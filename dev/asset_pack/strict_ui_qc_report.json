@@ -1,0 +1,1656 @@
+{
+  "total": 66,
+  "normalized": [
+    {
+      "path": "assets/ui/icons/menu.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          84,
+          80,
+          343,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          127,
+          152,
+          370,
+          341
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/back.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          81,
+          352,
+          349
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          122,
+          153,
+          384,
+          350
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/close.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          83,
+          80,
+          345,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          95,
+          121,
+          344,
+          370
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/settings.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          85,
+          352,
+          341
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          123,
+          126,
+          389,
+          392
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/info.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          91,
+          352,
+          329
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          80,
+          91,
+          377,
+          397
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/help.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          104,
+          80,
+          303,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          105,
+          80,
+          406,
+          382
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/pause.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          85,
+          80,
+          342,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          146,
+          144,
+          334,
+          391
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/play.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          109,
+          80,
+          294,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          143,
+          136,
+          384,
+          418
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/restart.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          106,
+          80,
+          300,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          106,
+          140,
+          359,
+          400
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/save.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          108,
+          80,
+          296,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          108,
+          80,
+          403,
+          360
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/confirm.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          91,
+          352,
+          329
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          122,
+          114,
+          376,
+          367
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/ui/icons/cancel.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          87,
+          80,
+          337,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          88,
+          107,
+          376,
+          397
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/watering_low.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          94,
+          352,
+          323
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          96,
+          104,
+          363,
+          359
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/watering_medium.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          86,
+          80,
+          340,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          98,
+          143,
+          369,
+          380
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/watering_high.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          116,
+          80,
+          279,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          116,
+          80,
+          395,
+          420
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/fertilizing_low.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          85,
+          80,
+          341,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          164,
+          129,
+          335,
+          368
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/fertilizing_medium.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          96,
+          352,
+          320
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          158,
+          96,
+          338,
+          376
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/fertilizing_high.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          85,
+          352,
+          341
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          170,
+          122,
+          343,
+          387
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/training_low.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          141,
+          80,
+          229,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          155,
+          80,
+          343,
+          419
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/training_medium.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          84,
+          80,
+          343,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          139,
+          150,
+          396,
+          372
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/training_high.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          81,
+          352,
+          349
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          130,
+          119,
+          368,
+          402
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/environment_airflow.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          113,
+          80,
+          286,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          113,
+          98,
+          361,
+          374
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/environment_climate.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          107,
+          80,
+          297,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          111,
+          80,
+          389,
+          407
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/actions/environment_reset.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          81,
+          352,
+          349
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          159,
+          120,
+          353,
+          381
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/resources/water.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          147,
+          80,
+          218,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          164,
+          80,
+          365,
+          361
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/resources/nutrients.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          105,
+          80,
+          301,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          191,
+          130,
+          355,
+          384
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/resources/light.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          85,
+          352,
+          341
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          118,
+          111,
+          394,
+          371
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/resources/temperature.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          84,
+          352,
+          343
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          144,
+          120,
+          330,
+          403
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/resources/humidity.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          133,
+          80,
+          246,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          133,
+          80,
+          379,
+          392
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/resources/co2.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          81,
+          352,
+          349
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          112,
+          167,
+          399,
+          354
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/resources/ph.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          109,
+          80,
+          294,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          109,
+          90,
+          402,
+          340
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/resources/ec.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          113,
+          80,
+          285,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          119,
+          80,
+          367,
+          403
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/healthy.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          114,
+          80,
+          283,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          114,
+          80,
+          344,
+          396
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/growth_boost.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          123,
+          80,
+          266,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          156,
+          128,
+          351,
+          389
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/slow_growth.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          84,
+          352,
+          343
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          149,
+          124,
+          346,
+          396
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/nutrient_deficiency.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          88,
+          352,
+          336
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          125,
+          100,
+          342,
+          399
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/nutrient_burn.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          90,
+          80,
+          331,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          148,
+          121,
+          356,
+          397
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/overwatered.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          118,
+          80,
+          276,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          118,
+          80,
+          370,
+          364
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/underwatered.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          83,
+          80,
+          346,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          121,
+          109,
+          347,
+          411
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/heat_stress.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          93,
+          80,
+          326,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          128,
+          140,
+          364,
+          377
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/light_stress.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          85,
+          80,
+          341,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          100,
+          129,
+          396,
+          377
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/root_rot.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          113,
+          80,
+          285,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          172,
+          96,
+          334,
+          431
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/recovery.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          99,
+          80,
+          313,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          99,
+          80,
+          401,
+          372
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/states/dead.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          83,
+          80,
+          346,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          99,
+          111,
+          378,
+          414
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/pest_attack.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          81,
+          80,
+          349,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          111,
+          109,
+          382,
+          406
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/disease.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          122,
+          80,
+          267,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          122,
+          80,
+          389,
+          426
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/nutrient_lockout.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          99,
+          80,
+          313,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          100,
+          116,
+          336,
+          377
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/ph_drift.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          88,
+          80,
+          335,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          88,
+          141,
+          397,
+          380
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/dry_soil.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          85,
+          352,
+          341
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          128,
+          137,
+          377,
+          383
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/too_wet_soil.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          103,
+          80,
+          306,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          103,
+          83,
+          409,
+          377
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/heat_wave.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          81,
+          80,
+          349,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          100,
+          107,
+          385,
+          386
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/cold_roots.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          188,
+          80,
+          135,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          241,
+          80,
+          323,
+          432
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/salt_buildup.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          86,
+          352,
+          340
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          152,
+          119,
+          355,
+          401
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/events/fungal_growth.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          85,
+          80,
+          341,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          120,
+          121,
+          364,
+          385
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/pests/spider_mites.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          95,
+          80,
+          321,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          128,
+          108,
+          356,
+          404
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/pests/aphids.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          81,
+          80,
+          349,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          125,
+          119,
+          387,
+          384
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/pests/thrips.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          80,
+          352,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          149,
+          108,
+          365,
+          396
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/pests/fungus_gnats.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          81,
+          80,
+          349,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          127,
+          115,
+          374,
+          391
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/progression/seed.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          84,
+          352,
+          344
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          106,
+          84,
+          332,
+          403
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/progression/sprout.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          81,
+          80,
+          349,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          113,
+          158,
+          384,
+          361
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/progression/seedling.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          91,
+          80,
+          329,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          117,
+          170,
+          362,
+          357
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/progression/vegetative.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          85,
+          352,
+          341
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          120,
+          134,
+          393,
+          375
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/progression/preflower.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          83,
+          352,
+          346
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          93,
+          127,
+          405,
+          395
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/progression/flowering.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          85,
+          80,
+          341,
+          352
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          142,
+          122,
+          354,
+          379
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/progression/late_flower.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          81,
+          352,
+          349
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          173,
+          130,
+          338,
+          374
+        ],
+        "reasons": []
+      }
+    },
+    {
+      "path": "assets/gameplay/progression/harvest_ready.png",
+      "placement": {
+        "size": [
+          512,
+          512
+        ],
+        "placed": [
+          80,
+          83,
+          352,
+          346
+        ]
+      },
+      "qc": {
+        "ok": true,
+        "bbox": [
+          144,
+          122,
+          354,
+          373
+        ],
+        "reasons": []
+      }
+    }
+  ],
+  "failed": []
+}

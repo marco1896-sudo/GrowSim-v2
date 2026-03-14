@@ -1,0 +1,30 @@
+{
+  "moves": [
+    { "source": "stylelock_menu.png", "target": "assets/reference/style_lock/menu.png" },
+    { "source": "stylelock_settings.png", "target": "assets/reference/style_lock/settings.png" },
+    { "source": "stylelock_water.png", "target": "assets/reference/style_lock/water.png" },
+    { "source": "stylelock_state_healthy.png", "target": "assets/reference/style_lock/state_healthy.png" },
+    { "source": "stylelock_pest_warning.png", "target": "assets/reference/style_lock/pest_warning.png" },
+    { "source": "stylelock_premium_button.png", "target": "assets/reference/style_lock/premium_button.png" },
+    { "source": "stylelock_premium_window_frame.png", "target": "assets/reference/style_lock/premium_window_frame.png" },
+    { "source": "stylelock_premium_progress_bar.png", "target": "assets/reference/style_lock/premium_progress_bar.png" },
+
+    { "source": "component_premium_button.png", "target": "assets/ui/components/premium_button.png" },
+    { "source": "component_premium_window_frame.png", "target": "assets/ui/components/premium_window_frame.png" },
+    { "source": "component_premium_card.png", "target": "assets/ui/components/premium_card.png" },
+    { "source": "component_premium_tab.png", "target": "assets/ui/components/premium_tab.png" },
+    { "source": "component_premium_badge.png", "target": "assets/ui/components/premium_badge.png" },
+    { "source": "component_premium_achievement.png", "target": "assets/ui/components/premium_achievement.png" },
+    { "source": "component_premium_progress_bar.png", "target": "assets/ui/components/premium_progress_bar.png" },
+    { "source": "component_premium_notification_chip.png", "target": "assets/ui/components/premium_notification_chip.png" },
+
+    { "source": "ui_core_board.png", "target": "tmp/imagegen/raw/ui_core_board.png" },
+    { "source": "actions_board.png", "target": "tmp/imagegen/raw/actions_board.png" },
+    { "source": "resources_board.png", "target": "tmp/imagegen/raw/resources_board.png" },
+    { "source": "states_board.png", "target": "tmp/imagegen/raw/states_board.png" },
+    { "source": "events_board_a.png", "target": "tmp/imagegen/raw/events_board_a.png" },
+    { "source": "events_board_b.png", "target": "tmp/imagegen/raw/events_board_b.png" },
+    { "source": "progression_board.png", "target": "tmp/imagegen/raw/progression_board.png" },
+    { "source": "optional_expansion_board.png", "target": "tmp/imagegen/raw/optional_expansion_board.png" }
+  ]
+}

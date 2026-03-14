@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "iconCount": 90,
+  "atlasResolution": [
+    4848,
+    5384
+  ],
+  "cellSize": 512,
+  "padding": 24,
+  "normalization": {
+    "normalizedIcons": 16,
+    "downscaledIcons": 15,
+    "untouchedIcons": 74
+  },
+  "checks": {
+    "everyIconOnce": true,
+    "noOverlaps": true,
+    "noOutOfBounds": true,
+    "transparencyPreserved": true,
+    "minimalDimensions": true
+  },
+  "packingEfficiency": 0.903888,
+  "pngFileSize": 12683947,
+  "webpFileSize": 9462280,
+  "compressionRatio": 1.3405,
+  "issues": []
+}
