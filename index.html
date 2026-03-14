@@ -62,34 +62,22 @@
         <article class="panel panel-status">
           <h2 class="panel-title">PFLANZENSTATUS</h2>
           <article id="waterRing" class="status-row" role="button" tabindex="0" aria-label="Wasser Details öffnen" style="--value:70;">
-            <div class="status-label">
-              <span class="mini-icon" aria-hidden="true">W</span>
-              <span id="plantWaterLabel">Wasser</span>
-            </div>
+            <div class="status-label"><span class="mini-icon" aria-hidden="true">W</span></div>
             <div class="status-track"></div>
             <strong id="waterValue">70%</strong>
           </article>
           <article id="nutritionRing" class="status-row" role="button" tabindex="0" aria-label="Nährstoffe Details öffnen" style="--value:65;">
-            <div class="status-label">
-              <span class="mini-icon" aria-hidden="true">N</span>
-              <span id="plantNutritionLabel">Nährstoffe</span>
-            </div>
+            <div class="status-label"><span class="mini-icon" aria-hidden="true">N</span></div>
             <div class="status-track"></div>
             <strong id="nutritionValue">65%</strong>
           </article>
           <article id="growthRing" class="status-row" role="button" tabindex="0" aria-label="Wachstum Details öffnen" style="--value:10;">
-            <div class="status-label">
-              <span class="mini-icon" aria-hidden="true">G</span>
-              <span id="plantGrowthLabel">Wachstum</span>
-            </div>
+            <div class="status-label"><span class="mini-icon" aria-hidden="true">G</span></div>
             <div class="status-track"></div>
             <strong id="growthValue">10%</strong>
           </article>
           <article id="riskRing" class="status-row" role="button" tabindex="0" aria-label="Risiko Details öffnen" style="--value:20;">
-            <div class="status-label">
-              <span class="mini-icon" aria-hidden="true">R</span>
-              <span id="plantRiskLabel">Risiko</span>
-            </div>
+            <div class="status-label"><span class="mini-icon" aria-hidden="true">R</span></div>
             <div class="status-track"></div>
             <strong id="riskValue">20%</strong>
           </article>
@@ -100,20 +88,32 @@
             <h2 class="panel-title">WURZEL &amp; BODEN</h2>
             <div class="metric-grid-2x2">
               <div class="metric-cell">
-                <span id="rootPhLabel" class="metric-label">pH</span>
-                <strong id="rootPhValue">5.9</strong>
+                <span class="metric-title">pH</span>
+                <div class="metric-body">
+                  <span id="rootPhIcon" class="metric-icon" aria-hidden="true">pH</span>
+                  <strong id="rootPhValue">5.9</strong>
+                </div>
               </div>
               <div class="metric-cell">
-                <span id="rootEcLabel" class="metric-label">EC</span>
-                <strong id="rootEcValue">1.3</strong>
+                <span class="metric-title">EC</span>
+                <div class="metric-body">
+                  <span id="rootEcIcon" class="metric-icon" aria-hidden="true">EC</span>
+                  <strong id="rootEcValue">1.3</strong>
+                </div>
               </div>
               <div class="metric-cell">
-                <span id="rootHealthLabel" class="metric-label">Wurzelg.</span>
-                <strong id="rootHealthValue">78%</strong>
+                <span class="metric-title">Wurzelg.</span>
+                <div class="metric-body">
+                  <span id="rootHealthIcon" class="metric-icon" aria-hidden="true">W</span>
+                  <strong id="rootHealthValue">78%</strong>
+                </div>
               </div>
               <div class="metric-cell">
-                <span id="rootOxygenLabel" class="metric-label">O2</span>
-                <strong id="rootOxygenValue">78%</strong>
+                <span class="metric-title">O2</span>
+                <div class="metric-body">
+                  <span id="rootOxygenIcon" class="metric-icon" aria-hidden="true">O2</span>
+                  <strong id="rootOxygenValue">78%</strong>
+                </div>
               </div>
             </div>
           </article>
@@ -122,20 +122,32 @@
             <h2 class="panel-title">UMGEBUNGSDATEN</h2>
             <div class="metric-grid-2x2">
               <div class="metric-cell">
-                <span id="envLightLabel" class="metric-label">PPFD</span>
-                <strong id="envLightValue">720</strong>
+                <span class="metric-title">PPFD</span>
+                <div class="metric-body">
+                  <span id="envLightIcon" class="metric-icon" aria-hidden="true">L</span>
+                  <strong id="envLightValue">720</strong>
+                </div>
               </div>
               <div class="metric-cell">
-                <span id="envTempLabel" class="metric-label">Temp</span>
-                <strong id="envTempValue">25.3°C</strong>
+                <span class="metric-title">Temp</span>
+                <div class="metric-body">
+                  <span id="envTempIcon" class="metric-icon" aria-hidden="true">T</span>
+                  <strong id="envTempValue">25.3°C</strong>
+                </div>
               </div>
               <div class="metric-cell">
-                <span id="envHumidityLabel" class="metric-label">Rlf</span>
-                <strong id="envHumidityValue">61%</strong>
+                <span class="metric-title">Rlf</span>
+                <div class="metric-body">
+                  <span id="envHumidityIcon" class="metric-icon" aria-hidden="true">H</span>
+                  <strong id="envHumidityValue">61%</strong>
+                </div>
               </div>
               <div class="metric-cell">
-                <span id="envAirflowLabel" class="metric-label">Luftstrom</span>
-                <strong id="envAirflowValue">Gut</strong>
+                <span class="metric-title">Luftstrom</span>
+                <div class="metric-body">
+                  <span id="envAirflowIcon" class="metric-icon" aria-hidden="true">A</span>
+                  <strong id="envAirflowValue">Gut</strong>
+                </div>
               </div>
             </div>
           </article>
@@ -350,4 +362,3 @@
   <script src="app.js" defer></script>
 </body>
 </html>
-
