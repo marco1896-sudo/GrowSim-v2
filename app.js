@@ -652,14 +652,14 @@ function applyHudAtlasIcons() {
     setAtlasIcon(infoLabels[2], 'gameplay/resources/sim_time', { className: 'atlas-info-icon', size: 35, fallbackGlyph: 'T' });
   }
 
-  setAtlasIcon(document.getElementById('rootPhLabel'), 'gameplay/resources/ph', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'P' });
-  setAtlasIcon(document.getElementById('rootEcLabel'), 'gameplay/resources/ec', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'E' });
-  setAtlasIcon(document.getElementById('rootHealthLabel'), 'gameplay/resources/growth', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'R' });
-  setAtlasIcon(document.getElementById('rootOxygenLabel'), 'gameplay/resources/co2', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'O' });
-  setAtlasIcon(document.getElementById('envLightLabel'), 'gameplay/resources/light', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'L' });
-  setAtlasIcon(document.getElementById('envTempLabel'), 'gameplay/resources/temperature', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'T' });
-  setAtlasIcon(document.getElementById('envHumidityLabel'), 'gameplay/resources/humidity', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'H' });
-  setAtlasIcon(document.getElementById('envAirflowLabel'), 'gameplay/actions/environment_airflow', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'A' });
+  setAtlasIcon(document.getElementById('rootPhIcon'), 'gameplay/resources/ph', { className: 'atlas-info-icon', size: 52, fallbackGlyph: 'P' });
+  setAtlasIcon(document.getElementById('rootEcIcon'), 'gameplay/resources/ec', { className: 'atlas-info-icon', size: 52, fallbackGlyph: 'E' });
+  setAtlasIcon(document.getElementById('rootHealthIcon'), 'gameplay/resources/growth', { className: 'atlas-info-icon', size: 52, fallbackGlyph: 'R' });
+  setAtlasIcon(document.getElementById('rootOxygenIcon'), 'gameplay/resources/co2', { className: 'atlas-info-icon', size: 52, fallbackGlyph: 'O' });
+  setAtlasIcon(document.getElementById('envLightIcon'), 'gameplay/resources/light', { className: 'atlas-info-icon', size: 52, fallbackGlyph: 'L' });
+  setAtlasIcon(document.getElementById('envTempIcon'), 'gameplay/resources/temperature', { className: 'atlas-info-icon', size: 52, fallbackGlyph: 'T' });
+  setAtlasIcon(document.getElementById('envHumidityIcon'), 'gameplay/resources/humidity', { className: 'atlas-info-icon', size: 52, fallbackGlyph: 'H' });
+  setAtlasIcon(document.getElementById('envAirflowIcon'), 'gameplay/actions/environment_airflow', { className: 'atlas-info-icon', size: 52, fallbackGlyph: 'A' });
 }
 
 function renderStaticAtlasIcons() {
