@@ -2292,23 +2292,23 @@ body::before {
 
 .status-row {
   --value: 0;
-  --status-icon-col-width: 3.4rem;
-  --status-value-col-width: 3rem;
+  --status-icon-col-width: 2.7rem;
+  --status-value-col-width: 3.15rem;
   display: grid;
   grid-template-columns: var(--status-icon-col-width) minmax(0, 1fr) var(--status-value-col-width);
   align-items: center;
-  column-gap: 0.38rem;
-  margin: 0.06rem 0.2rem;
-  min-height: 2.2rem;
-  padding: 0.18rem 0.3rem;
+  column-gap: 0.46rem;
+  margin: 0.1rem 0.24rem;
+  min-height: 2.06rem;
+  padding: 0.16rem 0.34rem;
   border-radius: 8px;
   border: 1px solid rgba(167, 145, 95, 0.26);
   background:
-    linear-gradient(180deg, rgba(255, 227, 157, 0.04), rgba(255, 227, 157, 0) 38%),
+    linear-gradient(180deg, rgba(255, 227, 157, 0.03), rgba(255, 227, 157, 0) 34%),
     linear-gradient(160deg, rgba(23, 26, 34, 0.92), rgba(12, 15, 23, 0.95));
   box-shadow:
-    inset 0 1px 0 rgba(239, 211, 144, 0.12),
-    inset 0 -8px 12px rgba(4, 8, 14, 0.34);
+    inset 0 1px 0 rgba(239, 211, 144, 0.1),
+    inset 0 -7px 10px rgba(4, 8, 14, 0.32);
   cursor: pointer;
   transition: transform 150ms ease, border-color 150ms ease;
 }
@@ -2333,15 +2333,13 @@ body::before {
 }
 
 .dashboard-grid .status-row .mini-icon {
-  width: 1.36rem;
-  height: 1.36rem;
+  width: 1.2rem;
+  height: 1.2rem;
   margin-bottom: 0;
-  border: 1px solid rgba(212, 178, 106, 0.4);
-  border-radius: 999px;
-  background: radial-gradient(circle at 34% 28%, rgba(242, 208, 128, 0.18), rgba(22, 24, 32, 0.94));
-  box-shadow:
-    inset 0 1px 0 rgba(250, 226, 170, 0.14),
-    0 2px 8px rgba(0, 0, 0, 0.34);
+  border: 1px solid rgba(215, 184, 111, 0.24);
+  border-radius: 8px;
+  background: linear-gradient(160deg, rgba(31, 36, 47, 0.9), rgba(17, 21, 30, 0.94));
+  box-shadow: inset 0 1px 0 rgba(245, 218, 153, 0.09);
   color: #d8c48f;
 }
 
@@ -2349,21 +2347,21 @@ body::before {
   display: inline-flex;
   align-items: center;
   width: 100%;
-  padding-right: 0.1rem;
+  padding-right: 0.04rem;
 }
 
 .status-track {
   position: relative;
-  width: 100%;
+  width: calc(100% - 0.1rem);
   justify-self: stretch;
-  height: 9px;
+  height: 8px;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(58, 66, 77, 0.8), rgba(30, 35, 43, 0.92));
-  border: 1px solid rgba(173, 145, 82, 0.34);
+  border: 1px solid rgba(173, 145, 82, 0.28);
   overflow: hidden;
   box-shadow:
-    inset 0 1px 1px rgba(255, 235, 180, 0.12),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+    inset 0 1px 1px rgba(255, 235, 180, 0.1),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.4);
 }
 
 .status-track::before {
@@ -2393,15 +2391,16 @@ body::before {
 }
 
 .status-row .status-value {
-  font-size: 0.82rem;
+  font-size: 0.86rem;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.015em;
   color: #efe2b8;
   min-width: var(--status-value-col-width);
   text-align: right;
   justify-self: end;
   line-height: 1;
-  padding-right: 0.02rem;
+  padding-right: 0;
 }
 
 .metric-row {
