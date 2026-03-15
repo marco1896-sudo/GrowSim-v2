@@ -2298,9 +2298,9 @@ body::before {
   grid-template-columns: var(--status-icon-col-width) minmax(0, 1fr) var(--status-value-col-width);
   align-items: center;
   column-gap: 0.46rem;
-  margin: 0.1rem 0.24rem;
+  margin: 0 0.24rem;
   min-height: 2.06rem;
-  padding: 0.16rem 0.34rem;
+  padding: 0.2rem 0.34rem;
   border-radius: 8px;
   border: 1px solid rgba(167, 145, 95, 0.26);
   background:
@@ -2311,6 +2311,10 @@ body::before {
     inset 0 -7px 10px rgba(4, 8, 14, 0.32);
   cursor: pointer;
   transition: transform 150ms ease, border-color 150ms ease;
+}
+
+.panel-status .status-row + .status-row {
+  margin-top: 0.3rem;
 }
 
 .status-row:hover {
