@@ -248,15 +248,30 @@
   </section>
 
   <section id="statDetailSheet" class="bottom-sheet hidden" aria-hidden="true">
-    <header class="sheet-header">
+    <header class="sheet-header stat-detail-header">
       <h2 id="statDetailTitle">Statistik</h2>
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content stat-detail-content">
-      <p id="statDetailValue" class="stat-detail-value">0</p>
-      <p id="statDetailStatus" class="sheet-badge">Status: -</p>
-      <p id="statDetailExplanation" class="sheet-note">-</p>
-      <p id="statDetailRecommendation" class="stat-detail-recommendation">-</p>
+      <section class="stat-detail-hero" aria-label="Statistikwert">
+        <div class="stat-detail-icon-shell" aria-hidden="true">
+          <img id="statDetailIcon" class="stat-detail-icon" src="assets/gameplay/resources/water.png" alt="">
+        </div>
+        <p id="statDetailValue" class="stat-detail-value">0</p>
+      </section>
+
+      <section class="stat-detail-status-block" aria-label="Statusübersicht">
+        <p id="statDetailStatus" class="sheet-badge stat-detail-status-badge">Status: -</p>
+        <div id="statDetailBar" class="stat-detail-meter" role="progressbar" aria-label="Statistikwert" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="statDetailBarFill" class="stat-detail-meter-fill"></span>
+        </div>
+      </section>
+
+      <section class="stat-detail-copy" aria-label="Details">
+        <p id="statDetailExplanation" class="sheet-note stat-detail-explanation">-</p>
+        <p id="statDetailRecommendation" class="stat-detail-recommendation">-</p>
+      </section>
+
       <button id="statDetailPrimaryBtn" class="action-btn action-primary" type="button">Aktion</button>
     </div>
   </section>

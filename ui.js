@@ -77,8 +77,11 @@ function cacheUi() {
   ui.diagnosisSheet = document.getElementById('diagnosisSheet');
   ui.statDetailSheet = document.getElementById('statDetailSheet');
   ui.statDetailTitle = document.getElementById('statDetailTitle');
+  ui.statDetailIcon = document.getElementById('statDetailIcon');
   ui.statDetailValue = document.getElementById('statDetailValue');
   ui.statDetailStatus = document.getElementById('statDetailStatus');
+  ui.statDetailBar = document.getElementById('statDetailBar');
+  ui.statDetailBarFill = document.getElementById('statDetailBarFill');
   ui.statDetailExplanation = document.getElementById('statDetailExplanation');
   ui.statDetailRecommendation = document.getElementById('statDetailRecommendation');
   ui.statDetailPrimaryBtn = document.getElementById('statDetailPrimaryBtn');

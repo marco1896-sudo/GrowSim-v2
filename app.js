@@ -3254,6 +3254,8 @@ function escapeHtml(value) {
 const STAT_DETAIL_CONFIG = Object.freeze({
   water: Object.freeze({
     title: 'Wasser',
+    iconPath: 'assets/gameplay/resources/water.png',
+    valueSuffix: '%',
     buttonLabel: 'Gießen',
     action: () => openSheet('care'),
     getValue: () => Math.round(Number(state.status.water) || 0),
@@ -3275,6 +3277,8 @@ const STAT_DETAIL_CONFIG = Object.freeze({
   }),
   nutrition: Object.freeze({
     title: 'Nährstoffe',
+    iconPath: 'assets/gameplay/resources/nutrients.png',
+    valueSuffix: '%',
     buttonLabel: 'Pflege öffnen',
     action: () => openSheet('care'),
     getValue: () => Math.round(Number(state.status.nutrition) || 0),
@@ -3295,6 +3299,8 @@ const STAT_DETAIL_CONFIG = Object.freeze({
   }),
   growth: Object.freeze({
     title: 'Wachstum',
+    iconPath: 'assets/gameplay/resources/growth.png',
+    valueSuffix: '%',
     buttonLabel: 'Analyse öffnen',
     action: () => openSheet('dashboard'),
     getValue: () => Math.round(Number(state.status.growth) || 0),
@@ -3315,6 +3321,8 @@ const STAT_DETAIL_CONFIG = Object.freeze({
   }),
   risk: Object.freeze({
     title: 'Risiko',
+    iconPath: 'assets/gameplay/resources/stress.png',
+    valueSuffix: '%',
     buttonLabel: 'Analyse öffnen',
     action: () => openSheet('dashboard'),
     getValue: () => Math.round(Number(state.status.risk) || 0),
@@ -3371,8 +3379,16 @@ function renderStatDetailSheet() {
   const recommendation = config.getRecommendation(value, impulse);
 
   ui.statDetailTitle.textContent = config.title;
-  ui.statDetailValue.textContent = `${value}`;
+  if (ui.statDetailIcon) {
+    ui.statDetailIcon.src = config.iconPath || 'assets/gameplay/resources/water.png';
+  }
+  ui.statDetailValue.textContent = `${value}${config.valueSuffix || ''}`;
   ui.statDetailStatus.textContent = `Status: ${status}`;
+  if (ui.statDetailBar) {
+    ui.statDetailBar.style.setProperty('--detail-value', String(Math.max(0, Math.min(100, value))));
+    ui.statDetailBar.setAttribute('aria-valuenow', String(Math.max(0, Math.min(100, value))));
+    ui.statDetailBar.dataset.statKey = key;
+  }
   ui.statDetailExplanation.textContent = explanation;
   ui.statDetailRecommendation.textContent = recommendation;
   ui.statDetailPrimaryBtn.textContent = config.buttonLabel;
