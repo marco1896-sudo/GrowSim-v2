@@ -1918,11 +1918,11 @@ body::before {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding: 0.48rem 0.62rem calc(0.42rem + env(safe-area-inset-bottom));
+  padding: 0.56rem 0.62rem calc(0.3rem + env(safe-area-inset-bottom));
 }
 
 .hud-main {
-  gap: 0.32rem;
+  gap: 0.4rem;
 }
 
 .info-bar {
@@ -2139,8 +2139,8 @@ body::before {
 .dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.14rem;
-  margin-top: -0.02rem;
+  gap: 0.2rem;
+  margin-top: 0.02rem;
 }
 
 .panel {
@@ -2170,7 +2170,7 @@ body::before {
 
 .panel-status {
   position: relative;
-  padding-bottom: 0.03rem;
+  padding-bottom: 0.14rem;
 }
 
 .panel-status::after {
@@ -2191,7 +2191,7 @@ body::before {
 .panel-stack {
   display: grid;
   grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 0.08rem;
+  gap: 0.12rem;
   align-content: start;
 }
 
@@ -2207,8 +2207,8 @@ body::before {
 .panel-metrics-grid .metric-grid-2x2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.08rem;
-  padding: 0.06rem 0.12rem 0.08rem;
+  gap: 0.1rem;
+  padding: 0.08rem 0.14rem 0.12rem;
 }
 
 .panel-metrics-grid .metric-cell {
@@ -2285,11 +2285,12 @@ body::before {
 .status-row {
   --value: 0;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1.54rem minmax(0, 1fr) 2.7rem;
   align-items: center;
-  gap: 0.18rem;
-  margin: 0.04rem 0.2rem;
-  padding: 0.06rem 0.18rem;
+  gap: 0.26rem;
+  margin: 0.08rem 0.22rem;
+  min-height: 2.2rem;
+  padding: 0.18rem 0.2rem;
   border-radius: 8px;
   border: 1px solid rgba(167, 145, 95, 0.26);
   background: linear-gradient(160deg, rgba(23, 26, 34, 0.92), rgba(12, 15, 23, 0.95));
@@ -2312,12 +2313,14 @@ body::before {
   align-items: center;
   justify-content: center;
   align-self: center;
-  min-width: 0;
+  width: 1.54rem;
+  min-width: 1.54rem;
 }
 
 .dashboard-grid .status-row .mini-icon {
-  width: 1.16rem;
-  height: 1.16rem;
+  width: 1.34rem;
+  height: 1.34rem;
+  margin-bottom: 0;
 }
 
 .status-track {
@@ -2345,10 +2348,12 @@ body::before {
 }
 
 .status-row strong {
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   color: #efe2b8;
-  min-width: 2.45rem;
+  min-width: 2.7rem;
   text-align: right;
+  justify-self: end;
+  line-height: 1;
 }
 
 .metric-row {
@@ -2378,11 +2383,15 @@ body::before {
 }
 
 .mini-icon {
-  width: 7rem;
-  height: 7rem;
+  width: 1.42rem;
+  height: 1.42rem;
   line-height: 1;
-  border: 0;
-  background: none;
+  border: 1px solid rgba(212, 178, 106, 0.4);
+  border-radius: 999px;
+  background: radial-gradient(circle at 34% 28%, rgba(242, 208, 128, 0.18), rgba(22, 24, 32, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(250, 226, 170, 0.14),
+    0 2px 8px rgba(0, 0, 0, 0.34);
 }
 
 .info-label .atlas-info-icon {
@@ -2399,13 +2408,13 @@ body::before {
 
 .mini-icon .atlas-mini-icon {
   margin-right: 0;
-  filter: drop-shadow(0 0 9px rgba(239, 188, 94, 0.38));
+  filter: drop-shadow(0 0 8px rgba(239, 188, 94, 0.44));
 }
 
 .action-panel {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.06rem;
-  margin-top: 0.02rem;
+  margin-top: -0.02rem;
   margin-bottom: calc(0.1rem + env(safe-area-inset-bottom));
   padding: 0 calc(0.02rem + env(safe-area-inset-left)) calc(0.12rem + env(safe-area-inset-bottom)) calc(0.02rem + env(safe-area-inset-right));
   border: 0;
