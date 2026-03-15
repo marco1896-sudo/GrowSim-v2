@@ -2292,13 +2292,15 @@ body::before {
 
 .status-row {
   --value: 0;
+  --status-icon-col-width: 3.75rem;
+  --status-value-col-width: 2.9rem;
   display: grid;
-  grid-template-columns: 1.56rem minmax(0, 1fr) 2.68rem;
+  grid-template-columns: var(--status-icon-col-width) minmax(0, 1fr) var(--status-value-col-width);
   align-items: center;
-  gap: 0.28rem;
+  column-gap: 0.44rem;
   margin: 0.07rem 0.22rem;
-  min-height: 2.2rem;
-  padding: 0.2rem 0.24rem;
+  min-height: 2.28rem;
+  padding: 0.2rem 0.32rem;
   border-radius: 8px;
   border: 1px solid rgba(167, 145, 95, 0.26);
   background:
@@ -2321,30 +2323,37 @@ body::before {
   outline-offset: 1px;
 }
 
-.status-label {
+.status-icon-col {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  align-self: center;
-  width: 1.56rem;
-  min-width: 1.56rem;
+  width: 100%;
+  min-height: 100%;
 }
 
 .dashboard-grid .status-row .mini-icon {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.42rem;
+  height: 1.42rem;
   margin-bottom: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  border: 1px solid rgba(212, 178, 106, 0.4);
+  border-radius: 999px;
+  background: radial-gradient(circle at 34% 28%, rgba(242, 208, 128, 0.18), rgba(22, 24, 32, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(250, 226, 170, 0.14),
+    0 2px 8px rgba(0, 0, 0, 0.34);
   color: #d8c48f;
+}
+
+.status-bar-col {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
 }
 
 .status-track {
   position: relative;
-  width: min(100%, 7.9rem);
-  justify-self: start;
+  width: 100%;
+  justify-self: stretch;
   height: 8px;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(58, 66, 77, 0.8), rgba(30, 35, 43, 0.92));
@@ -2381,12 +2390,12 @@ body::before {
   box-shadow: 0 0 10px rgba(250, 109, 66, 0.38);
 }
 
-.status-row strong {
+.status-row .status-value {
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   color: #efe2b8;
-  min-width: 2.68rem;
+  min-width: var(--status-value-col-width);
   text-align: right;
   justify-self: end;
   line-height: 1;
