@@ -2309,7 +2309,7 @@ body::before {
   box-shadow:
     inset 0 1px 0 rgba(239, 211, 144, 0.1),
     inset 0 -7px 10px rgba(4, 8, 14, 0.32);
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: transform 150ms ease, border-color 150ms ease;
 }
@@ -2336,23 +2336,29 @@ body::before {
   min-height: 100%;
   height: 100%;
   justify-self: start;
-  overflow: hidden;
+  padding-block: 0.12rem;
+  overflow: visible;
 }
 
 .dashboard-grid .status-row .mini-icon {
-  width: 3.2rem;
-  height: 3.2rem;
+  width: 3.06rem;
+  height: 3.06rem;
   margin-bottom: 0;
-  border: 1px solid rgba(215, 184, 111, 0.24);
-  border-radius: 8px;
-  background: linear-gradient(160deg, rgba(31, 36, 47, 0.9), rgba(17, 21, 30, 0.94));
-  box-shadow: inset 0 1px 0 rgba(245, 218, 153, 0.09);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   color: #d8c48f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
 .status-row .mini-icon .atlas-mini-icon {
   width: 100%;
   height: 100%;
+  object-fit: contain;
 }
 
 .status-bar-col {
