@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'growsim-v1-20260314-pwa-lite-shell';
+const CACHE_VERSION = 'growsim-v2-20260315-pwa-consistent-ui';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');
@@ -39,7 +39,7 @@ self.addEventListener('install', (event) => {
   console.info('[sw] install', CACHE_VERSION);
   event.waitUntil(
     caches.open(SHELL_CACHE)
-      .then((cache) => cache.addAll(APP_SHELL_FILES))
+      .then((cache) => cache.addAll(APP_SHELL_FILES.map((url) => new Request(url, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
@@ -68,7 +68,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname.startsWith(appPath('assets/'))) {
-    event.respondWith(cacheFirst(event.request));
+    event.respondWith(staleWhileRevalidate(event.request, RUNTIME_CACHE));
     return;
   }
 
@@ -82,7 +82,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(shellThenNetwork(event.request));
+  event.respondWith(networkFirst(event.request, SHELL_CACHE));
 });
 
 async function cacheFirst(request) {
@@ -119,6 +119,27 @@ async function shellThenNetwork(request) {
   } catch (_error) {
     return cached || Response.error();
   }
+}
+
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  const fetchPromise = fetch(request)
+    .then((fresh) => {
+      if (fresh && fresh.ok) {
+        cache.put(request, fresh.clone());
+      }
+      return fresh;
+    })
+    .catch(() => null);
+
+  if (cached) {
+    fetchPromise.catch(() => {});
+    return cached;
+  }
+
+  const fresh = await fetchPromise;
+  return fresh || Response.error();
 }
 
 async function networkFirst(request, cacheName) {

@@ -2292,15 +2292,15 @@ body::before {
 
 .status-row {
   --value: 0;
-  --status-icon-col-width: 3.75rem;
-  --status-value-col-width: 2.9rem;
+  --status-icon-col-width: 3.4rem;
+  --status-value-col-width: 3rem;
   display: grid;
   grid-template-columns: var(--status-icon-col-width) minmax(0, 1fr) var(--status-value-col-width);
   align-items: center;
-  column-gap: 0.44rem;
-  margin: 0.07rem 0.22rem;
-  min-height: 2.28rem;
-  padding: 0.2rem 0.32rem;
+  column-gap: 0.38rem;
+  margin: 0.06rem 0.2rem;
+  min-height: 2.2rem;
+  padding: 0.18rem 0.3rem;
   border-radius: 8px;
   border: 1px solid rgba(167, 145, 95, 0.26);
   background:
@@ -2329,11 +2329,12 @@ body::before {
   justify-content: center;
   width: 100%;
   min-height: 100%;
+  justify-self: start;
 }
 
 .dashboard-grid .status-row .mini-icon {
-  width: 1.42rem;
-  height: 1.42rem;
+  width: 1.36rem;
+  height: 1.36rem;
   margin-bottom: 0;
   border: 1px solid rgba(212, 178, 106, 0.4);
   border-radius: 999px;
@@ -2348,13 +2349,14 @@ body::before {
   display: inline-flex;
   align-items: center;
   width: 100%;
+  padding-right: 0.1rem;
 }
 
 .status-track {
   position: relative;
   width: 100%;
   justify-self: stretch;
-  height: 8px;
+  height: 9px;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(58, 66, 77, 0.8), rgba(30, 35, 43, 0.92));
   border: 1px solid rgba(173, 145, 82, 0.34);
@@ -2399,6 +2401,7 @@ body::before {
   text-align: right;
   justify-self: end;
   line-height: 1;
+  padding-right: 0.02rem;
 }
 
 .metric-row {
