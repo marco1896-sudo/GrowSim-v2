@@ -1922,6 +1922,11 @@ body::before {
 }
 
 .hud-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-content: stretch;
   gap: 0.4rem;
 }
 
@@ -2141,6 +2146,8 @@ body::before {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.2rem;
   margin-top: 0.02rem;
+  min-height: 0;
+  align-content: stretch;
 }
 
 .panel {
@@ -2170,6 +2177,7 @@ body::before {
 
 .panel-status {
   position: relative;
+  min-height: 0;
   padding-bottom: 0.14rem;
 }
 
@@ -2414,14 +2422,15 @@ body::before {
 .action-panel {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.06rem;
-  margin-top: -0.02rem;
-  margin-bottom: calc(0.1rem + env(safe-area-inset-bottom));
-  padding: 0 calc(0.02rem + env(safe-area-inset-left)) calc(0.12rem + env(safe-area-inset-bottom)) calc(0.02rem + env(safe-area-inset-right));
+  margin-top: 0;
+  margin-bottom: calc(0.02rem + env(safe-area-inset-bottom));
+  padding: 0 calc(0.02rem + env(safe-area-inset-left)) calc(0.04rem + env(safe-area-inset-bottom)) calc(0.02rem + env(safe-area-inset-right));
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   overflow: visible;
+  align-self: end;
 }
 
 .hud-main .action-panel .action-btn.action-medallion {
@@ -2507,7 +2516,7 @@ body::before {
 
 @media (max-width: 420px) {
   .action-panel {
-    margin-bottom: calc(0.08rem + env(safe-area-inset-bottom));
+    margin-bottom: calc(0.02rem + env(safe-area-inset-bottom));
     padding-bottom: calc(0.04rem + env(safe-area-inset-bottom));
   }
 
