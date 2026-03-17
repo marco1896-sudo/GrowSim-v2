@@ -3027,25 +3027,107 @@ function renderAnalysisOverview() {
 
   const stageIndex = Number(state.plant && state.plant.stageIndex) || 1;
   const stageDef = STAGE_DEFS[clampInt(stageIndex, 0, STAGE_DEFS.length - 1)];
-  const stageDisplay = clampInt(stageIndex + 1, 1, STAGE_DEFS.length);
   const stageLabel = stageDef ? stageDef.label : '-';
-  const qualityTier = (state.plant && state.plant.lifecycle && state.plant.lifecycle.qualityTier) || 'normal';
+  const phaseProgress = clampInt(Math.round((Number(state.plant && state.plant.stageProgress) || 0) * 100), 0, 100);
+  const nextEventInMs = Math.max(0, Number(state.events && state.events.scheduler && state.events.scheduler.nextEventRealTimeMs) - Number(state.simulation && state.simulation.nowMs));
   const dayNight = (state.simulation && state.simulation.isDaytime) ? 'Tag' : 'Nacht';
   const simDay = Number(state.simulation && state.simulation.simDay) || 0;
+  const simHour = clampInt(Number(state.simulation && state.simulation.simHour) || 0, 0, 23);
+  const simMinute = clampInt(Number(state.simulation && state.simulation.simMinute) || 0, 0, 59);
+  const growthImpulse = round2(Number(state.simulation && state.simulation.growthImpulse) || 0);
   const status = state.status || {};
-  const qualityTierText = qualityTierLabel(qualityTier);
+  const health = clampInt(Math.round(Number(status.health) || 0), 0, 100);
+  const stress = clampInt(Math.round(Number(status.stress) || 0), 0, 100);
+  const risk = clampInt(Math.round(Number(status.risk) || 0), 0, 100);
+  const water = clampInt(Math.round(Number(status.water) || 0), 0, 100);
+  const nutrition = clampInt(Math.round(Number(status.nutrition) || 0), 0, 100);
+  const growth = clampInt(Math.round(Number(status.growth) || 0), 0, 100);
+  const overallScore = clampInt(Math.round((health * 0.45) + ((100 - stress) * 0.3) + ((100 - risk) * 0.25)), 0, 100);
+  const topStress = diagnosisDrivers().slice(0, 4);
+
+  const interpretationRows = [
+    { label: 'Wasser', value: water, state: water < 35 ? 'Niedrig' : (water > 80 ? 'Zu hoch' : 'Stabil') },
+    { label: 'Nährstoffe', value: nutrition, state: nutrition < 35 ? 'Mangel' : (nutrition > 80 ? 'Überschuss' : 'Stabil') },
+    { label: 'Licht', value: clampInt(Math.round((Number(uiPreviewData.ppfd) / 10) || 0), 0, 100), state: Number(uiPreviewData.ppfd) < 550 ? 'Zu niedrig' : 'Gut' },
+    { label: 'Umgebung', value: clampInt(Math.round((100 - Math.abs((Number(uiPreviewData.temperature) || 24) - 24) * 8) || 0), 0, 100), state: Number(uiPreviewData.humidity) > 72 ? 'Feucht' : 'Stabil' }
+  ];
+
+  const mergedTrend = [];
+  const actions = Array.isArray(state.history && state.history.actions) ? state.history.actions : [];
+  const events = Array.isArray(state.history && state.history.events) ? state.history.events : [];
+  for (const row of actions) {
+    mergedTrend.push({
+      atSimTimeMs: Number(row.atSimTimeMs || row.simTime || state.simulation.simTimeMs || 0),
+      label: String(row.label || row.id || 'Aktion')
+    });
+  }
+  for (const row of events) {
+    mergedTrend.push({
+      atSimTimeMs: Number(row.atSimTimeMs || row.simTime || state.simulation.simTimeMs || 0),
+      label: String(row.optionLabel || row.optionId || row.eventId || 'Ereignis')
+    });
+  }
+  mergedTrend.sort((a, b) => b.atSimTimeMs - a.atSimTimeMs);
+  const trendRows = mergedTrend.slice(0, 4);
+  const trendHtml = trendRows.length
+    ? trendRows.map((row) => `<div class="metric-row"><span class="metric-label">${escapeHtml(row.label)}</span><strong>${escapeHtml(simStampFromMs(row.atSimTimeMs))}</strong></div>`).join('')
+    : '<div class="metric-row"><span class="metric-label">Noch keine Daten</span><strong>---</strong></div>';
+
+  const stressHtml = topStress.length
+    ? topStress.map((item) => {
+      const severity = clampInt(Math.round(Number(item.score) || 0), 0, 100);
+      const icon = escapeHtml(String(item.label || 'S').slice(0, 1).toUpperCase());
+      return `<article class="status-row" style="--value:${severity};"><div class="status-label"><span class="mini-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(String(item.label || 'Stressfaktor'))}</span></div><div class="status-track"></div><strong>${severity}%</strong></article>`;
+    }).join('')
+    : '<article class="status-row" style="--value:0;"><div class="status-label"><span class="mini-icon" aria-hidden="true">S</span><span>Stabil</span></div><div class="status-track"></div><strong>0%</strong></article>';
 
   ui.analysisPanelOverview.innerHTML = `
-    <div class="gs-analysis-metric"><strong>Stufe ${stageDisplay}: ${stageLabel}</strong><br>Qualität: ${escapeHtml(String(qualityTierText))}</div>
-    <div class="gs-analysis-metric"><strong>${dayNight}</strong><br>Sim-Tag ${simDay}</div>
-    <div class="gs-analysis-metric-grid">
-      <div class="gs-analysis-metric">Wasser<br><strong>${round2(Number(status.water) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Nährstoffe<br><strong>${round2(Number(status.nutrition) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Gesundheit<br><strong>${round2(Number(status.health) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Stress<br><strong>${round2(Number(status.stress) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Risiko<br><strong>${round2(Number(status.risk) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Wachstum<br><strong>${round2(Number(status.growth) || 0)}</strong></div>
-    </div>
+    <section class="analysis-top-area">
+      <article class="phase-card phase-card-top analysis-phase-card">
+        <div class="phase-card-head">
+          <strong class="phase-card-title">Analyse</strong>
+          <span class="phase-card-cycle" aria-label="Tageszyklus">${dayNight === 'Tag' ? 'D' : 'N'}</span>
+        </div>
+        <div class="phase-card-meta">
+          <p class="phase-card-age">Tag ${simDay}</p>
+          <p class="phase-card-subtitle">${phaseProgress}% -> ${escapeHtml(stageLabel)}</p>
+        </div>
+        <div class="phase-progress">
+          <span class="phase-progress-fill" style="width:${phaseProgress}%;"></span>
+        </div>
+      </article>
+      <section class="info-bar" aria-label="Analyse-Status">
+        <article class="info-tile"><span class="info-label">Ereignis</span><strong>${escapeHtml(formatCountdown(nextEventInMs))}</strong></article>
+        <article class="info-tile"><span class="info-label">Impuls</span><strong>${growthImpulse}</strong></article>
+        <article class="info-tile"><span class="info-label">Tag / Zeit</span><strong>Tag ${simDay} · ${String(simHour).padStart(2, '0')}:${String(simMinute).padStart(2, '0')}</strong></article>
+      </section>
+    </section>
+
+    <article class="panel panel-metrics analysis-card">
+      <h3 class="panel-title">Gesamtzustand</h3>
+      <div class="analysis-score-wrap">
+        <strong class="analysis-score-value">${overallScore}%</strong>
+        <p class="analysis-score-phase">${escapeHtml(stageLabel)}</p>
+        <div class="status-track analysis-score-track" style="--value:${overallScore};"></div>
+      </div>
+    </article>
+
+    <article class="panel panel-status analysis-card">
+      <h3 class="panel-title">Stressfaktoren</h3>
+      ${stressHtml}
+    </article>
+
+    <article class="panel panel-metrics panel-metrics-grid analysis-card">
+      <h3 class="panel-title">Interpretation</h3>
+      <div class="metric-grid-2x2">
+        ${interpretationRows.map((row) => `<div class="metric-cell"><span class="metric-label">${escapeHtml(row.label)}</span><strong>${row.value}% · ${escapeHtml(row.state)}</strong></div>`).join('')}
+      </div>
+    </article>
+
+    <article class="panel panel-metrics analysis-card">
+      <h3 class="panel-title">Trend</h3>
+      <div class="analysis-trend-list">${trendHtml}</div>
+    </article>
   `;
 }
 

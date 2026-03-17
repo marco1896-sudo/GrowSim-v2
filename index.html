@@ -13,20 +13,20 @@
 <body>
   <div id="app-hud" class="app-hud">
     <main class="hud-main">
-      <section class="info-bar" aria-label="Top-Metriken">
-        <article class="info-tile">
-          <span class="info-label">Ereignis</span>
-          <strong id="nextEventValue">--:--</strong>
-        </article>
-        <article class="info-tile">
-          <span class="info-label">Impuls</span>
-          <strong id="growthImpulseValue">0.00</strong>
-        </article>
-        <article class="info-tile">
-          <span class="info-label">Tag / Zeit</span>
-          <strong id="simTimeValue">Tag 1 · --:--</strong>
-        </article>
-      </section>
+      <article id="phaseCard" class="phase-card phase-card-top" aria-live="polite">
+        <div class="phase-card-head">
+          <strong id="phaseCardTitle" class="phase-card-title">Blüte</strong>
+          <span id="phaseCardCycle" class="phase-card-cycle" aria-label="Tageszyklus">D</span>
+        </div>
+        <div class="phase-card-meta">
+          <p id="phaseCardAge" class="phase-card-age">Tag 1</p>
+          <p id="phaseCardSubtitle" class="phase-card-subtitle">0% -> Vegetationsphase</p>
+        </div>
+        <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="phaseProgressFill" class="phase-progress-fill"></span>
+          <span id="phaseProgressMarker" class="phase-progress-marker" aria-hidden="true"></span>
+        </div>
+      </article>
 
       <section class="hero-card">
         <button id="menuToggleBtn" class="menu-toggle-btn menu-toggle-floating" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
@@ -44,17 +44,20 @@
           <img id="overlayPestMites" class="overlay-image hidden" alt="">
           <img id="overlayPestThrips" class="overlay-image hidden" alt="">
         </div>
-        <article id="phaseCard" class="phase-card phase-card-badge" aria-live="polite">
-          <div class="phase-card-head">
-            <strong id="phaseCardTitle" class="phase-card-title">Blüte</strong>
-            <span id="phaseCardCycle" class="phase-card-cycle" aria-label="Tageszyklus">D</span>
-          </div>
-          <p id="phaseCardAge" class="phase-card-age">Tag 1</p>
-          <p id="phaseCardSubtitle" class="phase-card-subtitle">0% -> Vegetationsphase</p>
-          <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <span id="phaseProgressFill" class="phase-progress-fill"></span>
-            <span id="phaseProgressMarker" class="phase-progress-marker" aria-hidden="true"></span>
-          </div>
+      </section>
+
+      <section class="info-bar" aria-label="Top-Metriken">
+        <article class="info-tile">
+          <span class="info-label">Ereignis</span>
+          <strong id="nextEventValue">--:--</strong>
+        </article>
+        <article class="info-tile">
+          <span class="info-label">Impuls</span>
+          <strong id="growthImpulseValue">0.00</strong>
+        </article>
+        <article class="info-tile">
+          <span class="info-label">Tag / Zeit</span>
+          <strong id="simTimeValue">Tag 1 · --:--</strong>
         </article>
       </section>
 
@@ -208,15 +211,15 @@
       </div>
     </header>
     <div class="sheet-content analysis-content">
-      <div class="gs-analysis-tabs" role="tablist" aria-label="Analyse-Tabs">
-        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button">Übersicht</button>
-        <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button">Diagnose</button>
-        <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button">Verlauf</button>
-      </div>
-
       <section id="analysisPanelOverview" class="gs-analysis-panel gs-analysis-overview" aria-live="polite"></section>
       <section id="analysisPanelDiagnosis" class="gs-analysis-panel gs-analysis-diagnosis hidden" aria-live="polite"></section>
       <section id="analysisPanelTimeline" class="gs-analysis-panel gs-analysis-timeline hidden" aria-live="polite"></section>
+
+      <div class="gs-analysis-tabs" role="tablist" aria-label="Analyse-Aktionen">
+        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button">Zurück</button>
+        <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button">Empfehlung</button>
+        <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button">Details / Export</button>
+      </div>
     </div>
   </section>
 
