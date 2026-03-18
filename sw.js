@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'growsim-v1-20260314-pwa-lite-shell';
+const CACHE_VERSION = 'growsim-v1-20260318-figma-hud-shell-v1';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');
@@ -23,16 +23,20 @@ const APP_SHELL_FILES = [
   appPath('src/events/eventMemory.js'),
   appPath('src/events/eventAnalysis.js'),
   appPath('src/events/eventResolver.js'),
-  appPath('src/ui/iconAtlas.js'),
+  appPath('src/ui/components/hudPanels.js'),
   appPath('manifest.webmanifest'),
   appPath('data/events.json'),
-  appPath('data/events.foundation.json'),
   appPath('data/events.v2.json'),
   appPath('data/actions.json'),
+  appPath('assets/plant_growth/plant_growth_sprite.png'),
   appPath('assets/plant_growth/plant_growth_metadata.json'),
-  appPath('assets/sprites/ui_icon_sheet.json'),
   appPath('icons/icon-192.png'),
-  appPath('icons/icon-512.png')
+  appPath('icons/icon-512.png'),
+  appPath('assets/backgrounds/bg_dark_01.jpg'),
+  appPath('assets/backgrounds/bg_dark_02.jpg'),
+  appPath('assets/ui/backgrounds/Basic screen.jpg'),
+  appPath('assets/ui/backgrounds/Basic screen.png'),
+  appPath('assets/ui/backgrounds/stage_forest_main.webp')
 ];
 
 self.addEventListener('install', (event) => {
