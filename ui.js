@@ -141,6 +141,8 @@ function cacheUi() {
   ui.deathRescueBtn = document.getElementById('deathRescueBtn');
   ui.deathRescueSubtext = document.getElementById('deathRescueSubtext');
   ui.deathRescueFeedback = document.getElementById('deathRescueFeedback');
+  ui.screenViews = Array.from(document.querySelectorAll('.hud-screen[data-screen]'));
+  ui.screenNavButtons = Array.from(document.querySelectorAll('[data-screen-target]'));
 }
 
 function bindUi() {
@@ -205,6 +207,11 @@ function bindUi() {
   ui.menuLeaderboardBtn.addEventListener('click', () => openMenuPlaceholder('Rangliste', 'Die Rangliste ist bald verfügbar.'));
   ui.menuDialogCancelBtn.addEventListener('click', closeMenuDialog);
   ui.backdrop.addEventListener('click', closeSheet);
+  for (const navButton of ui.screenNavButtons || []) {
+    navButton.addEventListener('click', () => {
+      switchHudScreen(navButton.dataset.screenTarget);
+    });
+  }
 
   const analysisTabs = [ui.analysisTabOverview, ui.analysisTabDiagnosis, ui.analysisTabTimeline].filter(Boolean);
   if (!analysisTabs.length) {
@@ -261,6 +268,7 @@ function ensureRequiredUi() {
 
 function renderAll() {
   syncDeathState();
+  renderScreenNavigation();
   renderHud();
   renderSheets();
   renderGameMenu();
@@ -269,6 +277,28 @@ function renderAll() {
   renderAnalysisPanel(true);
   renderLanding();
   renderDeathOverlay();
+}
+
+function renderScreenNavigation() {
+  const current = state && state.ui && typeof state.ui.activeScreen === 'string'
+    ? state.ui.activeScreen
+    : 'home';
+  switchHudScreen(current);
+}
+
+function switchHudScreen(screenId) {
+  const nextScreen = String(screenId || 'home');
+  if (!state.ui) {
+    return;
+  }
+  state.ui.activeScreen = nextScreen;
+  for (const screen of ui.screenViews || []) {
+    screen.classList.toggle('is-active', screen.dataset.screen === nextScreen);
+  }
+  for (const button of ui.screenNavButtons || []) {
+    button.classList.toggle('is-active', button.dataset.screenTarget === nextScreen);
+    button.setAttribute('aria-pressed', button.dataset.screenTarget === nextScreen ? 'true' : 'false');
+  }
 }
 
 function renderHud() {

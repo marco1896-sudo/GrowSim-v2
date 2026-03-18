@@ -12,7 +12,7 @@
 </head>
 <body>
   <div id="app-hud" class="app-hud">
-    <main class="hud-main">
+    <main class="hud-main hud-screen is-active" data-screen="home">
       <article id="phaseCard" class="phase-card phase-card-top" aria-live="polite">
         <div class="phase-card-head">
           <strong id="phaseCardTitle" class="phase-card-title">Blüte</strong>
@@ -172,6 +172,297 @@
         <button id="openDiagnosisBtn" class="action-btn hidden" type="button">Diagnose öffnen</button>
       </div>
     </main>
+
+    <main class="hud-main hud-screen" data-screen="ops">
+      <article class="phase-card phase-card-top" aria-live="polite">
+        <div class="phase-card-head">
+          <strong class="phase-card-title">Operation Deck</strong>
+          <span class="phase-card-cycle" aria-label="Tageszyklus">N</span>
+        </div>
+        <div class="phase-card-meta">
+          <p class="phase-card-age">Tag 14</p>
+          <p class="phase-card-subtitle">82% -> Stabilisierungsfenster</p>
+        </div>
+        <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="82">
+          <span class="phase-progress-fill" style="--phase-progress:82;"></span>
+          <span class="phase-progress-marker" aria-hidden="true"></span>
+        </div>
+      </article>
+
+      <section class="hero-card hero-card-ops" aria-label="Operations-Hero">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-stack hero-stack-icon">
+          <img class="hero-panel-icon" src="assets/ui/icons/icon_growth.svg" alt="">
+        </div>
+      </section>
+
+      <section class="info-bar" aria-label="Operations-Metriken">
+        <article class="info-tile">
+          <span class="info-label">Signal</span>
+          <strong>Stabil</strong>
+        </article>
+        <article class="info-tile">
+          <span class="info-label">Sektor</span>
+          <strong>Hydro-A3</strong>
+        </article>
+        <article class="info-tile">
+          <span class="info-label">Fenster</span>
+          <strong>02:15</strong>
+        </article>
+      </section>
+
+      <section class="dashboard-grid" aria-label="Operations-Dashboard">
+        <article class="panel panel-status">
+          <h2 class="panel-title">SYSTEMSTATUS</h2>
+          <article class="status-row" style="--value:72;">
+            <div class="status-label">
+              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_water.svg" alt=""></span>
+              <span>Bewässerung</span>
+            </div>
+            <div class="status-track"></div>
+            <strong>72%</strong>
+          </article>
+          <article class="status-row" style="--value:64;">
+            <div class="status-label">
+              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_nutrients.svg" alt=""></span>
+              <span>Nährstoffe</span>
+            </div>
+            <div class="status-track"></div>
+            <strong>64%</strong>
+          </article>
+          <article class="status-row" style="--value:78;">
+            <div class="status-label">
+              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_roots.svg" alt=""></span>
+              <span>Wurzelzone</span>
+            </div>
+            <div class="status-track"></div>
+            <strong>78%</strong>
+          </article>
+          <article class="status-row" style="--value:24;">
+            <div class="status-label">
+              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_risk.svg" alt=""></span>
+              <span>Risiko</span>
+            </div>
+            <div class="status-track"></div>
+            <strong>24%</strong>
+          </article>
+        </article>
+
+        <div class="panel-stack">
+          <article class="panel panel-metrics panel-metrics-grid">
+            <h2 class="panel-title">MICROKLIMA</h2>
+            <div class="metric-grid-2x2">
+              <div class="metric-cell">
+                <span class="metric-label">VPD</span>
+                <strong>0.95</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Luftstrom</span>
+                <strong>Mittel</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Licht</span>
+                <strong>740</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Temp</span>
+                <strong>24.8°C</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel panel-metrics panel-metrics-grid">
+            <h2 class="panel-title">RESSOURCEN</h2>
+            <div class="metric-grid-2x2">
+              <div class="metric-cell">
+                <span class="metric-label">Tank</span>
+                <strong>61%</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Additive</span>
+                <strong>4</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Filter</span>
+                <strong>89%</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Reserve</span>
+                <strong>2.1L</strong>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="action-panel">
+        <button class="action-btn action-medallion action-primary" type="button">
+          <img class="custom-action-icon" src="assets/ui/icons/pflege.png" alt="" aria-hidden="true">
+          <span class="action-title">Pflege</span>
+        </button>
+        <button class="action-btn action-medallion action-secondary" type="button">
+          <img class="custom-action-icon" src="assets/ui/icons/analyse.png" alt="" aria-hidden="true">
+          <span class="action-title">Analyse</span>
+        </button>
+        <button class="action-btn action-medallion action-tertiary" type="button">
+          <img class="custom-action-icon" src="assets/ui/icons/time_boost.png" alt="" aria-hidden="true">
+          <span class="action-title">Boost</span>
+        </button>
+      </section>
+    </main>
+
+    <main class="hud-main hud-screen" data-screen="intel">
+      <article class="phase-card phase-card-top" aria-live="polite">
+        <div class="phase-card-head">
+          <strong class="phase-card-title">Intel Archive</strong>
+          <span class="phase-card-cycle" aria-label="Tageszyklus">D</span>
+        </div>
+        <div class="phase-card-meta">
+          <p class="phase-card-age">Tag 14</p>
+          <p class="phase-card-subtitle">47% -> Evidenz gesammelt</p>
+        </div>
+        <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="47">
+          <span class="phase-progress-fill" style="--phase-progress:47;"></span>
+          <span class="phase-progress-marker" aria-hidden="true"></span>
+        </div>
+      </article>
+
+      <section class="hero-card hero-card-intel" aria-label="Analyse-Hero">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-stack hero-stack-icon">
+          <img class="hero-panel-icon" src="assets/ui/icons/icon_ec.svg" alt="">
+        </div>
+      </section>
+
+      <section class="info-bar" aria-label="Intel-Metriken">
+        <article class="info-tile">
+          <span class="info-label">Alerts</span>
+          <strong>03</strong>
+        </article>
+        <article class="info-tile">
+          <span class="info-label">Protokolle</span>
+          <strong>18</strong>
+        </article>
+        <article class="info-tile">
+          <span class="info-label">Trend</span>
+          <strong>Positiv</strong>
+        </article>
+      </section>
+
+      <section class="dashboard-grid" aria-label="Intel-Dashboard">
+        <article class="panel panel-status">
+          <h2 class="panel-title">DIAGNOSE</h2>
+          <article class="status-row" style="--value:58;">
+            <div class="status-label">
+              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_ph.svg" alt=""></span>
+              <span>pH Drift</span>
+            </div>
+            <div class="status-track"></div>
+            <strong>58%</strong>
+          </article>
+          <article class="status-row" style="--value:46;">
+            <div class="status-label">
+              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_temperatur.svg" alt=""></span>
+              <span>Wärme</span>
+            </div>
+            <div class="status-track"></div>
+            <strong>46%</strong>
+          </article>
+          <article class="status-row" style="--value:33;">
+            <div class="status-label">
+              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_humidity.svg" alt=""></span>
+              <span>Feuchte</span>
+            </div>
+            <div class="status-track"></div>
+            <strong>33%</strong>
+          </article>
+          <article class="status-row" style="--value:17;">
+            <div class="status-label">
+              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_stress.svg" alt=""></span>
+              <span>Stress</span>
+            </div>
+            <div class="status-track"></div>
+            <strong>17%</strong>
+          </article>
+        </article>
+
+        <div class="panel-stack">
+          <article class="panel panel-metrics panel-metrics-grid">
+            <h2 class="panel-title">VERLAUF</h2>
+            <div class="metric-grid-2x2">
+              <div class="metric-cell">
+                <span class="metric-label">Events</span>
+                <strong>11</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Gelöst</span>
+                <strong>9</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Boost</span>
+                <strong>2/6</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Qualität</span>
+                <strong>84</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel panel-metrics panel-metrics-grid">
+            <h2 class="panel-title">AKTIONEN</h2>
+            <div class="metric-grid-2x2">
+              <div class="metric-cell">
+                <span class="metric-label">Pflege</span>
+                <strong>6</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Analyse</span>
+                <strong>5</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Risikopeak</span>
+                <strong>42%</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="metric-label">Stabilität</span>
+                <strong>Hoch</strong>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="action-panel">
+        <button class="action-btn action-medallion action-primary" type="button">
+          <img class="custom-action-icon" src="assets/ui/icons/info.png" alt="" aria-hidden="true">
+          <span class="action-title">Status</span>
+        </button>
+        <button class="action-btn action-medallion action-secondary" type="button">
+          <img class="custom-action-icon" src="assets/ui/icons/confirm.png" alt="" aria-hidden="true">
+          <span class="action-title">Bestät.</span>
+        </button>
+        <button class="action-btn action-medallion action-tertiary" type="button">
+          <img class="custom-action-icon" src="assets/ui/icons/save.png" alt="" aria-hidden="true">
+          <span class="action-title">Speicher</span>
+        </button>
+      </section>
+    </main>
+
+    <section class="screen-nav-panel" aria-label="Bildschirm-Navigation">
+      <button id="screenNavHome" class="action-btn action-secondary screen-nav-btn is-active" type="button" data-screen-target="home">
+        <img class="screen-nav-icon" src="assets/ui/icons/menu.png" alt="" aria-hidden="true">
+        <span>Home</span>
+      </button>
+      <button id="screenNavOps" class="action-btn action-secondary screen-nav-btn" type="button" data-screen-target="ops">
+        <img class="screen-nav-icon" src="assets/ui/icons/pflege.png" alt="" aria-hidden="true">
+        <span>Ops</span>
+      </button>
+      <button id="screenNavIntel" class="action-btn action-secondary screen-nav-btn" type="button" data-screen-target="intel">
+        <img class="screen-nav-icon" src="assets/ui/icons/analyse.png" alt="" aria-hidden="true">
+        <span>Intel</span>
+      </button>
+    </section>
   </div>
 
   <div id="sheetBackdrop" class="sheet-backdrop hidden" aria-hidden="true"></div>
