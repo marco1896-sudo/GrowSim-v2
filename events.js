@@ -1484,10 +1484,22 @@ function computeEventDynamicWeight(item) {
       .filter((entry) => String(entry && entry.category || '').toLowerCase() !== 'positive')
       .length;
     const positiveRecent = recent.length - negativeRecent;
+    const stableWindow = stress <= 34 && risk <= 34 && health >= 70;
 
     factor += negativeRecent >= 2 ? 0.35 : 0;
     factor += health < 55 ? 0.2 : 0;
     factor -= positiveRecent >= 2 ? 0.45 : 0;
+
+    // Frequency smoothing: keep positives present in stable runs, but avoid reward spam.
+    if (stableWindow && positiveRecent === 0) {
+      factor *= 1.18;
+    }
+    if (stableWindow && positiveRecent === 1) {
+      factor *= 1.06;
+    }
+    if (positiveRecent >= 2) {
+      factor *= 0.82;
+    }
   } else {
     factor += risk >= 60 ? 0.15 : 0;
     factor += stress >= 55 ? 0.1 : 0;
