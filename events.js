@@ -388,6 +388,9 @@ function fallbackEventsForCurrentPhase(nowMs) {
     if (!eventDef || !eventDef.id || !isEventPhaseAllowed(eventDef)) {
       return false;
     }
+    if (!evaluateEventConstraints(eventDef)) {
+      return false;
+    }
     const cooldowns = state.events.scheduler.eventCooldowns || {};
     const blockedUntil = Number(cooldowns[eventDef.id] || 0);
     return blockedUntil <= nowMs;
@@ -410,6 +413,10 @@ function isEventEligible(eventDef, cooldowns, nowMs) {
   }
 
   if (!isEventPhaseAllowed(eventDef)) {
+    return false;
+  }
+
+  if (!evaluateEventConstraints(eventDef)) {
     return false;
   }
 
@@ -440,6 +447,128 @@ function isEventPhaseAllowed(eventDef) {
   }
 
   return allowedPhases.includes(String(state.plant.phase || ''));
+}
+
+function buildEventConstraintSnapshot() {
+  const stageIndexOneBased = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+  const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+  const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+  const environment = deriveEnvironmentReadout();
+  const roots = deriveRootZoneReadout(environment);
+  const airflowScore = environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+
+  const plantSize = clamp(((stageIndexOneBased - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
+  const rootMass = clamp(((stageIndexOneBased - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
+
+  return {
+    simDay,
+    stageIndexOneBased,
+    plantSize,
+    rootMass,
+    environmentState: {
+      temperatureC: environment.temperatureC,
+      humidityPercent: environment.humidityPercent,
+      vpdKpa: environment.vpdKpa,
+      airflowScore
+    },
+    rootZone: {
+      ph: Number(roots.ph),
+      ec: Number(String(roots.ec).replace(/\s*mS$/i, '')),
+      oxygenPercent: Number(String(roots.oxygen).replace('%', '')),
+      healthPercent: Number(String(roots.rootHealth).replace('%', ''))
+    }
+  };
+}
+
+function evaluateEventConstraints(eventDef) {
+  const constraints = eventDef && eventDef.constraints && typeof eventDef.constraints === 'object'
+    ? eventDef.constraints
+    : null;
+
+  if (!constraints) {
+    return true;
+  }
+
+  const snapshot = buildEventConstraintSnapshot();
+
+  const minStage = Number(constraints.minStage);
+  const maxStage = Number(constraints.maxStage);
+  const minDay = Number(constraints.minDay);
+  const maxDay = Number(constraints.maxDay);
+  const minPlantSize = Number(constraints.minPlantSize);
+  const minRootMass = Number(constraints.minRootMass);
+
+  if (constraints.minStage !== null && constraints.minStage !== undefined && Number.isFinite(minStage) && snapshot.stageIndexOneBased < minStage) {
+    return false;
+  }
+  if (constraints.maxStage !== null && constraints.maxStage !== undefined && Number.isFinite(maxStage) && snapshot.stageIndexOneBased > maxStage) {
+    return false;
+  }
+  if (constraints.minDay !== null && constraints.minDay !== undefined && Number.isFinite(minDay) && snapshot.simDay < minDay) {
+    return false;
+  }
+  if (constraints.maxDay !== null && constraints.maxDay !== undefined && Number.isFinite(maxDay) && snapshot.simDay > maxDay) {
+    return false;
+  }
+  if (constraints.minPlantSize !== null && constraints.minPlantSize !== undefined && Number.isFinite(minPlantSize) && snapshot.plantSize < minPlantSize) {
+    return false;
+  }
+  if (constraints.minRootMass !== null && constraints.minRootMass !== undefined && Number.isFinite(minRootMass) && snapshot.rootMass < minRootMass) {
+    return false;
+  }
+
+  const env = constraints.environmentState && typeof constraints.environmentState === 'object'
+    ? constraints.environmentState
+    : null;
+  if (env) {
+    const minTemperatureC = Number(env.minTemperatureC);
+    const maxTemperatureC = Number(env.maxTemperatureC);
+    const minHumidityPercent = Number(env.minHumidityPercent);
+    const maxHumidityPercent = Number(env.maxHumidityPercent);
+    const minVpdKpa = Number(env.minVpdKpa);
+    const maxVpdKpa = Number(env.maxVpdKpa);
+    const minAirflowScore = Number(env.minAirflowScore);
+
+    if (env.minTemperatureC !== null && env.minTemperatureC !== undefined && Number.isFinite(minTemperatureC) && snapshot.environmentState.temperatureC < minTemperatureC) return false;
+    if (env.maxTemperatureC !== null && env.maxTemperatureC !== undefined && Number.isFinite(maxTemperatureC) && snapshot.environmentState.temperatureC > maxTemperatureC) return false;
+    if (env.minHumidityPercent !== null && env.minHumidityPercent !== undefined && Number.isFinite(minHumidityPercent) && snapshot.environmentState.humidityPercent < minHumidityPercent) return false;
+    if (env.maxHumidityPercent !== null && env.maxHumidityPercent !== undefined && Number.isFinite(maxHumidityPercent) && snapshot.environmentState.humidityPercent > maxHumidityPercent) return false;
+    if (env.minVpdKpa !== null && env.minVpdKpa !== undefined && Number.isFinite(minVpdKpa) && snapshot.environmentState.vpdKpa < minVpdKpa) return false;
+    if (env.maxVpdKpa !== null && env.maxVpdKpa !== undefined && Number.isFinite(maxVpdKpa) && snapshot.environmentState.vpdKpa > maxVpdKpa) return false;
+    if (env.minAirflowScore !== null && env.minAirflowScore !== undefined && Number.isFinite(minAirflowScore) && snapshot.environmentState.airflowScore < minAirflowScore) return false;
+  }
+
+  const root = constraints.rootZone && typeof constraints.rootZone === 'object'
+    ? constraints.rootZone
+    : null;
+  if (root) {
+    const minPh = Number(root.minPh);
+    const maxPh = Number(root.maxPh);
+    const minEc = Number(root.minEc);
+    const maxEc = Number(root.maxEc);
+    const minOxygenPercent = Number(root.minOxygenPercent);
+
+    if (root.minPh !== null && root.minPh !== undefined && Number.isFinite(minPh) && snapshot.rootZone.ph < minPh) return false;
+    if (root.maxPh !== null && root.maxPh !== undefined && Number.isFinite(maxPh) && snapshot.rootZone.ph > maxPh) return false;
+    if (root.minEc !== null && root.minEc !== undefined && Number.isFinite(minEc) && snapshot.rootZone.ec < minEc) return false;
+    if (root.maxEc !== null && root.maxEc !== undefined && Number.isFinite(maxEc) && snapshot.rootZone.ec > maxEc) return false;
+    if (root.minOxygenPercent !== null && root.minOxygenPercent !== undefined && Number.isFinite(minOxygenPercent) && snapshot.rootZone.oxygenPercent < minOxygenPercent) return false;
+  }
+
+  const category = String(eventDef.category || 'generic').toLowerCase();
+  const stressNow = clamp(Number(state.status.stress || 0), 0, 100);
+  const riskNow = clamp(Number(state.status.risk || 0), 0, 100);
+  const healthNow = clamp(Number(state.status.health || 0), 0, 100);
+
+  if (category === 'positive' && (stressNow > 48 || riskNow > 45 || healthNow < 55)) {
+    return false;
+  }
+
+  if (snapshot.simDay <= 10 && (category === 'pest' || category === 'disease') && riskNow < 65) {
+    return false;
+  }
+
+  return true;
 }
 
 function evaluateEventTriggers(triggers) {
@@ -534,12 +663,37 @@ function resolveTriggerField(fieldPath) {
   if (fieldPath === 'plant.stageKey') {
     return state.plant.stageKey;
   }
+  if (fieldPath === 'plant.size') {
+    const stageIndex = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+    const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+    return clamp(((stageIndex - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
+  }
+  if (fieldPath === 'plant.rootMass') {
+    const stageIndex = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+    const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+    return clamp(((stageIndex - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
+  }
   if (fieldPath.startsWith('setup.')) {
     return (state.setup || {})[fieldPath.split('.')[1]];
   }
   if (fieldPath === 'simulation.isDaytime') {
     return state.simulation.isDaytime;
   }
+  if (fieldPath === 'simulation.simDay') {
+    return Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+  }
+
+  const environment = deriveEnvironmentReadout();
+  if (fieldPath === 'env.temperatureC') return environment.temperatureC;
+  if (fieldPath === 'env.humidityPercent') return environment.humidityPercent;
+  if (fieldPath === 'env.vpdKpa') return environment.vpdKpa;
+  if (fieldPath === 'env.airflowScore') return environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+
+  const roots = deriveRootZoneReadout(environment);
+  if (fieldPath === 'root.ph') return Number(roots.ph);
+  if (fieldPath === 'root.ec') return Number(String(roots.ec).replace(/\s*mS$/i, ''));
+  if (fieldPath === 'root.oxygenPercent') return Number(String(roots.oxygen).replace('%', ''));
+  if (fieldPath === 'root.healthPercent') return Number(String(roots.rootHealth).replace('%', ''));
 
   return undefined;
 }
@@ -1112,6 +1266,7 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     title: String(rawEvent.title),
     description: String(rawEvent.description),
     triggers: rawEvent.triggers && typeof rawEvent.triggers === 'object' ? rawEvent.triggers : {},
+    constraints: inferEventConstraints(rawEvent, category),
     allowedPhases: Array.isArray(rawEvent.allowedPhases)
       ? rawEvent.allowedPhases.map((phase) => String(phase)).filter(Boolean)
       : [],
@@ -1125,6 +1280,57 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     options,
     sourceVersion
   };
+}
+
+function inferEventConstraints(rawEvent, category) {
+  const raw = rawEvent && rawEvent.constraints && typeof rawEvent.constraints === 'object'
+    ? rawEvent.constraints
+    : {};
+
+  const stageRule = rawEvent && rawEvent.triggers && rawEvent.triggers.stage && typeof rawEvent.triggers.stage === 'object'
+    ? rawEvent.triggers.stage
+    : {};
+
+  const hasUserConstraints = Object.keys(raw).length > 0;
+  const minStageFromTrigger = Number.isFinite(Number(stageRule.min)) ? Number(stageRule.min) : null;
+
+  const defaultsByCategory = {
+    water: { minDay: 2, minPlantSize: 10, minRootMass: 10 },
+    nutrition: { minDay: 4, minPlantSize: 16, minRootMass: 18 },
+    pest: { minDay: 6, minPlantSize: 20, minRootMass: 18 },
+    disease: { minDay: 7, minPlantSize: 22, minRootMass: 20 },
+    environment: { minDay: 3, minPlantSize: 12, minRootMass: 12 },
+    positive: {
+      minDay: 3,
+      minPlantSize: 10,
+      minRootMass: 10,
+      environmentState: { minTemperatureC: 20, maxTemperatureC: 31, minHumidityPercent: 44, maxHumidityPercent: 72, minVpdKpa: 0.6, maxVpdKpa: 1.45, minAirflowScore: 45 },
+      rootZone: { minPh: 5.6, maxPh: 6.4, minEc: 0.9, maxEc: 1.9, minOxygenPercent: 50 }
+    },
+    generic: { minDay: 3, minPlantSize: 10, minRootMass: 10 }
+  };
+
+  const base = defaultsByCategory[String(category || 'generic')] || defaultsByCategory.generic;
+  const merged = {
+    minStage: minStageFromTrigger,
+    minDay: Number.isFinite(Number(raw.minDay)) ? Number(raw.minDay) : base.minDay,
+    minPlantSize: Number.isFinite(Number(raw.minPlantSize)) ? Number(raw.minPlantSize) : base.minPlantSize,
+    minRootMass: Number.isFinite(Number(raw.minRootMass)) ? Number(raw.minRootMass) : base.minRootMass,
+    maxStage: Number.isFinite(Number(raw.maxStage)) ? Number(raw.maxStage) : null,
+    maxDay: Number.isFinite(Number(raw.maxDay)) ? Number(raw.maxDay) : null,
+    environmentState: raw.environmentState && typeof raw.environmentState === 'object'
+      ? { ...(base.environmentState || {}), ...raw.environmentState }
+      : (base.environmentState || null),
+    rootZone: raw.rootZone && typeof raw.rootZone === 'object'
+      ? { ...(base.rootZone || {}), ...raw.rootZone }
+      : (base.rootZone || null)
+  };
+
+  if (!hasUserConstraints && !Number.isFinite(Number(merged.minStage))) {
+    merged.minStage = base.minPlantSize >= 20 ? 3 : 2;
+  }
+
+  return merged;
 }
 
 function inferCategoryFromTags(tags) {
@@ -1361,11 +1567,14 @@ function scheduleNextEventRoll(nowMs, reason) {
 
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) {
-    return { ready: false, reason: 'unsupported' };
+    return;
   }
 
   try {
     const registration = await navigator.serviceWorker.register('./sw.js');
+    if (!navigator.serviceWorker.controller) {
+      showServiceWorkerHint();
+    }
 
     if (registration.waiting) {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -1389,47 +1598,9 @@ async function registerServiceWorker() {
         window.location.reload();
       }
     });
-
-    const readyState = await waitForServiceWorkerActivation(5000, registration);
-    if (!readyState.ready) {
-      showServiceWorkerHint();
-    }
-    return readyState;
   } catch (_error) {
-    showServiceWorkerHint();
-    return { ready: false, reason: 'registration_failed' };
+    // SW registration failures should not block app usage.
   }
-}
-
-async function waitForServiceWorkerActivation(timeoutMs = 5000, registrationHint = null) {
-  if (!('serviceWorker' in navigator)) {
-    return { ready: false, reason: 'unsupported' };
-  }
-  if (navigator.serviceWorker.controller) {
-    return { ready: true, source: 'controller' };
-  }
-
-  const readyPromise = navigator.serviceWorker.ready
-    .then((registration) => ({
-      ready: Boolean(registration && registration.active),
-      source: 'ready',
-      registration
-    }))
-    .catch(() => ({ ready: false, reason: 'ready_rejected' }));
-  const timeoutPromise = new Promise((resolve) => {
-    window.setTimeout(() => resolve({ ready: false, reason: 'ready_timeout' }), timeoutMs);
-  });
-  const readyState = await Promise.race([readyPromise, timeoutPromise]);
-  if (readyState && readyState.ready) {
-    return readyState;
-  }
-
-  const reg = registrationHint || await navigator.serviceWorker.getRegistration().catch(() => null);
-  if (reg && reg.active) {
-    return { ready: true, source: 'active_registration', registration: reg };
-  }
-
-  return readyState && typeof readyState === 'object' ? readyState : { ready: false, reason: 'unknown' };
 }
 
 window.GrowSimEvents = Object.freeze({

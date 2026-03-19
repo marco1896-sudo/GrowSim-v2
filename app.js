@@ -94,8 +94,13 @@ const DEFAULT_STAGE_TIMELINE = Object.freeze([
   Object.freeze({ id: 'finish', label: 'Reife / Finish', phase: 'harvest', simDayStart: 82 })
 ]);
 
-const PLANT_SPRITE_ASSET = 'assets/plant_growth/plant_growth_sprite.png';
+const PLANT_SPRITE_ASSET = 'assets/plant_growth/aligned_frames/frame_008.png';
 const PLANT_METADATA_ASSET = 'assets/plant_growth/plant_growth_metadata.json';
+const PLANT_STAGE_IMAGES = Object.freeze([
+  'assets/plant_growth/aligned_frames/frame_008.png',  // stage_1 (Keimling)
+  'assets/plant_growth/aligned_frames/frame_023.png',  // stage_2 (Wachstum)
+  'assets/plant_growth/aligned_frames/frame_039.png'   // stage_3 (Bluete)
+]);
 
 const DEFAULT_PLANT_STAGE_RANGES = Object.freeze({
   seed: Object.freeze({ start: 1, end: 3 }),
@@ -295,7 +300,8 @@ const state = {
     deathOverlayAcknowledged: false,
     care: {
       selectedCategory: null,
-      feedback: { kind: 'info', text: 'Bereit.' }
+      selectedActionId: null,
+      feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
     },
     analysis: {
       activeTab: 'overview'
@@ -321,539 +327,10 @@ let menuDialogConfirmHandler = null;
 
 const actionDebounceUntil = Object.create(null);
 
-const atlasIconRuntime = {
-  initialized: false,
-  loaded: false,
-  loadPromise: null,
-  nodes: new Set(),
-  hudStaticApplied: false,
-  lastHudStageIcon: '',
-  lastHudCycleIcon: ''
-};
-
-const overlayAssetRuntime = {
-  loading: new Set(),
-  ready: new Set(),
-  missing: new Set()
-};
-
-const bootMetrics = {
-  startPerfMs: 0,
-  startEpochMs: 0,
-  firstHudRenderMs: null,
-  spriteReadyMs: null,
-  serviceWorkerReadyMs: null,
-  bootCompleteMs: null,
-  spriteReady: false,
-  serviceWorkerReady: false
-};
-
-let deferredSpriteWarmupPromise = null;
-
-const HUD_RING_ICON_MAP = Object.freeze({
-  waterRing: { icon: 'gameplay/resources/water', fallback: 'W' },
-  nutritionRing: { icon: 'gameplay/resources/nutrition', fallback: 'N' },
-  growthRing: { icon: 'gameplay/resources/growth', fallback: 'G' },
-  riskRing: { icon: 'gameplay/resources/stress', fallback: 'R' }
-});
-
-const CUSTOM_ACTION_ICON_MAP = Object.freeze([
-  Object.freeze({ buttonId: 'careActionBtn', iconId: 'careActionIcon', assetPath: 'assets/ui/icons/pflege.png' }),
-  Object.freeze({ buttonId: 'analyzeActionBtn', iconId: 'analyzeActionIcon', assetPath: 'assets/ui/icons/analyse.png' }),
-  Object.freeze({ buttonId: 'boostActionBtn', iconId: 'boostActionIcon', assetPath: 'assets/ui/icons/time_boost.png' })
-]);
-
-// Temporary preview metrics for HUD-only display until full simulation bindings exist.
-// Keep all non-simulated values centralized here to avoid scattered mock data.
-const uiPreviewData = Object.freeze({
-  ph: 5.9,
-  ec: 1.3,
-  ppfd: 720,
-  temperature: 25.3,
-  humidity: 61,
-  airflow: 'Gut',
-  rootHealth: 78,
-  oxygen: 78
-});
-
-const STAGE_PROGRESSION_ICON_KEYS = Object.freeze([
-  'seed',
-  'sprout',
-  'seedling',
-  'vegetative',
-  'vegetative',
-  'preflower',
-  'flowering',
-  'flowering',
-  'late_flower',
-  'late_flower',
-  'harvest_ready',
-  'harvest_ready'
-]);
-
-const HUD_TEXT_DE_MAP = Object.freeze({
-  Day: 'Tag',
-  Flowering: 'Blüte',
-  Good: 'Gut'
-});
-
-function localizeHudText(value) {
-  let text = String(value ?? '').trim();
-  if (!text) {
-    return text;
-  }
-  for (const [en, de] of Object.entries(HUD_TEXT_DE_MAP)) {
-    text = text.replace(new RegExp(`\\b${en}\\b`, 'gi'), de);
-  }
-  return text;
-}
-
-function showBootError(error) {
-  const stack = error && error.stack ? error.stack : String(error && error.message ? error.message : error);
-  console.error(stack);
-
-  const existing = document.getElementById('bootErrorBanner');
-  if (existing) {
-    existing.remove();
-  }
-
-  const banner = document.createElement('aside');
-  banner.id = 'bootErrorBanner';
-  banner.className = 'boot-error-banner';
-  banner.innerHTML = `
-    <strong>Fehler beim Starten</strong>
-    <p>${escapeHtml(String(error && error.message ? error.message : 'Unbekannter Fehler'))}</p>
-    <div class="boot-error-actions">
-      <button type="button" id="bootReloadBtn" class="action-btn action-primary">Neu laden</button>
-      <span>Cache-Hinweis: Wenn es weiterhin hängt, Browserdaten für diese Seite löschen.</span>
-    </div>
-  `;
-  document.body.appendChild(banner);
-  const reloadBtn = document.getElementById('bootReloadBtn');
-  if (reloadBtn) {
-    reloadBtn.addEventListener('click', () => window.location.reload());
-  }
-}
-
-function initAtlasUiIntegration() {
-  if (atlasIconRuntime.initialized) {
-    return;
-  }
-  atlasIconRuntime.initialized = true;
-  renderStaticAtlasIcons();
-  void ensureAtlasLoaded();
-}
-
-function ensureAtlasLoaded() {
-  if (atlasIconRuntime.loadPromise) {
-    return atlasIconRuntime.loadPromise;
-  }
-
-  const atlasApi = window.GrowSimIconAtlas;
-  if (!atlasApi || typeof atlasApi.loadAtlas !== 'function' || typeof atlasApi.drawIcon !== 'function') {
-    atlasIconRuntime.loadPromise = Promise.resolve(false);
-    return atlasIconRuntime.loadPromise;
-  }
-
-  atlasIconRuntime.loadPromise = atlasApi.loadAtlas()
-    .then(() => {
-      atlasIconRuntime.loaded = true;
-      refreshAtlasIconNodes();
-      return true;
-    })
-    .catch((error) => {
-      console.warn('Atlas konnte nicht geladen werden, Fallback aktiv.', error);
-      return false;
-    });
-
-  return atlasIconRuntime.loadPromise;
-}
-
-function refreshAtlasIconNodes() {
-  for (const canvas of atlasIconRuntime.nodes) {
-    if (canvas && canvas.isConnected) {
-      drawAtlasIconToCanvas(
-        canvas,
-        String(canvas.dataset.iconName || ''),
-        String(canvas.dataset.fallbackGlyph || '?')
-      );
-    }
-  }
-}
-
-function drawAtlasIconToCanvas(canvas, iconName, fallbackGlyph) {
-  if (!canvas) {
-    return false;
-  }
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    return false;
-  }
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const safeInset = Math.max(1, Math.round(canvas.width * 0.07));
-  const drawSize = Math.max(1, canvas.width - safeInset * 2);
-  const drawX = safeInset;
-  const drawY = Math.max(0, safeInset - Math.round(canvas.width * 0.035));
-  const atlasApi = window.GrowSimIconAtlas;
-  let drawn = false;
-  if (atlasIconRuntime.loaded && atlasApi && typeof atlasApi.drawIcon === 'function') {
-    drawn = atlasApi.drawIcon(ctx, iconName, drawX, drawY, drawSize);
-    if (!drawn && iconName.includes('/')) {
-      drawn = atlasApi.drawIcon(ctx, iconName.split('/').pop(), drawX, drawY, drawSize);
-    }
-  }
-
-  if (drawn) {
-    canvas.dataset.missing = '0';
-    return true;
-  }
-
-  ctx.fillStyle = 'rgba(220, 236, 255, 0.9)';
-  ctx.font = `${Math.floor(canvas.width * 0.56)}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(fallbackGlyph || '?', canvas.width / 2, canvas.height / 2 - Math.round(canvas.height * 0.03));
-  canvas.dataset.missing = '1';
-  return false;
-}
-
-function findDirectIconCanvas(parent, className) {
-  if (!parent || !parent.children) {
-    return null;
-  }
-  for (const child of parent.children) {
-    if (child.tagName === 'CANVAS' && child.classList.contains(className)) {
-      return child;
-    }
-  }
-  return null;
-}
-
-function setAtlasIcon(parent, iconName, options = {}) {
-  if (!parent) {
-    return;
-  }
-
-  const className = options.className || 'atlas-inline-icon';
-  const size = Math.max(12, Number(options.size) || 18);
-  const pixelRatio = Math.max(1, Math.min(3, Number(window.devicePixelRatio) || 1));
-  const internalSize = Math.max(64, Math.round(size * pixelRatio));
-  const fallbackGlyph = String(options.fallbackGlyph || '?').slice(0, 1);
-  const prepend = options.prepend !== false;
-  const iconNameText = String(iconName || '');
-
-  let canvas = findDirectIconCanvas(parent, className);
-  if (!canvas) {
-    canvas = document.createElement('canvas');
-    canvas.className = className;
-    if (prepend && parent.firstChild) {
-      parent.insertBefore(canvas, parent.firstChild);
-    } else {
-      parent.appendChild(canvas);
-    }
-  }
-
-  const sizeText = String(size);
-  const unchanged = canvas.dataset.iconName === iconNameText
-    && canvas.dataset.fallbackGlyph === fallbackGlyph
-    && canvas.dataset.iconSize === sizeText
-    && canvas.dataset.iconPxSize === String(internalSize);
-  if (canvas.width !== internalSize) canvas.width = internalSize;
-  if (canvas.height !== internalSize) canvas.height = internalSize;
-  if (canvas.style.width !== `${size}px`) canvas.style.width = `${size}px`;
-  if (canvas.style.height !== `${size}px`) canvas.style.height = `${size}px`;
-  if (canvas.style.flex !== '0 0 auto') canvas.style.flex = '0 0 auto';
-  canvas.dataset.iconName = iconNameText;
-  canvas.dataset.fallbackGlyph = fallbackGlyph;
-  canvas.dataset.iconSize = sizeText;
-  canvas.dataset.iconPxSize = String(internalSize);
-  atlasIconRuntime.nodes.add(canvas);
-  if (unchanged) {
-    return;
-  }
-  drawAtlasIconToCanvas(canvas, canvas.dataset.iconName, fallbackGlyph);
-}
-
-function progressionIconForStageIndex(rawIndex) {
-  const idx = clampInt(Number(rawIndex) || 0, 0, STAGE_PROGRESSION_ICON_KEYS.length - 1);
-  return `gameplay/progression/${STAGE_PROGRESSION_ICON_KEYS[idx]}`;
-}
-
-function careCategoryIconName(category) {
-  const map = {
-    watering: 'gameplay/actions/watering_medium',
-    fertilizing: 'gameplay/actions/fertilizing_medium',
-    training: 'gameplay/actions/training_medium',
-    environment: 'gameplay/actions/environment_climate'
-  };
-  return map[String(category || '')] || 'ui/icons/help';
-}
-
-function actionIconName(actionId) {
-  return `gameplay/actions/${String(actionId || '').trim()}`;
-}
-
-function eventIconName(eventId) {
-  const safeId = String(eventId || '').trim();
-  if (!safeId) {
-    return 'gameplay/events/pest_attack';
-  }
-  return `gameplay/events/${safeId}`;
-}
-
-function applyHudAtlasIcons() {
-  const stageIconName = progressionIconForStageIndex(state.plant.stageIndex);
-  const cycleIconName = state.simulation.isDaytime ? 'gameplay/resources/light' : 'ui/icons/pause';
-
-  if (ui.phaseCardTitle && atlasIconRuntime.lastHudStageIcon !== stageIconName) {
-    setAtlasIcon(ui.phaseCardTitle, stageIconName, {
-      className: 'atlas-title-icon',
-      size: 32,
-      fallbackGlyph: 'P'
-    });
-    atlasIconRuntime.lastHudStageIcon = stageIconName;
-  }
-
-  if (ui.phaseCardCycle && atlasIconRuntime.lastHudCycleIcon !== cycleIconName) {
-    ui.phaseCardCycle.textContent = '';
-    setAtlasIcon(ui.phaseCardCycle, cycleIconName, {
-      className: 'atlas-cycle-icon',
-      size: 30,
-      fallbackGlyph: state.simulation.isDaytime ? 'D' : 'N'
-    });
-    atlasIconRuntime.lastHudCycleIcon = cycleIconName;
-  }
-
-  if (atlasIconRuntime.hudStaticApplied) {
-    return;
-  }
-
-  atlasIconRuntime.hudStaticApplied = true;
-
-  for (const [ringId, iconSpec] of Object.entries(HUD_RING_ICON_MAP)) {
-    const iconHost = document.querySelector(`#${ringId} .mini-icon`);
-    if (!iconHost) {
-      continue;
-    }
-    iconHost.textContent = '';
-    setAtlasIcon(iconHost, iconSpec.icon, {
-      className: 'atlas-mini-icon',
-      size: 42,
-      fallbackGlyph: iconSpec.fallback
-    });
-  }
-
-  const infoLabels = document.querySelectorAll('.info-bar .info-label');
-  if (infoLabels.length >= 3) {
-    setAtlasIcon(infoLabels[0], 'gameplay/events/pest_attack', { className: 'atlas-info-icon', size: 35, fallbackGlyph: 'E' });
-    setAtlasIcon(infoLabels[1], 'gameplay/resources/growth', { className: 'atlas-info-icon', size: 35, fallbackGlyph: 'G' });
-    setAtlasIcon(infoLabels[2], 'gameplay/resources/sim_time', { className: 'atlas-info-icon', size: 35, fallbackGlyph: 'T' });
-  }
-
-  setAtlasIcon(document.getElementById('rootPhLabel'), 'gameplay/resources/ph', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'P' });
-  setAtlasIcon(document.getElementById('rootEcLabel'), 'gameplay/resources/ec', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'E' });
-  setAtlasIcon(document.getElementById('rootHealthLabel'), 'gameplay/resources/growth', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'R' });
-  setAtlasIcon(document.getElementById('rootOxygenLabel'), 'gameplay/resources/co2', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'O' });
-  setAtlasIcon(document.getElementById('envLightLabel'), 'gameplay/resources/light', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'L' });
-  setAtlasIcon(document.getElementById('envTempLabel'), 'gameplay/resources/temperature', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'T' });
-  setAtlasIcon(document.getElementById('envHumidityLabel'), 'gameplay/resources/humidity', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'H' });
-  setAtlasIcon(document.getElementById('envAirflowLabel'), 'gameplay/actions/environment_airflow', { className: 'atlas-info-icon', size: 42, fallbackGlyph: 'A' });
-}
-
-function renderStaticAtlasIcons() {
-  if (ui.menuToggleBtn) {
-    const menuToggleIconHost = ui.menuToggleBtn.querySelector('.menu-toggle-icon');
-    const menuToggleLabel = ui.menuToggleBtn.querySelector('.menu-toggle-label');
-    if (menuToggleLabel) {
-      menuToggleLabel.textContent = 'Menü';
-    }
-    if (menuToggleIconHost) {
-      menuToggleIconHost.textContent = '';
-      setAtlasIcon(menuToggleIconHost, 'ui/icons/menu', {
-        className: 'atlas-menu-icon',
-        size: 42,
-        fallbackGlyph: 'M'
-      });
-    }
-  }
-
-  applyCustomActionIcons();
-  if (ui.skipNightActionBtn) {
-    setAtlasIcon(ui.skipNightActionBtn, 'ui/icons/play', {
-      className: 'atlas-btn-icon',
-      size: 18,
-      fallbackGlyph: '>'
-    });
-  }
-}
-
-function applyCustomActionIcons() {
-  for (const entry of CUSTOM_ACTION_ICON_MAP) {
-    const button = document.getElementById(entry.buttonId);
-    if (!button) {
-      continue;
-    }
-
-    for (const child of Array.from(button.children)) {
-      if (child.tagName === 'CANVAS' && child.classList.contains('atlas-btn-icon')) {
-        child.remove();
-      }
-    }
-
-    let icon = document.getElementById(entry.iconId);
-    if (!icon || icon.parentElement !== button) {
-      icon = button.querySelector('img.custom-action-icon');
-    }
-    if (!icon) {
-      icon = document.createElement('img');
-      icon.id = entry.iconId;
-      icon.className = 'custom-action-icon';
-      icon.alt = '';
-      icon.setAttribute('aria-hidden', 'true');
-      button.insertBefore(icon, button.firstChild);
-    }
-
-    if (!icon.classList.contains('custom-action-icon')) {
-      icon.classList.add('custom-action-icon');
-    }
-    const expectedSrc = appPath(entry.assetPath);
-    if (icon.getAttribute('src') !== expectedSrc) {
-      icon.setAttribute('src', expectedSrc);
-    }
-    icon.setAttribute('loading', 'eager');
-    icon.setAttribute('decoding', 'async');
-    icon.setAttribute('draggable', 'false');
-  }
-}
-
-function renderMenuAtlasIcons() {
-  const menuEntries = [
-    [ui.menuNewRunBtn, 'gameplay/progression/seed', 'N'],
-    [ui.menuRescueBtn, 'gameplay/states/recovery', 'R'],
-    [ui.menuStatsBtn, 'ui/icons/info', 'S'],
-    [ui.menuPushBtn, 'ui/icons/settings', 'P'],
-    [ui.menuLanguageBtn, 'ui/icons/help', 'L'],
-    [ui.menuSupportBtn, 'ui/icons/help', 'U'],
-    [ui.menuAboutBtn, 'ui/icons/info', 'I']
-  ];
-  for (const [button, iconName, fallback] of menuEntries) {
-    if (!button) {
-      continue;
-    }
-    const titleLine = button.querySelector('span');
-    const target = titleLine || button;
-    setAtlasIcon(target, iconName, { className: 'atlas-menu-entry-icon', size: 16, fallbackGlyph: fallback });
-  }
-
-  if (ui.menuAchievementsBtn) {
-    setAtlasIcon(ui.menuAchievementsBtn, 'ui/icons/confirm', { className: 'atlas-btn-icon', size: 16, fallbackGlyph: 'A' });
-  }
-  if (ui.menuLeaderboardBtn) {
-    setAtlasIcon(ui.menuLeaderboardBtn, 'gameplay/resources/growth', { className: 'atlas-btn-icon', size: 16, fallbackGlyph: 'L' });
-  }
-  if (ui.menuCloseBtn) {
-    setAtlasIcon(ui.menuCloseBtn, 'ui/icons/close', { className: 'atlas-btn-icon', size: 16, fallbackGlyph: 'X' });
-  }
-  if (ui.menuHeaderCloseBtn) {
-    ui.menuHeaderCloseBtn.textContent = '';
-    setAtlasIcon(ui.menuHeaderCloseBtn, 'ui/icons/close', { className: 'atlas-btn-icon', size: 16, fallbackGlyph: 'X' });
-  }
-}
-
-function renderEventSheetAtlasIcons() {
-  if (!ui.eventStateBadge || !ui.eventTitle) {
-    return;
-  }
-
-  const stateIconMap = {
-    idle: 'ui/icons/info',
-    activeEvent: 'gameplay/events/pest_attack',
-    resolving: 'gameplay/resources/sim_time',
-    resolved: 'ui/icons/confirm',
-    cooldown: 'ui/icons/pause'
-  };
-  setAtlasIcon(ui.eventStateBadge, stateIconMap[state.events.machineState] || 'ui/icons/info', {
-    className: 'atlas-badge-icon',
-    size: 14,
-    fallbackGlyph: '!'
-  });
-
-  const activeEventIcon = state.events.machineState === 'activeEvent'
-    ? eventIconName(state.events.activeEventId)
-    : 'gameplay/events/pest_attack';
-  setAtlasIcon(ui.eventTitle, activeEventIcon, {
-    className: 'atlas-title-icon',
-    size: 16,
-    fallbackGlyph: 'E'
-  });
-}
-
-function setNodeTextById(id, value) {
-  const node = document.getElementById(id);
-  if (node && node.textContent !== String(value)) {
-    node.textContent = String(value);
-  }
-}
-
-function setNodeVarById(id, variable, value) {
-  const node = document.getElementById(id);
-  if (node) {
-    node.style.setProperty(variable, String(value));
-  }
-}
-
-function renderDataVisualization() {
-  const hud = document.getElementById('dataVizHud');
-  if (!hud) {
-    return;
-  }
-
-  setNodeTextById('rootPhValue', uiPreviewData.ph.toFixed(1));
-  setNodeTextById('rootEcValue', uiPreviewData.ec.toFixed(1));
-  setNodeTextById('rootHealthValue', `${Math.round(uiPreviewData.rootHealth)}%`);
-  setNodeTextById('rootOxygenValue', `${Math.round(uiPreviewData.oxygen)}%`);
-
-  setNodeTextById('envLightValue', `${Math.round(uiPreviewData.ppfd)} PPFD`);
-  setNodeTextById('envTempValue', `${uiPreviewData.temperature.toFixed(1)} °C`);
-  setNodeTextById('envHumidityValue', `${Math.round(uiPreviewData.humidity)}%`);
-  setNodeTextById('envAirflowValue', localizeHudText(String(uiPreviewData.airflow)));
-}
-
-function resetBootMetrics() {
-  bootMetrics.startEpochMs = Date.now();
-  bootMetrics.startPerfMs = performance.now();
-  bootMetrics.firstHudRenderMs = null;
-  bootMetrics.spriteReadyMs = null;
-  bootMetrics.serviceWorkerReadyMs = null;
-  bootMetrics.bootCompleteMs = null;
-  bootMetrics.spriteReady = false;
-  bootMetrics.serviceWorkerReady = false;
-  window.__gsBootMetrics = bootMetrics;
-  if (typeof performance.mark === 'function') {
-    performance.mark('gs-boot-start');
-  }
-}
-
-function markBootMetric(key, extra = null) {
-  if (!bootMetrics.startPerfMs) {
-    return;
-  }
-  const elapsed = Math.max(0, performance.now() - bootMetrics.startPerfMs);
-  bootMetrics[key] = round2(elapsed);
-  if (extra && typeof extra === 'object') {
-    Object.assign(bootMetrics, extra);
-  }
-  if (typeof performance.mark === 'function') {
-    performance.mark(`gs-${key}`);
-  }
-  window.__gsBootMetrics = bootMetrics;
-}
-
 wireDomainOwnership();
 
 window.__gsBootOk = false;
+window.__gsBootTrace = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   boot().catch((error) => {
@@ -964,39 +441,61 @@ function wireDomainOwnership() {
 }
 
 async function boot() {
+  let bootStep = 'start';
   try {
-    resetBootMetrics();
+    logBootStep('boot:start');
+    bootStep = 'mount_hud_components';
+    mountHudComponents();
+    logBootStep('boot:mount_hud_components');
+    bootStep = 'cache_ui';
     cacheUi();
+    logBootStep('boot:cache_ui');
+    bootStep = 'validate_ui';
     if (!ensureRequiredUi()) {
       throw new Error('Required UI elements missing');
     }
-    initializeOverlayNodesForLazyLoad();
+    logBootStep('boot:validate_ui');
 
-    const swRegistrationPromise = registerServiceWorker();
-    swRegistrationPromise
-      .then((result) => {
-        if (result && result.ready === true) {
-          markBootMetric('serviceWorkerReadyMs', { serviceWorkerReady: true });
-        }
-      })
-      .catch(() => {
-        // Non-fatal: registration failures are surfaced through warning UI.
-      });
-
+    bootStep = 'storage_adapter';
     storageAdapter = await createStorageAdapter();
+    logBootStep('boot:storage_adapter');
+    bootStep = 'state_restore';
     await initOrMigrateState();
+    logBootStep('boot:state_restore', {
+      simTimeMs: state.simulation.simTimeMs,
+      nextEventRealTimeMs: state.events.scheduler.nextEventRealTimeMs,
+      growthImpulse: state.simulation.growthImpulse
+    });
+
+    bootStep = 'catalogs';
     await loadCatalogs();
+    logBootStep('boot:catalogs', {
+      events: state.events.catalog.length,
+      actions: state.actions.catalog.length,
+      plantSpriteReady: plantSpriteRuntime.ready
+    });
 
+    bootStep = 'bind_ui';
     bindUi();
-    initAtlasUiIntegration();
+    logBootStep('boot:bind_ui');
     applyBackgroundAsset();
+    bootStep = 'service_worker';
+    await registerServiceWorker();
+    logBootStep('boot:service_worker');
 
+    bootStep = 'runtime_sync';
     const bootNowMs = Date.now();
     syncSimulationFromElapsedTime(bootNowMs);
     syncRuntimeClocks(bootNowMs);
     syncActiveEventFromCatalog();
     updateVisibleOverlays();
     syncCanonicalStateShape();
+    logBootStep('boot:runtime_sync', {
+      nowMs: state.simulation.nowMs,
+      simTimeMs: state.simulation.simTimeMs,
+      nextEventRealTimeMs: state.events.scheduler.nextEventRealTimeMs,
+      growthImpulse: state.simulation.growthImpulse
+    });
 
     addLog('system', 'Runtime initialisiert', {
       mode: state.simulation.mode,
@@ -1007,21 +506,77 @@ async function boot() {
     window.__applyAction = (id) => applyAction(id);
     window.__devSelfTest = () => runDevSelfTest();
 
+    bootStep = 'loop_and_render';
     startLoopOnce();
     startHeartbeatWatchdog();
     renderAll();
-    markBootMetric('firstHudRenderMs');
+    renderLanding();
     window.__gsBootOk = true;
     state.ui.lastRenderRealMs = Date.now();
-    void warmUpPlantSpriteAfterFirstRender();
+    logBootStep('boot:render_complete');
 
+    bootStep = 'persist';
     await schedulePushIfAllowed(true);
     await persistState();
-    markBootMetric('bootCompleteMs');
+    logBootStep('boot:done');
   } catch (error) {
-    console.error('Boot failed', error);
+    logBootStep('boot:failed', {
+      step: bootStep,
+      message: error && error.message ? error.message : String(error)
+    });
+    console.error('Boot failed', { step: bootStep, error });
     showBootError(error);
   }
+}
+
+function mountHudComponents() {
+  const appHud = document.getElementById('app-hud');
+  if (!appHud) {
+    return;
+  }
+
+  const hudPanelsApi = window.GrowSimHudPanels;
+  if (!hudPanelsApi || typeof hudPanelsApi.mount !== 'function') {
+    return;
+  }
+
+  hudPanelsApi.mount(appHud, {
+    player: {
+      name: 'Max Mustergrower',
+      role: 'Gärtner',
+      xpText: 'XP: 7.350 / 8.650',
+      xpPercent: 84,
+      currencyCoins: '2.480',
+      currencyGems: '55',
+      currencyStars: '114'
+    },
+    environment: {
+      temperature: '25.3°C',
+      humidity: '61%',
+      vpd: '1.2 kPa',
+      light: '720 PPFD',
+      airflow: 'Good'
+    }
+  });
+}
+
+function logBootStep(step, details) {
+  const entry = {
+    atMs: Date.now(),
+    step: String(step || 'unknown')
+  };
+  if (details && typeof details === 'object') {
+    entry.details = details;
+  }
+  window.__gsBootTrace.push(entry);
+  if (window.__gsBootTrace.length > 80) {
+    window.__gsBootTrace.splice(0, window.__gsBootTrace.length - 80);
+  }
+  if (entry.details) {
+    console.info('[boot]', entry.step, entry.details);
+    return;
+  }
+  console.info('[boot]', entry.step);
 }
 
 async function initOrMigrateState() {
@@ -1033,28 +588,6 @@ async function initOrMigrateState() {
 async function loadCatalogs() {
   await loadEventCatalog();
   await loadActionsCatalog();
-}
-
-function warmUpPlantSpriteAfterFirstRender() {
-  if (deferredSpriteWarmupPromise) {
-    return deferredSpriteWarmupPromise;
-  }
-
-  deferredSpriteWarmupPromise = loadPlantSpriteRuntime()
-    .then((ready) => {
-      markBootMetric('spriteReadyMs', { spriteReady: Boolean(ready) });
-      if (ready && ui.plantImage) {
-        renderPlantFromSprite(ui.plantImage);
-      }
-      return ready;
-    })
-    .catch((error) => {
-      console.warn('[boot] Plant sprite warm-up fehlgeschlagen.', error);
-      markBootMetric('spriteReadyMs', { spriteReady: false });
-      return false;
-    });
-
-  return deferredSpriteWarmupPromise;
 }
 
 function startLoopOnce() {
@@ -1484,6 +1017,9 @@ function fallbackEventsForCurrentPhase(nowMs) {
     if (!eventDef || !eventDef.id || !isEventPhaseAllowed(eventDef)) {
       return false;
     }
+    if (!evaluateEventConstraints(eventDef)) {
+      return false;
+    }
     const cooldowns = state.events.scheduler.eventCooldowns || {};
     const blockedUntil = Number(cooldowns[eventDef.id] || 0);
     return blockedUntil <= nowMs;
@@ -1506,6 +1042,10 @@ function isEventEligible(eventDef, cooldowns, nowMs) {
   }
 
   if (!isEventPhaseAllowed(eventDef)) {
+    return false;
+  }
+
+  if (!evaluateEventConstraints(eventDef)) {
     return false;
   }
 
@@ -1536,6 +1076,128 @@ function isEventPhaseAllowed(eventDef) {
   }
 
   return allowedPhases.includes(String(state.plant.phase || ''));
+}
+
+function buildEventConstraintSnapshot() {
+  const stageIndexOneBased = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+  const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+  const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+  const environment = deriveEnvironmentReadout();
+  const roots = deriveRootZoneReadout(environment);
+  const airflowScore = environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+
+  const plantSize = clamp(((stageIndexOneBased - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
+  const rootMass = clamp(((stageIndexOneBased - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
+
+  return {
+    simDay,
+    stageIndexOneBased,
+    plantSize,
+    rootMass,
+    environmentState: {
+      temperatureC: environment.temperatureC,
+      humidityPercent: environment.humidityPercent,
+      vpdKpa: environment.vpdKpa,
+      airflowScore
+    },
+    rootZone: {
+      ph: Number(roots.ph),
+      ec: Number(String(roots.ec).replace(/\s*mS$/i, '')),
+      oxygenPercent: Number(String(roots.oxygen).replace('%', '')),
+      healthPercent: Number(String(roots.rootHealth).replace('%', ''))
+    }
+  };
+}
+
+function evaluateEventConstraints(eventDef) {
+  const constraints = eventDef && eventDef.constraints && typeof eventDef.constraints === 'object'
+    ? eventDef.constraints
+    : null;
+
+  if (!constraints) {
+    return true;
+  }
+
+  const snapshot = buildEventConstraintSnapshot();
+
+  const minStage = Number(constraints.minStage);
+  const maxStage = Number(constraints.maxStage);
+  const minDay = Number(constraints.minDay);
+  const maxDay = Number(constraints.maxDay);
+  const minPlantSize = Number(constraints.minPlantSize);
+  const minRootMass = Number(constraints.minRootMass);
+
+  if (constraints.minStage !== null && constraints.minStage !== undefined && Number.isFinite(minStage) && snapshot.stageIndexOneBased < minStage) {
+    return false;
+  }
+  if (constraints.maxStage !== null && constraints.maxStage !== undefined && Number.isFinite(maxStage) && snapshot.stageIndexOneBased > maxStage) {
+    return false;
+  }
+  if (constraints.minDay !== null && constraints.minDay !== undefined && Number.isFinite(minDay) && snapshot.simDay < minDay) {
+    return false;
+  }
+  if (constraints.maxDay !== null && constraints.maxDay !== undefined && Number.isFinite(maxDay) && snapshot.simDay > maxDay) {
+    return false;
+  }
+  if (constraints.minPlantSize !== null && constraints.minPlantSize !== undefined && Number.isFinite(minPlantSize) && snapshot.plantSize < minPlantSize) {
+    return false;
+  }
+  if (constraints.minRootMass !== null && constraints.minRootMass !== undefined && Number.isFinite(minRootMass) && snapshot.rootMass < minRootMass) {
+    return false;
+  }
+
+  const env = constraints.environmentState && typeof constraints.environmentState === 'object'
+    ? constraints.environmentState
+    : null;
+  if (env) {
+    const minTemperatureC = Number(env.minTemperatureC);
+    const maxTemperatureC = Number(env.maxTemperatureC);
+    const minHumidityPercent = Number(env.minHumidityPercent);
+    const maxHumidityPercent = Number(env.maxHumidityPercent);
+    const minVpdKpa = Number(env.minVpdKpa);
+    const maxVpdKpa = Number(env.maxVpdKpa);
+    const minAirflowScore = Number(env.minAirflowScore);
+
+    if (env.minTemperatureC !== null && env.minTemperatureC !== undefined && Number.isFinite(minTemperatureC) && snapshot.environmentState.temperatureC < minTemperatureC) return false;
+    if (env.maxTemperatureC !== null && env.maxTemperatureC !== undefined && Number.isFinite(maxTemperatureC) && snapshot.environmentState.temperatureC > maxTemperatureC) return false;
+    if (env.minHumidityPercent !== null && env.minHumidityPercent !== undefined && Number.isFinite(minHumidityPercent) && snapshot.environmentState.humidityPercent < minHumidityPercent) return false;
+    if (env.maxHumidityPercent !== null && env.maxHumidityPercent !== undefined && Number.isFinite(maxHumidityPercent) && snapshot.environmentState.humidityPercent > maxHumidityPercent) return false;
+    if (env.minVpdKpa !== null && env.minVpdKpa !== undefined && Number.isFinite(minVpdKpa) && snapshot.environmentState.vpdKpa < minVpdKpa) return false;
+    if (env.maxVpdKpa !== null && env.maxVpdKpa !== undefined && Number.isFinite(maxVpdKpa) && snapshot.environmentState.vpdKpa > maxVpdKpa) return false;
+    if (env.minAirflowScore !== null && env.minAirflowScore !== undefined && Number.isFinite(minAirflowScore) && snapshot.environmentState.airflowScore < minAirflowScore) return false;
+  }
+
+  const root = constraints.rootZone && typeof constraints.rootZone === 'object'
+    ? constraints.rootZone
+    : null;
+  if (root) {
+    const minPh = Number(root.minPh);
+    const maxPh = Number(root.maxPh);
+    const minEc = Number(root.minEc);
+    const maxEc = Number(root.maxEc);
+    const minOxygenPercent = Number(root.minOxygenPercent);
+
+    if (root.minPh !== null && root.minPh !== undefined && Number.isFinite(minPh) && snapshot.rootZone.ph < minPh) return false;
+    if (root.maxPh !== null && root.maxPh !== undefined && Number.isFinite(maxPh) && snapshot.rootZone.ph > maxPh) return false;
+    if (root.minEc !== null && root.minEc !== undefined && Number.isFinite(minEc) && snapshot.rootZone.ec < minEc) return false;
+    if (root.maxEc !== null && root.maxEc !== undefined && Number.isFinite(maxEc) && snapshot.rootZone.ec > maxEc) return false;
+    if (root.minOxygenPercent !== null && root.minOxygenPercent !== undefined && Number.isFinite(minOxygenPercent) && snapshot.rootZone.oxygenPercent < minOxygenPercent) return false;
+  }
+
+  const category = String(eventDef.category || 'generic').toLowerCase();
+  const stressNow = clamp(Number(state.status.stress || 0), 0, 100);
+  const riskNow = clamp(Number(state.status.risk || 0), 0, 100);
+  const healthNow = clamp(Number(state.status.health || 0), 0, 100);
+
+  if (category === 'positive' && (stressNow > 48 || riskNow > 45 || healthNow < 55)) {
+    return false;
+  }
+
+  if (snapshot.simDay <= 10 && (category === 'pest' || category === 'disease') && riskNow < 65) {
+    return false;
+  }
+
+  return true;
 }
 
 function evaluateEventTriggers(triggers) {
@@ -1630,12 +1292,37 @@ function resolveTriggerField(fieldPath) {
   if (fieldPath === 'plant.stageKey') {
     return state.plant.stageKey;
   }
+  if (fieldPath === 'plant.size') {
+    const stageIndex = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+    const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+    return clamp(((stageIndex - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
+  }
+  if (fieldPath === 'plant.rootMass') {
+    const stageIndex = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+    const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+    return clamp(((stageIndex - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
+  }
   if (fieldPath.startsWith('setup.')) {
     return (state.setup || {})[fieldPath.split('.')[1]];
   }
   if (fieldPath === 'simulation.isDaytime') {
     return state.simulation.isDaytime;
   }
+  if (fieldPath === 'simulation.simDay') {
+    return Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+  }
+
+  const environment = deriveEnvironmentReadout();
+  if (fieldPath === 'env.temperatureC') return environment.temperatureC;
+  if (fieldPath === 'env.humidityPercent') return environment.humidityPercent;
+  if (fieldPath === 'env.vpdKpa') return environment.vpdKpa;
+  if (fieldPath === 'env.airflowScore') return environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+
+  const roots = deriveRootZoneReadout(environment);
+  if (fieldPath === 'root.ph') return Number(roots.ph);
+  if (fieldPath === 'root.ec') return Number(String(roots.ec).replace(/\s*mS$/i, ''));
+  if (fieldPath === 'root.oxygenPercent') return Number(String(roots.oxygen).replace('%', ''));
+  if (fieldPath === 'root.healthPercent') return Number(String(roots.rootHealth).replace('%', ''));
 
   return undefined;
 }
@@ -1988,7 +1675,7 @@ function applyAction(actionId) {
 
   const before = snapshotStatus();
 
-  applyEffectsObject(action.effects.immediate || {});
+  applyActionImmediateEffects(action);
   scheduleActionOverTimeEffect(action, nowMs);
 
   const triggeredSideEffects = [];
@@ -2130,6 +1817,68 @@ function applyOverTimeRates(rates, elapsedSimMs) {
       state.status[metric] += delta;
     }
   }
+}
+
+function applyActionImmediateEffects(action) {
+  const immediate = action && action.effects ? action.effects.immediate : null;
+  if (Array.isArray(immediate)) {
+    applyStructuredEffects(immediate);
+    return;
+  }
+  applyEffectsObject(immediate || {});
+}
+
+function applyStructuredEffects(effectsList) {
+  for (const effect of effectsList || []) {
+    if (!effect || typeof effect !== 'object') {
+      continue;
+    }
+
+    const metric = String(effect.stat || '').trim();
+    const mode = String(effect.mode || 'add').trim();
+    const value = Number(effect.value);
+
+    if (!metric || (!Object.prototype.hasOwnProperty.call(state.status, metric) && metric !== 'growth')) {
+      continue;
+    }
+
+    if ((mode !== 'clamp_min' && mode !== 'clamp_max' && mode !== 'reduce_risk' && mode !== 'reduce_salt_load') && !Number.isFinite(value)) {
+      continue;
+    }
+
+    if (metric === 'growth') {
+      if (mode === 'add') {
+        applyGrowthPercentDelta(value);
+      } else if (mode === 'subtract') {
+        applyGrowthPercentDelta(-Math.abs(value));
+      } else if (mode === 'set') {
+        state.plant.progress = clamp(Number(value), 0, 100);
+      }
+      continue;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(state.status, metric)) {
+      continue;
+    }
+
+    if (mode === 'add') {
+      state.status[metric] += value;
+    } else if (mode === 'subtract') {
+      state.status[metric] -= Math.abs(value);
+    } else if (mode === 'set') {
+      state.status[metric] = value;
+    } else if (mode === 'clamp_min') {
+      state.status[metric] = Math.max(state.status[metric], Number(effect.min));
+    } else if (mode === 'clamp_max') {
+      state.status[metric] = Math.min(state.status[metric], Number(effect.max));
+    } else if (mode === 'reduce_risk') {
+      state.status.risk -= Math.abs(Number.isFinite(value) ? value : 0);
+    } else if (mode === 'reduce_salt_load') {
+      state.status.risk -= Math.abs(Number.isFinite(value) ? value : 0);
+    }
+  }
+
+  clampStatus();
 }
 
 function applyEffectsObject(effects) {
@@ -2471,12 +2220,13 @@ function renderAll() {
 function renderHud() {
   const dead = isPlantDead();
   const phaseCard = getPhaseCardViewModel();
-  const boostText = `-30m Eventzeit · ${state.boost.boostUsedToday}/${state.boost.boostMaxPerDay}`;
-  const heroCardNode = document.querySelector('.hero-card');
+  const boostText = `Event -30 Min · kleiner Pflanzenimpuls · ${state.boost.boostUsedToday}/${state.boost.boostMaxPerDay} heute`;
 
-  const localizedPhaseTitle = localizeHudText(phaseCard.title);
-  if (ui.phaseCardTitle && ui.phaseCardTitle.textContent !== localizedPhaseTitle) {
-    ui.phaseCardTitle.textContent = localizedPhaseTitle;
+  if (ui.phaseCardTitle && ui.phaseCardTitle.textContent !== phaseCard.title) {
+    ui.phaseCardTitle.textContent = phaseCard.title;
+  }
+  if (ui.phaseCardCycle && ui.phaseCardCycle.textContent !== phaseCard.cycleIcon) {
+    ui.phaseCardCycle.textContent = phaseCard.cycleIcon;
   }
   if (ui.phaseCardCycle) {
     ui.phaseCardCycle.setAttribute('aria-label', state.simulation.isDaytime ? 'Tag' : 'Nacht');
@@ -2500,45 +2250,47 @@ function renderHud() {
     ui.phaseProgressMarker.classList.toggle('hidden', !phaseCard.nextLabel || phaseCard.progressPercent >= 100);
   }
   if (ui.phaseCard) {
-    ui.phaseCard.setAttribute('aria-label', `Phase ${localizedPhaseTitle}. ${phaseCard.ageLabel}. ${phaseCard.subtitle}.`);
-  }
-  if (heroCardNode) {
-    heroCardNode.dataset.stageIndex = String(clampInt(Number(state.plant.stageIndex) || 0, 0, 99));
+    ui.phaseCard.setAttribute('aria-label', `Phase ${phaseCard.title}. ${phaseCard.ageLabel}. ${phaseCard.subtitle}.`);
   }
 
-  if (ui.boostUsageText.textContent !== boostText) {
+  if (ui.boostUsageText && ui.boostUsageText.textContent !== boostText) {
     ui.boostUsageText.textContent = boostText;
   }
 
   setRing(ui.healthRing, ui.healthValue, state.status.health);
   setRing(ui.stressRing, ui.stressValue, state.status.stress);
-  setRing(ui.waterRing, ui.waterValue, state.status.water, { suffix: '%' });
-  setRing(ui.nutritionRing, ui.nutritionValue, state.status.nutrition, { suffix: '%' });
-  setRing(ui.growthRing, ui.growthValue, state.status.growth, { suffix: '%' });
-  setRing(ui.riskRing, ui.riskValue, state.status.risk, { suffix: '%' });
+  setRing(ui.waterRing, ui.waterValue, state.status.water);
+  setRing(ui.nutritionRing, ui.nutritionValue, state.status.nutrition);
+  setRing(ui.growthRing, ui.growthValue, state.status.growth);
+  setRing(ui.riskRing, ui.riskValue, state.status.risk);
 
-  if (ui.plantImage) {
-    renderPlantFromSprite(ui.plantImage);
+  if (ui.plantSprite) {
+    const nextPlantSrc = plantAssetPath(state.plant.stageKey);
+    if (ui.plantSprite.dataset.stageSrc !== nextPlantSrc) {
+      ui.plantSprite.src = nextPlantSrc;
+      ui.plantSprite.dataset.stageSrc = nextPlantSrc;
+    }
   }
 
   const eventStatus = eventStatusDisplay();
-  ui.nextEventValue.textContent = eventStatus.value;
+  if (ui.nextEventValue) {
+    ui.nextEventValue.textContent = eventStatus.value;
+  }
   if (ui.nextEventValue && ui.nextEventValue.dataset.label !== eventStatus.label) {
     const labelNode = ui.nextEventValue.closest('.info-tile')?.querySelector('.info-label');
     if (labelNode) {
-      const compactEventLabelMap = {
-        'Ereignisstatus': 'Ereignis',
-        'Ergebnis in': 'Auflösung',
-        'Nächstes Ereignis': 'Ereignis'
-      };
-      labelNode.textContent = compactEventLabelMap[eventStatus.label] || eventStatus.label;
+      labelNode.textContent = eventStatus.label;
     }
     ui.nextEventValue.dataset.label = eventStatus.label;
   }
-  ui.growthImpulseValue.textContent = state.simulation.growthImpulse.toFixed(2);
-  const simDayDisplay = Math.max(1, Math.floor(simDayFloat()) + 1);
-  const compactClock = formatSimClock(state.simulation.simTimeMs).slice(0, 5);
-  ui.simTimeValue.textContent = `Tag ${simDayDisplay} · ${compactClock}`;
+  if (ui.growthImpulseValue) {
+    ui.growthImpulseValue.textContent = state.simulation.growthImpulse.toFixed(2);
+  }
+  if (ui.simTimeValue) {
+    ui.simTimeValue.textContent = formatSimClock(state.simulation.simTimeMs);
+  }
+
+  renderPanelReadouts();
 
   const showSkipNight = !dead && !state.simulation.isDaytime;
 
@@ -2550,9 +2302,88 @@ function renderHud() {
     ui.skipNightActionBtn.classList.toggle('hidden', !showSkipNight);
   }
 
-  applyHudAtlasIcons();
-  renderDataVisualization();
   renderOverlayVisibility();
+}
+
+function renderPanelReadouts() {
+  if (ui.playerNameValue && ui.playerNameValue.textContent !== 'Max Mustergrower') {
+    ui.playerNameValue.textContent = 'Max Mustergrower';
+  }
+  if (ui.playerRoleValue && ui.playerRoleValue.textContent !== 'Gärtner') {
+    ui.playerRoleValue.textContent = 'Gärtner';
+  }
+
+  const xpCurrent = 1200 + (Number(state.simulation.simDay) * 440);
+  const xpTarget = 8650;
+  const xpRatio = clamp(xpCurrent / xpTarget, 0, 1);
+  if (ui.playerXpValue) {
+    ui.playerXpValue.textContent = `XP: ${formatCompactNumber(xpCurrent)} / ${formatCompactNumber(xpTarget)}`;
+  }
+  if (ui.playerXpFill) {
+    ui.playerXpFill.style.setProperty('--xp', String(Math.round(xpRatio * 100)));
+  }
+
+  const coinBalance = 2480 + Math.round(Number(state.simulation.simDay) * 28);
+  const gemBalance = 55 + Math.max(0, Math.floor(Number(state.boost.boostUsedToday || 0) / 2));
+  const starBalance = 114 + Math.round(Number(state.status.growth || 0) / 2);
+  if (ui.currencyCoinValue) ui.currencyCoinValue.textContent = formatCompactNumber(coinBalance);
+  if (ui.currencyGemValue) ui.currencyGemValue.textContent = formatCompactNumber(gemBalance);
+  if (ui.currencyStarValue) ui.currencyStarValue.textContent = formatCompactNumber(starBalance);
+
+  const environment = deriveEnvironmentReadout();
+  if (ui.envTemperatureValue) ui.envTemperatureValue.textContent = `${environment.temperatureC.toFixed(1)}°C`;
+  if (ui.envHumidityValue) ui.envHumidityValue.textContent = `${environment.humidityPercent}%`;
+  if (ui.envVpdValue) ui.envVpdValue.textContent = `${environment.vpdKpa.toFixed(1)} kPa`;
+  if (ui.envLightValue) ui.envLightValue.textContent = `${environment.ppfd} PPFD`;
+  if (ui.envAirflowValue) ui.envAirflowValue.textContent = environment.airflowLabel;
+
+  const roots = deriveRootZoneReadout(environment);
+  if (ui.rootPhValue) ui.rootPhValue.textContent = roots.ph;
+  if (ui.rootEcValue) ui.rootEcValue.textContent = roots.ec;
+  if (ui.rootHealthValue) ui.rootHealthValue.textContent = roots.rootHealth;
+  if (ui.rootOxygenValue) ui.rootOxygenValue.textContent = roots.oxygen;
+}
+
+function deriveEnvironmentReadout() {
+  const water = clamp(Number(state.status.water || 0), 0, 100);
+  const stress = clamp(Number(state.status.stress || 0), 0, 100);
+  const risk = clamp(Number(state.status.risk || 0), 0, 100);
+  const isDay = Boolean(state.simulation.isDaytime);
+
+  const temperatureC = clamp((isDay ? 24.2 : 20.4) + (stress * 0.05) + (risk * 0.02), 18, 36);
+  const humidityPercent = Math.round(clamp(38 + (water * 0.42) - (stress * 0.14), 32, 82));
+  const vpdKpa = clamp(0.7 + ((temperatureC - 21) * 0.08) + ((60 - humidityPercent) * 0.012), 0.4, 2.4);
+  const ppfd = isDay ? Math.round(clamp(550 + (Number(state.status.growth || 0) * 2.4), 420, 980)) : 45;
+  const airflowScore = clamp(100 - risk - Math.round(stress * 0.35), 0, 100);
+  const airflowLabel = airflowScore >= 70 ? 'Good' : airflowScore >= 40 ? 'Mittel' : 'Schwach';
+
+  return { temperatureC, humidityPercent, vpdKpa, ppfd, airflowLabel };
+}
+
+function deriveRootZoneReadout(environment) {
+  const nutrition = clamp(Number(state.status.nutrition || 0), 0, 100);
+  const water = clamp(Number(state.status.water || 0), 0, 100);
+  const risk = clamp(Number(state.status.risk || 0), 0, 100);
+
+  const phValue = clamp(5.6 + ((nutrition - 50) * 0.008) - ((risk - 40) * 0.003), 5.4, 6.6);
+  const ecValue = clamp(0.8 + (nutrition * 0.01), 0.6, 2.3);
+  const oxygenPercent = Math.round(clamp(92 - (water * 0.28) - (risk * 0.18), 32, 95));
+  const rootHealthPercent = Math.round(clamp(55 + (nutrition * 0.32) - (risk * 0.25) - ((environment.vpdKpa - 1.2) * 12), 10, 99));
+
+  return {
+    ph: phValue.toFixed(1),
+    ec: `${ecValue.toFixed(1)} mS`,
+    rootHealth: `${rootHealthPercent}%`,
+    oxygen: `${oxygenPercent}%`
+  };
+}
+
+function formatCompactNumber(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return '0';
+  }
+  return Math.round(numeric).toLocaleString('de-DE');
 }
 
 const STAT_RING_UPDATE_IDS = new Set(['waterRing', 'nutritionRing', 'growthRing', 'riskRing']);
@@ -2578,7 +2409,7 @@ function triggerStatUpdateFeedback(ringNode, textNode) {
   }, STAT_UPDATE_ANIMATION_MS);
 }
 
-function setRing(ringNode, textNode, value, options = null) {
+function setRing(ringNode, textNode, value) {
   if (!ringNode || !textNode) {
     return;
   }
@@ -2586,7 +2417,6 @@ function setRing(ringNode, textNode, value, options = null) {
   const roundedText = String(rounded);
   const previousValueText = ringNode.dataset.value;
   const valueChanged = previousValueText !== roundedText;
-  const suffix = options && typeof options.suffix === 'string' ? options.suffix : '';
 
   if (valueChanged) {
     ringNode.style.setProperty('--value', roundedText);
@@ -2596,57 +2426,8 @@ function setRing(ringNode, textNode, value, options = null) {
       triggerStatUpdateFeedback(ringNode, textNode);
     }
   }
-  const displayText = `${roundedText}${suffix}`;
-  if (textNode.textContent !== displayText) {
-    textNode.textContent = displayText;
-  }
-}
-
-function ensureOverlayAssetLoaded(overlayId, node) {
-  if (!overlayId || !node) {
-    return;
-  }
-  if (overlayAssetRuntime.ready.has(overlayId) || overlayAssetRuntime.missing.has(overlayId)) {
-    return;
-  }
-  if (overlayAssetRuntime.loading.has(overlayId)) {
-    return;
-  }
-
-  const rawPath = OVERLAY_ASSETS[overlayId];
-  if (!rawPath) {
-    overlayAssetRuntime.missing.add(overlayId);
-    return;
-  }
-
-  const src = appPath(rawPath);
-  const probe = new Image();
-  overlayAssetRuntime.loading.add(overlayId);
-  probe.onload = () => {
-    overlayAssetRuntime.loading.delete(overlayId);
-    overlayAssetRuntime.ready.add(overlayId);
-    node.src = src;
-    if (state.ui.visibleOverlayIds.includes(overlayId)) {
-      node.classList.remove('hidden');
-      node.setAttribute('aria-hidden', 'false');
-    }
-  };
-  probe.onerror = () => {
-    overlayAssetRuntime.loading.delete(overlayId);
-    overlayAssetRuntime.missing.add(overlayId);
-  };
-  probe.src = src;
-}
-
-function initializeOverlayNodesForLazyLoad() {
-  const nodes = [ui.overlayBurn, ui.overlayDefMg, ui.overlayDefN, ui.overlayMoldWarning, ui.overlayPestMites, ui.overlayPestThrips];
-  for (const node of nodes) {
-    if (!node) {
-      continue;
-    }
-    node.removeAttribute('src');
-    node.classList.add('hidden');
-    node.setAttribute('aria-hidden', 'true');
+  if (textNode.textContent !== roundedText) {
+    textNode.textContent = roundedText;
   }
 }
 
@@ -2661,17 +2442,33 @@ function renderOverlayVisibility() {
   };
 
   for (const [overlayId, node] of Object.entries(nodes)) {
-    const visible = state.ui.visibleOverlayIds.includes(overlayId);
     if (!node) {
       continue;
     }
-    if (visible) {
-      ensureOverlayAssetLoaded(overlayId, node);
-    }
-    const shouldShow = visible && overlayAssetRuntime.ready.has(overlayId);
-    node.classList.toggle('hidden', !shouldShow);
-    node.setAttribute('aria-hidden', String(!shouldShow));
+    const visible = state.ui.visibleOverlayIds.includes(overlayId);
+    node.classList.toggle('hidden', !visible);
   }
+}
+
+function renderPlantFallback(targetNode) {
+  if (!targetNode || typeof targetNode.getContext !== 'function') {
+    return;
+  }
+  const canvasMetrics = syncPlantCanvasToContainer(targetNode);
+  const ctx = targetNode.getContext('2d', { alpha: true });
+  if (!ctx) {
+    return;
+  }
+  ctx.clearRect(0, 0, targetNode.width, targetNode.height);
+  const w = canvasMetrics.widthPx;
+  const h = canvasMetrics.heightPx;
+  ctx.fillStyle = 'rgba(134, 167, 94, 0.85)';
+  ctx.fillRect(Math.round(w * 0.48), Math.round(h * 0.45), Math.max(2, Math.round(w * 0.04)), Math.round(h * 0.3));
+  ctx.fillStyle = 'rgba(164, 205, 110, 0.78)';
+  ctx.beginPath();
+  ctx.ellipse(Math.round(w * 0.5), Math.round(h * 0.38), Math.round(w * 0.13), Math.round(h * 0.11), 0, 0, Math.PI * 2);
+  ctx.fill();
+  targetNode.dataset.stageName = normalizeStageKey(state.plant.stageKey);
 }
 
 function renderSheets() {
@@ -2707,7 +2504,6 @@ function renderGameMenu() {
     ui.menuDialog.setAttribute('aria-hidden', String(!dialogOpen));
   }
 
-  renderMenuAtlasIcons();
   renderMenuDynamicRows();
 }
 
@@ -2746,15 +2542,23 @@ function renderCareSheet(force = false) {
   const categoryOrder = ['watering', 'fertilizing', 'training', 'environment'];
   const categoryLabels = {
     watering: 'Bewässerung',
-    fertilizing: 'Düngung',
+    fertilizing: 'Nährstoffe',
     training: 'Training',
     environment: 'Umgebung'
+  };
+  const categoryIcons = {
+    watering: '💧',
+    fertilizing: '◉',
+    training: '✦',
+    environment: '◌'
   };
 
   const availableCategories = categoryOrder.filter((category) => catalog.some((action) => action.category === category));
   if (!availableCategories.length) {
     ui.careCategoryList.replaceChildren();
     ui.careActionList.replaceChildren();
+    ui.careEffectsList.replaceChildren();
+    ui.careExecuteButton.disabled = true;
     setCareFeedback('error', 'Keine Aktionen geladen.');
     return;
   }
@@ -2764,12 +2568,14 @@ function renderCareSheet(force = false) {
     state.ui.care.selectedCategory = availableCategories[0];
   }
 
-  renderCareCategoryButtons(availableCategories, categoryLabels);
+  renderCareCategoryButtons(availableCategories, categoryLabels, categoryIcons);
   renderCareActionButtons(state.ui.care.selectedCategory);
+  renderCareEffectsPanel();
   renderCareFeedback();
+  renderCareExecuteButton();
 }
 
-function renderCareCategoryButtons(categories, labels) {
+function renderCareCategoryButtons(categories, labels, icons) {
   const signature = categories.join('|') + `|selected:${state.ui.care.selectedCategory}`;
   if (ui.careCategoryList.dataset.signature === signature) {
     return;
@@ -2781,19 +2587,19 @@ function renderCareCategoryButtons(categories, labels) {
   for (const category of categories) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'care-category-btn';
+    btn.className = 'care-category-tab';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', String(state.ui.care.selectedCategory === category));
     if (state.ui.care.selectedCategory === category) {
-      btn.classList.add('is-active');
+      btn.classList.add('care-category-tab-active');
     }
-    btn.textContent = labels[category] || category;
-    setAtlasIcon(btn, careCategoryIconName(category), {
-      className: 'atlas-btn-icon',
-      size: 16,
-      fallbackGlyph: (labels[category] || category).slice(0, 1)
-    });
+    btn.innerHTML = `<span class="care-category-icon" aria-hidden="true">${icons[category] || '◌'}</span><span>${labels[category] || category}</span>`;
     btn.addEventListener('click', () => {
       state.ui.care.selectedCategory = category;
-      setCareFeedback('info', `${labels[category] || category} ausgewählt.`);
+      state.ui.care.selectedActionId = null;
+      ui.careCategoryList.dataset.signature = '';
+      ui.careActionList.dataset.signature = '';
+      setCareFeedback('info', `${labels[category] || category} bereit.`);
       renderCareSheet(true);
     });
     ui.careCategoryList.appendChild(btn);
@@ -2807,7 +2613,7 @@ function renderCareActionButtons(category) {
 
   const signature = actions.map((action) => {
     const cooldownUntil = Number(state.actions.cooldowns[action.id] || 0);
-    return `${action.id}:${cooldownUntil}`;
+    return `${action.id}:${cooldownUntil}:selected:${state.ui.care.selectedActionId === action.id}`;
   }).join('|');
 
   if (ui.careActionList.dataset.signature === signature) {
@@ -2818,39 +2624,157 @@ function renderCareActionButtons(category) {
   ui.careActionList.replaceChildren();
 
   for (const action of actions) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'care-action-btn';
-
     const cooldownLeft = Math.max(0, Number(state.actions.cooldowns[action.id] || 0) - Date.now());
     const cooldownText = cooldownLeft > 0
-      ? `Abklingzeit ${Math.ceil(cooldownLeft / 60000)}m`
-      : `Abklingzeit ${Math.round(action.cooldownRealMinutes || 0)}m`;
+      ? `${Math.ceil(cooldownLeft / 60000)} min`
+      : `${Math.round(action.cooldownRealMinutes || 0)} min`;
 
-    button.innerHTML = `<div><strong>${action.label}</strong><div class="care-action-meta">${labelForIntensity(action.intensity)}</div></div><span class="care-action-meta">${cooldownText}</span>`;
-    setAtlasIcon(button, actionIconName(action.id), {
-      className: 'atlas-btn-icon',
-      size: 16,
-      fallbackGlyph: 'A'
-    });
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'care-action-card';
+    if (state.ui.care.selectedActionId === action.id) {
+      button.classList.add('is-selected');
+    }
+
+    button.innerHTML = `
+      <div class="care-action-media" aria-hidden="true">◇</div>
+      <div class="care-action-body">
+        <h4 class="care-action-title">${escapeHtml(action.label)}</h4>
+        <p class="care-action-subtitle">${escapeHtml(action.uxCopy && action.uxCopy.short ? action.uxCopy.short : labelForIntensity(action.intensity))}</p>
+        <div class="care-action-meta-row">
+          <span class="care-action-cooldown">Cooldown: ${cooldownText}</span>
+          <span class="care-action-effects">${formatEffectsInline(action)}</span>
+        </div>
+      </div>`;
 
     button.addEventListener('click', () => {
-      const result = applyAction(action.id);
-      if (result.ok) {
-        setCareFeedback('success', `${action.label} ausgeführt.`);
-      } else {
-        setCareFeedback('error', explainActionFailure(result.reason));
-      }
+      state.ui.care.selectedActionId = action.id;
+      ui.careActionList.dataset.signature = '';
+      setCareFeedback('info', `${action.label} ausgewählt.`);
       renderCareSheet(true);
-      renderHud();
     });
 
     ui.careActionList.appendChild(button);
   }
 }
 
+function formatEffectsInline(action) {
+  const immediate = action && action.effects && action.effects.immediate ? action.effects.immediate : {};
+  if (Array.isArray(immediate)) {
+    return immediate
+      .map((effect) => (effect && effect.label ? String(effect.label) : null))
+      .filter(Boolean)
+      .slice(0, 2)
+      .join(' · ') || 'Keine direkten Effekte';
+  }
+  const map = [
+    ['water', 'Feuchtigkeit'],
+    ['nutrition', 'Nährstoffe'],
+    ['growth', 'Wachstum'],
+    ['stress', 'Stress'],
+    ['risk', 'Risiko']
+  ];
+  const parts = [];
+  for (const [key, label] of map) {
+    const value = Number(immediate[key] || 0);
+    if (!value) continue;
+    parts.push(`${label} ${value > 0 ? '+' : ''}${round2(value)}`);
+  }
+  return parts.slice(0, 2).join(' · ') || 'Keine direkten Effekte';
+}
+
+function renderCareEffectsPanel() {
+  ui.careEffectsList.replaceChildren();
+
+  const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
+  if (!selected) {
+    const li = document.createElement('li');
+    li.textContent = 'Keine Aktion ausgewählt.';
+    ui.careEffectsList.appendChild(li);
+    return;
+  }
+
+  const immediate = selected.effects && selected.effects.immediate ? selected.effects.immediate : {};
+  if (Array.isArray(immediate)) {
+    const labels = {
+      water: 'Feuchtigkeit',
+      nutrition: 'Nährstoffe',
+      growth: 'Wachstum',
+      stress: 'Stress',
+      risk: 'Risiko',
+      health: 'Gesundheit'
+    };
+    for (const effect of immediate) {
+      if (!effect || typeof effect !== 'object') {
+        continue;
+      }
+      const li = document.createElement('li');
+      const statLabel = labels[String(effect.stat || '')] || 'System';
+      li.innerHTML = `<span>${escapeHtml(statLabel)}</span><strong>${escapeHtml(String(effect.label || 'Systemeingriff'))}</strong>`;
+      ui.careEffectsList.appendChild(li);
+    }
+
+    if (!ui.careEffectsList.children.length) {
+      const li = document.createElement('li');
+      li.textContent = 'Keine unmittelbaren Effekte.';
+      ui.careEffectsList.appendChild(li);
+    }
+    return;
+  }
+  const effectRows = [
+    ['water', 'Feuchtigkeit'],
+    ['nutrition', 'Nährstoffe'],
+    ['growth', 'Wachstum'],
+    ['stress', 'Stress'],
+    ['risk', 'Risiko'],
+    ['health', 'Gesundheit']
+  ];
+
+  for (const [key, label] of effectRows) {
+    const value = Number(immediate[key] || 0);
+    if (!value) {
+      continue;
+    }
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${label}</span><strong>${value > 0 ? '+' : ''}${round2(value)}</strong>`;
+    ui.careEffectsList.appendChild(li);
+  }
+
+  if (!ui.careEffectsList.children.length) {
+    const li = document.createElement('li');
+    li.textContent = 'Keine unmittelbaren Effekte.';
+    ui.careEffectsList.appendChild(li);
+  }
+}
+
+function renderCareExecuteButton() {
+  const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
+  ui.careExecuteButton.disabled = !selected;
+}
+
+function onCareExecuteAction() {
+  const action = state.actions.byId[state.ui.care.selectedActionId || ''];
+  if (!action) {
+    setCareFeedback('error', 'Bitte zuerst eine Aktion wählen.');
+    renderCareSheet(true);
+    return;
+  }
+
+  const result = applyAction(action.id);
+  if (result.ok) {
+    setCareFeedback('success', action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgeführt.`);
+    state.ui.care.selectedActionId = null;
+  } else {
+    setCareFeedback('error', explainActionFailure(result.reason));
+  }
+
+  ui.careActionList.dataset.signature = '';
+  renderCareSheet(true);
+  renderHud();
+}
+
 function renderCareFeedback() {
-  const feedback = (state.ui.care && state.ui.care.feedback) || { kind: 'info', text: 'Bereit.' };
+  const feedback = (state.ui.care && state.ui.care.feedback) || { kind: 'info', text: 'Wähle eine Aktion.' };
   ui.careFeedback.textContent = feedback.text;
   ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');
   ui.careFeedback.classList.toggle('is-error', feedback.kind === 'error');
@@ -2916,16 +2840,10 @@ function renderEventSheet() {
         button.type = 'button';
         button.className = 'event-option-btn';
         button.textContent = option.label;
-        setAtlasIcon(button, 'ui/icons/confirm', {
-          className: 'atlas-btn-icon',
-          size: 15,
-          fallbackGlyph: '✓'
-        });
         button.addEventListener('click', () => onEventOptionClick(option.id));
         ui.eventOptionList.appendChild(button);
       }
     }
-    renderEventSheetAtlasIcons();
     return;
   }
 
@@ -2954,7 +2872,6 @@ function renderEventSheet() {
     ui.eventOptionList.dataset.signature = '';
     ui.eventOptionList.replaceChildren();
   }
-  renderEventSheetAtlasIcons();
 }
 
 function warnMissingUiOnce(key) {
@@ -3027,107 +2944,25 @@ function renderAnalysisOverview() {
 
   const stageIndex = Number(state.plant && state.plant.stageIndex) || 1;
   const stageDef = STAGE_DEFS[clampInt(stageIndex, 0, STAGE_DEFS.length - 1)];
+  const stageDisplay = clampInt(stageIndex + 1, 1, STAGE_DEFS.length);
   const stageLabel = stageDef ? stageDef.label : '-';
-  const phaseProgress = clampInt(Math.round((Number(state.plant && state.plant.stageProgress) || 0) * 100), 0, 100);
-  const nextEventInMs = Math.max(0, Number(state.events && state.events.scheduler && state.events.scheduler.nextEventRealTimeMs) - Number(state.simulation && state.simulation.nowMs));
+  const qualityTier = (state.plant && state.plant.lifecycle && state.plant.lifecycle.qualityTier) || 'normal';
   const dayNight = (state.simulation && state.simulation.isDaytime) ? 'Tag' : 'Nacht';
   const simDay = Number(state.simulation && state.simulation.simDay) || 0;
-  const simHour = clampInt(Number(state.simulation && state.simulation.simHour) || 0, 0, 23);
-  const simMinute = clampInt(Number(state.simulation && state.simulation.simMinute) || 0, 0, 59);
-  const growthImpulse = round2(Number(state.simulation && state.simulation.growthImpulse) || 0);
   const status = state.status || {};
-  const health = clampInt(Math.round(Number(status.health) || 0), 0, 100);
-  const stress = clampInt(Math.round(Number(status.stress) || 0), 0, 100);
-  const risk = clampInt(Math.round(Number(status.risk) || 0), 0, 100);
-  const water = clampInt(Math.round(Number(status.water) || 0), 0, 100);
-  const nutrition = clampInt(Math.round(Number(status.nutrition) || 0), 0, 100);
-  const growth = clampInt(Math.round(Number(status.growth) || 0), 0, 100);
-  const overallScore = clampInt(Math.round((health * 0.45) + ((100 - stress) * 0.3) + ((100 - risk) * 0.25)), 0, 100);
-  const topStress = diagnosisDrivers().slice(0, 4);
-
-  const interpretationRows = [
-    { label: 'Wasser', value: water, state: water < 35 ? 'Niedrig' : (water > 80 ? 'Zu hoch' : 'Stabil') },
-    { label: 'Nährstoffe', value: nutrition, state: nutrition < 35 ? 'Mangel' : (nutrition > 80 ? 'Überschuss' : 'Stabil') },
-    { label: 'Licht', value: clampInt(Math.round((Number(uiPreviewData.ppfd) / 10) || 0), 0, 100), state: Number(uiPreviewData.ppfd) < 550 ? 'Zu niedrig' : 'Gut' },
-    { label: 'Umgebung', value: clampInt(Math.round((100 - Math.abs((Number(uiPreviewData.temperature) || 24) - 24) * 8) || 0), 0, 100), state: Number(uiPreviewData.humidity) > 72 ? 'Feucht' : 'Stabil' }
-  ];
-
-  const mergedTrend = [];
-  const actions = Array.isArray(state.history && state.history.actions) ? state.history.actions : [];
-  const events = Array.isArray(state.history && state.history.events) ? state.history.events : [];
-  for (const row of actions) {
-    mergedTrend.push({
-      atSimTimeMs: Number(row.atSimTimeMs || row.simTime || state.simulation.simTimeMs || 0),
-      label: String(row.label || row.id || 'Aktion')
-    });
-  }
-  for (const row of events) {
-    mergedTrend.push({
-      atSimTimeMs: Number(row.atSimTimeMs || row.simTime || state.simulation.simTimeMs || 0),
-      label: String(row.optionLabel || row.optionId || row.eventId || 'Ereignis')
-    });
-  }
-  mergedTrend.sort((a, b) => b.atSimTimeMs - a.atSimTimeMs);
-  const trendRows = mergedTrend.slice(0, 4);
-  const trendHtml = trendRows.length
-    ? trendRows.map((row) => `<div class="metric-row"><span class="metric-label">${escapeHtml(row.label)}</span><strong>${escapeHtml(simStampFromMs(row.atSimTimeMs))}</strong></div>`).join('')
-    : '<div class="metric-row"><span class="metric-label">Noch keine Daten</span><strong>---</strong></div>';
-
-  const stressHtml = topStress.length
-    ? topStress.map((item) => {
-      const severity = clampInt(Math.round(Number(item.score) || 0), 0, 100);
-      const icon = escapeHtml(String(item.label || 'S').slice(0, 1).toUpperCase());
-      return `<article class="status-row" style="--value:${severity};"><div class="status-label"><span class="mini-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(String(item.label || 'Stressfaktor'))}</span></div><div class="status-track"></div><strong>${severity}%</strong></article>`;
-    }).join('')
-    : '<article class="status-row" style="--value:0;"><div class="status-label"><span class="mini-icon" aria-hidden="true">S</span><span>Stabil</span></div><div class="status-track"></div><strong>0%</strong></article>';
+  const qualityTierText = qualityTierLabel(qualityTier);
 
   ui.analysisPanelOverview.innerHTML = `
-    <section class="analysis-top-area">
-      <article class="phase-card phase-card-top analysis-phase-card">
-        <div class="phase-card-head">
-          <strong class="phase-card-title">Analyse</strong>
-          <span class="phase-card-cycle" aria-label="Tageszyklus">${dayNight === 'Tag' ? 'D' : 'N'}</span>
-        </div>
-        <div class="phase-card-meta">
-          <p class="phase-card-age">Tag ${simDay}</p>
-          <p class="phase-card-subtitle">${phaseProgress}% -> ${escapeHtml(stageLabel)}</p>
-        </div>
-        <div class="phase-progress">
-          <span class="phase-progress-fill" style="width:${phaseProgress}%;"></span>
-        </div>
-      </article>
-      <section class="info-bar" aria-label="Analyse-Status">
-        <article class="info-tile"><span class="info-label">Ereignis</span><strong>${escapeHtml(formatCountdown(nextEventInMs))}</strong></article>
-        <article class="info-tile"><span class="info-label">Impuls</span><strong>${growthImpulse}</strong></article>
-        <article class="info-tile"><span class="info-label">Tag / Zeit</span><strong>Tag ${simDay} · ${String(simHour).padStart(2, '0')}:${String(simMinute).padStart(2, '0')}</strong></article>
-      </section>
-    </section>
-
-    <article class="panel panel-metrics analysis-card">
-      <h3 class="panel-title">Gesamtzustand</h3>
-      <div class="analysis-score-wrap">
-        <strong class="analysis-score-value">${overallScore}%</strong>
-        <p class="analysis-score-phase">${escapeHtml(stageLabel)}</p>
-        <div class="status-track analysis-score-track" style="--value:${overallScore};"></div>
-      </div>
-    </article>
-
-    <article class="panel panel-status analysis-card">
-      <h3 class="panel-title">Stressfaktoren</h3>
-      ${stressHtml}
-    </article>
-
-    <article class="panel panel-metrics panel-metrics-grid analysis-card">
-      <h3 class="panel-title">Interpretation</h3>
-      <div class="metric-grid-2x2">
-        ${interpretationRows.map((row) => `<div class="metric-cell"><span class="metric-label">${escapeHtml(row.label)}</span><strong>${row.value}% · ${escapeHtml(row.state)}</strong></div>`).join('')}
-      </div>
-    </article>
-
-    <article class="panel panel-metrics analysis-card">
-      <h3 class="panel-title">Trend</h3>
-      <div class="analysis-trend-list">${trendHtml}</div>
-    </article>
+    <div class="gs-analysis-metric"><strong>Stufe ${stageDisplay}: ${stageLabel}</strong><br>Qualität: ${escapeHtml(String(qualityTierText))}</div>
+    <div class="gs-analysis-metric"><strong>${dayNight}</strong><br>Sim-Tag ${simDay}</div>
+    <div class="gs-analysis-metric-grid">
+      <div class="gs-analysis-metric">Wasser<br><strong>${round2(Number(status.water) || 0)}</strong></div>
+      <div class="gs-analysis-metric">Nährstoffe<br><strong>${round2(Number(status.nutrition) || 0)}</strong></div>
+      <div class="gs-analysis-metric">Gesundheit<br><strong>${round2(Number(status.health) || 0)}</strong></div>
+      <div class="gs-analysis-metric">Stress<br><strong>${round2(Number(status.stress) || 0)}</strong></div>
+      <div class="gs-analysis-metric">Risiko<br><strong>${round2(Number(status.risk) || 0)}</strong></div>
+      <div class="gs-analysis-metric">Wachstum<br><strong>${round2(Number(status.growth) || 0)}</strong></div>
+    </div>
   `;
 }
 
@@ -3561,7 +3396,8 @@ function hasSetup() {
 }
 
 function renderLanding() {
-  const visible = !hasSetup();
+  // BLOCK 1: standard boot should show the HUD directly without setup overlay.
+  const visible = false;
   ui.landing.classList.toggle('hidden', !visible);
   ui.landing.setAttribute('aria-hidden', String(!visible));
 }
@@ -3764,22 +3600,6 @@ async function onDeathRescueClick() {
   schedulePersistState(true);
 }
 
-async function hasActiveServiceWorker(timeoutMs = 3500) {
-  if (!('serviceWorker' in navigator)) {
-    return false;
-  }
-  if (navigator.serviceWorker.controller) {
-    return true;
-  }
-  const readyPromise = navigator.serviceWorker.ready
-    .then((registration) => Boolean(registration && registration.active))
-    .catch(() => false);
-  const timeoutPromise = new Promise((resolve) => {
-    window.setTimeout(() => resolve(false), timeoutMs);
-  });
-  return Promise.race([readyPromise, timeoutPromise]);
-}
-
 async function onPushToggleClick() {
   const notifications = getCanonicalNotificationsSettings(state);
   const currentlyEnabled = notifications.enabled === true;
@@ -3819,11 +3639,10 @@ async function onPushToggleClick() {
     return;
   }
 
-  const swActive = await hasActiveServiceWorker(3500);
-  if (!swActive) {
+  if (!navigator.serviceWorker.controller) {
     notifications.enabled = false;
     state.settings.pushNotificationsEnabled = false;
-    notifications.lastMessage = 'Service Worker konnte nicht rechtzeitig aktiviert werden. Bitte neu laden.';
+    notifications.lastMessage = 'Service Worker noch nicht aktiv – bitte einmal normal neu laden.';
     renderPushToggle();
     renderGameMenu();
     schedulePersistState(true);
@@ -4153,21 +3972,20 @@ function clampInt(value, min, max) {
 
 function plantAssetPath(stageName) {
   const safeStageKey = normalizeStageKey(stageName);
-  const numericStageIndex = clampInt(Number(safeStageKey.replace('stage_', '')) - 1, 0, STAGE_DEFS.length - 1);
-  const frameIndex = getPlantFrameIndex({
-    stageIndex: numericStageIndex,
-    stageProgress: 0,
-    phase: state.plant.phase
-  });
-  return appPath(`${PLANT_SPRITE_ASSET}#frame_${String(frameIndex).padStart(3, '0')}`);
+  const stageIndex = clampInt(Number(safeStageKey.replace('stage_', '')) - 1, 0, STAGE_DEFS.length - 1);
+  const phase = String(getStageTimeline()[stageIndex]?.phase || state.plant.phase || '').toLowerCase();
+
+  let tier = 0;
+  if (phase === 'vegetative') tier = 1;
+  if (phase === 'flowering' || phase === 'harvest' || phase === 'dead') tier = 2;
+
+  return appPath(PLANT_STAGE_IMAGES[tier] || PLANT_STAGE_IMAGES[0]);
 }
 
 function applyBackgroundAsset() {
-  const bg = state.ui.selectedBackground === 'bg_dark_02.jpg'
-    ? appPath('assets/backgrounds/bg_dark_02.jpg')
-    : appPath('assets/backgrounds/bg_dark_01.jpg');
-
-  document.body.style.backgroundImage = `linear-gradient(135deg, rgba(7, 10, 17, 0.93) 0%, rgba(9, 14, 24, 0.88) 100%), url('${bg}')`;
+  // BLOCK 1: no competing page background; visual background is owned by .app-hud.
+  document.body.style.backgroundImage = 'none';
+  document.body.style.backgroundColor = '#04090f';
 }
 
 async function createStorageAdapter() {
@@ -4478,6 +4296,7 @@ function renderPlantFromSprite(targetNode) {
     return;
   }
   if (!plantSpriteRuntime.ready || !plantSpriteRuntime.image || !plantSpriteRuntime.metadata) {
+    renderPlantFallback(targetNode);
     return;
   }
 
@@ -4513,6 +4332,11 @@ function renderPlantFromSprite(targetNode) {
   const dy = clampInt(centerDy + downOffset, 0, maxDy);
 
   const ctx = targetNode.getContext('2d', { alpha: true });
+  if (!ctx) {
+    console.warn('[plant] 2D context unavailable, using fallback render.');
+    renderPlantFallback(targetNode);
+    return;
+  }
   ctx.clearRect(0, 0, targetNode.width, targetNode.height);
   ctx.drawImage(
     plantSpriteRuntime.image,
@@ -5082,7 +4906,8 @@ function resetStateToDefaults() {
     deathOverlayAcknowledged: false,
     care: {
       selectedCategory: null,
-      feedback: { kind: 'info', text: 'Bereit.' }
+      selectedActionId: null,
+      feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
     },
     analysis: {
       activeTab: 'overview'
@@ -5108,6 +4933,9 @@ function ensureStateIntegrity(nowMs) {
   if (!Number.isFinite(state.simulation.nowMs)) {
     state.simulation.nowMs = nowMs;
   }
+  if (!Number.isFinite(state.simulation.startRealTimeMs)) {
+    state.simulation.startRealTimeMs = nowMs;
+  }
   if (!Number.isFinite(state.simulation.simTimeMs)) {
     state.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
   }
@@ -5122,6 +4950,9 @@ function ensureStateIntegrity(nowMs) {
   }
   if (!Number.isFinite(state.simulation.lastPushScheduleAtMs)) {
     state.simulation.lastPushScheduleAtMs = 0;
+  }
+  if (!Number.isFinite(state.simulation.growthImpulse)) {
+    state.simulation.growthImpulse = 0;
   }
   state.simulation.isDaytime = isDaytimeAtSimTime(state.simulation.simTimeMs);
 
@@ -5291,13 +5122,16 @@ function ensureStateIntegrity(nowMs) {
     state.ui.visibleOverlayIds = [];
   }
   if (!state.ui.care || typeof state.ui.care !== 'object') {
-    state.ui.care = { selectedCategory: null, feedback: { kind: 'info', text: 'Bereit.' } };
+    state.ui.care = { selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'Wähle eine Aktion.' } };
   }
   if (typeof state.ui.care.selectedCategory !== 'string') {
     state.ui.care.selectedCategory = null;
   }
+  if (typeof state.ui.care.selectedActionId !== 'string') {
+    state.ui.care.selectedActionId = null;
+  }
   if (!state.ui.care.feedback || typeof state.ui.care.feedback !== 'object') {
-    state.ui.care.feedback = { kind: 'info', text: 'Bereit.' };
+    state.ui.care.feedback = { kind: 'info', text: 'Wähle eine Aktion.' };
   }
   if (!state.ui.analysis || typeof state.ui.analysis !== 'object') {
     state.ui.analysis = { activeTab: 'overview' };
@@ -5310,6 +5144,9 @@ function ensureStateIntegrity(nowMs) {
   }
   if (typeof state.ui.deathOverlayAcknowledged !== 'boolean') {
     state.ui.deathOverlayAcknowledged = false;
+  }
+  if (typeof state.ui.statDetailKey !== 'string') {
+    state.ui.statDetailKey = null;
   }
 
   if (typeof state.events.scheduler.lastEventId !== 'string') {
@@ -5624,7 +5461,21 @@ function normalizeAction(rawAction) {
     sideEffects: Array.isArray(rawAction.sideEffects) ? rawAction.sideEffects : []
   };
 
-  base.effects.immediate = base.effects.immediate && typeof base.effects.immediate === 'object' ? base.effects.immediate : {};
+  const immediateRaw = base.effects.immediate;
+  if (Array.isArray(immediateRaw)) {
+    base.effects.immediate = immediateRaw
+      .filter((entry) => entry && typeof entry === 'object' && entry.stat)
+      .map((entry) => ({
+        stat: String(entry.stat),
+        mode: String(entry.mode || 'add'),
+        value: Number(entry.value),
+        min: Number(entry.min),
+        max: Number(entry.max),
+        label: entry.label ? String(entry.label) : ''
+      }));
+  } else {
+    base.effects.immediate = immediateRaw && typeof immediateRaw === 'object' ? immediateRaw : {};
+  }
   base.effects.overTime = base.effects.overTime && typeof base.effects.overTime === 'object' ? base.effects.overTime : {};
   base.effects.durationSimMinutes = clamp(base.effects.durationSimMinutes, 0, 24 * 60);
 
@@ -5669,6 +5520,7 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     title: String(rawEvent.title),
     description: String(rawEvent.description),
     triggers: rawEvent.triggers && typeof rawEvent.triggers === 'object' ? rawEvent.triggers : {},
+    constraints: inferEventConstraints(rawEvent, category),
     allowedPhases: Array.isArray(rawEvent.allowedPhases)
       ? rawEvent.allowedPhases.map((phase) => String(phase)).filter(Boolean)
       : [],
@@ -5684,6 +5536,57 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     options,
     sourceVersion
   };
+}
+
+function inferEventConstraints(rawEvent, category) {
+  const raw = rawEvent && rawEvent.constraints && typeof rawEvent.constraints === 'object'
+    ? rawEvent.constraints
+    : {};
+
+  const stageRule = rawEvent && rawEvent.triggers && rawEvent.triggers.stage && typeof rawEvent.triggers.stage === 'object'
+    ? rawEvent.triggers.stage
+    : {};
+
+  const hasUserConstraints = Object.keys(raw).length > 0;
+  const minStageFromTrigger = Number.isFinite(Number(stageRule.min)) ? Number(stageRule.min) : null;
+
+  const defaultsByCategory = {
+    water: { minDay: 2, minPlantSize: 10, minRootMass: 10 },
+    nutrition: { minDay: 4, minPlantSize: 16, minRootMass: 18 },
+    pest: { minDay: 6, minPlantSize: 20, minRootMass: 18 },
+    disease: { minDay: 7, minPlantSize: 22, minRootMass: 20 },
+    environment: { minDay: 3, minPlantSize: 12, minRootMass: 12 },
+    positive: {
+      minDay: 3,
+      minPlantSize: 10,
+      minRootMass: 10,
+      environmentState: { minTemperatureC: 20, maxTemperatureC: 31, minHumidityPercent: 44, maxHumidityPercent: 72, minVpdKpa: 0.6, maxVpdKpa: 1.45, minAirflowScore: 45 },
+      rootZone: { minPh: 5.6, maxPh: 6.4, minEc: 0.9, maxEc: 1.9, minOxygenPercent: 50 }
+    },
+    generic: { minDay: 3, minPlantSize: 10, minRootMass: 10 }
+  };
+
+  const base = defaultsByCategory[String(category || 'generic')] || defaultsByCategory.generic;
+  const merged = {
+    minStage: minStageFromTrigger,
+    minDay: Number.isFinite(Number(raw.minDay)) ? Number(raw.minDay) : base.minDay,
+    minPlantSize: Number.isFinite(Number(raw.minPlantSize)) ? Number(raw.minPlantSize) : base.minPlantSize,
+    minRootMass: Number.isFinite(Number(raw.minRootMass)) ? Number(raw.minRootMass) : base.minRootMass,
+    maxStage: Number.isFinite(Number(raw.maxStage)) ? Number(raw.maxStage) : null,
+    maxDay: Number.isFinite(Number(raw.maxDay)) ? Number(raw.maxDay) : null,
+    environmentState: raw.environmentState && typeof raw.environmentState === 'object'
+      ? { ...(base.environmentState || {}), ...raw.environmentState }
+      : (base.environmentState || null),
+    rootZone: raw.rootZone && typeof raw.rootZone === 'object'
+      ? { ...(base.rootZone || {}), ...raw.rootZone }
+      : (base.rootZone || null)
+  };
+
+  if (!hasUserConstraints && !Number.isFinite(Number(merged.minStage))) {
+    merged.minStage = base.minPlantSize >= 20 ? 3 : 2;
+  }
+
+  return merged;
 }
 
 function inferCategoryFromTags(tags) {
@@ -5920,11 +5823,14 @@ function scheduleNextEventRoll(nowMs, reason) {
 
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) {
-    return { ready: false, reason: 'unsupported' };
+    return;
   }
 
   try {
     const registration = await navigator.serviceWorker.register('./sw.js');
+    if (!navigator.serviceWorker.controller) {
+      showServiceWorkerHint();
+    }
 
     if (registration.waiting) {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -5948,50 +5854,17 @@ async function registerServiceWorker() {
         window.location.reload();
       }
     });
-
-    const readyState = await waitForServiceWorkerActivation(5000, registration);
-    if (!readyState.ready) {
-      showServiceWorkerHint();
-    }
-    return readyState;
   } catch (_error) {
-    showServiceWorkerHint();
-    return { ready: false, reason: 'registration_failed' };
+    // SW registration failures should not block app usage.
   }
-}
-
-async function waitForServiceWorkerActivation(timeoutMs = 5000, registrationHint = null) {
-  if (!('serviceWorker' in navigator)) {
-    return { ready: false, reason: 'unsupported' };
-  }
-  if (navigator.serviceWorker.controller) {
-    return { ready: true, source: 'controller' };
-  }
-
-  const readyPromise = navigator.serviceWorker.ready
-    .then((registration) => ({
-      ready: Boolean(registration && registration.active),
-      source: 'ready',
-      registration
-    }))
-    .catch(() => ({ ready: false, reason: 'ready_rejected' }));
-  const timeoutPromise = new Promise((resolve) => {
-    window.setTimeout(() => resolve({ ready: false, reason: 'ready_timeout' }), timeoutMs);
-  });
-  const readyState = await Promise.race([readyPromise, timeoutPromise]);
-  if (readyState && readyState.ready) {
-    return readyState;
-  }
-
-  const reg = registrationHint || await navigator.serviceWorker.getRegistration().catch(() => null);
-  if (reg && reg.active) {
-    return { ready: true, source: 'active_registration', registration: reg };
-  }
-
-  return readyState && typeof readyState === 'object' ? readyState : { ready: false, reason: 'unknown' };
 }
 
 function showServiceWorkerHint() {
+  // BLOCK 1: suppress non-critical boot warning banner in normal startup.
+  if (window.__gsShowBootWarnings !== true) {
+    return;
+  }
+
   if (document.getElementById('swHintBanner')) {
     return;
   }
@@ -6016,7 +5889,7 @@ function canNotify(type) {
     return false;
   }
 
-  if (!('serviceWorker' in navigator)) {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
     return false;
   }
 
@@ -6025,27 +5898,6 @@ function canNotify(type) {
   }
 
   return true;
-}
-
-function postMessageToServiceWorker(payload) {
-  if (!('serviceWorker' in navigator)) {
-    return;
-  }
-
-  if (navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage(payload);
-    return;
-  }
-
-  navigator.serviceWorker.ready
-    .then((registration) => {
-      if (registration && registration.active) {
-        registration.active.postMessage(payload);
-      }
-    })
-    .catch(() => {
-      // non-fatal
-    });
 }
 
 function notify(type, title, body) {
@@ -6060,7 +5912,7 @@ function notify(type, title, body) {
   };
   const tag = tagByType[type] || 'gs-generic';
 
-  postMessageToServiceWorker({
+  navigator.serviceWorker.controller.postMessage({
     type: 'GS_SHOW_NOTIFICATION',
     title,
     options: {
@@ -6177,7 +6029,20 @@ function notifyPlantNeedsCare(bodyText) {
     }
   };
 
-  postMessageToServiceWorker(payload);
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage(payload);
+    return;
+  }
+
+  navigator.serviceWorker.ready
+    .then((registration) => {
+      if (registration && registration.active) {
+        registration.active.postMessage(payload);
+      }
+    })
+    .catch(() => {
+      // non-fatal
+    });
 }
 
 async function postJsonStub(url, payload) {
