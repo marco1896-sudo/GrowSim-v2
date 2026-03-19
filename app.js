@@ -5722,11 +5722,20 @@ function computeEventDynamicWeight(item) {
   const risk = Number(state.status.risk) || 0;
   const stress = Number(state.status.stress) || 0;
   const health = Number(state.status.health) || 0;
+  const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+
+  const recent = state.events.history.slice(-6);
+  const recentByCategory = recent.reduce((acc, entry) => {
+    const key = String(entry && entry.category || 'generic').toLowerCase();
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
 
   let factor = 1;
+  const category = String(item && item.category || 'generic').toLowerCase();
+  const severeCategory = category === 'pest' || category === 'disease';
 
-  if (item.category === 'positive') {
-    const recent = state.events.history.slice(-4);
+  if (category === 'positive') {
     const negativeRecent = recent
       .filter((entry) => String(entry && entry.category || '').toLowerCase() !== 'positive')
       .length;
@@ -5740,7 +5749,26 @@ function computeEventDynamicWeight(item) {
     factor += stress >= 55 ? 0.1 : 0;
   }
 
-  if (item.category === 'disease' && risk < 40) {
+  // Midgame anti-spam: reduce harsh event density unless risk/stress justify it.
+  if (simDay >= 15 && simDay <= 40) {
+    if (severeCategory && risk < 70 && stress < 62) {
+      factor *= 0.72;
+    }
+    if (category === 'environment' && stress < 50 && risk < 50) {
+      factor *= 0.84;
+    }
+  }
+
+  // Soft anti-repeat per category to avoid "everything at once" feeling.
+  const sameCategoryRecent = Number(recentByCategory[category] || 0);
+  if (sameCategoryRecent >= 2) {
+    factor *= 0.78;
+  }
+  if (sameCategoryRecent >= 3) {
+    factor *= 0.7;
+  }
+
+  if (category === 'disease' && risk < 40) {
     factor *= 0.85;
   }
 
