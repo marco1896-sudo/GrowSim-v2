@@ -595,6 +595,7 @@ function startLoopOnce() {
     return;
   }
   loopRunning = true;
+  clearRuntimeHaltBanner();
   tickHandle = setInterval(tick, state.simulation.tickIntervalMs);
 }
 
@@ -3467,6 +3468,10 @@ function renderDeathOverlay() {
   ui.deathOverlay.classList.toggle('hidden', !visible);
   ui.deathOverlay.setAttribute('aria-hidden', String(!visible));
 
+  if (visible && state.ui.menuDialogOpen) {
+    closeMenuDialog();
+  }
+
   if (!visible) {
     return;
   }
@@ -3874,6 +3879,7 @@ function onWindowFocus() {
   if (document.visibilityState !== 'visible') {
     return;
   }
+  clearRuntimeHaltBanner();
   syncSimulationFromElapsedTime(Date.now());
   renderAll();
   schedulePersistState();
@@ -3883,6 +3889,7 @@ function onPageShow() {
   if (document.visibilityState !== 'visible') {
     return;
   }
+  clearRuntimeHaltBanner();
   syncSimulationFromElapsedTime(Date.now());
   startLoopOnce();
   renderAll();
@@ -3899,6 +3906,13 @@ function showRuntimeHaltBanner() {
   banner.className = 'boot-error-banner';
   banner.innerHTML = '<strong>Simulation angehalten – bitte neu laden.</strong>';
   document.body.appendChild(banner);
+}
+
+function clearRuntimeHaltBanner() {
+  const existing = document.getElementById('runtimeHaltBanner');
+  if (existing) {
+    existing.remove();
+  }
 }
 
 function addLog(type, message, details) {
