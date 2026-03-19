@@ -1603,13 +1603,46 @@ function enterEventCooldown(nowMs) {
 function deterministicRoll() {
   const bucket = Math.floor(state.events.scheduler.nextEventRealTimeMs / EVENT_ROLL_MIN_REAL_MS);
   const riskBucket = Math.round(state.status.risk / 5);
-  return deterministicUnitFloat(`roll:${bucket}:${riskBucket}:${state.simulation.tickCount}`);
+  const pressureBucket = Math.round(computeEnvironmentEventPressure() * 10);
+  return deterministicUnitFloat(`roll:${bucket}:${riskBucket}:${pressureBucket}:${state.simulation.tickCount}`);
+}
+
+function computeEnvironmentEventPressure() {
+  const env = deriveEnvironmentReadout();
+  const root = deriveRootZoneReadout(env);
+
+  const tempPressure = clamp(Math.abs(Number(env.temperatureC) - 25) / 10, 0, 1);
+  const humidityPressure = clamp(Math.abs(Number(env.humidityPercent) - 58) / 28, 0, 1);
+  const vpdPressure = clamp(Math.abs(Number(env.vpdKpa) - 1.15) / 1.0, 0, 1);
+  const airflowScore = env.airflowLabel === 'Good' ? 80 : (env.airflowLabel === 'Mittel' ? 55 : 30);
+  const airflowPressure = clamp((60 - airflowScore) / 60, 0, 1);
+
+  const ph = Number(root.ph);
+  const ec = Number(String(root.ec).replace(/\s*mS$/i, ''));
+  const oxygen = Number(String(root.oxygen).replace('%', ''));
+
+  const phPressure = clamp(Math.abs(ph - 6.0) / 0.9, 0, 1);
+  const ecPressure = clamp(Math.abs(ec - 1.45) / 1.0, 0, 1);
+  const oxygenPressure = clamp((60 - oxygen) / 60, 0, 1);
+
+  return clamp(
+    (tempPressure * 0.18)
+    + (humidityPressure * 0.14)
+    + (vpdPressure * 0.2)
+    + (airflowPressure * 0.1)
+    + (phPressure * 0.14)
+    + (ecPressure * 0.14)
+    + (oxygenPressure * 0.1),
+    0,
+    1
+  );
 }
 
 function eventThreshold() {
   const base = 0.34;
   const riskInfluence = state.status.risk / 340;
-  return clamp(base + riskInfluence, 0.15, 0.88);
+  const envInfluence = computeEnvironmentEventPressure() * 0.18;
+  return clamp(base + riskInfluence + envInfluence, 0.15, 0.88);
 }
 
 function shouldTriggerEvent(roll) {
@@ -5746,6 +5779,7 @@ function computeEventDynamicWeight(item) {
   const stress = Number(state.status.stress) || 0;
   const health = Number(state.status.health) || 0;
   const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+  const envPressure = computeEnvironmentEventPressure();
 
   const recent = state.events.history.slice(-6);
   const recentByCategory = recent.reduce((acc, entry) => {
@@ -5801,6 +5835,22 @@ function computeEventDynamicWeight(item) {
   }
   if (sameCategoryRecent >= 3) {
     factor *= 0.7;
+  }
+
+  if (category === 'environment') {
+    factor *= 0.86 + (envPressure * 0.42);
+  }
+
+  if (category === 'pest' || category === 'disease') {
+    factor *= 0.8 + (envPressure * 0.5);
+  }
+
+  if (category === 'nutrition') {
+    factor *= 0.88 + (envPressure * 0.28);
+  }
+
+  if (category === 'positive') {
+    factor *= 1.06 - (envPressure * 0.22);
   }
 
   if (category === 'disease' && risk < 40) {

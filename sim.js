@@ -85,7 +85,11 @@ function buildRootZoneModelFromState(statusLike = state.status, env = buildEnvir
   };
 }
 
-window.GrowSimEnvModel = window.GrowSimEnvModel || Object.freeze({
+const __gsGlobal = typeof globalThis !== 'undefined'
+  ? globalThis
+  : (typeof window !== 'undefined' ? window : this);
+
+__gsGlobal.GrowSimEnvModel = __gsGlobal.GrowSimEnvModel || Object.freeze({
   getEnvStageProfile,
   buildEnvironmentModelFromState,
   buildRootZoneModelFromState
