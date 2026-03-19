@@ -2345,6 +2345,18 @@ function renderPanelReadouts() {
 }
 
 function deriveEnvironmentReadout() {
+  const envApi = window.GrowSimEnvModel;
+  if (envApi && typeof envApi.buildEnvironmentModelFromState === 'function') {
+    const model = envApi.buildEnvironmentModelFromState(state.status, state.simulation, state.plant);
+    return {
+      temperatureC: model.temperatureC,
+      humidityPercent: model.humidityPercent,
+      vpdKpa: model.vpdKpa,
+      ppfd: model.ppfd,
+      airflowLabel: model.airflowLabel
+    };
+  }
+
   const water = clamp(Number(state.status.water || 0), 0, 100);
   const stress = clamp(Number(state.status.stress || 0), 0, 100);
   const risk = clamp(Number(state.status.risk || 0), 0, 100);
@@ -2361,6 +2373,17 @@ function deriveEnvironmentReadout() {
 }
 
 function deriveRootZoneReadout(environment) {
+  const envApi = window.GrowSimEnvModel;
+  if (envApi && typeof envApi.buildRootZoneModelFromState === 'function') {
+    const model = envApi.buildRootZoneModelFromState(state.status, environment, state.plant);
+    return {
+      ph: model.ph.toFixed(1),
+      ec: `${model.ec.toFixed(1)} mS`,
+      rootHealth: `${Math.round(model.rootHealthPercent)}%`,
+      oxygen: `${Math.round(model.oxygenPercent)}%`
+    };
+  }
+
   const nutrition = clamp(Number(state.status.nutrition || 0), 0, 100);
   const water = clamp(Number(state.status.water || 0), 0, 100);
   const risk = clamp(Number(state.status.risk || 0), 0, 100);

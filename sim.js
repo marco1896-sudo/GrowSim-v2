@@ -1,6 +1,95 @@
 'use strict';
 
 const FAIRNESS_REACTION_GRACE_MS = 2 * 60 * 1000;
+const OFFLINE_STATUS_DECAY_MULTIPLIER = 0.72;
+const WATER_STRESS_THRESHOLD = 40;
+const WATER_CRITICAL_THRESHOLD = 16;
+const NUTRITION_STRESS_THRESHOLD = 40;
+const NUTRITION_CRITICAL_THRESHOLD = 18;
+
+const ENV_STAGE_PROFILES = Object.freeze([
+  Object.freeze({ minStage: 1, maxStage: 2, temp: [22, 27], humidity: [62, 76], vpd: [0.55, 1.05], ec: [0.7, 1.2], ph: [5.8, 6.3] }),
+  Object.freeze({ minStage: 3, maxStage: 6, temp: [23, 29], humidity: [52, 68], vpd: [0.85, 1.35], ec: [1.0, 1.9], ph: [5.7, 6.2] }),
+  Object.freeze({ minStage: 7, maxStage: 10, temp: [21, 28], humidity: [42, 56], vpd: [1.05, 1.55], ec: [1.2, 2.2], ph: [5.8, 6.3] }),
+  Object.freeze({ minStage: 11, maxStage: 12, temp: [20, 26], humidity: [42, 55], vpd: [0.95, 1.45], ec: [0.8, 1.6], ph: [5.8, 6.4] })
+]);
+
+function getEnvStageProfile(stageIndexOneBased) {
+  const stage = clampInt(Number(stageIndexOneBased) || 1, 1, 12);
+  return ENV_STAGE_PROFILES.find((profile) => stage >= profile.minStage && stage <= profile.maxStage) || ENV_STAGE_PROFILES[1];
+}
+
+function buildEnvironmentModelFromState(statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant) {
+  const water = clamp(Number(statusLike.water || 0), 0, 100);
+  const stress = clamp(Number(statusLike.stress || 0), 0, 100);
+  const risk = clamp(Number(statusLike.risk || 0), 0, 100);
+  const stageIndexOneBased = clampInt(Number((plantLike && plantLike.stageIndex) || 0) + 1, 1, 12);
+  const profile = getEnvStageProfile(stageIndexOneBased);
+  const isDay = Boolean(simulationLike && simulationLike.isDaytime);
+
+  const dayBase = isDay ? 24.4 : 20.7;
+  const temperatureC = clamp(dayBase + (stress * 0.048) + (risk * 0.018), 17, 36);
+  const humidityPercent = Math.round(clamp(41 + (water * 0.40) - (stress * 0.15), 30, 84));
+  const vpdKpa = clamp(0.72 + ((temperatureC - 21) * 0.082) + ((60 - humidityPercent) * 0.012), 0.35, 2.6);
+  const ppfd = isDay ? Math.round(clamp(560 + (Number(statusLike.growth || 0) * 2.2), 420, 980)) : 45;
+  const airflowScore = clamp(100 - risk - Math.round(stress * 0.34), 0, 100);
+  const airflowLabel = airflowScore >= 70 ? 'Good' : airflowScore >= 40 ? 'Mittel' : 'Schwach';
+
+  const tempDeviation = profile.temp ? Math.max(0, profile.temp[0] - temperatureC, temperatureC - profile.temp[1]) : 0;
+  const humidityDeviation = profile.humidity ? Math.max(0, profile.humidity[0] - humidityPercent, humidityPercent - profile.humidity[1]) : 0;
+  const vpdDeviation = profile.vpd ? Math.max(0, profile.vpd[0] - vpdKpa, vpdKpa - profile.vpd[1]) : 0;
+
+  return {
+    temperatureC,
+    humidityPercent,
+    vpdKpa,
+    ppfd,
+    airflowScore,
+    airflowLabel,
+    stageProfile: profile,
+    stressFactor: {
+      temp: clamp(tempDeviation / 7, 0, 1),
+      humidity: clamp(humidityDeviation / 30, 0, 1),
+      vpd: clamp(vpdDeviation / 0.95, 0, 1),
+      airflow: clamp((45 - airflowScore) / 45, 0, 1)
+    }
+  };
+}
+
+function buildRootZoneModelFromState(statusLike = state.status, env = buildEnvironmentModelFromState(statusLike, state.simulation, state.plant), plantLike = state.plant) {
+  const nutrition = clamp(Number(statusLike.nutrition || 0), 0, 100);
+  const water = clamp(Number(statusLike.water || 0), 0, 100);
+  const risk = clamp(Number(statusLike.risk || 0), 0, 100);
+  const stageIndexOneBased = clampInt(Number((plantLike && plantLike.stageIndex) || 0) + 1, 1, 12);
+  const profile = getEnvStageProfile(stageIndexOneBased);
+
+  const phValue = clamp(5.6 + ((nutrition - 50) * 0.008) - ((risk - 40) * 0.003), 5.3, 6.7);
+  const ecValue = clamp(0.8 + (nutrition * 0.01), 0.5, 2.4);
+  const oxygenPercent = Math.round(clamp(92 - (water * 0.28) - (risk * 0.18), 30, 96));
+  const rootHealthPercent = Math.round(clamp(55 + (nutrition * 0.32) - (risk * 0.25) - ((env.vpdKpa - 1.2) * 12), 10, 99));
+
+  const phDeviation = profile.ph ? Math.max(0, profile.ph[0] - phValue, phValue - profile.ph[1]) : 0;
+  const ecDeviation = profile.ec ? Math.max(0, profile.ec[0] - ecValue, ecValue - profile.ec[1]) : 0;
+
+  return {
+    ph: phValue,
+    ec: ecValue,
+    oxygenPercent,
+    rootHealthPercent,
+    stageProfile: profile,
+    stressFactor: {
+      ph: clamp(phDeviation / 1.0, 0, 1),
+      ec: clamp(ecDeviation / 1.4, 0, 1),
+      oxygen: clamp((50 - oxygenPercent) / 50, 0, 1)
+    }
+  };
+}
+
+window.GrowSimEnvModel = window.GrowSimEnvModel || Object.freeze({
+  getEnvStageProfile,
+  buildEnvironmentModelFromState,
+  buildRootZoneModelFromState
+});
 
 function tick() {
   const nowMs = Date.now();
@@ -313,49 +402,92 @@ function applyOfflineNightSurvivalClamp() {
 }
 
 function applyStatusDrift(elapsedMs) {
-  const minutes = elapsedMs / 60_000;
+  const minutesRaw = elapsedMs / 60_000;
+  const offlineCatchUp = elapsedMs > MAX_ELAPSED_PER_TICK_MS;
+  const minutes = minutesRaw * (offlineCatchUp ? OFFLINE_STATUS_DECAY_MULTIPLIER : 1);
   if (minutes <= 0) {
     state.simulation.growthImpulse = 0;
     return;
   }
 
-  state.status.water -= 0.33 * minutes;
-  state.status.nutrition -= 0.16 * minutes;
+  const envModel = buildEnvironmentModelFromState(state.status, state.simulation, state.plant);
+  const rootModel = buildRootZoneModelFromState(state.status, envModel, state.plant);
+
+  const envStress = (envModel.stressFactor.temp * 0.36)
+    + (envModel.stressFactor.humidity * 0.24)
+    + (envModel.stressFactor.vpd * 0.28)
+    + (envModel.stressFactor.airflow * 0.12);
+  const rootStress = (rootModel.stressFactor.ph * 0.42)
+    + (rootModel.stressFactor.ec * 0.34)
+    + (rootModel.stressFactor.oxygen * 0.24);
+
+  const uptakePenalty = clamp((rootStress * 0.62) + (envStress * 0.38), 0, 0.92);
+  const transpiration = clamp(0.75 + ((envModel.vpdKpa - 0.95) * 0.62), 0.35, 1.95);
+
+  const waterDrainPerMin = 0.105 + (transpiration * 0.055) + (envStress * 0.04);
+  const nutritionDrainPerMin = 0.08 + (0.05 * (1 - uptakePenalty)) + (0.028 * rootStress);
+
+  state.status.water -= waterDrainPerMin * minutes;
+  state.status.nutrition -= nutritionDrainPerMin * minutes;
 
   const inRecoveryBand = (
     state.status.water >= 45 && state.status.water <= 72 &&
     state.status.nutrition >= 45 && state.status.nutrition <= 72 &&
-    state.status.stress < 42
+    state.status.stress < 42 &&
+    envStress < 0.35 &&
+    rootStress < 0.35
   );
 
-  let stressDelta = 0.06 * minutes;
+  const waterDeficiency = clamp((WATER_STRESS_THRESHOLD - state.status.water) / (WATER_STRESS_THRESHOLD - WATER_CRITICAL_THRESHOLD), 0, 1);
+  const waterCritical = clamp((WATER_CRITICAL_THRESHOLD - state.status.water) / WATER_CRITICAL_THRESHOLD, 0, 1);
+  const nutritionDeficiency = clamp((NUTRITION_STRESS_THRESHOLD - state.status.nutrition) / (NUTRITION_STRESS_THRESHOLD - NUTRITION_CRITICAL_THRESHOLD), 0, 1);
+  const nutritionCritical = clamp((NUTRITION_CRITICAL_THRESHOLD - state.status.nutrition) / NUTRITION_CRITICAL_THRESHOLD, 0, 1);
+
+  let stressDelta = (-0.02 * minutes)
+    + (waterDeficiency * 0.10 * minutes)
+    + (waterCritical * 0.30 * minutes)
+    + (nutritionDeficiency * 0.08 * minutes)
+    + (nutritionCritical * 0.10 * minutes)
+    + (envStress * 0.18 * minutes)
+    + (rootStress * 0.14 * minutes);
   if (inRecoveryBand) {
-    stressDelta -= 0.26 * minutes;
-  }
-  if (state.status.water < 30) {
-    stressDelta += 0.42 * minutes;
-  }
-  if (state.status.nutrition < 30) {
-    stressDelta += 0.32 * minutes;
+    stressDelta -= 0.10 * minutes;
   }
   state.status.stress += stressDelta;
 
-  let riskDelta = 0.05 * minutes + ((state.status.stress / 100) * 0.22 * minutes);
+  const stressPressure = clamp((state.status.stress - 52) / 48, 0, 1);
+  const deficiencyPressure = (waterDeficiency * 0.25) + (waterCritical * 1.0) + (nutritionDeficiency * 0.1);
+  let riskDelta = (-0.004 * minutes)
+    + (stressPressure * 0.08 * minutes)
+    + (deficiencyPressure * 0.06 * minutes)
+    + (envStress * 0.10 * minutes)
+    + (rootStress * 0.12 * minutes);
   if (inRecoveryBand) {
-    riskDelta -= 0.14 * minutes;
+    riskDelta -= 0.05 * minutes;
   }
-  if (state.status.water > 90 || state.status.water < 18) {
-    riskDelta += 0.32 * minutes;
+  if (state.status.water > 97 || state.status.water < 12) {
+    riskDelta += 0.08 * minutes;
   }
   state.status.risk += riskDelta;
 
-  let healthDelta = (-0.02 * minutes) - ((state.status.stress / 100) * 0.44 * minutes) - ((state.status.risk / 100) * 0.30 * minutes);
+  const stressHealthPressure = clamp((state.status.stress - 55) / 45, 0, 1);
+  const riskHealthPressure = clamp((state.status.risk - 60) / 40, 0, 1);
+  let healthDelta = (-0.008 * minutes)
+    - (stressHealthPressure * 0.13 * minutes)
+    - (riskHealthPressure * 0.11 * minutes)
+    - (waterCritical * 0.10 * minutes)
+    - (envStress * 0.07 * minutes)
+    - (rootStress * 0.08 * minutes);
   if (inRecoveryBand && state.status.risk <= 45) {
-    healthDelta += 0.36 * minutes;
+    healthDelta += 0.20 * minutes;
+  }
+  if (state.status.water < 12) {
+    healthDelta -= 0.06 * minutes;
   }
   state.status.health += healthDelta;
 
-  const impulseRaw = (state.status.health - state.status.stress - (state.status.risk * 0.45)) / 35;
+  const ecoEfficiency = clamp(1 - (envStress * 0.5) - (rootStress * 0.5), 0, 1);
+  const impulseRaw = ((state.status.health - state.status.stress - (state.status.risk * 0.45)) / 35) * (0.7 + (ecoEfficiency * 0.6));
   state.simulation.growthImpulse = clamp(impulseRaw, -3, 3);
 
   clampStatus();
