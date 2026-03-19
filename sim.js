@@ -8,10 +8,10 @@ const NUTRITION_STRESS_THRESHOLD = 40;
 const NUTRITION_CRITICAL_THRESHOLD = 18;
 
 const ENV_STAGE_PROFILES = Object.freeze([
-  Object.freeze({ minStage: 1, maxStage: 2, temp: [22, 27], humidity: [62, 76], vpd: [0.55, 1.05], ec: [0.7, 1.2], ph: [5.8, 6.3] }),
-  Object.freeze({ minStage: 3, maxStage: 6, temp: [23, 29], humidity: [52, 68], vpd: [0.85, 1.35], ec: [1.0, 1.9], ph: [5.7, 6.2] }),
-  Object.freeze({ minStage: 7, maxStage: 10, temp: [21, 28], humidity: [42, 56], vpd: [1.05, 1.55], ec: [1.2, 2.2], ph: [5.8, 6.3] }),
-  Object.freeze({ minStage: 11, maxStage: 12, temp: [20, 26], humidity: [42, 55], vpd: [0.95, 1.45], ec: [0.8, 1.6], ph: [5.8, 6.4] })
+  Object.freeze({ minStage: 1, maxStage: 2, temp: [22, 28], humidity: [60, 78], vpd: [0.50, 1.10], ec: [0.7, 1.3], ph: [5.8, 6.3] }),
+  Object.freeze({ minStage: 3, maxStage: 6, temp: [23, 29], humidity: [50, 70], vpd: [0.80, 1.40], ec: [1.0, 2.0], ph: [5.7, 6.2] }),
+  Object.freeze({ minStage: 7, maxStage: 10, temp: [21, 28], humidity: [40, 58], vpd: [1.00, 1.65], ec: [1.2, 2.2], ph: [5.8, 6.3] }),
+  Object.freeze({ minStage: 11, maxStage: 12, temp: [20, 26], humidity: [40, 56], vpd: [0.90, 1.55], ec: [0.8, 1.6], ph: [5.8, 6.4] })
 ]);
 
 function getEnvStageProfile(stageIndexOneBased) {
@@ -421,11 +421,16 @@ function applyStatusDrift(elapsedMs) {
     + (rootModel.stressFactor.ec * 0.34)
     + (rootModel.stressFactor.oxygen * 0.24);
 
-  const uptakePenalty = clamp((rootStress * 0.62) + (envStress * 0.38), 0, 0.92);
-  const transpiration = clamp(0.75 + ((envModel.vpdKpa - 0.95) * 0.62), 0.35, 1.95);
+  const stageIndexOneBased = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, 12);
+  const stagePressure = clamp((stageIndexOneBased - 1) / 11, 0, 1);
+  const envInfluence = 0.78 + (stagePressure * 0.34);
+  const rootInfluence = 0.76 + (stagePressure * 0.38);
 
-  const waterDrainPerMin = 0.105 + (transpiration * 0.055) + (envStress * 0.04);
-  const nutritionDrainPerMin = 0.08 + (0.05 * (1 - uptakePenalty)) + (0.028 * rootStress);
+  const uptakePenalty = clamp(((rootStress * 0.58) + (envStress * 0.34)) * rootInfluence, 0, 0.92);
+  const transpiration = clamp(0.74 + ((envModel.vpdKpa - 0.95) * 0.60), 0.35, 1.95);
+
+  const waterDrainPerMin = 0.10 + (transpiration * 0.054) + (envStress * 0.038 * envInfluence);
+  const nutritionDrainPerMin = 0.078 + (0.048 * (1 - uptakePenalty)) + (0.024 * rootStress * rootInfluence);
 
   state.status.water -= waterDrainPerMin * minutes;
   state.status.nutrition -= nutritionDrainPerMin * minutes;
@@ -448,8 +453,8 @@ function applyStatusDrift(elapsedMs) {
     + (waterCritical * 0.30 * minutes)
     + (nutritionDeficiency * 0.08 * minutes)
     + (nutritionCritical * 0.10 * minutes)
-    + (envStress * 0.18 * minutes)
-    + (rootStress * 0.14 * minutes);
+    + (envStress * 0.14 * envInfluence * minutes)
+    + (rootStress * 0.12 * rootInfluence * minutes);
   if (inRecoveryBand) {
     stressDelta -= 0.10 * minutes;
   }
@@ -460,8 +465,8 @@ function applyStatusDrift(elapsedMs) {
   let riskDelta = (-0.004 * minutes)
     + (stressPressure * 0.08 * minutes)
     + (deficiencyPressure * 0.06 * minutes)
-    + (envStress * 0.10 * minutes)
-    + (rootStress * 0.12 * minutes);
+    + (envStress * 0.08 * envInfluence * minutes)
+    + (rootStress * 0.10 * rootInfluence * minutes);
   if (inRecoveryBand) {
     riskDelta -= 0.05 * minutes;
   }
@@ -476,8 +481,8 @@ function applyStatusDrift(elapsedMs) {
     - (stressHealthPressure * 0.13 * minutes)
     - (riskHealthPressure * 0.11 * minutes)
     - (waterCritical * 0.10 * minutes)
-    - (envStress * 0.07 * minutes)
-    - (rootStress * 0.08 * minutes);
+    - (envStress * 0.055 * envInfluence * minutes)
+    - (rootStress * 0.068 * rootInfluence * minutes);
   if (inRecoveryBand && state.status.risk <= 45) {
     healthDelta += 0.20 * minutes;
   }
