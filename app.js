@@ -532,11 +532,13 @@ async function boot() {
 function mountHudComponents() {
   const appHud = document.getElementById('app-hud');
   if (!appHud) {
+    document.body.classList.remove('panelized-ready');
     return;
   }
 
   const hudPanelsApi = window.GrowSimHudPanels;
   if (!hudPanelsApi || typeof hudPanelsApi.mount !== 'function') {
+    document.body.classList.remove('panelized-ready');
     return;
   }
 
@@ -558,7 +560,9 @@ function mountHudComponents() {
       airflow: 'Good'
     }
   });
+  document.body.classList.add('panelized-ready');
 }
+
 
 function logBootStep(step, details) {
   const entry = {

@@ -293,7 +293,12 @@ function switchHudScreen(screenId) {
   }
   state.ui.activeScreen = nextScreen;
   for (const screen of ui.screenViews || []) {
-    screen.classList.toggle('is-active', screen.dataset.screen === nextScreen);
+    const isActive = screen.dataset.screen === nextScreen;
+    screen.classList.toggle('is-active', isActive);
+    screen.hidden = !isActive;
+    screen.setAttribute('aria-hidden', String(!isActive));
+    screen.style.display = isActive ? 'grid' : 'none';
+    screen.style.pointerEvents = isActive ? 'auto' : 'none';
   }
   for (const button of ui.screenNavButtons || []) {
     button.classList.toggle('is-active', button.dataset.screenTarget === nextScreen);

@@ -989,6 +989,20 @@ body {
   gap: 0.78rem;
 }
 
+.hud-screen {
+  display: none !important;
+  pointer-events: none;
+}
+
+.hud-screen.is-active {
+  display: grid !important;
+  pointer-events: auto;
+}
+
+.hud-screen.is-active.hud-main--panelized {
+  display: block !important;
+}
+
 .hero-card {
   position: relative;
   min-height: 360px;
@@ -2543,16 +2557,18 @@ body {
 }
 
 /* BLOCK 1 hard-neutralization: legacy pre-panelized home layers must not render */
-#app-hud > .top-row:not(.top-row--panelized),
-#app-hud > .hud-main:not(.hud-main--panelized),
-.hero-card:not(.hero-card--panelized),
-.hero-glow,
-.hero-stack,
-.phase-card,
-.info-bar,
-.mini-rings,
-.action-panel,
-.locked-card {
+body.panelized-ready :is(
+  #app-hud > .top-row:not(.top-row--panelized),
+  #app-hud > .hud-main:not(.hud-main--panelized),
+  .hero-card:not(.hero-card--panelized),
+  .hero-glow,
+  .hero-stack,
+  .phase-card,
+  .info-bar,
+  .mini-rings,
+  .action-panel,
+  .locked-card
+) {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
@@ -3045,3 +3061,22 @@ body {
     width: 393px;
   }
 }
+
+/* Home screen visibility guard (wins against legacy neutralization specificity) */
+#app-hud > .hud-main.hud-screen {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#app-hud > .hud-main.hud-screen.is-active {
+  display: grid !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* MARKER_PANELIZED_20260319 */
+
+/* HARD OVERRIDE: only active HUD screen visible */
+#app-hud > .hud-screen { display: none !important; pointer-events: none !important; }
+#app-hud > .hud-screen.is-active { display: grid !important; pointer-events: auto !important; }

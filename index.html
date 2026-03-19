@@ -1,4 +1,4 @@
-ï»¿<!doctype html>
+<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
@@ -8,14 +8,14 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260319c">
 </head>
 <body>
   <div id="app-hud" class="app-hud">
     <main class="hud-main hud-screen is-active" data-screen="home">
       <article id="phaseCard" class="phase-card phase-card-top" aria-live="polite">
         <div class="phase-card-head">
-          <strong id="phaseCardTitle" class="phase-card-title">BlÃ¼te</strong>
+          <strong id="phaseCardTitle" class="phase-card-title">Blüte</strong>
           <span id="phaseCardCycle" class="phase-card-cycle" aria-label="Tageszyklus">D</span>
         </div>
         <div class="phase-card-meta">
@@ -29,10 +29,10 @@
       </article>
 
       <section class="hero-card">
-        <button id="menuToggleBtn" class="menu-toggle-btn menu-toggle-floating" type="button" aria-label="MenÃ¼ Ã¶ffnen" aria-haspopup="dialog" aria-expanded="false">
-          <span class="menu-toggle-label" aria-hidden="true">MenÃ¼</span>
+        <button id="menuToggleBtn" class="menu-toggle-btn menu-toggle-floating" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
+          <span class="menu-toggle-label" aria-hidden="true">Menü</span>
           <span class="menu-toggle-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">MenÃ¼ Ã¶ffnen</span>
+          <span class="visually-hidden">Menü öffnen</span>
         </button>
         <div class="hero-glow" aria-hidden="true"></div>
         <div class="hero-stack">
@@ -57,14 +57,14 @@
         </article>
         <article class="info-tile">
           <span class="info-label">Tag / Zeit</span>
-          <strong id="simTimeValue">Tag 1 Â· --:--</strong>
+          <strong id="simTimeValue">Tag 1 · --:--</strong>
         </article>
       </section>
 
       <section id="dataVizHud" class="dashboard-grid" aria-label="Pflanzen-Dashboard">
         <article class="panel panel-status">
           <h2 class="panel-title">PFLANZENSTATUS</h2>
-          <article id="waterRing" class="status-row" role="button" tabindex="0" aria-label="Wasser Details Ã¶ffnen" style="--value:70;">
+          <article id="waterRing" class="status-row" role="button" tabindex="0" aria-label="Wasser Details öffnen" style="--value:70;">
             <div class="status-label">
               <span class="mini-icon" aria-hidden="true">W</span>
               <span id="plantWaterLabel">Wasser</span>
@@ -72,15 +72,15 @@
             <div class="status-track"></div>
             <strong id="waterValue">70%</strong>
           </article>
-          <article id="nutritionRing" class="status-row" role="button" tabindex="0" aria-label="NÃ¤hrstoffe Details Ã¶ffnen" style="--value:65;">
+          <article id="nutritionRing" class="status-row" role="button" tabindex="0" aria-label="Nährstoffe Details öffnen" style="--value:65;">
             <div class="status-label">
               <span class="mini-icon" aria-hidden="true">N</span>
-              <span id="plantNutritionLabel">NÃ¤hrstoffe</span>
+              <span id="plantNutritionLabel">Nährstoffe</span>
             </div>
             <div class="status-track"></div>
             <strong id="nutritionValue">65%</strong>
           </article>
-          <article id="growthRing" class="status-row" role="button" tabindex="0" aria-label="Wachstum Details Ã¶ffnen" style="--value:10;">
+          <article id="growthRing" class="status-row" role="button" tabindex="0" aria-label="Wachstum Details öffnen" style="--value:10;">
             <div class="status-label">
               <span class="mini-icon" aria-hidden="true">G</span>
               <span id="plantGrowthLabel">Wachstum</span>
@@ -88,7 +88,7 @@
             <div class="status-track"></div>
             <strong id="growthValue">10%</strong>
           </article>
-          <article id="riskRing" class="status-row" role="button" tabindex="0" aria-label="Risiko Details Ã¶ffnen" style="--value:20;">
+          <article id="riskRing" class="status-row" role="button" tabindex="0" aria-label="Risiko Details öffnen" style="--value:20;">
             <div class="status-label">
               <span class="mini-icon" aria-hidden="true">R</span>
               <span id="plantRiskLabel">Risiko</span>
@@ -130,7 +130,7 @@
               </div>
               <div class="metric-cell">
                 <span id="envTempLabel" class="metric-label">Temp</span>
-                <strong id="envTempValue">25.3Â°C</strong>
+                <strong id="envTempValue">25.3°C</strong>
               </div>
               <div class="metric-cell">
                 <span id="envHumidityLabel" class="metric-label">Rlf</span>
@@ -157,7 +157,7 @@
         <button id="boostActionBtn" class="action-btn action-medallion action-tertiary" type="button">
           <img id="boostActionIcon" class="custom-action-icon" src="assets/ui/icons/time_boost.png" alt="" aria-hidden="true">
           <span class="action-title">Boost</span>
-          <span id="boostUsageText" class="boost-sub">-30m Eventzeit Â· 0/6</span>
+          <span id="boostUsageText" class="boost-sub">-30m Eventzeit · 0/6</span>
         </button>
       </section>
 
@@ -168,8 +168,8 @@
         <article id="stressRing" class="ring ring-main" style="--value:15; --ring-color:var(--color-stress);">
           <strong id="stressValue">15</strong>
         </article>
-        <button id="skipNightActionBtn" class="action-btn hidden" type="button">Nacht Ã¼berspringen</button>
-        <button id="openDiagnosisBtn" class="action-btn hidden" type="button">Diagnose Ã¶ffnen</button>
+        <button id="skipNightActionBtn" class="action-btn hidden" type="button">Nacht überspringen</button>
+        <button id="openDiagnosisBtn" class="action-btn hidden" type="button">Diagnose öffnen</button>
       </div>
     </main>
 
@@ -217,7 +217,7 @@
           <article class="status-row" style="--value:72;">
             <div class="status-label">
               <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_water.svg" alt=""></span>
-              <span>BewÃ¤sserung</span>
+              <span>Bewässerung</span>
             </div>
             <div class="status-track"></div>
             <strong>72%</strong>
@@ -225,7 +225,7 @@
           <article class="status-row" style="--value:64;">
             <div class="status-label">
               <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_nutrients.svg" alt=""></span>
-              <span>NÃ¤hrstoffe</span>
+              <span>Nährstoffe</span>
             </div>
             <div class="status-track"></div>
             <strong>64%</strong>
@@ -266,7 +266,7 @@
               </div>
               <div class="metric-cell">
                 <span class="metric-label">Temp</span>
-                <strong>24.8Â°C</strong>
+                <strong>24.8°C</strong>
               </div>
             </div>
           </article>
@@ -363,7 +363,7 @@
           <article class="status-row" style="--value:46;">
             <div class="status-label">
               <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_temperatur.svg" alt=""></span>
-              <span>WÃ¤rme</span>
+              <span>Wärme</span>
             </div>
             <div class="status-track"></div>
             <strong>46%</strong>
@@ -395,7 +395,7 @@
                 <strong>11</strong>
               </div>
               <div class="metric-cell">
-                <span class="metric-label">GelÃ¶st</span>
+                <span class="metric-label">Gelöst</span>
                 <strong>9</strong>
               </div>
               <div class="metric-cell">
@@ -403,7 +403,7 @@
                 <strong>2/6</strong>
               </div>
               <div class="metric-cell">
-                <span class="metric-label">QualitÃ¤t</span>
+                <span class="metric-label">Qualität</span>
                 <strong>84</strong>
               </div>
             </div>
@@ -425,7 +425,7 @@
                 <strong>42%</strong>
               </div>
               <div class="metric-cell">
-                <span class="metric-label">StabilitÃ¤t</span>
+                <span class="metric-label">Stabilität</span>
                 <strong>Hoch</strong>
               </div>
             </div>
@@ -440,7 +440,7 @@
         </button>
         <button class="action-btn action-medallion action-secondary" type="button">
           <img class="custom-action-icon" src="assets/ui/icons/confirm.png" alt="" aria-hidden="true">
-          <span class="action-title">BestÃ¤t.</span>
+          <span class="action-title">Bestät.</span>
         </button>
         <button class="action-btn action-medallion action-tertiary" type="button">
           <img class="custom-action-icon" src="assets/ui/icons/save.png" alt="" aria-hidden="true">
@@ -470,10 +470,10 @@
   <section id="careSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2>Pflege</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content">
-      <p class="sheet-note">Kategorie wÃ¤hlen, IntensitÃ¤t antippen, Aktion direkt ausfÃ¼hren.</p>
+      <p class="sheet-note">Kategorie wählen, Intensität antippen, Aktion direkt ausführen.</p>
       <div id="careCategoryList" class="care-category-list" role="tablist" aria-label="Pflegekategorien"></div>
       <div id="careActionList" class="care-action-list" aria-live="polite"></div>
       <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">Bereit.</p>
@@ -483,7 +483,7 @@
   <section id="eventSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2>Ereignis</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content">
       <p id="eventStateBadge" class="sheet-badge">Status: inaktiv</p>
@@ -498,7 +498,7 @@
     <header class="sheet-header">
       <h2>Analyse</h2>
       <div class="sheet-header-actions">
-        <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+        <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
       </div>
     </header>
     <div class="sheet-content analysis-content">
@@ -507,7 +507,7 @@
       <section id="analysisPanelTimeline" class="gs-analysis-panel gs-analysis-timeline hidden" aria-live="polite"></section>
 
       <div class="gs-analysis-tabs" role="tablist" aria-label="Analyse-Aktionen">
-        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button">ZurÃ¼ck</button>
+        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button">Zurück</button>
         <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button">Empfehlung</button>
         <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button">Details / Export</button>
       </div>
@@ -517,14 +517,14 @@
   <section id="diagnosisSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2>Diagnose</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content">
-      <p>Dieses MVP enthÃ¤lt ein gesperrtes Platzhaltermodul fÃ¼r Diagnose.</p>
+      <p>Dieses MVP enthält ein gesperrtes Platzhaltermodul für Diagnose.</p>
       <ul class="diagnosis-list">
-        <li>Wahrscheinlichkeits-Heatmap fÃ¼r Pathogene (Pro)</li>
-        <li>Zerlegung der NÃ¤hrstofftrends (Pro)</li>
-        <li>Vorhersage fÃ¼r Wurzelstress (Pro)</li>
+        <li>Wahrscheinlichkeits-Heatmap für Pathogene (Pro)</li>
+        <li>Zerlegung der Nährstofftrends (Pro)</li>
+        <li>Vorhersage für Wurzelstress (Pro)</li>
       </ul>
     </div>
   </section>
@@ -532,7 +532,7 @@
   <section id="statDetailSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2 id="statDetailTitle">Statistik</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content stat-detail-content">
       <p id="statDetailValue" class="stat-detail-value">0</p>
@@ -546,11 +546,11 @@
   <section id="landing" class="landing-overlay hidden" aria-hidden="true">
     <div class="landing-card">
       <h2>Einrichtung</h2>
-      <p class="sheet-note">Einmalige Grundeinstellungen fÃ¼r diesen Durchlauf.</p>
-      <label>Modus<select id="setupMode"><option value="indoor">Innen</option><option value="outdoor">AuÃŸen</option><option value="greenhouse">GewÃ¤chshaus</option></select></label>
+      <p class="sheet-note">Einmalige Grundeinstellungen für diesen Durchlauf.</p>
+      <label>Modus<select id="setupMode"><option value="indoor">Innen</option><option value="outdoor">Außen</option><option value="greenhouse">Gewächshaus</option></select></label>
       <label>Licht<select id="setupLight"><option value="low">Niedrig</option><option value="medium" selected>Mittel</option><option value="high">Hoch</option></select></label>
       <label>Substrat<select id="setupMedium"><option value="soil" selected>Erde</option><option value="coco">Kokos</option><option value="hydro">Hydroponik</option></select></label>
-      <label>TopfgrÃ¶ÃŸe<select id="setupPotSize"><option value="small">Klein</option><option value="medium" selected>Mittel</option><option value="large">GroÃŸ</option></select></label>
+      <label>Topfgröße<select id="setupPotSize"><option value="small">Klein</option><option value="medium" selected>Mittel</option><option value="large">Groß</option></select></label>
       <label>Genetik<select id="setupGenetics"><option value="auto" selected>Autoflower</option><option value="photo">Photoperiodisch</option></select></label>
       <button id="startRunBtn" class="action-btn action-primary" type="button">Durchlauf starten</button>
     </div>
@@ -565,7 +565,7 @@
       <ol id="deathHistoryList" class="death-list"></ol>
       <div class="death-actions">
         <button id="deathRescueBtn" class="action-btn action-primary" type="button">Rettungsaktion nutzen</button>
-        <span id="deathRescueSubtext" class="sheet-note">1Ã— pro Run</span>
+        <span id="deathRescueSubtext" class="sheet-note">1× pro Run</span>
         <span id="deathRescueFeedback" class="sheet-note"></span>
         <button id="deathResetBtn" class="action-btn action-secondary" type="button">Neuen Run starten</button>
         <button id="deathAnalyzeBtn" class="action-btn action-ghost" type="button">Analyse ansehen</button>
@@ -576,8 +576,8 @@
   <div id="menuBackdrop" class="menu-backdrop hidden" aria-hidden="true"></div>
   <section id="gameMenu" class="game-menu hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
     <header class="game-menu-header">
-      <h2 id="menuTitle">MENÃœ</h2>
-      <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="MenÃ¼ schlieÃŸen">X</button>
+      <h2 id="menuTitle">MENÜ</h2>
+      <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="Menü schließen">X</button>
     </header>
     <div class="game-menu-content">
       <section class="game-menu-section">
@@ -604,7 +604,7 @@
         <button id="menuLeaderboardBtn" class="ghost-btn" type="button">Rangliste</button>
       </div>
 
-      <button id="menuCloseBtn" class="action-btn action-primary" type="button">SchlieÃŸen</button>
+      <button id="menuCloseBtn" class="action-btn action-primary" type="button">Schließen</button>
     </div>
   </section>
 
@@ -630,18 +630,18 @@
 
   </div>
 
-  <script src="sim.js" defer></script>
-  <script src="src/simulation/plantState.js" defer></script>
-  <script src="src/events/eventFlags.js" defer></script>
-  <script src="src/events/eventMemory.js" defer></script>
-  <script src="src/events/eventAnalysis.js" defer></script>
-  <script src="src/events/eventResolver.js" defer></script>
-  <script src="events.js" defer></script>
-  <script src="src/ui/iconAtlas.js" defer></script>
-  <script src="ui.js" defer></script>
-  <script src="storage.js" defer></script>
-  <script src="notifications.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="sim.js?v=20260319c" defer></script>
+  <script src="src/simulation/plantState.js?v=20260319c" defer></script>
+  <script src="src/events/eventFlags.js?v=20260319c" defer></script>
+  <script src="src/events/eventMemory.js?v=20260319c" defer></script>
+  <script src="src/events/eventAnalysis.js?v=20260319c" defer></script>
+  <script src="src/events/eventResolver.js?v=20260319c" defer></script>
+  <script src="events.js?v=20260319c" defer></script>
+  <script src="ui.js?v=20260319c" defer></script>
+  <script src="storage.js?v=20260319c" defer></script>
+  <script src="notifications.js?v=20260319c" defer></script>
+  <script src="app.js?v=20260319c" defer></script>
 </body>
 </html>
+
 
