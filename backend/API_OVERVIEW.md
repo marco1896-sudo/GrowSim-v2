@@ -1,11 +1,11 @@
-# Grow Simulator Backend API Overview
+# API Overview
 
-Base URL (lokal): `http://localhost:8080`
+Base URL (local): `http://localhost:8080`
 
 ## Health
 
 ### GET `/api/health`
-Antwort:
+Response:
 ```json
 { "ok": true, "service": "growsim-backend" }
 ```
@@ -16,44 +16,51 @@ Antwort:
 Body:
 ```json
 {
-  "email": "marco@example.com",
+  "email": "you@example.com",
   "password": "secret123",
   "displayName": "Marco"
 }
 ```
-Antwort:
+Response:
 ```json
 {
   "token": "<jwt>",
-  "user": {
-    "id": "...",
-    "email": "marco@example.com",
-    "displayName": "Marco"
-  }
+  "user": { "id": "...", "email": "you@example.com", "displayName": "Marco" }
 }
 ```
 
 ### POST `/api/auth/login`
 Body:
 ```json
-{
-  "email": "marco@example.com",
-  "password": "secret123"
-}
+{ "email": "you@example.com", "password": "secret123" }
 ```
-Antwort: wie Register
+Response: same shape as register.
 
 ### GET `/api/auth/me`
-Header: `Authorization: Bearer <jwt>`
+Header:
+`Authorization: Bearer <jwt>`
 
-## Save-System
+Response:
+```json
+{
+  "user": {
+    "id": "...",
+    "email": "you@example.com",
+    "displayName": "Marco",
+    "createdAt": "2026-..."
+  }
+}
+```
 
-### GET `/api/save`
-Optional Query: `?slot=main`
+## Save System
 
-Header: `Authorization: Bearer <jwt>`
+> Save payload is intentionally flexible. `state` can be your full GrowSim state object.
 
-Antwort (wenn kein Save vorhanden):
+### GET `/api/save?slot=main`
+Header:
+`Authorization: Bearer <jwt>`
+
+Response (no save yet):
 ```json
 {
   "slot": "main",
@@ -63,50 +70,40 @@ Antwort (wenn kein Save vorhanden):
 }
 ```
 
-Antwort (wenn Save vorhanden):
+Response (save exists):
 ```json
 {
   "slot": "main",
   "hasSave": true,
-  "state": { "...": "kompletter frontend state" },
-  "updatedAt": "2026-03-20T...",
-  "createdAt": "2026-03-20T..."
+  "state": { "simulation": {}, "plant": {}, "events": {} },
+  "updatedAt": "2026-...",
+  "createdAt": "2026-..."
 }
 ```
 
 ### POST `/api/save`
-Header: `Authorization: Bearer <jwt>`
+Header:
+`Authorization: Bearer <jwt>`
 
 Body:
 ```json
 {
   "slot": "main",
   "state": {
-    "simulation": { "simTimeMs": 123456789 },
-    "plant": { "phase": "seedling" },
-    "status": { "health": 85 }
+    "simulation": {},
+    "plant": {},
+    "events": {},
+    "status": {},
+    "ui": {}
   }
 }
 ```
 
-Antwort:
+Response:
 ```json
 {
   "message": "Save stored successfully",
   "slot": "main",
-  "updatedAt": "2026-03-20T..."
-}
-```
-
----
-
-## Fehlerformat
-
-```json
-{
-  "error": "Validation failed",
-  "details": [
-    { "msg": "Valid email is required", "path": "email" }
-  ]
+  "updatedAt": "2026-..."
 }
 ```

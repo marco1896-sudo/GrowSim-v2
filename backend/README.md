@@ -1,13 +1,14 @@
 # Grow Simulator Backend
 
-Ein **einfaches, produktionsnahes Backend** für dein bestehendes Grow-Simulator-Frontend.
+Ein schlankes, produktionsnahes Backend für dein bestehendes Grow-Simulator-Frontend.
 
 ## Warum diese Architektur?
 
-- **Node + Express**: leicht zu verstehen, große Community
-- **MongoDB**: sehr gut für flexiblen Game-State als JSON (ohne starres SQL-Schema)
-- **JWT Auth**: Standard für mobile/web Frontend-Auth
-- **Eine klare Save-API**: dein bestehender `state` kann fast 1:1 gespeichert werden
+Ich habe **Node.js + Express + MongoDB + JWT** gewählt, weil das für deinen Fall am einfachsten wartbar ist:
+- sehr klarer REST-Flow
+- flexibel für deinen großen Game-State (JSON)
+- mit Coolify gut deploybar (API als Container + MongoDB als separater Service)
+- keine Supabase-spezifische Komplexität (RLS, Policies, Keys) nötig
 
 ## Was dieses Backend kann
 
@@ -15,19 +16,17 @@ Ein **einfaches, produktionsnahes Backend** für dein bestehendes Grow-Simulator
   - `POST /api/auth/register`
   - `POST /api/auth/login`
   - `GET /api/auth/me`
-- Save-System:
+- Save-System (voller Simulator-State als JSON):
   - `GET /api/save`
   - `POST /api/save`
 - Health:
   - `GET /api/health`
-- CORS über ENV konfigurierbar
-- Docker/Coolify-ready
-
----
+- CORS per ENV
+- Docker-ready für Coolify/VPS
 
 ## Projektstruktur
 
-```txt
+```text
 backend/
   src/
     config/
@@ -53,120 +52,102 @@ backend/
     server.js
   .dockerignore
   .env.example
-  API_OVERVIEW.md
-  docker-compose.local.yml
   Dockerfile
+  docker-compose.local.yml
+  API_OVERVIEW.md
   package.json
 ```
 
----
+## Environment Variablen
 
-## Lokales Setup
+Siehe `.env.example`:
 
-### 1) Abhängigkeiten installieren
+- `NODE_ENV` - development/production
+- `PORT` - API Port, z. B. `8080`
+- `JWT_SECRET` - langer geheimer String (Pflicht)
+- `JWT_EXPIRES_IN` - z. B. `7d`
+- `CORS_ORIGINS` - komma-separierte Frontend URLs
+- `MONGODB_URI` - Mongo-Verbindung
+
+## Lokal starten (einfach)
+
+1. In `backend/` wechseln
+2. Abhängigkeiten installieren
+3. `.env.example` nach `.env` kopieren und Werte setzen
+4. Mongo starten (lokal oder per Docker)
+5. API starten
+
 ```bash
 cd backend
 npm install
-```
-
-### 2) ENV anlegen
-```bash
 cp .env.example .env
-```
-Dann `.env` ausfüllen:
-- `JWT_SECRET` (lange zufällige Zeichenkette)
-- `MONGODB_URI`
-- `CORS_ORIGINS`
-
-### 3) Starten
-```bash
-npm start
-```
-oder im Dev-Modus:
-```bash
 npm run dev
 ```
 
-Backend läuft dann auf `http://localhost:8080`.
-
----
-
-## Optional lokal mit Docker + Mongo
+Health prüfen:
 
 ```bash
-docker compose -f docker-compose.local.yml up --build
+curl http://localhost:8080/api/health
 ```
 
----
+## Optional: Mongo lokal via Docker
 
-## Frontend-Integration (minimaler Umbau)
+```bash
+docker compose -f docker-compose.local.yml up -d
+```
 
-Dein Frontend speichert aktuell lokal (z. B. `localStorage`).
-Für Backend-Sync brauchst du nur zusätzlich:
+## Coolify Deployment (VPS)
 
-1. User registrieren/loggen -> JWT speichern (z. B. localStorage)
-2. Beim Laden:
+### Service 1: Backend
+- Quelle: dieses Repo
+- Base Directory: `backend`
+- Build: Dockerfile
+- Port: `8080`
+- ENV in Coolify setzen (`JWT_SECRET`, `MONGODB_URI`, `CORS_ORIGINS`, ...)
+
+### Service 2: MongoDB
+- Entweder Coolify Mongo Service erstellen
+- Oder externe MongoDB nutzen
+- `MONGODB_URI` ins Backend eintragen
+
+## Frontend Integration (minimaler Refactor)
+
+Dein Frontend nutzt aktuell LocalStorage (`grow-sim-state-v2`). Das bleibt erstmal bestehen.
+
+Empfohlener Integrationsweg:
+1. Beim Login Token speichern (`localStorage` oder später secure Storage).
+2. Beim Start:
    - `GET /api/save`
-   - Wenn `hasSave === true`, `state` in die bestehende Runtime übernehmen
-3. Beim Speichern:
-   - aktuellen kompletten State an `POST /api/save` senden
+   - wenn `hasSave=true`, den `state` in deinen bestehenden Restore-Flow geben.
+3. Beim Speichern (manuell oder autosave):
+   - gesamten bestehenden State als `state` zu `POST /api/save` senden.
 
-### Beispiel Fetch (Save)
+Beispiel:
+
 ```js
-await fetch('https://BACKEND_URL/api/save', {
+await fetch(`${API_BASE}/api/save`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
+    Authorization: `Bearer ${token}`
   },
-  body: JSON.stringify({
-    slot: 'main',
-    state: currentState
-  })
+  body: JSON.stringify({ slot: 'main', state: fullGrowSimState })
 });
 ```
 
-### Beispiel Fetch (Load)
-```js
-const res = await fetch('https://BACKEND_URL/api/save', {
-  headers: { 'Authorization': `Bearer ${token}` }
-});
-const data = await res.json();
-if (data.hasSave && data.state) {
-  // in bestehende GrowSim-Logik mergen/restoren
-}
-```
+## Sicherheit / Hinweise
+
+- Passwörter werden gehasht (`bcryptjs`)
+- JWT schützt private Endpunkte
+- Eingaben werden validiert (`express-validator`)
+- Keine Secrets im Code hardcoden
+- Für Produktion `JWT_SECRET` lang & zufällig setzen
+
+## Verfügbare NPM Scripts
+
+- `npm run dev` - Start mit Watch
+- `npm start` - Produktionsstart
+- `npm run check` - einfache Syntaxchecks
 
 ---
-
-## Coolify Deployment (einfach)
-
-1. Repository in Coolify verbinden
-2. Service auf Ordner `backend/` zeigen
-3. Buildpack/Dockerfile nutzen (Dockerfile ist vorhanden)
-4. ENV Variablen in Coolify setzen:
-   - `NODE_ENV=production`
-   - `PORT=8080`
-   - `JWT_SECRET=...`
-   - `JWT_EXPIRES_IN=7d`
-   - `MONGODB_URI=...`
-   - `CORS_ORIGINS=https://deine-frontend-domain.tld`
-5. Port 8080 exponieren (oder Coolify-intern routen)
-6. Deploy auslösen
-
-### MongoDB in Coolify
-Du kannst in Coolify zusätzlich einen MongoDB-Service erstellen und dessen Connection String als `MONGODB_URI` verwenden.
-
----
-
-## Hinweis zu Skills/Tools (OpenClaw)
-
-Ich habe aktiv nach passenden Skills gesucht (Backend/Express/MongoDB/Docker). Relevant gefunden wurden u. a.:
-- `codewithhashim/...@express-backend-starter`
-- `laskar-ksatria/...@nodejs-express-mongodb-backend-pattern`
-
-Für dein Ziel war ein direktes, sauberes In-Repo-Backend ohne zusätzliche Skill-Installation am sinnvollsten (weniger Komplexität, volle Kontrolle).
-
----
-
-Details zu Endpoints und Request/Response: siehe **API_OVERVIEW.md**.
+Wenn du willst, baue ich dir im nächsten Schritt direkt die **konkrete Frontend-Anbindung** in `app.js/storage.js` ein (Login, Cloud-Save, Fallback auf LocalStorage).

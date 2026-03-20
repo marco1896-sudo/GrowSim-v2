@@ -1,22 +1,13 @@
 version: '3.9'
 services:
-  mongo:
+  mongodb:
     image: mongo:7
+    container_name: growsim-mongodb
     restart: unless-stopped
     ports:
-      - '27017:27017'
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
-
-  backend:
-    build: .
-    restart: unless-stopped
-    ports:
-      - '8080:8080'
-    env_file:
-      - .env
-    depends_on:
-      - mongo
 
 volumes:
   mongo_data:
