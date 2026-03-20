@@ -3988,8 +3988,7 @@ function hasSetup() {
 }
 
 function renderLanding() {
-  // BLOCK 1: standard boot should show the HUD directly without setup overlay.
-  const visible = false;
+  const visible = !hasSetup();
   ui.landing.classList.toggle('hidden', !visible);
   ui.landing.setAttribute('aria-hidden', String(!visible));
 }
@@ -4221,14 +4220,19 @@ async function onPushToggleClick() {
   }
 
   let permission = Notification.permission;
+  let permissionTimedOut = false;
   if (permission !== 'granted') {
-    permission = await Notification.requestPermission();
+    const permissionResult = await requestNotificationPermissionSafe();
+    permission = permissionResult.permission;
+    permissionTimedOut = permissionResult.timedOut === true;
   }
 
   if (permission !== 'granted') {
     notifications.enabled = false;
     state.settings.pushNotificationsEnabled = false;
-    notifications.lastMessage = 'Berechtigung nicht erteilt. Bitte Benachrichtigungen im Browser erlauben.';
+    notifications.lastMessage = permissionTimedOut
+      ? 'Berechtigungsdialog nicht bestätigt. Bitte Benachrichtigungen im Browser erlauben.'
+      : 'Berechtigung nicht erteilt. Bitte Benachrichtigungen im Browser erlauben.';
     renderPushToggle();
     renderGameMenu();
     schedulePersistState(true);
@@ -4251,6 +4255,40 @@ async function onPushToggleClick() {
   renderPushToggle();
   renderGameMenu();
   schedulePersistState(true);
+}
+
+async function requestNotificationPermissionSafe(timeoutMs = 1800) {
+  if (typeof Notification === 'undefined' || typeof Notification.requestPermission !== 'function') {
+    return { permission: 'denied', timedOut: false };
+  }
+
+  try {
+    const requestResult = Notification.requestPermission();
+    if (!requestResult || typeof requestResult.then !== 'function') {
+      return { permission: String(requestResult || Notification.permission || 'default'), timedOut: false };
+    }
+
+    let timeoutHandle = null;
+    const timeoutResult = new Promise((resolve) => {
+      timeoutHandle = window.setTimeout(() => resolve({ timedOut: true }), timeoutMs);
+    });
+    const resolvedResult = requestResult
+      .then((value) => ({ permission: String(value || Notification.permission || 'default'), timedOut: false }))
+      .catch(() => ({ permission: String(Notification.permission || 'default'), timedOut: false }));
+
+    const winner = await Promise.race([resolvedResult, timeoutResult]);
+    if (timeoutHandle !== null) {
+      window.clearTimeout(timeoutHandle);
+    }
+
+    if (winner && winner.timedOut) {
+      return { permission: String(Notification.permission || 'default'), timedOut: true };
+    }
+
+    return winner || { permission: String(Notification.permission || 'default'), timedOut: false };
+  } catch (_error) {
+    return { permission: String(Notification.permission || 'default'), timedOut: false };
+  }
 }
 
 function onNotificationTypeToggle() {
@@ -4342,11 +4380,13 @@ function withDebouncedAction(actionKey, buttonNode, callback) {
 }
 
 function closeSheet() {
-  if (state.events.machineState === 'activeEvent') {
+  const currentSheet = state.ui.openSheet;
+
+  if (currentSheet === 'event' && state.events.machineState === 'activeEvent') {
     dismissActiveEvent();
     return;
   }
-  if (state.events.machineState === 'resolved') {
+  if (currentSheet === 'event' && state.events.machineState === 'resolved') {
     enterEventCooldown(state.simulation.nowMs);
     renderAll();
     schedulePersistState(true);
