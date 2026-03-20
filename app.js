@@ -94,7 +94,7 @@ const DEFAULT_STAGE_TIMELINE = Object.freeze([
   Object.freeze({ id: 'finish', label: 'Reife / Finish', phase: 'harvest', simDayStart: 82 })
 ]);
 
-const PLANT_SPRITE_ASSET = 'assets/plant_growth/aligned_frames/frame_008.png';
+const PLANT_SPRITE_ASSET = 'assets/plant_growth/plant_growth_sprite.png';
 const PLANT_METADATA_ASSET = 'assets/plant_growth/plant_growth_metadata.json';
 const PLANT_STAGE_IMAGES = Object.freeze([
   'assets/plant_growth/aligned_frames/frame_008.png',  // stage_1 (Keimling)
@@ -127,6 +127,24 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
   'harvest',
   'harvest'
 ]);
+
+// Figma reference (Home 132:51) defines a shared anchor zone:
+// center + baseline are fixed, while stage variants scale inside that same zone.
+const HOME_PLANT_REFERENCE_FIT = Object.freeze({
+  maxFootprintScale: 0.83,
+  baselineInsetPx: 54
+});
+
+const HOME_PLANT_STAGE_SCALE = Object.freeze({
+  seed: 0.84,
+  sprout: 0.9,
+  seedling: 0.96,
+  vegetative: 0.96,
+  preflower: 0.99,
+  flowering: 1.0,
+  late_flowering: 1.0,
+  harvest: 0.96
+});
 
 const plantSpriteRuntime = {
   ready: false,
@@ -677,6 +695,7 @@ async function boot() {
 
     bootStep = 'catalogs';
     await loadCatalogs();
+    await loadPlantSpriteRuntime();
     logBootStep('boot:catalogs', {
       events: state.events.catalog.length,
       actions: state.actions.catalog.length,
@@ -2887,7 +2906,8 @@ function renderOverlayVisibility(visibleOverlayIds = null) {
     if (!node) {
       continue;
     }
-    const visible = activeOverlays.includes(overlayId);
+    const hasSource = Boolean(node.getAttribute('src'));
+    const visible = activeOverlays.includes(overlayId) && hasSource;
     node.classList.toggle('hidden', !visible);
   }
 }
@@ -4573,9 +4593,24 @@ function plantAssetPath(stageName) {
 }
 
 function applyBackgroundAsset() {
-  // BLOCK 1: no competing page background; visual background is owned by .app-hud.
+  // Home owns the atmospheric background inside #app-hud; body stays neutral.
   document.body.style.backgroundImage = 'none';
   document.body.style.backgroundColor = '#04090f';
+
+  const appHud = document.getElementById('app-hud');
+  if (!appHud) {
+    return;
+  }
+
+  const selected = state.ui && typeof state.ui.selectedBackground === 'string'
+    ? state.ui.selectedBackground
+    : 'bg_dark_01.jpg';
+  const mappedFile = selected === 'bg_dark_02.jpg'
+    ? 'bg_dark_02.jpg'
+    : 'Basic screen.jpg';
+
+  const primary = appPath(`assets/ui/backgrounds/${mappedFile}`);
+  appHud.style.setProperty('--home-general-bg', `url("${primary}")`);
 }
 
 async function createStorageAdapter() {
@@ -4912,14 +4947,21 @@ function renderPlantFromSprite(targetNode) {
   const dstW = Math.max(1, canvasMetrics.widthPx);
   const dstH = Math.max(1, canvasMetrics.heightPx);
 
-  const scale = Math.min(dstW / srcW, dstH / srcH);
+  const containScale = Math.min(dstW / srcW, dstH / srcH);
+  const spriteStage = getPlantSpriteStageFromState(state.plant);
+  const stageScale = HOME_PLANT_STAGE_SCALE[spriteStage] || 1;
+  const fitScale = clamp(
+    HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale,
+    0.1,
+    1
+  );
+  const scale = containScale * fitScale;
   const drawW = Math.max(1, Math.round(srcW * scale));
   const drawH = Math.max(1, Math.round(srcH * scale));
   const dx = Math.round((dstW - drawW) / 2);
-  const centerDy = Math.round((dstH - drawH) / 2);
-  const downOffset = Math.round(dstH * 0.08);
+  const baselineInset = clampInt(HOME_PLANT_REFERENCE_FIT.baselineInsetPx, 0, dstH);
   const maxDy = Math.max(0, dstH - drawH);
-  const dy = clampInt(centerDy + downOffset, 0, maxDy);
+  const dy = clampInt(dstH - drawH - baselineInset, 0, maxDy);
 
   const ctx = targetNode.getContext('2d', { alpha: true });
   if (!ctx) {
@@ -4942,7 +4984,8 @@ function renderPlantFromSprite(targetNode) {
 
   targetNode.dataset.frameIndex = String(nextFrameIndex);
   targetNode.dataset.stageName = stageName;
-  targetNode.dataset.spriteStage = getPlantSpriteStageFromState(state.plant);
+  targetNode.dataset.spriteStage = spriteStage;
+  targetNode.dataset.fitScale = String(fitScale);
   targetNode.dataset.canvasWidth = String(canvasMetrics.widthPx);
   targetNode.dataset.canvasHeight = String(canvasMetrics.heightPx);
 

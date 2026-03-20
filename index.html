@@ -33,28 +33,35 @@
           </div>
         </article>
 
-        <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
-          <img src="assets/ui/icons/menu.png" alt="" aria-hidden="true">
-          <span class="visually-hidden">Menü öffnen</span>
-        </button>
-
-        <div class="home-plant-stage" aria-hidden="true">
-          <canvas id="plantImage" class="home-plant-canvas" width="2048" height="2048" role="img" aria-label="Pflanzenstadium"></canvas>
-          <img id="overlayBurn" class="overlay-image hidden" alt="">
-          <img id="overlayDefMg" class="overlay-image hidden" alt="">
-          <img id="overlayDefN" class="overlay-image hidden" alt="">
-          <img id="overlayMoldWarning" class="overlay-image hidden" alt="">
-          <img id="overlayPestMites" class="overlay-image hidden" alt="">
-          <img id="overlayPestThrips" class="overlay-image hidden" alt="">
+        <div class="home-scene-fixed" aria-hidden="true">
+          <div class="home-plant-shadow"></div>
+          <div class="home-plant-stage plant-container">
+            <canvas id="plantImage" class="home-plant-canvas" width="2048" height="2048" role="img" aria-label="Pflanzenstadium"></canvas>
+            <img id="overlayBurn" class="overlay-image hidden" alt="">
+            <img id="overlayDefMg" class="overlay-image hidden" alt="">
+            <img id="overlayDefN" class="overlay-image hidden" alt="">
+            <img id="overlayMoldWarning" class="overlay-image hidden" alt="">
+            <img id="overlayPestMites" class="overlay-image hidden" alt="">
+            <img id="overlayPestThrips" class="overlay-image hidden" alt="">
+          </div>
         </div>
 
-        <section class="home-env-panel" aria-label="Umgebungsdaten">
-          <div class="home-env-row"><img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true"><span id="envTempLabel">Temperatur</span><strong id="envTempValue">25.3°C</strong></div>
-          <div class="home-env-row"><img src="assets/ui/icons/icon_humidity.svg" alt="" aria-hidden="true"><span id="envHumidityLabel">Luftfeuchte</span><strong id="envHumidityValue">61%</strong></div>
-          <div class="home-env-row"><img src="assets/ui/icons/icon_vpd.svg" alt="" aria-hidden="true"><span id="envVpdLabel">VPD</span><strong id="envVpdValue">1.2 kPa</strong></div>
-          <div class="home-env-row"><img src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true"><span id="envLightLabel">Licht</span><strong id="envLightValue">720 PPFD</strong></div>
-          <div class="home-env-row"><img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true"><span id="envAirflowLabel">Luftstrom</span><strong id="envAirflowValue">Good</strong></div>
-        </section>
+        <div class="home-right-column">
+          <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
+            <img src="assets/ui/icons/menu.png" alt="" aria-hidden="true">
+            <span class="visually-hidden">Menü öffnen</span>
+          </button>
+
+          <section class="home-env-panel" aria-label="Umgebungsdaten">
+            <div class="home-env-row"><img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true"><span id="envTempLabel">Temperatur</span><strong id="envTempValue">25.3°C</strong></div>
+            <div class="home-env-row"><img src="assets/ui/icons/icon_humidity.svg" alt="" aria-hidden="true"><span id="envHumidityLabel">Luftfeuchte</span><strong id="envHumidityValue">61%</strong></div>
+            <div class="home-env-row"><img src="assets/ui/icons/icon_vpd.svg" alt="" aria-hidden="true"><span id="envVpdLabel">VPD</span><strong id="envVpdValue">1.2 kPa</strong></div>
+            <div class="home-env-row"><img src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true"><span id="envLightLabel">Licht</span><strong id="envLightValue">720 PPFD</strong></div>
+            <div class="home-env-row"><img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true"><span id="envAirflowLabel">Luftstrom</span><strong id="envAirflowValue">Good</strong></div>
+          </section>
+        </div>
+
+        <div class="home-content-scroll">
 
         <article id="phaseCard" class="home-progress-panel" aria-live="polite">
           <div class="home-progress-top">
@@ -139,6 +146,7 @@
             <span id="boostUsageText" class="boost-sub">-30m Eventzeit · 0/6</span>
           </button>
         </section>
+        </div>
 
         <article id="healthRing" class="hidden" style="--value:85;"><strong id="healthValue">85</strong></article>
         <button id="skipNightActionBtn" class="hidden" type="button">Nacht überspringen</button>
