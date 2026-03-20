@@ -1,4 +1,4 @@
-<!doctype html>
+ï»¿<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
@@ -12,31 +12,34 @@
 </head>
 <body>
   <div id="app-hud" class="app-hud">
-    <main class="hud-main hud-screen is-active" data-screen="home">
-      <article id="phaseCard" class="phase-card phase-card-top" aria-live="polite">
-        <div class="phase-card-head">
-          <strong id="phaseCardTitle" class="phase-card-title">Blüte</strong>
-          <span id="phaseCardCycle" class="phase-card-cycle" aria-label="Tageszyklus">D</span>
-        </div>
-        <div class="phase-card-meta">
-          <p id="phaseCardAge" class="phase-card-age">Tag 1</p>
-          <p id="phaseCardSubtitle" class="phase-card-subtitle">0% -> Vegetationsphase</p>
-        </div>
-        <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <span id="phaseProgressFill" class="phase-progress-fill"></span>
-          <span id="phaseProgressMarker" class="phase-progress-marker" aria-hidden="true"></span>
-        </div>
-      </article>
+    <main class="hud-main hud-screen is-active home-screen" data-screen="home">
+      <section class="home-stage" aria-label="Home HUD">
+        <article class="home-player-panel" aria-label="Spielerpanel">
+          <div class="home-avatar-shell">
+            <span class="home-level-pill" id="playerLevelBadge">LVL 9</span>
+          </div>
+          <div class="home-player-meta">
+            <strong id="playerNameValue" class="home-player-name">Max Mustergrower</strong>
+            <span id="playerRoleValue" class="home-player-role">G&Auml;RTNER</span>
+            <p id="playerXpValue" class="home-player-xp">XP: 7.350 / 8.650</p>
+            <div class="home-player-xp-track" aria-hidden="true">
+              <span id="playerXpFill" class="home-player-xp-fill" style="--xp:84;"></span>
+            </div>
+          </div>
+          <div class="home-currency-stack" aria-label="WÃ¤hrungen">
+            <div class="home-currency-row home-currency-row--gold"><span>&#x1FA99;</span><strong id="playerCoinValue">2.480</strong></div>
+            <div class="home-currency-row home-currency-row--cyan"><span>&#x1F48E;</span><strong id="playerGemValue">55</strong></div>
+            <div class="home-currency-row home-currency-row--star"><span>&#x2B50;</span><strong id="playerStarValue">114</strong></div>
+          </div>
+        </article>
 
-      <section class="hero-card">
-        <button id="menuToggleBtn" class="menu-toggle-btn menu-toggle-floating" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
-          <span class="menu-toggle-label" aria-hidden="true">Menü</span>
-          <span class="menu-toggle-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Menü öffnen</span>
+        <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="MenÃ¼ Ã¶ffnen" aria-haspopup="dialog" aria-expanded="false">
+          <img src="assets/ui/icons/menu.png" alt="" aria-hidden="true">
+          <span class="visually-hidden">MenÃ¼ Ã¶ffnen</span>
         </button>
-        <div class="hero-glow" aria-hidden="true"></div>
-        <div class="hero-stack">
-          <canvas id="plantImage" class="plant-image" width="2048" height="2048" role="img" aria-label="Pflanzenstadium"></canvas>
+
+        <div class="home-plant-stage" aria-hidden="true">
+          <canvas id="plantImage" class="home-plant-canvas" width="2048" height="2048" role="img" aria-label="Pflanzenstadium"></canvas>
           <img id="overlayBurn" class="overlay-image hidden" alt="">
           <img id="overlayDefMg" class="overlay-image hidden" alt="">
           <img id="overlayDefN" class="overlay-image hidden" alt="">
@@ -44,495 +47,238 @@
           <img id="overlayPestMites" class="overlay-image hidden" alt="">
           <img id="overlayPestThrips" class="overlay-image hidden" alt="">
         </div>
-      </section>
 
-      <section class="info-bar" aria-label="Top-Metriken">
-        <article class="info-tile">
-          <span class="info-label">Ereignis</span>
-          <strong id="nextEventValue">--:--</strong>
-        </article>
-        <article class="info-tile">
-          <span class="info-label">Impuls</span>
-          <strong id="growthImpulseValue">0.00</strong>
-        </article>
-        <article class="info-tile">
-          <span class="info-label">Tag / Zeit</span>
-          <strong id="simTimeValue">Tag 1 · --:--</strong>
-        </article>
-      </section>
+        <section class="home-env-panel" aria-label="Umgebungsdaten">
+          <div class="home-env-row"><img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true"><span id="envTempLabel">Temperatur</span><strong id="envTempValue">25.3Â°C</strong></div>
+          <div class="home-env-row"><img src="assets/ui/icons/icon_humidity.svg" alt="" aria-hidden="true"><span id="envHumidityLabel">Luftfeuchte</span><strong id="envHumidityValue">61%</strong></div>
+          <div class="home-env-row"><img src="assets/ui/icons/icon_vpd.svg" alt="" aria-hidden="true"><span id="envVpdLabel">VPD</span><strong id="envVpdValue">1.2 kPa</strong></div>
+          <div class="home-env-row"><img src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true"><span id="envLightLabel">Licht</span><strong id="envLightValue">720 PPFD</strong></div>
+          <div class="home-env-row"><img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true"><span id="envAirflowLabel">Luftstrom</span><strong id="envAirflowValue">Good</strong></div>
+        </section>
 
-      <section id="dataVizHud" class="dashboard-grid" aria-label="Pflanzen-Dashboard">
-        <article class="panel panel-status">
-          <h2 class="panel-title">PFLANZENSTATUS</h2>
-          <article id="waterRing" class="status-row" role="button" tabindex="0" aria-label="Wasser Details öffnen" style="--value:70;">
-            <div class="status-label">
-              <span class="mini-icon" aria-hidden="true">W</span>
-              <span id="plantWaterLabel">Wasser</span>
+        <article id="phaseCard" class="home-progress-panel" aria-live="polite">
+          <div class="home-progress-top">
+            <div class="home-progress-phase">
+              <strong id="phaseCardTitle" class="home-progress-title">Vegetativ</strong>
+              <span id="phaseCardAge" class="home-progress-day">Tag 14</span>
             </div>
-            <div class="status-track"></div>
-            <strong id="waterValue">70%</strong>
-          </article>
-          <article id="nutritionRing" class="status-row" role="button" tabindex="0" aria-label="Nährstoffe Details öffnen" style="--value:65;">
-            <div class="status-label">
-              <span class="mini-icon" aria-hidden="true">N</span>
-              <span id="plantNutritionLabel">Nährstoffe</span>
+            <div class="home-progress-grow">
+              <strong id="phaseCardSubtitle">42%</strong>
+              <span>Wachstum</span>
             </div>
-            <div class="status-track"></div>
-            <strong id="nutritionValue">65%</strong>
-          </article>
-          <article id="growthRing" class="status-row" role="button" tabindex="0" aria-label="Wachstum Details öffnen" style="--value:10;">
-            <div class="status-label">
-              <span class="mini-icon" aria-hidden="true">G</span>
-              <span id="plantGrowthLabel">Wachstum</span>
-            </div>
-            <div class="status-track"></div>
-            <strong id="growthValue">10%</strong>
-          </article>
-          <article id="riskRing" class="status-row" role="button" tabindex="0" aria-label="Risiko Details öffnen" style="--value:20;">
-            <div class="status-label">
-              <span class="mini-icon" aria-hidden="true">R</span>
-              <span id="plantRiskLabel">Risiko</span>
-            </div>
-            <div class="status-track"></div>
-            <strong id="riskValue">20%</strong>
-          </article>
+            <span class="home-progress-stress-chip">Stress</span>
+            <strong id="growthImpulseValue" class="home-progress-multi">+0.80x</strong>
+            <button id="openDiagnosisBtn" class="home-progress-pause" type="button" aria-label="Diagnose Ã¶ffnen"></button>
+          </div>
+          <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
+            <span id="phaseProgressFill" class="phase-progress-fill" style="--phase-progress:42;"></span>
+            <span id="phaseProgressMarker" class="phase-progress-marker" aria-hidden="true"></span>
+          </div>
+          <div class="home-progress-bottom">
+            <span id="phaseCardCycle" class="home-progress-cycle" aria-label="Tageszyklus">D</span>
+            <span id="simTimeValue" class="home-progress-time">Tag 14 Â· 09:18</span>
+            <span class="home-progress-event-label">Ereignis</span>
+            <strong id="nextEventValue" class="home-progress-event">11:43</strong>
+          </div>
         </article>
 
-        <div class="panel-stack">
-          <article class="panel panel-metrics panel-metrics-grid">
-            <h2 class="panel-title">WURZEL &amp; BODEN</h2>
-            <div class="metric-grid-2x2">
-              <div class="metric-cell">
-                <span id="rootPhLabel" class="metric-label">pH</span>
-                <strong id="rootPhValue">5.9</strong>
-              </div>
-              <div class="metric-cell">
-                <span id="rootEcLabel" class="metric-label">EC</span>
-                <strong id="rootEcValue">1.3</strong>
-              </div>
-              <div class="metric-cell">
-                <span id="rootHealthLabel" class="metric-label">Wurzelg.</span>
-                <strong id="rootHealthValue">78%</strong>
-              </div>
-              <div class="metric-cell">
-                <span id="rootOxygenLabel" class="metric-label">O2</span>
-                <strong id="rootOxygenValue">78%</strong>
-              </div>
-            </div>
-          </article>
+        <section id="dataVizHud" class="home-status-panel" aria-label="Pflanzen-Dashboard">
+          <div class="home-status-column">
+            <h2 class="home-status-title">Pflanzenstatus</h2>
+            <article id="waterRing" class="home-status-row" role="button" tabindex="0" aria-label="Wasser Details Ã¶ffnen" style="--value:70;">
+              <div class="home-status-label"><img src="assets/ui/icons/icon_water.svg" alt="" aria-hidden="true"><span id="plantWaterLabel">Wasser</span></div>
+              <strong id="waterValue">70%</strong>
+              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
+            </article>
+            <article id="nutritionRing" class="home-status-row" role="button" tabindex="0" aria-label="NÃ¤hrstoffe Details Ã¶ffnen" style="--value:65;">
+              <div class="home-status-label"><img src="assets/ui/icons/icon_nutrients.svg" alt="" aria-hidden="true"><span id="plantNutritionLabel">NÃ¤hrstoffe</span></div>
+              <strong id="nutritionValue">65%</strong>
+              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
+            </article>
+            <article id="growthRing" class="home-status-row" role="button" tabindex="0" aria-label="Wachstum Details Ã¶ffnen" style="--value:3;">
+              <div class="home-status-label"><img src="assets/ui/icons/icon_growth.svg" alt="" aria-hidden="true"><span id="plantGrowthLabel">Wachstum</span></div>
+              <strong id="growthValue">2.6%</strong>
+              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
+            </article>
+            <article id="riskRing" class="home-status-row" role="button" tabindex="0" aria-label="Risiko Details Ã¶ffnen" style="--value:20;">
+              <div class="home-status-label"><img src="assets/ui/icons/icon_risk.svg" alt="" aria-hidden="true"><span id="plantRiskLabel">Risiko</span></div>
+              <strong id="riskValue">20%</strong>
+              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
+            </article>
+            <article id="stressRing" class="home-status-row" style="--value:15;">
+              <div class="home-status-label"><img src="assets/ui/icons/icon_stress.svg" alt="" aria-hidden="true"><span id="plantStressLabel">Stress</span></div>
+              <strong id="stressValue">15%</strong>
+              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
+            </article>
+          </div>
 
-          <article class="panel panel-metrics panel-metrics-grid">
-            <h2 class="panel-title">UMGEBUNGSDATEN</h2>
-            <div class="metric-grid-2x2">
-              <div class="metric-cell">
-                <span id="envLightLabel" class="metric-label">PPFD</span>
-                <strong id="envLightValue">720</strong>
-              </div>
-              <div class="metric-cell">
-                <span id="envTempLabel" class="metric-label">Temp</span>
-                <strong id="envTempValue">25.3°C</strong>
-              </div>
-              <div class="metric-cell">
-                <span id="envHumidityLabel" class="metric-label">Rlf</span>
-                <strong id="envHumidityValue">61%</strong>
-              </div>
-              <div class="metric-cell">
-                <span id="envAirflowLabel" class="metric-label">Luftstrom</span>
-                <strong id="envAirflowValue">Gut</strong>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
+          <div class="home-status-divider" aria-hidden="true"></div>
 
-      <section class="action-panel">
-        <button id="careActionBtn" class="action-btn action-medallion action-primary" type="button">
-          <img id="careActionIcon" class="custom-action-icon" src="assets/ui/icons/pflege.png" alt="" aria-hidden="true">
-          <span class="action-title">Pflege</span>
-        </button>
-        <button id="analyzeActionBtn" class="action-btn action-medallion action-secondary" type="button">
-          <img id="analyzeActionIcon" class="custom-action-icon" src="assets/ui/icons/analyse.png" alt="" aria-hidden="true">
-          <span class="action-title">Analyse</span>
-        </button>
-        <button id="boostActionBtn" class="action-btn action-medallion action-tertiary" type="button">
-          <img id="boostActionIcon" class="custom-action-icon" src="assets/ui/icons/time_boost.png" alt="" aria-hidden="true">
-          <span class="action-title">Boost</span>
-          <span id="boostUsageText" class="boost-sub">-30m Eventzeit · 0/6</span>
-        </button>
-      </section>
+          <div class="home-root-column">
+            <h2 class="home-status-title">Wurzeln &amp; Boden</h2>
+            <div class="home-root-row"><img src="assets/ui/icons/icon_ph.svg" alt="" aria-hidden="true"><span id="rootPhLabel">pH</span><strong id="rootPhValue">5.9</strong></div>
+            <div class="home-root-row"><img src="assets/ui/icons/icon_ec.svg" alt="" aria-hidden="true"><span id="rootEcLabel">EC</span><strong id="rootEcValue">1.3 mS</strong></div>
+            <div class="home-root-row"><img src="assets/ui/icons/icon_roots.svg" alt="" aria-hidden="true"><span id="rootHealthLabel">Wurzelgesundheit</span><strong id="rootHealthValue">20%</strong></div>
+            <div class="home-root-row"><img src="assets/ui/icons/icon_o2.svg" alt="" aria-hidden="true"><span id="rootOxygenLabel">Sauerstoff</span><strong id="rootOxygenValue">78%</strong></div>
+          </div>
+        </section>
 
-      <div class="hud-compat hidden" aria-hidden="true">
-        <article id="healthRing" class="ring ring-main" style="--value:85; --ring-color:var(--color-health);">
-          <strong id="healthValue">85</strong>
-        </article>
-        <article id="stressRing" class="ring ring-main" style="--value:15; --ring-color:var(--color-stress);">
-          <strong id="stressValue">15</strong>
-        </article>
-        <button id="skipNightActionBtn" class="action-btn hidden" type="button">Nacht überspringen</button>
-        <button id="openDiagnosisBtn" class="action-btn hidden" type="button">Diagnose öffnen</button>
-      </div>
-    </main>
+        <section class="home-action-panel">
+          <button id="careActionBtn" class="home-action-btn" type="button">
+            <img id="careActionIcon" class="home-action-icon" src="assets/ui/icons/pflege.png" alt="" aria-hidden="true">
+            <span class="home-action-title">Pflege</span>
+          </button>
+          <button id="analyzeActionBtn" class="home-action-btn" type="button">
+            <img id="analyzeActionIcon" class="home-action-icon" src="assets/ui/icons/analyse.png" alt="" aria-hidden="true">
+            <span class="home-action-title">Analyse</span>
+          </button>
+          <button id="boostActionBtn" class="home-action-btn" type="button">
+            <span class="home-boost-tag">-30m</span>
+            <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/time_boost.png" alt="" aria-hidden="true">
+            <span class="home-action-title">Boost</span>
+            <span id="boostUsageText" class="boost-sub">-30m Eventzeit Â· 0/6</span>
+          </button>
+        </section>
 
-    <main class="hud-main hud-screen" data-screen="ops">
-      <article class="phase-card phase-card-top" aria-live="polite">
-        <div class="phase-card-head">
-          <strong class="phase-card-title">Operation Deck</strong>
-          <span class="phase-card-cycle" aria-label="Tageszyklus">N</span>
-        </div>
-        <div class="phase-card-meta">
-          <p class="phase-card-age">Tag 14</p>
-          <p class="phase-card-subtitle">82% -> Stabilisierungsfenster</p>
-        </div>
-        <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="82">
-          <span class="phase-progress-fill" style="--phase-progress:82;"></span>
-          <span class="phase-progress-marker" aria-hidden="true"></span>
-        </div>
-      </article>
-
-      <section class="hero-card hero-card-ops" aria-label="Operations-Hero">
-        <div class="hero-glow" aria-hidden="true"></div>
-        <div class="hero-stack hero-stack-icon">
-          <img class="hero-panel-icon" src="assets/ui/icons/icon_growth.svg" alt="">
-        </div>
-      </section>
-
-      <section class="info-bar" aria-label="Operations-Metriken">
-        <article class="info-tile">
-          <span class="info-label">Signal</span>
-          <strong>Stabil</strong>
-        </article>
-        <article class="info-tile">
-          <span class="info-label">Sektor</span>
-          <strong>Hydro-A3</strong>
-        </article>
-        <article class="info-tile">
-          <span class="info-label">Fenster</span>
-          <strong>02:15</strong>
-        </article>
-      </section>
-
-      <section class="dashboard-grid" aria-label="Operations-Dashboard">
-        <article class="panel panel-status">
-          <h2 class="panel-title">SYSTEMSTATUS</h2>
-          <article class="status-row" style="--value:72;">
-            <div class="status-label">
-              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_water.svg" alt=""></span>
-              <span>Bewässerung</span>
-            </div>
-            <div class="status-track"></div>
-            <strong>72%</strong>
-          </article>
-          <article class="status-row" style="--value:64;">
-            <div class="status-label">
-              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_nutrients.svg" alt=""></span>
-              <span>Nährstoffe</span>
-            </div>
-            <div class="status-track"></div>
-            <strong>64%</strong>
-          </article>
-          <article class="status-row" style="--value:78;">
-            <div class="status-label">
-              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_roots.svg" alt=""></span>
-              <span>Wurzelzone</span>
-            </div>
-            <div class="status-track"></div>
-            <strong>78%</strong>
-          </article>
-          <article class="status-row" style="--value:24;">
-            <div class="status-label">
-              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_risk.svg" alt=""></span>
-              <span>Risiko</span>
-            </div>
-            <div class="status-track"></div>
-            <strong>24%</strong>
-          </article>
-        </article>
-
-        <div class="panel-stack">
-          <article class="panel panel-metrics panel-metrics-grid">
-            <h2 class="panel-title">MICROKLIMA</h2>
-            <div class="metric-grid-2x2">
-              <div class="metric-cell">
-                <span class="metric-label">VPD</span>
-                <strong>0.95</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Luftstrom</span>
-                <strong>Mittel</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Licht</span>
-                <strong>740</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Temp</span>
-                <strong>24.8°C</strong>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel panel-metrics panel-metrics-grid">
-            <h2 class="panel-title">RESSOURCEN</h2>
-            <div class="metric-grid-2x2">
-              <div class="metric-cell">
-                <span class="metric-label">Tank</span>
-                <strong>61%</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Additive</span>
-                <strong>4</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Filter</span>
-                <strong>89%</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Reserve</span>
-                <strong>2.1L</strong>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="action-panel">
-        <button class="action-btn action-medallion action-primary" type="button">
-          <img class="custom-action-icon" src="assets/ui/icons/pflege.png" alt="" aria-hidden="true">
-          <span class="action-title">Pflege</span>
-        </button>
-        <button class="action-btn action-medallion action-secondary" type="button">
-          <img class="custom-action-icon" src="assets/ui/icons/analyse.png" alt="" aria-hidden="true">
-          <span class="action-title">Analyse</span>
-        </button>
-        <button class="action-btn action-medallion action-tertiary" type="button">
-          <img class="custom-action-icon" src="assets/ui/icons/time_boost.png" alt="" aria-hidden="true">
-          <span class="action-title">Boost</span>
-        </button>
+        <article id="healthRing" class="hidden" style="--value:85;"><strong id="healthValue">85</strong></article>
+        <button id="skipNightActionBtn" class="hidden" type="button">Nacht Ã¼berspringen</button>
       </section>
     </main>
-
-    <main class="hud-main hud-screen" data-screen="intel">
-      <article class="phase-card phase-card-top" aria-live="polite">
-        <div class="phase-card-head">
-          <strong class="phase-card-title">Intel Archive</strong>
-          <span class="phase-card-cycle" aria-label="Tageszyklus">D</span>
-        </div>
-        <div class="phase-card-meta">
-          <p class="phase-card-age">Tag 14</p>
-          <p class="phase-card-subtitle">47% -> Evidenz gesammelt</p>
-        </div>
-        <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="47">
-          <span class="phase-progress-fill" style="--phase-progress:47;"></span>
-          <span class="phase-progress-marker" aria-hidden="true"></span>
-        </div>
-      </article>
-
-      <section class="hero-card hero-card-intel" aria-label="Analyse-Hero">
-        <div class="hero-glow" aria-hidden="true"></div>
-        <div class="hero-stack hero-stack-icon">
-          <img class="hero-panel-icon" src="assets/ui/icons/icon_ec.svg" alt="">
-        </div>
-      </section>
-
-      <section class="info-bar" aria-label="Intel-Metriken">
-        <article class="info-tile">
-          <span class="info-label">Alerts</span>
-          <strong>03</strong>
-        </article>
-        <article class="info-tile">
-          <span class="info-label">Protokolle</span>
-          <strong>18</strong>
-        </article>
-        <article class="info-tile">
-          <span class="info-label">Trend</span>
-          <strong>Positiv</strong>
-        </article>
-      </section>
-
-      <section class="dashboard-grid" aria-label="Intel-Dashboard">
-        <article class="panel panel-status">
-          <h2 class="panel-title">DIAGNOSE</h2>
-          <article class="status-row" style="--value:58;">
-            <div class="status-label">
-              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_ph.svg" alt=""></span>
-              <span>pH Drift</span>
-            </div>
-            <div class="status-track"></div>
-            <strong>58%</strong>
-          </article>
-          <article class="status-row" style="--value:46;">
-            <div class="status-label">
-              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_temperatur.svg" alt=""></span>
-              <span>Wärme</span>
-            </div>
-            <div class="status-track"></div>
-            <strong>46%</strong>
-          </article>
-          <article class="status-row" style="--value:33;">
-            <div class="status-label">
-              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_humidity.svg" alt=""></span>
-              <span>Feuchte</span>
-            </div>
-            <div class="status-track"></div>
-            <strong>33%</strong>
-          </article>
-          <article class="status-row" style="--value:17;">
-            <div class="status-label">
-              <span class="mini-icon"><img class="mini-asset-icon" src="assets/ui/icons/icon_stress.svg" alt=""></span>
-              <span>Stress</span>
-            </div>
-            <div class="status-track"></div>
-            <strong>17%</strong>
-          </article>
-        </article>
-
-        <div class="panel-stack">
-          <article class="panel panel-metrics panel-metrics-grid">
-            <h2 class="panel-title">VERLAUF</h2>
-            <div class="metric-grid-2x2">
-              <div class="metric-cell">
-                <span class="metric-label">Events</span>
-                <strong>11</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Gelöst</span>
-                <strong>9</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Boost</span>
-                <strong>2/6</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Qualität</span>
-                <strong>84</strong>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel panel-metrics panel-metrics-grid">
-            <h2 class="panel-title">AKTIONEN</h2>
-            <div class="metric-grid-2x2">
-              <div class="metric-cell">
-                <span class="metric-label">Pflege</span>
-                <strong>6</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Analyse</span>
-                <strong>5</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Risikopeak</span>
-                <strong>42%</strong>
-              </div>
-              <div class="metric-cell">
-                <span class="metric-label">Stabilität</span>
-                <strong>Hoch</strong>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="action-panel">
-        <button class="action-btn action-medallion action-primary" type="button">
-          <img class="custom-action-icon" src="assets/ui/icons/info.png" alt="" aria-hidden="true">
-          <span class="action-title">Status</span>
-        </button>
-        <button class="action-btn action-medallion action-secondary" type="button">
-          <img class="custom-action-icon" src="assets/ui/icons/confirm.png" alt="" aria-hidden="true">
-          <span class="action-title">Bestät.</span>
-        </button>
-        <button class="action-btn action-medallion action-tertiary" type="button">
-          <img class="custom-action-icon" src="assets/ui/icons/save.png" alt="" aria-hidden="true">
-          <span class="action-title">Speicher</span>
-        </button>
-      </section>
-    </main>
-
-    <section class="screen-nav-panel" aria-label="Bildschirm-Navigation">
-      <button id="screenNavHome" class="action-btn action-secondary screen-nav-btn is-active" type="button" data-screen-target="home">
-        <img class="screen-nav-icon" src="assets/ui/icons/menu.png" alt="" aria-hidden="true">
-        <span>Home</span>
-      </button>
-      <button id="screenNavOps" class="action-btn action-secondary screen-nav-btn" type="button" data-screen-target="ops">
-        <img class="screen-nav-icon" src="assets/ui/icons/pflege.png" alt="" aria-hidden="true">
-        <span>Ops</span>
-      </button>
-      <button id="screenNavIntel" class="action-btn action-secondary screen-nav-btn" type="button" data-screen-target="intel">
-        <img class="screen-nav-icon" src="assets/ui/icons/analyse.png" alt="" aria-hidden="true">
-        <span>Intel</span>
-      </button>
-    </section>
-  </div>
+</div>
 
   <div id="sheetBackdrop" class="sheet-backdrop hidden" aria-hidden="true"></div>
 
-  <section id="careSheet" class="bottom-sheet hidden" aria-hidden="true">
-    <header class="sheet-header">
-      <h2>Pflege</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+  <section id="careSheet" class="bottom-sheet figma-sheet figma-sheet-care hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Pflege / Aktionen</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
     </header>
-    <div class="sheet-content">
-      <p class="sheet-note">Kategorie wählen, Intensität antippen, Aktion direkt ausführen.</p>
-      <div id="careCategoryList" class="care-category-list" role="tablist" aria-label="Pflegekategorien"></div>
-      <div id="careActionList" class="care-action-list" aria-live="polite"></div>
-      <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">Bereit.</p>
+    <div class="sheet-content figma-sheet-content">
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div class="figma-top-player-title">Aktionsdeck</div>
+        <div class="figma-top-player-subtitle">Pflege und Eingriffe</div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--care">
+        <h3 class="figma-section-head">Pflegeaktionen</h3>
+        <div id="careCategoryList" class="care-category-list figma-care-categories" role="tablist" aria-label="Pflegekategorien"></div>
+        <div id="careActionList" class="care-action-list figma-care-actions" aria-live="polite"></div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--care">
+        <h3 class="figma-section-head">Zeitaktionen</h3>
+        <ul id="careEffectsList" class="care-effects-list"></ul>
+        <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">WÃ¤hle eine Aktion.</p>
+        <button id="careExecuteButton" class="action-btn action-primary care-execute-btn" type="button">Aktion ausfÃ¼hren</button>
+      </section>
     </div>
   </section>
 
-  <section id="eventSheet" class="bottom-sheet hidden" aria-hidden="true">
-    <header class="sheet-header">
-      <h2>Ereignis</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+  <section id="eventSheet" class="bottom-sheet figma-sheet figma-sheet-event hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Ereignis-Popup</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
     </header>
-    <div class="sheet-content">
-      <p id="eventStateBadge" class="sheet-badge">Status: inaktiv</p>
-      <h3 id="eventTitle">Kein aktives Ereignis</h3>
-      <p id="eventText">Ereignisdetails erscheinen hier, sobald ein Ereignis aktiv ist.</p>
-      <p id="eventMeta" class="sheet-note">Abklingzeit: bereit</p>
-      <div id="eventOptionList" class="event-option-list"></div>
+    <div class="sheet-content figma-sheet-content">
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div class="figma-top-player-title">Event-System</div>
+        <div class="figma-top-player-subtitle">Positive &amp; negative Varianten</div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--event">
+        <h3 class="figma-section-head">Negatives Event</h3>
+        <p id="eventStateBadge" class="sheet-badge">Status: inaktiv</p>
+        <h3 id="eventTitle">Kein aktives Ereignis</h3>
+        <p id="eventText">Ereignisdetails erscheinen hier, sobald ein Ereignis aktiv ist.</p>
+        <p id="eventMeta" class="sheet-note">Abklingzeit: bereit</p>
+        <div id="eventOptionList" class="event-option-list"></div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--event-positive" aria-hidden="true">
+        <h3 class="figma-section-head">Positives Event</h3>
+        <p class="sheet-note">VitalitÃ¤tsschub: optimale Bedingungen erkannt.</p>
+        <div class="figma-static-row"><span>Bonus Ã¼bernehmen</span><strong class="value_green">+12%</strong></div>
+        <div class="figma-static-row"><span>Stabil weiterfahren</span><span class="subtitle">Sicher</span></div>
+      </section>
     </div>
   </section>
 
-  <section id="dashboardSheet" class="bottom-sheet hidden" aria-hidden="true">
-    <header class="sheet-header">
-      <h2>Analyse</h2>
+  <section id="dashboardSheet" class="bottom-sheet figma-sheet figma-sheet-analysis hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Analyse / Statistik</h2>
       <div class="sheet-header-actions">
-        <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+        <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
       </div>
     </header>
-    <div class="sheet-content analysis-content">
-      <section id="analysisPanelOverview" class="gs-analysis-panel gs-analysis-overview" aria-live="polite"></section>
-      <section id="analysisPanelDiagnosis" class="gs-analysis-panel gs-analysis-diagnosis hidden" aria-live="polite"></section>
-      <section id="analysisPanelTimeline" class="gs-analysis-panel gs-analysis-timeline hidden" aria-live="polite"></section>
+    <div class="sheet-content analysis-content figma-sheet-content">
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div class="figma-top-player-title">Analysezentrum</div>
+        <div class="figma-top-player-subtitle">Live-Metriken</div>
+      </section>
 
-      <div class="gs-analysis-tabs" role="tablist" aria-label="Analyse-Aktionen">
-        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button">Zurück</button>
-        <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button">Empfehlung</button>
-        <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button">Details / Export</button>
+      <section id="analysisPanelOverview" class="gs-analysis-panel gs-analysis-overview figma-section-card" aria-live="polite"></section>
+      <section id="analysisPanelDiagnosis" class="gs-analysis-panel gs-analysis-diagnosis figma-section-card hidden" aria-live="polite"></section>
+      <section id="analysisPanelTimeline" class="gs-analysis-panel gs-analysis-timeline figma-section-card hidden" aria-live="polite"></section>
+
+      <div class="gs-analysis-tabs figma-bottom-actions" role="tablist" aria-label="Analyse-Aktionen">
+        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button">Report</button>
+        <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button">Filter</button>
+        <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button">Export</button>
       </div>
     </div>
   </section>
 
-  <section id="diagnosisSheet" class="bottom-sheet hidden" aria-hidden="true">
-    <header class="sheet-header">
-      <h2>Diagnose</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+  <section id="diagnosisSheet" class="bottom-sheet figma-sheet figma-sheet-settings hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Einstellungen</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
     </header>
-    <div class="sheet-content">
-      <p>Dieses MVP enthält ein gesperrtes Platzhaltermodul für Diagnose.</p>
-      <ul class="diagnosis-list">
-        <li>Wahrscheinlichkeits-Heatmap für Pathogene (Pro)</li>
-        <li>Zerlegung der Nährstofftrends (Pro)</li>
-        <li>Vorhersage für Wurzelstress (Pro)</li>
-      </ul>
+    <div class="sheet-content figma-sheet-content">
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div class="figma-top-player-title">System</div>
+        <div class="figma-top-player-subtitle">Simulationseinstellungen</div>
+      </section>
+
+      <section class="figma-section-card figma-settings-card figma-settings-card--gameplay">
+        <h3 class="figma-section-head">Gameplay</h3>
+        <div class="figma-static-row"><span>Simulationstempo</span><strong id="settingsSimSpeedValue" class="value_gold">1.0x</strong></div>
+        <div class="figma-static-row"><span>Event-HÃ¤ufigkeit</span><span id="settingsEventFrequencyValue" class="subtitle">30-90m</span></div>
+        <div class="figma-static-row"><span>Tutorial-Hinweise</span><strong id="settingsTutorialValue" class="value_green">An</strong></div>
+        <div class="figma-static-row"><span>Autosave</span><strong id="settingsAutosaveValue" class="value_green">Alle 5s</strong></div>
+      </section>
+
+      <section class="figma-section-card figma-settings-card figma-settings-card--audio">
+        <h3 class="figma-section-head">Audio und Grafik</h3>
+        <div class="figma-static-row">
+          <span>Push-Benachrichtigungen</span>
+          <button id="pushToggleBtn" class="ghost-btn settings-toggle-btn" type="button" aria-pressed="false">Aus</button>
+        </div>
+        <p id="pushToggleStatus" class="sheet-note">Deaktiviert</p>
+        <div class="settings-checkboxes">
+          <label><input id="notifTypeEvents" type="checkbox">Events</label>
+          <label><input id="notifTypeCritical" type="checkbox">Kritisch</label>
+          <label><input id="notifTypeReminder" type="checkbox">Erinnerung</label>
+        </div>
+        <p id="pushToggleFeedback" class="sheet-note"></p>
+      </section>
+
+      <section class="figma-section-card figma-settings-card figma-settings-card--account">
+        <h3 class="figma-section-head">Account</h3>
+        <div class="figma-static-row"><span>Cloud Sync</span><strong id="settingsCloudSyncValue" class="value_green">Verbunden</strong></div>
+        <div class="figma-static-row"><span>Support</span><button id="settingsSupportBtn" class="ghost-btn settings-link-btn" type="button">Ã–ffnen</button></div>
+        <div class="figma-settings-actions">
+          <button id="analysisResetBtn" class="action-btn action-secondary" type="button">Reset</button>
+          <button id="settingsDefaultBtn" class="action-btn action-primary" type="button">Default</button>
+          <button id="settingsSaveBtn" class="action-btn action-primary" type="button">Speichern</button>
+        </div>
+      </section>
     </div>
   </section>
 
   <section id="statDetailSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2 id="statDetailTitle">Statistik</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
     </header>
     <div class="sheet-content stat-detail-content">
       <p id="statDetailValue" class="stat-detail-value">0</p>
@@ -543,16 +289,46 @@
     </div>
   </section>
 
-  <section id="landing" class="landing-overlay hidden" aria-hidden="true">
-    <div class="landing-card">
-      <h2>Einrichtung</h2>
-      <p class="sheet-note">Einmalige Grundeinstellungen für diesen Durchlauf.</p>
-      <label>Modus<select id="setupMode"><option value="indoor">Innen</option><option value="outdoor">Außen</option><option value="greenhouse">Gewächshaus</option></select></label>
-      <label>Licht<select id="setupLight"><option value="low">Niedrig</option><option value="medium" selected>Mittel</option><option value="high">Hoch</option></select></label>
-      <label>Substrat<select id="setupMedium"><option value="soil" selected>Erde</option><option value="coco">Kokos</option><option value="hydro">Hydroponik</option></select></label>
-      <label>Topfgröße<select id="setupPotSize"><option value="small">Klein</option><option value="medium" selected>Mittel</option><option value="large">Groß</option></select></label>
-      <label>Genetik<select id="setupGenetics"><option value="auto" selected>Autoflower</option><option value="photo">Photoperiodisch</option></select></label>
-      <button id="startRunBtn" class="action-btn action-primary" type="button">Durchlauf starten</button>
+  <section id="landing" class="landing-overlay figma-onboarding-overlay hidden" aria-hidden="true">
+    <div class="landing-card figma-onboarding-card">
+      <h2>Start / Onboarding</h2>
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div class="figma-top-player-title">Grow Simulator</div>
+        <div class="figma-top-player-subtitle">Neue Session</div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">TopfgrÃ¶ÃŸe</h3>
+        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupPotSize" data-setup-value="small"><span>2 Liter (S)</span><strong class="value_gold">FrÃ¼hspiel</strong></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="medium"><span>8 Liter (M)</span><strong class="value_green">Ausgewogen</strong></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="large"><span>16 Liter (L)</span><strong class="value_gold">Langzeit</strong></button>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Pflanzentyp</h3>
+        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupGenetics" data-setup-value="auto"><span>Hybrid / Auto</span><span class="badge">Empfohlen</span></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupGenetics" data-setup-value="photo"><span>Sativa / Photo</span><span class="subtitle">Langzyklus</span></button>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Setup-Modus</h3>
+        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupMode" data-setup-value="indoor"><span>Auto Setup</span><strong class="value_green">Aktiv</strong></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupMode" data-setup-value="outdoor"><span>Foto Setup</span><span class="subtitle">Manuell</span></button>
+      </section>
+
+      <div class="figma-onboarding-actions">
+        <button class="ghost-btn" type="button">ZurÃ¼ck</button>
+        <button class="ghost-btn" type="button">Preset</button>
+        <button id="startRunBtn" class="action-btn action-primary" type="button">Start</button>
+      </div>
+
+      <div class="setup-hidden-selects" aria-hidden="true">
+        <label>Modus<select id="setupMode"><option value="indoor" selected>Indoor</option><option value="outdoor">Outdoor</option><option value="greenhouse">Greenhouse</option></select></label>
+        <label>Licht<select id="setupLight"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+        <label>Substrat<select id="setupMedium"><option value="soil" selected>Soil</option><option value="coco">Coco</option><option value="hydro">Hydro</option></select></label>
+        <label>Topf<select id="setupPotSize"><option value="small" selected>Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
+        <label>Genetik<select id="setupGenetics"><option value="auto" selected>Auto</option><option value="photo">Photo</option></select></label>
+      </div>
     </div>
   </section>
 
@@ -565,7 +341,7 @@
       <ol id="deathHistoryList" class="death-list"></ol>
       <div class="death-actions">
         <button id="deathRescueBtn" class="action-btn action-primary" type="button">Rettungsaktion nutzen</button>
-        <span id="deathRescueSubtext" class="sheet-note">1× pro Run</span>
+        <span id="deathRescueSubtext" class="sheet-note">1Ã— pro Run</span>
         <span id="deathRescueFeedback" class="sheet-note"></span>
         <button id="deathResetBtn" class="action-btn action-secondary" type="button">Neuen Run starten</button>
         <button id="deathAnalyzeBtn" class="action-btn action-ghost" type="button">Analyse ansehen</button>
@@ -574,37 +350,37 @@
   </section>
 
   <div id="menuBackdrop" class="menu-backdrop hidden" aria-hidden="true"></div>
-  <section id="gameMenu" class="game-menu hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
-    <header class="game-menu-header">
-      <h2 id="menuTitle">MENÜ</h2>
-      <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="Menü schließen">X</button>
+  <section id="gameMenu" class="game-menu figma-menu-screen hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+    <header class="game-menu-header figma-sheet-header">
+      <h2 id="menuTitle">MenÃ¼</h2>
+      <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="MenÃ¼ schlieÃŸen">X</button>
     </header>
-    <div class="game-menu-content">
-      <section class="game-menu-section">
-        <h3>SPIEL</h3>
-        <button id="menuNewRunBtn" class="menu-entry" type="button"><span>Neuer Run</span><small>Starte einen neuen Durchgang.</small></button>
-        <button id="menuRescueBtn" class="menu-entry" type="button"><span>Rettungsaktion</span><small id="menuRescueSubtext">Einmalige Notfall-Rettung.</small></button>
-        <button id="menuStatsBtn" class="menu-entry" type="button"><span>Run-Statistik</span><small>&Ouml;ffnet die aktuelle Pflanzenanalyse.</small></button>
+    <div class="game-menu-content figma-sheet-content">
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div class="figma-top-player-title">Max Mustergrower</div>
+        <div class="figma-top-player-subtitle">GÃ¤rtner</div>
       </section>
 
-      <section class="game-menu-section">
-        <h3>EINSTELLUNGEN</h3>
-        <button id="menuPushBtn" class="menu-entry" type="button" aria-pressed="false"><span>Push-Benachrichtigungen</span><small id="menuPushStatus">Deaktiviert</small></button>
-        <button id="menuLanguageBtn" class="menu-entry" type="button"><span>Sprache</span><small>Platzhalter</small></button>
+      <section class="figma-section-card figma-menu-list">
+        <button id="menuStatsBtn" class="menu-entry figma-menu-entry" type="button"><span>Profil</span><small>Run-Statistik</small></button>
+        <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span>Inventar</span><small id="menuRescueSubtext">Einmalige Rettung verfÃ¼gbar.</small></button>
+        <button id="menuSupportBtn" class="menu-entry figma-menu-entry" type="button"><span>Missionen</span><small>Projekt unterstÃ¼tzen</small></button>
+        <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span>Tutorial</span><small>Infos und Team</small></button>
+        <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span>Einstellungen</span><small>Einstellungen Ã¶ffnen</small></button>
+        <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span>Speichern und Beenden</span><small>Neuen Run starten</small></button>
       </section>
 
-      <section class="game-menu-section">
-        <h3>SUPPORT</h3>
-        <button id="menuSupportBtn" class="menu-entry" type="button"><span>Projekt unterst&uuml;tzen</span><small>Platzhalter</small></button>
-        <button id="menuAboutBtn" class="menu-entry" type="button"><span>&Uuml;ber das Spiel</span><small>Infos und Team</small></button>
+      <section class="figma-section-card">
+        <h3 class="figma-section-head">Schnellzugriff</h3>
+        <div class="figma-static-row"><span>Push-Benachrichtigungen</span><strong id="menuPushStatus" class="value_gold">Deaktiviert</strong></div>
+        <button id="menuPushBtn" class="menu-entry figma-menu-entry figma-menu-entry--small" type="button" aria-pressed="false"><span>Push umschalten</span><small>Status jetzt Ã¤ndern</small></button>
       </section>
 
       <div class="menu-quick-actions">
-        <button id="menuAchievementsBtn" class="ghost-btn" type="button">Erfolge</button>
-        <button id="menuLeaderboardBtn" class="ghost-btn" type="button">Rangliste</button>
+        <button id="menuAchievementsBtn" class="ghost-btn" type="button">Home</button>
+        <button id="menuLeaderboardBtn" class="ghost-btn" type="button">Ops</button>
+        <button id="menuCloseBtn" class="action-btn action-primary" type="button">SchlieÃŸen</button>
       </div>
-
-      <button id="menuCloseBtn" class="action-btn action-primary" type="button">Schließen</button>
     </div>
   </section>
 
@@ -619,17 +395,6 @@
     </div>
   </section>
 
-  <div class="hidden" aria-hidden="true">
-    <button id="analysisResetBtn" type="button"></button>
-    <button id="pushToggleBtn" type="button"></button>
-    <span id="pushToggleStatus"></span>
-    <span id="pushToggleFeedback"></span>
-    <input id="notifTypeEvents" type="checkbox">
-    <input id="notifTypeCritical" type="checkbox">
-    <input id="notifTypeReminder" type="checkbox">
-
-  </div>
-
   <script src="sim.js?v=20260319c" defer></script>
   <script src="src/simulation/plantState.js?v=20260319c" defer></script>
   <script src="src/events/eventFlags.js?v=20260319c" defer></script>
@@ -640,8 +405,16 @@
   <script src="ui.js?v=20260319c" defer></script>
   <script src="storage.js?v=20260319c" defer></script>
   <script src="notifications.js?v=20260319c" defer></script>
-  <script src="app.js?v=20260319c" defer></script>
+  <script src="src/ui/components/primitives.js?v=20260319d" defer></script>
+  <script src="src/ui/controller/uiController.js?v=20260319d" defer></script>
+  <script src="src/ui/runtime/screenRuntimeManager.js?v=20260319d" defer></script>
+  <script src="src/ui/mappings/homeMapping.js?v=20260319d" defer></script>
+  <script src="src/ui/mappings/careMapping.js?v=20260319d" defer></script>
+  <script src="src/ui/screens/screenModules.js?v=20260319d" defer></script>
+  <script src="app.js?v=20260319d" defer></script>
 </body>
 </html>
+
+
 
 

@@ -291,6 +291,7 @@ const state = {
     activeEffects: []
   },
   ui: {
+    activeScreen: 'home',
     openSheet: null,
     menuOpen: false,
     menuDialogOpen: false,
@@ -324,6 +325,10 @@ let persistTimer = null;
 let rescueAdPending = false;
 let wasCriticalHealth = false;
 let menuDialogConfirmHandler = null;
+let uiController = null;
+let screenRuntimeManager = null;
+let menuOverlayModule = null;
+let sheetsOverlayModule = null;
 
 const actionDebounceUntil = Object.create(null);
 
@@ -440,6 +445,209 @@ function wireDomainOwnership() {
   window.__gsDomainOwnership = ownership;
 }
 
+function getUiController() {
+  if (uiController) {
+    return uiController;
+  }
+  if (window.__gsUiController) {
+    uiController = window.__gsUiController;
+    return uiController;
+  }
+  return null;
+}
+
+function getUiPrimitives() {
+  const primitives = window.GrowSimUIPrimitives;
+  if (primitives && typeof primitives === 'object') {
+    return primitives;
+  }
+  return null;
+}
+
+function uiNode(key, fallbackId) {
+  if (ui[key]) {
+    return ui[key];
+  }
+  if (fallbackId) {
+    const node = document.getElementById(fallbackId);
+    if (node) {
+      ui[key] = node;
+      return node;
+    }
+  }
+  return null;
+}
+
+function resolveScreenContainer(screenId) {
+  if (Array.isArray(ui.screenViews)) {
+    const existing = ui.screenViews.find((node) => node && node.dataset && node.dataset.screen === screenId);
+    if (existing) {
+      return existing;
+    }
+  }
+  return document.querySelector(`.hud-screen[data-screen="${screenId}"]`);
+}
+
+function createFallbackScreenModule(screenId, container, mapping, updateFn) {
+  return {
+    id: screenId,
+    container,
+    mapping,
+    render() {
+      return container;
+    },
+    bindEvents() {
+    },
+    update(vm, prevVm) {
+      if (typeof updateFn === 'function') {
+        updateFn(vm, prevVm);
+      }
+    }
+  };
+}
+
+function createHomeScreenModule(mapping) {
+  const modulesApi = window.GrowSimScreenModules;
+  const container = resolveScreenContainer('home');
+  if (modulesApi && typeof modulesApi.createHomeScreenModule === 'function') {
+    return modulesApi.createHomeScreenModule({
+      container,
+      mapping,
+      renderer: window.GrowSimHomeRenderer || null,
+      onBindEvents: (controller) => {
+        if (typeof bindHomeScreenEvents === 'function') {
+          bindHomeScreenEvents(controller);
+        }
+      },
+      onUpdate: (vm, prevVm) => updateHomeFromViewModel(vm, prevVm)
+    });
+  }
+  return createFallbackScreenModule('home', container, mapping, (vm, prevVm) => updateHomeFromViewModel(vm, prevVm));
+}
+
+function createPassiveScreenModule(screenId) {
+  const modulesApi = window.GrowSimScreenModules;
+  const container = resolveScreenContainer(screenId);
+  if (modulesApi && typeof modulesApi.createPassiveScreenModule === 'function') {
+    return modulesApi.createPassiveScreenModule({
+      id: screenId,
+      container,
+      mapping: null
+    });
+  }
+  return createFallbackScreenModule(screenId, container, null, null);
+}
+
+function createOverlayFallbackModule(moduleId, onBindEvents, onUpdate) {
+  return {
+    id: String(moduleId || 'overlay'),
+    render() {
+    },
+    bindEvents(controller) {
+      if (typeof onBindEvents === 'function') {
+        onBindEvents(controller);
+      }
+    },
+    update(vm, prevVm) {
+      if (typeof onUpdate === 'function') {
+        onUpdate(vm, prevVm);
+      }
+    }
+  };
+}
+
+function createMenuOverlayModule() {
+  const modulesApi = window.GrowSimScreenModules;
+  if (modulesApi && typeof modulesApi.createMenuOverlayModule === 'function') {
+    return modulesApi.createMenuOverlayModule({
+      onBindEvents: (controller) => {
+        if (typeof bindMenuOverlayEvents === 'function') {
+          bindMenuOverlayEvents(controller);
+        }
+      },
+      onUpdate: () => {
+        renderGameMenu();
+      }
+    });
+  }
+  return createOverlayFallbackModule('menuOverlay', (controller) => {
+    if (typeof bindMenuOverlayEvents === 'function') {
+      bindMenuOverlayEvents(controller);
+    }
+  }, () => renderGameMenu());
+}
+
+function createSheetsOverlayModule() {
+  const modulesApi = window.GrowSimScreenModules;
+  if (modulesApi && typeof modulesApi.createSheetsOverlayModule === 'function') {
+    return modulesApi.createSheetsOverlayModule({
+      onBindEvents: (controller) => {
+        if (typeof bindSheetsOverlayEvents === 'function') {
+          bindSheetsOverlayEvents(controller);
+        }
+      },
+      onUpdate: () => {
+        renderSheets();
+        renderCareSheet();
+        renderEventSheet();
+        renderAnalysisPanel(false);
+      }
+    });
+  }
+  return createOverlayFallbackModule('sheetsOverlay', (controller) => {
+    if (typeof bindSheetsOverlayEvents === 'function') {
+      bindSheetsOverlayEvents(controller);
+    }
+  }, () => {
+    renderSheets();
+    renderCareSheet();
+    renderEventSheet();
+    renderAnalysisPanel(false);
+  });
+}
+
+function initUiArchitecture() {
+  const controllerApi = window.GrowSimUIController;
+  if (controllerApi && typeof controllerApi.createUIController === 'function') {
+    uiController = controllerApi.createUIController({
+      applyAction: (actionId) => applyAction(actionId),
+      applyEventOption: (optionId) => onEventOptionClickCore(optionId),
+      openSheet: (sheetName) => openSheet(sheetName),
+      closeSheet: () => closeSheet(),
+      closeMenu: () => closeMenu(),
+      resetRun: () => resetRun(),
+      toggleMenu: () => onMenuToggleClick()
+    });
+    window.__gsUiController = uiController;
+  }
+
+  const runtimeApi = window.GrowSimScreenRuntime;
+  if (runtimeApi && typeof runtimeApi.createScreenRuntimeManager === 'function') {
+    const mappings = window.GrowSimScreenMappings || {};
+    screenRuntimeManager = runtimeApi.createScreenRuntimeManager({
+      root: document,
+      defaultScreenId: 'home'
+    });
+    screenRuntimeManager.register(createHomeScreenModule(mappings.home || null));
+    if (uiController) {
+      screenRuntimeManager.bindController(uiController);
+    }
+    const active = state.ui && typeof state.ui.activeScreen === 'string' ? state.ui.activeScreen : 'home';
+    state.ui.activeScreen = screenRuntimeManager.setActiveScreen(active);
+    window.__gsScreenRuntime = screenRuntimeManager;
+  }
+
+  menuOverlayModule = createMenuOverlayModule();
+  sheetsOverlayModule = createSheetsOverlayModule();
+
+  if (menuOverlayModule && typeof menuOverlayModule.bindEvents === 'function') {
+    menuOverlayModule.bindEvents(uiController);
+  }
+  if (sheetsOverlayModule && typeof sheetsOverlayModule.bindEvents === 'function') {
+    sheetsOverlayModule.bindEvents(uiController);
+  }
+}
+
 async function boot() {
   let bootStep = 'start';
   try {
@@ -478,6 +686,12 @@ async function boot() {
     bootStep = 'bind_ui';
     bindUi();
     logBootStep('boot:bind_ui');
+    bootStep = 'ui_architecture';
+    initUiArchitecture();
+    logBootStep('boot:ui_architecture', {
+      controller: Boolean(uiController),
+      runtime: Boolean(screenRuntimeManager)
+    });
     applyBackgroundAsset();
     bootStep = 'service_worker';
     await registerServiceWorker();
@@ -1422,6 +1636,14 @@ function applyFoundationFollowUps(choice, eventId) {
 }
 
 function onEventOptionClick(optionId) {
+  const controller = getUiController();
+  if (controller && typeof controller.handleEventOption === 'function' && !controller.isDispatching()) {
+    return controller.handleEventOption(optionId);
+  }
+  return onEventOptionClickCore(optionId);
+}
+
+function onEventOptionClickCore(optionId) {
   if (isPlantDead()) {
     return;
   }
@@ -1668,7 +1890,10 @@ function cooldownMs() {
 }
 
 function onCareApply() {
-  const result = applyAction('watering_medium_deep');
+  const controller = getUiController();
+  const result = controller && typeof controller.handleAction === 'function'
+    ? controller.handleAction('watering_medium_deep')
+    : applyAction('watering_medium_deep');
   if (!result.ok) {
     addLog('action', `Aktion blockiert: ${result.reason}`, { actionId: 'watering_medium_deep' });
   }
@@ -1676,6 +1901,14 @@ function onCareApply() {
   closeSheet();
   renderAll();
   schedulePersistState(true);
+}
+
+function executeCareAction(actionId) {
+  const controller = getUiController();
+  if (controller && typeof controller.handleAction === 'function') {
+    return controller.handleAction(actionId);
+  }
+  return applyAction(actionId);
 }
 
 function applyAction(actionId) {
@@ -2245,147 +2478,291 @@ function updateVisibleOverlays() {
 
 function renderAll() {
   syncDeathState();
-  renderHud();
+  renderActiveScreen();
+  renderOverlayModules();
+  renderLanding();
+  renderDeathOverlay();
+}
+
+function renderOverlayModules() {
+  let handled = false;
+
+  if (sheetsOverlayModule && typeof sheetsOverlayModule.update === 'function') {
+    sheetsOverlayModule.update(state, null);
+    handled = true;
+  }
+
+  if (menuOverlayModule && typeof menuOverlayModule.update === 'function') {
+    menuOverlayModule.update(state, null);
+    handled = true;
+  }
+
+  if (handled) {
+    return;
+  }
+
   renderSheets();
   renderGameMenu();
   renderCareSheet();
   renderEventSheet();
   renderAnalysisPanel(false);
-  renderLanding();
-  renderDeathOverlay();
+  renderSettingsSheet();
+}
+
+function renderActiveScreen() {
+  if (screenRuntimeManager && typeof screenRuntimeManager.render === 'function') {
+    const active = state.ui && typeof state.ui.activeScreen === 'string' ? state.ui.activeScreen : 'home';
+    state.ui.activeScreen = screenRuntimeManager.setActiveScreen(active);
+    screenRuntimeManager.render(state);
+    return;
+  }
+  renderHud();
+}
+
+function buildHomeViewModel(appState = state) {
+  const sourceState = appState && typeof appState === 'object' ? appState : state;
+  const dead = Boolean(sourceState.plant && (sourceState.plant.isDead || sourceState.plant.phase === 'dead'));
+  const phaseCard = typeof getPhaseCardViewModel === 'function'
+    ? getPhaseCardViewModel()
+    : { title: '-', cycleIcon: '-', ageLabel: '-', subtitle: '-', progressPercent: 0, nextLabel: '' };
+  const eventStatus = eventStatusDisplay(sourceState);
+  const simulation = sourceState.simulation || {};
+  const status = sourceState.status || {};
+  const boost = sourceState.boost || {};
+
+  const simDay = Number(simulation.simDay || 0);
+  const xpCurrent = 1200 + (simDay * 440);
+  const xpTarget = 8650;
+  const xpRatio = clamp(xpCurrent / xpTarget, 0, 1);
+  const coinBalance = 2480 + Math.round(simDay * 28);
+  const gemBalance = 55 + Math.max(0, Math.floor(Number(boost.boostUsedToday || 0) / 2));
+  const starBalance = 114 + Math.round(Number(status.growth || 0) / 2);
+
+  const environment = deriveEnvironmentReadout(sourceState);
+  const roots = deriveRootZoneReadout(environment, sourceState);
+  const showSkipNight = !dead && !Boolean(simulation.isDaytime);
+
+  return {
+    id: 'home',
+    dead,
+    phaseCard,
+    eventStatus,
+    boostText: `Event -30 Min · kleiner Pflanzenimpuls · ${Number(boost.boostUsedToday || 0)}/${Number(boost.boostMaxPerDay || 0)} heute`,
+    growthImpulseText: Number(simulation.growthImpulse || 0).toFixed(2),
+    simTimeText: formatSimClock(Number(simulation.simTimeMs || 0)),
+    isDaytime: Boolean(simulation.isDaytime),
+    rings: {
+      health: Number(status.health || 0),
+      stress: Number(status.stress || 0),
+      water: Number(status.water || 0),
+      nutrition: Number(status.nutrition || 0),
+      growth: Number(status.growth || 0),
+      risk: Number(status.risk || 0)
+    },
+    panel: {
+      playerName: 'Max Mustergrower',
+      playerRole: 'Gärtner',
+      xpText: `XP: ${formatCompactNumber(xpCurrent)} / ${formatCompactNumber(xpTarget)}`,
+      xpPercent: Math.round(xpRatio * 100),
+      coinText: formatCompactNumber(coinBalance),
+      gemText: formatCompactNumber(gemBalance),
+      starText: formatCompactNumber(starBalance),
+      envTempText: `${environment.temperatureC.toFixed(1)}°C`,
+      envHumidityText: `${environment.humidityPercent}%`,
+      envVpdText: `${environment.vpdKpa.toFixed(1)} kPa`,
+      envLightText: `${environment.ppfd} PPFD`,
+      envAirflowText: environment.airflowLabel,
+      rootPhText: roots.ph,
+      rootEcText: roots.ec,
+      rootHealthText: roots.rootHealth,
+      rootOxygenText: roots.oxygen
+    },
+    actions: {
+      careDisabled: dead,
+      boostDisabled: dead,
+      diagnosisDisabled: dead,
+      skipNightDisabled: dead || Boolean(simulation.isDaytime),
+      showSkipNight
+    },
+    overlays: Array.isArray(sourceState.ui && sourceState.ui.visibleOverlayIds)
+      ? sourceState.ui.visibleOverlayIds.slice()
+      : []
+  };
+}
+
+function updateHomeFromViewModel(homeVm, prevVm = null) {
+  const vm = homeVm && typeof homeVm === 'object' ? homeVm : buildHomeViewModel(state);
+  const phaseCard = vm.phaseCard || {};
+  const dead = Boolean(vm.dead);
+
+  const phaseCardTitleNode = uiNode('phaseCardTitle', 'phaseCardTitle');
+  const phaseCardCycleNode = uiNode('phaseCardCycle', 'phaseCardCycle');
+  const phaseCardAgeNode = uiNode('phaseCardAge', 'phaseCardAge');
+  const phaseCardSubtitleNode = uiNode('phaseCardSubtitle', 'phaseCardSubtitle');
+  const phaseProgressFillNode = uiNode('phaseProgressFill', 'phaseProgressFill');
+  const phaseCardNode = uiNode('phaseCard', 'phaseCard');
+  const phaseProgressNode = ui.phaseProgress || (phaseCardNode ? phaseCardNode.querySelector('.phase-progress') : null);
+  const phaseProgressMarkerNode = uiNode('phaseProgressMarker', 'phaseProgressMarker');
+
+  if (phaseCardTitleNode && phaseCardTitleNode.textContent !== phaseCard.title) {
+    phaseCardTitleNode.textContent = String(phaseCard.title || '');
+  }
+  if (phaseCardCycleNode && phaseCardCycleNode.textContent !== phaseCard.cycleIcon) {
+    phaseCardCycleNode.textContent = String(phaseCard.cycleIcon || '');
+  }
+  if (phaseCardCycleNode) {
+    phaseCardCycleNode.setAttribute('aria-label', vm.isDaytime ? 'Tag' : 'Nacht');
+  }
+  if (phaseCardAgeNode && phaseCardAgeNode.textContent !== phaseCard.ageLabel) {
+    phaseCardAgeNode.textContent = String(phaseCard.ageLabel || '');
+  }
+  if (phaseCardSubtitleNode && phaseCardSubtitleNode.textContent !== phaseCard.subtitle) {
+    phaseCardSubtitleNode.textContent = String(phaseCard.subtitle || '');
+  }
+  if (phaseProgressFillNode) {
+    phaseProgressFillNode.style.setProperty('--phase-progress', String(Number(phaseCard.progressPercent || 0)));
+  }
+  if (phaseCardNode) {
+    phaseCardNode.classList.toggle('phase-card--complete', Number(phaseCard.progressPercent || 0) >= 100);
+    phaseCardNode.setAttribute(
+      'aria-label',
+      `Phase ${String(phaseCard.title || '-')}. ${String(phaseCard.ageLabel || '-')}. ${String(phaseCard.subtitle || '-')}.`
+    );
+  }
+  if (phaseProgressNode) {
+    phaseProgressNode.setAttribute('aria-valuenow', String(Number(phaseCard.progressPercent || 0)));
+  }
+  if (phaseProgressMarkerNode) {
+    phaseProgressMarkerNode.classList.toggle('hidden', !phaseCard.nextLabel || Number(phaseCard.progressPercent || 0) >= 100);
+  }
+
+  const boostUsageTextNode = uiNode('boostUsageText', 'boostUsageText');
+  if (boostUsageTextNode && boostUsageTextNode.textContent !== vm.boostText) {
+    boostUsageTextNode.textContent = String(vm.boostText || '');
+  }
+
+  setRing(uiNode('healthRing', 'healthRing'), uiNode('healthValue', 'healthValue'), Number(vm.rings && vm.rings.health || 0));
+  setRing(uiNode('stressRing', 'stressRing'), uiNode('stressValue', 'stressValue'), Number(vm.rings && vm.rings.stress || 0));
+  setRing(uiNode('waterRing', 'waterRing'), uiNode('waterValue', 'waterValue'), Number(vm.rings && vm.rings.water || 0));
+  setRing(uiNode('nutritionRing', 'nutritionRing'), uiNode('nutritionValue', 'nutritionValue'), Number(vm.rings && vm.rings.nutrition || 0));
+  setRing(uiNode('growthRing', 'growthRing'), uiNode('growthValue', 'growthValue'), Number(vm.rings && vm.rings.growth || 0));
+  setRing(uiNode('riskRing', 'riskRing'), uiNode('riskValue', 'riskValue'), Number(vm.rings && vm.rings.risk || 0));
+
+  const plantCanvas = uiNode('plantImage', 'plantImage');
+  if (plantCanvas && typeof renderPlantFromSprite === 'function') {
+    renderPlantFromSprite(plantCanvas);
+  }
+
+  const nextEventValueNode = uiNode('nextEventValue', 'nextEventValue');
+  if (nextEventValueNode) {
+    nextEventValueNode.textContent = String(vm.eventStatus && vm.eventStatus.value ? vm.eventStatus.value : '');
+    const nextLabel = String(vm.eventStatus && vm.eventStatus.label ? vm.eventStatus.label : '');
+    if (nextEventValueNode.dataset.label !== nextLabel) {
+      const labelNode = nextEventValueNode.closest('.info-tile')?.querySelector('.info-label');
+      if (labelNode) {
+        labelNode.textContent = nextLabel;
+      }
+      nextEventValueNode.dataset.label = nextLabel;
+    }
+  }
+
+  const growthImpulseNode = uiNode('growthImpulseValue', 'growthImpulseValue');
+  if (growthImpulseNode && growthImpulseNode.textContent !== vm.growthImpulseText) {
+    growthImpulseNode.textContent = String(vm.growthImpulseText || '0.00');
+  }
+  const simTimeNode = uiNode('simTimeValue', 'simTimeValue');
+  if (simTimeNode && simTimeNode.textContent !== vm.simTimeText) {
+    simTimeNode.textContent = String(vm.simTimeText || '');
+  }
+
+  renderPanelReadouts(vm);
+
+  const careActionBtnNode = uiNode('careActionBtn', 'careActionBtn');
+  const boostActionBtnNode = uiNode('boostActionBtn', 'boostActionBtn');
+  const diagnosisBtnNode = uiNode('openDiagnosisBtn', 'openDiagnosisBtn');
+  const skipNightBtnNode = uiNode('skipNightActionBtn', 'skipNightActionBtn');
+
+  if (careActionBtnNode) {
+    careActionBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.careDisabled);
+  }
+  if (boostActionBtnNode) {
+    boostActionBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.boostDisabled);
+  }
+  if (diagnosisBtnNode) {
+    diagnosisBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.diagnosisDisabled);
+  }
+  if (skipNightBtnNode) {
+    skipNightBtnNode.disabled = Boolean(vm.actions && vm.actions.skipNightDisabled);
+    skipNightBtnNode.classList.toggle('hidden', !Boolean(vm.actions && vm.actions.showSkipNight));
+  }
+
+  renderOverlayVisibility(vm.overlays);
 }
 
 function renderHud() {
-  const dead = isPlantDead();
-  const phaseCard = getPhaseCardViewModel();
-  const boostText = `Event -30 Min · kleiner Pflanzenimpuls · ${state.boost.boostUsedToday}/${state.boost.boostMaxPerDay} heute`;
-
-  if (ui.phaseCardTitle && ui.phaseCardTitle.textContent !== phaseCard.title) {
-    ui.phaseCardTitle.textContent = phaseCard.title;
-  }
-  if (ui.phaseCardCycle && ui.phaseCardCycle.textContent !== phaseCard.cycleIcon) {
-    ui.phaseCardCycle.textContent = phaseCard.cycleIcon;
-  }
-  if (ui.phaseCardCycle) {
-    ui.phaseCardCycle.setAttribute('aria-label', state.simulation.isDaytime ? 'Tag' : 'Nacht');
-  }
-  if (ui.phaseCardAge && ui.phaseCardAge.textContent !== phaseCard.ageLabel) {
-    ui.phaseCardAge.textContent = phaseCard.ageLabel;
-  }
-  if (ui.phaseCardSubtitle && ui.phaseCardSubtitle.textContent !== phaseCard.subtitle) {
-    ui.phaseCardSubtitle.textContent = phaseCard.subtitle;
-  }
-  if (ui.phaseProgressFill) {
-    ui.phaseProgressFill.style.setProperty('--phase-progress', String(phaseCard.progressPercent));
-  }
-  if (ui.phaseCard) {
-    ui.phaseCard.classList.toggle('phase-card--complete', phaseCard.progressPercent >= 100);
-  }
-  if (ui.phaseProgress) {
-    ui.phaseProgress.setAttribute('aria-valuenow', String(phaseCard.progressPercent));
-  }
-  if (ui.phaseProgressMarker) {
-    ui.phaseProgressMarker.classList.toggle('hidden', !phaseCard.nextLabel || phaseCard.progressPercent >= 100);
-  }
-  if (ui.phaseCard) {
-    ui.phaseCard.setAttribute('aria-label', `Phase ${phaseCard.title}. ${phaseCard.ageLabel}. ${phaseCard.subtitle}.`);
-  }
-
-  if (ui.boostUsageText && ui.boostUsageText.textContent !== boostText) {
-    ui.boostUsageText.textContent = boostText;
-  }
-
-  setRing(ui.healthRing, ui.healthValue, state.status.health);
-  setRing(ui.stressRing, ui.stressValue, state.status.stress);
-  setRing(ui.waterRing, ui.waterValue, state.status.water);
-  setRing(ui.nutritionRing, ui.nutritionValue, state.status.nutrition);
-  setRing(ui.growthRing, ui.growthValue, state.status.growth);
-  setRing(ui.riskRing, ui.riskValue, state.status.risk);
-
-  if (ui.plantSprite) {
-    const nextPlantSrc = plantAssetPath(state.plant.stageKey);
-    if (ui.plantSprite.dataset.stageSrc !== nextPlantSrc) {
-      ui.plantSprite.src = nextPlantSrc;
-      ui.plantSprite.dataset.stageSrc = nextPlantSrc;
-    }
-  }
-
-  const eventStatus = eventStatusDisplay();
-  if (ui.nextEventValue) {
-    ui.nextEventValue.textContent = eventStatus.value;
-  }
-  if (ui.nextEventValue && ui.nextEventValue.dataset.label !== eventStatus.label) {
-    const labelNode = ui.nextEventValue.closest('.info-tile')?.querySelector('.info-label');
-    if (labelNode) {
-      labelNode.textContent = eventStatus.label;
-    }
-    ui.nextEventValue.dataset.label = eventStatus.label;
-  }
-  if (ui.growthImpulseValue) {
-    ui.growthImpulseValue.textContent = state.simulation.growthImpulse.toFixed(2);
-  }
-  if (ui.simTimeValue) {
-    ui.simTimeValue.textContent = formatSimClock(state.simulation.simTimeMs);
-  }
-
-  renderPanelReadouts();
-
-  const showSkipNight = !dead && !state.simulation.isDaytime;
-
-  ui.careActionBtn.disabled = dead;
-  ui.boostActionBtn.disabled = dead;
-  ui.openDiagnosisBtn.disabled = dead;
-  if (ui.skipNightActionBtn) {
-    ui.skipNightActionBtn.disabled = dead || state.simulation.isDaytime;
-    ui.skipNightActionBtn.classList.toggle('hidden', !showSkipNight);
-  }
-
-  renderOverlayVisibility();
+  const homeVm = buildHomeViewModel(state);
+  updateHomeFromViewModel(homeVm, null);
 }
 
-function renderPanelReadouts() {
-  if (ui.playerNameValue && ui.playerNameValue.textContent !== 'Max Mustergrower') {
-    ui.playerNameValue.textContent = 'Max Mustergrower';
+function renderPanelReadouts(homeVm = null) {
+  const vm = homeVm && typeof homeVm === 'object' ? homeVm : buildHomeViewModel(state);
+  const panel = vm.panel || {};
+
+  const playerNameNode = uiNode('playerNameValue', 'playerNameValue');
+  if (playerNameNode && playerNameNode.textContent !== panel.playerName) {
+    playerNameNode.textContent = String(panel.playerName || '');
   }
-  if (ui.playerRoleValue && ui.playerRoleValue.textContent !== 'Gärtner') {
-    ui.playerRoleValue.textContent = 'Gärtner';
+  const playerRoleNode = uiNode('playerRoleValue', 'playerRoleValue');
+  if (playerRoleNode && playerRoleNode.textContent !== panel.playerRole) {
+    playerRoleNode.textContent = String(panel.playerRole || '');
+  }
+  const playerXpNode = uiNode('playerXpValue', 'playerXpValue');
+  if (playerXpNode) {
+    playerXpNode.textContent = String(panel.xpText || '');
+  }
+  const playerXpFillNode = uiNode('playerXpFill', 'playerXpFill');
+  if (playerXpFillNode) {
+    playerXpFillNode.style.setProperty('--xp', String(Number(panel.xpPercent || 0)));
   }
 
-  const xpCurrent = 1200 + (Number(state.simulation.simDay) * 440);
-  const xpTarget = 8650;
-  const xpRatio = clamp(xpCurrent / xpTarget, 0, 1);
-  if (ui.playerXpValue) {
-    ui.playerXpValue.textContent = `XP: ${formatCompactNumber(xpCurrent)} / ${formatCompactNumber(xpTarget)}`;
-  }
-  if (ui.playerXpFill) {
-    ui.playerXpFill.style.setProperty('--xp', String(Math.round(xpRatio * 100)));
-  }
+  const coinNode = uiNode('currencyCoinValue', 'playerCoinValue');
+  const gemNode = uiNode('currencyGemValue', 'playerGemValue');
+  const starNode = uiNode('currencyStarValue', 'playerStarValue');
+  if (coinNode) coinNode.textContent = String(panel.coinText || '');
+  if (gemNode) gemNode.textContent = String(panel.gemText || '');
+  if (starNode) starNode.textContent = String(panel.starText || '');
 
-  const coinBalance = 2480 + Math.round(Number(state.simulation.simDay) * 28);
-  const gemBalance = 55 + Math.max(0, Math.floor(Number(state.boost.boostUsedToday || 0) / 2));
-  const starBalance = 114 + Math.round(Number(state.status.growth || 0) / 2);
-  if (ui.currencyCoinValue) ui.currencyCoinValue.textContent = formatCompactNumber(coinBalance);
-  if (ui.currencyGemValue) ui.currencyGemValue.textContent = formatCompactNumber(gemBalance);
-  if (ui.currencyStarValue) ui.currencyStarValue.textContent = formatCompactNumber(starBalance);
+  const envTempNode = uiNode('envTemperatureValue', 'envTempValue');
+  const envHumidityNode = uiNode('envHumidityValue', 'envHumidityValue');
+  const envVpdNode = uiNode('envVpdValue', 'envVpdValue');
+  const envLightNode = uiNode('envLightValue', 'envLightValue');
+  const envAirflowNode = uiNode('envAirflowValue', 'envAirflowValue');
+  if (envTempNode) envTempNode.textContent = String(panel.envTempText || '');
+  if (envHumidityNode) envHumidityNode.textContent = String(panel.envHumidityText || '');
+  if (envVpdNode) envVpdNode.textContent = String(panel.envVpdText || '');
+  if (envLightNode) envLightNode.textContent = String(panel.envLightText || '');
+  if (envAirflowNode) envAirflowNode.textContent = String(panel.envAirflowText || '');
 
-  const environment = deriveEnvironmentReadout();
-  if (ui.envTemperatureValue) ui.envTemperatureValue.textContent = `${environment.temperatureC.toFixed(1)}°C`;
-  if (ui.envHumidityValue) ui.envHumidityValue.textContent = `${environment.humidityPercent}%`;
-  if (ui.envVpdValue) ui.envVpdValue.textContent = `${environment.vpdKpa.toFixed(1)} kPa`;
-  if (ui.envLightValue) ui.envLightValue.textContent = `${environment.ppfd} PPFD`;
-  if (ui.envAirflowValue) ui.envAirflowValue.textContent = environment.airflowLabel;
-
-  const roots = deriveRootZoneReadout(environment);
-  if (ui.rootPhValue) ui.rootPhValue.textContent = roots.ph;
-  if (ui.rootEcValue) ui.rootEcValue.textContent = roots.ec;
-  if (ui.rootHealthValue) ui.rootHealthValue.textContent = roots.rootHealth;
-  if (ui.rootOxygenValue) ui.rootOxygenValue.textContent = roots.oxygen;
+  const rootPhNode = uiNode('rootPhValue', 'rootPhValue');
+  const rootEcNode = uiNode('rootEcValue', 'rootEcValue');
+  const rootHealthNode = uiNode('rootHealthValue', 'rootHealthValue');
+  const rootOxygenNode = uiNode('rootOxygenValue', 'rootOxygenValue');
+  if (rootPhNode) rootPhNode.textContent = String(panel.rootPhText || '');
+  if (rootEcNode) rootEcNode.textContent = String(panel.rootEcText || '');
+  if (rootHealthNode) rootHealthNode.textContent = String(panel.rootHealthText || '');
+  if (rootOxygenNode) rootOxygenNode.textContent = String(panel.rootOxygenText || '');
 }
 
-function deriveEnvironmentReadout() {
+window.GrowSimHomeRenderer = Object.freeze({
+  buildViewModel: (appState) => buildHomeViewModel(appState || state),
+  update: (homeVm, prevVm) => updateHomeFromViewModel(homeVm, prevVm)
+});
+
+function deriveEnvironmentReadout(sourceState = state) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
   const envApi = window.GrowSimEnvModel;
   if (envApi && typeof envApi.buildEnvironmentModelFromState === 'function') {
-    const model = envApi.buildEnvironmentModelFromState(state.status, state.simulation, state.plant);
+    const model = envApi.buildEnvironmentModelFromState(activeState.status, activeState.simulation, activeState.plant);
     return {
       temperatureC: model.temperatureC,
       humidityPercent: model.humidityPercent,
@@ -2395,25 +2772,26 @@ function deriveEnvironmentReadout() {
     };
   }
 
-  const water = clamp(Number(state.status.water || 0), 0, 100);
-  const stress = clamp(Number(state.status.stress || 0), 0, 100);
-  const risk = clamp(Number(state.status.risk || 0), 0, 100);
-  const isDay = Boolean(state.simulation.isDaytime);
+  const water = clamp(Number(activeState.status && activeState.status.water || 0), 0, 100);
+  const stress = clamp(Number(activeState.status && activeState.status.stress || 0), 0, 100);
+  const risk = clamp(Number(activeState.status && activeState.status.risk || 0), 0, 100);
+  const isDay = Boolean(activeState.simulation && activeState.simulation.isDaytime);
 
   const temperatureC = clamp((isDay ? 24.2 : 20.4) + (stress * 0.05) + (risk * 0.02), 18, 36);
   const humidityPercent = Math.round(clamp(38 + (water * 0.42) - (stress * 0.14), 32, 82));
   const vpdKpa = clamp(0.7 + ((temperatureC - 21) * 0.08) + ((60 - humidityPercent) * 0.012), 0.4, 2.4);
-  const ppfd = isDay ? Math.round(clamp(550 + (Number(state.status.growth || 0) * 2.4), 420, 980)) : 45;
+  const ppfd = isDay ? Math.round(clamp(550 + (Number(activeState.status && activeState.status.growth || 0) * 2.4), 420, 980)) : 45;
   const airflowScore = clamp(100 - risk - Math.round(stress * 0.35), 0, 100);
   const airflowLabel = airflowScore >= 70 ? 'Good' : airflowScore >= 40 ? 'Mittel' : 'Schwach';
 
   return { temperatureC, humidityPercent, vpdKpa, ppfd, airflowLabel };
 }
 
-function deriveRootZoneReadout(environment) {
+function deriveRootZoneReadout(environment, sourceState = state) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
   const envApi = window.GrowSimEnvModel;
   if (envApi && typeof envApi.buildRootZoneModelFromState === 'function') {
-    const model = envApi.buildRootZoneModelFromState(state.status, environment, state.plant);
+    const model = envApi.buildRootZoneModelFromState(activeState.status, environment, activeState.plant);
     return {
       ph: model.ph.toFixed(1),
       ec: `${model.ec.toFixed(1)} mS`,
@@ -2422,9 +2800,9 @@ function deriveRootZoneReadout(environment) {
     };
   }
 
-  const nutrition = clamp(Number(state.status.nutrition || 0), 0, 100);
-  const water = clamp(Number(state.status.water || 0), 0, 100);
-  const risk = clamp(Number(state.status.risk || 0), 0, 100);
+  const nutrition = clamp(Number(activeState.status && activeState.status.nutrition || 0), 0, 100);
+  const water = clamp(Number(activeState.status && activeState.status.water || 0), 0, 100);
+  const risk = clamp(Number(activeState.status && activeState.status.risk || 0), 0, 100);
 
   const phValue = clamp(5.6 + ((nutrition - 50) * 0.008) - ((risk - 40) * 0.003), 5.4, 6.6);
   const ecValue = clamp(0.8 + (nutrition * 0.01), 0.6, 2.3);
@@ -2492,7 +2870,10 @@ function setRing(ringNode, textNode, value) {
   }
 }
 
-function renderOverlayVisibility() {
+function renderOverlayVisibility(visibleOverlayIds = null) {
+  const activeOverlays = Array.isArray(visibleOverlayIds)
+    ? visibleOverlayIds
+    : (Array.isArray(state.ui && state.ui.visibleOverlayIds) ? state.ui.visibleOverlayIds : []);
   const nodes = {
     overlay_burn: ui.overlayBurn,
     overlay_def_mg: ui.overlayDefMg,
@@ -2506,7 +2887,7 @@ function renderOverlayVisibility() {
     if (!node) {
       continue;
     }
-    const visible = state.ui.visibleOverlayIds.includes(overlayId);
+    const visible = activeOverlays.includes(overlayId);
     node.classList.toggle('hidden', !visible);
   }
 }
@@ -2599,14 +2980,27 @@ function renderCareSheet(force = false) {
     return;
   }
 
+  if (!ui.careCategoryList || !ui.careActionList || !ui.careFeedback || !ui.careEffectsList || !ui.careExecuteButton) {
+    return;
+  }
+
+  const careMapping = window.GrowSimScreenMappings && window.GrowSimScreenMappings.care;
+  const careViewModel = careMapping && typeof careMapping.toViewModel === 'function'
+    ? careMapping.toViewModel(state)
+    : null;
+
   const catalog = Array.isArray(state.actions.catalog) ? state.actions.catalog : [];
-  const categoryOrder = ['watering', 'fertilizing', 'training', 'environment'];
-  const categoryLabels = {
-    watering: 'Bewässerung',
-    fertilizing: 'Nährstoffe',
-    training: 'Training',
-    environment: 'Umgebung'
-  };
+  const categoryOrder = careViewModel && Array.isArray(careViewModel.categoryOrder)
+    ? careViewModel.categoryOrder.slice()
+    : ['watering', 'fertilizing', 'training', 'environment'];
+  const categoryLabels = careViewModel && careViewModel.categoryLabels
+    ? careViewModel.categoryLabels
+    : {
+      watering: 'Bewässerung',
+      fertilizing: 'Nährstoffe',
+      training: 'Training',
+      environment: 'Umgebung'
+    };
   const categoryIcons = {
     watering: '💧',
     fertilizing: '◉',
@@ -2614,7 +3008,9 @@ function renderCareSheet(force = false) {
     environment: '◌'
   };
 
-  const availableCategories = categoryOrder.filter((category) => catalog.some((action) => action.category === category));
+  const availableCategories = careViewModel && Array.isArray(careViewModel.availableCategories)
+    ? careViewModel.availableCategories.slice()
+    : categoryOrder.filter((category) => catalog.some((action) => action.category === category));
   if (!availableCategories.length) {
     ui.careCategoryList.replaceChildren();
     ui.careActionList.replaceChildren();
@@ -2630,7 +3026,7 @@ function renderCareSheet(force = false) {
   }
 
   renderCareCategoryButtons(availableCategories, categoryLabels, categoryIcons);
-  renderCareActionButtons(state.ui.care.selectedCategory);
+  renderCareActionButtons(state.ui.care.selectedCategory, careViewModel);
   renderCareEffectsPanel();
   renderCareFeedback();
   renderCareExecuteButton();
@@ -2644,11 +3040,16 @@ function renderCareCategoryButtons(categories, labels, icons) {
 
   ui.careCategoryList.dataset.signature = signature;
   ui.careCategoryList.replaceChildren();
+  const primitives = getUiPrimitives();
 
   for (const category of categories) {
-    const btn = document.createElement('button');
+    const btn = primitives && typeof primitives.button === 'function'
+      ? primitives.button({ className: 'care-category-tab', attrs: { role: 'tab' } })
+      : document.createElement('button');
     btn.type = 'button';
-    btn.className = 'care-category-tab';
+    if (!btn.classList.contains('care-category-tab')) {
+      btn.className = 'care-category-tab';
+    }
     btn.setAttribute('role', 'tab');
     btn.setAttribute('aria-selected', String(state.ui.care.selectedCategory === category));
     if (state.ui.care.selectedCategory === category) {
@@ -2667,13 +3068,21 @@ function renderCareCategoryButtons(categories, labels, icons) {
   }
 }
 
-function renderCareActionButtons(category) {
-  const actions = state.actions.catalog
-    .filter((action) => action.category === category)
-    .sort((a, b) => intensityRank(a.intensity) - intensityRank(b.intensity));
+function renderCareActionButtons(category, careViewModel = null) {
+  const actions = careViewModel && Array.isArray(careViewModel.actions)
+    ? careViewModel.actions
+      .filter((action) => action.category === category)
+      .sort((a, b) => intensityRank(a.intensity) - intensityRank(b.intensity))
+    : state.actions.catalog
+      .filter((action) => action.category === category)
+      .sort((a, b) => intensityRank(a.intensity) - intensityRank(b.intensity));
 
   const signature = actions.map((action) => {
-    const cooldownUntil = Number(state.actions.cooldowns[action.id] || 0);
+    const cooldownUntil = Number(
+      Object.prototype.hasOwnProperty.call(action, 'cooldownUntil')
+        ? action.cooldownUntil
+        : state.actions.cooldowns[action.id] || 0
+    );
     return `${action.id}:${cooldownUntil}:selected:${state.ui.care.selectedActionId === action.id}`;
   }).join('|');
 
@@ -2683,30 +3092,38 @@ function renderCareActionButtons(category) {
 
   ui.careActionList.dataset.signature = signature;
   ui.careActionList.replaceChildren();
+  const primitives = getUiPrimitives();
 
   for (const action of actions) {
-    const cooldownLeft = Math.max(0, Number(state.actions.cooldowns[action.id] || 0) - Date.now());
+    const cooldownUntil = Number(
+      Object.prototype.hasOwnProperty.call(action, 'cooldownUntil')
+        ? action.cooldownUntil
+        : state.actions.cooldowns[action.id] || 0
+    );
+    const cooldownLeft = Math.max(0, cooldownUntil - Date.now());
     const cooldownText = cooldownLeft > 0
       ? `${Math.ceil(cooldownLeft / 60000)} min`
       : `${Math.round(action.cooldownRealMinutes || 0)} min`;
+    const hintText = formatActionHint(action, cooldownLeft);
 
-    const button = document.createElement('button');
+    const button = primitives && typeof primitives.button === 'function'
+      ? primitives.button({ className: 'care-action-card' })
+      : document.createElement('button');
     button.type = 'button';
-    button.className = 'care-action-card';
+    if (!button.classList.contains('care-action-card')) {
+      button.className = 'care-action-card';
+    }
     if (state.ui.care.selectedActionId === action.id) {
       button.classList.add('is-selected');
     }
+    if (cooldownLeft > 0) {
+      button.classList.add('is-cooldown');
+    }
+    button.setAttribute('aria-pressed', String(state.ui.care.selectedActionId === action.id));
 
     button.innerHTML = `
-      <div class="care-action-media" aria-hidden="true">◇</div>
-      <div class="care-action-body">
-        <h4 class="care-action-title">${escapeHtml(action.label)}</h4>
-        <p class="care-action-subtitle">${escapeHtml(action.uxCopy && action.uxCopy.short ? action.uxCopy.short : labelForIntensity(action.intensity))}</p>
-        <div class="care-action-meta-row">
-          <span class="care-action-cooldown">Cooldown: ${cooldownText}</span>
-          <span class="care-action-effects">${formatEffectsInline(action)}</span>
-        </div>
-      </div>`;
+      <span class="care-action-label">${escapeHtml(action.label)}</span>
+      <span class="care-action-hint" title="${escapeHtml(`Cooldown: ${cooldownText}`)}">${escapeHtml(hintText)}</span>`;
 
     button.addEventListener('click', () => {
       state.ui.care.selectedActionId = action.id;
@@ -2742,6 +3159,17 @@ function formatEffectsInline(action) {
     parts.push(`${label} ${value > 0 ? '+' : ''}${round2(value)}`);
   }
   return parts.slice(0, 2).join(' · ') || 'Keine direkten Effekte';
+}
+
+function formatActionHint(action, cooldownLeft) {
+  if (cooldownLeft > 0) {
+    return `Cooldown ${Math.ceil(cooldownLeft / 60000)} min`;
+  }
+  const shortCopy = action && action.uxCopy && action.uxCopy.short ? String(action.uxCopy.short) : '';
+  if (shortCopy) {
+    return shortCopy;
+  }
+  return formatEffectsInline(action);
 }
 
 function renderCareEffectsPanel() {
@@ -2821,7 +3249,7 @@ function onCareExecuteAction() {
     return;
   }
 
-  const result = applyAction(action.id);
+  const result = executeCareAction(action.id);
   if (result.ok) {
     setCareFeedback('success', action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgeführt.`);
     state.ui.care.selectedActionId = null;
@@ -2896,12 +3324,24 @@ function renderEventSheet() {
     if (ui.eventOptionList.dataset.signature !== optionSignature) {
       ui.eventOptionList.dataset.signature = optionSignature;
       ui.eventOptionList.replaceChildren();
+      const primitives = getUiPrimitives();
       for (const option of state.events.activeOptions) {
-        const button = document.createElement('button');
+        const button = primitives && typeof primitives.button === 'function'
+          ? primitives.button({ className: 'event-option-btn' })
+          : document.createElement('button');
         button.type = 'button';
-        button.className = 'event-option-btn';
+        if (!button.classList.contains('event-option-btn')) {
+          button.className = 'event-option-btn';
+        }
         button.textContent = option.label;
-        button.addEventListener('click', () => onEventOptionClick(option.id));
+        button.addEventListener('click', () => {
+          const controller = getUiController();
+          if (controller && typeof controller.handleEventOption === 'function') {
+            controller.handleEventOption(option.id);
+            return;
+          }
+          onEventOptionClick(option.id);
+        });
         ui.eventOptionList.appendChild(button);
       }
     }
@@ -2975,6 +3415,40 @@ function renderAnalysisPanel(force = false) {
   renderAnalysisTimeline();
 }
 
+function renderSettingsSheet() {
+  if (!ui.diagnosisSheet || state.ui.openSheet !== 'diagnosis') {
+    return;
+  }
+
+  renderPushToggle();
+
+  const speedNode = document.getElementById('settingsSimSpeedValue');
+  if (speedNode) {
+    speedNode.textContent = `${round2(Number(state.simulation && state.simulation.timeCompression) || 0)}x`;
+  }
+
+  const eventFreqNode = document.getElementById('settingsEventFrequencyValue');
+  if (eventFreqNode) {
+    const minutes = Math.round(EVENT_ROLL_MIN_REAL_MS / 60000);
+    eventFreqNode.textContent = `${minutes}-${Math.round(EVENT_ROLL_MAX_REAL_MS / 60000)}m`;
+  }
+
+  const tutorialNode = document.getElementById('settingsTutorialValue');
+  if (tutorialNode) {
+    tutorialNode.textContent = 'An';
+  }
+
+  const autosaveNode = document.getElementById('settingsAutosaveValue');
+  if (autosaveNode) {
+    autosaveNode.textContent = `Alle ${Math.max(1, Math.round(PERSIST_THROTTLE_MS / 1000))}s`;
+  }
+
+  const cloudNode = document.getElementById('settingsCloudSyncValue');
+  if (cloudNode) {
+    cloudNode.textContent = 'Verbunden';
+  }
+}
+
 function renderPushToggle() {
   if (!ui.pushToggleBtn || !ui.pushToggleStatus || !ui.pushToggleFeedback || !ui.notifTypeEvents || !ui.notifTypeCritical || !ui.notifTypeReminder) {
     return;
@@ -3003,26 +3477,53 @@ function renderAnalysisOverview() {
     return;
   }
 
-  const stageIndex = Number(state.plant && state.plant.stageIndex) || 1;
-  const stageDef = STAGE_DEFS[clampInt(stageIndex, 0, STAGE_DEFS.length - 1)];
-  const stageDisplay = clampInt(stageIndex + 1, 1, STAGE_DEFS.length);
-  const stageLabel = stageDef ? stageDef.label : '-';
-  const qualityTier = (state.plant && state.plant.lifecycle && state.plant.lifecycle.qualityTier) || 'normal';
-  const dayNight = (state.simulation && state.simulation.isDaytime) ? 'Tag' : 'Nacht';
-  const simDay = Number(state.simulation && state.simulation.simDay) || 0;
   const status = state.status || {};
-  const qualityTierText = qualityTierLabel(qualityTier);
+  const environment = deriveEnvironmentReadout(state);
+  const roots = deriveRootZoneReadout(environment, state);
+  const drivers = diagnosisDrivers();
+  const primaryDriver = drivers[0];
+  const trendText = primaryDriver && primaryDriver.label !== 'Stabiler Zustand'
+    ? `48h Verlauf: ${primaryDriver.label}. ${primaryDriver.reason}`
+    : '48h Verlauf: Wasser stabil, Risiko leicht steigend, Stress fallend.';
+
+  const statusRows = [
+    { label: 'Wasser', value: `${Math.round(Number(status.water) || 0)}%`, tone: 'value_gold' },
+    { label: 'Nährstoffe', value: `${Math.round(Number(status.nutrition) || 0)}%`, tone: 'value_gold' },
+    { label: 'Wachstum', value: `${round2(Number(status.growth) || 0)}%`, tone: 'value_green' },
+    { label: 'Risiko', value: `${Math.round(Number(status.risk) || 0)}%`, tone: 'value_orange' },
+    { label: 'Stress', value: `${Math.round(Number(status.stress) || 0)}%`, tone: 'value_gold' }
+  ];
+
+  const rootRows = [
+    { label: 'pH', value: String(roots.ph || '-') },
+    { label: 'EC', value: String(roots.ec || '-') },
+    { label: 'Wurzelgesundheit', value: String(roots.rootHealth || '-') },
+    { label: 'Sauerstoff', value: String(roots.oxygen || '-') }
+  ];
+
+  const rowsToHtml = (rows) => rows.map((row) => `
+      <div class="gs-analysis-status-row">
+        <span>${escapeHtml(String(row.label || '-'))}</span>
+        <strong class="${escapeHtml(String(row.tone || 'value_green'))}">${escapeHtml(String(row.value || '-'))}</strong>
+      </div>
+    `).join('');
 
   ui.analysisPanelOverview.innerHTML = `
-    <div class="gs-analysis-metric"><strong>Stufe ${stageDisplay}: ${stageLabel}</strong><br>Qualität: ${escapeHtml(String(qualityTierText))}</div>
-    <div class="gs-analysis-metric"><strong>${dayNight}</strong><br>Sim-Tag ${simDay}</div>
-    <div class="gs-analysis-metric-grid">
-      <div class="gs-analysis-metric">Wasser<br><strong>${round2(Number(status.water) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Nährstoffe<br><strong>${round2(Number(status.nutrition) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Gesundheit<br><strong>${round2(Number(status.health) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Stress<br><strong>${round2(Number(status.stress) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Risiko<br><strong>${round2(Number(status.risk) || 0)}</strong></div>
-      <div class="gs-analysis-metric">Wachstum<br><strong>${round2(Number(status.growth) || 0)}</strong></div>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Pflanzenstatus</h3>
+      ${rowsToHtml(statusRows)}
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Wurzeln &amp; Boden</h3>
+      ${rowsToHtml(rootRows)}
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Trend</h3>
+      <p class="gs-analysis-trend-text">${escapeHtml(trendText)}</p>
+    </section>
+    <div class="gs-analysis-overview-meta">
+      <span>${escapeHtml((state.simulation && state.simulation.isDaytime) ? 'Tag' : 'Nacht')}</span>
+      <strong>Sim-Tag ${escapeHtml(String(Number(state.simulation && state.simulation.simDay) || 0))}</strong>
     </div>
   `;
 }
@@ -3367,6 +3868,8 @@ function openSheet(name) {
     renderEventSheet();
   } else if (name === 'care') {
     renderCareSheet(true);
+  } else if (name === 'diagnosis') {
+    renderSettingsSheet();
   } else if (name === 'statDetail') {
     renderStatDetailSheet();
   }
@@ -3412,6 +3915,14 @@ function onMenuNewRunClick() {
     cancelLabel: 'Abbrechen',
     confirmLabel: 'Neuer Run',
     onConfirm: async () => {
+      const controller = getUiController();
+      if (controller && typeof controller.handleMenuCommand === 'function') {
+        const commandResult = await controller.handleMenuCommand('new_run');
+        if (commandResult && commandResult.result && typeof commandResult.result.then === 'function') {
+          await commandResult.result;
+        }
+        return;
+      }
       closeMenu();
       await resetRun();
     }
@@ -4008,17 +4519,22 @@ function formatResolvedOutcome(outcome) {
   return `${tone} ${choice}${note}`.trim();
 }
 
-function eventStatusDisplay() {
-  if (state.events.machineState === 'activeEvent') {
+function eventStatusDisplay(sourceState = state) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const eventsState = activeState.events || {};
+  const simulation = activeState.simulation || {};
+  const scheduler = eventsState.scheduler || {};
+
+  if (eventsState.machineState === 'activeEvent') {
     return { label: 'Ereignisstatus', value: 'Ereignis aktiv' };
   }
-  if (state.events.machineState === 'resolving') {
-    return { label: 'Ergebnis in', value: formatCountdown(state.events.resolvingUntilMs - state.simulation.nowMs) };
+  if (eventsState.machineState === 'resolving') {
+    return { label: 'Ergebnis in', value: formatCountdown(Number(eventsState.resolvingUntilMs || 0) - Number(simulation.nowMs || 0)) };
   }
-  if (state.events.machineState === 'resolved') {
+  if (eventsState.machineState === 'resolved') {
     return { label: 'Ereignisstatus', value: 'Ergebnis bereit' };
   }
-  return { label: 'Nächstes Ereignis', value: formatCountdown(state.events.scheduler.nextEventRealTimeMs - state.simulation.nowMs) };
+  return { label: 'Nächstes Ereignis', value: formatCountdown(Number(scheduler.nextEventRealTimeMs || 0) - Number(simulation.nowMs || 0)) };
 }
 
 function formatCountdown(ms) {

@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "check:ui-architecture": "node dev/scripts/ui-architecture-guard.js",
+    "check:syntax": "node --check app.js && node --check ui.js"
+  },
   "devDependencies": {
     "playwright": "^1.58.2"
   }

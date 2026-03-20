@@ -1,4 +1,8 @@
-'use strict';
+﻿'use strict';
+
+let homeBindingsBound = false;
+let menuOverlayBindingsBound = false;
+let sheetsOverlayBindingsBound = false;
 
 function showBootError(error) {
   const stack = error && error.stack ? error.stack : String(error && error.message ? error.message : error);
@@ -105,6 +109,8 @@ function cacheUi() {
 
   ui.careCategoryList = document.getElementById('careCategoryList');
   ui.careActionList = document.getElementById('careActionList');
+  ui.careEffectsList = document.getElementById('careEffectsList');
+  ui.careExecuteButton = document.getElementById('careExecuteButton');
   ui.careFeedback = document.getElementById('careFeedback');
   ui.eventStateBadge = document.getElementById('eventStateBadge');
   ui.eventTitle = document.getElementById('eventTitle');
@@ -132,6 +138,7 @@ function cacheUi() {
   ui.setupMedium = document.getElementById('setupMedium');
   ui.setupPotSize = document.getElementById('setupPotSize');
   ui.setupGenetics = document.getElementById('setupGenetics');
+  ui.setupOptionButtons = Array.from(document.querySelectorAll('[data-setup-select][data-setup-value]'));
 
   ui.deathOverlay = document.getElementById('deathOverlay');
   ui.deathDriverList = document.getElementById('deathDriverList');
@@ -149,13 +156,80 @@ function bindUi() {
   if (visibilityHandlerBound) {
     return;
   }
-  ui.careActionBtn.addEventListener('click', () => withDebouncedAction('care', ui.careActionBtn, () => openSheet('care')));
-  ui.analyzeActionBtn.addEventListener('click', () => withDebouncedAction('analyze', ui.analyzeActionBtn, () => openSheet('dashboard')));
-  ui.boostActionBtn.addEventListener('click', () => withDebouncedAction('boost', ui.boostActionBtn, onBoostAction));
+  bindHomeScreenEvents(window.__gsUiController || null);
+  bindMenuOverlayEvents(window.__gsUiController || null);
+  bindSheetsOverlayEvents(window.__gsUiController || null);
+  bindSetupOptionButtons();
+
+  ui.startRunBtn.addEventListener('click', onStartRun);
+  ui.analysisResetBtn.addEventListener('click', onAnalysisResetClick);
+  ui.pushToggleBtn.addEventListener('click', onPushToggleClick);
+  ui.notifTypeEvents.addEventListener('change', onNotificationTypeToggle);
+  ui.notifTypeCritical.addEventListener('change', onNotificationTypeToggle);
+  ui.notifTypeReminder.addEventListener('change', onNotificationTypeToggle);
+  ui.deathResetBtn.addEventListener('click', onDeathResetClick);
+  ui.deathAnalyzeBtn.addEventListener('click', onDeathAnalyzeClick);
+  ui.deathRescueBtn.addEventListener('click', onDeathRescueClick);
+
+  for (const navButton of ui.screenNavButtons || []) {
+    navButton.addEventListener('click', () => {
+      switchHudScreen(navButton.dataset.screenTarget);
+    });
+  }
+
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('focus', onWindowFocus);
+  window.addEventListener('pageshow', onPageShow);
+  visibilityHandlerBound = true;
+}
+
+function bindHomeScreenEvents(controller = null) {
+  if (homeBindingsBound) {
+    return;
+  }
+
+  const resolveController = () => controller || window.__gsUiController || null;
+
+  if (ui.careActionBtn) {
+    ui.careActionBtn.addEventListener('click', () => withDebouncedAction('care', ui.careActionBtn, () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('care');
+        return;
+      }
+      openSheet('care');
+    }));
+  }
+
+  if (ui.analyzeActionBtn) {
+    ui.analyzeActionBtn.addEventListener('click', () => withDebouncedAction('analyze', ui.analyzeActionBtn, () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('dashboard');
+        return;
+      }
+      openSheet('dashboard');
+    }));
+  }
+
+  if (ui.boostActionBtn) {
+    ui.boostActionBtn.addEventListener('click', () => withDebouncedAction('boost', ui.boostActionBtn, onBoostAction));
+  }
+
   if (ui.skipNightActionBtn) {
     ui.skipNightActionBtn.addEventListener('click', () => withDebouncedAction('skipNight', ui.skipNightActionBtn, onSkipNightAction));
   }
-  ui.openDiagnosisBtn.addEventListener('click', () => openSheet('diagnosis'));
+
+  if (ui.openDiagnosisBtn) {
+    ui.openDiagnosisBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('diagnosis');
+        return;
+      }
+      openSheet('diagnosis');
+    });
+  }
 
   const statRingBindings = [
     { node: ui.waterRing, key: 'water' },
@@ -176,40 +250,128 @@ function bindUi() {
     });
   }
 
+  homeBindingsBound = true;
+}
+function bindMenuOverlayEvents(controller = null) {
+  if (menuOverlayBindingsBound) {
+    return;
+  }
+
+  const resolveController = () => controller || window.__gsUiController || null;
+
+  if (ui.menuToggleBtn) {
+    ui.menuToggleBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleMenuCommand === 'function') {
+        activeController.handleMenuCommand('toggle_menu');
+        return;
+      }
+      onMenuToggleClick();
+    });
+  }
+  if (ui.menuCloseBtn) {
+    ui.menuCloseBtn.addEventListener('click', closeMenu);
+  }
+  if (ui.menuHeaderCloseBtn) {
+    ui.menuHeaderCloseBtn.addEventListener('click', closeMenu);
+  }
+  if (ui.menuBackdrop) {
+    ui.menuBackdrop.addEventListener('click', closeMenu);
+  }
+  if (ui.menuNewRunBtn) {
+    ui.menuNewRunBtn.addEventListener('click', onMenuNewRunClick);
+  }
+  if (ui.menuRescueBtn) {
+    ui.menuRescueBtn.addEventListener('click', onDeathRescueClick);
+  }
+  if (ui.menuStatsBtn) {
+    ui.menuStatsBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleMenuCommand === 'function') {
+        activeController.handleMenuCommand('open_stats');
+        return;
+      }
+      closeMenu();
+      openSheet('dashboard');
+    });
+  }
+  if (ui.menuPushBtn) {
+    ui.menuPushBtn.addEventListener('click', onPushToggleClick);
+  }
+  if (ui.menuLanguageBtn) {
+    ui.menuLanguageBtn.addEventListener('click', () => {
+      closeMenu();
+      openSheet('diagnosis');
+    });
+  }
+  if (ui.menuSupportBtn) {
+    ui.menuSupportBtn.addEventListener('click', () => openMenuPlaceholder('Projekt unterstützen', 'Support-Optionen folgen in einem späteren Update.'));
+  }
+  if (ui.menuAboutBtn) {
+    ui.menuAboutBtn.addEventListener('click', () => openMenuPlaceholder('Über das Spiel', 'Grow Simulator MVP · Weitere Infos folgen.'));
+  }
+  if (ui.menuAchievementsBtn) {
+    ui.menuAchievementsBtn.addEventListener('click', () => openMenuPlaceholder('Achievements', 'Achievements sind bald verfügbar.'));
+  }
+  if (ui.menuLeaderboardBtn) {
+    ui.menuLeaderboardBtn.addEventListener('click', () => openMenuPlaceholder('Rangliste', 'Die Rangliste ist bald verfügbar.'));
+  }
+  if (ui.menuDialogCancelBtn) {
+    ui.menuDialogCancelBtn.addEventListener('click', closeMenuDialog);
+  }
+
+  menuOverlayBindingsBound = true;
+}
+
+function bindSheetsOverlayEvents(controller = null) {
+  if (sheetsOverlayBindingsBound) {
+    return;
+  }
+
+  const resolveController = () => controller || window.__gsUiController || null;
+
   if (ui.statDetailPrimaryBtn) {
     ui.statDetailPrimaryBtn.addEventListener('click', onStatDetailPrimaryAction);
   }
 
-  ui.startRunBtn.addEventListener('click', onStartRun);
-  ui.analysisResetBtn.addEventListener('click', onAnalysisResetClick);
-  ui.pushToggleBtn.addEventListener('click', onPushToggleClick);
-  ui.notifTypeEvents.addEventListener('change', onNotificationTypeToggle);
-  ui.notifTypeCritical.addEventListener('change', onNotificationTypeToggle);
-  ui.notifTypeReminder.addEventListener('change', onNotificationTypeToggle);
-  ui.deathResetBtn.addEventListener('click', onDeathResetClick);
-  ui.deathAnalyzeBtn.addEventListener('click', onDeathAnalyzeClick);
-  ui.deathRescueBtn.addEventListener('click', onDeathRescueClick);
-  ui.menuToggleBtn.addEventListener('click', onMenuToggleClick);
-  ui.menuCloseBtn.addEventListener('click', closeMenu);
-  ui.menuHeaderCloseBtn.addEventListener('click', closeMenu);
-  ui.menuBackdrop.addEventListener('click', closeMenu);
-  ui.menuNewRunBtn.addEventListener('click', onMenuNewRunClick);
-  ui.menuRescueBtn.addEventListener('click', onDeathRescueClick);
-  ui.menuStatsBtn.addEventListener('click', () => {
-    closeMenu();
-    openSheet('dashboard');
-  });
-  ui.menuPushBtn.addEventListener('click', onPushToggleClick);
-  ui.menuLanguageBtn.addEventListener('click', () => openMenuPlaceholder('Sprache', 'Sprachauswahl folgt in einem späteren Update.'));
-  ui.menuSupportBtn.addEventListener('click', () => openMenuPlaceholder('Projekt unterstützen', 'Support-Optionen folgen in einem späteren Update.'));
-  ui.menuAboutBtn.addEventListener('click', () => openMenuPlaceholder('Über das Spiel', 'Grow Simulator MVP · Weitere Infos folgen.'));
-  ui.menuAchievementsBtn.addEventListener('click', () => openMenuPlaceholder('Achievements', 'Achievements sind bald verfügbar.'));
-  ui.menuLeaderboardBtn.addEventListener('click', () => openMenuPlaceholder('Rangliste', 'Die Rangliste ist bald verfügbar.'));
-  ui.menuDialogCancelBtn.addEventListener('click', closeMenuDialog);
-  ui.backdrop.addEventListener('click', closeSheet);
-  for (const navButton of ui.screenNavButtons || []) {
-    navButton.addEventListener('click', () => {
-      switchHudScreen(navButton.dataset.screenTarget);
+  if (ui.careExecuteButton) {
+    ui.careExecuteButton.addEventListener('click', onCareExecuteAction);
+  }
+
+  const settingsSaveBtn = document.getElementById('settingsSaveBtn');
+  if (settingsSaveBtn) {
+    settingsSaveBtn.addEventListener('click', () => {
+      closeSheet();
+      schedulePersistState(true);
+    });
+  }
+
+  const settingsDefaultBtn = document.getElementById('settingsDefaultBtn');
+  if (settingsDefaultBtn) {
+    settingsDefaultBtn.addEventListener('click', () => {
+      const notifications = getCanonicalNotificationsSettings(state);
+      notifications.enabled = false;
+      notifications.types.events = true;
+      notifications.types.critical = true;
+      notifications.types.reminder = true;
+      renderPushToggle();
+      schedulePersistState(true);
+    });
+  }
+
+  const settingsSupportBtn = document.getElementById('settingsSupportBtn');
+  if (settingsSupportBtn) {
+    settingsSupportBtn.addEventListener('click', () => openMenuPlaceholder('Support', 'Support-Optionen folgen in einem spaeteren Update.'));
+  }
+
+  if (ui.backdrop) {
+    ui.backdrop.addEventListener('click', () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleCloseSheet === 'function') {
+        activeController.handleCloseSheet();
+        return;
+      }
+      closeSheet();
     });
   }
 
@@ -226,13 +388,58 @@ function bindUi() {
 
   const closeButtons = document.querySelectorAll('[data-close-sheet]');
   for (const button of closeButtons) {
-    button.addEventListener('click', closeSheet);
+    button.addEventListener('click', () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleCloseSheet === 'function') {
+        activeController.handleCloseSheet();
+        return;
+      }
+      closeSheet();
+    });
   }
 
-  document.addEventListener('visibilitychange', onVisibilityChange);
-  window.addEventListener('focus', onWindowFocus);
-  window.addEventListener('pageshow', onPageShow);
-  visibilityHandlerBound = true;
+  sheetsOverlayBindingsBound = true;
+}
+
+function bindSetupOptionButtons() {
+  const buttons = Array.isArray(ui.setupOptionButtons) ? ui.setupOptionButtons : [];
+  if (!buttons.length) {
+    return;
+  }
+
+  const syncGroup = (selectId) => {
+    const selectNode = document.getElementById(selectId);
+    if (!selectNode) {
+      return;
+    }
+    for (const candidate of buttons) {
+      if (candidate.dataset.setupSelect !== selectId) {
+        continue;
+      }
+      candidate.classList.toggle('is-active', String(candidate.dataset.setupValue) === String(selectNode.value));
+    }
+  };
+
+  for (const button of buttons) {
+    if (button.dataset.setupBound === 'true') {
+      continue;
+    }
+    button.dataset.setupBound = 'true';
+    button.addEventListener('click', () => {
+      const selectId = String(button.dataset.setupSelect || '');
+      const value = String(button.dataset.setupValue || '');
+      const selectNode = document.getElementById(selectId);
+      if (!selectNode) {
+        return;
+      }
+      selectNode.value = value;
+      syncGroup(selectId);
+    });
+  }
+
+  syncGroup('setupPotSize');
+  syncGroup('setupGenetics');
+  syncGroup('setupMode');
 }
 
 function ensureRequiredUi() {
@@ -248,7 +455,7 @@ function ensureRequiredUi() {
     'menuBackdrop', 'gameMenu', 'menuCloseBtn', 'menuHeaderCloseBtn', 'menuNewRunBtn', 'menuRescueBtn', 'menuRescueSubtext',
     'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuAboutBtn',
     'menuAchievementsBtn', 'menuLeaderboardBtn', 'menuDialog', 'menuDialogTitle', 'menuDialogText', 'menuDialogCancelBtn', 'menuDialogConfirmBtn',
-    'careCategoryList', 'careActionList', 'careFeedback', 'eventStateBadge', 'eventTitle', 'eventText', 'eventMeta', 'eventOptionList',
+    'careCategoryList', 'careActionList', 'careEffectsList', 'careExecuteButton', 'careFeedback', 'eventStateBadge', 'eventTitle', 'eventText', 'eventMeta', 'eventOptionList',
     'analysisTabOverview', 'analysisTabDiagnosis', 'analysisTabTimeline', 'analysisPanelOverview', 'analysisPanelDiagnosis', 'analysisPanelTimeline',
     'analysisResetBtn', 'pushToggleBtn', 'pushToggleStatus', 'pushToggleFeedback',
     'notifTypeEvents', 'notifTypeCritical', 'notifTypeReminder',
@@ -291,18 +498,27 @@ function switchHudScreen(screenId) {
   if (!state.ui) {
     return;
   }
-  state.ui.activeScreen = nextScreen;
-  for (const screen of ui.screenViews || []) {
-    const isActive = screen.dataset.screen === nextScreen;
-    screen.classList.toggle('is-active', isActive);
-    screen.hidden = !isActive;
-    screen.setAttribute('aria-hidden', String(!isActive));
-    screen.style.display = isActive ? 'grid' : 'none';
-    screen.style.pointerEvents = isActive ? 'auto' : 'none';
+  const runtime = window.__gsScreenRuntime;
+  if (runtime && typeof runtime.setActiveScreen === 'function') {
+    state.ui.activeScreen = runtime.setActiveScreen(nextScreen);
+    if (typeof runtime.render === 'function') {
+      runtime.render(state);
+    }
+  } else {
+    state.ui.activeScreen = nextScreen;
+    for (const screen of ui.screenViews || []) {
+      const isActive = screen.dataset.screen === nextScreen;
+      screen.classList.toggle('is-active', isActive);
+      screen.hidden = !isActive;
+      screen.setAttribute('aria-hidden', String(!isActive));
+      screen.style.display = isActive ? 'grid' : 'none';
+      screen.style.pointerEvents = isActive ? 'auto' : 'none';
+    }
   }
   for (const button of ui.screenNavButtons || []) {
-    button.classList.toggle('is-active', button.dataset.screenTarget === nextScreen);
-    button.setAttribute('aria-pressed', button.dataset.screenTarget === nextScreen ? 'true' : 'false');
+    const isActiveButton = button.dataset.screenTarget === state.ui.activeScreen;
+    button.classList.toggle('is-active', isActiveButton);
+    button.setAttribute('aria-pressed', isActiveButton ? 'true' : 'false');
   }
 }
 
@@ -825,16 +1041,19 @@ function diagnosisDrivers() {
 
 function recommendedCareCategory(primaryDriver) {
   if (!primaryDriver) return 'environment';
-  const map = {
-    Wassermangel: 'watering',
-    Überwässerung: 'environment',
-    Nährstoffmangel: 'fertilizing',
-    Nährstoffüberschuss: 'environment',
-    'Hoher Stress': 'environment',
-    'Hohes Risiko': 'environment',
-    'Stabiler Zustand': 'training'
-  };
-  return map[primaryDriver.label] || 'environment';
+  const label = String(primaryDriver.label || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  if (label.includes('wassermangel')) return 'watering';
+  if (label.includes('uberwasserung')) return 'environment';
+  if (label.includes('nahrstoffmangel')) return 'fertilizing';
+  if (label.includes('nahrstoffuberschuss')) return 'environment';
+  if (label.includes('hoher stress')) return 'environment';
+  if (label.includes('hohes risiko')) return 'environment';
+  if (label.includes('stabiler zustand')) return 'training';
+  return 'environment';
 }
 
 function qualityTierLabel(tier) {
@@ -1563,3 +1782,4 @@ async function createStorageAdapter() {
     return localStorageAdapter();
   }
 }
+
