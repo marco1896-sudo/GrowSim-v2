@@ -13,7 +13,8 @@ export const env = {
   port: Number(process.env.PORT || 8080),
   jwtSecret: required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  mongodbUri: required('MONGODB_URI'),
+  mongodbUri: process.env.MONGODB_URI || '',
+  useInMemoryDb: String(process.env.USE_INMEMORY_DB || '').toLowerCase() === 'true',
   corsOrigins: (process.env.CORS_ORIGINS || '')
     .split(',')
     .map((s) => s.trim())

@@ -3,7 +3,7 @@ import { env } from './config/env.js';
 import { connectDb } from './config/db.js';
 
 async function bootstrap() {
-  await connectDb(env.mongodbUri);
+  await connectDb({ mongodbUri: env.mongodbUri, useInMemoryDb: env.useInMemoryDb });
   app.listen(env.port, () => {
     console.log(`[growsim-backend] listening on :${env.port}`);
   });
