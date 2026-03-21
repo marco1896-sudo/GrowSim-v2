@@ -438,6 +438,46 @@
         { "id": "reset_shock", "when": "health <= 35", "chance": 0.32, "deltas": { "health": -3, "stress": 4, "growth": -0.3 }, "note": "Empfindliche Pflanzen koennen kurzzeitig einbrechen." }
       ],
       "riskNotes": "Bester Anti-Risk-Eingriff, aber teuer im Tempo."
+    },
+    {
+      "id": "training_high_scrog",
+      "category": "training",
+      "intensity": "high",
+      "label": "SCROG-Netz einweben",
+      "uxCopy": {
+        "short": "Netz füllen",
+        "success": "Gleichmäßiges Blätterdach für maximale Lichtausbeute.",
+        "warning": "Sehr zeitaufwendig, erhöht das Risiko von Triebbrüchen."
+      },
+      "trigger": { "timeWindow": "daytime_only", "requiresNoActiveCooldown": true, "minStageIndex": 5 },
+      "prerequisites": { "min": { "health": 65 }, "max": { "stress": 45, "risk": 60 } },
+      "effects": {
+        "immediate": { "stress": 8, "growth": 0.5 },
+        "durationSimMinutes": 720,
+        "overTime": { "growthPerHour": 1.2, "stressPerHour": -0.2 }
+      },
+      "cooldownRealMinutes": 360,
+      "riskNotes": "Maximiert Ertragspotenzial in der späten Vegetationsphase."
+    },
+    {
+      "id": "watering_medium_vitamin",
+      "category": "watering",
+      "intensity": "medium",
+      "label": "Vitamin-Lösung",
+      "uxCopy": {
+        "short": "Abwehrkräfte stärken",
+        "success": "Pflanze wirkt vitaler und widerstandsfähiger.",
+        "warning": "Zusätzliche Feuchtigkeit beachten."
+      },
+      "trigger": { "timeWindow": "anytime", "requiresNoActiveCooldown": true, "minStageIndex": 2 },
+      "prerequisites": { "min": { "health": 5 }, "max": { "water": 85 } },
+      "effects": {
+        "immediate": { "water": 12, "health": 6, "stress": -5, "risk": -3 },
+        "durationSimMinutes": 180,
+        "overTime": { "healthPerHour": 0.5, "stressPerHour": -0.3 }
+      },
+      "cooldownRealMinutes": 90,
+      "riskNotes": "Ideal nach Stressereignissen zur schnelleren Erholung."
     }
   ],
   "balancingNotes": {
