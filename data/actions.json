@@ -147,7 +147,26 @@
       ],
       "riskNotes": "Rescue-Tool, nicht fuer Routinepflege."
     },
-
+    {
+      "id": "fertilizing_medium_calmag",
+      "category": "fertilizing",
+      "intensity": "medium",
+      "label": "CalMag-Zusatz",
+      "uxCopy": {
+        "short": "Mängel vorbeugen",
+        "success": "Zusatzstoffe stabilisieren die Blattgesundheit.",
+        "warning": "Überdosierung kann den pH-Wert stören."
+      },
+      "trigger": { "timeWindow": "daytime_only", "requiresNoActiveCooldown": true, "minStageIndex": 3 },
+      "prerequisites": { "min": { "water": 30 }, "max": { "nutrition": 95 } },
+      "effects": {
+        "immediate": { "health": 4, "stress": -2, "nutrition": 2, "risk": -1 },
+        "durationSimMinutes": 120,
+        "overTime": { "healthPerHour": 0.3 }
+      },
+      "cooldownRealMinutes": 60,
+      "riskNotes": "Präventive Maßnahme für stabilere Zellwände."
+    },
     {
       "id": "fertilizing_low_microfeed",
       "category": "fertilizing",
@@ -265,6 +284,49 @@
       "riskNotes": "Sehr effizient, aber nur in stabilen Fenstern."
     },
     {
+      "id": "training_medium_topping",
+      "category": "training",
+      "intensity": "medium",
+      "label": "Topping (Kappen)",
+      "uxCopy": {
+        "short": "Haupttrieb kappen",
+        "success": "Apikale Dominanz gebrochen. Triebe verzweigen sich.",
+        "warning": "Verursacht deutlichen Stressschock."
+      },
+      "trigger": { "timeWindow": "daytime_only", "requiresNoActiveCooldown": true, "minStageIndex": 4 },
+      "prerequisites": { "min": { "health": 60 }, "max": { "stress": 40 } },
+      "effects": {
+        "immediate": { "stress": 12, "growth": -2, "health": -2 },
+        "durationSimMinutes": 480,
+        "overTime": { "growthPerHour": 0.75, "stressPerHour": -0.4 }
+      },
+      "cooldownRealMinutes": 240,
+      "sideEffects": [
+        { "id": "topping_stunt", "when": "health <= 50", "chance": 0.35, "deltas": { "growth": -5, "stress": 8 }, "note": "Wachstumsstopp bei zu schwacher Pflanze." }
+      ],
+      "riskNotes": "Investition in zukünftiges Volumen, braucht Erholungszeit."
+    },
+    {
+      "id": "training_high_lollipop",
+      "category": "training",
+      "intensity": "high",
+      "label": "Lollipopping",
+      "uxCopy": {
+        "short": "Unten ausmisten",
+        "success": "Energie fokusiert auf Top-Buds. Luftstrom verbessert.",
+        "warning": "Starker Eingriff in die Biomasse."
+      },
+      "trigger": { "timeWindow": "daytime_only", "requiresNoActiveCooldown": true, "minStageIndex": 8 },
+      "prerequisites": { "min": { "health": 55 }, "max": { "stress": 50, "risk": 70 } },
+      "effects": {
+        "immediate": { "stress": 15, "risk": -8, "growth": 1.2 },
+        "durationSimMinutes": 600,
+        "overTime": { "growthPerHour": 0.85, "stressPerHour": -0.5, "riskPerHour": -0.2 }
+      },
+      "cooldownRealMinutes": 300,
+      "riskNotes": "Reduziert Schimmelrisiko und steigert Qualität der Haupterte."
+    },
+    {
       "id": "training_high_defoliation",
       "category": "training",
       "intensity": "high",
@@ -333,6 +395,26 @@
         { "id": "climate_swings", "when": "stress >= 65", "chance": 0.2, "deltas": { "stress": 2, "risk": 1 }, "note": "Instabile Pflanzen reagieren empfindlich auf Umstellungen." }
       ],
       "riskNotes": "Starker Defensiv-Move mit moderatem Wasserverbrauch."
+    },
+    {
+      "id": "environment_high_co2",
+      "category": "environment",
+      "intensity": "high",
+      "label": "CO2-Anreicherung",
+      "uxCopy": {
+        "short": "Wachstum beschleunigen",
+        "success": "Atmosphärischer Boost aktiv. Stoffwechsel auf Maximum.",
+        "warning": "Zehrt massiv an Wasser und Nährstoffen."
+      },
+      "trigger": { "timeWindow": "daytime_only", "requiresNoActiveCooldown": true, "minStageIndex": 5 },
+      "prerequisites": { "min": { "health": 75, "water": 60, "nutrition": 60 }, "max": { "stress": 30 } },
+      "effects": {
+        "immediate": { "growth": 2.5, "stress": 2 },
+        "durationSimMinutes": 360,
+        "overTime": { "growthPerHour": 1.5, "waterPerHour": -5.0, "nutritionPerHour": -3.5 }
+      },
+      "cooldownRealMinutes": 180,
+      "riskNotes": "Nur bei perfekter Umgebung nutzen, sonst droht schneller Burnout."
     },
     {
       "id": "environment_high_reset",
