@@ -3203,8 +3203,8 @@ function renderCareSheet(force = false) {
   const categoryIcons = {
     watering: '<img src="assets/ui/icons/icon_water.svg" alt="" aria-hidden="true">',
     fertilizing: '<img src="assets/ui/icons/icon_nutrients.svg" alt="" aria-hidden="true">',
-    training: '<img src="assets/ui/icons/pflege.png" alt="" aria-hidden="true">',
-    environment: '<img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true">'
+    training: '<img src="assets/ui/icons/icon_growth.svg" alt="" aria-hidden="true">',
+    environment: '<img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true">'
   };
 
   const availableCategories = careViewModel && Array.isArray(careViewModel.availableCategories)
@@ -3321,8 +3321,13 @@ function renderCareActionButtons(category, careViewModel = null) {
     button.setAttribute('aria-pressed', String(state.ui.care.selectedActionId === action.id));
 
     button.innerHTML = `
-      <span class="care-action-label">${escapeHtml(action.label)}</span>
-      <span class="care-action-hint" title="${escapeHtml(`Cooldown: ${cooldownText}`)}">${escapeHtml(hintText)}</span>`;
+      <div class="care-action-icon-box">
+        <img src="${getActionIconPath(action)}" class="care-action-card-icon" alt="" aria-hidden="true">
+      </div>
+      <div class="care-action-info-box">
+        <span class="care-action-label">${escapeHtml(action.label)}</span>
+        <span class="care-action-hint" title="${escapeHtml(`Cooldown: ${cooldownText}`)}">${escapeHtml(hintText)}</span>
+      </div>`;
 
     button.addEventListener('click', () => {
       state.ui.care.selectedActionId = action.id;
@@ -5478,6 +5483,21 @@ function getCanonicalMeta(snapshot) {
   if (s.meta.rescue.lastResult !== null && typeof s.meta.rescue.lastResult !== 'string') s.meta.rescue.lastResult = null;
   return s.meta;
 }
+function getActionIconPath(action) {
+  const cat = action.category || 'environment';
+  const intensity = action.intensity || 'low';
+  if (cat === 'watering') {
+    return intensity === 'high' ? 'assets/ui/icons/icon_water.svg' : 'assets/ui/icons/icon_water.svg';
+  }
+  if (cat === 'fertilizing') {
+    return 'assets/ui/icons/icon_nutrients.svg';
+  }
+  if (cat === 'training') {
+    return 'assets/ui/icons/icon_growth.svg';
+  }
+  return 'assets/ui/icons/icon_airflow.svg';
+}
+
 function getCanonicalSettings(snapshot) {
   const s = snapshot || state;
   if (!s.settings || typeof s.settings !== 'object') {
