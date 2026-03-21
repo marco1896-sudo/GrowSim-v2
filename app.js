@@ -2585,12 +2585,13 @@ function buildHomeViewModel(appState = state) {
   const boost = sourceState.boost || {};
 
   const simDay = Number(simulation.simDay || 0);
-  const xpCurrent = 1200 + (simDay * 440);
+  const xpCurrent = Math.min(8650, 1200 + (simDay * 440));
   const xpTarget = 8650;
   const xpRatio = clamp(xpCurrent / xpTarget, 0, 1);
   const coinBalance = 2480 + Math.round(simDay * 28);
   const gemBalance = 55 + Math.max(0, Math.floor(Number(boost.boostUsedToday || 0) / 2));
   const starBalance = 114 + Math.round(Number(status.growth || 0) / 2);
+  const playerLevel = Math.floor(xpCurrent / 1000) + 1;
 
   const environment = deriveEnvironmentReadout(sourceState);
   const roots = deriveRootZoneReadout(environment, sourceState);
@@ -2614,8 +2615,9 @@ function buildHomeViewModel(appState = state) {
       risk: Number(status.risk || 0)
     },
     panel: {
-      playerName: 'Max Mustergrower',
-      playerRole: 'Gärtner',
+      playerName: 'Marco',
+      playerRole: 'Master Grower',
+      playerLevel: `LVL ${playerLevel}`,
       xpText: `XP: ${formatCompactNumber(xpCurrent)} / ${formatCompactNumber(xpTarget)}`,
       xpPercent: Math.round(xpRatio * 100),
       coinText: formatCompactNumber(coinBalance),
@@ -2761,6 +2763,11 @@ function renderHud() {
 function renderPanelReadouts(homeVm = null) {
   const vm = homeVm && typeof homeVm === 'object' ? homeVm : buildHomeViewModel(state);
   const panel = vm.panel || {};
+
+  const playerLevelNode = uiNode('playerLevelBadge', 'playerLevelBadge');
+  if (playerLevelNode && playerLevelNode.textContent !== panel.playerLevel) {
+    playerLevelNode.textContent = String(panel.playerLevel || 'LVL 1');
+  }
 
   const playerNameNode = uiNode('playerNameValue', 'playerNameValue');
   if (playerNameNode && playerNameNode.textContent !== panel.playerName) {
@@ -3572,7 +3579,9 @@ function renderSettingsSheet() {
 
   const cloudNode = document.getElementById('settingsCloudSyncValue');
   if (cloudNode) {
-    cloudNode.textContent = 'Verbunden';
+    cloudNode.textContent = 'Lokal';
+    cloudNode.classList.remove('value_green');
+    cloudNode.classList.add('value_gold');
   }
 }
 
@@ -4096,6 +4105,14 @@ function hasSetup() {
 
 function renderLanding() {
   const visible = !hasSetup();
+  const appHud = document.getElementById('app-hud');
+  if (appHud) {
+    appHud.classList.toggle('app-hud--blocked', visible);
+    appHud.setAttribute('aria-hidden', String(visible));
+    if ('inert' in appHud) {
+      appHud.inert = visible;
+    }
+  }
   ui.landing.classList.toggle('hidden', !visible);
   ui.landing.setAttribute('aria-hidden', String(!visible));
 }
@@ -4712,6 +4729,9 @@ function formatCountdown(ms) {
   const totalSeconds = Math.ceil(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
+  if (minutes > 99) {
+    return `${minutes}m`;
+  }
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
@@ -5371,6 +5391,10 @@ async function restoreState() {
   }
   if (saved.ui && typeof saved.ui === 'object') {
     Object.assign(state.ui, saved.ui);
+    state.ui.openSheet = null;
+    state.ui.menuOpen = false;
+    state.ui.menuDialogOpen = false;
+    state.ui.statDetailKey = null;
   }
   if (saved.setup && typeof saved.setup === 'object') {
     state.setup = { ...saved.setup };
