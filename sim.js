@@ -472,13 +472,26 @@ function applyStatusDrift(elapsedMs) {
   const envModel = buildEnvironmentModelFromState(state.status, state.simulation, state.plant);
   const rootModel = buildRootZoneModelFromState(state.status, envModel, state.plant);
 
-  const envStress = (envModel.stressFactor.temp * 0.36)
+  const envStressBase = (envModel.stressFactor.temp * 0.36)
     + (envModel.stressFactor.humidity * 0.24)
     + (envModel.stressFactor.vpd * 0.28)
     + (envModel.stressFactor.airflow * 0.12);
-  const rootStress = (rootModel.stressFactor.ph * 0.42)
+  const rootStressBase = (rootModel.stressFactor.ph * 0.42)
     + (rootModel.stressFactor.ec * 0.34)
     + (rootModel.stressFactor.oxygen * 0.24);
+
+  const profile = envModel.stageProfile || getEnvStageProfile(clampInt(Number(state.plant.stageIndex || 0) + 1, 1, 12));
+  const tempOut = profile.temp ? Math.max(0, profile.temp[0] - envModel.temperatureC, envModel.temperatureC - profile.temp[1]) : 0;
+  const humidityOut = profile.humidity ? Math.max(0, profile.humidity[0] - envModel.humidityPercent, envModel.humidityPercent - profile.humidity[1]) : 0;
+  const vpdOut = profile.vpd ? Math.max(0, profile.vpd[0] - envModel.vpdKpa, envModel.vpdKpa - profile.vpd[1]) : 0;
+  const phOut = profile.ph ? Math.max(0, profile.ph[0] - rootModel.ph, rootModel.ph - profile.ph[1]) : 0;
+  const ecOut = profile.ec ? Math.max(0, profile.ec[0] - rootModel.ec, rootModel.ec - profile.ec[1]) : 0;
+
+  const profileEnvPenalty = clamp((tempOut / 5.5) + (humidityOut / 24) + (vpdOut / 0.9), 0, 1.5);
+  const profileRootPenalty = clamp((phOut / 0.8) + (ecOut / 1.2), 0, 1.5);
+
+  const envStress = clamp(envStressBase + (profileEnvPenalty * 0.22), 0, 2);
+  const rootStress = clamp(rootStressBase + (profileRootPenalty * 0.26), 0, 2);
 
   const stageIndexOneBased = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, 12);
   const stagePressure = clamp((stageIndexOneBased - 1) / 11, 0, 1);
