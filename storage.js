@@ -269,7 +269,8 @@ async function restoreState() {
       actions: Array.isArray(saved.history.actions) ? saved.history.actions : history.actions,
       events: Array.isArray(saved.history.events) ? saved.history.events : history.events,
       system: Array.isArray(saved.history.system) ? saved.history.system : history.system,
-      systemLog: Array.isArray(saved.history.systemLog) ? saved.history.systemLog : history.systemLog
+      systemLog: Array.isArray(saved.history.systemLog) ? saved.history.systemLog : history.systemLog,
+      telemetry: Array.isArray(saved.history.telemetry) ? saved.history.telemetry : history.telemetry
     };
   }
 
@@ -284,6 +285,10 @@ async function restoreState() {
   }
   if (saved.ui && typeof saved.ui === 'object') {
     Object.assign(state.ui, saved.ui);
+    state.ui.openSheet = null;
+    state.ui.menuOpen = false;
+    state.ui.menuDialogOpen = false;
+    state.ui.statDetailKey = null;
   }
   if (saved.setup && typeof saved.setup === 'object') {
     state.setup = { ...saved.setup };
@@ -490,7 +495,7 @@ function resetStateToDefaults() {
       lastResult: null
     }
   };
-  state.history = { actions: [], events: [], system: [], systemLog: [] };
+  state.history = { actions: [], events: [], system: [], systemLog: [], telemetry: [] };
   state.debug = { enabled: false, showInternalTicks: false, forceDaytime: false };
 
   state.simulation = {

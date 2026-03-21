@@ -563,6 +563,21 @@ function applyStatusDrift(elapsedMs) {
   }
   state.status.health += healthDelta;
 
+  // Record telemetry for charts
+  if (!state.history.telemetry) state.history.telemetry = [];
+  const lastTele = state.history.telemetry[state.history.telemetry.length - 1];
+  const currentSimDay = Number(state.simulation.simDay) || 0;
+  if (!lastTele || lastTele.day !== currentSimDay) {
+    state.history.telemetry.push({
+      day: currentSimDay,
+      health: Math.round(state.status.health),
+      water: Math.round(state.status.water),
+      nutrition: Math.round(state.status.nutrition),
+      stress: Math.round(state.status.stress)
+    });
+    if (state.history.telemetry.length > 50) state.history.telemetry.shift();
+  }
+
   const ecoEfficiency = clamp(1 - (envStress * 0.5) - (rootStress * 0.5), 0, 1);
   const impulseRaw = ((state.status.health - state.status.stress - (state.status.risk * 0.45)) / 35) * (0.7 + (ecoEfficiency * 0.6));
   state.simulation.growthImpulse = clamp(impulseRaw, -3, 3);

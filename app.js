@@ -3692,6 +3692,12 @@ function renderAnalysisOverview() {
 
   ui.analysisPanelOverview.innerHTML = `
     <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Historischer Verlauf</h3>
+      <div style="height: 180px; width: 100%; margin-bottom: 15px;">
+        <canvas id="analysisChartCanvas"></canvas>
+      </div>
+    </section>
+    <section class="gs-analysis-overview-section">
       <h3 class="figma-section-head">Pflanzenstatus</h3>
       ${rowsToHtml(statusRows)}
     </section>
@@ -3703,11 +3709,86 @@ function renderAnalysisOverview() {
       <h3 class="figma-section-head">Trend</h3>
       <p class="gs-analysis-trend-text">${escapeHtml(trendText)}</p>
     </section>
-    <div class="gs-analysis-overview-meta">
-      <span>${escapeHtml((state.simulation && state.simulation.isDaytime) ? 'Tag' : 'Nacht')}</span>
-      <strong>Sim-Tag ${escapeHtml(String(Number(state.simulation && state.simulation.simDay) || 0))}</strong>
-    </div>
   `;
+
+  // Init Chart
+  setTimeout(() => {
+    initAnalysisChart();
+  }, 50);
+}
+
+let analysisChart = null;
+
+function initAnalysisChart() {
+  const canvas = document.getElementById('analysisChartCanvas');
+  if (!canvas) return;
+
+  const telemetry = state.history.telemetry || [];
+  const labels = telemetry.map(t => `Tag ${t.day}`);
+  
+  if (analysisChart) {
+    analysisChart.destroy();
+  }
+
+  const ctx = canvas.getContext('2d');
+  analysisChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Gesundheit',
+          data: telemetry.map(t => t.health),
+          borderColor: '#4ade80',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 0
+        },
+        {
+          label: 'Wasser',
+          data: telemetry.map(t => t.water),
+          borderColor: '#3b82f6',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 0
+        },
+        {
+          label: 'Nährstoffe',
+          data: telemetry.map(t => t.nutrition),
+          borderColor: '#facc15',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 }, maxRotation: 0 }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: 'rgba(255,255,255,0.6)', font: { size: 9 }, boxWidth: 10 }
+        }
+      }
+    }
+  });
 }
 
 function renderAnalysisDiagnosis() {
