@@ -1529,22 +1529,22 @@ function computeEventDynamicWeight(item) {
     const negativeRecent = recent
       .filter((entry) => String(entry && entry.category || '').toLowerCase() !== 'positive')
       .length;
-    const positiveRecent = recent.length - negativeRecent;
+    const positiveRecent = recent.filter((entry) => String(entry && entry.category || '').toLowerCase() === 'positive').length;
     const stableWindow = stress <= 34 && risk <= 34 && health >= 70;
 
-    factor += negativeRecent >= 2 ? 0.35 : 0;
-    factor += health < 55 ? 0.2 : 0;
-    factor -= positiveRecent >= 2 ? 0.45 : 0;
+    factor += negativeRecent >= 1 ? 0.45 : 0;
+    factor += health < 60 ? 0.35 : 0;
+    factor -= positiveRecent >= 3 ? 0.55 : 0;
 
     // Frequency smoothing: keep positives present in stable runs, but avoid reward spam.
     if (stableWindow && positiveRecent === 0) {
-      factor *= 1.18;
+      factor *= 1.35;
     }
     if (stableWindow && positiveRecent === 1) {
-      factor *= 1.06;
+      factor *= 1.15;
     }
-    if (positiveRecent >= 2) {
-      factor *= 0.82;
+    if (positiveRecent >= 3) {
+      factor *= 0.75;
     }
   } else {
     factor += risk >= 60 ? 0.15 : 0;
@@ -1583,7 +1583,7 @@ function computeEventDynamicWeight(item) {
   }
 
   if (category === 'positive') {
-    factor *= 1.06 - (envPressure * 0.22);
+    factor *= 1.25 - (envPressure * 0.15);
   }
 
   if (category === 'disease' && risk < 40) {
