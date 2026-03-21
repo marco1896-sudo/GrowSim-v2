@@ -2,10 +2,10 @@
 
 const FAIRNESS_REACTION_GRACE_MS = 2 * 60 * 1000;
 const OFFLINE_STATUS_DECAY_MULTIPLIER = 0.72;
-const WATER_STRESS_THRESHOLD = 40;
-const WATER_CRITICAL_THRESHOLD = 16;
-const NUTRITION_STRESS_THRESHOLD = 40;
-const NUTRITION_CRITICAL_THRESHOLD = 18;
+const WATER_STRESS_THRESHOLD = 30;
+const WATER_CRITICAL_THRESHOLD = 12;
+const NUTRITION_STRESS_THRESHOLD = 30;
+const NUTRITION_CRITICAL_THRESHOLD = 14;
 
 const ENV_STAGE_PROFILES = Object.freeze([
   Object.freeze({ minStage: 1, maxStage: 2, temp: [22, 28], humidity: [60, 78], vpd: [0.50, 1.10], ec: [0.7, 1.3], ph: [5.8, 6.3] }),
@@ -550,11 +550,11 @@ function applyStatusDrift(elapsedMs) {
   const stressHealthPressure = clamp((state.status.stress - 55) / 45, 0, 1);
   const riskHealthPressure = clamp((state.status.risk - 60) / 40, 0, 1);
   let healthDelta = (-0.008 * minutes)
-    - (stressHealthPressure * 0.13 * minutes)
-    - (riskHealthPressure * 0.11 * minutes)
-    - (waterCritical * 0.10 * minutes)
-    - (envStress * 0.055 * envInfluence * minutes)
-    - (rootStress * 0.068 * rootInfluence * minutes);
+    - (stressHealthPressure * 0.08 * minutes)
+    - (riskHealthPressure * 0.07 * minutes)
+    - (waterCritical * 0.08 * minutes)
+    - (envStress * 0.045 * envInfluence * minutes)
+    - (rootStress * 0.05 * rootInfluence * minutes);
   if (inRecoveryBand && state.status.risk <= 45) {
     healthDelta += 0.20 * minutes;
   }

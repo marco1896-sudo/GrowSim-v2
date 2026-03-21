@@ -958,10 +958,10 @@ function computeEnvironmentEventPressure() {
 }
 
 function eventThreshold() {
-  const base = 0.34;
-  const riskInfluence = state.status.risk / 340;
-  const envInfluence = computeEnvironmentEventPressure() * 0.18;
-  return clamp(base + riskInfluence + envInfluence, 0.15, 0.88);
+  const base = 0.28;
+  const riskInfluence = state.status.risk / 400;
+  const envInfluence = computeEnvironmentEventPressure() * 0.15;
+  return clamp(base + riskInfluence + envInfluence, 0.12, 0.85);
 }
 
 function shouldTriggerEvent(roll) {
