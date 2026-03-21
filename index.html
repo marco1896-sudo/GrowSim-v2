@@ -59,7 +59,12 @@
             <div class="home-env-row"><img src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true"><span id="envLightLabel">Licht</span><strong id="envLightValue">720 PPFD</strong></div>
             <div class="home-env-row"><img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true"><span id="envAirflowLabel">Luftstrom</span><strong id="envAirflowValue">Good</strong></div>
 
-            <div class="home-env-controls" aria-label="Feinsteuerung Umwelt und Wurzeln">
+            <button id="toggleEnvControlsBtn" class="home-env-toggle-btn" type="button">
+              <span>Umwelt-Steuerung</span>
+              <span class="toggle-icon">▼</span>
+            </button>
+
+            <div id="homeEnvControls" class="home-env-controls hidden" aria-label="Feinsteuerung Umwelt und Wurzeln">
               <label class="home-env-control" for="envCtrlTemp"><span>Temp</span><strong id="envCtrlTempOut">25.0°C</strong></label>
               <input id="envCtrlTemp" type="range" min="16" max="36" step="0.1" value="25">
 

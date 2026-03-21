@@ -32,6 +32,7 @@ function showBootError(error) {
 }
 
 function cacheUi() {
+  ui.appHud = document.getElementById('app-hud');
   ui.phaseCard = document.getElementById('phaseCard');
   ui.phaseCardTitle = document.getElementById('phaseCardTitle');
   ui.phaseCardCycle = document.getElementById('phaseCardCycle');
@@ -268,6 +269,15 @@ function bindHomeScreenEvents(controller = null) {
     });
     binding.node.addEventListener('change', (event) => {
       onEnvironmentControlInput(binding.key, event.target.value);
+    });
+  }
+
+  const toggleBtn = document.getElementById('toggleEnvControlsBtn');
+  const controlsDiv = document.getElementById('homeEnvControls');
+  if (toggleBtn && controlsDiv) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = controlsDiv.classList.toggle('hidden');
+      toggleBtn.classList.toggle('is-open', !isHidden);
     });
   }
 
@@ -1314,6 +1324,13 @@ function hasSetup() {
 
 function renderLanding() {
   const visible = !hasSetup();
+  if (ui.appHud) {
+    ui.appHud.classList.toggle('app-hud--blocked', visible);
+    ui.appHud.setAttribute('aria-hidden', String(visible));
+    if ('inert' in ui.appHud) {
+      ui.appHud.inert = visible;
+    }
+  }
   ui.landing.classList.toggle('hidden', !visible);
   ui.landing.setAttribute('aria-hidden', String(!visible));
 }

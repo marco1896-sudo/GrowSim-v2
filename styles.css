@@ -4949,6 +4949,35 @@ body.panelized-ready :is(
 
 
 
+.home-env-toggle-btn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 6px 10px;
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.home-env-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.home-env-toggle-btn .toggle-icon {
+  font-size: 8px;
+  transition: transform 0.3s;
+}
+
+.home-env-toggle-btn.is-open .toggle-icon {
+  transform: rotate(180deg);
+}
+
 .home-env-controls {
   margin-top: 4px;
   padding-top: 6px;
