@@ -239,12 +239,24 @@ function runEventStateMachine(nowMs) {
     }
 
     const roll = deterministicRoll();
-    addLog('event_roll', 'Ereignisgrenze erreicht, Ereignis wird aktiviert', {
+    const threshold = eventThreshold();
+    addLog('event_roll', 'Ereignisgrenze erreicht, Wurf wird geprüft', {
       roll,
-      threshold: eventThreshold(),
+      threshold,
       simHour: simHour(state.simulation.simTimeMs),
       at: nowMs
     });
+
+    if (!shouldTriggerEvent(roll)) {
+      addLog('event_roll', 'Ereigniswurf verfehlt, kein Event aktiviert', {
+        roll,
+        threshold,
+        at: nowMs
+      });
+      scheduleNextEventRoll(nowMs, 'roll_miss');
+      schedulePushIfAllowed(false);
+      return;
+    }
 
     const activated = activateEvent(nowMs);
     if (activated) {
