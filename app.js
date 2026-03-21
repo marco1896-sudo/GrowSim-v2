@@ -2588,9 +2588,9 @@ function buildHomeViewModel(appState = state) {
   const xpCurrent = Math.min(8650, 1200 + (simDay * 440));
   const xpTarget = 8650;
   const xpRatio = clamp(xpCurrent / xpTarget, 0, 1);
-  const coinBalance = 2480 + Math.round(simDay * 28);
-  const gemBalance = 55 + Math.max(0, Math.floor(Number(boost.boostUsedToday || 0) / 2));
-  const starBalance = 114 + Math.round(Number(status.growth || 0) / 2);
+  const coinBalance = Number(status.coins || (2480 + Math.round(simDay * 28)));
+  const gemBalance = Number(status.gems || (55 + Math.max(0, Math.floor(Number(boost.boostUsedToday || 0) / 2))));
+  const starBalance = Number(status.stars || (114 + Math.round(Number(status.growth || 0) / 2)));
   const playerLevel = Math.floor(xpCurrent / 1000) + 1;
 
   const environment = deriveEnvironmentReadout(sourceState);
@@ -2707,6 +2707,22 @@ function updateHomeFromViewModel(homeVm, prevVm = null) {
   const plantCanvas = uiNode('plantImage', 'plantImage');
   if (plantCanvas && typeof renderPlantFromSprite === 'function') {
     renderPlantFromSprite(plantCanvas);
+  }
+
+  const plantStatusChipNode = uiNode('plantStatusChip', 'plantStatusChip');
+  if (plantStatusChipNode) {
+    const stress = Number(vm.rings && vm.rings.stress || 0);
+    const health = Number(vm.rings && vm.rings.health || 0);
+    let statusText = 'Gesund';
+    let statusClass = 'home-progress-status-ok';
+    if (stress > 60) { statusText = 'Stress'; statusClass = 'home-progress-status-stress'; }
+    else if (health < 40) { statusText = 'Kritisch'; statusClass = 'home-progress-status-critical'; }
+    else if (stress > 30) { statusText = 'Achtung'; statusClass = 'home-progress-status-warn'; }
+    
+    if (plantStatusChipNode.textContent !== statusText) {
+      plantStatusChipNode.textContent = statusText;
+      plantStatusChipNode.className = `home-progress-stress-chip ${statusClass}`;
+    }
   }
 
   const nextEventValueNode = uiNode('nextEventValue', 'nextEventValue');

@@ -2213,6 +2213,11 @@ body {
   padding: 1rem;
 }
 
+.app-hud--blocked {
+  pointer-events: none;
+  user-select: none;
+}
+
 .landing-card {
   width: min(420px, 100%);
   border-radius: 18px;
@@ -4125,6 +4130,26 @@ body.panelized-ready :is(
   border: 1px solid rgba(250, 204, 21, 0.22);
   border-radius: 3px;
   padding: 1px 4px;
+}
+.home-progress-status-ok {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.3);
+}
+.home-progress-status-warn {
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.1);
+  border-color: rgba(250, 204, 21, 0.3);
+}
+.home-progress-status-stress {
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.1);
+  border-color: rgba(251, 146, 60, 0.3);
+}
+.home-progress-status-critical {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.3);
 }
 
 .home-progress-multi {

@@ -90,7 +90,7 @@
               <strong id="phaseCardSubtitle">42%</strong>
               <span>Wachstum</span>
             </div>
-            <span class="home-progress-stress-chip">Stress</span>
+            <span id="plantStatusChip" class="home-progress-stress-chip">Stress</span>
             <strong id="growthImpulseValue" class="home-progress-multi">+0.80x</strong>
             <button id="openDiagnosisBtn" class="home-progress-pause" type="button" aria-label="Diagnose öffnen"></button>
           </div>
@@ -289,7 +289,7 @@
 
       <section class="figma-section-card figma-settings-card figma-settings-card--account">
         <h3 class="figma-section-head">Account</h3>
-        <div class="figma-static-row"><span>Cloud Sync</span><strong id="settingsCloudSyncValue" class="value_green">Verbunden</strong></div>
+        <div class="figma-static-row"><span>Cloud Sync</span><strong id="settingsCloudSyncValue" class="value_gold">Lokal</strong></div>
         <div class="figma-static-row"><span>Support</span><button id="settingsSupportBtn" class="ghost-btn settings-link-btn" type="button">Öffnen</button></div>
         <div class="figma-settings-actions">
           <button id="analysisResetBtn" class="action-btn action-secondary" type="button">Reset</button>
@@ -342,8 +342,8 @@
       </section>
 
       <div class="figma-onboarding-actions">
-        <button class="ghost-btn" type="button">Zurück</button>
-        <button class="ghost-btn" type="button">Preset</button>
+        <button id="setupBackBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfügbar">Zurück</button>
+        <button id="setupPresetBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfügbar">Preset</button>
         <button id="startRunBtn" class="action-btn action-primary" type="button">Start</button>
       </div>
 
