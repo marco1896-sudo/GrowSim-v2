@@ -73,6 +73,7 @@ function cacheUi() {
   ui.boostActionBtn = document.getElementById('boostActionBtn');
   ui.skipNightActionBtn = document.getElementById('skipNightActionBtn');
   ui.openDiagnosisBtn = document.getElementById('openDiagnosisBtn');
+  ui.eventsActionBtn = document.getElementById('eventsActionBtn');
   ui.menuToggleBtn = document.getElementById('menuToggleBtn');
   ui.envCtrlTemp = document.getElementById('envCtrlTemp');
   ui.envCtrlHumidity = document.getElementById('envCtrlHumidity');
@@ -136,6 +137,9 @@ function cacheUi() {
   ui.notifTypeEvents = document.getElementById('notifTypeEvents');
   ui.notifTypeCritical = document.getElementById('notifTypeCritical');
   ui.notifTypeReminder = document.getElementById('notifTypeReminder');
+
+  ui.missionsSheet = document.getElementById('missionsSheet');
+  ui.missionsList = document.getElementById('missionsList');
 
   ui.landing = document.getElementById('landing');
   ui.startRunBtn = document.getElementById('startRunBtn');
@@ -237,6 +241,17 @@ function bindHomeScreenEvents(controller = null) {
     });
   }
 
+  if (ui.eventsActionBtn) {
+    ui.eventsActionBtn.addEventListener('click', () => withDebouncedAction('events', ui.eventsActionBtn, () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('event');
+        return;
+      }
+      openSheet('event');
+    }));
+  }
+
   const statRingBindings = [
     { node: ui.waterRing, key: 'water' },
     { node: ui.nutritionRing, key: 'nutrition' },
@@ -336,7 +351,7 @@ function bindMenuOverlayEvents(controller = null) {
     });
   }
   if (ui.menuSupportBtn) {
-    ui.menuSupportBtn.addEventListener('click', () => openMenuPlaceholder('Projekt unterstützen', 'Support-Optionen folgen in einem späteren Update.'));
+    ui.menuSupportBtn.addEventListener('click', () => openSheet('missions'));
   }
   if (ui.menuAboutBtn) {
     ui.menuAboutBtn.addEventListener('click', () => openMenuPlaceholder('Über das Spiel', 'Grow Simulator MVP · Weitere Infos folgen.'));

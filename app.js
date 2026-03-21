@@ -204,6 +204,11 @@ const state = {
       lastResult: null
     }
   },
+  missions: {
+    catalog: [],
+    byId: {},
+    completed: []
+  },
   environmentControls: {
     temperatureC: 25,
     humidityPercent: 60,
@@ -294,7 +299,7 @@ const state = {
       analysis: []
     }
   },
-  history: { actions: [], events: [], system: [], systemLog: [] },
+  history: { actions: [], events: [], system: [], systemLog: [], telemetry: [] },
   debug: { enabled: false, showInternalTicks: false, forceDaytime: false },
   status: {
     health: 85,
@@ -832,6 +837,19 @@ async function initOrMigrateState() {
 async function loadCatalogs() {
   await loadEventCatalog();
   await loadActionsCatalog();
+  await loadMissionsCatalog();
+}
+
+async function loadMissionsCatalog() {
+  try {
+    const response = await fetch('./data/missions.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const missions = await response.json();
+    state.missions.catalog = missions;
+    state.missions.byId = Object.fromEntries(missions.map(m => [m.id, m]));
+  } catch (error) {
+    console.warn('Missions konnte nicht geladen werden', error);
+  }
 }
 
 function startLoopOnce() {
@@ -3105,6 +3123,7 @@ function renderSheets() {
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
   toggleSheet(ui.statDetailSheet, activeSheet === 'statDetail');
+  toggleSheet(ui.missionsSheet, activeSheet === 'missions');
 }
 
 function renderGameMenu() {
@@ -4133,9 +4152,35 @@ function openSheet(name) {
     renderCareSheet(true);
   } else if (name === 'diagnosis') {
     renderSettingsSheet();
+  } else if (name === 'missions') {
+    renderMissionsSheet();
   } else if (name === 'statDetail') {
     renderStatDetailSheet();
   }
+}
+
+function renderMissionsSheet() {
+  if (!ui.missionsSheet || state.ui.openSheet !== 'missions') return;
+  ui.missionsList.replaceChildren();
+
+  state.missions.catalog.forEach(mission => {
+    const isCompleted = state.missions.completed.includes(mission.id);
+    const card = document.createElement('div');
+    card.className = `figma-section-card mission-card ${isCompleted ? 'mission-completed' : ''}`;
+    
+    let rewardText = '';
+    if (mission.reward.coins) rewardText += `🪙 ${mission.reward.coins} `;
+    if (mission.reward.gems) rewardText += `💎 ${mission.reward.gems} `;
+    if (mission.reward.stars) rewardText += `⭐ ${mission.reward.stars} `;
+
+    card.innerHTML = `
+      <div class="figma-static-row">
+        <span><strong>${escapeHtml(mission.title)}</strong><br><small>${escapeHtml(mission.description)}</small></span>
+        <span class="value_gold">${isCompleted ? 'Abgeschlossen' : rewardText}</span>
+      </div>
+    `;
+    ui.missionsList.appendChild(card);
+  });
 }
 
 function onMenuToggleClick() {
@@ -4357,7 +4402,7 @@ function onStartRun() {
   };
 
   // Figma-spec starting resources based on setup
-  const startingCoins = setup.potSize === 'large' ? 1800 : (setup.potSize === 'medium' ? 2480 : 3200);
+  const startingCoins = setup.potSize === 'xlarge' ? 1500 : (setup.potSize === 'large' ? 1800 : (setup.potSize === 'medium' ? 2480 : 3200));
   state.status.coins = startingCoins;
   state.status.gems = 55;
   state.status.stars = 10;

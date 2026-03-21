@@ -162,6 +162,10 @@
             <img id="analyzeActionIcon" class="home-action-icon" src="assets/ui/icons/analyse.png" alt="" aria-hidden="true">
             <span class="home-action-title">Analyse</span>
           </button>
+          <button id="eventsActionBtn" class="home-action-btn" type="button">
+            <img id="eventsActionIcon" class="home-action-icon" src="assets/ui/icons/info.png" alt="" aria-hidden="true">
+            <span class="home-action-title">Events</span>
+          </button>
           <button id="boostActionBtn" class="home-action-btn" type="button">
             <span class="home-boost-tag">-30m</span>
             <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/time_boost.png" alt="" aria-hidden="true">
@@ -306,6 +310,22 @@
     </div>
   </section>
 
+  <section id="missionsSheet" class="bottom-sheet figma-sheet figma-sheet-missions hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Missionen & Erfolge</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+    </header>
+    <div class="sheet-content figma-sheet-content">
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div class="figma-top-player-title">Progression</div>
+        <div class="figma-top-player-subtitle">Aktive Herausforderungen</div>
+      </section>
+      <div id="missionsList" class="missions-list">
+        <!-- Missions will be injected here -->
+      </div>
+    </div>
+  </section>
+
   <section id="statDetailSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2 id="statDetailTitle">Statistik</h2>
@@ -333,12 +353,14 @@
         <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupPotSize" data-setup-value="small"><span>2 Liter (S)</span><strong class="value_gold">Frühspiel</strong></button>
         <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="medium"><span>8 Liter (M)</span><strong class="value_green">Ausgewogen</strong></button>
         <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="large"><span>16 Liter (L)</span><strong class="value_gold">Langzeit</strong></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="xlarge"><span>25 Liter (XL)</span><strong class="value_gold">Expert</strong></button>
       </section>
 
       <section class="figma-section-card figma-section-card--onboarding">
         <h3 class="figma-section-head">Pflanzentyp</h3>
-        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupGenetics" data-setup-value="auto"><span>Hybrid / Auto</span><span class="badge">Empfohlen</span></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupGenetics" data-setup-value="photo"><span>Sativa / Photo</span><span class="subtitle">Langzyklus</span></button>
+        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupGenetics" data-setup-value="hybrid"><span>Hybrid</span><span class="badge">Empfohlen</span></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupGenetics" data-setup-value="indica"><span>Indica</span><span class="subtitle">Robust</span></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupGenetics" data-setup-value="sativa"><span>Sativa</span><span class="subtitle">Langzyklus</span></button>
       </section>
 
       <section class="figma-section-card figma-section-card--onboarding">
@@ -357,8 +379,8 @@
         <label>Modus<select id="setupMode"><option value="indoor" selected>Indoor</option><option value="outdoor">Outdoor</option><option value="greenhouse">Greenhouse</option></select></label>
         <label>Licht<select id="setupLight"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
         <label>Substrat<select id="setupMedium"><option value="soil" selected>Soil</option><option value="coco">Coco</option><option value="hydro">Hydro</option></select></label>
-        <label>Topf<select id="setupPotSize"><option value="small" selected>Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
-        <label>Genetik<select id="setupGenetics"><option value="auto" selected>Auto</option><option value="photo">Photo</option></select></label>
+        <label>Topf<select id="setupPotSize"><option value="small" selected>Small</option><option value="medium">Medium</option><option value="large">Large</option><option value="xlarge">XLarge</option></select></label>
+        <label>Genetik<select id="setupGenetics"><option value="hybrid" selected>Hybrid</option><option value="indica">Indica</option><option value="sativa">Sativa</option></select></label>
       </div>
     </div>
   </section>
