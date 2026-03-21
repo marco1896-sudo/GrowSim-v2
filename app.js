@@ -3166,10 +3166,10 @@ function renderCareSheet(force = false) {
       environment: 'Umgebung'
     };
   const categoryIcons = {
-    watering: '💧',
-    fertilizing: '◉',
-    training: '✦',
-    environment: '◌'
+    watering: '<img src="assets/ui/icons/icon_water.svg" alt="" aria-hidden="true">',
+    fertilizing: '<img src="assets/ui/icons/icon_nutrients.svg" alt="" aria-hidden="true">',
+    training: '<img src="assets/ui/icons/pflege.png" alt="" aria-hidden="true">',
+    environment: '<img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true">'
   };
 
   const availableCategories = careViewModel && Array.isArray(careViewModel.availableCategories)
@@ -3219,7 +3219,7 @@ function renderCareCategoryButtons(categories, labels, icons) {
     if (state.ui.care.selectedCategory === category) {
       btn.classList.add('care-category-tab-active');
     }
-    btn.innerHTML = `<span class="care-category-icon" aria-hidden="true">${icons[category] || '◌'}</span><span>${labels[category] || category}</span>`;
+    btn.innerHTML = `<span class="care-category-icon" aria-hidden="true">${icons[category] || '◌'}</span><span class="care-category-label">${labels[category] || category}</span>`;
     btn.addEventListener('click', () => {
       state.ui.care.selectedCategory = category;
       state.ui.care.selectedActionId = null;
@@ -4134,6 +4134,10 @@ function hasSetup() {
 }
 
 function renderLanding() {
+  const landingNode = uiNode('landing', 'landing');
+  if (!landingNode) {
+    return;
+  }
   const visible = !hasSetup();
   const appHud = document.getElementById('app-hud');
   if (appHud) {
@@ -4143,8 +4147,8 @@ function renderLanding() {
       appHud.inert = visible;
     }
   }
-  ui.landing.classList.toggle('hidden', !visible);
-  ui.landing.setAttribute('aria-hidden', String(!visible));
+  landingNode.classList.toggle('hidden', !visible);
+  landingNode.setAttribute('aria-hidden', String(!visible));
 }
 
 function renderDeathOverlay() {
@@ -4241,31 +4245,49 @@ function formatRecentHistoryHtml(row) {
 }
 
 function onStartRun() {
+  const setup = {
+    mode: document.getElementById('setupMode').value || 'indoor',
+    light: document.getElementById('setupLight').value || 'medium',
+    medium: document.getElementById('setupMedium').value || 'soil',
+    potSize: document.getElementById('setupPotSize').value || 'medium',
+    genetics: document.getElementById('setupGenetics').value || 'auto'
+  };
+
   const nowMs = Date.now();
   state.setup = {
-    mode: ui.setupMode.value || 'indoor',
-    light: ui.setupLight.value || 'medium',
-    medium: ui.setupMedium.value || 'soil',
-    potSize: ui.setupPotSize.value || 'medium',
-    genetics: ui.setupGenetics.value || 'auto',
+    ...setup,
     createdAtReal: nowMs
   };
+
+  // Figma-spec starting resources based on setup
+  const startingCoins = setup.potSize === 'large' ? 1800 : (setup.potSize === 'medium' ? 2480 : 3200);
+  state.status.coins = startingCoins;
+  state.status.gems = 55;
+  state.status.stars = 10;
 
   state.simulation.startRealTimeMs = nowMs;
   state.simulation.lastTickRealTimeMs = nowMs;
   state.simulation.simEpochMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
   state.simulation.simTimeMs = state.simulation.simEpochMs;
   state.status.growth = 0;
+  state.status.health = 100;
+  state.status.water = 80;
+  state.status.nutrition = 70;
+  state.status.stress = 0;
+  state.status.risk = 0;
+  
   state.plant.stageIndex = 0;
   state.plant.stageProgress = 0;
-  state.plant.phase = getCurrentStage(0).current.phase;
+  const initialStage = getCurrentStage(0);
+  state.plant.phase = (initialStage && initialStage.current) ? initialStage.current.phase : 'seedling';
   state.plant.stageKey = stageAssetKeyForIndex(0);
   state.plant.lastValidStageKey = state.plant.stageKey;
 
   syncCanonicalStateShape();
   renderLanding();
+  renderHud();
   schedulePersistState(true);
-  addLog('system', 'Einstellungen gespeichert, Durchlauf gestartet', state.setup);
+  addLog('system', 'Neuer Run gestartet (Figma-Setup)', state.setup);
 }
 
 async function onDeathResetClick() {
