@@ -3038,12 +3038,42 @@ function renderPlantFallback(targetNode) {
   ctx.clearRect(0, 0, targetNode.width, targetNode.height);
   const w = canvasMetrics.widthPx;
   const h = canvasMetrics.heightPx;
-  ctx.fillStyle = 'rgba(134, 167, 94, 0.85)';
-  ctx.fillRect(Math.round(w * 0.48), Math.round(h * 0.45), Math.max(2, Math.round(w * 0.04)), Math.round(h * 0.3));
-  ctx.fillStyle = 'rgba(164, 205, 110, 0.78)';
-  ctx.beginPath();
-  ctx.ellipse(Math.round(w * 0.5), Math.round(h * 0.38), Math.round(w * 0.13), Math.round(h * 0.11), 0, 0, Math.PI * 2);
-  ctx.fill();
+
+  const stageIndex = clampInt(Number(state.plant.stageIndex), 0, PLANT_STAGE_IMAGES.length - 1);
+  const assetPath = appPath(PLANT_STAGE_IMAGES[stageIndex] || PLANT_STAGE_IMAGES[0]);
+
+  const img = new Image();
+  img.onload = () => {
+    const srcW = img.naturalWidth || 512;
+    const srcH = img.naturalHeight || 512;
+    const dstW = w;
+    const dstH = h;
+
+    const containScale = Math.min(dstW / srcW, dstH / srcH);
+    const spriteStage = getPlantSpriteStageFromState(state.plant);
+    const stageScale = HOME_PLANT_STAGE_SCALE[spriteStage] || 1;
+    const fitScale = HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale;
+    const scale = containScale * fitScale;
+
+    const drawW = Math.round(srcW * scale);
+    const drawH = Math.round(srcH * scale);
+    const dx = Math.round((dstW - drawW) / 2);
+    const baselineInset = clampInt(HOME_PLANT_REFERENCE_FIT.baselineInsetPx, 0, dstH);
+    const dy = clampInt(dstH - drawH - baselineInset, 0, dstH - drawH);
+
+    ctx.clearRect(0, 0, targetNode.width, targetNode.height);
+    ctx.drawImage(img, dx, dy, drawW, drawH);
+  };
+  img.onerror = () => {
+    ctx.fillStyle = 'rgba(134, 167, 94, 0.85)';
+    ctx.fillRect(Math.round(w * 0.48), Math.round(h * 0.45), Math.max(2, Math.round(w * 0.04)), Math.round(h * 0.3));
+    ctx.fillStyle = 'rgba(164, 205, 110, 0.78)';
+    ctx.beginPath();
+    ctx.ellipse(Math.round(w * 0.5), Math.round(h * 0.38), Math.round(w * 0.13), Math.round(h * 0.11), 0, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  img.src = assetPath;
+
   targetNode.dataset.stageName = normalizeStageKey(state.plant.stageKey);
 }
 
