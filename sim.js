@@ -19,20 +19,42 @@ function getEnvStageProfile(stageIndexOneBased) {
   return ENV_STAGE_PROFILES.find((profile) => stage >= profile.minStage && stage <= profile.maxStage) || ENV_STAGE_PROFILES[1];
 }
 
+function getEnvironmentControlsForSimulation() {
+  const controls = state && state.environmentControls && typeof state.environmentControls === 'object'
+    ? state.environmentControls
+    : {};
+  const safeTemp = Number.isFinite(Number(controls.temperatureC)) ? Number(controls.temperatureC) : 25;
+  const safeHumidity = Number.isFinite(Number(controls.humidityPercent)) ? Number(controls.humidityPercent) : 60;
+  const safeAirflow = Number.isFinite(Number(controls.airflowPercent)) ? Number(controls.airflowPercent) : 70;
+  const safePh = Number.isFinite(Number(controls.ph)) ? Number(controls.ph) : 6.0;
+  const safeEc = Number.isFinite(Number(controls.ec)) ? Number(controls.ec) : 1.4;
+
+  return {
+    temperatureC: clamp(safeTemp, 16, 36),
+    humidityPercent: clampInt(safeHumidity, 30, 90),
+    airflowPercent: clampInt(safeAirflow, 0, 100),
+    ph: clamp(safePh, 5.0, 7.0),
+    ec: clamp(safeEc, 0.6, 2.8)
+  };
+}
+
 function buildEnvironmentModelFromState(statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant) {
   const water = clamp(Number(statusLike.water || 0), 0, 100);
   const stress = clamp(Number(statusLike.stress || 0), 0, 100);
   const risk = clamp(Number(statusLike.risk || 0), 0, 100);
   const stageIndexOneBased = clampInt(Number((plantLike && plantLike.stageIndex) || 0) + 1, 1, 12);
   const profile = getEnvStageProfile(stageIndexOneBased);
+  const controls = getEnvironmentControlsForSimulation();
   const isDay = Boolean(simulationLike && simulationLike.isDaytime);
 
   const dayBase = isDay ? 24.4 : 20.7;
-  const temperatureC = clamp(dayBase + (stress * 0.048) + (risk * 0.018), 17, 36);
-  const humidityPercent = Math.round(clamp(41 + (water * 0.40) - (stress * 0.15), 30, 84));
+  const physicsTemp = clamp(dayBase + (stress * 0.048) + (risk * 0.018), 17, 36);
+  const physicsHumidity = Math.round(clamp(41 + (water * 0.40) - (stress * 0.15), 30, 84));
+  const temperatureC = clamp((physicsTemp * 0.40) + (controls.temperatureC * 0.60), 16, 36);
+  const humidityPercent = Math.round(clamp((physicsHumidity * 0.42) + (controls.humidityPercent * 0.58), 30, 90));
   const vpdKpa = clamp(0.72 + ((temperatureC - 21) * 0.082) + ((60 - humidityPercent) * 0.012), 0.35, 2.6);
   const ppfd = isDay ? Math.round(clamp(560 + (Number(statusLike.growth || 0) * 2.2), 420, 980)) : 45;
-  const airflowScore = clamp(100 - risk - Math.round(stress * 0.34), 0, 100);
+  const airflowScore = clamp(Math.round((controls.airflowPercent * 0.82) + ((100 - risk - Math.round(stress * 0.34)) * 0.18)), 0, 100);
   const airflowLabel = airflowScore >= 70 ? 'Good' : airflowScore >= 40 ? 'Mittel' : 'Schwach';
 
   const tempDeviation = profile.temp ? Math.max(0, profile.temp[0] - temperatureC, temperatureC - profile.temp[1]) : 0;
@@ -62,9 +84,12 @@ function buildRootZoneModelFromState(statusLike = state.status, env = buildEnvir
   const risk = clamp(Number(statusLike.risk || 0), 0, 100);
   const stageIndexOneBased = clampInt(Number((plantLike && plantLike.stageIndex) || 0) + 1, 1, 12);
   const profile = getEnvStageProfile(stageIndexOneBased);
+  const controls = getEnvironmentControlsForSimulation();
 
-  const phValue = clamp(5.6 + ((nutrition - 50) * 0.008) - ((risk - 40) * 0.003), 5.3, 6.7);
-  const ecValue = clamp(0.8 + (nutrition * 0.01), 0.5, 2.4);
+  const computedPh = clamp(5.6 + ((nutrition - 50) * 0.008) - ((risk - 40) * 0.003), 5.3, 6.7);
+  const computedEc = clamp(0.8 + (nutrition * 0.01), 0.5, 2.4);
+  const phValue = clamp((controls.ph * 0.78) + (computedPh * 0.22), 5.0, 7.0);
+  const ecValue = clamp((controls.ec * 0.84) + (computedEc * 0.16), 0.6, 2.8);
   const oxygenPercent = Math.round(clamp(92 - (water * 0.28) - (risk * 0.18), 30, 96));
   const rootHealthPercent = Math.round(clamp(55 + (nutrition * 0.32) - (risk * 0.25) - ((env.vpdKpa - 1.2) * 12), 10, 99));
 
@@ -405,6 +430,35 @@ function applyOfflineNightSurvivalClamp() {
   });
 }
 
+function evolveEnvironmentChemistry(minutes) {
+  const controls = getEnvironmentControlsForSimulation();
+  const isDay = Boolean(state.simulation && state.simulation.isDaytime);
+  const statusWater = clamp(Number(state.status.water || 0), 0, 100);
+  const statusNutrition = clamp(Number(state.status.nutrition || 0), 0, 100);
+
+  const ambientTemp = isDay ? 24.0 : 21.0;
+  controls.temperatureC = clamp(controls.temperatureC + ((ambientTemp - controls.temperatureC) * 0.015 * minutes), 16, 36);
+
+  const humidityPull = ((statusWater - 50) * 0.04) - ((controls.airflowPercent - 50) * 0.03);
+  controls.humidityPercent = clampInt(Math.round(controls.humidityPercent + (humidityPull * 0.12 * minutes)), 30, 90);
+
+  controls.airflowPercent = clampInt(Math.round(controls.airflowPercent + ((55 - controls.airflowPercent) * 0.01 * minutes)), 0, 100);
+
+  const ecDecayPerMin = 0.0028 + ((100 - statusNutrition) * 0.00002) + ((statusWater < 35 ? 0.0012 : 0));
+  controls.ec = clamp(controls.ec - (ecDecayPerMin * minutes), 0.6, 2.8);
+
+  const phDrift = ((6.0 - controls.ph) * 0.018) - ((controls.ec - 1.6) * 0.004);
+  controls.ph = clamp(controls.ph + (phDrift * minutes), 5.0, 7.0);
+
+  if (state.environmentControls && typeof state.environmentControls === 'object') {
+    state.environmentControls.temperatureC = controls.temperatureC;
+    state.environmentControls.humidityPercent = controls.humidityPercent;
+    state.environmentControls.airflowPercent = controls.airflowPercent;
+    state.environmentControls.ph = controls.ph;
+    state.environmentControls.ec = controls.ec;
+  }
+}
+
 function applyStatusDrift(elapsedMs) {
   const minutesRaw = elapsedMs / 60_000;
   const offlineCatchUp = elapsedMs > MAX_ELAPSED_PER_TICK_MS;
@@ -414,6 +468,7 @@ function applyStatusDrift(elapsedMs) {
     return;
   }
 
+  evolveEnvironmentChemistry(minutes);
   const envModel = buildEnvironmentModelFromState(state.status, state.simulation, state.plant);
   const rootModel = buildRootZoneModelFromState(state.status, envModel, state.plant);
 

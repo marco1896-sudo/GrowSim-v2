@@ -4950,3 +4950,14 @@ body.panelized-ready :is(
   accent-color: #7cffae;
   height: 10px;
 }
+.home-env-control--readonly {
+  opacity: 0.92;
+}
+
+.home-env-note {
+  display: block;
+  margin-top: -1px;
+  margin-bottom: 3px;
+  font-size: 8px;
+  color: rgba(180, 225, 190, 0.86);
+}

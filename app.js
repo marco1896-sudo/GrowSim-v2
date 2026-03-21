@@ -2120,9 +2120,37 @@ function applyActionImmediateEffects(action) {
   const immediate = action && action.effects ? action.effects.immediate : null;
   if (Array.isArray(immediate)) {
     applyStructuredEffects(immediate);
+    applyEnvironmentActionInfluence(action);
     return;
   }
   applyEffectsObject(immediate || {});
+  applyEnvironmentActionInfluence(action);
+}
+
+function applyEnvironmentActionInfluence(action) {
+  const controls = ensureEnvironmentControls(state);
+  if (!action || typeof action !== 'object') {
+    return;
+  }
+
+  const category = String(action.category || '').toLowerCase();
+  const intensity = String(action.intensity || 'low').toLowerCase();
+  const intensityFactor = intensity === 'high' ? 1 : intensity === 'medium' ? 0.65 : 0.4;
+
+  if (category === 'fertilizing') {
+    controls.ec = clamp(controls.ec + (0.28 * intensityFactor), 0.6, 2.8);
+    controls.ph = clamp(controls.ph - (0.04 * intensityFactor), 5.0, 7.0);
+  }
+
+  if (category === 'watering') {
+    controls.ec = clamp(controls.ec - (0.10 + (0.08 * intensityFactor)), 0.6, 2.8);
+    const phPull = (6.0 - controls.ph) * (0.20 + (0.15 * intensityFactor));
+    controls.ph = clamp(controls.ph + phPull, 5.0, 7.0);
+  }
+
+  if (category === 'environment') {
+    controls.airflowPercent = clampInt(controls.airflowPercent + Math.round(8 * intensityFactor), 0, 100);
+  }
 }
 
 function applyStructuredEffects(effectsList) {
@@ -2795,12 +2823,12 @@ function renderPanelReadouts(homeVm = null) {
   setText('envCtrlAirflowOut', `${controls.airflowPercent}%`);
   setText('envCtrlPhOut', `${controls.ph.toFixed(1)}`);
   setText('envCtrlEcOut', `${controls.ec.toFixed(1)} mS`);
+  setText('envCtrlEcHint', 'nur über mineralisches Düngen');
 
   setRange('envCtrlTemp', controls.temperatureC.toFixed(1));
   setRange('envCtrlHumidity', controls.humidityPercent);
   setRange('envCtrlAirflow', controls.airflowPercent);
   setRange('envCtrlPh', controls.ph.toFixed(1));
-  setRange('envCtrlEc', controls.ec.toFixed(1));
 }
 
 window.GrowSimHomeRenderer = Object.freeze({
@@ -2849,7 +2877,10 @@ function onEnvironmentControlInput(controlKey, rawValue) {
   if (controlKey === 'humidityPercent') controls.humidityPercent = clampInt(value, 30, 90);
   if (controlKey === 'airflowPercent') controls.airflowPercent = clampInt(value, 0, 100);
   if (controlKey === 'ph') controls.ph = clamp(value, 5.0, 7.0);
-  if (controlKey === 'ec') controls.ec = clamp(value, 0.6, 2.8);
+  if (controlKey === 'ec') {
+    addLog('action', 'EC ist nicht direkt regelbar. Nutze mineralische Düngung.', { attemptedValue: value });
+    return;
+  }
   renderHud();
   schedulePersistState();
 }

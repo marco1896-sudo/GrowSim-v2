@@ -259,8 +259,7 @@ function bindHomeScreenEvents(controller = null) {
     { node: ui.envCtrlTemp, key: 'temperatureC' },
     { node: ui.envCtrlHumidity, key: 'humidityPercent' },
     { node: ui.envCtrlAirflow, key: 'airflowPercent' },
-    { node: ui.envCtrlPh, key: 'ph' },
-    { node: ui.envCtrlEc, key: 'ec' }
+    { node: ui.envCtrlPh, key: 'ph' }
   ];
   for (const binding of controlBindings) {
     if (!binding.node) continue;
