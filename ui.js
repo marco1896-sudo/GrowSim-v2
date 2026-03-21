@@ -73,6 +73,11 @@ function cacheUi() {
   ui.skipNightActionBtn = document.getElementById('skipNightActionBtn');
   ui.openDiagnosisBtn = document.getElementById('openDiagnosisBtn');
   ui.menuToggleBtn = document.getElementById('menuToggleBtn');
+  ui.envCtrlTemp = document.getElementById('envCtrlTemp');
+  ui.envCtrlHumidity = document.getElementById('envCtrlHumidity');
+  ui.envCtrlAirflow = document.getElementById('envCtrlAirflow');
+  ui.envCtrlPh = document.getElementById('envCtrlPh');
+  ui.envCtrlEc = document.getElementById('envCtrlEc');
 
   ui.backdrop = document.getElementById('sheetBackdrop');
   ui.careSheet = document.getElementById('careSheet');
@@ -247,6 +252,23 @@ function bindHomeScreenEvents(controller = null) {
         event.preventDefault();
         onStatRingPress(binding.key);
       }
+    });
+  }
+
+  const controlBindings = [
+    { node: ui.envCtrlTemp, key: 'temperatureC' },
+    { node: ui.envCtrlHumidity, key: 'humidityPercent' },
+    { node: ui.envCtrlAirflow, key: 'airflowPercent' },
+    { node: ui.envCtrlPh, key: 'ph' },
+    { node: ui.envCtrlEc, key: 'ec' }
+  ];
+  for (const binding of controlBindings) {
+    if (!binding.node) continue;
+    binding.node.addEventListener('input', (event) => {
+      onEnvironmentControlInput(binding.key, event.target.value);
+    });
+    binding.node.addEventListener('change', (event) => {
+      onEnvironmentControlInput(binding.key, event.target.value);
     });
   }
 

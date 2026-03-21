@@ -4923,3 +4923,30 @@ body.panelized-ready :is(
 
 
 
+
+.home-env-controls {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  display: grid;
+  gap: 4px;
+}
+
+.home-env-control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  color: rgba(240, 246, 240, 0.84);
+}
+
+.home-env-control strong {
+  font-size: 9px;
+  color: #dfffe8;
+}
+
+.home-env-controls input[type="range"] {
+  width: 100%;
+  accent-color: #7cffae;
+  height: 10px;
+}

@@ -58,6 +58,23 @@
             <div class="home-env-row"><img src="assets/ui/icons/icon_vpd.svg" alt="" aria-hidden="true"><span id="envVpdLabel">VPD</span><strong id="envVpdValue">1.2 kPa</strong></div>
             <div class="home-env-row"><img src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true"><span id="envLightLabel">Licht</span><strong id="envLightValue">720 PPFD</strong></div>
             <div class="home-env-row"><img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true"><span id="envAirflowLabel">Luftstrom</span><strong id="envAirflowValue">Good</strong></div>
+
+            <div class="home-env-controls" aria-label="Feinsteuerung Umwelt und Wurzeln">
+              <label class="home-env-control" for="envCtrlTemp"><span>Temp</span><strong id="envCtrlTempOut">25.0°C</strong></label>
+              <input id="envCtrlTemp" type="range" min="16" max="36" step="0.1" value="25">
+
+              <label class="home-env-control" for="envCtrlHumidity"><span>rF</span><strong id="envCtrlHumidityOut">60%</strong></label>
+              <input id="envCtrlHumidity" type="range" min="30" max="90" step="1" value="60">
+
+              <label class="home-env-control" for="envCtrlAirflow"><span>Luft</span><strong id="envCtrlAirflowOut">70%</strong></label>
+              <input id="envCtrlAirflow" type="range" min="0" max="100" step="1" value="70">
+
+              <label class="home-env-control" for="envCtrlPh"><span>pH</span><strong id="envCtrlPhOut">6.0</strong></label>
+              <input id="envCtrlPh" type="range" min="5.0" max="7.0" step="0.1" value="6.0">
+
+              <label class="home-env-control" for="envCtrlEc"><span>EC</span><strong id="envCtrlEcOut">1.4 mS</strong></label>
+              <input id="envCtrlEc" type="range" min="0.6" max="2.8" step="0.1" value="1.4">
+            </div>
           </section>
         </div>
 

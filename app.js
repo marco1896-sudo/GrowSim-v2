@@ -204,6 +204,13 @@ const state = {
       lastResult: null
     }
   },
+  environmentControls: {
+    temperatureC: 25,
+    humidityPercent: 60,
+    airflowPercent: 70,
+    ph: 6.0,
+    ec: 1.4
+  },
   simulation: {
     nowMs: now,
     startRealTimeMs: now,
@@ -2770,6 +2777,30 @@ function renderPanelReadouts(homeVm = null) {
   if (rootEcNode) rootEcNode.textContent = String(panel.rootEcText || '');
   if (rootHealthNode) rootHealthNode.textContent = String(panel.rootHealthText || '');
   if (rootOxygenNode) rootOxygenNode.textContent = String(panel.rootOxygenText || '');
+
+  const controls = ensureEnvironmentControls(state);
+  const setText = (id, text) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = String(text);
+  };
+  const setRange = (id, value) => {
+    const node = document.getElementById(id);
+    if (node && document.activeElement !== node) {
+      node.value = String(value);
+    }
+  };
+
+  setText('envCtrlTempOut', `${controls.temperatureC.toFixed(1)}°C`);
+  setText('envCtrlHumidityOut', `${controls.humidityPercent}%`);
+  setText('envCtrlAirflowOut', `${controls.airflowPercent}%`);
+  setText('envCtrlPhOut', `${controls.ph.toFixed(1)}`);
+  setText('envCtrlEcOut', `${controls.ec.toFixed(1)} mS`);
+
+  setRange('envCtrlTemp', controls.temperatureC.toFixed(1));
+  setRange('envCtrlHumidity', controls.humidityPercent);
+  setRange('envCtrlAirflow', controls.airflowPercent);
+  setRange('envCtrlPh', controls.ph.toFixed(1));
+  setRange('envCtrlEc', controls.ec.toFixed(1));
 }
 
 window.GrowSimHomeRenderer = Object.freeze({
@@ -2777,43 +2808,88 @@ window.GrowSimHomeRenderer = Object.freeze({
   update: (homeVm, prevVm) => updateHomeFromViewModel(homeVm, prevVm)
 });
 
+function getEnvironmentControlDefaults() {
+  return {
+    temperatureC: 25,
+    humidityPercent: 60,
+    airflowPercent: 70,
+    ph: 6.0,
+    ec: 1.4
+  };
+}
+
+function ensureEnvironmentControls(sourceState = state) {
+  const target = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  if (!target.environmentControls || typeof target.environmentControls !== 'object') {
+    target.environmentControls = getEnvironmentControlDefaults();
+  }
+  const controls = target.environmentControls;
+  controls.temperatureC = clamp(Number(controls.temperatureC), 16, 36);
+  controls.humidityPercent = clampInt(Number(controls.humidityPercent), 30, 90);
+  controls.airflowPercent = clampInt(Number(controls.airflowPercent), 0, 100);
+  controls.ph = clamp(Number(controls.ph), 5.0, 7.0);
+  controls.ec = clamp(Number(controls.ec), 0.6, 2.8);
+  return controls;
+}
+
+function deriveAirflowLabel(airflowPercent) {
+  if (airflowPercent >= 75) return 'Stark';
+  if (airflowPercent >= 45) return 'Good';
+  if (airflowPercent >= 25) return 'Mittel';
+  return 'Schwach';
+}
+
+function onEnvironmentControlInput(controlKey, rawValue) {
+  const controls = ensureEnvironmentControls(state);
+  const value = Number(rawValue);
+  if (!Number.isFinite(value)) {
+    return;
+  }
+  if (controlKey === 'temperatureC') controls.temperatureC = clamp(value, 16, 36);
+  if (controlKey === 'humidityPercent') controls.humidityPercent = clampInt(value, 30, 90);
+  if (controlKey === 'airflowPercent') controls.airflowPercent = clampInt(value, 0, 100);
+  if (controlKey === 'ph') controls.ph = clamp(value, 5.0, 7.0);
+  if (controlKey === 'ec') controls.ec = clamp(value, 0.6, 2.8);
+  renderHud();
+  schedulePersistState();
+}
+
 function deriveEnvironmentReadout(sourceState = state) {
   const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = ensureEnvironmentControls(activeState);
   const envApi = window.GrowSimEnvModel;
   if (envApi && typeof envApi.buildEnvironmentModelFromState === 'function') {
     const model = envApi.buildEnvironmentModelFromState(activeState.status, activeState.simulation, activeState.plant);
+    const temperatureC = clamp(Number(controls.temperatureC), 16, 36);
+    const humidityPercent = clampInt(Number(controls.humidityPercent), 30, 90);
+    const vpdKpa = clamp(0.7 + ((temperatureC - 21) * 0.08) + ((60 - humidityPercent) * 0.012), 0.4, 2.4);
     return {
-      temperatureC: model.temperatureC,
-      humidityPercent: model.humidityPercent,
-      vpdKpa: model.vpdKpa,
+      temperatureC,
+      humidityPercent,
+      vpdKpa,
       ppfd: model.ppfd,
-      airflowLabel: model.airflowLabel
+      airflowLabel: deriveAirflowLabel(controls.airflowPercent)
     };
   }
 
-  const water = clamp(Number(activeState.status && activeState.status.water || 0), 0, 100);
-  const stress = clamp(Number(activeState.status && activeState.status.stress || 0), 0, 100);
-  const risk = clamp(Number(activeState.status && activeState.status.risk || 0), 0, 100);
   const isDay = Boolean(activeState.simulation && activeState.simulation.isDaytime);
-
-  const temperatureC = clamp((isDay ? 24.2 : 20.4) + (stress * 0.05) + (risk * 0.02), 18, 36);
-  const humidityPercent = Math.round(clamp(38 + (water * 0.42) - (stress * 0.14), 32, 82));
+  const temperatureC = clamp(Number(controls.temperatureC), 16, 36);
+  const humidityPercent = clampInt(Number(controls.humidityPercent), 30, 90);
   const vpdKpa = clamp(0.7 + ((temperatureC - 21) * 0.08) + ((60 - humidityPercent) * 0.012), 0.4, 2.4);
   const ppfd = isDay ? Math.round(clamp(550 + (Number(activeState.status && activeState.status.growth || 0) * 2.4), 420, 980)) : 45;
-  const airflowScore = clamp(100 - risk - Math.round(stress * 0.35), 0, 100);
-  const airflowLabel = airflowScore >= 70 ? 'Good' : airflowScore >= 40 ? 'Mittel' : 'Schwach';
 
-  return { temperatureC, humidityPercent, vpdKpa, ppfd, airflowLabel };
+  return { temperatureC, humidityPercent, vpdKpa, ppfd, airflowLabel: deriveAirflowLabel(controls.airflowPercent) };
 }
 
 function deriveRootZoneReadout(environment, sourceState = state) {
   const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = ensureEnvironmentControls(activeState);
   const envApi = window.GrowSimEnvModel;
   if (envApi && typeof envApi.buildRootZoneModelFromState === 'function') {
     const model = envApi.buildRootZoneModelFromState(activeState.status, environment, activeState.plant);
     return {
-      ph: model.ph.toFixed(1),
-      ec: `${model.ec.toFixed(1)} mS`,
+      ph: Number(controls.ph).toFixed(1),
+      ec: `${Number(controls.ec).toFixed(1)} mS`,
       rootHealth: `${Math.round(model.rootHealthPercent)}%`,
       oxygen: `${Math.round(model.oxygenPercent)}%`
     };
@@ -2823,8 +2899,8 @@ function deriveRootZoneReadout(environment, sourceState = state) {
   const water = clamp(Number(activeState.status && activeState.status.water || 0), 0, 100);
   const risk = clamp(Number(activeState.status && activeState.status.risk || 0), 0, 100);
 
-  const phValue = clamp(5.6 + ((nutrition - 50) * 0.008) - ((risk - 40) * 0.003), 5.4, 6.6);
-  const ecValue = clamp(0.8 + (nutrition * 0.01), 0.6, 2.3);
+  const phValue = clamp(Number(controls.ph), 5.0, 7.0);
+  const ecValue = clamp(Number(controls.ec), 0.6, 2.8);
   const oxygenPercent = Math.round(clamp(92 - (water * 0.28) - (risk * 0.18), 32, 95));
   const rootHealthPercent = Math.round(clamp(55 + (nutrition * 0.32) - (risk * 0.25) - ((environment.vpdKpa - 1.2) * 12), 10, 99));
 
@@ -5470,6 +5546,13 @@ function resetStateToDefaults() {
       lastResult: null
     }
   };
+  state.environmentControls = {
+    temperatureC: 25,
+    humidityPercent: 60,
+    airflowPercent: 70,
+    ph: 6.0,
+    ec: 1.4
+  };
   state.history = { actions: [], events: [], system: [], systemLog: [] };
   state.debug = { enabled: false, showInternalTicks: false, forceDaytime: false };
 
@@ -5597,6 +5680,7 @@ function ensureStateIntegrity(nowMs) {
     state.schemaVersion = '1.0.0';
   }
 
+  ensureEnvironmentControls(state);
   state.simulation.mode = MODE;
   state.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
   state.simulation.timeCompression = SIM_TIME_COMPRESSION;
