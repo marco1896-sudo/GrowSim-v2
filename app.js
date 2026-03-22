@@ -7212,3 +7212,60 @@ function appPath(relativePath) {
   const normalized = String(relativePath || '').replace(/^\//, '');
   return `./${normalized}`;
 }
+window.checkMissions = function(triggerType, payload) {
+  if (!state.missions || !state.missions.catalog) return;
+  const nowMs = Date.now();
+  state.missions.catalog.forEach(mission => {
+    if (state.missions.completed.includes(mission.id)) return;
+    const cond = mission.condition;
+    if (!cond) return;
+    let isCompleted = false;
+    if (triggerType === 'tick') {
+      if (cond.type === 'min_day') {
+        if (state.simulation.simDay >= cond.value) isCompleted = true;
+      } else if (cond.type === 'min_health') {
+        if (state.plant.averageHealth >= cond.value) isCompleted = true;
+      } else if (cond.type === 'max_stress_duration') {
+         if (state.plant.averageStress < cond.value) {
+            mission._stressStartTime = mission._stressStartTime || state.simulation.simTimeMs;
+            if (state.simulation.simTimeMs - mission._stressStartTime >= (cond.duration * 60000)) {
+               isCompleted = true;
+            }
+         } else {
+            mission._stressStartTime = null;
+         }
+      }
+    } else if (triggerType === 'action') {
+      if (cond.type === 'action_used' && payload && payload.actionId === cond.value) {
+        isCompleted = true;
+      }
+    }
+    if (isCompleted) {
+      window.completeMission(mission);
+    }
+  });
+};
+
+window.completeMission = function(mission) {
+  state.missions.completed.push(mission.id);
+  if (mission.reward) {
+    if (!state.meta.inventory) state.meta.inventory = { coins: 0, gems: 0, stars: 0 };
+    if (mission.reward.coins) state.meta.inventory.coins += mission.reward.coins;
+    if (mission.reward.gems) state.meta.inventory.gems += mission.reward.gems;
+    if (mission.reward.stars) state.meta.inventory.stars += mission.reward.stars;
+  }
+  if (typeof addLog === 'function') {
+    addLog('system', Mission erfllt: \, { missionId: mission.id, reward: mission.reward });
+  }
+  if (typeof openMenuDialog === 'function') {
+    openMenuDialog({
+      title: 'Mission erfllt! 🎉',
+      message: Du hast die Mission "\" abgeschlossen!,
+      cancelLabel: 'OK',
+      confirmLabel: null
+    });
+  }
+  if (typeof renderMissionsSheet === 'function' && state.ui.openSheet === 'missions') {
+    renderMissionsSheet();
+  }
+};
