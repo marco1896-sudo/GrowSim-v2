@@ -235,7 +235,8 @@ const state = {
     isDaytime: isDaytimeAtSimTime(initialSimTimeMs),
     growthImpulse: 0,
     lastPushScheduleAtMs: 0,
-    fairnessGraceUntilRealMs: 0
+    fairnessGraceUntilRealMs: 0,
+    isCatchUp: false
   },
   plant: {
     phase: 'seedling',

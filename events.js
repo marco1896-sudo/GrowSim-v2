@@ -207,7 +207,7 @@ function applyFoundationFollowUps(choice, eventId) {
   }
 }
 
-function runEventStateMachine(nowMs) {
+function runEventStateMachine(nowMs, isCatchUp = false) {
   if (state.events.machineState === 'resolved') {
     enterEventCooldown(nowMs);
   }
