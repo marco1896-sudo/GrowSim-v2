@@ -7273,3 +7273,134 @@ window.completeMission = function(mission) {
 
 
 
+function migrateSettings(state) {
+  if (!state.settings.gameplay) {
+    state.settings.gameplay = { simSpeed: 1.0, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
+  }
+  if (!state.settings.audio) {
+    state.settings.audio = { volume: 84, effects: 'Hoch', battery: false, haptic: true };
+  }
+  if (!state.settings.account) {
+    state.settings.account = { cloudSync: true };
+  }
+}
+
+function updateSettingsUI() {
+  const g = state.settings.gameplay;
+  const a = state.settings.audio;
+  const acc = state.settings.account;
+
+  const simSpeedNode = document.getElementById('settingsSimSpeedValue');
+  if (simSpeedNode) {
+    simSpeedNode.textContent = g.simSpeed.toFixed(1) + 'x';
+    simSpeedNode.className = g.simSpeed === 1.0 ? 'value_gold' : 'value_green';
+  }
+  
+  const eventFreqNode = document.getElementById('settingsEventFrequencyValue');
+  if (eventFreqNode) {
+    eventFreqNode.textContent = g.eventFrequency;
+    eventFreqNode.className = g.eventFrequency === 'Normal' ? 'subtitle' : 'value_gold';
+  }
+
+  const tutNode = document.getElementById('settingsTutorialValue');
+  if (tutNode) {
+    tutNode.textContent = g.tutorial ? 'An' : 'Aus';
+    tutNode.className = g.tutorial ? 'value_green' : 'subtitle';
+  }
+
+  const autoNode = document.getElementById('settingsAutosaveValue');
+  if (autoNode) {
+    autoNode.textContent = g.autosave === 0 ? 'Aus' : \Alle \m\;
+    autoNode.className = g.autosave === 0 ? 'subtitle' : 'value_green';
+  }
+
+  const volNode = document.getElementById('settingsVolumeValue');
+  if (volNode) {
+    volNode.textContent = a.volume + '%';
+    volNode.className = a.volume > 0 ? 'value_gold' : 'subtitle';
+  }
+
+  const effNode = document.getElementById('settingsEffectsValue');
+  if (effNode) {
+    effNode.textContent = a.effects;
+    effNode.className = a.effects === 'Hoch' ? 'value_gold' : 'subtitle';
+  }
+
+  const batNode = document.getElementById('settingsBatteryValue');
+  if (batNode) {
+    batNode.textContent = a.battery ? 'An' : 'Aus';
+    batNode.className = a.battery ? 'value_green' : 'subtitle';
+  }
+
+  const hapNode = document.getElementById('settingsHapticValue');
+  if (hapNode) {
+    hapNode.textContent = a.haptic ? 'An' : 'Aus';
+    hapNode.className = a.haptic ? 'value_green' : 'subtitle';
+  }
+
+  const cloudNode = document.getElementById('settingsCloudSyncValue');
+  if (cloudNode) {
+    cloudNode.textContent = acc.cloudSync ? 'Verbunden' : 'Lokal';
+    cloudNode.className = acc.cloudSync ? 'value_green' : 'subtitle';
+  }
+}
+
+function initSettingsEvents() {
+  const byId = (id) => document.getElementById(id);
+  
+  const bindCycle = (id, list, getter, setter) => {
+    const el = byId(id);
+    if (!el) return;
+    el.parentElement.addEventListener('click', () => {
+      const current = getter();
+      const idx = list.indexOf(current);
+      const next = list[(idx + 1) % list.length];
+      setter(next);
+      updateSettingsUI();
+    });
+    el.parentElement.style.cursor = 'pointer';
+  };
+
+  bindCycle('settingsSimSpeedValue', [0.5, 1.0, 1.5, 2.0], () => state.settings.gameplay.simSpeed, (v) => state.settings.gameplay.simSpeed = v);
+  bindCycle('settingsEventFrequencyValue', ['Wenig', 'Normal', 'Viel'], () => state.settings.gameplay.eventFrequency, (v) => state.settings.gameplay.eventFrequency = v);
+  bindCycle('settingsTutorialValue', [true, false], () => state.settings.gameplay.tutorial, (v) => state.settings.gameplay.tutorial = v);
+  bindCycle('settingsAutosaveValue', [0, 1, 5, 15], () => state.settings.gameplay.autosave, (v) => state.settings.gameplay.autosave = v);
+  
+  const volEl = byId('settingsVolumeValue');
+  if (volEl) {
+    volEl.parentElement.addEventListener('click', () => {
+      state.settings.audio.volume = (state.settings.audio.volume + 20) % 120; // 0, 20, 40, 60, 80, 100, then back to 0
+      updateSettingsUI();
+    });
+    volEl.parentElement.style.cursor = 'pointer';
+  }
+  
+  bindCycle('settingsEffectsValue', ['Niedrig', 'Mittel', 'Hoch', 'Ultra'], () => state.settings.audio.effects, (v) => state.settings.audio.effects = v);
+  bindCycle('settingsBatteryValue', [false, true], () => state.settings.audio.battery, (v) => state.settings.audio.battery = v);
+  bindCycle('settingsHapticValue', [true, false], () => state.settings.audio.haptic, (v) => state.settings.audio.haptic = v);
+  bindCycle('settingsCloudSyncValue', [true, false], () => state.settings.account.cloudSync, (v) => state.settings.account.cloudSync = v);
+  
+  const defBtn = byId('settingsDefaultBtn');
+  if (defBtn) {
+    defBtn.addEventListener('click', () => {
+      state.settings.gameplay = { simSpeed: 1.0, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
+      state.settings.audio = { volume: 84, effects: 'Hoch', battery: false, haptic: true };
+      state.settings.account = { cloudSync: true };
+      updateSettingsUI();
+    });
+  }
+}
+
+const originalRenderDiagnosisSheet = window.renderDiagnosisSheet;
+window.renderDiagnosisSheet = function() {
+  if (originalRenderDiagnosisSheet) originalRenderDiagnosisSheet();
+  migrateSettings(state);
+  updateSettingsUI();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    migrateSettings(state);
+    initSettingsEvents();
+  }, 1000);
+});

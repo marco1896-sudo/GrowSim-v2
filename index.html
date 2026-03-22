@@ -1,4 +1,4 @@
-ï»¿<!doctype html>
+<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
@@ -27,7 +27,7 @@
               <span id="playerXpFill" class="home-player-xp-fill" style="--xp:84;"></span>
             </div>
           </div>
-          <div class="home-currency-stack" aria-label="WÃ¤hrungen">
+          <div class="home-currency-stack" aria-label="Währungen">
             <div class="home-currency-row home-currency-row--gold"><span>&#x1FA99;</span><strong id="playerCoinValue">2.480</strong></div>
             <div class="home-currency-row home-currency-row--cyan"><span>&#x1F48E;</span><strong id="playerGemValue">55</strong></div>
             <div class="home-currency-row home-currency-row--star"><span>&#x2B50;</span><strong id="playerStarValue">114</strong></div>
@@ -48,13 +48,13 @@
         </div>
 
         <div class="home-right-column">
-          <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="MenÃ¼ Ã¶ffnen" aria-haspopup="dialog" aria-expanded="false">
+          <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
             <img src="assets/ui/icons/menu.png" alt="" aria-hidden="true">
-            <span class="visually-hidden">MenÃ¼ Ã¶ffnen</span>
+            <span class="visually-hidden">Menü öffnen</span>
           </button>
 
           <section class="home-env-panel" aria-label="Umgebungsdaten">
-            <div class="home-env-row"><img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true"><span id="envTempLabel">Temperatur</span><strong id="envTempValue">25.3Â°C</strong></div>
+            <div class="home-env-row"><img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true"><span id="envTempLabel">Temperatur</span><strong id="envTempValue">25.3°C</strong></div>
             <div class="home-env-row"><img src="assets/ui/icons/icon_humidity.svg" alt="" aria-hidden="true"><span id="envHumidityLabel">Luftfeuchte</span><strong id="envHumidityValue">61%</strong></div>
             <div class="home-env-row"><img src="assets/ui/icons/icon_vpd.svg" alt="" aria-hidden="true"><span id="envVpdLabel">VPD</span><strong id="envVpdValue">1.2 kPa</strong></div>
             <div class="home-env-row"><img src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true"><span id="envLightLabel">Licht</span><strong id="envLightValue">720 PPFD</strong></div>
@@ -62,11 +62,11 @@
 
             <button id="toggleEnvControlsBtn" class="home-env-toggle-btn" type="button">
               <span>Umwelt-Steuerung</span>
-              <span class="toggle-icon">â–¼</span>
+              <span class="toggle-icon">?</span>
             </button>
 
             <div id="homeEnvControls" class="home-env-controls hidden" aria-label="Feinsteuerung Umwelt und Wurzeln">
-              <label class="home-env-control" for="envCtrlTemp"><span>Temp</span><strong id="envCtrlTempOut">25.0Â°C</strong></label>
+              <label class="home-env-control" for="envCtrlTemp"><span>Temp</span><strong id="envCtrlTempOut">25.0°C</strong></label>
               <input id="envCtrlTemp" type="range" min="16" max="36" step="0.1" value="25">
 
               <label class="home-env-control" for="envCtrlHumidity"><span>rF</span><strong id="envCtrlHumidityOut">60%</strong></label>
@@ -79,7 +79,7 @@
               <input id="envCtrlPh" type="range" min="5.0" max="7.0" step="0.1" value="6.0">
 
               <div class="home-env-control home-env-control--readonly"><span>EC</span><strong id="envCtrlEcOut">1.4 mS</strong></div>
-              <small id="envCtrlEcHint" class="home-env-note">nur Ã¼ber mineralisches DÃ¼ngen</small>
+              <small id="envCtrlEcHint" class="home-env-note">nur über mineralisches Düngen</small>
             </div>
           </section>
         </div>
@@ -98,7 +98,7 @@
             </div>
             <span id="plantStatusChip" class="home-progress-stress-chip">Stress</span>
             <strong id="growthImpulseValue" class="home-progress-multi">+0.80x</strong>
-            <button id="openDiagnosisBtn" class="home-progress-pause" type="button" aria-label="Diagnose Ã¶ffnen"></button>
+            <button id="openDiagnosisBtn" class="home-progress-pause" type="button" aria-label="Diagnose öffnen"></button>
           </div>
           <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
             <span id="phaseProgressFill" class="phase-progress-fill" style="--phase-progress:42;"></span>
@@ -106,7 +106,7 @@
           </div>
           <div class="home-progress-bottom">
             <span id="phaseCardCycle" class="home-progress-cycle" aria-label="Tageszyklus">D</span>
-            <span id="simTimeValue" class="home-progress-time">Tag 14 Â· 09:18</span>
+            <span id="simTimeValue" class="home-progress-time">Tag 14 · 09:18</span>
             <span class="home-progress-event-label">Ereignis</span>
             <strong id="nextEventValue" class="home-progress-event">11:43</strong>
           </div>
@@ -115,22 +115,22 @@
         <section id="dataVizHud" class="home-status-panel" aria-label="Pflanzen-Dashboard">
           <div class="home-status-column">
             <h2 class="home-status-title">Pflanzenstatus</h2>
-            <article id="waterRing" class="home-status-row" role="button" tabindex="0" aria-label="Wasser Details Ã¶ffnen" style="--value:70;">
+            <article id="waterRing" class="home-status-row" role="button" tabindex="0" aria-label="Wasser Details öffnen" style="--value:70;">
               <div class="home-status-label"><img src="assets/ui/icons/icon_water.svg" alt="" aria-hidden="true"><span id="plantWaterLabel">Wasser</span></div>
               <strong id="waterValue">70%</strong>
               <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
             </article>
-            <article id="nutritionRing" class="home-status-row" role="button" tabindex="0" aria-label="NÃ¤hrstoffe Details Ã¶ffnen" style="--value:65;">
-              <div class="home-status-label"><img src="assets/ui/icons/icon_nutrients.svg" alt="" aria-hidden="true"><span id="plantNutritionLabel">NÃ¤hrstoffe</span></div>
+            <article id="nutritionRing" class="home-status-row" role="button" tabindex="0" aria-label="Nährstoffe Details öffnen" style="--value:65;">
+              <div class="home-status-label"><img src="assets/ui/icons/icon_nutrients.svg" alt="" aria-hidden="true"><span id="plantNutritionLabel">Nährstoffe</span></div>
               <strong id="nutritionValue">65%</strong>
               <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
             </article>
-            <article id="growthRing" class="home-status-row" role="button" tabindex="0" aria-label="Wachstum Details Ã¶ffnen" style="--value:3;">
+            <article id="growthRing" class="home-status-row" role="button" tabindex="0" aria-label="Wachstum Details öffnen" style="--value:3;">
               <div class="home-status-label"><img src="assets/ui/icons/icon_growth.svg" alt="" aria-hidden="true"><span id="plantGrowthLabel">Wachstum</span></div>
               <strong id="growthValue">2.6%</strong>
               <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
             </article>
-            <article id="riskRing" class="home-status-row" role="button" tabindex="0" aria-label="Risiko Details Ã¶ffnen" style="--value:20;">
+            <article id="riskRing" class="home-status-row" role="button" tabindex="0" aria-label="Risiko Details öffnen" style="--value:20;">
               <div class="home-status-label"><img src="assets/ui/icons/icon_risk.svg" alt="" aria-hidden="true"><span id="plantRiskLabel">Risiko</span></div>
               <strong id="riskValue">20%</strong>
               <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
@@ -170,13 +170,13 @@
             <span class="home-boost-tag">-30m</span>
             <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/time_boost.png" alt="" aria-hidden="true">
             <span class="home-action-title">Boost</span>
-            <span id="boostUsageText" class="boost-sub">-30m Eventzeit Â· 0/6</span>
+            <span id="boostUsageText" class="boost-sub">-30m Eventzeit · 0/6</span>
           </button>
         </section>
         </div>
 
         <article id="healthRing" class="hidden" style="--value:85;"><strong id="healthValue">85</strong></article>
-        <button id="skipNightActionBtn" class="hidden" type="button">Nacht Ã¼berspringen</button>
+        <button id="skipNightActionBtn" class="hidden" type="button">Nacht überspringen</button>
       </section>
     </main>
 </div>
@@ -186,7 +186,7 @@
   <section id="careSheet" class="bottom-sheet figma-sheet figma-sheet-care hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2>Pflege / Aktionen</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
@@ -203,8 +203,8 @@
       <section class="figma-section-card figma-section-card--care">
         <h3 class="figma-section-head">Zeitaktionen</h3>
         <ul id="careEffectsList" class="care-effects-list"></ul>
-        <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">WÃ¤hle eine Aktion.</p>
-        <button id="careExecuteButton" class="action-btn action-primary care-execute-btn" type="button">Aktion ausfÃ¼hren</button>
+        <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">Wähle eine Aktion.</p>
+        <button id="careExecuteButton" class="action-btn action-primary care-execute-btn" type="button">Aktion ausführen</button>
       </section>
     </div>
   </section>
@@ -212,7 +212,7 @@
   <section id="eventSheet" class="bottom-sheet figma-sheet figma-sheet-event hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2>Ereignis-Popup</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
@@ -231,8 +231,8 @@
 
       <section class="figma-section-card figma-section-card--event-positive" aria-hidden="true">
         <h3 class="figma-section-head">Positives Event</h3>
-        <p class="sheet-note">VitalitÃ¤tsschub: optimale Bedingungen erkannt.</p>
-        <div class="figma-static-row"><span>Bonus Ã¼bernehmen</span><strong class="value_green">+12%</strong></div>
+        <p class="sheet-note">Vitalitätsschub: optimale Bedingungen erkannt.</p>
+        <div class="figma-static-row"><span>Bonus übernehmen</span><strong class="value_green">+12%</strong></div>
         <div class="figma-static-row"><span>Stabil weiterfahren</span><span class="subtitle">Sicher</span></div>
       </section>
     </div>
@@ -242,7 +242,7 @@
     <header class="sheet-header figma-sheet-header">
       <h2>Analyse / Statistik</h2>
       <div class="sheet-header-actions">
-        <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+        <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
       </div>
     </header>
     <div class="sheet-content analysis-content figma-sheet-content">
@@ -263,10 +263,10 @@
     </div>
   </section>
 
-  <section id="diagnosisSheet" class="bottom-sheet figma-sheet figma-sheet-settings hidden" aria-hidden="true">
+    <section id="diagnosisSheet" class="bottom-sheet figma-sheet figma-sheet-settings hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Einstellungen</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <h2>Settings</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schliessen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
@@ -275,36 +275,30 @@
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--gameplay">
-        <h3 class="figma-section-head">Gameplay</h3>
+        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;">GAMEPLAY</h3>
         <div class="figma-static-row"><span>Simulationstempo</span><strong id="settingsSimSpeedValue" class="value_gold">1.0x</strong></div>
-        <div class="figma-static-row"><span>Event-HÃ¤ufigkeit</span><span id="settingsEventFrequencyValue" class="subtitle">30-90m</span></div>
-        <div class="figma-static-row"><span>Tutorial-Hinweise</span><strong id="settingsTutorialValue" class="value_green">An</strong></div>
-        <div class="figma-static-row"><span>Autosave</span><strong id="settingsAutosaveValue" class="value_green">Alle 5s</strong></div>
+        <div class="figma-static-row"><span>Event-Häufigkeit</span><span id="settingsEventFrequencyValue" class="subtitle">Normal</span></div>
+        <div class="figma-static-row"><span>Tutorial Hinweise</span><strong id="settingsTutorialValue" class="value_green">An</strong></div>
+        <div class="figma-static-row"><span>Auto Save</span><strong id="settingsAutosaveValue" class="value_green">Alle 5m</strong></div>
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--audio">
-        <h3 class="figma-section-head">Audio und Grafik</h3>
-        <div class="figma-static-row">
-          <span>Push-Benachrichtigungen</span>
-          <button id="pushToggleBtn" class="ghost-btn settings-toggle-btn" type="button" aria-pressed="false">Aus</button>
-        </div>
-        <p id="pushToggleStatus" class="sheet-note">Deaktiviert</p>
-        <div class="settings-checkboxes">
-          <label><input id="notifTypeEvents" type="checkbox">Events</label>
-          <label><input id="notifTypeCritical" type="checkbox">Kritisch</label>
-          <label><input id="notifTypeReminder" type="checkbox">Erinnerung</label>
-        </div>
-        <p id="pushToggleFeedback" class="sheet-note"></p>
+        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;">AUDIO & GRAFIK</h3>
+        <div class="figma-static-row"><span>Master Lautstärke</span><strong id="settingsVolumeValue" class="value_gold">84%</strong></div>
+        <div class="figma-static-row"><span>Effekte</span><span id="settingsEffectsValue" class="subtitle">Hoch</span></div>
+        <div class="figma-static-row"><span>Batterie-Modus</span><span id="settingsBatteryValue" class="subtitle">Aus</span></div>
+        <div class="figma-static-row"><span>Haptik</span><strong id="settingsHapticValue" class="value_green">An</strong></div>
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--account">
-        <h3 class="figma-section-head">Account</h3>
-        <div class="figma-static-row"><span>Cloud Sync</span><strong id="settingsCloudSyncValue" class="value_gold">Lokal</strong></div>
-        <div class="figma-static-row"><span>Support</span><button id="settingsSupportBtn" class="ghost-btn settings-link-btn" type="button">Ã–ffnen</button></div>
-        <div class="figma-settings-actions">
-          <button id="analysisResetBtn" class="action-btn action-secondary" type="button">Reset</button>
-          <button id="settingsDefaultBtn" class="action-btn action-primary" type="button">Default</button>
-          <button id="settingsSaveBtn" class="action-btn action-primary" type="button">Speichern</button>
+        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;">ACCOUNT</h3>
+        <div class="figma-static-row"><span>Cloud Sync</span><strong id="settingsCloudSyncValue" class="value_green">Verbunden</strong></div>
+        <div class="figma-static-row"><span>Support</span><span class="subtitle">></span></div>
+        
+        <div class="figma-settings-actions" style="display: flex; justify-content: space-between; margin-top: 20px;">
+          <button id="analysisResetBtn" class="action-btn action-secondary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;">RESET</button>
+          <button id="settingsDefaultBtn" class="action-btn action-primary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;">DEFAULT</button>
+          <button id="settingsSaveBtn" class="action-btn action-primary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;">SAVE</button>
         </div>
       </section>
     </div>
@@ -313,7 +307,7 @@
   <section id="missionsSheet" class="bottom-sheet figma-sheet figma-sheet-missions hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2>Missionen & Erfolge</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
@@ -329,7 +323,7 @@
   <section id="statDetailSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2 id="statDetailTitle">Statistik</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="SchlieÃŸen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content stat-detail-content">
       <p id="statDetailValue" class="stat-detail-value">0</p>
@@ -349,8 +343,8 @@
       </section>
 
       <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">TopfgrÃ¶ÃŸe</h3>
-        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupPotSize" data-setup-value="small"><span>2 Liter (S)</span><strong class="value_gold">FrÃ¼hspiel</strong></button>
+        <h3 class="figma-section-head">Topfgröße</h3>
+        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupPotSize" data-setup-value="small"><span>2 Liter (S)</span><strong class="value_gold">Frühspiel</strong></button>
         <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="medium"><span>8 Liter (M)</span><strong class="value_green">Ausgewogen</strong></button>
         <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="large"><span>16 Liter (L)</span><strong class="value_gold">Langzeit</strong></button>
         <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="xlarge"><span>25 Liter (XL)</span><strong class="value_gold">Expert</strong></button>
@@ -370,8 +364,8 @@
       </section>
 
       <div class="figma-onboarding-actions">
-        <button id="setupBackBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfÃ¼gbar">ZurÃ¼ck</button>
-        <button id="setupPresetBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfÃ¼gbar">Preset</button>
+        <button id="setupBackBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfügbar">Zurück</button>
+        <button id="setupPresetBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfügbar">Preset</button>
         <button id="startRunBtn" class="action-btn action-primary" type="button">Start</button>
       </div>
 
@@ -394,7 +388,7 @@
       <ol id="deathHistoryList" class="death-list"></ol>
       <div class="death-actions">
         <button id="deathRescueBtn" class="action-btn action-primary" type="button">Rettungsaktion nutzen</button>
-        <span id="deathRescueSubtext" class="sheet-note">1Ã— pro Run</span>
+        <span id="deathRescueSubtext" class="sheet-note">1× pro Run</span>
         <span id="deathRescueFeedback" class="sheet-note"></span>
         <button id="deathResetBtn" class="action-btn action-secondary" type="button">Neuen Run starten</button>
         <button id="deathAnalyzeBtn" class="action-btn action-ghost" type="button">Analyse ansehen</button>
@@ -405,34 +399,34 @@
   <div id="menuBackdrop" class="menu-backdrop hidden" aria-hidden="true"></div>
   <section id="gameMenu" class="game-menu figma-menu-screen hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
     <header class="game-menu-header figma-sheet-header">
-      <h2 id="menuTitle">MenÃ¼</h2>
-      <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="MenÃ¼ schlieÃŸen">X</button>
+      <h2 id="menuTitle">Menü</h2>
+      <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="Menü schließen">X</button>
     </header>
     <div class="game-menu-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
         <div class="figma-top-player-title">Max Mustergrower</div>
-        <div class="figma-top-player-subtitle">GÃ¤rtner</div>
+        <div class="figma-top-player-subtitle">Gärtner</div>
       </section>
 
       <section class="figma-section-card figma-menu-list">
         <button id="menuStatsBtn" class="menu-entry figma-menu-entry" type="button"><span>Profil</span><small>Run-Statistik</small></button>
-        <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span>Inventar</span><small id="menuRescueSubtext">Einmalige Rettung verfÃ¼gbar.</small></button>
-        <button id="menuSupportBtn" class="menu-entry figma-menu-entry" type="button"><span>Missionen</span><small>Projekt unterstÃ¼tzen</small></button>
+        <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span>Inventar</span><small id="menuRescueSubtext">Einmalige Rettung verfügbar.</small></button>
+        <button id="menuSupportBtn" class="menu-entry figma-menu-entry" type="button"><span>Missionen</span><small>Projekt unterstützen</small></button>
         <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span>Tutorial</span><small>Infos und Team</small></button>
-        <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span>Einstellungen</span><small>Einstellungen Ã¶ffnen</small></button>
+        <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span>Einstellungen</span><small>Einstellungen öffnen</small></button>
         <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span>Speichern und Beenden</span><small>Neuen Run starten</small></button>
       </section>
 
       <section class="figma-section-card">
         <h3 class="figma-section-head">Schnellzugriff</h3>
         <div class="figma-static-row"><span>Push-Benachrichtigungen</span><strong id="menuPushStatus" class="value_gold">Deaktiviert</strong></div>
-        <button id="menuPushBtn" class="menu-entry figma-menu-entry figma-menu-entry--small" type="button" aria-pressed="false"><span>Push umschalten</span><small>Status jetzt Ã¤ndern</small></button>
+        <button id="menuPushBtn" class="menu-entry figma-menu-entry figma-menu-entry--small" type="button" aria-pressed="false"><span>Push umschalten</span><small>Status jetzt ändern</small></button>
       </section>
 
       <div class="menu-quick-actions">
         <button id="menuAchievementsBtn" class="ghost-btn" type="button">Home</button>
         <button id="menuLeaderboardBtn" class="ghost-btn" type="button">Ops</button>
-        <button id="menuCloseBtn" class="action-btn action-primary" type="button">SchlieÃŸen</button>
+        <button id="menuCloseBtn" class="action-btn action-primary" type="button">Schließen</button>
       </div>
     </div>
   </section>
@@ -467,6 +461,7 @@
   <script src="app.js?v=20260319d" defer></script>
 </body>
 </html>
+
 
 
 
