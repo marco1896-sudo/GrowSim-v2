@@ -1053,8 +1053,6 @@ function applyAction(actionId) {
   const after = snapshotStatus();
   const deltaSummary = summarizeDelta(before, after);
 
-
-  if (typeof window.checkMissions === 'function') window.checkMissions('action', { actionId: action.id });
   addLog('action', `Aktion: ${action.label}`, {
     type: 'action',
     id: action.id,
@@ -1729,4 +1727,3 @@ window.GrowSimEvents = Object.freeze({
   registerServiceWorker,
   resolveFoundationCandidateEvent
 });
-

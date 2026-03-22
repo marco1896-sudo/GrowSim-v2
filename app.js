@@ -1,4 +1,4 @@
-/*
+Ôªø/*
 ASSUMPTIONS:
 - This Phase-1 implementation follows docs/PLAN.md architecture with one nested state object and one central tick loop.
 - Runtime mode defaults to "dev" for faster verification and can be switched via CONFIG.MODE.
@@ -38,7 +38,7 @@ const EVENT_COOLDOWN_MS = CONFIG.timing.eventCooldownMs;
 const EVENT_RESOLUTION_MS = 10 * 60 * 1000;
 const BOOST_ADVANCE_MS = CONFIG.boostAdvanceMs;
 // Absichtlich limitierter Boost: Event-Timer um 30 Min vorziehen,
-// Pflanzenwerte nur leicht anstoﬂen (kein vollst‰ndiger 30-Minuten-Simulationssprung).
+// Pflanzenwerte nur leicht ansto√üen (kein vollst√§ndiger 30-Minuten-Simulationssprung).
 const BOOST_PLANT_EFFECT_MS = 3 * 60 * 1000;
 const BOOST_GROWTH_PERCENT_DELTA = 0.02;
 const SIM_TIME_COMPRESSION = CONFIG.simulation.timeCompression;
@@ -52,7 +52,7 @@ const PERSIST_THROTTLE_MS = CONFIG.persistThrottleMs;
 const MAX_ELAPSED_PER_TICK_MS = 5000;
 const MAX_OFFLINE_SIM_MS = 8 * 60 * 60 * 1000;
 const APP_BASE_PATH = resolveAppBasePath();
-const FREEZE_SIM_ON_DEATH = true; // F¸r Klarheit: Simulation pausiert nach Tod der Pflanze.
+const FREEZE_SIM_ON_DEATH = true; // F√ºr Klarheit: Simulation pausiert nach Tod der Pflanze.
 
 const DB_NAME = 'grow-sim-db';
 const DB_STORE = 'kv';
@@ -71,26 +71,26 @@ const TOTAL_LIFECYCLE_SIM_MS = TOTAL_LIFECYCLE_SIM_DAYS * SIM_DAY_MS;
 const STAGE_DEFS = Object.freeze([
   Object.freeze({ index: 0, id: 'germination', label: 'Keimung', simDayStart: 0, phase: 'seedling', minHealth: 30, maxStress: 85 }),
   Object.freeze({ index: 1, id: 'seedling', label: 'Keimling', simDayStart: 3, phase: 'seedling', minHealth: 35, maxStress: 80 }),
-  Object.freeze({ index: 2, id: 'early_vegetative', label: 'Fr¸he Vegetationsphase', simDayStart: 8, phase: 'vegetative', minHealth: 40, maxStress: 75 }),
+  Object.freeze({ index: 2, id: 'early_vegetative', label: 'Fr√ºhe Vegetationsphase', simDayStart: 8, phase: 'vegetative', minHealth: 40, maxStress: 75 }),
   Object.freeze({ index: 3, id: 'vegetative', label: 'Vegetationsphase', simDayStart: 16, phase: 'vegetative', minHealth: 42, maxStress: 72 }),
-  Object.freeze({ index: 4, id: 'late_vegetative', label: 'Sp‰te Vegetationsphase', simDayStart: 24, phase: 'vegetative', minHealth: 45, maxStress: 70 }),
-  Object.freeze({ index: 5, id: 'pre_flower', label: 'Vorbl¸te', simDayStart: 31, phase: 'vegetative', minHealth: 48, maxStress: 65 }),
+  Object.freeze({ index: 4, id: 'late_vegetative', label: 'Sp√§te Vegetationsphase', simDayStart: 24, phase: 'vegetative', minHealth: 45, maxStress: 70 }),
+  Object.freeze({ index: 5, id: 'pre_flower', label: 'Vorbl√ºte', simDayStart: 31, phase: 'vegetative', minHealth: 48, maxStress: 65 }),
   Object.freeze({ index: 6, id: 'stretch', label: 'Streckphase', simDayStart: 39, phase: 'flowering', minHealth: 50, maxStress: 60 }),
-  Object.freeze({ index: 7, id: 'early_flower', label: 'Fr¸he Bl¸te', simDayStart: 47, phase: 'flowering', minHealth: 52, maxStress: 58 }),
-  Object.freeze({ index: 8, id: 'flower', label: 'Bl¸te', simDayStart: 57, phase: 'flowering', minHealth: 54, maxStress: 55 }),
-  Object.freeze({ index: 9, id: 'late_flower', label: 'Sp‰te Bl¸te', simDayStart: 66, phase: 'flowering', minHealth: 55, maxStress: 52 }),
+  Object.freeze({ index: 7, id: 'early_flower', label: 'Fr√ºhe Bl√ºte', simDayStart: 47, phase: 'flowering', minHealth: 52, maxStress: 58 }),
+  Object.freeze({ index: 8, id: 'flower', label: 'Bl√ºte', simDayStart: 57, phase: 'flowering', minHealth: 54, maxStress: 55 }),
+  Object.freeze({ index: 9, id: 'late_flower', label: 'Sp√§te Bl√ºte', simDayStart: 66, phase: 'flowering', minHealth: 55, maxStress: 52 }),
   Object.freeze({ index: 10, id: 'ripening', label: 'Reife', simDayStart: 75, phase: 'harvest', minHealth: 56, maxStress: 50 }),
   Object.freeze({ index: 11, id: 'harvest_ready', label: 'Erntereif', simDayStart: 84, phase: 'harvest', minHealth: 0, maxStress: 100 })
 ]);
 
 const DEFAULT_STAGE_TIMELINE = Object.freeze([
-  Object.freeze({ id: 'germination_seedling', label: 'Keimung / S‰mling', phase: 'seedling', simDayStart: 0 }),
-  Object.freeze({ id: 'early_vegetative', label: 'Fr¸he Vegetation', phase: 'vegetative', simDayStart: 4 }),
+  Object.freeze({ id: 'germination_seedling', label: 'Keimung / S√§mling', phase: 'seedling', simDayStart: 0 }),
+  Object.freeze({ id: 'early_vegetative', label: 'Fr√ºhe Vegetation', phase: 'vegetative', simDayStart: 4 }),
   Object.freeze({ id: 'mid_vegetative', label: 'Mittlere Vegetation', phase: 'vegetative', simDayStart: 14 }),
-  Object.freeze({ id: 'late_vegetative_preflower', label: 'Sp‰te Vegetation / Vorbl¸te', phase: 'vegetative', simDayStart: 28 }),
-  Object.freeze({ id: 'early_flower', label: 'Fr¸he Bl¸te', phase: 'flowering', simDayStart: 38 }),
-  Object.freeze({ id: 'mid_flower', label: 'Mittlere Bl¸te', phase: 'flowering', simDayStart: 52 }),
-  Object.freeze({ id: 'late_flower_ripe', label: 'Sp‰te Bl¸te / Reife', phase: 'flowering', simDayStart: 68 }),
+  Object.freeze({ id: 'late_vegetative_preflower', label: 'Sp√§te Vegetation / Vorbl√ºte', phase: 'vegetative', simDayStart: 28 }),
+  Object.freeze({ id: 'early_flower', label: 'Fr√ºhe Bl√ºte', phase: 'flowering', simDayStart: 38 }),
+  Object.freeze({ id: 'mid_flower', label: 'Mittlere Bl√ºte', phase: 'flowering', simDayStart: 52 }),
+  Object.freeze({ id: 'late_flower_ripe', label: 'Sp√§te Bl√ºte / Reife', phase: 'flowering', simDayStart: 68 }),
   Object.freeze({ id: 'finish', label: 'Reife / Finish', phase: 'harvest', simDayStart: 82 })
 ]);
 
@@ -160,7 +160,7 @@ const plantSpriteRuntime = {
 const PHASE_LABEL_DE = Object.freeze({
   seedling: 'Keimling',
   vegetative: 'Vegetativ',
-  flowering: 'Bl¸te',
+  flowering: 'Bl√ºte',
   harvest: 'Ernte',
   dead: 'Tot'
 });
@@ -332,7 +332,7 @@ const state = {
     care: {
       selectedCategory: null,
       selectedActionId: null,
-      feedback: { kind: 'info', text: 'W‰hle eine Aktion.' }
+      feedback: { kind: 'info', text: 'W√§hle eine Aktion.' }
     },
     analysis: {
       activeTab: 'overview'
@@ -406,7 +406,7 @@ function wireDomainOwnership() {
     ];
     const missingEventFns = requiredEventFns.filter((fnName) => typeof eventsApi[fnName] !== 'function');
     if (missingEventFns.length) {
-      throw new Error(`GrowSimEvents API unvollst‰ndig: ${missingEventFns.join(', ')}`);
+      throw new Error(`GrowSimEvents API unvollst√§ndig: ${missingEventFns.join(', ')}`);
     }
 
     runEventStateMachine = eventsApi.runEventStateMachine;
@@ -790,7 +790,7 @@ function mountHudComponents() {
   hudPanelsApi.mount(appHud, {
     player: {
       name: 'Max Mustergrower',
-      role: 'G‰rtner',
+      role: 'G√§rtner',
       xpText: 'XP: 7.350 / 8.650',
       xpPercent: 84,
       currencyCoins: '2.480',
@@ -798,7 +798,7 @@ function mountHudComponents() {
       currencyStars: '114'
     },
     environment: {
-      temperature: '25.3∞C',
+      temperature: '25.3¬∞C',
       humidity: '61%',
       vpd: '1.2 kPa',
       light: '720 PPFD',
@@ -1192,7 +1192,7 @@ function activateEvent(nowMs) {
   }
 
   if (!pool.length) {
-    addLog('event_roll', 'Keine passenden Ereignisse f¸r aktuellen Zustand', {
+    addLog('event_roll', 'Keine passenden Ereignisse f√ºr aktuellen Zustand', {
       simDay: Math.floor(simDayFloat()),
       at: nowMs
     });
@@ -1244,7 +1244,7 @@ function activateEvent(nowMs) {
     learningNote: eventDef.learningNote || ''
   };
 
-  addLog('event_shown', `Ereignis ausgew‰hlt: ${eventDef.id}`, {
+  addLog('event_shown', `Ereignis ausgew√§hlt: ${eventDef.id}`, {
     title: eventDef.title,
     severity: state.events.activeSeverity,
     category: eventDef.category || 'generic',
@@ -1770,7 +1770,7 @@ function onEventOptionClickCore(optionId) {
 
   applyFoundationFollowUps(choice, state.events.activeEventId);
 
-  addLog('choice', `Option gew‰hlt: ${state.events.activeEventId}/${choice.id}`, {
+  addLog('choice', `Option gew√§hlt: ${state.events.activeEventId}/${choice.id}`, {
     effects: choice.effects || {},
     sideEffects: triggeredSideEffects,
     effectsApplied: deltaSummary,
@@ -2358,7 +2358,7 @@ function onBoostAction() {
   runEventStateMachine(nowMs);
   updateVisibleOverlays();
 
-  addLog('action', 'Ereignis-Boost angewendet (Event-Timer -30 Min, Pflanze leicht angestoﬂen)', {
+  addLog('action', 'Ereignis-Boost angewendet (Event-Timer -30 Min, Pflanze leicht angesto√üen)', {
     usedToday: state.boost.boostUsedToday,
     nextEventAtMs: state.events.scheduler.nextEventRealTimeMs
   });
@@ -2369,19 +2369,19 @@ function onBoostAction() {
 
 function onSkipNightAction() {
   if (isPlantDead()) {
-    addLog('action', 'Nacht ¸berspringen blockiert: Pflanze ist eingegangen', null);
+    addLog('action', 'Nacht √ºberspringen blockiert: Pflanze ist eingegangen', null);
     renderAll();
     return;
   }
 
   if (state.simulation.isDaytime) {
-    addLog('action', 'Nacht ¸berspringen blockiert: Bereits Tagphase', null);
+    addLog('action', 'Nacht √ºberspringen blockiert: Bereits Tagphase', null);
     renderAll();
     return;
   }
 
   const nowMs = Date.now();
-  const usage = consumeBoostUsage(nowMs, 'Nacht ¸berspringen');
+  const usage = consumeBoostUsage(nowMs, 'Nacht √ºberspringen');
   if (!usage.ok) {
     renderAll();
     return;
@@ -2433,7 +2433,7 @@ function onSkipNightAction() {
   syncCanonicalStateShape();
   runEventStateMachine(nowMs);
 
-  addLog('action', 'Nacht ¸bersprungen: Tagesbeginn erreicht', {
+  addLog('action', 'Nacht √ºbersprungen: Tagesbeginn erreicht', {
     usedToday: state.boost.boostUsedToday,
     skippedNightSimMinutes: Math.round(remainingNightSimMs / 60000),
     simTimeAfter: state.simulation.simTimeMs
@@ -2456,7 +2456,7 @@ function resetBoostDaily(nowMs) {
   if (state.boost.dayStamp !== currentStamp) {
     state.boost.dayStamp = currentStamp;
     state.boost.boostUsedToday = 0;
-    addLog('system', 'T‰glicher Boost-Z‰hler zur¸ckgesetzt', { dayStamp: currentStamp });
+    addLog('system', 'T√§glicher Boost-Z√§hler zur√ºckgesetzt', { dayStamp: currentStamp });
   }
 }
 
@@ -2606,10 +2606,9 @@ function buildHomeViewModel(appState = state) {
   const xpCurrent = Math.min(8650, 1200 + (simDay * 440));
   const xpTarget = 8650;
   const xpRatio = clamp(xpCurrent / xpTarget, 0, 1);
-  const inv = sourceState.meta && sourceState.meta.inventory ? sourceState.meta.inventory : { coins: 0, gems: 0, stars: 0 };
-  const coinBalance = Number(inv.coins || 0);
-  const gemBalance = Number(inv.gems || 0);
-  const starBalance = Number(inv.stars || 0);
+  const coinBalance = Number(status.coins || (2480 + Math.round(simDay * 28)));
+  const gemBalance = Number(status.gems || (55 + Math.max(0, Math.floor(Number(boost.boostUsedToday || 0) / 2))));
+  const starBalance = Number(status.stars || (114 + Math.round(Number(status.growth || 0) / 2)));
   const playerLevel = Math.floor(xpCurrent / 1000) + 1;
 
   const environment = deriveEnvironmentReadout(sourceState);
@@ -2621,7 +2620,7 @@ function buildHomeViewModel(appState = state) {
     dead,
     phaseCard,
     eventStatus,
-    boostText: `Event -30 Min ∑ kleiner Pflanzenimpuls ∑ ${Number(boost.boostUsedToday || 0)}/${Number(boost.boostMaxPerDay || 0)} heute`,
+    boostText: `Event -30 Min ¬∑ kleiner Pflanzenimpuls ¬∑ ${Number(boost.boostUsedToday || 0)}/${Number(boost.boostMaxPerDay || 0)} heute`,
     growthImpulseText: Number(simulation.growthImpulse || 0).toFixed(2),
     simTimeText: formatSimClock(Number(simulation.simTimeMs || 0)),
     isDaytime: Boolean(simulation.isDaytime),
@@ -2642,7 +2641,7 @@ function buildHomeViewModel(appState = state) {
       coinText: formatCompactNumber(coinBalance),
       gemText: formatCompactNumber(gemBalance),
       starText: formatCompactNumber(starBalance),
-      envTempText: `${environment.temperatureC.toFixed(1)}∞C`,
+      envTempText: `${environment.temperatureC.toFixed(1)}¬∞C`,
       envHumidityText: `${environment.humidityPercent}%`,
       envVpdText: `${environment.vpdKpa.toFixed(1)} kPa`,
       envLightText: `${environment.ppfd} PPFD`,
@@ -2860,12 +2859,12 @@ function renderPanelReadouts(homeVm = null) {
     }
   };
 
-  setText('envCtrlTempOut', `${controls.temperatureC.toFixed(1)}∞C`);
+  setText('envCtrlTempOut', `${controls.temperatureC.toFixed(1)}¬∞C`);
   setText('envCtrlHumidityOut', `${controls.humidityPercent}%`);
   setText('envCtrlAirflowOut', `${controls.airflowPercent}%`);
   setText('envCtrlPhOut', `${controls.ph.toFixed(1)}`);
   setText('envCtrlEcOut', `${controls.ec.toFixed(1)} mS`);
-  setText('envCtrlEcHint', 'nur ¸ber mineralisches D¸ngen');
+  setText('envCtrlEcHint', 'nur √ºber mineralisches D√ºngen');
 
   setRange('envCtrlTemp', controls.temperatureC.toFixed(1));
   setRange('envCtrlHumidity', controls.humidityPercent);
@@ -2920,7 +2919,7 @@ function onEnvironmentControlInput(controlKey, rawValue) {
   if (controlKey === 'airflowPercent') controls.airflowPercent = clampInt(value, 0, 100);
   if (controlKey === 'ph') controls.ph = clamp(value, 5.0, 7.0);
   if (controlKey === 'ec') {
-    addLog('action', 'EC ist nicht direkt regelbar. Nutze mineralische D¸ngung.', { attemptedValue: value });
+    addLog('action', 'EC ist nicht direkt regelbar. Nutze mineralische D√ºngung.', { attemptedValue: value });
     return;
   }
   renderHud();
@@ -3159,8 +3158,8 @@ function renderMenuDynamicRows() {
   const rescueBlocked = rescueAdPending || rescueUsed;
   ui.menuRescueBtn.disabled = rescueBlocked;
   ui.menuRescueSubtext.textContent = rescueUsed
-    ? '1◊ pro Run bereits genutzt.'
-    : (meta.rescue.lastResult || '1◊ pro Run verf¸gbar.');
+    ? '1√ó pro Run bereits genutzt.'
+    : (meta.rescue.lastResult || '1√ó pro Run verf√ºgbar.');
 
   const notifications = getCanonicalNotificationsSettings(state);
   const enabled = notifications.enabled === true;
@@ -3196,8 +3195,8 @@ function renderCareSheet(force = false) {
   const categoryLabels = careViewModel && careViewModel.categoryLabels
     ? careViewModel.categoryLabels
     : {
-      watering: 'Bew‰sserung',
-      fertilizing: 'N‰hrstoffe',
+      watering: 'Bew√§sserung',
+      fertilizing: 'N√§hrstoffe',
       training: 'Training',
       environment: 'Umgebung'
     };
@@ -3255,7 +3254,7 @@ function renderCareCategoryButtons(categories, labels, icons) {
     if (state.ui.care.selectedCategory === category) {
       btn.classList.add('care-category-tab-active');
     }
-    btn.innerHTML = `<span class="care-category-icon" aria-hidden="true">${icons[category] || '?'}</span><span class="care-category-label">${labels[category] || category}</span>`;
+    btn.innerHTML = `<span class="care-category-icon" aria-hidden="true">${icons[category] || '‚óå'}</span><span class="care-category-label">${labels[category] || category}</span>`;
     btn.addEventListener('click', () => {
       state.ui.care.selectedCategory = category;
       state.ui.care.selectedActionId = null;
@@ -3333,7 +3332,7 @@ function renderCareActionButtons(category, careViewModel = null) {
     button.addEventListener('click', () => {
       state.ui.care.selectedActionId = action.id;
       ui.careActionList.dataset.signature = '';
-      setCareFeedback('info', `${action.label} ausgew‰hlt.`);
+      setCareFeedback('info', `${action.label} ausgew√§hlt.`);
       renderCareSheet(true);
     });
 
@@ -3348,11 +3347,11 @@ function formatEffectsInline(action) {
       .map((effect) => (effect && effect.label ? String(effect.label) : null))
       .filter(Boolean)
       .slice(0, 2)
-      .join(' ∑ ') || 'Keine direkten Effekte';
+      .join(' ¬∑ ') || 'Keine direkten Effekte';
   }
   const map = [
     ['water', 'Feuchtigkeit'],
-    ['nutrition', 'N‰hrstoffe'],
+    ['nutrition', 'N√§hrstoffe'],
     ['growth', 'Wachstum'],
     ['stress', 'Stress'],
     ['risk', 'Risiko']
@@ -3363,7 +3362,7 @@ function formatEffectsInline(action) {
     if (!value) continue;
     parts.push(`${label} ${value > 0 ? '+' : ''}${round2(value)}`);
   }
-  return parts.slice(0, 2).join(' ∑ ') || 'Keine direkten Effekte';
+  return parts.slice(0, 2).join(' ¬∑ ') || 'Keine direkten Effekte';
 }
 
 function formatActionHint(action, cooldownLeft) {
@@ -3383,7 +3382,7 @@ function renderCareEffectsPanel() {
   const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
   if (!selected) {
     const li = document.createElement('li');
-    li.textContent = 'Keine Aktion ausgew‰hlt.';
+    li.textContent = 'Keine Aktion ausgew√§hlt.';
     ui.careEffectsList.appendChild(li);
     return;
   }
@@ -3392,7 +3391,7 @@ function renderCareEffectsPanel() {
   if (Array.isArray(immediate)) {
     const labels = {
       water: 'Feuchtigkeit',
-      nutrition: 'N‰hrstoffe',
+      nutrition: 'N√§hrstoffe',
       growth: 'Wachstum',
       stress: 'Stress',
       risk: 'Risiko',
@@ -3417,7 +3416,7 @@ function renderCareEffectsPanel() {
   }
   const effectRows = [
     ['water', 'Feuchtigkeit'],
-    ['nutrition', 'N‰hrstoffe'],
+    ['nutrition', 'N√§hrstoffe'],
     ['growth', 'Wachstum'],
     ['stress', 'Stress'],
     ['risk', 'Risiko'],
@@ -3449,14 +3448,14 @@ function renderCareExecuteButton() {
 function onCareExecuteAction() {
   const action = state.actions.byId[state.ui.care.selectedActionId || ''];
   if (!action) {
-    setCareFeedback('error', 'Bitte zuerst eine Aktion w‰hlen.');
+    setCareFeedback('error', 'Bitte zuerst eine Aktion w√§hlen.');
     renderCareSheet(true);
     return;
   }
 
   const result = executeCareAction(action.id);
   if (result.ok) {
-    setCareFeedback('success', action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgef¸hrt.`);
+    setCareFeedback('success', action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgef√ºhrt.`);
     state.ui.care.selectedActionId = null;
   } else {
     setCareFeedback('error', explainActionFailure(result.reason));
@@ -3468,7 +3467,7 @@ function onCareExecuteAction() {
 }
 
 function renderCareFeedback() {
-  const feedback = (state.ui.care && state.ui.care.feedback) || { kind: 'info', text: 'W‰hle eine Aktion.' };
+  const feedback = (state.ui.care && state.ui.care.feedback) || { kind: 'info', text: 'W√§hle eine Aktion.' };
   ui.careFeedback.textContent = feedback.text;
   ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');
   ui.careFeedback.classList.toggle('is-error', feedback.kind === 'error');
@@ -3499,16 +3498,16 @@ function explainActionFailure(reason) {
     return `Aktion blockiert: ${value.replace('cooldown_active:', 'Abklingzeit noch ')}`;
   }
   if (value.startsWith('prereq_min_failed:') || value.startsWith('prereq_max_failed:')) {
-    return `Voraussetzung nicht erf¸llt (${value.split(':')[1] || 'unbekannt'}).`;
+    return `Voraussetzung nicht erf√ºllt (${value.split(':')[1] || 'unbekannt'}).`;
   }
   if (value.startsWith('outside_time_window:')) {
-    return 'Aktion nur tags¸ber verf¸gbar.';
+    return 'Aktion nur tags√ºber verf√ºgbar.';
   }
   if (value.startsWith('stage_too_low:')) {
-    return 'Aktion f¸r diese Phase noch nicht freigeschaltet.';
+    return 'Aktion f√ºr diese Phase noch nicht freigeschaltet.';
   }
   if (value === 'dead_run_ended') {
-    return 'Aktion nicht mˆglich: Die Pflanze ist eingegangen.';
+    return 'Aktion nicht m√∂glich: Die Pflanze ist eingegangen.';
   }
   return `Aktion blockiert (${value}).`;
 }
@@ -3523,7 +3522,7 @@ function renderEventSheet() {
   if (state.events.machineState === 'activeEvent') {
     ui.eventTitle.textContent = state.events.activeEventTitle;
     ui.eventText.textContent = state.events.activeEventText;
-    ui.eventMeta.textContent = `Schweregrad: ${state.events.activeSeverity} | Stichwˆrter: ${state.events.activeTags.join(', ') || '-'}`;
+    ui.eventMeta.textContent = `Schweregrad: ${state.events.activeSeverity} | Stichw√∂rter: ${state.events.activeTags.join(', ') || '-'}`;
 
     const optionSignature = `${state.events.activeEventId}|${state.events.activeOptions.map((option) => `${option.id}:${option.label}`).join('|')}`;
     if (ui.eventOptionList.dataset.signature !== optionSignature) {
@@ -3562,7 +3561,7 @@ function renderEventSheet() {
     const outcome = state.events.resolvedOutcome;
     ui.eventTitle.textContent = outcome && outcome.eventTitle ? outcome.eventTitle : 'Ergebnis bereit';
     ui.eventText.textContent = formatResolvedOutcome(outcome);
-    ui.eventMeta.textContent = 'Ergebnis bereit ñ schlieﬂe das Ereignis, um fortzufahren.';
+    ui.eventMeta.textContent = 'Ergebnis bereit ‚Äì schlie√üe das Ereignis, um fortzufahren.';
   } else if (state.events.machineState === 'cooldown') {
     const cooldownLeft = state.events.cooldownUntilMs - state.simulation.nowMs;
     ui.eventTitle.textContent = 'Abklingzeit aktiv';
@@ -3570,8 +3569,8 @@ function renderEventSheet() {
     ui.eventMeta.textContent = `Abklingzeit: ${formatCountdown(cooldownLeft)}`;
   } else {
     ui.eventTitle.textContent = 'Kein aktives Ereignis';
-    ui.eventText.textContent = 'Ein Ereignis erscheint, sobald der n‰chste Wurf erfolgreich ist.';
-    ui.eventMeta.textContent = `N‰chster Wurf: ${formatCountdown(state.events.scheduler.nextEventRealTimeMs - state.simulation.nowMs)}`;
+    ui.eventText.textContent = 'Ein Ereignis erscheint, sobald der n√§chste Wurf erfolgreich ist.';
+    ui.eventMeta.textContent = `N√§chster Wurf: ${formatCountdown(state.events.scheduler.nextEventRealTimeMs - state.simulation.nowMs)}`;
   }
 
   if (ui.eventOptionList.childElementCount > 0) {
@@ -3695,7 +3694,7 @@ function renderAnalysisOverview() {
 
   const statusRows = [
     { label: 'Wasser', value: `${Math.round(Number(status.water) || 0)}%`, tone: 'value_gold' },
-    { label: 'N‰hrstoffe', value: `${Math.round(Number(status.nutrition) || 0)}%`, tone: 'value_gold' },
+    { label: 'N√§hrstoffe', value: `${Math.round(Number(status.nutrition) || 0)}%`, tone: 'value_gold' },
     { label: 'Wachstum', value: `${round2(Number(status.growth) || 0)}%`, tone: 'value_green' },
     { label: 'Risiko', value: `${Math.round(Number(status.risk) || 0)}%`, tone: 'value_orange' },
     { label: 'Stress', value: `${Math.round(Number(status.stress) || 0)}%`, tone: 'value_gold' }
@@ -3780,7 +3779,7 @@ function initAnalysisChart() {
           pointRadius: 0
         },
         {
-          label: 'N‰hrstoffe',
+          label: 'N√§hrstoffe',
           data: telemetry.map(t => t.nutrition),
           borderColor: '#facc15',
           backgroundColor: 'transparent',
@@ -3838,7 +3837,7 @@ function renderAnalysisDiagnosis() {
 
   const rec = document.createElement('div');
   rec.className = 'gs-analysis-driver';
-  rec.innerHTML = `<strong>Empfohlene n‰chste Pflege:</strong> ${escapeHtml(recommendationLabel)}`;
+  rec.innerHTML = `<strong>Empfohlene n√§chste Pflege:</strong> ${escapeHtml(recommendationLabel)}`;
   ui.analysisPanelDiagnosis.appendChild(rec);
 }
 
@@ -3847,19 +3846,19 @@ function diagnosisDrivers() {
   const s = state.status || {};
   const stageIndex = Number(state.plant && state.plant.stageIndex) || 1;
 
-  if ((Number(s.water) || 0) < 35) d.push({ score: 100 - s.water, label: 'Wassermangel', reason: 'Zu trocken erhˆht den Stress' });
-  if ((Number(s.water) || 0) > 80) d.push({ score: s.water, label: '‹berw‰sserung', reason: 'Zu viel Wasser erhˆht das Risiko' });
-  if ((Number(s.nutrition) || 0) < 35) d.push({ score: 95 - s.nutrition, label: 'N‰hrstoffmangel', reason: 'Unterversorgung bremst das Wachstum' });
-  if ((Number(s.nutrition) || 0) > 80) d.push({ score: s.nutrition, label: 'N‰hrstoff¸berschuss', reason: 'Erhˆhtes Risiko f¸r N‰hrstoffbrand' });
+  if ((Number(s.water) || 0) < 35) d.push({ score: 100 - s.water, label: 'Wassermangel', reason: 'Zu trocken erh√∂ht den Stress' });
+  if ((Number(s.water) || 0) > 80) d.push({ score: s.water, label: '√úberw√§sserung', reason: 'Zu viel Wasser erh√∂ht das Risiko' });
+  if ((Number(s.nutrition) || 0) < 35) d.push({ score: 95 - s.nutrition, label: 'N√§hrstoffmangel', reason: 'Unterversorgung bremst das Wachstum' });
+  if ((Number(s.nutrition) || 0) > 80) d.push({ score: s.nutrition, label: 'N√§hrstoff√ºberschuss', reason: 'Erh√∂htes Risiko f√ºr N√§hrstoffbrand' });
   if ((Number(s.stress) || 0) > 60) d.push({ score: s.stress + 10, label: 'Hoher Stress', reason: 'Hoher Stress blockiert das beste Ergebnis' });
-  if ((Number(s.risk) || 0) > 60) d.push({ score: s.risk + 8, label: 'Hohes Risiko', reason: 'Hohes Risiko erhˆht negative Ereignisse' });
+  if ((Number(s.risk) || 0) > 60) d.push({ score: s.risk + 8, label: 'Hohes Risiko', reason: 'Hohes Risiko erh√∂ht negative Ereignisse' });
 
   if (stageIndex <= 3 && (Number(s.health) || 0) < 65) {
-    d.push({ score: 70 - (Number(s.health) || 0), label: 'Fr¸he-Phase-Empfindlichkeit', reason: 'Fr¸he Phasen brauchen stabile Wasser- und N‰hrstoffwerte' });
+    d.push({ score: 70 - (Number(s.health) || 0), label: 'Fr√ºhe-Phase-Empfindlichkeit', reason: 'Fr√ºhe Phasen brauchen stabile Wasser- und N√§hrstoffwerte' });
   }
 
   if (!d.length) {
-    d.push({ score: 1, label: 'Stabiler Zustand', reason: 'Kein grˆﬂeres Defizit erkannt' });
+    d.push({ score: 1, label: 'Stabiler Zustand', reason: 'Kein gr√∂√üeres Defizit erkannt' });
   }
 
   return d.sort((a, b) => b.score - a.score);
@@ -3869,9 +3868,9 @@ function recommendedCareCategory(primaryDriver) {
   if (!primaryDriver) return 'environment';
   const map = {
     Wassermangel: 'watering',
-    ‹berw‰sserung: 'environment',
-    N‰hrstoffmangel: 'fertilizing',
-    N‰hrstoff¸berschuss: 'environment',
+    √úberw√§sserung: 'environment',
+    N√§hrstoffmangel: 'fertilizing',
+    N√§hrstoff√ºberschuss: 'environment',
     'Hoher Stress': 'environment',
     'Hohes Risiko': 'environment',
     'Stabiler Zustand': 'training'
@@ -3881,19 +3880,19 @@ function recommendedCareCategory(primaryDriver) {
 
 function qualityTierLabel(tier) {
   if (tier === 'perfect') return 'Perfekt';
-  if (tier === 'degraded') return 'Geschw‰cht';
+  if (tier === 'degraded') return 'Geschw√§cht';
   return 'Normal';
 }
 
 function categoryLabel(category) {
   const map = {
-    watering: 'Bew‰sserung',
-    fertilizing: 'D¸ngung',
+    watering: 'Bew√§sserung',
+    fertilizing: 'D√ºngung',
     training: 'Training',
     environment: 'Umgebung',
     water: 'Wasser',
-    nutrition: 'N‰hrstoffe',
-    pest: 'Sch‰dlinge',
+    nutrition: 'N√§hrstoffe',
+    pest: 'Sch√§dlinge',
     disease: 'Krankheit',
     generic: 'Allgemein'
   };
@@ -3946,7 +3945,7 @@ function renderAnalysisTimeline() {
   if (!latest.length) {
     const empty = document.createElement('div');
     empty.className = 'gs-analysis-timeline-item';
-    empty.textContent = 'Noch keine Aktivit‰ten';
+    empty.textContent = 'Noch keine Aktivit√§ten';
     ui.analysisPanelTimeline.appendChild(empty);
     return;
   }
@@ -3958,19 +3957,19 @@ function renderAnalysisTimeline() {
 
     if (row.kind === 'action') {
       const d = row.data || {};
-      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} ∑ Aktion</div><strong>${escapeHtml(String(d.label || d.id || 'Aktion'))}</strong><br>${formatDeltaSummary(d.deltaSummary || {})}`;
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} ¬∑ Aktion</div><strong>${escapeHtml(String(d.label || d.id || 'Aktion'))}</strong><br>${formatDeltaSummary(d.deltaSummary || {})}`;
     } else if (row.kind === 'event') {
       const d = row.data || {};
       const note = d.learningNote ? `<details><summary>Lernhinweis</summary>${escapeHtml(String(d.learningNote))}</details>` : '';
-      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} ∑ Ereignis (${escapeHtml(categoryLabel(String(d.category || 'generic')))})</div><strong>${escapeHtml(String(d.optionLabel || d.optionId || d.eventId || 'Ereignis'))}</strong><br>${formatDeltaSummary(d.effectsApplied || d.deltaSummary || {})}${note}`;
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} ¬∑ Ereignis (${escapeHtml(categoryLabel(String(d.category || 'generic')))})</div><strong>${escapeHtml(String(d.optionLabel || d.optionId || d.eventId || 'Ereignis'))}</strong><br>${formatDeltaSummary(d.effectsApplied || d.deltaSummary || {})}${note}`;
     } else {
       const d = row.data || {};
       const typeLabel = String(d.type || 'system');
       const label = d.label || d.id || 'System';
       const wasDeadNote = typeof d.wasDead === 'boolean'
-        ? (d.wasDead ? ' ∑ Reanimation' : ' ∑ Stabilisierung')
+        ? (d.wasDead ? ' ¬∑ Reanimation' : ' ¬∑ Stabilisierung')
         : '';
-      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} ∑ System (${escapeHtml(typeLabel === 'rescue' ? 'Notfallrettung' : 'System')})</div><strong>${escapeHtml(String(label))}</strong>${wasDeadNote}<br>${formatDeltaSummary(d.effectsApplied || (d.details && d.details.effectsApplied) || {})}`;
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} ¬∑ System (${escapeHtml(typeLabel === 'rescue' ? 'Notfallrettung' : 'System')})</div><strong>${escapeHtml(String(label))}</strong>${wasDeadNote}<br>${formatDeltaSummary(d.effectsApplied || (d.details && d.details.effectsApplied) || {})}`;
     }
 
     ui.analysisPanelTimeline.appendChild(node);
@@ -3983,7 +3982,7 @@ function simStampFromMs(simMs) {
   const delta = Math.max(0, raw - base);
   const totalDay = Math.floor(delta / (24 * 60 * 60 * 1000));
   const hh = Math.floor((delta % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-  return `Tag ${totalDay} ∑ ${String(hh).padStart(2, '0')}:00`;
+  return `Tag ${totalDay} ¬∑ ${String(hh).padStart(2, '0')}:00`;
 }
 
 function formatDeltaSummary(delta) {
@@ -3995,7 +3994,7 @@ function formatDeltaSummary(delta) {
     const n = round2(Number(v));
     parts.push(`${k}: ${n > 0 ? '+' : ''}${n}`);
   }
-  return parts.length ? parts.join(' ∑ ') : 'Keine Netto‰nderung';
+  return parts.length ? parts.join(' ¬∑ ') : 'Keine Netto√§nderung';
 }
 
 function escapeHtml(value) {
@@ -4011,7 +4010,7 @@ function escapeHtml(value) {
 const STAT_DETAIL_CONFIG = Object.freeze({
   water: Object.freeze({
     title: 'Wasser',
-    buttonLabel: 'Gieﬂen',
+    buttonLabel: 'Gie√üen',
     action: () => openSheet('care'),
     getValue: () => Math.round(Number(state.status.water) || 0),
     getStatus: (value) => {
@@ -4022,17 +4021,17 @@ const STAT_DETAIL_CONFIG = Object.freeze({
     },
     getExplanation: (value) => {
       if (value >= 80) return 'Wasser ist aktuell optimal. Die Pflanze bleibt gut versorgt.';
-      if (value >= 60) return 'Wasser ist aktuell stabil. In den n‰chsten Zyklen noch unkritisch.';
+      if (value >= 60) return 'Wasser ist aktuell stabil. In den n√§chsten Zyklen noch unkritisch.';
       if (value >= 40) return 'Wasser wird knapper und sollte beobachtet werden.';
       return 'Wasser ist niedrig, Trockenstress kann schnell ansteigen.';
     },
     getRecommendation: (value) => value < 60
-      ? 'Empfehlung: Pflege ˆffnen und zeitnah gieﬂen.'
+      ? 'Empfehlung: Pflege √∂ffnen und zeitnah gie√üen.'
       : 'Empfehlung: Feuchtigkeit halten und den Verlauf beobachten.'
   }),
   nutrition: Object.freeze({
-    title: 'N‰hrstoffe',
-    buttonLabel: 'Pflege ˆffnen',
+    title: 'N√§hrstoffe',
+    buttonLabel: 'Pflege √∂ffnen',
     action: () => openSheet('care'),
     getValue: () => Math.round(Number(state.status.nutrition) || 0),
     getStatus: (value) => {
@@ -4042,17 +4041,17 @@ const STAT_DETAIL_CONFIG = Object.freeze({
       return 'Mangelrisiko';
     },
     getExplanation: (value) => {
-      if (value >= 60) return 'N‰hrstoffe unterst¸tzen das Wachstum aktuell noch ausreichend.';
-      if (value >= 40) return 'Sinkende N‰hrstoffe kˆnnen das Wachstum bald bremsen.';
-      return 'N‰hrstoffmangel begrenzt Entwicklung und erhˆht Stresspotenzial.';
+      if (value >= 60) return 'N√§hrstoffe unterst√ºtzen das Wachstum aktuell noch ausreichend.';
+      if (value >= 40) return 'Sinkende N√§hrstoffe k√∂nnen das Wachstum bald bremsen.';
+      return 'N√§hrstoffmangel begrenzt Entwicklung und erh√∂ht Stresspotenzial.';
     },
     getRecommendation: (value) => value < 60
-      ? 'Empfehlung: Pflege ˆffnen und eine passende D¸ngungsmaﬂnahme pr¸fen.'
-      : 'Empfehlung: N‰hrstoffniveau halten und regelm‰ﬂig kontrollieren.'
+      ? 'Empfehlung: Pflege √∂ffnen und eine passende D√ºngungsma√ünahme pr√ºfen.'
+      : 'Empfehlung: N√§hrstoffniveau halten und regelm√§√üig kontrollieren.'
   }),
   growth: Object.freeze({
     title: 'Wachstum',
-    buttonLabel: 'Analyse ˆffnen',
+    buttonLabel: 'Analyse √∂ffnen',
     action: () => openSheet('dashboard'),
     getValue: () => Math.round(Number(state.status.growth) || 0),
     getStatus: (value, impulse) => {
@@ -4062,23 +4061,23 @@ const STAT_DETAIL_CONFIG = Object.freeze({
       return 'Gebremst';
     },
     getExplanation: (_value, impulse) => {
-      if (impulse >= 0.12) return `Das Wachstum l‰uft stabil. Aktueller Impuls: ${impulse.toFixed(2)}.`;
+      if (impulse >= 0.12) return `Das Wachstum l√§uft stabil. Aktueller Impuls: ${impulse.toFixed(2)}.`;
       if (impulse >= 0.03) return `Das Wachstum entwickelt sich solide. Impuls: ${impulse.toFixed(2)}.`;
       return `Das Wachstum ist aktuell gebremst. Impuls: ${impulse.toFixed(2)}.`;
     },
     getRecommendation: (value) => value < 40
-      ? 'Empfehlung: Analyse ˆffnen und Wasser-/N‰hrstofftreiber pr¸fen.'
+      ? 'Empfehlung: Analyse √∂ffnen und Wasser-/N√§hrstofftreiber pr√ºfen.'
       : 'Empfehlung: Kurs halten und per Analyse auf Limitierungen achten.'
   }),
   risk: Object.freeze({
     title: 'Risiko',
-    buttonLabel: 'Analyse ˆffnen',
+    buttonLabel: 'Analyse √∂ffnen',
     action: () => openSheet('dashboard'),
     getValue: () => Math.round(Number(state.status.risk) || 0),
     getStatus: (value) => {
       if (value >= 75) return 'Kritisch';
       if (value >= 50) return 'Hoch';
-      if (value >= 25) return 'Erhˆht';
+      if (value >= 25) return 'Erh√∂ht';
       return 'Niedrig';
     },
     getExplanation: (_value) => {
@@ -4089,8 +4088,8 @@ const STAT_DETAIL_CONFIG = Object.freeze({
       return `Wichtigster Treiber: ${topDriver.label}. ${topDriver.reason}`;
     },
     getRecommendation: (value) => value >= 50
-      ? 'Empfehlung: Analyse ˆffnen und Gegenmaﬂnahmen priorisieren.'
-      : 'Empfehlung: Entwicklung beobachten und Risikoquellen fr¸h pr¸fen.'
+      ? 'Empfehlung: Analyse √∂ffnen und Gegenma√ünahmen priorisieren.'
+      : 'Empfehlung: Entwicklung beobachten und Risikoquellen fr√ºh pr√ºfen.'
   })
 });
 
@@ -4175,9 +4174,9 @@ function renderMissionsSheet() {
     card.className = `figma-section-card mission-card ${isCompleted ? 'mission-completed' : ''}`;
     
     let rewardText = '';
-    if (mission.reward.coins) rewardText += `?? ${mission.reward.coins} `;
-    if (mission.reward.gems) rewardText += `?? ${mission.reward.gems} `;
-    if (mission.reward.stars) rewardText += `? ${mission.reward.stars} `;
+    if (mission.reward.coins) rewardText += `ü™ô ${mission.reward.coins} `;
+    if (mission.reward.gems) rewardText += `üíé ${mission.reward.gems} `;
+    if (mission.reward.stars) rewardText += `‚≠ê ${mission.reward.stars} `;
 
     card.innerHTML = `
       <div class="figma-static-row">
@@ -4216,7 +4215,7 @@ function openMenuPlaceholder(title, text) {
   openMenuDialog({
     title,
     message: text,
-    cancelLabel: 'Schlieﬂen',
+    cancelLabel: 'Schlie√üen',
     confirmLabel: '',
     onConfirm: null
   });
@@ -4320,7 +4319,7 @@ function renderDeathOverlay() {
   ui.deathDriverList.replaceChildren();
   for (const item of topDrivers) {
     const row = document.createElement('li');
-    row.innerHTML = `<strong>${escapeHtml(String(item.label || 'Unklare Ursache'))}</strong><br>${escapeHtml(String(item.reason || 'Kein Detail verf¸gbar'))}`;
+    row.innerHTML = `<strong>${escapeHtml(String(item.label || 'Unklare Ursache'))}</strong><br>${escapeHtml(String(item.reason || 'Kein Detail verf√ºgbar'))}`;
     ui.deathDriverList.appendChild(row);
   }
 
@@ -4346,8 +4345,8 @@ function renderDeathOverlay() {
       ? 'Rettungsaktion bereits genutzt'
       : 'Rettungsaktion nutzen';
     ui.deathRescueSubtext.textContent = rescueUsed
-      ? '1◊ pro Run bereits verbraucht.'
-      : '1◊ pro Run';
+      ? '1√ó pro Run bereits verbraucht.'
+      : '1√ó pro Run';
     ui.deathRescueFeedback.textContent = meta.rescue.lastResult ? String(meta.rescue.lastResult) : '';
   }
 }
@@ -4384,12 +4383,12 @@ function formatRecentHistoryHtml(row) {
   const data = row.data || {};
   if (row.kind === 'action') {
     const label = escapeHtml(String(data.label || data.id || 'Aktion'));
-    return `<span class="timeline-meta">${simStamp} ∑ Aktion</span><br><strong>${label}</strong>`;
+    return `<span class="timeline-meta">${simStamp} ¬∑ Aktion</span><br><strong>${label}</strong>`;
   }
 
   const category = escapeHtml(categoryLabel(data.category || 'generic'));
   const label = escapeHtml(String(data.optionLabel || data.optionId || data.eventId || 'Ereignis'));
-  return `<span class="timeline-meta">${simStamp} ∑ Ereignis (${category})</span><br><strong>${label}</strong>`;
+  return `<span class="timeline-meta">${simStamp} ¬∑ Ereignis (${category})</span><br><strong>${label}</strong>`;
 }
 
 function onStartRun() {
@@ -4464,7 +4463,7 @@ async function onDeathRescueClick() {
   }
 
   if (meta.rescue.used) {
-    meta.rescue.lastResult = 'Rettungsaktion ist nur 1◊ pro Run verf¸gbar.';
+    meta.rescue.lastResult = 'Rettungsaktion ist nur 1√ó pro Run verf√ºgbar.';
     renderDeathOverlay();
     schedulePersistState(true);
     return;
@@ -4536,7 +4535,7 @@ async function onPushToggleClick() {
   if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
     notifications.enabled = false;
     state.settings.pushNotificationsEnabled = false;
-    notifications.lastMessage = 'Benachrichtigungen werden in diesem Browser nicht unterst¸tzt.';
+    notifications.lastMessage = 'Benachrichtigungen werden in diesem Browser nicht unterst√ºtzt.';
     renderPushToggle();
     renderGameMenu();
     schedulePersistState(true);
@@ -4555,7 +4554,7 @@ async function onPushToggleClick() {
     notifications.enabled = false;
     state.settings.pushNotificationsEnabled = false;
     notifications.lastMessage = permissionTimedOut
-      ? 'Berechtigungsdialog nicht best‰tigt. Bitte Benachrichtigungen im Browser erlauben.'
+      ? 'Berechtigungsdialog nicht best√§tigt. Bitte Benachrichtigungen im Browser erlauben.'
       : 'Berechtigung nicht erteilt. Bitte Benachrichtigungen im Browser erlauben.';
     renderPushToggle();
     renderGameMenu();
@@ -4566,7 +4565,7 @@ async function onPushToggleClick() {
   if (!navigator.serviceWorker.controller) {
     notifications.enabled = false;
     state.settings.pushNotificationsEnabled = false;
-    notifications.lastMessage = 'Service Worker noch nicht aktiv ñ bitte einmal normal neu laden.';
+    notifications.lastMessage = 'Service Worker noch nicht aktiv ‚Äì bitte einmal normal neu laden.';
     renderPushToggle();
     renderGameMenu();
     schedulePersistState(true);
@@ -4625,7 +4624,7 @@ function onNotificationTypeToggle() {
 }
 
 async function onAnalysisResetClick() {
-  const confirmed = window.confirm('Aktuellen Run wirklich zur¸cksetzen? Dieser Schritt lˆscht den gespeicherten Fortschritt.');
+  const confirmed = window.confirm('Aktuellen Run wirklich zur√ºcksetzen? Dieser Schritt l√∂scht den gespeicherten Fortschritt.');
   if (!confirmed) {
     return;
   }
@@ -4740,7 +4739,7 @@ function dismissActiveEvent() {
     optionId: '__dismiss__',
     optionLabel: 'Ignoriert',
     summary: 'bad',
-    learningNote: 'Ignorierte Ereignisse erhˆhen meist das Risiko.',
+    learningNote: 'Ignorierte Ereignisse erh√∂hen meist das Risiko.',
     resolvedAfterMs: EVENT_RESOLUTION_MS
   };
   state.events.resolvedOutcome = null;
@@ -4803,7 +4802,7 @@ function showRuntimeHaltBanner() {
   const banner = document.createElement('div');
   banner.id = 'runtimeHaltBanner';
   banner.className = 'boot-error-banner';
-  banner.innerHTML = '<strong>Simulation angehalten ñ bitte neu laden.</strong>';
+  banner.innerHTML = '<strong>Simulation angehalten ‚Äì bitte neu laden.</strong>';
   document.body.appendChild(banner);
 }
 
@@ -4872,7 +4871,7 @@ function translateEventState(machineState) {
     case 'activeEvent':
       return 'aktives Ereignis';
     case 'resolving':
-      return 'Ergebnis l‰uft';
+      return 'Ergebnis l√§uft';
     case 'resolved':
       return 'Ergebnis bereit';
     case 'cooldown':
@@ -4898,7 +4897,7 @@ function formatResolvedOutcome(outcome) {
   const tone = outcome.summary === 'good'
     ? 'Gute Entscheidung.'
     : (outcome.summary === 'bad' ? 'Eher schlechte Entscheidung.' : 'Gemischtes Ergebnis.');
-  const choice = outcome.optionLabel ? `Gew‰hlt: ${outcome.optionLabel}.` : '';
+  const choice = outcome.optionLabel ? `Gew√§hlt: ${outcome.optionLabel}.` : '';
   const note = outcome.learningNote ? ` ${outcome.learningNote}` : '';
   return `${tone} ${choice}${note}`.trim();
 }
@@ -4918,7 +4917,7 @@ function eventStatusDisplay(sourceState = state) {
   if (eventsState.machineState === 'resolved') {
     return { label: 'Ereignisstatus', value: 'Ergebnis bereit' };
   }
-  return { label: 'N‰chstes Ereignis', value: formatCountdown(Number(scheduler.nextEventRealTimeMs || 0) - Number(simulation.nowMs || 0)) };
+  return { label: 'N√§chstes Ereignis', value: formatCountdown(Number(scheduler.nextEventRealTimeMs || 0) - Number(simulation.nowMs || 0)) };
 }
 
 function formatCountdown(ms) {
@@ -5933,7 +5932,7 @@ function resetStateToDefaults() {
     care: {
       selectedCategory: null,
       selectedActionId: null,
-      feedback: { kind: 'info', text: 'W‰hle eine Aktion.' }
+      feedback: { kind: 'info', text: 'W√§hle eine Aktion.' }
     },
     analysis: {
       activeTab: 'overview'
@@ -6149,7 +6148,7 @@ function ensureStateIntegrity(nowMs) {
     state.ui.visibleOverlayIds = [];
   }
   if (!state.ui.care || typeof state.ui.care !== 'object') {
-    state.ui.care = { selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'W‰hle eine Aktion.' } };
+    state.ui.care = { selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'W√§hle eine Aktion.' } };
   }
   if (typeof state.ui.care.selectedCategory !== 'string') {
     state.ui.care.selectedCategory = null;
@@ -6158,7 +6157,7 @@ function ensureStateIntegrity(nowMs) {
     state.ui.care.selectedActionId = null;
   }
   if (!state.ui.care.feedback || typeof state.ui.care.feedback !== 'object') {
-    state.ui.care.feedback = { kind: 'info', text: 'W‰hle eine Aktion.' };
+    state.ui.care.feedback = { kind: 'info', text: 'W√§hle eine Aktion.' };
   }
   if (!state.ui.analysis || typeof state.ui.analysis !== 'object') {
     state.ui.analysis = { activeTab: 'overview' };
@@ -6425,8 +6424,8 @@ async function loadEventCatalog() {
     catalogs.push(normalizeEvent({
       id: 'fallback_soil_check',
       category: 'water',
-      title: 'Bodenfeuchte pr¸fen',
-      description: 'Bei der manuellen Kontrolle wurde ungleichm‰ﬂige Feuchte festgestellt.',
+      title: 'Bodenfeuchte pr√ºfen',
+      description: 'Bei der manuellen Kontrolle wurde ungleichm√§√üige Feuchte festgestellt.',
       choices: [
         { id: 'fallback_care', label: 'Ausgewogene Pflege anwenden', effects: { water: 6, stress: -2, health: 2 } },
         { id: 'fallback_wait', label: 'Einen Zyklus warten', effects: { stress: 2, risk: 2 } },
@@ -6898,7 +6897,7 @@ function scheduleNextEventRoll(nowMs, reason) {
   }
   state.events.scheduler.nextEventRealTimeMs = nextAt;
 
-  addLog('event_roll', 'N‰chster Ereigniswurf geplant', {
+  addLog('event_roll', 'N√§chster Ereigniswurf geplant', {
     reason,
     nextEventAtMs: nextAt,
     simDaytime: state.simulation.isDaytime
@@ -6955,7 +6954,7 @@ function showServiceWorkerHint() {
   const banner = document.createElement('div');
   banner.id = 'swHintBanner';
   banner.className = 'boot-error-banner boot-warning-banner';
-  banner.innerHTML = '<strong>Service Worker noch nicht aktiv ñ bitte einmal normal neu laden.</strong>';
+  banner.innerHTML = '<strong>Service Worker noch nicht aktiv ‚Äì bitte einmal normal neu laden.</strong>';
   document.body.appendChild(banner);
 }
 
@@ -7025,7 +7024,7 @@ function notifyEventAvailability() {
     return;
   }
 
-  notify('events', 'Grow Simulator', 'Ein Ereignis ist verf¸gbar. Tippe, um zu reagieren.');
+  notify('events', 'Grow Simulator', 'Ein Ereignis ist verf√ºgbar. Tippe, um zu reagieren.');
   notifications.runtime.lastNotifiedEventId = eventId;
 }
 
@@ -7087,7 +7086,7 @@ function notifyReminder(nowMs) {
     return;
   }
 
-  notify('reminder', 'Grow Simulator', 'Deine Pflanze braucht Pflege. ÷ffne die App f¸r eine Maﬂnahme.');
+  notify('reminder', 'Grow Simulator', 'Deine Pflanze braucht Pflege. √ñffne die App f√ºr eine Ma√ünahme.');
   notifications.runtime.lastReminderAtRealMs = nowMs;
 }
 
@@ -7213,6 +7212,7 @@ function appPath(relativePath) {
   const normalized = String(relativePath || '').replace(/^\//, '');
   return `./${normalized}`;
 }
+
 window.checkMissions = function(triggerType, payload) {
   if (!state.missions || !state.missions.catalog) return;
   const nowMs = Date.now();
@@ -7256,12 +7256,12 @@ window.completeMission = function(mission) {
     if (mission.reward.stars) state.meta.inventory.stars += mission.reward.stars;
   }
   if (typeof addLog === 'function') {
-    addLog('system', Mission erfllt: \, { missionId: mission.id, reward: mission.reward });
+    addLog('system', "Mission erfuellt: " + mission.title, { missionId: mission.id, reward: mission.reward });
   }
   if (typeof openMenuDialog === 'function') {
     openMenuDialog({
-      title: 'Mission erfllt! ??',
-      message: Du hast die Mission "\" abgeschlossen!,
+      title: 'Mission erfuellt! üéâ',
+      message: "Du hast die Mission " + mission.title + " abgeschlossen!",
       cancelLabel: 'OK',
       confirmLabel: null
     });
@@ -7270,8 +7270,6 @@ window.completeMission = function(mission) {
     renderMissionsSheet();
   }
 };
-
-
 
 function migrateSettings(state) {
   if (!state.settings.gameplay) {
@@ -7310,7 +7308,7 @@ function updateSettingsUI() {
 
   const autoNode = document.getElementById('settingsAutosaveValue');
   if (autoNode) {
-    autoNode.textContent = g.autosave === 0 ? 'Aus' : \Alle \m\;
+    autoNode.textContent = g.autosave === 0 ? 'Aus' : 'Alle ' + g.autosave + 'm';
     autoNode.className = g.autosave === 0 ? 'subtitle' : 'value_green';
   }
 
@@ -7369,7 +7367,7 @@ function initSettingsEvents() {
   const volEl = byId('settingsVolumeValue');
   if (volEl) {
     volEl.parentElement.addEventListener('click', () => {
-      state.settings.audio.volume = (state.settings.audio.volume + 20) % 120; // 0, 20, 40, 60, 80, 100, then back to 0
+      state.settings.audio.volume = (state.settings.audio.volume + 20) % 120;
       updateSettingsUI();
     });
     volEl.parentElement.style.cursor = 'pointer';

@@ -466,9 +466,6 @@ function resetStateToDefaults() {
   const preservedEventCatalog = Array.isArray(state.events && state.events.catalog) ? state.events.catalog.slice() : [];
   const preservedActionCatalog = Array.isArray(state.actions && state.actions.catalog) ? state.actions.catalog.slice() : [];
   const normalizedActions = preservedActionCatalog.map(normalizeAction).filter(Boolean);
-  const preservedInventory = state.meta && state.meta.inventory ? JSON.parse(JSON.stringify(state.meta.inventory)) : null;
-  const preservedMissionsCompleted = state.missions && Array.isArray(state.missions.completed) ? state.missions.completed.slice() : [];
-  const preservedMissionsCatalog = state.missions && Array.isArray(state.missions.catalog) ? state.missions.catalog.slice() : [];
 
   state.schemaVersion = '1.0.0';
   state.seed = SIM_GLOBAL_SEED;
@@ -498,8 +495,6 @@ function resetStateToDefaults() {
       lastResult: null
     }
   };
-  if (preservedInventory) state.meta.inventory = preservedInventory;
-  state.missions = { catalog: preservedMissionsCatalog, byId: Object.fromEntries(preservedMissionsCatalog.map(m => [m.id, m])), completed: preservedMissionsCompleted };
   state.history = { actions: [], events: [], system: [], systemLog: [], telemetry: [] };
   state.debug = { enabled: false, showInternalTicks: false, forceDaytime: false };
 
@@ -975,5 +970,3 @@ window.GrowSimStorage = Object.freeze({
   syncCanonicalStateShape,
   syncLegacyMirrorsFromCanonical
 });
-
-

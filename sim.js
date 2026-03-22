@@ -156,8 +156,6 @@ function tick() {
     renderSheets();
   }
 
-  if (typeof window.checkMissions === 'function') window.checkMissions('tick');
-
   renderHud();
   state.ui.lastRenderRealMs = nowMs;
   renderEventSheet();
@@ -1195,4 +1193,3 @@ async function loadActionsCatalog() {
     });
   }
 }
-
