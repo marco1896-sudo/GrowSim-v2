@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
 const HOST = '127.0.0.1';
-const PORT = 4174;
+const PORT = 4176;
 
 function contentTypeFor(filePath) {
   const ext = path.extname(filePath).toLowerCase();

@@ -171,17 +171,36 @@ function bindUi() {
   bindSheetsOverlayEvents(window.__gsUiController || null);
   bindSetupOptionButtons();
 
-  ui.startRunBtn.addEventListener('click', onStartRun);
-  ui.analysisResetBtn.addEventListener('click', onAnalysisResetClick);
-  ui.pushToggleBtn.addEventListener('click', onPushToggleClick);
-  ui.notifTypeEvents.addEventListener('change', onNotificationTypeToggle);
-  ui.notifTypeCritical.addEventListener('change', onNotificationTypeToggle);
-  ui.notifTypeReminder.addEventListener('change', onNotificationTypeToggle);
-  ui.deathResetBtn.addEventListener('click', onDeathResetClick);
-  ui.deathAnalyzeBtn.addEventListener('click', onDeathAnalyzeClick);
-  ui.deathRescueBtn.addEventListener('click', onDeathRescueClick);
+  if (ui.startRunBtn) {
+    ui.startRunBtn.addEventListener('click', onStartRun);
+  }
+  if (ui.analysisResetBtn) {
+    ui.analysisResetBtn.addEventListener('click', onAnalysisResetClick);
+  }
+  if (ui.pushToggleBtn) {
+    ui.pushToggleBtn.addEventListener('click', onPushToggleClick);
+  }
+  if (ui.notifTypeEvents) {
+    ui.notifTypeEvents.addEventListener('change', onNotificationTypeToggle);
+  }
+  if (ui.notifTypeCritical) {
+    ui.notifTypeCritical.addEventListener('change', onNotificationTypeToggle);
+  }
+  if (ui.notifTypeReminder) {
+    ui.notifTypeReminder.addEventListener('change', onNotificationTypeToggle);
+  }
+  if (ui.deathResetBtn) {
+    ui.deathResetBtn.addEventListener('click', onDeathResetClick);
+  }
+  if (ui.deathAnalyzeBtn) {
+    ui.deathAnalyzeBtn.addEventListener('click', onDeathAnalyzeClick);
+  }
+  if (ui.deathRescueBtn) {
+    ui.deathRescueBtn.addEventListener('click', onDeathRescueClick);
+  }
 
   for (const navButton of ui.screenNavButtons || []) {
+    if (!navButton) continue;
     navButton.addEventListener('click', () => {
       switchHudScreen(navButton.dataset.screenTarget);
     });

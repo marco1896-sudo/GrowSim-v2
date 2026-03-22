@@ -72,7 +72,8 @@ function loadSimContext() {
       status: { health: 85, stress: 15, risk: 20, water: 70, nutrition: 65, growth: 0 },
       events: { machineState: 'idle', scheduler: { nextEventRealTimeMs: 0 } },
       boost: { dayStamp: '2026-01-01', boostUsedToday: 0 },
-      debug: { enabled: false, showInternalTicks: false }
+      debug: { enabled: false, showInternalTicks: false },
+      history: { telemetry: [] } // Added history with telemetry
     }
   };
 
