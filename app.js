@@ -6143,7 +6143,7 @@ function ensureStateIntegrity(nowMs) {
     state.history.events = [];
   }
 
-  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis']);
+  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis', 'statDetail']);
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }

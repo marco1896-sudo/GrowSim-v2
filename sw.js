@@ -23,7 +23,12 @@ const APP_SHELL_FILES = [
   appPath('src/events/eventMemory.js'),
   appPath('src/events/eventAnalysis.js'),
   appPath('src/events/eventResolver.js'),
-  appPath('src/ui/components/hudPanels.js'),
+  appPath('src/ui/components/primitives.js'),
+  appPath('src/ui/controller/uiController.js'),
+  appPath('src/ui/runtime/screenRuntimeManager.js'),
+  appPath('src/ui/mappings/homeMapping.js'),
+  appPath('src/ui/mappings/careMapping.js'),
+  appPath('src/ui/screens/screenModules.js'),
   appPath('manifest.webmanifest'),
   appPath('data/events.json'),
   appPath('data/events.v2.json'),
@@ -35,8 +40,8 @@ const APP_SHELL_FILES = [
   appPath('assets/backgrounds/bg_dark_01.jpg'),
   appPath('assets/backgrounds/bg_dark_02.jpg'),
   appPath('assets/ui/backgrounds/Basic screen.jpg'),
-  appPath('assets/ui/backgrounds/Basic screen.png'),
-  appPath('assets/ui/backgrounds/stage_forest_main.webp')
+  appPath('assets/backgrounds/Basic screen.png'),
+  appPath('assets/backgrounds/stage_forest_main.webp')
 ];
 
 self.addEventListener('install', (event) => {
