@@ -5037,7 +5037,40 @@ body.panelized-ready :is(
   padding-top: 6px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: grid;
+  gap: 8px;
+}
+
+.home-env-microcopy {
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.45;
+  color: rgba(201, 230, 208, 0.86);
+}
+
+.home-env-controls-section {
+  display: grid;
   gap: 4px;
+  padding: 6px 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.home-env-controls-section--advanced {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(178, 222, 189, 0.08);
+}
+
+.home-env-controls-section--root {
+  background: rgba(143, 188, 165, 0.04);
+}
+
+.home-env-section-title {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(181, 226, 192, 0.78);
 }
 
 .home-env-control {
@@ -5064,7 +5097,7 @@ body.panelized-ready :is(
 
 .home-env-note {
   display: block;
-  margin-top: -1px;
+  margin-top: 0;
   margin-bottom: 3px;
   font-size: 8px;
   color: rgba(180, 225, 190, 0.86);

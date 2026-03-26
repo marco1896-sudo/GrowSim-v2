@@ -467,7 +467,9 @@ function buildEventConstraintSnapshot() {
   const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
   const environment = deriveEnvironmentReadout();
   const roots = deriveRootZoneReadout(environment);
-  const airflowScore = environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+  const airflowScore = Number.isFinite(Number(environment.airflowScore))
+    ? clamp(Number(environment.airflowScore), 0, 100)
+    : (environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30));
 
   const plantSize = clamp(((stageIndexOneBased - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
   const rootMass = clamp(((stageIndexOneBased - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
@@ -699,7 +701,11 @@ function resolveTriggerField(fieldPath) {
   if (fieldPath === 'env.temperatureC') return environment.temperatureC;
   if (fieldPath === 'env.humidityPercent') return environment.humidityPercent;
   if (fieldPath === 'env.vpdKpa') return environment.vpdKpa;
-  if (fieldPath === 'env.airflowScore') return environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+  if (fieldPath === 'env.airflowScore') {
+    return Number.isFinite(Number(environment.airflowScore))
+      ? clamp(Number(environment.airflowScore), 0, 100)
+      : (environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30));
+  }
 
   const roots = deriveRootZoneReadout(environment);
   if (fieldPath === 'root.ph') return Number(roots.ph);
@@ -933,7 +939,9 @@ function computeEnvironmentEventPressure() {
   const tempPressure = clamp(Math.abs(Number(env.temperatureC) - 25) / 10, 0, 1);
   const humidityPressure = clamp(Math.abs(Number(env.humidityPercent) - 58) / 28, 0, 1);
   const vpdPressure = clamp(Math.abs(Number(env.vpdKpa) - 1.15) / 1.0, 0, 1);
-  const airflowScore = env.airflowLabel === 'Good' ? 80 : (env.airflowLabel === 'Mittel' ? 55 : 30);
+  const airflowScore = Number.isFinite(Number(env.airflowScore))
+    ? clamp(Number(env.airflowScore), 0, 100)
+    : (env.airflowLabel === 'Good' ? 80 : (env.airflowLabel === 'Mittel' ? 55 : 30));
   const airflowPressure = clamp((60 - airflowScore) / 60, 0, 1);
 
   const ph = Number(root.ph);

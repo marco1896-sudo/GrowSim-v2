@@ -48,6 +48,31 @@ function normalizePendingChainsForStorage(store) {
   return Object.fromEntries(trimmed.map((record) => [record.chainId, record]));
 }
 
+function getClimateApi() {
+  const api = window.GrowSimEnvModel;
+  return api && typeof api === 'object' ? api : null;
+}
+
+function normalizeEnvironmentState(snapshot = state) {
+  const s = snapshot || state;
+  const climateApi = getClimateApi();
+
+  if (climateApi && typeof climateApi.normalizeEnvironmentControls === 'function') {
+    climateApi.normalizeEnvironmentControls(s);
+    if (typeof climateApi.ensureClimateState === 'function') {
+      climateApi.ensureClimateState(s, s.status, s.simulation, s.plant);
+    }
+    return;
+  }
+
+  if (!s.environmentControls || typeof s.environmentControls !== 'object') {
+    s.environmentControls = { temperatureC: 25, humidityPercent: 60, airflowPercent: 70, ph: 6.0, ec: 1.4 };
+  }
+  if (!s.climate || typeof s.climate !== 'object') {
+    s.climate = {};
+  }
+}
+
 function getCanonicalSimulation(snapshot) {
   const s = snapshot || state;
   if (!s.simulation || typeof s.simulation !== 'object') {
@@ -313,6 +338,18 @@ async function restoreState() {
   if (saved.status && typeof saved.status === 'object') {
     Object.assign(state.status, saved.status);
   }
+  if (saved.environmentControls && typeof saved.environmentControls === 'object') {
+    state.environmentControls = {
+      ...(state.environmentControls && typeof state.environmentControls === 'object' ? state.environmentControls : {}),
+      ...saved.environmentControls
+    };
+  }
+  if (saved.climate && typeof saved.climate === 'object') {
+    state.climate = {
+      ...(state.climate && typeof state.climate === 'object' ? state.climate : {}),
+      ...saved.climate
+    };
+  }
   if (saved.boost && typeof saved.boost === 'object') {
     Object.assign(state.boost, saved.boost);
   }
@@ -348,6 +385,7 @@ async function restoreState() {
   }
 
   migrateLegacyStateIntoCanonical(saved, state);
+  normalizeEnvironmentState(state);
 }
 
 function migrateLegacyStateIntoCanonical(saved, targetState) {
@@ -531,6 +569,11 @@ function resetStateToDefaults() {
       lastResult: null
     }
   };
+  const climateApi = getClimateApi();
+  state.environmentControls = climateApi && typeof climateApi.getEnvironmentControlDefaults === 'function'
+    ? climateApi.getEnvironmentControlDefaults()
+    : { temperatureC: 25, humidityPercent: 60, airflowPercent: 70, ph: 6.0, ec: 1.4 };
+  state.climate = {};
   state.history = { actions: [], events: [], system: [], systemLog: [], telemetry: [] };
   state.debug = { enabled: false, showInternalTicks: false, forceDaytime: false };
 
@@ -650,6 +693,7 @@ function resetStateToDefaults() {
   state.lastEventId = null;
   state.lastChoiceId = null;
   state.historyLog = [];
+  normalizeEnvironmentState(state);
 }
 
 function ensureStateIntegrity(nowMs) {
@@ -799,6 +843,7 @@ function ensureStateIntegrity(nowMs) {
   settings.pushNotificationsEnabled = Boolean(settings.pushNotificationsEnabled);
 
   state.setup = normalizeSetupState(state.setup, state.simulation);
+  normalizeEnvironmentState(state);
 
   if (!state.events || typeof state.events !== 'object') {
     state.events = { scheduler: {}, active: null, history: [] };
@@ -833,7 +878,7 @@ function ensureStateIntegrity(nowMs) {
     state.history.events = [];
   }
 
-  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis']);
+  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis', 'statDetail']);
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }

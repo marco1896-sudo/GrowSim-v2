@@ -151,4 +151,238 @@ function loadSimContext() {
   assert.ok(healthyImpulse > degradedImpulse, 'eco efficiency should reduce growth impulse under bad conditions');
 })();
 
+(function testRelativeHumidityRespondsToTemperatureAtFixedMoistureMass() {
+  const ctx = loadSimContext();
+
+  ctx.state.environmentControls = ctx.getEnvironmentControlDefaults();
+  ctx.state.climate = {};
+  ctx.state.setup = { mode: 'indoor', light: 'medium' };
+  ctx.ensureClimateState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  const fixedAbsoluteHumidity = ctx.absoluteHumidityFromRelativeHumidity(24, 60);
+  ctx.state.climate.tent.temperatureC = 24;
+  ctx.state.climate.tent.absoluteHumidityGm3 = fixedAbsoluteHumidity;
+  let readout = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  const rhAt24 = readout.humidityPercent;
+
+  ctx.state.climate.tent.temperatureC = 28;
+  ctx.state.climate.tent.absoluteHumidityGm3 = fixedAbsoluteHumidity;
+  readout = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  const rhAt28 = readout.humidityPercent;
+
+  assert.ok(rhAt28 < rhAt24, 'relative humidity should drop when temperature rises at fixed moisture mass');
+})();
+
+(function testRoomExchangePullsTentTowardAmbientIncrementally() {
+  const ctx = loadSimContext();
+
+  ctx.state.environmentControls = ctx.getEnvironmentControlDefaults();
+  ctx.state.environmentControls.fan.minPercent = 85;
+  ctx.state.environmentControls.fan.maxPercent = 100;
+  ctx.state.environmentControls.airflowPercent = 85;
+  ctx.state.environmentControls.targets.day.temperatureC = 24;
+  ctx.state.environmentControls.targets.day.humidityPercent = 55;
+  ctx.state.environmentControls.temperatureC = 24;
+  ctx.state.environmentControls.humidityPercent = 55;
+  ctx.state.climate = {};
+  ctx.state.setup = { mode: 'indoor', light: 'medium' };
+
+  ctx.ensureClimateState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  ctx.state.climate.tent.temperatureC = 30;
+  ctx.state.climate.tent.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(30, 68);
+  ctx.state.climate.room.current.temperatureC = 22;
+  ctx.state.climate.room.current.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(22, 48);
+
+  const beforeTemp = ctx.state.climate.tent.temperatureC;
+  const beforeAbsHumidity = ctx.state.climate.tent.absoluteHumidityGm3;
+
+  ctx.updateClimateState(10, ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  assert.ok(ctx.state.climate.tent.temperatureC < beforeTemp, 'tent temperature should move toward room temperature');
+  assert.ok(ctx.state.climate.tent.absoluteHumidityGm3 < beforeAbsHumidity, 'tent moisture should move toward room moisture');
+  assert.ok(ctx.state.climate.tent.temperatureC > ctx.state.climate.room.current.temperatureC, 'tent temperature should not jump directly to room temperature');
+})();
+
+(function testDefaultIndoorClimateKeepsQuarterHourInertia() {
+  const ctx = loadSimContext();
+
+  ctx.state.environmentControls = ctx.getEnvironmentControlDefaults();
+  ctx.state.climate = {};
+  ctx.state.setup = { mode: 'indoor', light: 'medium' };
+  ctx.state.simulation.isDaytime = true;
+  ctx.ensureClimateState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  ctx.state.climate.tent.temperatureC = 25;
+  ctx.state.climate.tent.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(25, 60);
+  ctx.state.climate.tent.humidityPercent = 60;
+  ctx.state.climate.tent.vpdKpa = ctx.round2(ctx.computeVpdKpa(25, 60));
+  ctx.state.climate.room.current.temperatureC = ctx.state.climate.room.day.temperatureC;
+  ctx.state.climate.room.current.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(
+    ctx.state.climate.room.day.temperatureC,
+    ctx.state.climate.room.day.humidityPercent
+  );
+  ctx.state.climate.runtime.activePeriod = 'day';
+  ctx.state.climate.runtime.transitionFromPeriod = 'day';
+  ctx.state.climate.runtime.targetBlend = 1;
+
+  ctx.updateClimateState(15, ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  assert.ok(ctx.state.climate.tent.temperatureC > 24, 'default indoor tent should keep thermal inertia over 15 minutes');
+  assert.ok(ctx.state.climate.tent.temperatureC < 25.5, 'default indoor tent should not heat unrealistically fast over 15 minutes');
+  assert.ok(ctx.state.climate.tent.humidityPercent >= 55, 'default indoor tent should not dump humidity too aggressively over 15 minutes');
+})();
+
+(function testNonIndoorModesIgnoreIndoorTentRuntimeDrift() {
+  const ctx = loadSimContext();
+
+  ctx.state.environmentControls = ctx.getEnvironmentControlDefaults();
+  ctx.state.setup = { mode: 'outdoor', light: 'medium' };
+  ctx.state.climate = {
+    tent: {
+      volumeM3: 1.28,
+      temperatureC: 18,
+      absoluteHumidityGm3: ctx.absoluteHumidityFromRelativeHumidity(18, 40),
+      humidityPercent: 40,
+      vpdKpa: ctx.round2(ctx.computeVpdKpa(18, 40)),
+      airflowScore: 15,
+      airflowLabel: 'Schwach',
+      exchangePerMinute: 0.07,
+      transpirationGph: 4
+    },
+    devices: {
+      light: { enabled: true, targetPercent: 80, outputPercent: 80 },
+      exhaust: { enabled: true, targetPercent: 100, outputPercent: 100 },
+      circulation: { enabled: true, targetPercent: 100, outputPercent: 100 },
+      heater: { enabled: true, targetPercent: 100, outputPercent: 100 },
+      humidifier: { enabled: true, targetPercent: 100, outputPercent: 100 },
+      dehumidifier: { enabled: true, targetPercent: 100, outputPercent: 100 }
+    },
+    room: {
+      day: { temperatureC: 23, humidityPercent: 52 },
+      night: { temperatureC: 20, humidityPercent: 58 },
+      current: {
+        temperatureC: 18,
+        absoluteHumidityGm3: ctx.absoluteHumidityFromRelativeHumidity(18, 40)
+      }
+    },
+    runtime: {
+      activePeriod: 'day',
+      transitionFromPeriod: 'day',
+      targetBlend: 1,
+      lastPeriodSwitchSimMs: 0,
+      controlDemand: {}
+    }
+  };
+
+  ctx.updateClimateState(30, ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  const readout = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  assert.strictEqual(readout.temperatureC, ctx.state.environmentControls.temperatureC, 'non-indoor readout should follow legacy temperature controls');
+  assert.strictEqual(readout.humidityPercent, ctx.state.environmentControls.humidityPercent, 'non-indoor readout should follow legacy humidity controls');
+  assert.strictEqual(readout.airflowScore, ctx.state.environmentControls.airflowPercent, 'non-indoor readout should follow legacy airflow controls');
+  assert.strictEqual(ctx.state.climate.tent.exchangePerMinute, 0, 'non-indoor mode should not keep indoor room-exchange drift active');
+  assert.strictEqual(ctx.state.climate.tent.transpirationGph, 0, 'non-indoor mode should not keep indoor transpiration runtime active');
+  assert.strictEqual(ctx.state.climate.devices.exhaust.outputPercent, 0, 'non-indoor mode should not keep indoor exhaust runtime active');
+})();
+
+(function testRaisedDayTemperatureTargetBuildsTrustWithinAnHour() {
+  const ctx = loadSimContext();
+
+  ctx.state.environmentControls = ctx.getEnvironmentControlDefaults();
+  ctx.state.climate = {};
+  ctx.state.setup = { mode: 'indoor', light: 'medium' };
+  ctx.state.simulation.isDaytime = true;
+  ctx.ensureClimateState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  ctx.state.climate.tent.temperatureC = 25;
+  ctx.state.climate.tent.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(25, 60);
+  ctx.state.climate.tent.humidityPercent = 60;
+  ctx.state.climate.tent.vpdKpa = ctx.round2(ctx.computeVpdKpa(25, 60));
+  ctx.state.climate.room.current.temperatureC = ctx.state.climate.room.day.temperatureC;
+  ctx.state.climate.room.current.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(
+    ctx.state.climate.room.day.temperatureC,
+    ctx.state.climate.room.day.humidityPercent
+  );
+  ctx.state.climate.runtime.activePeriod = 'day';
+  ctx.state.climate.runtime.transitionFromPeriod = 'day';
+  ctx.state.climate.runtime.targetBlend = 1;
+
+  ctx.state.environmentControls.targets.day.temperatureC = 29;
+  ctx.updateClimateState(60, ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  assert.ok(ctx.state.climate.tent.temperatureC > 25.15, 'raised day temperature target should move the tent meaningfully upward within an hour');
+  assert.ok(ctx.state.climate.devices.heater.outputPercent > 0, 'heater should participate when indoor tent sits below target');
+})();
+
+(function testHumidityTargetChangeDoesNotInstantlySnapActualTentRh() {
+  const ctx = loadSimContext();
+
+  ctx.state.environmentControls = ctx.getEnvironmentControlDefaults();
+  ctx.state.climate = {};
+  ctx.state.setup = { mode: 'indoor', light: 'medium' };
+  ctx.state.simulation.isDaytime = true;
+  ctx.ensureClimateState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  ctx.state.climate.tent.temperatureC = 25;
+  ctx.state.climate.tent.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(25, 69);
+  ctx.state.climate.tent.humidityPercent = 69;
+  ctx.state.climate.tent.vpdKpa = ctx.round2(ctx.computeVpdKpa(25, 69));
+  ctx.state.climate.room.current.temperatureC = ctx.state.climate.room.day.temperatureC;
+  ctx.state.climate.room.current.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(
+    ctx.state.climate.room.day.temperatureC,
+    ctx.state.climate.room.day.humidityPercent
+  );
+  ctx.state.climate.runtime.activePeriod = 'day';
+  ctx.state.climate.runtime.transitionFromPeriod = 'day';
+  ctx.state.climate.runtime.targetBlend = 1;
+
+  const before = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  ctx.state.environmentControls.targets.day.humidityPercent = 62;
+  ctx.normalizeEnvironmentControls(ctx.state);
+  const immediate = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  assert.strictEqual(before.humidityPercent, 69, 'test setup should start from the actual tent RH');
+  assert.strictEqual(immediate.humidityPercent, 69, 'changing RH target must not instantly snap actual tent RH');
+
+  ctx.updateClimateState(15, ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  const after = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  assert.ok(after.humidityPercent < immediate.humidityPercent, 'actual tent RH should start moving gradually after the target change');
+  assert.ok(after.humidityPercent > 62, 'actual tent RH should not instantly converge to the new target');
+})();
+
+(function testTemperatureTargetChangeDoesNotInstantlySnapActualTentTemp() {
+  const ctx = loadSimContext();
+
+  ctx.state.environmentControls = ctx.getEnvironmentControlDefaults();
+  ctx.state.climate = {};
+  ctx.state.setup = { mode: 'indoor', light: 'medium' };
+  ctx.state.simulation.isDaytime = true;
+  ctx.ensureClimateState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  ctx.state.climate.tent.temperatureC = 24.4;
+  ctx.state.climate.tent.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(24.4, 60);
+  ctx.state.climate.tent.humidityPercent = 60;
+  ctx.state.climate.tent.vpdKpa = ctx.round2(ctx.computeVpdKpa(24.4, 60));
+  ctx.state.climate.room.current.temperatureC = ctx.state.climate.room.day.temperatureC;
+  ctx.state.climate.room.current.absoluteHumidityGm3 = ctx.absoluteHumidityFromRelativeHumidity(
+    ctx.state.climate.room.day.temperatureC,
+    ctx.state.climate.room.day.humidityPercent
+  );
+  ctx.state.climate.runtime.activePeriod = 'day';
+  ctx.state.climate.runtime.transitionFromPeriod = 'day';
+  ctx.state.climate.runtime.targetBlend = 1;
+
+  const before = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  ctx.state.environmentControls.targets.day.temperatureC = 29;
+  ctx.normalizeEnvironmentControls(ctx.state);
+  const immediate = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+
+  assert.strictEqual(immediate.temperatureC, before.temperatureC, 'changing temperature target must not instantly snap actual tent temperature');
+
+  ctx.updateClimateState(30, ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  const after = ctx.buildEnvironmentReadoutFromState(ctx.state, ctx.state.status, ctx.state.simulation, ctx.state.plant);
+  assert.ok(after.temperatureC > immediate.temperatureC, 'actual tent temperature should rise gradually after a higher target is set');
+  assert.ok(after.temperatureC < 29, 'actual tent temperature should not instantly converge to the new target');
+})();
+
 console.log('environment-core regression tests passed');

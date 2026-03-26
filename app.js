@@ -216,6 +216,7 @@ const state = {
     ph: 6.0,
     ec: 1.4
   },
+  climate: {},
   simulation: {
     nowMs: now,
     startRealTimeMs: now,
@@ -1376,7 +1377,9 @@ function buildEventConstraintSnapshot() {
   const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
   const environment = deriveEnvironmentReadout();
   const roots = deriveRootZoneReadout(environment);
-  const airflowScore = environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+  const airflowScore = Number.isFinite(Number(environment.airflowScore))
+    ? clamp(Number(environment.airflowScore), 0, 100)
+    : (environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30));
 
   const plantSize = clamp(((stageIndexOneBased - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
   const rootMass = clamp(((stageIndexOneBased - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
@@ -1608,7 +1611,11 @@ function resolveTriggerField(fieldPath) {
   if (fieldPath === 'env.temperatureC') return environment.temperatureC;
   if (fieldPath === 'env.humidityPercent') return environment.humidityPercent;
   if (fieldPath === 'env.vpdKpa') return environment.vpdKpa;
-  if (fieldPath === 'env.airflowScore') return environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+  if (fieldPath === 'env.airflowScore') {
+    return Number.isFinite(Number(environment.airflowScore))
+      ? clamp(Number(environment.airflowScore), 0, 100)
+      : (environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30));
+  }
 
   const roots = deriveRootZoneReadout(environment);
   if (fieldPath === 'root.ph') return Number(roots.ph);
@@ -1914,7 +1921,9 @@ function computeEnvironmentEventPressure() {
   const tempPressure = clamp(Math.abs(Number(env.temperatureC) - 25) / 10, 0, 1);
   const humidityPressure = clamp(Math.abs(Number(env.humidityPercent) - 58) / 28, 0, 1);
   const vpdPressure = clamp(Math.abs(Number(env.vpdKpa) - 1.15) / 1.0, 0, 1);
-  const airflowScore = env.airflowLabel === 'Good' ? 80 : (env.airflowLabel === 'Mittel' ? 55 : 30);
+  const airflowScore = Number.isFinite(Number(env.airflowScore))
+    ? clamp(Number(env.airflowScore), 0, 100)
+    : (env.airflowLabel === 'Good' ? 80 : (env.airflowLabel === 'Mittel' ? 55 : 30));
   const airflowPressure = clamp((60 - airflowScore) / 60, 0, 1);
 
   const ph = Number(root.ph);
@@ -2888,16 +2897,41 @@ function renderPanelReadouts(homeVm = null) {
     }
   };
 
-  setText('envCtrlTempOut', `${controls.temperatureC.toFixed(1)}°C`);
-  setText('envCtrlHumidityOut', `${controls.humidityPercent}%`);
-  setText('envCtrlAirflowOut', `${controls.airflowPercent}%`);
+  setText('envCtrlTempOut', `${controls.targets.day.temperatureC.toFixed(1)}°C`);
+  setText('envCtrlHumidityOut', `${controls.targets.day.humidityPercent}%`);
+  setText('envCtrlAirflowOut', `${controls.fan.minPercent}%`);
+  setText('envCtrlNightTempOut', `${controls.targets.night.temperatureC.toFixed(1)}°C`);
+  setText('envCtrlNightHumidityOut', `${controls.targets.night.humidityPercent}%`);
+  setText('envCtrlDayVpdOut', `${controls.targets.day.vpdKpa.toFixed(2)} kPa`);
+  setText('envCtrlNightVpdOut', `${controls.targets.night.vpdKpa.toFixed(2)} kPa`);
+  setText('envCtrlFanMaxOut', `${controls.fan.maxPercent}%`);
+  setText('envCtrlTempBufferOut', `${controls.buffers.temperatureC.toFixed(1)}°C`);
+  setText('envCtrlHumidityBufferOut', `${controls.buffers.humidityPercent}%`);
+  setText('envCtrlVpdBufferOut', `${controls.buffers.vpdKpa.toFixed(2)} kPa`);
+  setText('envCtrlRampOut', `${Math.round(controls.ramp.percentPerMinute)}%/min`);
+  setText('envCtrlTransitionOut', `${Math.round(controls.transitionMinutes)} min`);
+  setText('envCtrlVpdEnabledOut', controls.vpdTargetEnabled ? 'An' : 'Aus');
   setText('envCtrlPhOut', `${controls.ph.toFixed(1)}`);
   setText('envCtrlEcOut', `${controls.ec.toFixed(1)} mS`);
   setText('envCtrlEcHint', 'nur über mineralisches Düngen');
 
-  setRange('envCtrlTemp', controls.temperatureC.toFixed(1));
-  setRange('envCtrlHumidity', controls.humidityPercent);
-  setRange('envCtrlAirflow', controls.airflowPercent);
+  setRange('envCtrlTemp', controls.targets.day.temperatureC.toFixed(1));
+  setRange('envCtrlHumidity', controls.targets.day.humidityPercent);
+  setRange('envCtrlAirflow', controls.fan.minPercent);
+  setRange('envCtrlNightTemp', controls.targets.night.temperatureC.toFixed(1));
+  setRange('envCtrlNightHumidity', controls.targets.night.humidityPercent);
+  setRange('envCtrlDayVpd', controls.targets.day.vpdKpa.toFixed(2));
+  setRange('envCtrlNightVpd', controls.targets.night.vpdKpa.toFixed(2));
+  setRange('envCtrlFanMax', controls.fan.maxPercent);
+  setRange('envCtrlTempBuffer', controls.buffers.temperatureC.toFixed(1));
+  setRange('envCtrlHumidityBuffer', controls.buffers.humidityPercent);
+  setRange('envCtrlVpdBuffer', controls.buffers.vpdKpa.toFixed(2));
+  setRange('envCtrlRamp', Math.round(controls.ramp.percentPerMinute));
+  setRange('envCtrlTransition', Math.round(controls.transitionMinutes));
+  const vpdToggle = document.getElementById('envCtrlVpdEnabled');
+  if (vpdToggle && document.activeElement !== vpdToggle) {
+    vpdToggle.checked = Boolean(controls.vpdTargetEnabled);
+  }
   setRange('envCtrlPh', controls.ph.toFixed(1));
 }
 
@@ -2907,17 +2941,34 @@ window.GrowSimHomeRenderer = Object.freeze({
 });
 
 function getEnvironmentControlDefaults() {
+  const envApi = window.GrowSimEnvModel;
+  if (envApi && typeof envApi.getEnvironmentControlDefaults === 'function') {
+    return envApi.getEnvironmentControlDefaults();
+  }
   return {
     temperatureC: 25,
     humidityPercent: 60,
     airflowPercent: 70,
     ph: 6.0,
-    ec: 1.4
+    ec: 1.4,
+    targets: {
+      day: { temperatureC: 25, humidityPercent: 60, vpdKpa: 1.2 },
+      night: { temperatureC: 21, humidityPercent: 55, vpdKpa: 1.1 }
+    },
+    vpdTargetEnabled: false,
+    fan: { minPercent: 70, maxPercent: 100 },
+    buffers: { temperatureC: 0.7, humidityPercent: 4, vpdKpa: 0.12 },
+    ramp: { percentPerMinute: 18 },
+    transitionMinutes: 45
   };
 }
 
 function ensureEnvironmentControls(sourceState = state) {
   const target = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const envApi = window.GrowSimEnvModel;
+  if (envApi && typeof envApi.normalizeEnvironmentControls === 'function') {
+    return envApi.normalizeEnvironmentControls(target);
+  }
   if (!target.environmentControls || typeof target.environmentControls !== 'object') {
     target.environmentControls = getEnvironmentControlDefaults();
   }
@@ -2927,13 +2978,32 @@ function ensureEnvironmentControls(sourceState = state) {
   controls.airflowPercent = clampInt(Number(controls.airflowPercent), 0, 100);
   controls.ph = clamp(Number(controls.ph), 5.0, 7.0);
   controls.ec = clamp(Number(controls.ec), 0.6, 2.8);
+  if (!controls.targets || typeof controls.targets !== 'object') controls.targets = {};
+  if (!controls.targets.day || typeof controls.targets.day !== 'object') controls.targets.day = {};
+  if (!controls.targets.night || typeof controls.targets.night !== 'object') controls.targets.night = {};
+  controls.targets.day.temperatureC = clamp(Number(controls.targets.day.temperatureC || controls.temperatureC), 16, 36);
+  controls.targets.day.humidityPercent = clampInt(Number(controls.targets.day.humidityPercent || controls.humidityPercent), 30, 90);
+  controls.targets.day.vpdKpa = clamp(Number(controls.targets.day.vpdKpa || 1.2), 0.2, 3.0);
+  controls.targets.night.temperatureC = clamp(Number(controls.targets.night.temperatureC || 21), 16, 36);
+  controls.targets.night.humidityPercent = clampInt(Number(controls.targets.night.humidityPercent || 55), 30, 90);
+  controls.targets.night.vpdKpa = clamp(Number(controls.targets.night.vpdKpa || 1.1), 0.2, 3.0);
+  controls.vpdTargetEnabled = Boolean(controls.vpdTargetEnabled);
+  if (!controls.fan || typeof controls.fan !== 'object') controls.fan = {};
+  controls.fan.minPercent = clampInt(Number(controls.fan.minPercent || controls.airflowPercent), 0, 100);
+  controls.fan.maxPercent = clampInt(Number(controls.fan.maxPercent || 100), controls.fan.minPercent, 100);
+  if (!controls.buffers || typeof controls.buffers !== 'object') controls.buffers = {};
+  controls.buffers.temperatureC = clamp(Number(controls.buffers.temperatureC || 0.7), 0.1, 4);
+  controls.buffers.humidityPercent = clampInt(Number(controls.buffers.humidityPercent || 4), 1, 20);
+  controls.buffers.vpdKpa = clamp(Number(controls.buffers.vpdKpa || 0.12), 0.02, 0.6);
+  if (!controls.ramp || typeof controls.ramp !== 'object') controls.ramp = {};
+  controls.ramp.percentPerMinute = clamp(Number(controls.ramp.percentPerMinute || 18), 1, 100);
+  controls.transitionMinutes = clamp(Number(controls.transitionMinutes || 45), 1, 180);
   return controls;
 }
 
 function deriveAirflowLabel(airflowPercent) {
-  if (airflowPercent >= 75) return 'Stark';
-  if (airflowPercent >= 45) return 'Good';
-  if (airflowPercent >= 25) return 'Mittel';
+  if (airflowPercent >= 70) return 'Good';
+  if (airflowPercent >= 40) return 'Mittel';
   return 'Schwach';
 }
 
@@ -2943,10 +3013,32 @@ function onEnvironmentControlInput(controlKey, rawValue) {
   if (!Number.isFinite(value)) {
     return;
   }
-  if (controlKey === 'temperatureC') controls.temperatureC = clamp(value, 16, 36);
-  if (controlKey === 'humidityPercent') controls.humidityPercent = clampInt(value, 30, 90);
-  if (controlKey === 'airflowPercent') controls.airflowPercent = clampInt(value, 0, 100);
+  if (controlKey === 'temperatureC') {
+    controls.targets.day.temperatureC = clamp(value, 16, 36);
+    controls.temperatureC = controls.targets.day.temperatureC;
+  }
+  if (controlKey === 'humidityPercent') {
+    controls.targets.day.humidityPercent = clampInt(value, 30, 90);
+    controls.humidityPercent = controls.targets.day.humidityPercent;
+  }
+  if (controlKey === 'airflowPercent') {
+    const safeAirflow = clampInt(value, 0, 100);
+    controls.fan.minPercent = safeAirflow;
+    controls.fan.maxPercent = Math.max(safeAirflow, clampInt(Number(controls.fan.maxPercent), safeAirflow, 100));
+    controls.airflowPercent = safeAirflow;
+  }
+  if (controlKey === 'nightTemperatureC') controls.targets.night.temperatureC = clamp(value, 16, 36);
+  if (controlKey === 'nightHumidityPercent') controls.targets.night.humidityPercent = clampInt(value, 30, 90);
+  if (controlKey === 'dayVpdKpa') controls.targets.day.vpdKpa = clamp(value, 0.2, 3.0);
+  if (controlKey === 'nightVpdKpa') controls.targets.night.vpdKpa = clamp(value, 0.2, 3.0);
+  if (controlKey === 'fanMaxPercent') controls.fan.maxPercent = clampInt(value, controls.fan.minPercent, 100);
+  if (controlKey === 'tempBufferC') controls.buffers.temperatureC = clamp(value, 0.1, 4);
+  if (controlKey === 'humidityBufferPercent') controls.buffers.humidityPercent = clampInt(value, 1, 20);
+  if (controlKey === 'vpdBufferKpa') controls.buffers.vpdKpa = clamp(value, 0.02, 0.6);
+  if (controlKey === 'rampPercentPerMinute') controls.ramp.percentPerMinute = clamp(value, 1, 100);
+  if (controlKey === 'transitionMinutes') controls.transitionMinutes = clamp(value, 1, 180);
   if (controlKey === 'ph') controls.ph = clamp(value, 5.0, 7.0);
+  if (controlKey === 'vpdTargetEnabled') controls.vpdTargetEnabled = Boolean(rawValue);
   if (controlKey === 'ec') {
     addLog('action', 'EC ist nicht direkt regelbar. Nutze mineralische Düngung.', { attemptedValue: value });
     return;
@@ -2959,27 +3051,46 @@ function deriveEnvironmentReadout(sourceState = state) {
   const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
   const controls = ensureEnvironmentControls(activeState);
   const envApi = window.GrowSimEnvModel;
-  if (envApi && typeof envApi.buildEnvironmentModelFromState === 'function') {
-    const model = envApi.buildEnvironmentModelFromState(activeState.status, activeState.simulation, activeState.plant);
-    const temperatureC = clamp(Number(controls.temperatureC), 16, 36);
-    const humidityPercent = clampInt(Number(controls.humidityPercent), 30, 90);
-    const vpdKpa = clamp(0.7 + ((temperatureC - 21) * 0.08) + ((60 - humidityPercent) * 0.012), 0.4, 2.4);
-    return {
-      temperatureC,
-      humidityPercent,
-      vpdKpa,
-      ppfd: model.ppfd,
-      airflowLabel: deriveAirflowLabel(controls.airflowPercent)
-    };
+  if (envApi && typeof envApi.buildEnvironmentReadoutFromState === 'function') {
+    return envApi.buildEnvironmentReadoutFromState(activeState, activeState.status, activeState.simulation, activeState.plant);
   }
 
   const isDay = Boolean(activeState.simulation && activeState.simulation.isDaytime);
-  const temperatureC = clamp(Number(controls.temperatureC), 16, 36);
-  const humidityPercent = clampInt(Number(controls.humidityPercent), 30, 90);
+  const tentClimate = activeState.climate && activeState.climate.tent && typeof activeState.climate.tent === 'object'
+    ? activeState.climate.tent
+    : null;
+  const temperatureC = clamp(
+    Number.isFinite(Number(tentClimate && tentClimate.temperatureC))
+      ? Number(tentClimate.temperatureC)
+      : Number(controls.temperatureC),
+    10,
+    40
+  );
+  const humidityPercent = clampInt(
+    Number.isFinite(Number(tentClimate && tentClimate.humidityPercent))
+      ? Number(tentClimate.humidityPercent)
+      : Number(controls.humidityPercent),
+    0,
+    100
+  );
   const vpdKpa = clamp(0.7 + ((temperatureC - 21) * 0.08) + ((60 - humidityPercent) * 0.012), 0.4, 2.4);
   const ppfd = isDay ? Math.round(clamp(550 + (Number(activeState.status && activeState.status.growth || 0) * 2.4), 420, 980)) : 45;
+  const airflowScore = clampInt(
+    Number.isFinite(Number(tentClimate && tentClimate.airflowScore))
+      ? Number(tentClimate.airflowScore)
+      : controls.airflowPercent,
+    0,
+    100
+  );
 
-  return { temperatureC, humidityPercent, vpdKpa, ppfd, airflowLabel: deriveAirflowLabel(controls.airflowPercent) };
+  return {
+    temperatureC,
+    humidityPercent,
+    vpdKpa,
+    ppfd,
+    airflowScore,
+    airflowLabel: (tentClimate && tentClimate.airflowLabel) || deriveAirflowLabel(airflowScore)
+  };
 }
 
 function deriveRootZoneReadout(environment, sourceState = state) {
@@ -6244,7 +6355,7 @@ function ensureStateIntegrity(nowMs) {
     state.history.events = [];
   }
 
-  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis']);
+  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis', 'statDetail']);
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }

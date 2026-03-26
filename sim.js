@@ -14,52 +14,401 @@ const ENV_STAGE_PROFILES = Object.freeze([
   Object.freeze({ minStage: 11, maxStage: 12, temp: [20, 26], humidity: [40, 56], vpd: [0.90, 1.55], ec: [0.8, 1.6], ph: [5.8, 6.4] })
 ]);
 
+const CLIMATE_TENT_VOLUME_M3 = 1.28;
+const CLIMATE_UPDATE_MAX_STEP_MINUTES = 5;
+const CLIMATE_ROOM_DEFAULTS = Object.freeze({
+  day: Object.freeze({ temperatureC: 23.0, humidityPercent: 52 }),
+  night: Object.freeze({ temperatureC: 20.0, humidityPercent: 58 })
+});
+const CLIMATE_BASE_EXCHANGE_PER_MINUTE = 0.0035;
+const CLIMATE_EXHAUST_EXCHANGE_FACTOR = 0.00023;
+const CLIMATE_CIRCULATION_EXCHANGE_FACTOR = 0.00004;
+const CLIMATE_MAX_EXCHANGE_PER_MINUTE = 0.08;
+
 function getEnvStageProfile(stageIndexOneBased) {
   const stage = clampInt(Number(stageIndexOneBased) || 1, 1, 12);
   return ENV_STAGE_PROFILES.find((profile) => stage >= profile.minStage && stage <= profile.maxStage) || ENV_STAGE_PROFILES[1];
 }
 
-function getEnvironmentControlsForSimulation() {
-  const controls = state && state.environmentControls && typeof state.environmentControls === 'object'
-    ? state.environmentControls
-    : {};
-  const safeTemp = Number.isFinite(Number(controls.temperatureC)) ? Number(controls.temperatureC) : 25;
-  const safeHumidity = Number.isFinite(Number(controls.humidityPercent)) ? Number(controls.humidityPercent) : 60;
-  const safeAirflow = Number.isFinite(Number(controls.airflowPercent)) ? Number(controls.airflowPercent) : 70;
-  const safePh = Number.isFinite(Number(controls.ph)) ? Number(controls.ph) : 6.0;
-  const safeEc = Number.isFinite(Number(controls.ec)) ? Number(controls.ec) : 1.4;
+function saturationVaporPressureKpa(tempC) {
+  const safeTemp = clamp(Number(tempC) || 0, -30, 60);
+  return 0.61078 * Math.exp((17.2694 * safeTemp) / (safeTemp + 237.3));
+}
+
+function absoluteHumidityFromRelativeHumidity(tempC, humidityPercent) {
+  const safeRh = clamp(Number(humidityPercent) || 0, 0, 100);
+  const saturation = saturationVaporPressureKpa(tempC);
+  const actualVaporPressureHpa = (saturation * (safeRh / 100)) * 10;
+  return clamp((216.7 * actualVaporPressureHpa) / (Number(tempC) + 273.15), 0, 80);
+}
+
+function relativeHumidityFromAbsoluteHumidity(tempC, absoluteHumidityGm3) {
+  const saturationAbs = absoluteHumidityFromRelativeHumidity(tempC, 100);
+  if (!Number.isFinite(saturationAbs) || saturationAbs <= 0) {
+    return 0;
+  }
+  return clamp((Number(absoluteHumidityGm3) / saturationAbs) * 100, 0, 100);
+}
+
+function computeVpdKpa(tempC, humidityPercent) {
+  const saturation = saturationVaporPressureKpa(tempC);
+  return clamp(saturation * (1 - (clamp(Number(humidityPercent) || 0, 0, 100) / 100)), 0, 3.5);
+}
+
+function deriveAirflowLabelFromScore(airflowScore) {
+  const safeScore = clampInt(Number(airflowScore) || 0, 0, 100);
+  if (safeScore >= 75) return 'Good';
+  if (safeScore >= 40) return 'Mittel';
+  return 'Schwach';
+}
+
+function getEnvironmentControlDefaults() {
+  const dayTemperatureC = 25;
+  const dayHumidityPercent = 60;
+  const nightTemperatureC = 21;
+  const nightHumidityPercent = 55;
 
   return {
-    temperatureC: clamp(safeTemp, 16, 36),
-    humidityPercent: clampInt(safeHumidity, 30, 90),
-    airflowPercent: clampInt(safeAirflow, 0, 100),
-    ph: clamp(safePh, 5.0, 7.0),
-    ec: clamp(safeEc, 0.6, 2.8)
+    temperatureC: dayTemperatureC,
+    humidityPercent: dayHumidityPercent,
+    airflowPercent: 70,
+    ph: 6.0,
+    ec: 1.4,
+    targets: {
+      day: {
+        temperatureC: dayTemperatureC,
+        humidityPercent: dayHumidityPercent,
+        vpdKpa: round2(computeVpdKpa(dayTemperatureC, dayHumidityPercent))
+      },
+      night: {
+        temperatureC: nightTemperatureC,
+        humidityPercent: nightHumidityPercent,
+        vpdKpa: round2(computeVpdKpa(nightTemperatureC, nightHumidityPercent))
+      }
+    },
+    vpdTargetEnabled: false,
+    fan: {
+      minPercent: 70,
+      maxPercent: 100
+    },
+    buffers: {
+      temperatureC: 0.7,
+      humidityPercent: 4,
+      vpdKpa: 0.12
+    },
+    ramp: {
+      percentPerMinute: 18
+    },
+    transitionMinutes: 45
   };
 }
 
-function buildEnvironmentModelFromState(statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant) {
-  const water = clamp(Number(statusLike.water || 0), 0, 100);
-  const stress = clamp(Number(statusLike.stress || 0), 0, 100);
-  const risk = clamp(Number(statusLike.risk || 0), 0, 100);
+function normalizeEnvironmentControls(sourceState = state) {
+  const target = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const defaults = getEnvironmentControlDefaults();
+  const controls = target.environmentControls && typeof target.environmentControls === 'object'
+    ? target.environmentControls
+    : (target.environmentControls = {});
+
+  controls.temperatureC = clamp(Number.isFinite(Number(controls.temperatureC)) ? Number(controls.temperatureC) : defaults.temperatureC, 16, 36);
+  controls.humidityPercent = clampInt(Number.isFinite(Number(controls.humidityPercent)) ? Number(controls.humidityPercent) : defaults.humidityPercent, 30, 90);
+  controls.airflowPercent = clampInt(Number.isFinite(Number(controls.airflowPercent)) ? Number(controls.airflowPercent) : defaults.airflowPercent, 0, 100);
+  controls.ph = clamp(Number.isFinite(Number(controls.ph)) ? Number(controls.ph) : defaults.ph, 5.0, 7.0);
+  controls.ec = clamp(Number.isFinite(Number(controls.ec)) ? Number(controls.ec) : defaults.ec, 0.6, 2.8);
+
+  if (!controls.targets || typeof controls.targets !== 'object') controls.targets = {};
+  if (!controls.targets.day || typeof controls.targets.day !== 'object') controls.targets.day = {};
+  if (!controls.targets.night || typeof controls.targets.night !== 'object') controls.targets.night = {};
+
+  controls.targets.day.temperatureC = clamp(
+    Number.isFinite(Number(controls.targets.day.temperatureC)) ? Number(controls.targets.day.temperatureC) : controls.temperatureC,
+    16,
+    36
+  );
+  controls.targets.day.humidityPercent = clampInt(
+    Number.isFinite(Number(controls.targets.day.humidityPercent)) ? Number(controls.targets.day.humidityPercent) : controls.humidityPercent,
+    30,
+    90
+  );
+  controls.targets.day.vpdKpa = clamp(
+    Number.isFinite(Number(controls.targets.day.vpdKpa))
+      ? Number(controls.targets.day.vpdKpa)
+      : computeVpdKpa(controls.targets.day.temperatureC, controls.targets.day.humidityPercent),
+    0.2,
+    3.0
+  );
+
+  controls.targets.night.temperatureC = clamp(
+    Number.isFinite(Number(controls.targets.night.temperatureC)) ? Number(controls.targets.night.temperatureC) : defaults.targets.night.temperatureC,
+    16,
+    36
+  );
+  controls.targets.night.humidityPercent = clampInt(
+    Number.isFinite(Number(controls.targets.night.humidityPercent)) ? Number(controls.targets.night.humidityPercent) : defaults.targets.night.humidityPercent,
+    30,
+    90
+  );
+  controls.targets.night.vpdKpa = clamp(
+    Number.isFinite(Number(controls.targets.night.vpdKpa))
+      ? Number(controls.targets.night.vpdKpa)
+      : computeVpdKpa(controls.targets.night.temperatureC, controls.targets.night.humidityPercent),
+    0.2,
+    3.0
+  );
+
+  controls.vpdTargetEnabled = Boolean(controls.vpdTargetEnabled);
+  if (!controls.fan || typeof controls.fan !== 'object') controls.fan = {};
+  controls.fan.minPercent = clampInt(Number.isFinite(Number(controls.fan.minPercent)) ? Number(controls.fan.minPercent) : controls.airflowPercent, 0, 100);
+  controls.fan.maxPercent = clampInt(Number.isFinite(Number(controls.fan.maxPercent)) ? Number(controls.fan.maxPercent) : defaults.fan.maxPercent, controls.fan.minPercent, 100);
+
+  if (!controls.buffers || typeof controls.buffers !== 'object') controls.buffers = {};
+  controls.buffers.temperatureC = clamp(Number.isFinite(Number(controls.buffers.temperatureC)) ? Number(controls.buffers.temperatureC) : defaults.buffers.temperatureC, 0.1, 4);
+  controls.buffers.humidityPercent = clampInt(Number.isFinite(Number(controls.buffers.humidityPercent)) ? Number(controls.buffers.humidityPercent) : defaults.buffers.humidityPercent, 1, 20);
+  controls.buffers.vpdKpa = clamp(Number.isFinite(Number(controls.buffers.vpdKpa)) ? Number(controls.buffers.vpdKpa) : defaults.buffers.vpdKpa, 0.02, 0.6);
+
+  if (!controls.ramp || typeof controls.ramp !== 'object') controls.ramp = {};
+  controls.ramp.percentPerMinute = clamp(Number.isFinite(Number(controls.ramp.percentPerMinute)) ? Number(controls.ramp.percentPerMinute) : defaults.ramp.percentPerMinute, 1, 100);
+  controls.transitionMinutes = clamp(Number.isFinite(Number(controls.transitionMinutes)) ? Number(controls.transitionMinutes) : defaults.transitionMinutes, 1, 180);
+
+  controls.temperatureC = controls.targets.day.temperatureC;
+  controls.humidityPercent = controls.targets.day.humidityPercent;
+  controls.airflowPercent = controls.fan.minPercent;
+
+  return controls;
+}
+
+function getEnvironmentControlsForSimulation(sourceState = state) {
+  return normalizeEnvironmentControls(sourceState);
+}
+
+function resolveLightPpfdBase(sourceState = state) {
+  const setupLight = String(sourceState && sourceState.setup && sourceState.setup.light || 'medium').toLowerCase();
+  if (setupLight === 'high') return 780;
+  if (setupLight === 'low') return 470;
+  return 620;
+}
+
+function resolveLightOutputPercent(sourceState = state, simulationLike = state.simulation) {
+  if (!(simulationLike && simulationLike.isDaytime)) {
+    return 0;
+  }
+  const setupLight = String(sourceState && sourceState.setup && sourceState.setup.light || 'medium').toLowerCase();
+  if (setupLight === 'high') return 100;
+  if (setupLight === 'low') return 62;
+  return 82;
+}
+
+function isIndoorClimateMode(sourceState = state) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  return String(activeState && activeState.setup && activeState.setup.mode || '').trim().toLowerCase() === 'indoor';
+}
+
+function lerp(start, end, t) {
+  const safeT = clamp(Number(t) || 0, 0, 1);
+  return Number(start) + ((Number(end) - Number(start)) * safeT);
+}
+
+function computeClimateAirflowScore(climate, controls, statusLike = state.status) {
+  const circulation = Number(climate.devices && climate.devices.circulation && climate.devices.circulation.outputPercent || 0);
+  const exhaust = Number(climate.devices && climate.devices.exhaust && climate.devices.exhaust.outputPercent || 0);
+  const demandFloor = Number(controls && controls.fan && controls.fan.minPercent || 0);
+  const stress = clamp(Number(statusLike && statusLike.stress || 0), 0, 100);
+  const score = Math.round((circulation * 0.55) + (exhaust * 0.35) + (demandFloor * 0.10) - (stress * 0.08));
+  return clamp(score, 0, 100);
+}
+
+function syncClimateStateToLegacyReadout(climate, controls, simulationLike = state.simulation, sourceState = state) {
+  const lightOutput = resolveLightOutputPercent(sourceState, simulationLike);
+  climate.tent.temperatureC = clamp(Number(controls.temperatureC) || 0, 10, 40);
+  climate.tent.absoluteHumidityGm3 = clamp(
+    absoluteHumidityFromRelativeHumidity(climate.tent.temperatureC, controls.humidityPercent),
+    0.5,
+    45
+  );
+  climate.tent.humidityPercent = clampInt(Number(controls.humidityPercent) || 0, 0, 100);
+  climate.tent.vpdKpa = round2(computeVpdKpa(climate.tent.temperatureC, climate.tent.humidityPercent));
+  climate.tent.exchangePerMinute = 0;
+  climate.tent.transpirationGph = 0;
+  climate.tent.airflowScore = clampInt(Number(controls.airflowPercent) || 0, 0, 100);
+  climate.tent.airflowLabel = deriveAirflowLabelFromScore(climate.tent.airflowScore);
+
+  for (const deviceKey of ['exhaust', 'circulation', 'heater', 'humidifier', 'dehumidifier']) {
+    if (!climate.devices[deviceKey] || typeof climate.devices[deviceKey] !== 'object') {
+      climate.devices[deviceKey] = {};
+    }
+    climate.devices[deviceKey].targetPercent = 0;
+    climate.devices[deviceKey].outputPercent = 0;
+  }
+  if (!climate.devices.light || typeof climate.devices.light !== 'object') {
+    climate.devices.light = {};
+  }
+  climate.devices.light.targetPercent = lightOutput;
+  climate.devices.light.outputPercent = lightOutput;
+
+  climate.runtime.controlDemand = {
+    temperatureError: 0,
+    humidityError: 0,
+    vpdError: 0,
+    targetTemperatureC: round2(climate.tent.temperatureC),
+    targetHumidityPercent: round2(climate.tent.humidityPercent),
+    targetVpdKpa: round2(climate.tent.vpdKpa)
+  };
+}
+
+function ensureClimateState(sourceState = state, statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant) {
+  const target = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = normalizeEnvironmentControls(target);
+  const sim = simulationLike || (target && target.simulation) || state.simulation;
+  const isDay = Boolean(sim && sim.isDaytime);
+  const activePeriod = isDay ? 'day' : 'night';
+
+  if (!target.climate || typeof target.climate !== 'object') target.climate = {};
+  const climate = target.climate;
+
+  if (!climate.tent || typeof climate.tent !== 'object') climate.tent = {};
+  if (!climate.room || typeof climate.room !== 'object') climate.room = {};
+  if (!climate.devices || typeof climate.devices !== 'object') climate.devices = {};
+  if (!climate.runtime || typeof climate.runtime !== 'object') climate.runtime = {};
+
+  if (!climate.room.day || typeof climate.room.day !== 'object') climate.room.day = {};
+  if (!climate.room.night || typeof climate.room.night !== 'object') climate.room.night = {};
+  if (!climate.room.current || typeof climate.room.current !== 'object') climate.room.current = {};
+
+  climate.room.day.temperatureC = clamp(Number.isFinite(Number(climate.room.day.temperatureC)) ? Number(climate.room.day.temperatureC) : CLIMATE_ROOM_DEFAULTS.day.temperatureC, 10, 36);
+  climate.room.day.humidityPercent = clampInt(Number.isFinite(Number(climate.room.day.humidityPercent)) ? Number(climate.room.day.humidityPercent) : CLIMATE_ROOM_DEFAULTS.day.humidityPercent, 20, 90);
+  climate.room.night.temperatureC = clamp(Number.isFinite(Number(climate.room.night.temperatureC)) ? Number(climate.room.night.temperatureC) : CLIMATE_ROOM_DEFAULTS.night.temperatureC, 10, 36);
+  climate.room.night.humidityPercent = clampInt(Number.isFinite(Number(climate.room.night.humidityPercent)) ? Number(climate.room.night.humidityPercent) : CLIMATE_ROOM_DEFAULTS.night.humidityPercent, 20, 90);
+
+  const activeRoom = climate.room[activePeriod];
+  climate.room.current.temperatureC = clamp(Number.isFinite(Number(climate.room.current.temperatureC)) ? Number(climate.room.current.temperatureC) : activeRoom.temperatureC, 10, 36);
+  climate.room.current.absoluteHumidityGm3 = clamp(
+    Number.isFinite(Number(climate.room.current.absoluteHumidityGm3))
+      ? Number(climate.room.current.absoluteHumidityGm3)
+      : absoluteHumidityFromRelativeHumidity(climate.room.current.temperatureC, activeRoom.humidityPercent),
+    0,
+    80
+  );
+
+  climate.tent.volumeM3 = clamp(Number.isFinite(Number(climate.tent.volumeM3)) ? Number(climate.tent.volumeM3) : CLIMATE_TENT_VOLUME_M3, 0.5, 5);
+  climate.tent.temperatureC = clamp(Number.isFinite(Number(climate.tent.temperatureC)) ? Number(climate.tent.temperatureC) : controls.temperatureC, 10, 40);
+  climate.tent.absoluteHumidityGm3 = clamp(
+    Number.isFinite(Number(climate.tent.absoluteHumidityGm3))
+      ? Number(climate.tent.absoluteHumidityGm3)
+      : absoluteHumidityFromRelativeHumidity(climate.tent.temperatureC, controls.humidityPercent),
+    0,
+    80
+  );
+  climate.tent.exchangePerMinute = clamp(Number(climate.tent.exchangePerMinute) || 0, 0, 1);
+  climate.tent.transpirationGph = clamp(Number(climate.tent.transpirationGph) || 0, 0, 25);
+
+  const deviceDefaults = {
+    light: resolveLightOutputPercent(target, sim),
+    exhaust: controls.fan.minPercent,
+    circulation: controls.fan.minPercent,
+    heater: 0,
+    humidifier: 0,
+    dehumidifier: 0
+  };
+  for (const [deviceKey, defaultTarget] of Object.entries(deviceDefaults)) {
+    if (!climate.devices[deviceKey] || typeof climate.devices[deviceKey] !== 'object') {
+      climate.devices[deviceKey] = {};
+    }
+    const device = climate.devices[deviceKey];
+    device.enabled = typeof device.enabled === 'boolean' ? device.enabled : true;
+    device.targetPercent = clamp(Number.isFinite(Number(device.targetPercent)) ? Number(device.targetPercent) : defaultTarget, 0, 100);
+    device.outputPercent = clamp(Number.isFinite(Number(device.outputPercent)) ? Number(device.outputPercent) : device.targetPercent, 0, 100);
+  }
+
+  climate.runtime.activePeriod = climate.runtime.activePeriod === 'night' ? 'night' : 'day';
+  climate.runtime.transitionFromPeriod = climate.runtime.transitionFromPeriod === 'night' ? 'night' : 'day';
+  climate.runtime.targetBlend = clamp(Number.isFinite(Number(climate.runtime.targetBlend)) ? Number(climate.runtime.targetBlend) : 1, 0, 1);
+  climate.runtime.lastPeriodSwitchSimMs = Number.isFinite(Number(climate.runtime.lastPeriodSwitchSimMs))
+    ? Number(climate.runtime.lastPeriodSwitchSimMs)
+    : Number(sim && sim.simTimeMs || 0);
+  if (!climate.runtime.controlDemand || typeof climate.runtime.controlDemand !== 'object') {
+    climate.runtime.controlDemand = {};
+  }
+
+  if (climate.runtime.activePeriod !== activePeriod) {
+    climate.runtime.transitionFromPeriod = climate.runtime.activePeriod;
+    climate.runtime.activePeriod = activePeriod;
+    climate.runtime.targetBlend = 0;
+    climate.runtime.lastPeriodSwitchSimMs = Number(sim && sim.simTimeMs || 0);
+  }
+
+  climate.tent.humidityPercent = clampInt(relativeHumidityFromAbsoluteHumidity(climate.tent.temperatureC, climate.tent.absoluteHumidityGm3), 0, 100);
+  climate.tent.vpdKpa = round2(computeVpdKpa(climate.tent.temperatureC, climate.tent.humidityPercent));
+  climate.tent.airflowScore = computeClimateAirflowScore(climate, controls, statusLike);
+  climate.tent.airflowLabel = deriveAirflowLabelFromScore(climate.tent.airflowScore);
+
+  if (!isIndoorClimateMode(target)) {
+    syncClimateStateToLegacyReadout(climate, controls, sim, target);
+  }
+
+  return climate;
+}
+
+function buildEnvironmentReadoutFromState(
+  sourceState = state,
+  statusLike = sourceState && sourceState.status ? sourceState.status : state.status,
+  simulationLike = sourceState && sourceState.simulation ? sourceState.simulation : state.simulation,
+  plantLike = sourceState && sourceState.plant ? sourceState.plant : state.plant
+) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = normalizeEnvironmentControls(activeState);
+  const climate = ensureClimateState(activeState, statusLike, simulationLike, plantLike);
+  const ppfdBase = resolveLightPpfdBase(activeState);
+  const ppfd = (simulationLike && simulationLike.isDaytime)
+    ? Math.round(clamp(ppfdBase + (Number(statusLike && statusLike.growth || 0) * 1.4), 320, 1100))
+    : 45;
+
+  if (climate && climate.tent) {
+    return {
+      temperatureC: clamp(Number(climate.tent.temperatureC) || controls.temperatureC, 10, 40),
+      humidityPercent: clampInt(Number(climate.tent.humidityPercent) || controls.humidityPercent, 0, 100),
+      vpdKpa: clamp(Number(climate.tent.vpdKpa) || computeVpdKpa(controls.temperatureC, controls.humidityPercent), 0.2, 3.5),
+      ppfd,
+      airflowScore: clampInt(Number(climate.tent.airflowScore) || controls.airflowPercent, 0, 100),
+      airflowLabel: climate.tent.airflowLabel || deriveAirflowLabelFromScore(climate.tent.airflowScore)
+    };
+  }
+
+  return {
+    temperatureC: controls.temperatureC,
+    humidityPercent: controls.humidityPercent,
+    vpdKpa: computeVpdKpa(controls.temperatureC, controls.humidityPercent),
+    ppfd,
+    airflowScore: controls.airflowPercent,
+    airflowLabel: deriveAirflowLabelFromScore(controls.airflowPercent)
+  };
+}
+
+function buildEnvironmentModelFromState(statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant, sourceState = state) {
+  const water = clamp(Number(statusLike && statusLike.water || 0), 0, 100);
+  const stress = clamp(Number(statusLike && statusLike.stress || 0), 0, 100);
+  const risk = clamp(Number(statusLike && statusLike.risk || 0), 0, 100);
   const stageIndexOneBased = clampInt(Number((plantLike && plantLike.stageIndex) || 0) + 1, 1, 12);
   const profile = getEnvStageProfile(stageIndexOneBased);
-  const controls = getEnvironmentControlsForSimulation();
-  const isDay = Boolean(simulationLike && simulationLike.isDaytime);
-
-  const dayBase = isDay ? 24.4 : 20.7;
-  const physicsTemp = clamp(dayBase + (stress * 0.048) + (risk * 0.018), 17, 36);
-  const physicsHumidity = Math.round(clamp(41 + (water * 0.40) - (stress * 0.15), 30, 84));
-  const temperatureC = clamp((physicsTemp * 0.40) + (controls.temperatureC * 0.60), 16, 36);
-  const humidityPercent = Math.round(clamp((physicsHumidity * 0.42) + (controls.humidityPercent * 0.58), 30, 90));
-  const vpdKpa = clamp(0.72 + ((temperatureC - 21) * 0.082) + ((60 - humidityPercent) * 0.012), 0.35, 2.6);
-  const ppfd = isDay ? Math.round(clamp(560 + (Number(statusLike.growth || 0) * 2.2), 420, 980)) : 45;
-  const airflowScore = clamp(Math.round((controls.airflowPercent * 0.82) + ((100 - risk - Math.round(stress * 0.34)) * 0.18)), 0, 100);
-  const airflowLabel = airflowScore >= 70 ? 'Good' : airflowScore >= 40 ? 'Mittel' : 'Schwach';
+  const readout = buildEnvironmentReadoutFromState(sourceState, statusLike, simulationLike, plantLike);
+  const temperatureC = clamp(Number(readout.temperatureC) || 0, 10, 40);
+  const humidityPercent = clampInt(Number(readout.humidityPercent) || 0, 0, 100);
+  const vpdKpa = clamp(Number(readout.vpdKpa) || 0, 0.2, 3.5);
+  const ppfd = clampInt(Number(readout.ppfd) || 45, 0, 1100);
+  const airflowScore = clampInt(
+    Number.isFinite(Number(readout.airflowScore))
+      ? Number(readout.airflowScore)
+      : (readout.airflowLabel === 'Good' ? 80 : (readout.airflowLabel === 'Mittel' ? 55 : 30)),
+    0,
+    100
+  );
+  const airflowLabel = readout.airflowLabel || deriveAirflowLabelFromScore(airflowScore);
 
   const tempDeviation = profile.temp ? Math.max(0, profile.temp[0] - temperatureC, temperatureC - profile.temp[1]) : 0;
   const humidityDeviation = profile.humidity ? Math.max(0, profile.humidity[0] - humidityPercent, humidityPercent - profile.humidity[1]) : 0;
   const vpdDeviation = profile.vpd ? Math.max(0, profile.vpd[0] - vpdKpa, vpdKpa - profile.vpd[1]) : 0;
+  const biologicalHeatPressure = clamp(((stress * 0.55) + (risk * 0.45)) / 100, 0, 1);
+  const biologicalMoisturePressure = clamp((((100 - water) * 0.35) + (stress * 0.65)) / 100, 0, 1);
+  const biologicalAirflowPressure = clamp(((stress * 0.45) + (risk * 0.55)) / 100, 0, 1);
 
   return {
     temperatureC,
@@ -70,10 +419,10 @@ function buildEnvironmentModelFromState(statusLike = state.status, simulationLik
     airflowLabel,
     stageProfile: profile,
     stressFactor: {
-      temp: clamp(tempDeviation / 7, 0, 1),
-      humidity: clamp(humidityDeviation / 30, 0, 1),
-      vpd: clamp(vpdDeviation / 0.95, 0, 1),
-      airflow: clamp((45 - airflowScore) / 45, 0, 1)
+      temp: clamp((tempDeviation / 7) + (biologicalHeatPressure * 0.18), 0, 1),
+      humidity: clamp((humidityDeviation / 30) + (biologicalMoisturePressure * 0.15), 0, 1),
+      vpd: clamp((vpdDeviation / 0.95) + (biologicalHeatPressure * 0.16), 0, 1),
+      airflow: clamp(((45 - airflowScore) / 45) + (biologicalAirflowPressure * 0.14), 0, 1)
     }
   };
 }
@@ -110,12 +459,172 @@ function buildRootZoneModelFromState(statusLike = state.status, env = buildEnvir
   };
 }
 
+function rampPercentToward(current, target, maxDeltaPerMinute, minutes) {
+  const safeCurrent = clamp(Number(current) || 0, 0, 100);
+  const safeTarget = clamp(Number(target) || 0, 0, 100);
+  const maxDelta = Math.max(0, Number(maxDeltaPerMinute) || 0) * Math.max(0, Number(minutes) || 0);
+  if (safeCurrent < safeTarget) {
+    return clamp(safeCurrent + maxDelta, 0, safeTarget);
+  }
+  if (safeCurrent > safeTarget) {
+    return clamp(safeCurrent - maxDelta, safeTarget, 100);
+  }
+  return safeCurrent;
+}
+
+function computePlantTranspirationGph(statusLike, simulationLike, plantLike, climate, sourceState = state) {
+  const isDay = Boolean(simulationLike && simulationLike.isDaytime);
+  const stageIndexOneBased = clampInt(Number((plantLike && plantLike.stageIndex) || 0) + 1, 1, 12);
+  const water = clamp(Number(statusLike && statusLike.water || 0), 0, 100);
+  const stress = clamp(Number(statusLike && statusLike.stress || 0), 0, 100);
+  const lightOutput = resolveLightOutputPercent(sourceState, simulationLike);
+  const stageFactor = 0.22 + (stageIndexOneBased * 0.17);
+  const waterFactor = clamp(0.35 + (water / 100), 0.2, 1.35);
+  const lightFactor = isDay ? clamp(lightOutput / 100, 0.45, 1.2) : 0.12;
+  const vpdFactor = clamp(0.55 + ((Number(climate.tent.vpdKpa) || 0.8) * 0.55), 0.35, 1.85);
+  const stressPenalty = clamp(1 - (stress * 0.004), 0.55, 1);
+  return clamp(3.2 * stageFactor * waterFactor * lightFactor * vpdFactor * stressPenalty, 0.05, 20);
+}
+
+function updateClimateState(minutes, sourceState = state, statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant) {
+  const safeMinutes = Math.max(0, Number(minutes) || 0);
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = normalizeEnvironmentControls(activeState);
+  const climate = ensureClimateState(activeState, statusLike, simulationLike, plantLike);
+  if (safeMinutes <= 0 || !isIndoorClimateMode(activeState)) {
+    return climate;
+  }
+
+  const totalSteps = Math.max(1, Math.ceil(safeMinutes / CLIMATE_UPDATE_MAX_STEP_MINUTES));
+  const stepMinutes = safeMinutes / totalSteps;
+  const currentPeriod = Boolean(simulationLike && simulationLike.isDaytime) ? 'day' : 'night';
+  const currentTargetProfile = controls.targets[currentPeriod];
+  const previousTargetProfile = controls.targets[climate.runtime.transitionFromPeriod || currentPeriod] || currentTargetProfile;
+
+  for (let index = 0; index < totalSteps; index += 1) {
+    const roomProfile = climate.room[currentPeriod];
+    climate.room.current.temperatureC = lerp(climate.room.current.temperatureC, roomProfile.temperatureC, clamp(0.22 * stepMinutes, 0, 1));
+    const roomAbsTarget = absoluteHumidityFromRelativeHumidity(climate.room.current.temperatureC, roomProfile.humidityPercent);
+    climate.room.current.absoluteHumidityGm3 = lerp(climate.room.current.absoluteHumidityGm3, roomAbsTarget, clamp(0.26 * stepMinutes, 0, 1));
+
+    climate.runtime.targetBlend = clamp(climate.runtime.targetBlend + (stepMinutes / Math.max(1, controls.transitionMinutes)), 0, 1);
+    const targetTemperatureC = lerp(previousTargetProfile.temperatureC, currentTargetProfile.temperatureC, climate.runtime.targetBlend);
+    const targetHumidityPercent = lerp(previousTargetProfile.humidityPercent, currentTargetProfile.humidityPercent, climate.runtime.targetBlend);
+    const targetVpdKpa = lerp(previousTargetProfile.vpdKpa, currentTargetProfile.vpdKpa, climate.runtime.targetBlend);
+
+    const temperatureError = climate.tent.temperatureC - targetTemperatureC;
+    const humidityError = climate.tent.humidityPercent - targetHumidityPercent;
+    const vpdError = climate.tent.vpdKpa - targetVpdKpa;
+
+    let exhaustTarget = controls.fan.minPercent;
+    let heaterTarget = 0;
+    let humidifierTarget = 0;
+    let dehumidifierTarget = 0;
+
+    if (temperatureError > controls.buffers.temperatureC) {
+      exhaustTarget += clamp(temperatureError * 22, 0, controls.fan.maxPercent - controls.fan.minPercent);
+    } else if (temperatureError < -controls.buffers.temperatureC) {
+      heaterTarget = clamp(Math.abs(temperatureError) * 37, 0, 100);
+    }
+
+    if (humidityError > controls.buffers.humidityPercent) {
+      exhaustTarget += clamp((humidityError - controls.buffers.humidityPercent) * 3.6, 0, controls.fan.maxPercent - controls.fan.minPercent);
+      dehumidifierTarget = clamp((humidityError - controls.buffers.humidityPercent) * 7, 0, 100);
+    } else if (humidityError < -controls.buffers.humidityPercent) {
+      humidifierTarget = clamp((Math.abs(humidityError) - controls.buffers.humidityPercent) * 7.5, 0, 100);
+    }
+
+    if (controls.vpdTargetEnabled) {
+      if (vpdError > controls.buffers.vpdKpa) {
+        humidifierTarget = Math.max(humidifierTarget, clamp((vpdError - controls.buffers.vpdKpa) * 65, 0, 100));
+        exhaustTarget = Math.max(controls.fan.minPercent, exhaustTarget - clamp((vpdError - controls.buffers.vpdKpa) * 18, 0, exhaustTarget));
+      } else if (vpdError < -controls.buffers.vpdKpa) {
+        dehumidifierTarget = Math.max(dehumidifierTarget, clamp((Math.abs(vpdError) - controls.buffers.vpdKpa) * 72, 0, 100));
+        exhaustTarget += clamp((Math.abs(vpdError) - controls.buffers.vpdKpa) * 20, 0, controls.fan.maxPercent - controls.fan.minPercent);
+      }
+    }
+
+    exhaustTarget = clamp(exhaustTarget, controls.fan.minPercent, controls.fan.maxPercent);
+    const circulationTarget = clamp(Math.max(controls.fan.minPercent, controls.airflowPercent), 0, 100);
+    const lightTarget = resolveLightOutputPercent(activeState, simulationLike);
+
+    climate.devices.light.targetPercent = lightTarget;
+    climate.devices.exhaust.targetPercent = exhaustTarget;
+    climate.devices.circulation.targetPercent = circulationTarget;
+    climate.devices.heater.targetPercent = heaterTarget;
+    climate.devices.humidifier.targetPercent = humidifierTarget;
+    climate.devices.dehumidifier.targetPercent = dehumidifierTarget;
+
+    const rampRate = controls.ramp.percentPerMinute;
+    climate.devices.light.outputPercent = rampPercentToward(climate.devices.light.outputPercent, climate.devices.light.targetPercent, rampRate * 1.2, stepMinutes);
+    climate.devices.exhaust.outputPercent = rampPercentToward(climate.devices.exhaust.outputPercent, climate.devices.exhaust.targetPercent, rampRate, stepMinutes);
+    climate.devices.circulation.outputPercent = rampPercentToward(climate.devices.circulation.outputPercent, climate.devices.circulation.targetPercent, rampRate * 1.25, stepMinutes);
+    climate.devices.heater.outputPercent = rampPercentToward(climate.devices.heater.outputPercent, climate.devices.heater.targetPercent, rampRate * 0.9, stepMinutes);
+    climate.devices.humidifier.outputPercent = rampPercentToward(climate.devices.humidifier.outputPercent, climate.devices.humidifier.targetPercent, rampRate * 0.8, stepMinutes);
+    climate.devices.dehumidifier.outputPercent = rampPercentToward(climate.devices.dehumidifier.outputPercent, climate.devices.dehumidifier.targetPercent, rampRate * 0.8, stepMinutes);
+
+    const exchangePerMinute = clamp(
+      CLIMATE_BASE_EXCHANGE_PER_MINUTE
+      + (climate.devices.exhaust.outputPercent * CLIMATE_EXHAUST_EXCHANGE_FACTOR)
+      + (climate.devices.circulation.outputPercent * CLIMATE_CIRCULATION_EXCHANGE_FACTOR),
+      CLIMATE_BASE_EXCHANGE_PER_MINUTE,
+      CLIMATE_MAX_EXCHANGE_PER_MINUTE
+    );
+    climate.tent.exchangePerMinute = exchangePerMinute;
+
+    const lightHeatPerMinute = 0.018 * (climate.devices.light.outputPercent / 100);
+    const heaterHeatPerMinute = 0.039 * (climate.devices.heater.outputPercent / 100);
+    const humidifierCoolingPerMinute = 0.004 * (climate.devices.humidifier.outputPercent / 100);
+    const dehumidifierHeatingPerMinute = 0.005 * (climate.devices.dehumidifier.outputPercent / 100);
+
+    climate.tent.temperatureC += (climate.room.current.temperatureC - climate.tent.temperatureC) * exchangePerMinute * stepMinutes;
+    climate.tent.temperatureC += (lightHeatPerMinute + heaterHeatPerMinute + dehumidifierHeatingPerMinute - humidifierCoolingPerMinute) * stepMinutes;
+    climate.tent.temperatureC = clamp(climate.tent.temperatureC, 12, 40);
+
+    climate.tent.humidityPercent = clampInt(relativeHumidityFromAbsoluteHumidity(climate.tent.temperatureC, climate.tent.absoluteHumidityGm3), 0, 100);
+    climate.tent.vpdKpa = round2(computeVpdKpa(climate.tent.temperatureC, climate.tent.humidityPercent));
+    climate.tent.transpirationGph = computePlantTranspirationGph(statusLike, simulationLike, plantLike, climate, activeState);
+
+    const transpirationAbsDelta = ((climate.tent.transpirationGph / climate.tent.volumeM3) / 60) * stepMinutes;
+    const humidifierAbsDelta = 0.18 * (climate.devices.humidifier.outputPercent / 100) * stepMinutes;
+    const dehumidifierAbsDelta = 0.16 * (climate.devices.dehumidifier.outputPercent / 100) * stepMinutes;
+
+    climate.tent.absoluteHumidityGm3 += (climate.room.current.absoluteHumidityGm3 - climate.tent.absoluteHumidityGm3) * exchangePerMinute * stepMinutes;
+    climate.tent.absoluteHumidityGm3 += transpirationAbsDelta + humidifierAbsDelta - dehumidifierAbsDelta;
+    climate.tent.absoluteHumidityGm3 = clamp(climate.tent.absoluteHumidityGm3, 0.5, 45);
+
+    climate.tent.humidityPercent = clampInt(relativeHumidityFromAbsoluteHumidity(climate.tent.temperatureC, climate.tent.absoluteHumidityGm3), 0, 100);
+    climate.tent.vpdKpa = round2(computeVpdKpa(climate.tent.temperatureC, climate.tent.humidityPercent));
+    climate.tent.airflowScore = computeClimateAirflowScore(climate, controls, statusLike);
+    climate.tent.airflowLabel = deriveAirflowLabelFromScore(climate.tent.airflowScore);
+
+    climate.runtime.controlDemand = {
+      temperatureError: round2(temperatureError),
+      humidityError: round2(humidityError),
+      vpdError: round2(vpdError),
+      targetTemperatureC: round2(targetTemperatureC),
+      targetHumidityPercent: round2(targetHumidityPercent),
+      targetVpdKpa: round2(targetVpdKpa)
+    };
+  }
+
+  return climate;
+}
+
 const __gsGlobal = typeof globalThis !== 'undefined'
   ? globalThis
   : (typeof window !== 'undefined' ? window : this);
 
 __gsGlobal.GrowSimEnvModel = __gsGlobal.GrowSimEnvModel || Object.freeze({
   getEnvStageProfile,
+  getEnvironmentControlDefaults,
+  normalizeEnvironmentControls,
+  ensureClimateState,
+  buildEnvironmentReadoutFromState,
+  updateClimateState,
+  computeVpdKpa,
+  absoluteHumidityFromRelativeHumidity,
+  relativeHumidityFromAbsoluteHumidity,
   buildEnvironmentModelFromState,
   buildRootZoneModelFromState
 });
@@ -432,31 +941,16 @@ function applyOfflineNightSurvivalClamp() {
 
 function evolveEnvironmentChemistry(minutes) {
   const controls = getEnvironmentControlsForSimulation();
-  const isDay = Boolean(state.simulation && state.simulation.isDaytime);
   const statusWater = clamp(Number(state.status.water || 0), 0, 100);
   const statusNutrition = clamp(Number(state.status.nutrition || 0), 0, 100);
 
-  const ambientTemp = isDay ? 24.0 : 21.0;
-  controls.temperatureC = clamp(controls.temperatureC + ((ambientTemp - controls.temperatureC) * 0.015 * minutes), 16, 36);
-
-  const humidityPull = ((statusWater - 50) * 0.04) - ((controls.airflowPercent - 50) * 0.03);
-  controls.humidityPercent = clampInt(Math.round(controls.humidityPercent + (humidityPull * 0.12 * minutes)), 30, 90);
-
-  controls.airflowPercent = clampInt(Math.round(controls.airflowPercent + ((55 - controls.airflowPercent) * 0.01 * minutes)), 0, 100);
+  updateClimateState(minutes, state, state.status, state.simulation, state.plant);
 
   const ecDecayPerMin = 0.0028 + ((100 - statusNutrition) * 0.00002) + ((statusWater < 35 ? 0.0012 : 0));
   controls.ec = clamp(controls.ec - (ecDecayPerMin * minutes), 0.6, 2.8);
 
   const phDrift = ((6.0 - controls.ph) * 0.018) - ((controls.ec - 1.6) * 0.004);
   controls.ph = clamp(controls.ph + (phDrift * minutes), 5.0, 7.0);
-
-  if (state.environmentControls && typeof state.environmentControls === 'object') {
-    state.environmentControls.temperatureC = controls.temperatureC;
-    state.environmentControls.humidityPercent = controls.humidityPercent;
-    state.environmentControls.airflowPercent = controls.airflowPercent;
-    state.environmentControls.ph = controls.ph;
-    state.environmentControls.ec = controls.ec;
-  }
 }
 
 function applyStatusDrift(elapsedMs) {

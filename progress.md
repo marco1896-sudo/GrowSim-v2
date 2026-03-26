@@ -18,3 +18,13 @@ Open items:
   - Converted actions to icon-first medallion treatment (larger atlas icons, smaller secondary labels).
   - Ensured floating menu uses atlas menu icon with premium corner styling.
   - Final screenshots regenerated in visual-tests/screenshots.
+
+2026-03-26
+- Investigated climate readout separation bug using live browser path against local static server.
+- Verified latest code path keeps top HUD temp/RH/airflow stable immediately after controller target changes.
+- Hardened app-level fallback `deriveEnvironmentReadout()` to prefer `state.climate.tent.*` actuals instead of controller mirrors.
+- Added regression tests for:
+  - no instant RH snap after target change
+  - no instant temperature snap after target change
+- Found likely live-app root cause for persistent user-visible bug: stale cached `sim.js` / `app.js` in PWA shell due unchanged script query strings and service worker cache version.
+- Bumped `sim.js` and `app.js` query versions in `index.html` and updated `sw.js` cache version to force fresh runtime assets.

@@ -78,6 +78,17 @@ function cacheUi() {
   ui.envCtrlTemp = document.getElementById('envCtrlTemp');
   ui.envCtrlHumidity = document.getElementById('envCtrlHumidity');
   ui.envCtrlAirflow = document.getElementById('envCtrlAirflow');
+  ui.envCtrlNightTemp = document.getElementById('envCtrlNightTemp');
+  ui.envCtrlNightHumidity = document.getElementById('envCtrlNightHumidity');
+  ui.envCtrlDayVpd = document.getElementById('envCtrlDayVpd');
+  ui.envCtrlNightVpd = document.getElementById('envCtrlNightVpd');
+  ui.envCtrlFanMax = document.getElementById('envCtrlFanMax');
+  ui.envCtrlTempBuffer = document.getElementById('envCtrlTempBuffer');
+  ui.envCtrlHumidityBuffer = document.getElementById('envCtrlHumidityBuffer');
+  ui.envCtrlVpdBuffer = document.getElementById('envCtrlVpdBuffer');
+  ui.envCtrlRamp = document.getElementById('envCtrlRamp');
+  ui.envCtrlTransition = document.getElementById('envCtrlTransition');
+  ui.envCtrlVpdEnabled = document.getElementById('envCtrlVpdEnabled');
   ui.envCtrlPh = document.getElementById('envCtrlPh');
   ui.envCtrlEc = document.getElementById('envCtrlEc');
 
@@ -294,6 +305,16 @@ function bindHomeScreenEvents(controller = null) {
     { node: ui.envCtrlTemp, key: 'temperatureC' },
     { node: ui.envCtrlHumidity, key: 'humidityPercent' },
     { node: ui.envCtrlAirflow, key: 'airflowPercent' },
+    { node: ui.envCtrlNightTemp, key: 'nightTemperatureC' },
+    { node: ui.envCtrlNightHumidity, key: 'nightHumidityPercent' },
+    { node: ui.envCtrlDayVpd, key: 'dayVpdKpa' },
+    { node: ui.envCtrlNightVpd, key: 'nightVpdKpa' },
+    { node: ui.envCtrlFanMax, key: 'fanMaxPercent' },
+    { node: ui.envCtrlTempBuffer, key: 'tempBufferC' },
+    { node: ui.envCtrlHumidityBuffer, key: 'humidityBufferPercent' },
+    { node: ui.envCtrlVpdBuffer, key: 'vpdBufferKpa' },
+    { node: ui.envCtrlRamp, key: 'rampPercentPerMinute' },
+    { node: ui.envCtrlTransition, key: 'transitionMinutes' },
     { node: ui.envCtrlPh, key: 'ph' }
   ];
   for (const binding of controlBindings) {
@@ -303,6 +324,12 @@ function bindHomeScreenEvents(controller = null) {
     });
     binding.node.addEventListener('change', (event) => {
       onEnvironmentControlInput(binding.key, event.target.value);
+    });
+  }
+
+  if (ui.envCtrlVpdEnabled) {
+    ui.envCtrlVpdEnabled.addEventListener('change', (event) => {
+      onEnvironmentControlInput('vpdTargetEnabled', event.target.checked);
     });
   }
 

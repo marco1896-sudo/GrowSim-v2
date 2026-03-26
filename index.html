@@ -66,20 +66,69 @@
             </button>
 
             <div id="homeEnvControls" class="home-env-controls hidden" aria-label="Feinsteuerung Umwelt und Wurzeln">
-              <label class="home-env-control" for="envCtrlTemp"><span>Temp</span><strong id="envCtrlTempOut">25.0°C</strong></label>
-              <input id="envCtrlTemp" type="range" min="16" max="36" step="0.1" value="25">
+              <p class="home-env-microcopy">Oben siehst du die aktuellen Zeltwerte. Unten stellst du Ziele und Controller-Verhalten ein.</p>
 
-              <label class="home-env-control" for="envCtrlHumidity"><span>rF</span><strong id="envCtrlHumidityOut">60%</strong></label>
-              <input id="envCtrlHumidity" type="range" min="30" max="90" step="1" value="60">
+              <div class="home-env-controls-section" aria-label="Basis-Klimaziele">
+                <div class="home-env-section-title">Basis</div>
+                <label class="home-env-control" for="envCtrlTemp"><span>Tag Temp Ziel</span><strong id="envCtrlTempOut">25.0°C</strong></label>
+                <input id="envCtrlTemp" type="range" min="16" max="36" step="0.1" value="25">
 
-              <label class="home-env-control" for="envCtrlAirflow"><span>Luft</span><strong id="envCtrlAirflowOut">70%</strong></label>
-              <input id="envCtrlAirflow" type="range" min="0" max="100" step="1" value="70">
+                <label class="home-env-control" for="envCtrlHumidity"><span>Tag rF Ziel</span><strong id="envCtrlHumidityOut">60%</strong></label>
+                <input id="envCtrlHumidity" type="range" min="30" max="90" step="1" value="60">
 
-              <label class="home-env-control" for="envCtrlPh"><span>pH</span><strong id="envCtrlPhOut">6.0</strong></label>
-              <input id="envCtrlPh" type="range" min="5.0" max="7.0" step="0.1" value="6.0">
+                <label class="home-env-control" for="envCtrlAirflow"><span>Min. Abluft</span><strong id="envCtrlAirflowOut">70%</strong></label>
+                <input id="envCtrlAirflow" type="range" min="0" max="100" step="1" value="70">
+                <small class="home-env-note">Basis-Lüfterstufe für den Controller. Höhere Werte tauschen Luft schneller mit dem Raum.</small>
+              </div>
 
-              <div class="home-env-control home-env-control--readonly"><span>EC</span><strong id="envCtrlEcOut">1.4 mS</strong></div>
-              <small id="envCtrlEcHint" class="home-env-note">nur über mineralisches Düngen</small>
+              <div class="home-env-controls-section home-env-controls-section--advanced" aria-label="Erweiterte Klimaeinstellungen">
+                <div class="home-env-section-title">Erweitert</div>
+
+                <label class="home-env-control" for="envCtrlNightTemp"><span>Nacht Temp</span><strong id="envCtrlNightTempOut">21.0°C</strong></label>
+                <input id="envCtrlNightTemp" type="range" min="16" max="36" step="0.1" value="21">
+
+                <label class="home-env-control" for="envCtrlNightHumidity"><span>Nacht rF</span><strong id="envCtrlNightHumidityOut">55%</strong></label>
+                <input id="envCtrlNightHumidity" type="range" min="30" max="90" step="1" value="55">
+
+                <label class="home-env-control" for="envCtrlDayVpd"><span>Tag VPD</span><strong id="envCtrlDayVpdOut">1.3 kPa</strong></label>
+                <input id="envCtrlDayVpd" type="range" min="0.2" max="3.0" step="0.01" value="1.3">
+
+                <label class="home-env-control" for="envCtrlNightVpd"><span>Nacht VPD</span><strong id="envCtrlNightVpdOut">1.1 kPa</strong></label>
+                <input id="envCtrlNightVpd" type="range" min="0.2" max="3.0" step="0.01" value="1.1">
+
+                <label class="home-env-control" for="envCtrlFanMax"><span>Max. Abluft</span><strong id="envCtrlFanMaxOut">100%</strong></label>
+                <input id="envCtrlFanMax" type="range" min="0" max="100" step="1" value="100">
+
+                <label class="home-env-control" for="envCtrlTempBuffer"><span>Temp Buffer</span><strong id="envCtrlTempBufferOut">0.7°C</strong></label>
+                <input id="envCtrlTempBuffer" type="range" min="0.1" max="4" step="0.1" value="0.7">
+
+                <label class="home-env-control" for="envCtrlHumidityBuffer"><span>rF Buffer</span><strong id="envCtrlHumidityBufferOut">4%</strong></label>
+                <input id="envCtrlHumidityBuffer" type="range" min="1" max="20" step="1" value="4">
+
+                <label class="home-env-control" for="envCtrlVpdBuffer"><span>VPD Buffer</span><strong id="envCtrlVpdBufferOut">0.12 kPa</strong></label>
+                <input id="envCtrlVpdBuffer" type="range" min="0.02" max="0.6" step="0.01" value="0.12">
+
+                <label class="home-env-control" for="envCtrlRamp"><span>Ramp</span><strong id="envCtrlRampOut">18%/min</strong></label>
+                <input id="envCtrlRamp" type="range" min="1" max="100" step="1" value="18">
+
+                <label class="home-env-control" for="envCtrlTransition"><span>Übergang</span><strong id="envCtrlTransitionOut">45 min</strong></label>
+                <input id="envCtrlTransition" type="range" min="1" max="180" step="1" value="45">
+
+                <label class="home-env-control home-env-control--toggle" for="envCtrlVpdEnabled">
+                  <span>VPD Ziel aktiv</span>
+                  <strong id="envCtrlVpdEnabledOut">Aus</strong>
+                </label>
+                <input id="envCtrlVpdEnabled" type="checkbox">
+              </div>
+
+              <div class="home-env-controls-section home-env-controls-section--root" aria-label="Wurzelsteuerung">
+                <div class="home-env-section-title">Wurzelzone</div>
+                <label class="home-env-control" for="envCtrlPh"><span>pH</span><strong id="envCtrlPhOut">6.0</strong></label>
+                <input id="envCtrlPh" type="range" min="5.0" max="7.0" step="0.1" value="6.0">
+
+                <div class="home-env-control home-env-control--readonly"><span>EC</span><strong id="envCtrlEcOut">1.4 mS</strong></div>
+                <small id="envCtrlEcHint" class="home-env-note">nur über mineralisches Düngen</small>
+              </div>
             </div>
           </section>
         </div>
@@ -442,7 +491,7 @@
     </div>
   </section>
 
-  <script src="sim.js?v=20260319c" defer></script>
+<script src="sim.js?v=20260326a" defer></script>
   <script src="src/simulation/plantState.js?v=20260319c" defer></script>
   <script src="src/events/eventFlags.js?v=20260319c" defer></script>
   <script src="src/events/eventMemory.js?v=20260319c" defer></script>
@@ -458,6 +507,6 @@
   <script src="src/ui/mappings/homeMapping.js?v=20260319d" defer></script>
   <script src="src/ui/mappings/careMapping.js?v=20260319d" defer></script>
   <script src="src/ui/screens/screenModules.js?v=20260319d" defer></script>
-  <script src="app.js?v=20260319d" defer></script>
+<script src="app.js?v=20260326a" defer></script>
 </body>
 </html>
