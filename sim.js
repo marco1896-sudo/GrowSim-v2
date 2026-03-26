@@ -71,7 +71,7 @@ function getEnvironmentControlDefaults() {
   return {
     temperatureC: dayTemperatureC,
     humidityPercent: dayHumidityPercent,
-    airflowPercent: 70,
+    airflowPercent: 65,
     ph: 6.0,
     ec: 1.4,
     targets: {
@@ -88,7 +88,7 @@ function getEnvironmentControlDefaults() {
     },
     vpdTargetEnabled: false,
     fan: {
-      minPercent: 70,
+      minPercent: 65,
       maxPercent: 100
     },
     buffers: {
