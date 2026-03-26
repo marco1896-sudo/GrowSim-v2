@@ -3544,18 +3544,19 @@ body.panelized-ready :is(
 .care-action-icon-box {
   width: 32px;
   height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(212, 175, 55, 0.14);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .care-action-card-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  opacity: 0.9;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.94;
 }
 
 .care-action-info-box {
@@ -3626,6 +3627,50 @@ body.panelized-ready :is(
   overflow-wrap: anywhere;
 }
 
+.care-preview {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.care-preview.hidden {
+  display: none;
+}
+
+.care-preview-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+}
+
+.care-preview-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.care-preview-label {
+  color: #f5f5f0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.care-preview-note {
+  color: rgba(223, 234, 221, 0.72);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .care-execute-btn {
   width: 100%;
   min-height: 44px;
@@ -3637,6 +3682,26 @@ body.panelized-ready :is(
 
 .care-execute-btn:disabled {
   opacity: 0.55;
+}
+
+@media (max-width: 480px) {
+  .care-preview {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .care-preview-image {
+    width: 56px;
+    height: 56px;
+  }
+
+  .care-preview-label {
+    font-size: 11px;
+  }
+
+  .care-preview-note {
+    font-size: 10px;
+  }
 }
 
 .figma-menu-screen {

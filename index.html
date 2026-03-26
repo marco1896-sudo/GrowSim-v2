@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260326c">
+  <link rel="stylesheet" href="styles.css?v=20260326d">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -254,6 +254,13 @@
 
       <section class="figma-section-card figma-section-card--care">
         <h3 class="figma-section-head">Zeitaktionen</h3>
+        <div id="carePreviewWrap" class="care-preview hidden" aria-hidden="true">
+          <img id="carePreviewImage" class="care-preview-image" alt="">
+          <div class="care-preview-copy">
+            <div id="carePreviewLabel" class="care-preview-label">Aktion auswählen</div>
+            <div id="carePreviewNote" class="care-preview-note">Gameplay-Vorschau</div>
+          </div>
+        </div>
         <ul id="careEffectsList" class="care-effects-list"></ul>
         <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">Wähle eine Aktion.</p>
         <button id="careExecuteButton" class="action-btn action-primary care-execute-btn" type="button">Aktion ausführen</button>
@@ -513,6 +520,6 @@
   <script src="src/ui/mappings/homeMapping.js?v=20260319d" defer></script>
   <script src="src/ui/mappings/careMapping.js?v=20260319d" defer></script>
   <script src="src/ui/screens/screenModules.js?v=20260319d" defer></script>
-<script src="app.js?v=20260326a" defer></script>
+<script src="app.js?v=20260326b" defer></script>
 </body>
 </html>

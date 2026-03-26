@@ -127,6 +127,10 @@ function cacheUi() {
 
   ui.careCategoryList = document.getElementById('careCategoryList');
   ui.careActionList = document.getElementById('careActionList');
+  ui.carePreviewWrap = document.getElementById('carePreviewWrap');
+  ui.carePreviewImage = document.getElementById('carePreviewImage');
+  ui.carePreviewLabel = document.getElementById('carePreviewLabel');
+  ui.carePreviewNote = document.getElementById('carePreviewNote');
   ui.careEffectsList = document.getElementById('careEffectsList');
   ui.careExecuteButton = document.getElementById('careExecuteButton');
   ui.careFeedback = document.getElementById('careFeedback');

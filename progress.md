@@ -42,6 +42,24 @@ Open items:
 - Small positive-event tuning pass:
   - slightly increased the payoff of ideal VPD / stable comfort / veg humidity rewards
   - nudged stable comfort weight up a little without changing cooldown architecture
+- Care Patch 1:
+  - added gameplay-asset resolver for care actions
+  - care action cards now prefer `assets/gameplay/actions/*`
+  - selected care action now shows a compact preview image + short note in the detail area
+- Care Patch 2 / watering redesign:
+  - added optional `rootZoneInfluence` and `climateInfluence` support to actions
+  - redesigned plain water, deep water, nutrient solution watering, and flush to feel distinct
+  - added a watering regression test to lock in EC/RH-direction differences
+- Care Patch 3 / fertilizing redesign:
+  - reworked light feed, balanced feed, CalMag, and strong feed into clearer cultivation roles
+  - reused the lightweight `rootZoneInfluence` model so feeding affects EC / pH pressure more believably
+  - kept feeding climate-neutral in this patch to avoid fake environmental side effects
+  - added a fertilizing regression test to lock in tiering and action distinctness
+- Care Patch 4 / training + environment redesign:
+  - reworked canopy arrangement, LST, and topping into clearer short-term stress vs later-payoff decisions
+  - renamed environment actions toward believable grower tasks like airflow clearing, hygiene, and major tent service
+  - added lightweight `environmentInfluence` support so only the airflow-care action nudges baseline airflow while hygiene/service skip generic airflow bumps
+  - added a training/environment regression test to lock in tradeoffs and realistic environment-task roles
 
 Open items:
 - Watch live gameplay frequency of the new climate warnings vs positive rewards before broad balance tweaks.

@@ -2190,6 +2190,13 @@ function applyEnvironmentActionInfluence(action) {
     return;
   }
 
+  const appliedCustomRootZone = applyActionRootZoneInfluence(action);
+  const appliedCustomClimate = applyActionClimateInfluence(action);
+  const appliedCustomEnvironment = applyActionEnvironmentInfluence(action);
+  if (appliedCustomRootZone || appliedCustomClimate || appliedCustomEnvironment) {
+    return;
+  }
+
   const category = String(action.category || '').toLowerCase();
   const intensity = String(action.intensity || 'low').toLowerCase();
   const intensityFactor = intensity === 'high' ? 1 : intensity === 'medium' ? 0.65 : 0.4;
@@ -2208,6 +2215,113 @@ function applyEnvironmentActionInfluence(action) {
   if (category === 'environment') {
     controls.airflowPercent = clampInt(controls.airflowPercent + Math.round(8 * intensityFactor), 0, 100);
   }
+}
+
+function applyActionEnvironmentInfluence(action) {
+  const influence = action && action.environmentInfluence && typeof action.environmentInfluence === 'object'
+    ? action.environmentInfluence
+    : null;
+  if (!influence) {
+    return false;
+  }
+
+  const controls = ensureEnvironmentControls(state);
+  let applied = false;
+
+  if (Number.isFinite(Number(influence.airflowDeltaPercent))) {
+    const airflowDeltaPercent = Number(influence.airflowDeltaPercent);
+    controls.airflowPercent = clampInt(controls.airflowPercent + airflowDeltaPercent, 0, 100);
+    if (controls.fan && typeof controls.fan === 'object') {
+      controls.fan.minPercent = clampInt(Number(controls.fan.minPercent) || 0, 0, 100);
+      controls.fan.minPercent = clampInt(controls.fan.minPercent + airflowDeltaPercent, 0, 100);
+      controls.fan.maxPercent = clampInt(Math.max(Number(controls.fan.maxPercent) || 100, controls.fan.minPercent), 0, 100);
+    }
+    applied = true;
+  }
+
+  if (Boolean(influence.skipGenericCategoryInfluence)) {
+    applied = true;
+  }
+
+  return applied;
+}
+
+function applyActionRootZoneInfluence(action) {
+  const influence = action && action.rootZoneInfluence && typeof action.rootZoneInfluence === 'object'
+    ? action.rootZoneInfluence
+    : null;
+  if (!influence) {
+    return false;
+  }
+
+  const controls = ensureEnvironmentControls(state);
+  let applied = false;
+
+  if (Number.isFinite(Number(influence.ecDelta))) {
+    controls.ec = clamp(controls.ec + Number(influence.ecDelta), 0.6, 2.8);
+    applied = true;
+  }
+
+  if (Number.isFinite(Number(influence.phDelta))) {
+    controls.ph = clamp(controls.ph + Number(influence.phDelta), 5.0, 7.0);
+    applied = true;
+  }
+
+  if (Number.isFinite(Number(influence.phToward))) {
+    const weight = clamp(Number.isFinite(Number(influence.phTowardWeight)) ? Number(influence.phTowardWeight) : 0.35, 0, 1);
+    controls.ph = clamp(controls.ph + ((Number(influence.phToward) - controls.ph) * weight), 5.0, 7.0);
+    applied = true;
+  }
+
+  return applied;
+}
+
+function applyActionClimateInfluence(action) {
+  const influence = action && action.climateInfluence && typeof action.climateInfluence === 'object'
+    ? action.climateInfluence
+    : null;
+  if (!influence) {
+    return false;
+  }
+
+  if (String((state.setup && state.setup.mode) || '') !== 'indoor') {
+    return false;
+  }
+
+  const envApi = window.GrowSimEnvModel;
+  if (!envApi
+    || typeof envApi.ensureClimateState !== 'function'
+    || typeof envApi.absoluteHumidityFromRelativeHumidity !== 'function'
+    || typeof envApi.relativeHumidityFromAbsoluteHumidity !== 'function'
+    || typeof envApi.computeVpdKpa !== 'function') {
+    return false;
+  }
+
+  const humidityPulsePercent = clamp(Number(influence.humidityPulsePercent) || 0, 0, 12);
+  if (humidityPulsePercent <= 0) {
+    return false;
+  }
+
+  const climate = envApi.ensureClimateState(state, state.status, state.simulation, state.plant);
+  if (!climate || !climate.tent) {
+    return false;
+  }
+
+  const tempC = clamp(Number(climate.tent.temperatureC) || 20, 10, 40);
+  const currentAbsHumidity = clamp(Number(climate.tent.absoluteHumidityGm3) || 0, 0, 80);
+  const currentRh = clamp(
+    Number(climate.tent.humidityPercent) || envApi.relativeHumidityFromAbsoluteHumidity(tempC, currentAbsHumidity),
+    0,
+    100
+  );
+  const targetRh = clamp(currentRh + humidityPulsePercent, 0, 95);
+  const targetAbsHumidity = clamp(envApi.absoluteHumidityFromRelativeHumidity(tempC, targetRh), currentAbsHumidity, 80);
+
+  climate.tent.absoluteHumidityGm3 = targetAbsHumidity;
+  climate.tent.humidityPercent = clampInt(envApi.relativeHumidityFromAbsoluteHumidity(tempC, targetAbsHumidity), 0, 100);
+  climate.tent.vpdKpa = round2(envApi.computeVpdKpa(tempC, climate.tent.humidityPercent));
+
+  return true;
 }
 
 function applyStructuredEffects(effectsList) {
@@ -3554,6 +3668,27 @@ function renderCareEffectsPanel() {
   ui.careEffectsList.replaceChildren();
 
   const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
+  if (ui.carePreviewWrap && ui.carePreviewImage && ui.carePreviewLabel && ui.carePreviewNote) {
+    const imagePath = selected ? (getCareActionAssetPath(selected) || getActionIconPath(selected)) : '';
+    if (selected && imagePath) {
+      ui.carePreviewImage.src = imagePath;
+      ui.carePreviewImage.alt = `${selected.label} – Aktionsvorschau`;
+      ui.carePreviewLabel.textContent = selected.label;
+      ui.carePreviewNote.textContent = selected.uxCopy && selected.uxCopy.short
+        ? String(selected.uxCopy.short)
+        : (selected.riskNotes ? String(selected.riskNotes) : 'Pflegeaktion');
+      ui.carePreviewWrap.classList.remove('hidden');
+      ui.carePreviewWrap.setAttribute('aria-hidden', 'false');
+    } else {
+      ui.carePreviewImage.removeAttribute('src');
+      ui.carePreviewImage.alt = '';
+      ui.carePreviewLabel.textContent = 'Aktion auswählen';
+      ui.carePreviewNote.textContent = 'Gameplay-Vorschau';
+      ui.carePreviewWrap.classList.add('hidden');
+      ui.carePreviewWrap.setAttribute('aria-hidden', 'true');
+    }
+  }
+
   if (!selected) {
     const li = document.createElement('li');
     li.textContent = 'Keine Aktion ausgewählt.';
@@ -5715,6 +5850,10 @@ function getCanonicalMeta(snapshot) {
   return s.meta;
 }
 function getActionIconPath(action) {
+  const gameplayPath = getCareActionAssetPath(action);
+  if (gameplayPath) {
+    return gameplayPath;
+  }
   const cat = action.category || 'environment';
   const intensity = action.intensity || 'low';
   if (cat === 'watering') {
@@ -5727,6 +5866,55 @@ function getActionIconPath(action) {
     return 'assets/ui/icons/icon_growth.svg';
   }
   return 'assets/ui/icons/icon_airflow.svg';
+}
+
+function getCareActionAssetPath(action) {
+  if (!action || typeof action !== 'object') {
+    return '';
+  }
+
+  const category = String(action.category || 'environment').toLowerCase();
+  const intensity = String(action.intensity || 'medium').toLowerCase();
+  const actionId = String(action.id || '').toLowerCase();
+
+  const environmentByActionId = {
+    environment_low_airflow: 'assets/gameplay/actions/environment_airflow.png',
+    environment_medium_climate: 'assets/gameplay/actions/environment_climate.png',
+    environment_high_co2: 'assets/gameplay/actions/environment_climate.png',
+    environment_high_reset: 'assets/gameplay/actions/environment_reset.png'
+  };
+  if (environmentByActionId[actionId]) {
+    return environmentByActionId[actionId];
+  }
+
+  const directByCategoryIntensity = {
+    watering: {
+      low: 'assets/gameplay/actions/watering_low.png',
+      medium: 'assets/gameplay/actions/watering_medium.png',
+      high: 'assets/gameplay/actions/watering_high.png'
+    },
+    fertilizing: {
+      low: 'assets/gameplay/actions/fertilizing_low.png',
+      medium: 'assets/gameplay/actions/fertilizing_medium.png',
+      high: 'assets/gameplay/actions/fertilizing_high.png'
+    },
+    training: {
+      low: 'assets/gameplay/actions/training_low.png',
+      medium: 'assets/gameplay/actions/training_medium.png',
+      high: 'assets/gameplay/actions/training_high.png'
+    },
+    environment: {
+      low: 'assets/gameplay/actions/environment_airflow.png',
+      medium: 'assets/gameplay/actions/environment_climate.png',
+      high: 'assets/gameplay/actions/environment_reset.png'
+    }
+  };
+
+  const categoryMap = directByCategoryIntensity[category];
+  if (categoryMap && categoryMap[intensity]) {
+    return categoryMap[intensity];
+  }
+  return '';
 }
 
 function getCanonicalSettings(snapshot) {
@@ -6723,6 +6911,12 @@ function normalizeAction(rawAction) {
     trigger: rawAction.trigger && typeof rawAction.trigger === 'object' ? rawAction.trigger : {},
     prerequisites: rawAction.prerequisites && typeof rawAction.prerequisites === 'object' ? rawAction.prerequisites : {},
     effects: rawAction.effects && typeof rawAction.effects === 'object' ? rawAction.effects : {},
+    uxCopy: rawAction.uxCopy && typeof rawAction.uxCopy === 'object' ? rawAction.uxCopy : {},
+    riskNotes: String(rawAction.riskNotes || ''),
+    careNotes: String(rawAction.careNotes || ''),
+    rootZoneInfluence: rawAction.rootZoneInfluence && typeof rawAction.rootZoneInfluence === 'object' ? rawAction.rootZoneInfluence : {},
+    climateInfluence: rawAction.climateInfluence && typeof rawAction.climateInfluence === 'object' ? rawAction.climateInfluence : {},
+    environmentInfluence: rawAction.environmentInfluence && typeof rawAction.environmentInfluence === 'object' ? rawAction.environmentInfluence : {},
     cooldownRealMinutes: clamp(rawAction.cooldownRealMinutes, 0, 24 * 60),
     sideEffects: Array.isArray(rawAction.sideEffects) ? rawAction.sideEffects : []
   };
