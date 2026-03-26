@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'growsim-v1-20260326-climate-readout-fix-v1';
+const CACHE_VERSION = 'growsim-v1-20260326-climate-hint-refine-v1';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');
