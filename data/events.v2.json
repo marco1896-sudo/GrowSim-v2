@@ -888,6 +888,359 @@
         "flowering",
         "harvest"
       ]
+    },
+    {
+      "id": "v2_climate_ideal_vpd_boost",
+      "category": "positive",
+      "title": "Ideales VPD-Fenster",
+      "description": "Blatttemperatur, Luftfeuchte und Luftaustausch liegen sauber im grünen Bereich. Die Pflanze arbeitet sichtbar effizient.",
+      "triggers": {
+        "all": [
+          { "field": "simulation.isDaytime", "op": "==", "value": true },
+          { "field": "env.temperatureC", "op": ">=", "value": 23 },
+          { "field": "env.temperatureC", "op": "<=", "value": 27.5 },
+          { "field": "env.humidityPercent", "op": ">=", "value": 54 },
+          { "field": "env.humidityPercent", "op": "<=", "value": 66 },
+          { "field": "env.vpdKpa", "op": ">=", "value": 0.95 },
+          { "field": "env.vpdKpa", "op": "<=", "value": 1.22 },
+          { "field": "env.airflowScore", "op": ">=", "value": 58 },
+          { "field": "status.stress", "op": "<=", "value": 35 },
+          { "field": "status.risk", "op": "<=", "value": 32 }
+        ],
+        "stage": { "min": 3, "max": 10 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 0.85,
+      "cooldownRealMinutes": 260,
+      "polarity": "positive",
+      "tags": ["climate", "ideal", "vpd", "perfect", "bonus"],
+      "options": [
+        {
+          "id": "keep_vpd_window",
+          "label": "Klima stabil halten",
+          "effects": { "growth": 1.6, "stress": -2, "risk": -1 }
+        },
+        {
+          "id": "light_push_window",
+          "label": "Leicht mehr Licht geben",
+          "effects": { "growth": 2.1, "stress": 1, "risk": 1 }
+        }
+      ],
+      "learningNote": "Ein gutes VPD-Fenster entsteht aus Temperatur, Luftfeuchte und Luftbewegung zusammen – nicht aus nur einem Wert.",
+      "allowedPhases": ["vegetative", "flowering"]
+    },
+    {
+      "id": "v2_climate_stable_comfort_bonus",
+      "category": "positive",
+      "title": "Stabiles Komfortklima",
+      "description": "Über längere Zeit bleibt das Zelt ruhig und ausgeglichen. Die Pflanze zeigt entspanntes, gleichmäßiges Wachstum.",
+      "triggers": {
+        "all": [
+          { "field": "env.temperatureC", "op": ">=", "value": 21.5 },
+          { "field": "env.temperatureC", "op": "<=", "value": 28 },
+          { "field": "env.humidityPercent", "op": ">=", "value": 48 },
+          { "field": "env.humidityPercent", "op": "<=", "value": 67 },
+          { "field": "env.airflowScore", "op": ">=", "value": 50 },
+          { "field": "env.instabilityScore", "op": "<=", "value": 18 },
+          { "field": "status.stress", "op": "<=", "value": 38 },
+          { "field": "status.risk", "op": "<=", "value": 38 }
+        ],
+        "stage": { "min": 3, "max": 10 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 0.8,
+      "cooldownRealMinutes": 320,
+      "polarity": "positive",
+      "tags": ["climate", "stable", "comfort", "recovery"],
+      "options": [
+        {
+          "id": "maintain_comfort",
+          "label": "Rhythmus beibehalten",
+          "effects": { "growth": 1.1, "stress": -2, "health": 1 }
+        },
+        {
+          "id": "coast_on_stability",
+          "label": "Sanft weiterlaufen lassen",
+          "effects": { "growth": 0.9, "stress": -1, "risk": -1 }
+        }
+      ],
+      "learningNote": "Nicht nur Spitzenwerte zählen. Ein ruhiges, stabiles Klima senkt versteckten Stress und verbessert die Konstanz.",
+      "allowedPhases": ["vegetative", "flowering"]
+    },
+    {
+      "id": "v2_climate_airflow_mold_guard",
+      "category": "positive",
+      "title": "Saubere Luftbewegung",
+      "description": "Der Luftstrom hält Blattoberflächen trocken, ohne die Pflanze auszutrocknen. Das senkt versteckten Schimmeldruck.",
+      "triggers": {
+        "all": [
+          { "field": "env.airflowScore", "op": ">=", "value": 72 },
+          { "field": "env.humidityPercent", "op": ">=", "value": 52 },
+          { "field": "env.humidityPercent", "op": "<=", "value": 68 },
+          { "field": "env.vpdKpa", "op": ">=", "value": 0.9 },
+          { "field": "env.vpdKpa", "op": "<=", "value": 1.35 },
+          { "field": "status.risk", "op": ">=", "value": 14 },
+          { "field": "status.stress", "op": "<=", "value": 42 }
+        ],
+        "stage": { "min": 4, "max": 10 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 0.72,
+      "cooldownRealMinutes": 280,
+      "polarity": "positive",
+      "tags": ["airflow", "ventilation", "mold", "prevention", "climate"],
+      "options": [
+        {
+          "id": "keep_canopy_open",
+          "label": "Luftstrom beibehalten",
+          "effects": { "risk": -4, "health": 1, "stress": -1 }
+        },
+        {
+          "id": "use_the_window",
+          "label": "Fenster für Gesundheit nutzen",
+          "effects": { "risk": -3, "growth": 0.6, "health": 1 }
+        }
+      ],
+      "learningNote": "Gute Luftbewegung ist ein Präventionswerkzeug: Sie hilft besonders dann, wenn Feuchte im brauchbaren, aber nicht perfekten Bereich liegt.",
+      "allowedPhases": ["vegetative", "flowering", "harvest"]
+    },
+    {
+      "id": "v2_climate_veg_leaf_expansion",
+      "category": "positive",
+      "title": "Veg-Feuchte passt",
+      "description": "Die Blattflächen stehen sauber und expansiv. Das Klima unterstützt in der Vegetationsphase spürbar die Blattentwicklung.",
+      "triggers": {
+        "all": [
+          { "field": "simulation.isDaytime", "op": "==", "value": true },
+          { "field": "env.temperatureC", "op": ">=", "value": 23 },
+          { "field": "env.temperatureC", "op": "<=", "value": 27 },
+          { "field": "env.humidityPercent", "op": ">=", "value": 60 },
+          { "field": "env.humidityPercent", "op": "<=", "value": 68 },
+          { "field": "env.vpdKpa", "op": ">=", "value": 0.85 },
+          { "field": "env.vpdKpa", "op": "<=", "value": 1.15 }
+        ],
+        "stage": { "min": 3, "max": 6 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 0.8,
+      "cooldownRealMinutes": 240,
+      "polarity": "positive",
+      "tags": ["humidity", "veg", "growth", "leaf", "climate"],
+      "options": [
+        {
+          "id": "hold_veg_humidity",
+          "label": "Veg-Klima halten",
+          "effects": { "growth": 1.8, "stress": -1 }
+        },
+        {
+          "id": "push_leaf_surface",
+          "label": "Momentum sanft mitnehmen",
+          "effects": { "growth": 2.0, "risk": 1, "stress": 1 }
+        }
+      ],
+      "learningNote": "Etwas mehr Feuchte in der Vegetationsphase kann Blattaufbau unterstützen – solange Temperatur, VPD und Luftbewegung dazu passen.",
+      "allowedPhases": ["vegetative"]
+    },
+    {
+      "id": "v2_climate_heat_stress",
+      "category": "environment",
+      "title": "Hitzestress im Zelt",
+      "description": "Die Blätter verlieren etwas Spannung und die Pflanze arbeitet gegen die Wärme. Das Klima ist tagsüber zu heiß geworden.",
+      "triggers": {
+        "all": [
+          { "field": "simulation.isDaytime", "op": "==", "value": true },
+          { "field": "env.temperatureC", "op": ">=", "value": 30 },
+          { "field": "env.vpdKpa", "op": ">=", "value": 1.35 }
+        ],
+        "stage": { "min": 3, "max": 10 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 1.15,
+      "cooldownRealMinutes": 210,
+      "polarity": "negative",
+      "tags": ["heat", "temp", "stress", "climate"],
+      "options": [
+        {
+          "id": "reduce_heat_load",
+          "label": "Wärmelast senken",
+          "effects": { "stress": -3, "risk": -1, "growth": -0.4 }
+        },
+        {
+          "id": "ride_it_out_heat",
+          "label": "Aussitzen",
+          "effects": { "health": -3, "stress": 5, "growth": -1.1, "risk": 2 }
+        }
+      ],
+      "learningNote": "Zu hohe Temperaturen drücken nicht nur die Komfortzone – sie verstärken über das VPD auch Transpirationsstress.",
+      "allowedPhases": ["vegetative", "flowering", "harvest"]
+    },
+    {
+      "id": "v2_climate_high_vpd_dry_stress",
+      "category": "environment",
+      "title": "Trockener Zug im Blätterdach",
+      "description": "Die Luft ist zu trocken für die aktuelle Last im Zelt. Die Pflanze zeigt erste Anzeichen von Trockenstress.",
+      "triggers": {
+        "all": [
+          { "field": "simulation.isDaytime", "op": "==", "value": true },
+          { "field": "env.humidityPercent", "op": "<=", "value": 45 },
+          { "field": "env.vpdKpa", "op": ">=", "value": 1.55 }
+        ],
+        "stage": { "min": 3, "max": 10 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 1.05,
+      "cooldownRealMinutes": 220,
+      "polarity": "negative",
+      "tags": ["dry", "vpd", "humidity", "stress"],
+      "options": [
+        {
+          "id": "soften_dry_pull",
+          "label": "Klima entschärfen",
+          "effects": { "stress": -3, "risk": -1, "growth": -0.3 }
+        },
+        {
+          "id": "ignore_dry_pull",
+          "label": "Ignorieren",
+          "effects": { "health": -2, "stress": 4, "growth": -0.9, "risk": 1 }
+        }
+      ],
+      "learningNote": "Ein hoher VPD-Wert ist oft ein Trockenheitsproblem aus Temperatur und Luftfeuchte zusammen – nicht nur 'zu wenig Wasser'.",
+      "allowedPhases": ["vegetative", "flowering"]
+    },
+    {
+      "id": "v2_climate_flower_humidity_risk",
+      "category": "disease",
+      "title": "Feuchte Taschen in der Blüte",
+      "description": "Zwischen den Blüten bleibt Feuchte hängen. Das erhöht das Risiko für Pilz- und Schimmelprobleme.",
+      "triggers": {
+        "all": [
+          { "field": "env.humidityPercent", "op": ">=", "value": 68 },
+          { "field": "env.vpdKpa", "op": "<=", "value": 0.95 },
+          { "field": "env.airflowScore", "op": "<=", "value": 65 }
+        ],
+        "stage": { "min": 7, "max": 11 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 1.18,
+      "cooldownRealMinutes": 240,
+      "polarity": "negative",
+      "tags": ["humidity", "mold", "fungus", "flower"],
+      "options": [
+        {
+          "id": "dry_the_canopy",
+          "label": "Canopy trockener fahren",
+          "effects": { "risk": -5, "stress": -1, "health": 1 }
+        },
+        {
+          "id": "wait_with_humidity",
+          "label": "Abwarten",
+          "effects": { "risk": 6, "health": -3, "stress": 2 }
+        }
+      ],
+      "learningNote": "Spätere Blüte verzeiht zu hohe Feuchte schlechter. Gute Luftbewegung und trockenere Fenster werden dann wichtiger.",
+      "allowedPhases": ["flowering", "harvest"]
+    },
+    {
+      "id": "v2_climate_stagnant_air_warning",
+      "category": "disease",
+      "title": "Stagnierende Luftschicht",
+      "description": "Im unteren Blätterdach steht die Luft. Feuchte und Wärme verteilen sich ungleichmäßig.",
+      "triggers": {
+        "all": [
+          { "field": "env.airflowScore", "op": "<=", "value": 42 },
+          { "field": "env.humidityPercent", "op": ">=", "value": 55 }
+        ],
+        "stage": { "min": 4, "max": 11 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 1.08,
+      "cooldownRealMinutes": 180,
+      "polarity": "negative",
+      "tags": ["airflow", "ventilation", "stagnant", "disease"],
+      "options": [
+        {
+          "id": "open_air_path",
+          "label": "Luftweg verbessern",
+          "effects": { "risk": -4, "stress": -1 }
+        },
+        {
+          "id": "ignore_stagnation",
+          "label": "Laufen lassen",
+          "effects": { "risk": 5, "health": -2, "stress": 2 }
+        }
+      ],
+      "learningNote": "Nicht jeder Schimmel startet mit extrem hoher Feuchte. Schlechte Luftbewegung kann schon vorher Probleme vorbereiten.",
+      "allowedPhases": ["vegetative", "flowering", "harvest"]
+    },
+    {
+      "id": "v2_climate_approaching_risk_zone",
+      "category": "environment",
+      "title": "Klimafenster wird eng",
+      "description": "Das Zelt ist noch nicht im roten Bereich, aber mehrere Werte driften in eine riskante Richtung.",
+      "triggers": {
+        "all": [
+          { "field": "env.instabilityScore", "op": "<=", "value": 24 }
+        ],
+        "any": [
+          { "field": "env.temperatureC", "op": ">=", "value": 29.2 },
+          { "field": "env.humidityPercent", "op": ">=", "value": 68 },
+          { "field": "env.humidityPercent", "op": "<=", "value": 45 },
+          { "field": "env.vpdKpa", "op": ">=", "value": 1.46 }
+        ],
+        "stage": { "min": 3, "max": 11 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 0.98,
+      "cooldownRealMinutes": 150,
+      "polarity": "neutral",
+      "tone": "neutral",
+      "tags": ["warning", "risk", "climate", "drift"],
+      "options": [
+        {
+          "id": "small_climate_correction",
+          "label": "Leicht gegensteuern",
+          "effects": { "risk": -2, "stress": -1 }
+        },
+        {
+          "id": "monitor_only",
+          "label": "Nur beobachten",
+          "effects": { "risk": 1, "stress": 1 }
+        }
+      ],
+      "learningNote": "Gute Grower reagieren oft schon im gelben Bereich. Kleine Korrekturen sind meist günstiger als späte Rettungsaktionen.",
+      "allowedPhases": ["vegetative", "flowering", "harvest"]
+    },
+    {
+      "id": "v2_climate_instability_warning",
+      "category": "environment",
+      "title": "Klimaschwankung spürbar",
+      "description": "Temperatur und Luftfeuchte schwanken stärker als der Pflanze guttut. Das sorgt für unnötige Unruhe im Zelt.",
+      "triggers": {
+        "all": [
+          { "field": "env.instabilityScore", "op": ">=", "value": 28 }
+        ],
+        "stage": { "min": 3, "max": 11 },
+        "setup": { "modeIn": ["indoor"] }
+      },
+      "weight": 1.02,
+      "cooldownRealMinutes": 170,
+      "polarity": "neutral",
+      "tone": "neutral",
+      "tags": ["climate", "fluctuation", "warning", "drift"],
+      "options": [
+        {
+          "id": "stabilize_controller",
+          "label": "Ruhe ins Klima bringen",
+          "effects": { "stress": -3, "risk": -1 }
+        },
+        {
+          "id": "chase_numbers",
+          "label": "Weiter an Zahlen ziehen",
+          "effects": { "stress": 2, "risk": 1 }
+        }
+      ],
+      "learningNote": "Nicht jede schlechte Phase kommt von dauerhaft falschen Werten. Häufige Schwankungen können selbst ein Stressfaktor sein.",
+      "allowedPhases": ["vegetative", "flowering", "harvest"]
     }
   ]
 }

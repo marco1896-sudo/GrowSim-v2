@@ -253,6 +253,9 @@ function syncClimateStateToLegacyReadout(climate, controls, simulationLike = sta
     targetHumidityPercent: round2(climate.tent.humidityPercent),
     targetVpdKpa: round2(climate.tent.vpdKpa)
   };
+  climate.runtime.eventTelemetry = {
+    instabilityScore: 0
+  };
 }
 
 function ensureClimateState(sourceState = state, statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant) {
@@ -328,6 +331,10 @@ function ensureClimateState(sourceState = state, statusLike = state.status, simu
   if (!climate.runtime.controlDemand || typeof climate.runtime.controlDemand !== 'object') {
     climate.runtime.controlDemand = {};
   }
+  if (!climate.runtime.eventTelemetry || typeof climate.runtime.eventTelemetry !== 'object') {
+    climate.runtime.eventTelemetry = {};
+  }
+  climate.runtime.eventTelemetry.instabilityScore = clamp(Number(climate.runtime.eventTelemetry.instabilityScore) || 0, 0, 100);
 
   if (climate.runtime.activePeriod !== activePeriod) {
     climate.runtime.transitionFromPeriod = climate.runtime.activePeriod;
@@ -369,7 +376,8 @@ function buildEnvironmentReadoutFromState(
       vpdKpa: clamp(Number(climate.tent.vpdKpa) || computeVpdKpa(controls.temperatureC, controls.humidityPercent), 0.2, 3.5),
       ppfd,
       airflowScore: clampInt(Number(climate.tent.airflowScore) || controls.airflowPercent, 0, 100),
-      airflowLabel: climate.tent.airflowLabel || deriveAirflowLabelFromScore(climate.tent.airflowScore)
+      airflowLabel: climate.tent.airflowLabel || deriveAirflowLabelFromScore(climate.tent.airflowScore),
+      instabilityScore: clamp(Number(climate.runtime && climate.runtime.eventTelemetry && climate.runtime.eventTelemetry.instabilityScore) || 0, 0, 100)
     };
   }
 
@@ -379,7 +387,8 @@ function buildEnvironmentReadoutFromState(
     vpdKpa: computeVpdKpa(controls.temperatureC, controls.humidityPercent),
     ppfd,
     airflowScore: controls.airflowPercent,
-    airflowLabel: deriveAirflowLabelFromScore(controls.airflowPercent)
+    airflowLabel: deriveAirflowLabelFromScore(controls.airflowPercent),
+    instabilityScore: 0
   };
 }
 
@@ -571,6 +580,9 @@ function updateClimateState(minutes, sourceState = state, statusLike = state.sta
       CLIMATE_MAX_EXCHANGE_PER_MINUTE
     );
     climate.tent.exchangePerMinute = exchangePerMinute;
+    const previousTemperatureC = climate.tent.temperatureC;
+    const previousHumidityPercent = climate.tent.humidityPercent;
+    const previousVpdKpa = climate.tent.vpdKpa;
 
     const lightHeatPerMinute = 0.018 * (climate.devices.light.outputPercent / 100);
     const heaterHeatPerMinute = 0.039 * (climate.devices.heater.outputPercent / 100);
@@ -597,6 +609,16 @@ function updateClimateState(minutes, sourceState = state, statusLike = state.sta
     climate.tent.vpdKpa = round2(computeVpdKpa(climate.tent.temperatureC, climate.tent.humidityPercent));
     climate.tent.airflowScore = computeClimateAirflowScore(climate, controls, statusLike);
     climate.tent.airflowLabel = deriveAirflowLabelFromScore(climate.tent.airflowScore);
+    const tempDeltaC = Math.abs(climate.tent.temperatureC - previousTemperatureC);
+    const humidityDelta = Math.abs(climate.tent.humidityPercent - previousHumidityPercent);
+    const vpdDelta = Math.abs(climate.tent.vpdKpa - previousVpdKpa);
+    const telemetry = climate.runtime.eventTelemetry || (climate.runtime.eventTelemetry = {});
+    const instabilityImpact = clamp((tempDeltaC * 18) + (humidityDelta * 1.35) + (vpdDelta * 45), 0, 100);
+    telemetry.instabilityScore = clamp(
+      Math.max(0, Number(telemetry.instabilityScore) || 0) - (4.5 * stepMinutes) + (instabilityImpact * 0.42),
+      0,
+      100
+    );
 
     climate.runtime.controlDemand = {
       temperatureError: round2(temperatureError),

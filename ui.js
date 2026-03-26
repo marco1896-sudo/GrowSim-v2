@@ -131,6 +131,8 @@ function cacheUi() {
   ui.careExecuteButton = document.getElementById('careExecuteButton');
   ui.careFeedback = document.getElementById('careFeedback');
   ui.eventStateBadge = document.getElementById('eventStateBadge');
+  ui.eventImageWrap = document.getElementById('eventImageWrap');
+  ui.eventImage = document.getElementById('eventImage');
   ui.eventTitle = document.getElementById('eventTitle');
   ui.eventText = document.getElementById('eventText');
   ui.eventMeta = document.getElementById('eventMeta');
@@ -949,6 +951,21 @@ function explainActionFailure(reason) {
 function renderEventSheet() {
   if (state.ui.openSheet !== 'event' && state.events.machineState !== 'activeEvent') {
     return;
+  }
+
+  if (ui.eventImageWrap && ui.eventImage) {
+    const imagePath = state.events.machineState === 'activeEvent' ? String(state.events.activeImagePath || '') : '';
+    if (imagePath) {
+      ui.eventImage.src = imagePath;
+      ui.eventImage.alt = state.events.activeEventTitle ? `${state.events.activeEventTitle} – Ereignisbild` : 'Ereignisbild';
+      ui.eventImageWrap.classList.remove('hidden');
+      ui.eventImageWrap.setAttribute('aria-hidden', 'false');
+    } else {
+      ui.eventImage.removeAttribute('src');
+      ui.eventImage.alt = '';
+      ui.eventImageWrap.classList.add('hidden');
+      ui.eventImageWrap.setAttribute('aria-hidden', 'true');
+    }
   }
 
   ui.eventStateBadge.textContent = `Status: ${translateEventState(state.events.machineState)}`;

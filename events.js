@@ -10,6 +10,284 @@ function getEventFoundationApis() {
   };
 }
 
+const EVENT_ASSET_MANIFEST = Object.freeze([
+  'assets/events/beneficial_fungi_colonized.png',
+  'assets/events/calcium_spotting.png',
+  'assets/events/cold_root_zone.png',
+  'assets/events/disease.png',
+  'assets/events/dry_pocket.png',
+  'assets/events/dry_soil.png',
+  'assets/events/event-CO2-enrichment-2.png',
+  'assets/events/event-co2-enrichment.png',
+  'assets/events/event-cold-night.png',
+  'assets/events/event-cold-stress.png',
+  'assets/events/event-drought-stress.png',
+  'assets/events/event-equipment-failure-2.png',
+  'assets/events/event-equipment-failure.png',
+  'assets/events/event-fungus-infection.png',
+  'assets/events/event-fungus-outbreak.png',
+  'assets/events/event-harvest-day.png',
+  'assets/events/event-harvest-ready.png',
+  'assets/events/event-heat-wave-2.png',
+  'assets/events/event-heat-wave.png',
+  'assets/events/event-light-burn-2.png',
+  'assets/events/event-light-burn.png',
+  'assets/events/event-light-intensity-spike.png',
+  'assets/events/event-nutrient-deficiency.png',
+  'assets/events/event-nutrient-lockout-2.png',
+  'assets/events/event-nutrient-lockout.png',
+  'assets/events/event-overwatering-event.png',
+  'assets/events/event-overwatering.png',
+  'assets/events/event-perfect-climate-day.png',
+  'assets/events/event-perfect-environment-day.png',
+  'assets/events/event-perfect-watering-2.png',
+  'assets/events/event-perfect-watering.png',
+  'assets/events/event-pest-attack-2.png',
+  'assets/events/event-pest-attack.png',
+  'assets/events/event-pest-invasion.png',
+  'assets/events/event-rapid-growth-burst.png',
+  'assets/events/event-rapid-growth-surge-2.png',
+  'assets/events/event-rapid-growth-surge.png',
+  'assets/events/event-research-breakthrough.png',
+  'assets/events/event-root-explosion.png',
+  'assets/events/event-slow-growth-period.png',
+  'assets/events/event-stress-recovery.png',
+  'assets/events/event-strong-genetics.png',
+  'assets/events/event-unexpected-mold.png',
+  'assets/events/event-ventilation-breakdown-2.png',
+  'assets/events/event-ventilation-breakdown.png',
+  'assets/events/fungal_growth.png',
+  'assets/events/fungus_gnat_wave.png',
+  'assets/events/heat_wave.png',
+  'assets/events/hot_dry_day.png',
+  'assets/events/late_flower_humidity.png',
+  'assets/events/magnesium_deficit.png',
+  'assets/events/mite_hotspot.png',
+  'assets/events/nitrogen_lockout.png',
+  'assets/events/nutrient_lockout.png',
+  'assets/events/pest_attack.png',
+  'assets/events/ph_drift.png',
+  'assets/events/ph_drift_high.png',
+  'assets/events/root_bound_warning.png',
+  'assets/events/salt_buildup.png',
+  'assets/events/soil_compaction.png',
+  'assets/events/soil_life_decline.png',
+  'assets/events/soil_too_wet.png',
+  'assets/events/thrips_early.png',
+  'assets/events/too_wet_soil.png',
+  'assets/events/topsoil_mold.png',
+  'assets/events/watering_gap.png'
+]);
+
+const EVENT_IMAGE_TOKEN_EXPANSIONS = Object.freeze({
+  klima: ['climate', 'environment'],
+  climate: ['environment'],
+  temperatur: ['temp', 'heat', 'cold'],
+  temp: ['temperature', 'heat', 'cold'],
+  hitze: ['heat', 'hot', 'wave'],
+  heat: ['hot', 'wave'],
+  hot: ['heat', 'dry'],
+  kalt: ['cold', 'night'],
+  cold: ['night', 'stress'],
+  luftfeuchte: ['humidity', 'humid'],
+  humidity: ['humid', 'mold'],
+  humid: ['humidity', 'mold'],
+  feuchte: ['humidity', 'humid'],
+  feucht: ['humidity', 'humid'],
+  trocken: ['dry', 'drought'],
+  dry: ['drought', 'stress'],
+  vpd: ['dry', 'humidity', 'climate'],
+  airflow: ['air', 'ventilation'],
+  luft: ['airflow', 'ventilation'],
+  abluft: ['airflow', 'ventilation'],
+  ventilation: ['airflow', 'air'],
+  stagnant: ['ventilation', 'airflow', 'breakdown'],
+  stagnation: ['ventilation', 'airflow', 'breakdown'],
+  schimmel: ['mold', 'fungus', 'fungal'],
+  mold: ['fungus', 'fungal'],
+  fungus: ['mold', 'fungal'],
+  fungal: ['mold', 'fungus'],
+  pilz: ['fungus', 'mold'],
+  disease: ['fungus', 'mold'],
+  risiko: ['risk', 'warning'],
+  risk: ['warning'],
+  warnung: ['warning', 'risk'],
+  warning: ['risk'],
+  drift: ['failure', 'spike'],
+  driftet: ['drift', 'failure'],
+  schwankung: ['spike', 'failure'],
+  schwankungen: ['spike', 'failure'],
+  fluctuation: ['spike', 'failure'],
+  stable: ['perfect', 'recovery'],
+  stabil: ['stable', 'perfect', 'recovery'],
+  comfort: ['perfect', 'recovery'],
+  komfort: ['comfort', 'perfect'],
+  ideal: ['perfect', 'climate'],
+  perfect: ['ideal', 'climate'],
+  bonus: ['perfect', 'growth'],
+  wachstum: ['growth', 'surge'],
+  growth: ['surge', 'burst'],
+  expansion: ['growth', 'burst'],
+  veg: ['vegetative'],
+  vegetativ: ['vegetative'],
+  vegetative: ['veg'],
+  flower: ['flowering', 'late', 'humidity'],
+  blüte: ['flower', 'flowering'],
+  flowering: ['flower', 'late'],
+  prevention: ['recovery', 'perfect'],
+  recovery: ['stress', 'perfect'],
+  stress: ['stress', 'recovery']
+});
+
+const EVENT_IMAGE_CATEGORY_FALLBACKS = Object.freeze({
+  positive: 'assets/events/event-perfect-environment-day.png',
+  environment: 'assets/events/event-slow-growth-period.png',
+  disease: 'assets/events/event-unexpected-mold.png',
+  pest: 'assets/events/event-pest-attack.png',
+  nutrition: 'assets/events/event-nutrient-deficiency.png',
+  water: 'assets/events/event-overwatering.png',
+  generic: 'assets/events/event-slow-growth-period.png'
+});
+
+function tokenizeEventImageValue(value) {
+  const normalized = String(value || '')
+    .toLowerCase()
+    .replace(/^assets\/events\//, '')
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  if (!normalized) {
+    return [];
+  }
+  const baseTokens = normalized.split(/\s+/).filter(Boolean);
+  const expanded = [];
+  for (const token of baseTokens) {
+    expanded.push(token);
+    const aliases = EVENT_IMAGE_TOKEN_EXPANSIONS[token];
+    if (Array.isArray(aliases)) {
+      for (const alias of aliases) {
+        expanded.push(String(alias));
+      }
+    }
+  }
+  return Array.from(new Set(expanded));
+}
+
+function buildEventImageContextTokens(rawEvent, normalizedEvent) {
+  const raw = rawEvent && typeof rawEvent === 'object' ? rawEvent : {};
+  const normalized = normalizedEvent && typeof normalizedEvent === 'object' ? normalizedEvent : {};
+  const tokens = [
+    ...tokenizeEventImageValue(raw.id),
+    ...tokenizeEventImageValue(raw.title),
+    ...tokenizeEventImageValue(raw.description),
+    ...tokenizeEventImageValue(normalized.category || raw.category),
+    ...tokenizeEventImageValue(normalized.polarity || raw.polarity)
+  ];
+  const tags = Array.isArray(raw.tags) ? raw.tags : [];
+  for (const tag of tags) {
+    tokens.push(...tokenizeEventImageValue(tag));
+  }
+  return Array.from(new Set(tokens));
+}
+
+function scoreEventAssetPath(assetPath, contextTokens, normalizedEvent = null, rawEvent = null) {
+  const assetTokens = tokenizeEventImageValue(assetPath);
+  if (!assetTokens.length || !contextTokens.length) {
+    return 0;
+  }
+
+  const assetSet = new Set(assetTokens);
+  const normalized = normalizedEvent && typeof normalizedEvent === 'object' ? normalizedEvent : {};
+  const raw = rawEvent && typeof rawEvent === 'object' ? rawEvent : {};
+  const category = String(normalized.category || raw.category || '').toLowerCase();
+  const polarity = String(normalized.polarity || raw.polarity || '').toLowerCase();
+  let score = 0;
+  for (const token of contextTokens) {
+    if (assetSet.has(token)) {
+      score += 4;
+    }
+  }
+
+  if (assetSet.has('perfect') && (contextTokens.includes('ideal') || contextTokens.includes('stable') || contextTokens.includes('comfort'))) {
+    score += 6;
+  }
+  if (assetSet.has('heat') && (contextTokens.includes('temp') || contextTokens.includes('heat') || contextTokens.includes('hot'))) {
+    score += 6;
+  }
+  if ((assetSet.has('mold') || assetSet.has('fungus') || assetSet.has('fungal')) && (contextTokens.includes('humidity') || contextTokens.includes('mold') || contextTokens.includes('fungus'))) {
+    score += 6;
+  }
+  if ((assetSet.has('ventilation') || assetSet.has('breakdown')) && (contextTokens.includes('airflow') || contextTokens.includes('ventilation') || contextTokens.includes('stagnant'))) {
+    score += 6;
+  }
+  if ((assetSet.has('dry') || assetSet.has('drought')) && (contextTokens.includes('dry') || contextTokens.includes('vpd') || contextTokens.includes('humidity'))) {
+    score += 5;
+  }
+  if ((assetSet.has('growth') || assetSet.has('surge') || assetSet.has('burst')) && (contextTokens.includes('growth') || contextTokens.includes('bonus') || contextTokens.includes('expansion'))) {
+    score += 5;
+  }
+
+  if (polarity === 'positive' || category === 'positive') {
+    if (assetSet.has('perfect') || assetSet.has('recovery')) {
+      score += 6;
+    }
+    if (assetSet.has('mold') || assetSet.has('fungus') || assetSet.has('fungal') || assetSet.has('disease') || assetSet.has('pest')) {
+      score -= 10;
+    }
+  }
+
+  if (category === 'disease') {
+    if ((assetSet.has('mold') || assetSet.has('fungus') || assetSet.has('fungal')) && (contextTokens.includes('humidity') || contextTokens.includes('mold') || contextTokens.includes('fungus'))) {
+      score += 10;
+    }
+    if (assetSet.has('disease')) {
+      score += 4;
+    }
+    if (assetSet.has('perfect') || assetSet.has('growth') || assetSet.has('surge') || assetSet.has('burst')) {
+      score -= 6;
+    }
+  }
+
+  if (category === 'environment') {
+    if ((assetSet.has('heat') || assetSet.has('hot') || assetSet.has('dry')) && (contextTokens.includes('temp') || contextTokens.includes('heat') || contextTokens.includes('dry'))) {
+      score += 5;
+    }
+    if ((assetSet.has('ventilation') || assetSet.has('breakdown')) && (contextTokens.includes('airflow') || contextTokens.includes('ventilation') || contextTokens.includes('stagnant'))) {
+      score += 4;
+    }
+  }
+
+  return score;
+}
+
+function resolveEventImagePath(rawEvent, normalizedEvent = null) {
+  const raw = rawEvent && typeof rawEvent === 'object' ? rawEvent : {};
+  const explicitPath = String(raw.imagePath || raw.image || '').trim();
+  if (explicitPath) {
+    return explicitPath;
+  }
+
+  const normalized = normalizedEvent && typeof normalizedEvent === 'object' ? normalizedEvent : {};
+  const contextTokens = buildEventImageContextTokens(raw, normalized);
+  let bestPath = '';
+  let bestScore = -1;
+
+  for (const assetPath of EVENT_ASSET_MANIFEST) {
+    const score = scoreEventAssetPath(assetPath, contextTokens, normalized, raw);
+    if (score > bestScore) {
+      bestScore = score;
+      bestPath = assetPath;
+    }
+  }
+
+  if (bestPath && bestScore >= 4) {
+    return bestPath;
+  }
+
+  const categoryKey = String(normalized.category || raw.category || 'generic').toLowerCase();
+  return EVENT_IMAGE_CATEGORY_FALLBACKS[categoryKey] || EVENT_IMAGE_CATEGORY_FALLBACKS.generic;
+}
+
 function resolveFoundationCandidateEvent() {
   const api = getEventFoundationApis();
   if (!api.plantState || !api.flags || !api.memory || !api.resolver) {
@@ -351,6 +629,7 @@ function activateEvent(nowMs) {
   state.events.activeCooldownRealMinutes = clamp(Number(eventDef.cooldownRealMinutes) || 120, 10, 24 * 60);
   state.events.activeCategory = eventDef.category || 'generic';
   state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
+  state.events.activeImagePath = String(eventDef.imagePath || '');
   state.events.scheduler.lastEventRealTimeMs = nowMs;
 
   state.events.scheduler.lastEventId = eventDef.id;
@@ -483,7 +762,8 @@ function buildEventConstraintSnapshot() {
       temperatureC: environment.temperatureC,
       humidityPercent: environment.humidityPercent,
       vpdKpa: environment.vpdKpa,
-      airflowScore
+      airflowScore,
+      instabilityScore: clamp(Number(environment.instabilityScore) || 0, 0, 100)
     },
     rootZone: {
       ph: Number(roots.ph),
@@ -542,6 +822,8 @@ function evaluateEventConstraints(eventDef) {
     const minVpdKpa = Number(env.minVpdKpa);
     const maxVpdKpa = Number(env.maxVpdKpa);
     const minAirflowScore = Number(env.minAirflowScore);
+    const minInstabilityScore = Number(env.minInstabilityScore);
+    const maxInstabilityScore = Number(env.maxInstabilityScore);
 
     if (env.minTemperatureC !== null && env.minTemperatureC !== undefined && Number.isFinite(minTemperatureC) && snapshot.environmentState.temperatureC < minTemperatureC) return false;
     if (env.maxTemperatureC !== null && env.maxTemperatureC !== undefined && Number.isFinite(maxTemperatureC) && snapshot.environmentState.temperatureC > maxTemperatureC) return false;
@@ -550,6 +832,8 @@ function evaluateEventConstraints(eventDef) {
     if (env.minVpdKpa !== null && env.minVpdKpa !== undefined && Number.isFinite(minVpdKpa) && snapshot.environmentState.vpdKpa < minVpdKpa) return false;
     if (env.maxVpdKpa !== null && env.maxVpdKpa !== undefined && Number.isFinite(maxVpdKpa) && snapshot.environmentState.vpdKpa > maxVpdKpa) return false;
     if (env.minAirflowScore !== null && env.minAirflowScore !== undefined && Number.isFinite(minAirflowScore) && snapshot.environmentState.airflowScore < minAirflowScore) return false;
+    if (env.minInstabilityScore !== null && env.minInstabilityScore !== undefined && Number.isFinite(minInstabilityScore) && snapshot.environmentState.instabilityScore < minInstabilityScore) return false;
+    if (env.maxInstabilityScore !== null && env.maxInstabilityScore !== undefined && Number.isFinite(maxInstabilityScore) && snapshot.environmentState.instabilityScore > maxInstabilityScore) return false;
   }
 
   const root = constraints.rootZone && typeof constraints.rootZone === 'object'
@@ -706,6 +990,7 @@ function resolveTriggerField(fieldPath) {
       ? clamp(Number(environment.airflowScore), 0, 100)
       : (environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30));
   }
+  if (fieldPath === 'env.instabilityScore') return clamp(Number(environment.instabilityScore) || 0, 0, 100);
 
   const roots = deriveRootZoneReadout(environment);
   if (fieldPath === 'root.ph') return Number(roots.ph);
@@ -902,6 +1187,7 @@ function enterEventCooldown(nowMs) {
   state.events.activeCooldownRealMinutes = 120;
   state.events.activeCategory = 'generic';
   state.events.activeTags = [];
+  state.events.activeImagePath = '';
 
   if (activeEventId) {
     state.events.scheduler.eventCooldowns[activeEventId] = nowMs + perEventCooldownMs;
@@ -1454,6 +1740,7 @@ function syncActiveEventFromCatalog() {
   state.events.activeCooldownRealMinutes = eventDef.cooldownRealMinutes || 120;
   state.events.activeCategory = eventDef.category || 'generic';
   state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
+  state.events.activeImagePath = String(eventDef.imagePath || '');
 
   const byOptionId = new Map(eventDef.options.map((option) => [option.id, option]));
   const currentIds = Array.isArray(state.events.activeOptions)
@@ -1734,4 +2021,9 @@ window.GrowSimEvents = Object.freeze({
   scheduleNextEventRoll,
   registerServiceWorker,
   resolveFoundationCandidateEvent
+});
+
+window.GrowSimEventAssets = Object.freeze({
+  resolveEventImagePath,
+  manifest: EVENT_ASSET_MANIFEST.slice()
 });

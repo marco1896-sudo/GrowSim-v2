@@ -28,3 +28,21 @@ Open items:
   - no instant temperature snap after target change
 - Found likely live-app root cause for persistent user-visible bug: stale cached `sim.js` / `app.js` in PWA shell due unchanged script query strings and service worker cache version.
 - Bumped `sim.js` and `app.js` query versions in `index.html` and updated `sw.js` cache version to force fresh runtime assets.
+- Extended the event system with climate-driven indoor tent events in `data/events.v2.json`:
+  - positive climate rewards
+  - stress/risk climate penalties
+  - neutral climate drift warnings
+- Added lightweight event image resolution in `events.js` using keyword-based matching against `assets/events`.
+- Added event image rendering support to the event sheet in `index.html`, `styles.css`, `ui.js`, and `app.js` via `state.events.activeImagePath`.
+- Added actual-climate instability telemetry in `sim.js` for fluctuation-based event triggers.
+- Added regression coverage for:
+  - `env.instabilityScore`
+  - indoor-only climate event gating
+  - event asset mapping for heat / ideal / humidity-risk climate events
+- Small positive-event tuning pass:
+  - slightly increased the payoff of ideal VPD / stable comfort / veg humidity rewards
+  - nudged stable comfort weight up a little without changing cooldown architecture
+
+Open items:
+- Watch live gameplay frequency of the new climate warnings vs positive rewards before broad balance tweaks.
+- If players want stronger visual distinction later, event image styling can be refined without touching the event engine.

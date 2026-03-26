@@ -285,6 +285,7 @@ const state = {
     activeCooldownRealMinutes: 120,
     activeCategory: 'generic',
     activeTags: [],
+    activeImagePath: '',
     resolvingUntilMs: 0,
     pendingOutcome: null,
     resolvedOutcome: null,
@@ -3690,6 +3691,21 @@ function renderEventSheet() {
     return;
   }
 
+  if (ui.eventImageWrap && ui.eventImage) {
+    const imagePath = state.events.machineState === 'activeEvent' ? String(state.events.activeImagePath || '') : '';
+    if (imagePath) {
+      ui.eventImage.src = imagePath;
+      ui.eventImage.alt = state.events.activeEventTitle ? `${state.events.activeEventTitle} – Ereignisbild` : 'Ereignisbild';
+      ui.eventImageWrap.classList.remove('hidden');
+      ui.eventImageWrap.setAttribute('aria-hidden', 'false');
+    } else {
+      ui.eventImage.removeAttribute('src');
+      ui.eventImage.alt = '';
+      ui.eventImageWrap.classList.add('hidden');
+      ui.eventImageWrap.setAttribute('aria-hidden', 'true');
+    }
+  }
+
   ui.eventStateBadge.textContent = `Status: ${translateEventState(state.events.machineState)}`;
 
   if (state.events.machineState === 'activeEvent') {
@@ -5662,6 +5678,7 @@ function getCanonicalEvents(snapshot) {
   if (!Number.isFinite(s.events.activeCooldownRealMinutes)) s.events.activeCooldownRealMinutes = 120;
   if (typeof s.events.activeCategory !== 'string') s.events.activeCategory = 'generic';
   if (!Array.isArray(s.events.activeTags)) s.events.activeTags = [];
+  if (typeof s.events.activeImagePath !== 'string') s.events.activeImagePath = '';
   if (!Number.isFinite(s.events.resolvingUntilMs)) s.events.resolvingUntilMs = 0;
   if (!s.events.pendingOutcome || typeof s.events.pendingOutcome !== 'object') s.events.pendingOutcome = null;
   if (!s.events.resolvedOutcome || typeof s.events.resolvedOutcome !== 'object') s.events.resolvedOutcome = null;
@@ -5903,6 +5920,7 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
         activeCooldownRealMinutes: Number(saved.event.activeCooldownRealMinutes || 120),
         activeCategory: String(saved.event.activeCategory || 'generic'),
         activeTags: Array.isArray(saved.event.activeTags) ? saved.event.activeTags : [],
+        activeImagePath: String(saved.event.activeImagePath || ''),
         lastEventAtMs: Number(saved.event.lastEventAtMs || 0),
         cooldownUntilMs: Number(saved.event.cooldownUntilMs || 0),
         catalog: Array.isArray(saved.event.catalog) ? saved.event.catalog : events.catalog,
@@ -6114,6 +6132,7 @@ function resetStateToDefaults() {
     activeCooldownRealMinutes: 120,
     activeCategory: 'generic',
     activeTags: [],
+    activeImagePath: '',
     lastEventAtMs: 0,
     cooldownUntilMs: 0,
     catalog: preservedEventCatalog
@@ -6760,6 +6779,14 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
   }
 
   const category = String(rawEvent.category || inferCategoryFromTags(rawEvent.tags || []));
+  const normalizedSeed = {
+    category,
+    polarity: inferEventPolarity(rawEvent, category)
+  };
+  const eventAssetsApi = window.GrowSimEventAssets;
+  const imagePath = eventAssetsApi && typeof eventAssetsApi.resolveEventImagePath === 'function'
+    ? String(eventAssetsApi.resolveEventImagePath(rawEvent, normalizedSeed) || '')
+    : String(rawEvent.imagePath || rawEvent.image || '');
 
   return {
     id: String(rawEvent.id),
@@ -6775,11 +6802,12 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     cooldownRealMinutes: clamp(Number(rawEvent.cooldownRealMinutes) || 120, 10, 24 * 60),
     learningNote: String(rawEvent.learningNote || ''),
     severity: normalizeSeverity(rawEvent.severity),
-    polarity: inferEventPolarity(rawEvent, category),
+    polarity: normalizedSeed.polarity,
     environment: inferEnvironmentScope(rawEvent),
     tags: Array.isArray(rawEvent.tags) ? rawEvent.tags.map(String) : [],
     tone: String(rawEvent.tone || ''),
     isFollowUp: rawEvent.isFollowUp === true,
+    imagePath,
     options,
     sourceVersion
   };
@@ -6904,6 +6932,7 @@ function syncActiveEventFromCatalog() {
   state.events.activeCooldownRealMinutes = eventDef.cooldownRealMinutes || 120;
   state.events.activeCategory = eventDef.category || 'generic';
   state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
+  state.events.activeImagePath = String(eventDef.imagePath || '');
 
   const byOptionId = new Map(eventDef.options.map((option) => [option.id, option]));
   const currentIds = Array.isArray(state.events.activeOptions)
