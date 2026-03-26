@@ -1,0 +1,158 @@
+{
+  "grid": {
+    "cols": 6,
+    "rows": 4,
+    "mode": "full_canvas_equal_cells"
+  },
+  "boards": [
+    {
+      "source": "tmp/imagegen/raw/ui_core_board.png",
+      "target_dir": "assets/ui/icons",
+      "names": [
+        "menu",
+        "back",
+        "close",
+        "settings",
+        "info",
+        "help",
+        "pause",
+        "play",
+        "restart",
+        "save",
+        "confirm",
+        "cancel"
+      ]
+    },
+    {
+      "source": "tmp/imagegen/raw/actions_board.png",
+      "target_dir": "assets/gameplay/actions",
+      "names": [
+        "watering_low_mist",
+        "watering_medium_deep",
+        "watering_high_flush",
+        "fertilizing_low_microfeed",
+        "fertilizing_medium_balanced",
+        "fertilizing_high_boost",
+        "training_low_leaf_tuck",
+        "training_medium_lst",
+        "training_high_defoliation",
+        "environment_low_airflow",
+        "environment_medium_climate",
+        "environment_high_reset"
+      ]
+    },
+    {
+      "source": "tmp/imagegen/raw/resources_board.png",
+      "target_dir": "assets/gameplay/resources",
+      "names": [
+        "health",
+        "stress",
+        "water",
+        "nutrition",
+        "growth",
+        "risk",
+        "event_timer",
+        "sim_time"
+      ]
+    },
+    {
+      "source": "tmp/imagegen/raw/states_board.png",
+      "target_dir": "assets/gameplay/states",
+      "names": [
+        "healthy",
+        "growth_boost",
+        "slow_growth",
+        "nutrient_deficiency",
+        "nutrient_burn",
+        "overwatered",
+        "underwatered",
+        "mold_warning",
+        "pest_mites",
+        "pest_thrips",
+        "recovery",
+        "dead_plant"
+      ]
+    },
+    {
+      "source": "tmp/imagegen/raw/events_board_a.png",
+      "target_dir": "assets/gameplay/events",
+      "names": [
+        "soil_compaction",
+        "fungus_gnat_wave",
+        "nitrogen_lockout",
+        "magnesium_deficit",
+        "salt_buildup",
+        "soil_too_wet",
+        "dry_pocket",
+        "ph_drift_high",
+        "topsoil_mold",
+        "root_bound_warning"
+      ]
+    },
+    {
+      "source": "tmp/imagegen/raw/events_board_b.png",
+      "target_dir": "assets/gameplay/events",
+      "names": [
+        "calcium_spotting",
+        "thrips_early",
+        "mite_hotspot",
+        "cold_root_zone",
+        "hot_dry_day",
+        "overfeeding_warning",
+        "beneficial_fungi_colonized",
+        "watering_gap",
+        "soil_life_decline",
+        "late_flower_humidity"
+      ]
+    },
+    {
+      "source": "tmp/imagegen/raw/progression_board.png",
+      "target_dir": "assets/gameplay/progression",
+      "names": [
+        "seed",
+        "sprout",
+        "seedling",
+        "early_veg",
+        "mid_veg",
+        "late_veg",
+        "preflower",
+        "flowering",
+        "late_flower",
+        "harvest_ready"
+      ]
+    }
+  ],
+  "optional_boards": [
+    {
+      "source": "tmp/imagegen/raw/optional_expansion_board.png",
+      "targets": [
+        {
+          "target_dir": "assets/gameplay/resources",
+          "names": [
+            "ph",
+            "ec",
+            "temperature",
+            "humidity",
+            "co2",
+            "oxygen",
+            "root_health",
+            "currency"
+          ],
+          "start_slot": 0
+        },
+        {
+          "target_dir": "assets/ui/icons",
+          "names": [
+            "achievements",
+            "leaderboard",
+            "push_notifications",
+            "language",
+            "support",
+            "about"
+          ],
+          "start_slot": 8
+        }
+      ]
+    }
+  ]
+}

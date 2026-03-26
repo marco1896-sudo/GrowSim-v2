@@ -1,0 +1,646 @@
+{
+  "meta": {
+    "image": "ui_icon_sheet.png",
+    "iconCount": 90,
+    "cellSize": 512,
+    "padding": 24,
+    "atlasWidth": 4848,
+    "atlasHeight": 5384,
+    "columns": 9,
+    "rows": 10,
+    "aliases": {
+      "back": "ui/icons/back",
+      "cancel": "ui/icons/cancel",
+      "close": "ui/icons/close",
+      "confirm": "ui/icons/confirm",
+      "help": "ui/icons/help",
+      "info": "ui/icons/info",
+      "menu": "ui/icons/menu",
+      "pause": "ui/icons/pause",
+      "play": "ui/icons/play",
+      "restart": "ui/icons/restart",
+      "save": "ui/icons/save",
+      "settings": "ui/icons/settings",
+      "environment_airflow": "gameplay/actions/environment_airflow",
+      "environment_climate": "gameplay/actions/environment_climate",
+      "environment_reset": "gameplay/actions/environment_reset",
+      "fertilizing_high": "gameplay/actions/fertilizing_high",
+      "fertilizing_low": "gameplay/actions/fertilizing_low",
+      "fertilizing_medium": "gameplay/actions/fertilizing_medium",
+      "training_high": "gameplay/actions/training_high",
+      "training_low": "gameplay/actions/training_low",
+      "training_medium": "gameplay/actions/training_medium",
+      "watering_high": "gameplay/actions/watering_high",
+      "watering_low": "gameplay/actions/watering_low",
+      "watering_medium": "gameplay/actions/watering_medium",
+      "co2": "gameplay/resources/co2",
+      "ec": "gameplay/resources/ec",
+      "growth": "gameplay/resources/growth",
+      "humidity": "gameplay/resources/humidity",
+      "light": "gameplay/resources/light",
+      "nutrients": "gameplay/resources/nutrients",
+      "nutrition": "gameplay/resources/nutrition",
+      "ph": "gameplay/resources/ph",
+      "sim_time": "gameplay/resources/sim_time",
+      "stress": "gameplay/resources/stress",
+      "temperature": "gameplay/resources/temperature",
+      "water": "gameplay/resources/water",
+      "dead": "gameplay/states/dead",
+      "growth_boost": "gameplay/states/growth_boost",
+      "healthy": "gameplay/states/healthy",
+      "heat_stress": "gameplay/states/heat_stress",
+      "light_stress": "gameplay/states/light_stress",
+      "mold_warning": "gameplay/states/mold_warning",
+      "nutrient_burn": "gameplay/states/nutrient_burn",
+      "nutrient_deficiency": "gameplay/states/nutrient_deficiency",
+      "overwatered": "gameplay/states/overwatered",
+      "pest_mites": "gameplay/states/pest_mites",
+      "pest_thrips": "gameplay/states/pest_thrips",
+      "recovery": "gameplay/states/recovery",
+      "root_rot": "gameplay/states/root_rot",
+      "slow_growth": "gameplay/states/slow_growth",
+      "underwatered": "gameplay/states/underwatered",
+      "beneficial_fungi_colonized": "gameplay/events/beneficial_fungi_colonized",
+      "calcium_spotting": "gameplay/events/calcium_spotting",
+      "cold_root_zone": "gameplay/events/cold_root_zone",
+      "disease": "gameplay/events/disease",
+      "dry_pocket": "gameplay/events/dry_pocket",
+      "dry_soil": "gameplay/events/dry_soil",
+      "fungal_growth": "gameplay/events/fungal_growth",
+      "fungus_gnat_wave": "gameplay/events/fungus_gnat_wave",
+      "heat_wave": "gameplay/events/heat_wave",
+      "hot_dry_day": "gameplay/events/hot_dry_day",
+      "late_flower_humidity": "gameplay/events/late_flower_humidity",
+      "magnesium_deficit": "gameplay/events/magnesium_deficit",
+      "mite_hotspot": "gameplay/events/mite_hotspot",
+      "nitrogen_lockout": "gameplay/events/nitrogen_lockout",
+      "nutrient_lockout": "gameplay/events/nutrient_lockout",
+      "pest_attack": "gameplay/events/pest_attack",
+      "ph_drift": "gameplay/events/ph_drift",
+      "ph_drift_high": "gameplay/events/ph_drift_high",
+      "root_bound_warning": "gameplay/events/root_bound_warning",
+      "salt_buildup": "gameplay/events/salt_buildup",
+      "soil_compaction": "gameplay/events/soil_compaction",
+      "soil_life_decline": "gameplay/events/soil_life_decline",
+      "soil_too_wet": "gameplay/events/soil_too_wet",
+      "thrips_early": "gameplay/events/thrips_early",
+      "too_wet_soil": "gameplay/events/too_wet_soil",
+      "topsoil_mold": "gameplay/events/topsoil_mold",
+      "watering_gap": "gameplay/events/watering_gap",
+      "aphids": "gameplay/pests/aphids",
+      "fungus_gnats": "gameplay/pests/fungus_gnats",
+      "spider_mites": "gameplay/pests/spider_mites",
+      "thrips": "gameplay/pests/thrips",
+      "flowering": "gameplay/progression/flowering",
+      "harvest_ready": "gameplay/progression/harvest_ready",
+      "late_flower": "gameplay/progression/late_flower",
+      "preflower": "gameplay/progression/preflower",
+      "seed": "gameplay/progression/seed",
+      "seedling": "gameplay/progression/seedling",
+      "sprout": "gameplay/progression/sprout",
+      "vegetative": "gameplay/progression/vegetative"
+    }
+  },
+  "icons": {
+    "ui/icons/back": {
+      "x": 24,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/cancel": {
+      "x": 560,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/close": {
+      "x": 1096,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/confirm": {
+      "x": 1632,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/help": {
+      "x": 2168,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/info": {
+      "x": 2704,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/menu": {
+      "x": 3240,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/pause": {
+      "x": 3776,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/play": {
+      "x": 4312,
+      "y": 24,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/restart": {
+      "x": 24,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/save": {
+      "x": 560,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "ui/icons/settings": {
+      "x": 1096,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/environment_airflow": {
+      "x": 1632,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/environment_climate": {
+      "x": 2168,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/environment_reset": {
+      "x": 2704,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/fertilizing_high": {
+      "x": 3240,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/fertilizing_low": {
+      "x": 3776,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/fertilizing_medium": {
+      "x": 4312,
+      "y": 560,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/training_high": {
+      "x": 24,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/training_low": {
+      "x": 560,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/training_medium": {
+      "x": 1096,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/watering_high": {
+      "x": 1632,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/watering_low": {
+      "x": 2168,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/actions/watering_medium": {
+      "x": 2704,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/co2": {
+      "x": 3240,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/ec": {
+      "x": 3776,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/growth": {
+      "x": 4312,
+      "y": 1096,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/humidity": {
+      "x": 24,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/light": {
+      "x": 560,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/nutrients": {
+      "x": 1096,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/nutrition": {
+      "x": 1632,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/ph": {
+      "x": 2168,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/sim_time": {
+      "x": 2704,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/stress": {
+      "x": 3240,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/temperature": {
+      "x": 3776,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/resources/water": {
+      "x": 4312,
+      "y": 1632,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/dead": {
+      "x": 24,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/growth_boost": {
+      "x": 560,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/healthy": {
+      "x": 1096,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/heat_stress": {
+      "x": 1632,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/light_stress": {
+      "x": 2168,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/mold_warning": {
+      "x": 2704,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/nutrient_burn": {
+      "x": 3240,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/nutrient_deficiency": {
+      "x": 3776,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/overwatered": {
+      "x": 4312,
+      "y": 2168,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/pest_mites": {
+      "x": 24,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/pest_thrips": {
+      "x": 560,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/recovery": {
+      "x": 1096,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/root_rot": {
+      "x": 1632,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/slow_growth": {
+      "x": 2168,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/states/underwatered": {
+      "x": 2704,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/beneficial_fungi_colonized": {
+      "x": 3240,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/calcium_spotting": {
+      "x": 3776,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/cold_root_zone": {
+      "x": 4312,
+      "y": 2704,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/disease": {
+      "x": 24,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/dry_pocket": {
+      "x": 560,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/dry_soil": {
+      "x": 1096,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/fungal_growth": {
+      "x": 1632,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/fungus_gnat_wave": {
+      "x": 2168,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/heat_wave": {
+      "x": 2704,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/hot_dry_day": {
+      "x": 3240,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/late_flower_humidity": {
+      "x": 3776,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/magnesium_deficit": {
+      "x": 4312,
+      "y": 3240,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/mite_hotspot": {
+      "x": 24,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/nitrogen_lockout": {
+      "x": 560,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/nutrient_lockout": {
+      "x": 1096,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/pest_attack": {
+      "x": 1632,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/ph_drift": {
+      "x": 2168,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/ph_drift_high": {
+      "x": 2704,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/root_bound_warning": {
+      "x": 3240,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/salt_buildup": {
+      "x": 3776,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/soil_compaction": {
+      "x": 4312,
+      "y": 3776,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/soil_life_decline": {
+      "x": 24,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/soil_too_wet": {
+      "x": 560,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/thrips_early": {
+      "x": 1096,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/too_wet_soil": {
+      "x": 1632,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/topsoil_mold": {
+      "x": 2168,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/events/watering_gap": {
+      "x": 2704,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/pests/aphids": {
+      "x": 3240,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/pests/fungus_gnats": {
+      "x": 3776,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/pests/spider_mites": {
+      "x": 4312,
+      "y": 4312,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/pests/thrips": {
+      "x": 24,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/progression/flowering": {
+      "x": 560,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/progression/harvest_ready": {
+      "x": 1096,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/progression/late_flower": {
+      "x": 1632,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/progression/preflower": {
+      "x": 2168,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/progression/seed": {
+      "x": 2704,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/progression/seedling": {
+      "x": 3240,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/progression/sprout": {
+      "x": 3776,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    },
+    "gameplay/progression/vegetative": {
+      "x": 4312,
+      "y": 4848,
+      "w": 512,
+      "h": 512
+    }
+  }
+}

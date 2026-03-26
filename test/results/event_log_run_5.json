@@ -1,0 +1,368 @@
+[
+  {
+    "day": 5.28,
+    "stage": 3,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.04,
+      "growth": 0.9
+    }
+  },
+  {
+    "day": 8.44,
+    "stage": 3,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.18,
+      "growth": 0.9
+    }
+  },
+  {
+    "day": 10.52,
+    "stage": 4,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0.11,
+    "resulting_status_change": {
+      "risk": -1,
+      "growth": 1.6
+    }
+  },
+  {
+    "day": 11.45,
+    "stage": 4,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.94,
+      "growth": 0.9
+    }
+  },
+  {
+    "day": 13.55,
+    "stage": 4,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0.61,
+    "resulting_status_change": {
+      "risk": -1,
+      "growth": 1.6
+    }
+  },
+  {
+    "day": 14.25,
+    "stage": 4,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -1.5,
+      "growth": 0.9
+    }
+  },
+  {
+    "day": 16.83,
+    "stage": 5,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 1.81,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 18.41,
+    "stage": 5,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.77
+    }
+  },
+  {
+    "day": 19.5,
+    "stage": 5,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0.1,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 21.25,
+    "stage": 6,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.88
+    }
+  },
+  {
+    "day": 22.68,
+    "stage": 6,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 1.68,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 24.6,
+    "stage": 6,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -1.3
+    }
+  },
+  {
+    "day": 25.62,
+    "stage": 7,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 2.2,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 27.68,
+    "stage": 7,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -1.68
+    }
+  },
+  {
+    "day": 28.78,
+    "stage": 7,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 1.77,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 30.52,
+    "stage": 8,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -2.48
+    }
+  },
+  {
+    "day": 31.84,
+    "stage": 8,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0.07,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 33.44,
+    "stage": 8,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -1.04
+    }
+  },
+  {
+    "day": 34.88,
+    "stage": 8,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0.42,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 36.61,
+    "stage": 9,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -2.16
+    }
+  },
+  {
+    "day": 37.53,
+    "stage": 9,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0.41,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 39.53,
+    "stage": 9,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.12
+    }
+  },
+  {
+    "day": 40.46,
+    "stage": 9,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 2.01,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 42.4,
+    "stage": 10,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.54
+    }
+  },
+  {
+    "day": 43.72,
+    "stage": 10,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 1.24,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 44.87,
+    "stage": 10,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.37
+    }
+  },
+  {
+    "day": 46.53,
+    "stage": 10,
+    "event_id": "v2_positive_outdoor_sun_window",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 2.55,
+    "resulting_status_change": {
+      "risk": -1
+    }
+  },
+  {
+    "day": 47.45,
+    "stage": 10,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.94
+    }
+  },
+  {
+    "day": 49.86,
+    "stage": 11,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.33
+    }
+  },
+  {
+    "day": 52.78,
+    "stage": 11,
+    "event_id": "v2_positive_ideal_mild_days",
+    "event_category": "positive",
+    "event_polarity": "positive",
+    "environment": "greenhouse",
+    "stress_level": 0,
+    "resulting_status_change": {
+      "stress": -0.54
+    }
+  }
+]

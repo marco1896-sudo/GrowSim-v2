@@ -1,0 +1,101 @@
+[
+  {
+    "file": "assets/gameplay/events/beneficial_fungi_colonized.png",
+    "valid": true,
+    "bbox": [
+      41,
+      24,
+      471,
+      488
+    ],
+    "reasons": []
+  },
+  {
+    "file": "assets/gameplay/events/calcium_spotting.png",
+    "valid": true,
+    "bbox": [
+      55,
+      54,
+      452,
+      438
+    ],
+    "reasons": []
+  },
+  {
+    "file": "assets/gameplay/events/hot_dry_day.png",
+    "valid": true,
+    "bbox": [
+      53,
+      27,
+      434,
+      486
+    ],
+    "reasons": []
+  },
+  {
+    "file": "assets/gameplay/events/magnesium_deficit.png",
+    "valid": true,
+    "bbox": [
+      48,
+      51,
+      444,
+      456
+    ],
+    "reasons": []
+  },
+  {
+    "file": "assets/gameplay/events/mite_hotspot.png",
+    "valid": true,
+    "bbox": [
+      30,
+      35,
+      463,
+      466
+    ],
+    "reasons": []
+  },
+  {
+    "file": "assets/gameplay/events/nitrogen_lockout.png",
+    "valid": true,
+    "bbox": [
+      28,
+      28,
+      441,
+      450
+    ],
+    "reasons": []
+  },
+  {
+    "file": "assets/gameplay/events/ph_drift_high.png",
+    "valid": true,
+    "bbox": [
+      72,
+      90,
+      441,
+      419
+    ],
+    "reasons": []
+  },
+  {
+    "file": "assets/gameplay/events/root_bound_warning.png",
+    "valid": true,
+    "bbox": [
+      78,
+      32,
+      424,
+      473
+    ],
+    "reasons": []
+  },
+  {
+    "file": "assets/gameplay/events/soil_life_decline.png",
+    "valid": true,
+    "bbox": [
+      25,
+      35,
+      455,
+      449
+    ],
+    "reasons": []
+  }
+]

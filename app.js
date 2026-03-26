@@ -1,0 +1,7508 @@
+﻿/*
+ASSUMPTIONS:
+- This Phase-1 implementation follows docs/PLAN.md architecture with one nested state object and one central tick loop.
+- Runtime mode defaults to "dev" for faster verification and can be switched via CONFIG.MODE.
+- /api/push/subscribe and /api/push/schedule are backend stubs; failures are logged but never break the app.
+*/
+
+'use strict';
+
+const CONFIG = Object.freeze({
+  MODE: 'prod',
+  timing: Object.freeze({
+    uiTickMs: 1000,
+    eventRollMinRealMs: 30 * 60 * 1000,
+    eventRollMaxRealMs: 90 * 60 * 1000,
+    eventCooldownMs: 20 * 60 * 1000
+  }),
+  simulation: Object.freeze({
+    timeCompression: 12,
+    dayStartHour: 6,
+    nightStartHour: 22,
+    startHour: 8,
+    globalSeed: 'grow-sim-v1-seed',
+    plantId: 'plant-001'
+  }),
+  boostAdvanceMs: 30 * 60 * 1000,
+  maxHistoryLog: 200,
+  persistThrottleMs: 2500,
+  logTickEveryNTicks: 10,
+  actionDebounceMs: 450
+});
+
+const MODE = CONFIG.MODE === 'dev' ? 'dev' : 'prod';
+const UI_TICK_INTERVAL_MS = CONFIG.timing.uiTickMs;
+const EVENT_ROLL_MIN_REAL_MS = CONFIG.timing.eventRollMinRealMs;
+const EVENT_ROLL_MAX_REAL_MS = CONFIG.timing.eventRollMaxRealMs;
+const EVENT_COOLDOWN_MS = CONFIG.timing.eventCooldownMs;
+const EVENT_RESOLUTION_MS = 10 * 60 * 1000;
+const BOOST_ADVANCE_MS = CONFIG.boostAdvanceMs;
+// Absichtlich limitierter Boost: Event-Timer um 30 Min vorziehen,
+// Pflanzenwerte nur leicht anstoßen (kein vollständiger 30-Minuten-Simulationssprung).
+const BOOST_PLANT_EFFECT_MS = 3 * 60 * 1000;
+const BOOST_GROWTH_PERCENT_DELTA = 0.02;
+const SIM_TIME_COMPRESSION = CONFIG.simulation.timeCompression;
+const SIM_DAY_START_HOUR = CONFIG.simulation.dayStartHour;
+const SIM_NIGHT_START_HOUR = CONFIG.simulation.nightStartHour;
+const SIM_START_HOUR = CONFIG.simulation.startHour;
+const SIM_GLOBAL_SEED = CONFIG.simulation.globalSeed;
+const SIM_PLANT_ID = CONFIG.simulation.plantId;
+const MAX_HISTORY_LOG = CONFIG.maxHistoryLog;
+const PERSIST_THROTTLE_MS = CONFIG.persistThrottleMs;
+const MAX_ELAPSED_PER_TICK_MS = 5000;
+const MAX_OFFLINE_SIM_MS = 8 * 60 * 60 * 1000;
+const APP_BASE_PATH = resolveAppBasePath();
+const FREEZE_SIM_ON_DEATH = true; // Für Klarheit: Simulation pausiert nach Tod der Pflanze.
+
+const DB_NAME = 'grow-sim-db';
+const DB_STORE = 'kv';
+const DB_KEY = 'state-v2';
+const LS_STATE_KEY = 'grow-sim-state-v2';
+const PUSH_SUB_KEY = 'grow-sim-push-sub-v1';
+const EVENTS_CATALOG_VERSION = '20260301-de';
+const ACTIONS_CATALOG_VERSION = '20260304-v1';
+const VAPID_PUBLIC_KEY = 'BElxPLACEHOLDERp8v2C4CwY6ofqP5E8v2rFjQvqW8g4bW2-v8JvKc-l7dXXn4N1xqjY7PqFhL3O8m4jzWzI8v7jA';
+
+const REAL_RUN_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const TOTAL_LIFECYCLE_SIM_DAYS = 88;
+const SIM_DAY_MS = 24 * 60 * 60 * 1000;
+const TOTAL_LIFECYCLE_SIM_MS = TOTAL_LIFECYCLE_SIM_DAYS * SIM_DAY_MS;
+
+const STAGE_DEFS = Object.freeze([
+  Object.freeze({ index: 0, id: 'germination', label: 'Keimung', simDayStart: 0, phase: 'seedling', minHealth: 30, maxStress: 85 }),
+  Object.freeze({ index: 1, id: 'seedling', label: 'Keimling', simDayStart: 3, phase: 'seedling', minHealth: 35, maxStress: 80 }),
+  Object.freeze({ index: 2, id: 'early_vegetative', label: 'Frühe Vegetationsphase', simDayStart: 8, phase: 'vegetative', minHealth: 40, maxStress: 75 }),
+  Object.freeze({ index: 3, id: 'vegetative', label: 'Vegetationsphase', simDayStart: 16, phase: 'vegetative', minHealth: 42, maxStress: 72 }),
+  Object.freeze({ index: 4, id: 'late_vegetative', label: 'Späte Vegetationsphase', simDayStart: 24, phase: 'vegetative', minHealth: 45, maxStress: 70 }),
+  Object.freeze({ index: 5, id: 'pre_flower', label: 'Vorblüte', simDayStart: 31, phase: 'vegetative', minHealth: 48, maxStress: 65 }),
+  Object.freeze({ index: 6, id: 'stretch', label: 'Streckphase', simDayStart: 39, phase: 'flowering', minHealth: 50, maxStress: 60 }),
+  Object.freeze({ index: 7, id: 'early_flower', label: 'Frühe Blüte', simDayStart: 47, phase: 'flowering', minHealth: 52, maxStress: 58 }),
+  Object.freeze({ index: 8, id: 'flower', label: 'Blüte', simDayStart: 57, phase: 'flowering', minHealth: 54, maxStress: 55 }),
+  Object.freeze({ index: 9, id: 'late_flower', label: 'Späte Blüte', simDayStart: 66, phase: 'flowering', minHealth: 55, maxStress: 52 }),
+  Object.freeze({ index: 10, id: 'ripening', label: 'Reife', simDayStart: 75, phase: 'harvest', minHealth: 56, maxStress: 50 }),
+  Object.freeze({ index: 11, id: 'harvest_ready', label: 'Erntereif', simDayStart: 84, phase: 'harvest', minHealth: 0, maxStress: 100 })
+]);
+
+const DEFAULT_STAGE_TIMELINE = Object.freeze([
+  Object.freeze({ id: 'germination_seedling', label: 'Keimung / Sämling', phase: 'seedling', simDayStart: 0 }),
+  Object.freeze({ id: 'early_vegetative', label: 'Frühe Vegetation', phase: 'vegetative', simDayStart: 4 }),
+  Object.freeze({ id: 'mid_vegetative', label: 'Mittlere Vegetation', phase: 'vegetative', simDayStart: 14 }),
+  Object.freeze({ id: 'late_vegetative_preflower', label: 'Späte Vegetation / Vorblüte', phase: 'vegetative', simDayStart: 28 }),
+  Object.freeze({ id: 'early_flower', label: 'Frühe Blüte', phase: 'flowering', simDayStart: 38 }),
+  Object.freeze({ id: 'mid_flower', label: 'Mittlere Blüte', phase: 'flowering', simDayStart: 52 }),
+  Object.freeze({ id: 'late_flower_ripe', label: 'Späte Blüte / Reife', phase: 'flowering', simDayStart: 68 }),
+  Object.freeze({ id: 'finish', label: 'Reife / Finish', phase: 'harvest', simDayStart: 82 })
+]);
+
+const PLANT_SPRITE_ASSET = 'assets/plant_growth/plant_growth_sprite.png';
+const PLANT_METADATA_ASSET = 'assets/plant_growth/plant_growth_metadata.json';
+const PLANT_STAGE_IMAGES = Object.freeze([
+  'assets/plant_growth/aligned_frames/frame_008.png',  // stage_1 (Keimling)
+  'assets/plant_growth/aligned_frames/frame_023.png',  // stage_2 (Wachstum)
+  'assets/plant_growth/aligned_frames/frame_039.png'   // stage_3 (Bluete)
+]);
+
+const DEFAULT_PLANT_STAGE_RANGES = Object.freeze({
+  seed: Object.freeze({ start: 1, end: 3 }),
+  sprout: Object.freeze({ start: 4, end: 7 }),
+  seedling: Object.freeze({ start: 8, end: 10 }),
+  vegetative: Object.freeze({ start: 11, end: 27 }),
+  preflower: Object.freeze({ start: 28, end: 31 }),
+  flowering: Object.freeze({ start: 32, end: 38 }),
+  late_flowering: Object.freeze({ start: 39, end: 43 }),
+  harvest: Object.freeze({ start: 44, end: 46 })
+});
+
+const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
+  'seed',
+  'sprout',
+  'seedling',
+  'vegetative',
+  'vegetative',
+  'preflower',
+  'flowering',
+  'flowering',
+  'late_flowering',
+  'late_flowering',
+  'harvest',
+  'harvest'
+]);
+
+// Figma reference (Home 132:51) defines a shared anchor zone:
+// center + baseline are fixed, while stage variants scale inside that same zone.
+const HOME_PLANT_REFERENCE_FIT = Object.freeze({
+  maxFootprintScale: 0.83,
+  baselineInsetPx: 54
+});
+
+const HOME_PLANT_STAGE_SCALE = Object.freeze({
+  seed: 0.84,
+  sprout: 0.9,
+  seedling: 0.96,
+  vegetative: 0.96,
+  preflower: 0.99,
+  flowering: 1.0,
+  late_flowering: 1.0,
+  harvest: 0.96
+});
+
+const plantSpriteRuntime = {
+  ready: false,
+  loadingPromise: null,
+  image: null,
+  metadata: null,
+  stageRanges: DEFAULT_PLANT_STAGE_RANGES,
+  frameBoundsCache: new Map(),
+  boundsCanvas: null,
+  boundsCtx: null
+};
+
+const PHASE_LABEL_DE = Object.freeze({
+  seedling: 'Keimling',
+  vegetative: 'Vegetativ',
+  flowering: 'Blüte',
+  harvest: 'Ernte',
+  dead: 'Tot'
+});
+
+const OVERLAY_ASSETS = Object.freeze({
+  overlay_burn: 'assets/gameplay/states/nutrient_burn.png',
+  overlay_def_mg: 'assets/gameplay/states/nutrient_deficiency.png',
+  overlay_def_n: 'assets/gameplay/states/nutrient_deficiency.png',
+  overlay_mold_warning: 'assets/gameplay/states/mold_warning.png',
+  overlay_pest_mites: 'assets/gameplay/states/pest_mites.png',
+  overlay_pest_thrips: 'assets/gameplay/states/pest_thrips.png'
+});
+
+const now = Date.now();
+const initialSimTimeMs = alignToSimStartHour(now, SIM_START_HOUR);
+const state = {
+  schemaVersion: '1.0.0',
+  seed: SIM_GLOBAL_SEED,
+  plantId: SIM_PLANT_ID,
+  setup: null,
+  settings: {
+    notifications: {
+      enabled: false,
+      types: {
+        events: true,
+        critical: true,
+        reminder: true
+      },
+      runtime: {
+        lastNotifiedEventId: null,
+        lastCriticalAtRealMs: 0,
+        lastReminderAtRealMs: 0
+      }
+    },
+    pushNotificationsEnabled: false
+  },
+  meta: {
+    rescue: {
+      used: false,
+      usedAtRealMs: null,
+      lastResult: null
+    }
+  },
+  missions: {
+    catalog: [],
+    byId: {},
+    completed: []
+  },
+  environmentControls: {
+    temperatureC: 25,
+    humidityPercent: 60,
+    airflowPercent: 70,
+    ph: 6.0,
+    ec: 1.4
+  },
+  simulation: {
+    nowMs: now,
+    startRealTimeMs: now,
+    lastTickRealTimeMs: now,
+    simTimeMs: initialSimTimeMs,
+    simEpochMs: initialSimTimeMs,
+    simDay: 0,
+    simHour: SIM_START_HOUR,
+    simMinute: 0,
+    tickCount: 0,
+    mode: MODE,
+    tickIntervalMs: UI_TICK_INTERVAL_MS,
+    timeCompression: SIM_TIME_COMPRESSION,
+    globalSeed: SIM_GLOBAL_SEED,
+    plantId: SIM_PLANT_ID,
+    dayWindow: { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR },
+    isDaytime: isDaytimeAtSimTime(initialSimTimeMs),
+    growthImpulse: 0,
+    lastPushScheduleAtMs: 0,
+    fairnessGraceUntilRealMs: 0,
+    isCatchUp: false
+  },
+  plant: {
+    phase: 'seedling',
+    isDead: false,
+    stageIndex: 0,
+    stageKey: 'stage_01',
+    stageProgress: 0,
+    stageStartSimDay: 0,
+    lastValidStageKey: 'stage_01',
+    averageHealth: 85,
+    averageStress: 15,
+    observedSimMs: 0,
+    lifecycle: {
+      totalSimDays: TOTAL_LIFECYCLE_SIM_DAYS,
+      qualityTier: 'normal',
+      qualityScore: 77.5,
+      qualityLocked: false
+    },
+    assets: {
+      basePath: 'assets/plant_growth/',
+      resolvedStagePath: ''
+    }
+  },
+  events: {
+    machineState: 'idle',
+    scheduler: {
+      nextEventRealTimeMs: now + EVENT_ROLL_MIN_REAL_MS,
+      lastEventRealTimeMs: 0,
+      lastEventId: null,
+      lastChoiceId: null,
+      lastEventCategory: null,
+      deferredUntilDaytime: false,
+      windowRealMinutes: { min: 30, max: 90 },
+      eventCooldowns: {},
+      categoryCooldowns: {}
+    },
+    active: null,
+    history: [],
+    activeEventId: null,
+    activeEventTitle: '',
+    activeEventText: '',
+    activeLearningNote: '',
+    activeOptions: [],
+    activeSeverity: 1,
+    activeCooldownRealMinutes: 120,
+    activeCategory: 'generic',
+    activeTags: [],
+    resolvingUntilMs: 0,
+    pendingOutcome: null,
+    resolvedOutcome: null,
+    lastEventAtMs: 0,
+    cooldownUntilMs: 0,
+    catalog: [],
+    foundation: {
+      flags: {},
+      memory: {
+        events: [],
+        decisions: [],
+        pendingChains: {}
+      },
+      analysis: []
+    }
+  },
+  history: { actions: [], events: [], system: [], systemLog: [], telemetry: [] },
+  debug: { enabled: false, showInternalTicks: false, forceDaytime: false },
+  status: {
+    health: 85,
+    stress: 15,
+    water: 70,
+    nutrition: 65,
+    growth: 0,
+    risk: 20
+  },
+  boost: {
+    boostUsedToday: 0,
+    boostMaxPerDay: 6,
+    dayStamp: dayStamp(now)
+  },
+  actions: {
+    catalog: [],
+    byId: {},
+    cooldowns: {},
+    activeEffects: []
+  },
+  ui: {
+    activeScreen: 'home',
+    openSheet: null,
+    menuOpen: false,
+    menuDialogOpen: false,
+    selectedBackground: 'bg_dark_01.jpg',
+    visibleOverlayIds: [],
+    deathOverlayOpen: false,
+    deathOverlayAcknowledged: false,
+    care: {
+      selectedCategory: null,
+      selectedActionId: null,
+      feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
+    },
+    analysis: {
+      activeTab: 'overview'
+    },
+    statDetailKey: null
+  },
+  lastEventId: null,
+  lastChoiceId: null,
+  historyLog: []
+};
+
+const ui = {};
+const warnedUiKeys = new Set();
+let storageAdapter = null;
+let tickHandle = null;
+let loopRunning = false;
+let visibilityHandlerBound = false;
+let heartbeatWatchdogHandle = null;
+let persistTimer = null;
+let rescueAdPending = false;
+let wasCriticalHealth = false;
+let menuDialogConfirmHandler = null;
+let uiController = null;
+let screenRuntimeManager = null;
+let menuOverlayModule = null;
+let sheetsOverlayModule = null;
+
+const actionDebounceUntil = Object.create(null);
+
+wireDomainOwnership();
+
+window.__gsBootOk = false;
+window.__gsBootTrace = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  boot().catch((error) => {
+    console.error('Boot promise failed', error);
+    showBootError(error);
+  });
+});
+
+function wireDomainOwnership() {
+  const ownership = {
+    events: 'legacy_app',
+    storage: 'legacy_app',
+    notifications: 'legacy_app'
+  };
+
+  const eventsApi = window.GrowSimEvents;
+  if (eventsApi && typeof eventsApi === 'object') {
+    const requiredEventFns = [
+      'runEventStateMachine',
+      'activateEvent',
+      'eligibleEventsForNow',
+      'isEventEligible',
+      'evaluateEventTriggers',
+      'evaluateSetupConstraints',
+      'evaluateTriggerCondition',
+      'resolveTriggerField',
+      'onEventOptionClick',
+      'enterEventCooldown',
+      'deterministicRoll',
+      'eventThreshold',
+      'shouldTriggerEvent',
+      'deterministicEventDelayMs',
+      'cooldownMs',
+      'computeEventDynamicWeight',
+      'selectEventDeterministically',
+      'scheduleNextEventRoll',
+      'registerServiceWorker'
+    ];
+    const missingEventFns = requiredEventFns.filter((fnName) => typeof eventsApi[fnName] !== 'function');
+    if (missingEventFns.length) {
+      throw new Error(`GrowSimEvents API unvollständig: ${missingEventFns.join(', ')}`);
+    }
+
+    runEventStateMachine = eventsApi.runEventStateMachine;
+    activateEvent = eventsApi.activateEvent;
+    eligibleEventsForNow = eventsApi.eligibleEventsForNow;
+    isEventEligible = eventsApi.isEventEligible;
+    evaluateEventTriggers = eventsApi.evaluateEventTriggers;
+    evaluateSetupConstraints = eventsApi.evaluateSetupConstraints;
+    evaluateTriggerCondition = eventsApi.evaluateTriggerCondition;
+    resolveTriggerField = eventsApi.resolveTriggerField;
+    onEventOptionClick = eventsApi.onEventOptionClick;
+    enterEventCooldown = eventsApi.enterEventCooldown;
+    deterministicRoll = eventsApi.deterministicRoll;
+    eventThreshold = eventsApi.eventThreshold;
+    shouldTriggerEvent = eventsApi.shouldTriggerEvent;
+    deterministicEventDelayMs = eventsApi.deterministicEventDelayMs;
+    cooldownMs = eventsApi.cooldownMs;
+    computeEventDynamicWeight = eventsApi.computeEventDynamicWeight;
+    selectEventDeterministically = eventsApi.selectEventDeterministically;
+    scheduleNextEventRoll = eventsApi.scheduleNextEventRoll;
+    registerServiceWorker = eventsApi.registerServiceWorker;
+    ownership.events = 'events_module';
+  }
+
+  const storageApi = window.GrowSimStorage;
+  if (storageApi && typeof storageApi === 'object') {
+    localStorageAdapter = storageApi.localStorageAdapter;
+    getCanonicalSimulation = storageApi.getCanonicalSimulation;
+    getCanonicalPlant = storageApi.getCanonicalPlant;
+    getCanonicalEvents = storageApi.getCanonicalEvents;
+    getCanonicalHistory = storageApi.getCanonicalHistory;
+    getCanonicalMeta = storageApi.getCanonicalMeta;
+    getCanonicalSettings = storageApi.getCanonicalSettings;
+    getCanonicalNotificationsSettings = storageApi.getCanonicalNotificationsSettings;
+    restoreState = storageApi.restoreState;
+    persistState = storageApi.persistState;
+    schedulePersistState = storageApi.schedulePersistState;
+    migrateState = storageApi.migrateState;
+    resetStateToDefaults = storageApi.resetStateToDefaults;
+    ensureStateIntegrity = storageApi.ensureStateIntegrity;
+    syncCanonicalStateShape = storageApi.syncCanonicalStateShape;
+    syncLegacyMirrorsFromCanonical = storageApi.syncLegacyMirrorsFromCanonical;
+    ownership.storage = 'storage_module';
+  }
+
+  const notificationsApi = window.GrowSimNotifications;
+  if (notificationsApi && typeof notificationsApi === 'object') {
+    showServiceWorkerHint = notificationsApi.showServiceWorkerHint;
+    schedulePushIfAllowed = notificationsApi.schedulePushIfAllowed;
+    canNotify = notificationsApi.canNotify;
+    notify = notificationsApi.notify;
+    evaluateNotificationTriggers = notificationsApi.evaluateNotificationTriggers;
+    notifyEventAvailability = notificationsApi.notifyEventAvailability;
+    notifyCriticalState = notificationsApi.notifyCriticalState;
+    notifyReminder = notificationsApi.notifyReminder;
+    notifyPlantNeedsCare = notificationsApi.notifyPlantNeedsCare;
+    postJsonStub = notificationsApi.postJsonStub;
+    base64ToU8 = notificationsApi.base64ToU8;
+    openDb = notificationsApi.openDb;
+    dbGet = notificationsApi.dbGet;
+    dbSet = notificationsApi.dbSet;
+    dbDelete = notificationsApi.dbDelete;
+    ownership.notifications = 'notifications_module';
+  }
+
+  window.__gsDomainOwnership = ownership;
+}
+
+function getUiController() {
+  if (uiController) {
+    return uiController;
+  }
+  if (window.__gsUiController) {
+    uiController = window.__gsUiController;
+    return uiController;
+  }
+  return null;
+}
+
+function getUiPrimitives() {
+  const primitives = window.GrowSimUIPrimitives;
+  if (primitives && typeof primitives === 'object') {
+    return primitives;
+  }
+  return null;
+}
+
+function uiNode(key, fallbackId) {
+  if (ui[key]) {
+    return ui[key];
+  }
+  if (fallbackId) {
+    const node = document.getElementById(fallbackId);
+    if (node) {
+      ui[key] = node;
+      return node;
+    }
+  }
+  return null;
+}
+
+function resolveScreenContainer(screenId) {
+  if (Array.isArray(ui.screenViews)) {
+    const existing = ui.screenViews.find((node) => node && node.dataset && node.dataset.screen === screenId);
+    if (existing) {
+      return existing;
+    }
+  }
+  return document.querySelector(`.hud-screen[data-screen="${screenId}"]`);
+}
+
+function createFallbackScreenModule(screenId, container, mapping, updateFn) {
+  return {
+    id: screenId,
+    container,
+    mapping,
+    render() {
+      return container;
+    },
+    bindEvents() {
+    },
+    update(vm, prevVm) {
+      if (typeof updateFn === 'function') {
+        updateFn(vm, prevVm);
+      }
+    }
+  };
+}
+
+function createHomeScreenModule(mapping) {
+  const modulesApi = window.GrowSimScreenModules;
+  const container = resolveScreenContainer('home');
+  if (modulesApi && typeof modulesApi.createHomeScreenModule === 'function') {
+    return modulesApi.createHomeScreenModule({
+      container,
+      mapping,
+      renderer: window.GrowSimHomeRenderer || null,
+      onBindEvents: (controller) => {
+        if (typeof bindHomeScreenEvents === 'function') {
+          bindHomeScreenEvents(controller);
+        }
+      },
+      onUpdate: (vm, prevVm) => updateHomeFromViewModel(vm, prevVm)
+    });
+  }
+  return createFallbackScreenModule('home', container, mapping, (vm, prevVm) => updateHomeFromViewModel(vm, prevVm));
+}
+
+function createPassiveScreenModule(screenId) {
+  const modulesApi = window.GrowSimScreenModules;
+  const container = resolveScreenContainer(screenId);
+  if (modulesApi && typeof modulesApi.createPassiveScreenModule === 'function') {
+    return modulesApi.createPassiveScreenModule({
+      id: screenId,
+      container,
+      mapping: null
+    });
+  }
+  return createFallbackScreenModule(screenId, container, null, null);
+}
+
+function createOverlayFallbackModule(moduleId, onBindEvents, onUpdate) {
+  return {
+    id: String(moduleId || 'overlay'),
+    render() {
+    },
+    bindEvents(controller) {
+      if (typeof onBindEvents === 'function') {
+        onBindEvents(controller);
+      }
+    },
+    update(vm, prevVm) {
+      if (typeof onUpdate === 'function') {
+        onUpdate(vm, prevVm);
+      }
+    }
+  };
+}
+
+function createMenuOverlayModule() {
+  const modulesApi = window.GrowSimScreenModules;
+  if (modulesApi && typeof modulesApi.createMenuOverlayModule === 'function') {
+    return modulesApi.createMenuOverlayModule({
+      onBindEvents: (controller) => {
+        if (typeof bindMenuOverlayEvents === 'function') {
+          bindMenuOverlayEvents(controller);
+        }
+      },
+      onUpdate: () => {
+        renderGameMenu();
+      }
+    });
+  }
+  return createOverlayFallbackModule('menuOverlay', (controller) => {
+    if (typeof bindMenuOverlayEvents === 'function') {
+      bindMenuOverlayEvents(controller);
+    }
+  }, () => renderGameMenu());
+}
+
+function createSheetsOverlayModule() {
+  const modulesApi = window.GrowSimScreenModules;
+  if (modulesApi && typeof modulesApi.createSheetsOverlayModule === 'function') {
+    return modulesApi.createSheetsOverlayModule({
+      onBindEvents: (controller) => {
+        if (typeof bindSheetsOverlayEvents === 'function') {
+          bindSheetsOverlayEvents(controller);
+        }
+      },
+      onUpdate: () => {
+        renderSheets();
+        renderCareSheet();
+        renderEventSheet();
+        renderAnalysisPanel(false);
+      }
+    });
+  }
+  return createOverlayFallbackModule('sheetsOverlay', (controller) => {
+    if (typeof bindSheetsOverlayEvents === 'function') {
+      bindSheetsOverlayEvents(controller);
+    }
+  }, () => {
+    renderSheets();
+    renderCareSheet();
+    renderEventSheet();
+    renderAnalysisPanel(false);
+  });
+}
+
+function initUiArchitecture() {
+  const controllerApi = window.GrowSimUIController;
+  if (controllerApi && typeof controllerApi.createUIController === 'function') {
+    uiController = controllerApi.createUIController({
+      applyAction: (actionId) => applyAction(actionId),
+      applyEventOption: (optionId) => onEventOptionClickCore(optionId),
+      openSheet: (sheetName) => openSheet(sheetName),
+      closeSheet: () => closeSheet(),
+      closeMenu: () => closeMenu(),
+      resetRun: () => resetRun(),
+      toggleMenu: () => onMenuToggleClick()
+    });
+    window.__gsUiController = uiController;
+  }
+
+  const runtimeApi = window.GrowSimScreenRuntime;
+  if (runtimeApi && typeof runtimeApi.createScreenRuntimeManager === 'function') {
+    const mappings = window.GrowSimScreenMappings || {};
+    screenRuntimeManager = runtimeApi.createScreenRuntimeManager({
+      root: document,
+      defaultScreenId: 'home'
+    });
+    screenRuntimeManager.register(createHomeScreenModule(mappings.home || null));
+    if (uiController) {
+      screenRuntimeManager.bindController(uiController);
+    }
+    const active = state.ui && typeof state.ui.activeScreen === 'string' ? state.ui.activeScreen : 'home';
+    state.ui.activeScreen = screenRuntimeManager.setActiveScreen(active);
+    window.__gsScreenRuntime = screenRuntimeManager;
+  }
+
+  menuOverlayModule = createMenuOverlayModule();
+  sheetsOverlayModule = createSheetsOverlayModule();
+
+  if (menuOverlayModule && typeof menuOverlayModule.bindEvents === 'function') {
+    menuOverlayModule.bindEvents(uiController);
+  }
+  if (sheetsOverlayModule && typeof sheetsOverlayModule.bindEvents === 'function') {
+    sheetsOverlayModule.bindEvents(uiController);
+  }
+}
+
+async function boot() {
+  let bootStep = 'start';
+  try {
+    logBootStep('boot:start');
+    bootStep = 'mount_hud_components';
+    mountHudComponents();
+    logBootStep('boot:mount_hud_components');
+    bootStep = 'cache_ui';
+    cacheUi();
+    logBootStep('boot:cache_ui');
+    bootStep = 'validate_ui';
+    if (!ensureRequiredUi()) {
+      const missing = Array.isArray(ensureRequiredUi.lastMissing) ? ensureRequiredUi.lastMissing : [];
+      throw new Error(`Required UI elements missing: ${missing.join(', ')}`);
+    }
+    logBootStep('boot:validate_ui');
+    applyOverlayAssets();
+
+    bootStep = 'storage_adapter';
+    storageAdapter = await createStorageAdapter();
+    logBootStep('boot:storage_adapter');
+    bootStep = 'state_restore';
+    await initOrMigrateState();
+    logBootStep('boot:state_restore', {
+      simTimeMs: state.simulation.simTimeMs,
+      nextEventRealTimeMs: state.events.scheduler.nextEventRealTimeMs,
+      growthImpulse: state.simulation.growthImpulse
+    });
+
+    bootStep = 'catalogs';
+    await loadCatalogs();
+    await loadPlantSpriteRuntime();
+    logBootStep('boot:catalogs', {
+      events: state.events.catalog.length,
+      actions: state.actions.catalog.length,
+      plantSpriteReady: plantSpriteRuntime.ready
+    });
+
+    bootStep = 'bind_ui';
+    bindUi();
+    logBootStep('boot:bind_ui');
+    bootStep = 'ui_architecture';
+    initUiArchitecture();
+    logBootStep('boot:ui_architecture', {
+      controller: Boolean(uiController),
+      runtime: Boolean(screenRuntimeManager)
+    });
+    applyBackgroundAsset();
+    bootStep = 'service_worker';
+    await registerServiceWorker();
+    logBootStep('boot:service_worker');
+
+    bootStep = 'runtime_sync';
+    const bootNowMs = Date.now();
+    syncSimulationFromElapsedTime(bootNowMs);
+    syncRuntimeClocks(bootNowMs);
+    syncActiveEventFromCatalog();
+    updateVisibleOverlays();
+    syncCanonicalStateShape();
+    logBootStep('boot:runtime_sync', {
+      nowMs: state.simulation.nowMs,
+      simTimeMs: state.simulation.simTimeMs,
+      nextEventRealTimeMs: state.events.scheduler.nextEventRealTimeMs,
+      growthImpulse: state.simulation.growthImpulse
+    });
+
+    addLog('system', 'Runtime initialisiert', {
+      mode: state.simulation.mode,
+      events: state.events.catalog.length,
+      actions: state.actions.catalog.length
+    });
+
+    window.__applyAction = (id) => applyAction(id);
+    window.__devSelfTest = () => runDevSelfTest();
+
+    bootStep = 'loop_and_render';
+    startLoopOnce();
+    startHeartbeatWatchdog();
+    renderAll();
+    renderLanding();
+    window.__gsBootOk = true;
+    state.ui.lastRenderRealMs = Date.now();
+    logBootStep('boot:render_complete');
+
+    bootStep = 'persist';
+    await schedulePushIfAllowed(true);
+    await persistState();
+    logBootStep('boot:done');
+  } catch (error) {
+    logBootStep('boot:failed', {
+      step: bootStep,
+      message: error && error.message ? error.message : String(error)
+    });
+    console.error('Boot failed', { step: bootStep, error });
+    showBootError(error);
+  }
+}
+
+function mountHudComponents() {
+  const appHud = document.getElementById('app-hud');
+  if (!appHud) {
+    document.body.classList.remove('panelized-ready');
+    return;
+  }
+
+  const hudPanelsApi = window.GrowSimHudPanels;
+  if (!hudPanelsApi || typeof hudPanelsApi.mount !== 'function') {
+    document.body.classList.remove('panelized-ready');
+    return;
+  }
+
+  hudPanelsApi.mount(appHud, {
+    player: {
+      name: 'Max Mustergrower',
+      role: 'Gärtner',
+      xpText: 'XP: 7.350 / 8.650',
+      xpPercent: 84,
+      currencyCoins: '2.480',
+      currencyGems: '55',
+      currencyStars: '114'
+    },
+    environment: {
+      temperature: '25.3°C',
+      humidity: '61%',
+      vpd: '1.2 kPa',
+      light: '720 PPFD',
+      airflow: 'Good'
+    }
+  });
+  document.body.classList.add('panelized-ready');
+}
+
+
+function logBootStep(step, details) {
+  const entry = {
+    atMs: Date.now(),
+    step: String(step || 'unknown')
+  };
+  if (details && typeof details === 'object') {
+    entry.details = details;
+  }
+  window.__gsBootTrace.push(entry);
+  if (window.__gsBootTrace.length > 80) {
+    window.__gsBootTrace.splice(0, window.__gsBootTrace.length - 80);
+  }
+  if (entry.details) {
+    console.info('[boot]', entry.step, entry.details);
+    return;
+  }
+  console.info('[boot]', entry.step);
+}
+
+function applyOverlayAssets() {
+  const overlayNodes = {
+    overlay_burn: ui.overlayBurn,
+    overlay_def_mg: ui.overlayDefMg,
+    overlay_def_n: ui.overlayDefN,
+    overlay_mold_warning: ui.overlayMoldWarning,
+    overlay_pest_mites: ui.overlayPestMites,
+    overlay_pest_thrips: ui.overlayPestThrips
+  };
+
+  for (const [overlayId, node] of Object.entries(overlayNodes)) {
+    if (!node) {
+      continue;
+    }
+
+    const assetPath = OVERLAY_ASSETS[overlayId];
+    if (!assetPath) {
+      node.removeAttribute('src');
+      node.classList.add('hidden');
+      continue;
+    }
+
+    node.src = appPath(assetPath);
+  }
+}
+
+async function initOrMigrateState() {
+  await restoreState();
+  migrateState();
+  ensureStateIntegrity(Date.now());
+}
+
+async function loadCatalogs() {
+  await loadEventCatalog();
+  await loadActionsCatalog();
+  await loadMissionsCatalog();
+}
+
+async function loadMissionsCatalog() {
+  try {
+    const response = await fetch('./data/missions.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const missions = await response.json();
+    state.missions.catalog = missions;
+    state.missions.byId = Object.fromEntries(missions.map(m => [m.id, m]));
+  } catch (error) {
+    console.warn('Missions konnte nicht geladen werden', error);
+  }
+}
+
+function startLoopOnce() {
+  if (loopRunning || tickHandle !== null) {
+    return;
+  }
+  loopRunning = true;
+  clearRuntimeHaltBanner();
+  tickHandle = setInterval(tick, state.simulation.tickIntervalMs);
+}
+
+function stopLoop() {
+  if (tickHandle !== null) {
+    clearInterval(tickHandle);
+    tickHandle = null;
+  }
+  loopRunning = false;
+}
+
+function startHeartbeatWatchdog() {
+  if (heartbeatWatchdogHandle !== null) {
+    return;
+  }
+  heartbeatWatchdogHandle = setInterval(() => {
+    if (document.visibilityState !== 'visible') {
+      return;
+    }
+    const last = Number(state.ui && state.ui.lastRenderRealMs) || 0;
+    if (!loopRunning || !Number.isFinite(last) || (Date.now() - last) > 15000) {
+      showRuntimeHaltBanner();
+    }
+  }, 3000);
+}
+
+function runDevSelfTest() {
+  if (!state.debug || !state.debug.enabled) {
+    return { ok: false, reason: 'debug_disabled' };
+  }
+
+  const assertions = [];
+  const beforeSim = getCanonicalSimulation(state).simTimeMs;
+
+  tick();
+  const afterTickSim = getCanonicalSimulation(state).simTimeMs;
+  assertions.push({ name: 'tick_advances_sim_time', pass: afterTickSim > beforeSim });
+
+  const actionResult = applyAction('watering_low_mist');
+  assertions.push({ name: 'apply_action_path', pass: Boolean(actionResult && (actionResult.ok || actionResult.reason)) });
+
+  activateEvent(Date.now());
+  const active = getCanonicalEvents(state);
+  if (active.machineState === 'activeEvent' && Array.isArray(active.activeOptions) && active.activeOptions.length) {
+    onEventOptionClick(active.activeOptions[0].id);
+  }
+
+  const canonical = {
+    simulation: Boolean(state.simulation && state.simulation),
+    plant: Boolean(state.plant && state.plant),
+    events: Boolean(state.events && state.events.scheduler && state.events),
+    history: Boolean(state.history && Array.isArray(state.history.actions) && Array.isArray(state.history.events))
+  };
+
+  assertions.push({ name: 'canonical_shapes_present', pass: Object.values(canonical).every(Boolean) });
+
+  return {
+    ok: assertions.every((item) => item.pass),
+    assertions,
+    canonical
+  };
+}
+
+function addLog(type, message, details) {
+  const timestamp = Date.now();
+  const payload = details || null;
+  const entry = {
+    id: `${timestamp}-${state.simulation.tickCount}-${state.history.systemLog.length}`,
+    atMs: timestamp,
+    t: timestamp,
+    type,
+    message,
+    msg: message,
+    details: payload,
+    data: payload
+  };
+
+  state.history.systemLog.push(entry);
+  if (state.history.systemLog.length > MAX_HISTORY_LOG) {
+    state.history.systemLog = state.history.systemLog.slice(-MAX_HISTORY_LOG);
+  }
+
+  if (!state.history || typeof state.history !== 'object') {
+    state.history = { actions: [], events: [], system: [] };
+  }
+
+  if (type === 'action') {
+    state.history.actions = Array.isArray(state.history.actions) ? state.history.actions : [];
+    state.history.actions.push({
+      type: 'action',
+      id: (payload && payload.id) || message,
+      category: payload && payload.category,
+      intensity: payload && payload.intensity,
+      label: payload && payload.label,
+      atSimTimeMs: state.simulation.simTimeMs,
+      atRealTimeMs: timestamp,
+      result: 'ok',
+      reason: payload && payload.reason,
+      deltaSummary: payload && payload.deltaSummary ? payload.deltaSummary : {},
+      sideEffects: payload && payload.sideEffects ? payload.sideEffects : []
+    });
+  } else if (type === 'event' || type === 'event_shown' || type === 'choice') {
+    state.history.events = Array.isArray(state.history.events) ? state.history.events : [];
+  } else {
+    state.history.system = Array.isArray(state.history.system) ? state.history.system : [];
+    state.history.system.push({
+      type: 'system',
+      id: type,
+      atSimTimeMs: state.simulation.simTimeMs,
+      details: payload || { message }
+    });
+  }
+}
+
+function requestRescueAd() {
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      resolve({ ok: true });
+    }, 1200);
+  });
+}
+
+function applyRescueEffects() {
+  const before = {
+    health: Number(state.status.health) || 0,
+    stress: Number(state.status.stress) || 0,
+    risk: Number(state.status.risk) || 0,
+    growth: Number(state.status.growth) || 0,
+    water: Number(state.status.water) || 0,
+    nutrition: Number(state.status.nutrition) || 0,
+    qualityScore: Number(state.plant?.lifecycle?.qualityScore) || 0
+  };
+  const wasDead = isPlantDead();
+  const isCriticalAlive = !wasDead && before.health < 20;
+  if (!wasDead && !isCriticalAlive) {
+    return { ok: false };
+  }
+
+  if (wasDead) {
+    state.status.health = 34;
+    state.status.stress = before.stress - 22;
+    state.status.risk = before.risk - 18;
+    state.status.water = Math.max(before.water, 40);
+    state.status.nutrition = Math.max(before.nutrition, 32);
+    state.status.growth = Math.max(4, before.growth - 2);
+    if (state.plant && state.plant.lifecycle && Number.isFinite(before.qualityScore)) {
+      state.plant.lifecycle.qualityScore = round2(Math.max(0, before.qualityScore - 6));
+    }
+    state.plant.isDead = false;
+    if (state.plant.phase === 'dead') {
+      const safeIndex = clampInt(Number(state.plant.stageIndex) || 0, 0, Math.max(0, getStageTimeline().length - 1));
+      state.plant.phase = getStageTimeline()[safeIndex]?.phase || 'seedling';
+    }
+    state.ui.deathOverlayOpen = false;
+    state.ui.deathOverlayAcknowledged = true;
+  } else {
+    state.status.health = before.health + 15;
+    state.status.stress = before.stress - 10;
+    state.status.risk = before.risk - 10;
+  }
+
+  clampStatus();
+
+  const after = {
+    health: Number(state.status.health) || 0,
+    stress: Number(state.status.stress) || 0,
+    risk: Number(state.status.risk) || 0,
+    growth: Number(state.status.growth) || 0,
+    water: Number(state.status.water) || 0,
+    nutrition: Number(state.status.nutrition) || 0,
+    qualityScore: Number(state.plant?.lifecycle?.qualityScore) || 0
+  };
+
+  return {
+    ok: true,
+    wasDead,
+    effectsApplied: {
+      health: round2(after.health - before.health),
+      stress: round2(after.stress - before.stress),
+      risk: round2(after.risk - before.risk),
+      growth: round2(after.growth - before.growth),
+      water: round2(after.water - before.water),
+      nutrition: round2(after.nutrition - before.nutrition),
+      qualityScore: round2(after.qualityScore - before.qualityScore)
+    }
+  };
+}
+
+function updateLifecycleAverages(elapsedSimMs) {
+  const observed = Math.max(0, Number(elapsedSimMs) || 0);
+  if (observed <= 0) {
+    return;
+  }
+
+  const totalObserved = state.plant.observedSimMs + observed;
+  state.plant.averageHealth = ((state.plant.averageHealth * state.plant.observedSimMs) + (state.status.health * observed)) / totalObserved;
+  state.plant.averageStress = ((state.plant.averageStress * state.plant.observedSimMs) + (state.status.stress * observed)) / totalObserved;
+  state.plant.observedSimMs = totalObserved;
+}
+
+function updateQualityTier() {
+  const avgHealth = state.plant.averageHealth;
+  const avgStress = state.plant.averageStress;
+
+  if (avgHealth >= 80 && avgStress <= 30 && state.status.stress <= 30) {
+    state.plant.lifecycle.qualityTier = 'perfect';
+    return;
+  }
+
+  if (avgHealth < 50 || avgStress >= 50 || state.status.stress >= 65) {
+    state.plant.lifecycle.qualityTier = 'degraded';
+    return;
+  }
+
+  state.plant.lifecycle.qualityTier = 'normal';
+}
+
+function simDayFloat() {
+  const elapsed = Math.max(0, state.simulation.simTimeMs - state.simulation.simEpochMs);
+  return clamp(elapsed / SIM_DAY_MS, 0, TOTAL_LIFECYCLE_SIM_DAYS);
+}
+
+function deterministicStageDelayDays(stageIndex) {
+  if (stageIndex <= 0) {
+    return 0;
+  }
+  const u = deterministicUnitFloat(`stage_delay:${stageIndex}`);
+  return round2((u - 0.5) * 0.6);
+}
+
+function stageAssetKeyForIndex(stageIndex) {
+  return `stage_${String(stageIndex + 1).padStart(2, '0')}`;
+}
+
+function normalizeStageKey(rawStageKey) {
+  const raw = String(rawStageKey || '').trim();
+  const match = raw.match(/^stage_(\d{1,2})$/);
+  if (match) {
+    const index = clampInt(Number(match[1]), 1, STAGE_DEFS.length);
+    return `stage_${String(index).padStart(2, '0')}`;
+  }
+
+  return 'stage_01';
+}
+
+function runEventStateMachine(nowMs) {
+  if (state.events.machineState === 'resolving') {
+    if (nowMs >= state.events.resolvingUntilMs) {
+      state.events.machineState = 'resolved';
+      addLog('system', 'Ereignisausgang ist bereit', {
+        eventId: state.events.activeEventId,
+        chosenOptionId: state.events.lastChoiceId,
+        resolvedAtMs: nowMs
+      });
+    } else if (state.events.scheduler.nextEventRealTimeMs <= nowMs) {
+      scheduleNextEventRoll(nowMs, 'resolving_event_pending');
+      schedulePushIfAllowed(false);
+    }
+  }
+
+  if (state.events.machineState === 'resolved' && !state.events.resolvedOutcome && state.events.pendingOutcome) {
+    state.events.resolvedOutcome = { ...state.events.pendingOutcome };
+    state.events.pendingOutcome = null;
+  }
+
+  if (state.events.machineState === 'cooldown') {
+    if (nowMs >= state.events.cooldownUntilMs) {
+      state.events.machineState = 'idle';
+      addLog('system', 'Abklingzeit beendet, Status wieder inaktiv', null);
+    }
+    if (nowMs >= state.events.scheduler.nextEventRealTimeMs) {
+      scheduleNextEventRoll(nowMs, 'cooldown');
+      schedulePushIfAllowed(false);
+    }
+  }
+
+  if ((state.events.machineState === 'activeEvent' || state.events.machineState === 'resolved')
+    && nowMs >= state.events.scheduler.nextEventRealTimeMs) {
+    scheduleNextEventRoll(nowMs, `${state.events.machineState}_event_pending`);
+    schedulePushIfAllowed(false);
+  }
+
+  if (state.events.machineState === 'idle' && nowMs >= state.events.scheduler.nextEventRealTimeMs) {
+    if (!state.simulation.isDaytime) {
+      state.events.scheduler.nextEventRealTimeMs = nextDaytimeRealMs(nowMs, state.simulation.simTimeMs);
+      addLog('event_roll', 'Nachtphase: Ereigniswurf auf Tagesbeginn verschoben', {
+        nextEventAtMs: state.events.scheduler.nextEventRealTimeMs
+      });
+      schedulePushIfAllowed(false);
+      return;
+    }
+
+    const roll = deterministicRoll();
+    addLog('event_roll', 'Ereignisgrenze erreicht, Ereignis wird aktiviert', {
+      roll,
+      threshold: eventThreshold(),
+      simHour: simHour(state.simulation.simTimeMs),
+      at: nowMs
+    });
+
+    const activated = activateEvent(nowMs);
+    if (activated) {
+      state.ui.openSheet = 'event';
+      schedulePushIfAllowed(false);
+      return;
+    }
+
+    addLog('event_roll', 'Ereignisgrenze bleibt aktiv: Kein Ereignis aktivierbar', {
+      at: nowMs,
+      phase: state.plant.phase
+    });
+    state.events.scheduler.nextEventRealTimeMs = nowMs;
+    schedulePushIfAllowed(false);
+    return;
+  }
+
+  if (state.events.machineState === 'activeEvent') {
+    state.ui.openSheet = 'event';
+  }
+}
+
+function activateEvent(nowMs) {
+  const catalog = state.events.catalog;
+  if (!Array.isArray(catalog) || !catalog.length) {
+    return false;
+  }
+
+  const eligible = eligibleEventsForNow(nowMs);
+  let pool = eligible;
+  if (!pool.length) {
+    pool = fallbackEventsForCurrentPhase(nowMs);
+  }
+
+  if (!pool.length) {
+    addLog('event_roll', 'Keine passenden Ereignisse für aktuellen Zustand', {
+      simDay: Math.floor(simDayFloat()),
+      at: nowMs
+    });
+    return false;
+  }
+
+  const foundationCandidate = resolveFoundationCandidateEvent();
+  const forcedEvent = foundationCandidate && foundationCandidate.eventId
+    ? pool.find((event) => event && event.id === foundationCandidate.eventId)
+    : null;
+
+  const eventDef = forcedEvent || selectEventDeterministically(pool, nowMs);
+  if (!eventDef) {
+    return false;
+  }
+
+  const foundationApi = getEventFoundationApis();
+  let consumedPendingChain = null;
+  if (foundationApi.memory && typeof foundationApi.memory.consumePendingChain === 'function') {
+    consumedPendingChain = foundationApi.memory.consumePendingChain(state.events, eventDef.id);
+  }
+  if (foundationApi.memory && eventDef.id === 'stable_growth_reward' && typeof foundationApi.memory.clearPendingChain === 'function') {
+    foundationApi.memory.clearPendingChain(state.events, 'root_stress_followup');
+  }
+
+  const options = eventDef.options.slice(0, 3);
+
+  state.events.machineState = 'activeEvent';
+  state.events.activeEventId = eventDef.id;
+  state.events.scheduler.lastEventId = eventDef.id;
+  state.events.activeEventTitle = eventDef.title;
+  state.events.activeEventText = eventDef.description;
+  state.events.activeLearningNote = eventDef.learningNote || '';
+  state.events.activeOptions = options;
+  state.events.activeSeverity = eventDef.severity || 3;
+  state.events.activeCooldownRealMinutes = clamp(Number(eventDef.cooldownRealMinutes) || 120, 10, 24 * 60);
+  state.events.activeCategory = eventDef.category || 'generic';
+  state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
+  state.events.scheduler.lastEventRealTimeMs = nowMs;
+
+  state.events.scheduler.lastEventId = eventDef.id;
+  state.events.scheduler.lastEventRealTimeMs = nowMs;
+  state.events.scheduler.lastEventCategory = eventDef.category || 'generic';
+  state.events.active = {
+    id: eventDef.id,
+    title: eventDef.title,
+    description: eventDef.description,
+    category: eventDef.category || 'generic',
+    learningNote: eventDef.learningNote || ''
+  };
+
+  addLog('event_shown', `Ereignis ausgewählt: ${eventDef.id}`, {
+    title: eventDef.title,
+    severity: state.events.activeSeverity,
+    category: eventDef.category || 'generic',
+    foundationReason: foundationCandidate && foundationCandidate.eventId === eventDef.id ? foundationCandidate.reason : null,
+    consumedPendingChainId: consumedPendingChain ? consumedPendingChain.chainId : null
+  });
+
+  if (foundationApi.memory) {
+    foundationApi.memory.addEvent(state.events, eventDef.id, {
+      phase: state.plant.phase,
+      reason: foundationCandidate && foundationCandidate.eventId === eventDef.id ? foundationCandidate.reason : 'default_selection',
+      consumedChainId: consumedPendingChain ? consumedPendingChain.chainId : null,
+      sourceEventId: consumedPendingChain ? consumedPendingChain.sourceEventId : null,
+      sourceOptionId: consumedPendingChain ? consumedPendingChain.sourceOptionId : null
+    });
+  }
+
+  notifyPlantNeedsCare('Deine Pflanze braucht Pflege.');
+  return true;
+}
+
+
+function eligibleEventsForNow(nowMs) {
+  const cooldowns = state.events.scheduler.eventCooldowns || {};
+  return state.events.catalog
+    .filter((eventDef) => isEventEligible(eventDef, cooldowns, nowMs))
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+}
+
+function fallbackEventsForCurrentPhase(nowMs) {
+  const phase = String(state.plant.phase || '');
+  const fallback = state.events.catalog.filter((eventDef) => {
+    if (!eventDef || !eventDef.id || !isEventPhaseAllowed(eventDef)) {
+      return false;
+    }
+    if (!evaluateEventConstraints(eventDef)) {
+      return false;
+    }
+    const cooldowns = state.events.scheduler.eventCooldowns || {};
+    const blockedUntil = Number(cooldowns[eventDef.id] || 0);
+    return blockedUntil <= nowMs;
+  });
+
+  if (fallback.length) {
+    addLog('event_roll', 'Fallback-Ereignispool genutzt (Phase-only)', {
+      phase,
+      candidateCount: fallback.length,
+      at: nowMs
+    });
+  }
+
+  return fallback.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+}
+
+function isEventEligible(eventDef, cooldowns, nowMs) {
+  if (!eventDef || !eventDef.id) {
+    return false;
+  }
+
+  if (!isEventPhaseAllowed(eventDef)) {
+    return false;
+  }
+
+  if (!evaluateEventConstraints(eventDef)) {
+    return false;
+  }
+
+  const blockedUntil = Number(cooldowns[eventDef.id] || 0);
+  if (blockedUntil > nowMs) {
+    return false;
+  }
+
+  const categoryCooldowns = state.events && state.events.scheduler && state.events.scheduler.categoryCooldowns
+    ? state.events.scheduler.categoryCooldowns
+    : {};
+  const categoryKey = String(eventDef.category || 'generic');
+  const categoryBlockedUntil = Number(categoryCooldowns[categoryKey] || 0);
+  if (categoryBlockedUntil > nowMs) {
+    return false;
+  }
+
+  return evaluateEventTriggers(eventDef.triggers || {});
+}
+
+function isEventPhaseAllowed(eventDef) {
+  const allowedPhases = Array.isArray(eventDef.allowedPhases)
+    ? eventDef.allowedPhases.map((phase) => String(phase))
+    : [];
+
+  if (!allowedPhases.length) {
+    return true;
+  }
+
+  return allowedPhases.includes(String(state.plant.phase || ''));
+}
+
+function buildEventConstraintSnapshot() {
+  const stageIndexOneBased = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+  const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+  const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+  const environment = deriveEnvironmentReadout();
+  const roots = deriveRootZoneReadout(environment);
+  const airflowScore = environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+
+  const plantSize = clamp(((stageIndexOneBased - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
+  const rootMass = clamp(((stageIndexOneBased - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
+
+  return {
+    simDay,
+    stageIndexOneBased,
+    plantSize,
+    rootMass,
+    environmentState: {
+      temperatureC: environment.temperatureC,
+      humidityPercent: environment.humidityPercent,
+      vpdKpa: environment.vpdKpa,
+      airflowScore
+    },
+    rootZone: {
+      ph: Number(roots.ph),
+      ec: Number(String(roots.ec).replace(/\s*mS$/i, '')),
+      oxygenPercent: Number(String(roots.oxygen).replace('%', '')),
+      healthPercent: Number(String(roots.rootHealth).replace('%', ''))
+    }
+  };
+}
+
+function evaluateEventConstraints(eventDef) {
+  const constraints = eventDef && eventDef.constraints && typeof eventDef.constraints === 'object'
+    ? eventDef.constraints
+    : null;
+
+  if (!constraints) {
+    return true;
+  }
+
+  const snapshot = buildEventConstraintSnapshot();
+
+  const minStage = Number(constraints.minStage);
+  const maxStage = Number(constraints.maxStage);
+  const minDay = Number(constraints.minDay);
+  const maxDay = Number(constraints.maxDay);
+  const minPlantSize = Number(constraints.minPlantSize);
+  const minRootMass = Number(constraints.minRootMass);
+
+  if (constraints.minStage !== null && constraints.minStage !== undefined && Number.isFinite(minStage) && snapshot.stageIndexOneBased < minStage) {
+    return false;
+  }
+  if (constraints.maxStage !== null && constraints.maxStage !== undefined && Number.isFinite(maxStage) && snapshot.stageIndexOneBased > maxStage) {
+    return false;
+  }
+  if (constraints.minDay !== null && constraints.minDay !== undefined && Number.isFinite(minDay) && snapshot.simDay < minDay) {
+    return false;
+  }
+  if (constraints.maxDay !== null && constraints.maxDay !== undefined && Number.isFinite(maxDay) && snapshot.simDay > maxDay) {
+    return false;
+  }
+  if (constraints.minPlantSize !== null && constraints.minPlantSize !== undefined && Number.isFinite(minPlantSize) && snapshot.plantSize < minPlantSize) {
+    return false;
+  }
+  if (constraints.minRootMass !== null && constraints.minRootMass !== undefined && Number.isFinite(minRootMass) && snapshot.rootMass < minRootMass) {
+    return false;
+  }
+
+  const env = constraints.environmentState && typeof constraints.environmentState === 'object'
+    ? constraints.environmentState
+    : null;
+  if (env) {
+    const minTemperatureC = Number(env.minTemperatureC);
+    const maxTemperatureC = Number(env.maxTemperatureC);
+    const minHumidityPercent = Number(env.minHumidityPercent);
+    const maxHumidityPercent = Number(env.maxHumidityPercent);
+    const minVpdKpa = Number(env.minVpdKpa);
+    const maxVpdKpa = Number(env.maxVpdKpa);
+    const minAirflowScore = Number(env.minAirflowScore);
+
+    if (env.minTemperatureC !== null && env.minTemperatureC !== undefined && Number.isFinite(minTemperatureC) && snapshot.environmentState.temperatureC < minTemperatureC) return false;
+    if (env.maxTemperatureC !== null && env.maxTemperatureC !== undefined && Number.isFinite(maxTemperatureC) && snapshot.environmentState.temperatureC > maxTemperatureC) return false;
+    if (env.minHumidityPercent !== null && env.minHumidityPercent !== undefined && Number.isFinite(minHumidityPercent) && snapshot.environmentState.humidityPercent < minHumidityPercent) return false;
+    if (env.maxHumidityPercent !== null && env.maxHumidityPercent !== undefined && Number.isFinite(maxHumidityPercent) && snapshot.environmentState.humidityPercent > maxHumidityPercent) return false;
+    if (env.minVpdKpa !== null && env.minVpdKpa !== undefined && Number.isFinite(minVpdKpa) && snapshot.environmentState.vpdKpa < minVpdKpa) return false;
+    if (env.maxVpdKpa !== null && env.maxVpdKpa !== undefined && Number.isFinite(maxVpdKpa) && snapshot.environmentState.vpdKpa > maxVpdKpa) return false;
+    if (env.minAirflowScore !== null && env.minAirflowScore !== undefined && Number.isFinite(minAirflowScore) && snapshot.environmentState.airflowScore < minAirflowScore) return false;
+  }
+
+  const root = constraints.rootZone && typeof constraints.rootZone === 'object'
+    ? constraints.rootZone
+    : null;
+  if (root) {
+    const minPh = Number(root.minPh);
+    const maxPh = Number(root.maxPh);
+    const minEc = Number(root.minEc);
+    const maxEc = Number(root.maxEc);
+    const minOxygenPercent = Number(root.minOxygenPercent);
+
+    if (root.minPh !== null && root.minPh !== undefined && Number.isFinite(minPh) && snapshot.rootZone.ph < minPh) return false;
+    if (root.maxPh !== null && root.maxPh !== undefined && Number.isFinite(maxPh) && snapshot.rootZone.ph > maxPh) return false;
+    if (root.minEc !== null && root.minEc !== undefined && Number.isFinite(minEc) && snapshot.rootZone.ec < minEc) return false;
+    if (root.maxEc !== null && root.maxEc !== undefined && Number.isFinite(maxEc) && snapshot.rootZone.ec > maxEc) return false;
+    if (root.minOxygenPercent !== null && root.minOxygenPercent !== undefined && Number.isFinite(minOxygenPercent) && snapshot.rootZone.oxygenPercent < minOxygenPercent) return false;
+  }
+
+  const category = String(eventDef.category || 'generic').toLowerCase();
+  const stressNow = clamp(Number(state.status.stress || 0), 0, 100);
+  const riskNow = clamp(Number(state.status.risk || 0), 0, 100);
+  const healthNow = clamp(Number(state.status.health || 0), 0, 100);
+
+  if (category === 'positive' && (stressNow > 48 || riskNow > 45 || healthNow < 55)) {
+    return false;
+  }
+
+  if (snapshot.simDay <= 10 && (category === 'pest' || category === 'disease') && riskNow < 65) {
+    return false;
+  }
+
+  return true;
+}
+
+function evaluateEventTriggers(triggers) {
+  const t = triggers && typeof triggers === 'object' ? triggers : {};
+
+  if (t.stage && typeof t.stage === 'object') {
+    const stageIndex = state.plant.stageIndex + 1;
+    if (Number.isFinite(Number(t.stage.min)) && stageIndex < Number(t.stage.min)) {
+      return false;
+    }
+    if (Number.isFinite(Number(t.stage.max)) && stageIndex > Number(t.stage.max)) {
+      return false;
+    }
+  }
+
+  if (t.setup && typeof t.setup === 'object') {
+    if (!evaluateSetupConstraints(t.setup)) {
+      return false;
+    }
+  }
+
+  const all = Array.isArray(t.all) ? t.all : [];
+  const any = Array.isArray(t.any) ? t.any : [];
+
+  if (all.length && !all.every(evaluateTriggerCondition)) {
+    return false;
+  }
+  if (any.length && !any.some(evaluateTriggerCondition)) {
+    return false;
+  }
+
+  return true;
+}
+
+function evaluateSetupConstraints(setupRule) {
+  const setup = state.setup || {};
+  for (const [key, values] of Object.entries(setupRule)) {
+    if (!Array.isArray(values)) {
+      continue;
+    }
+    const prop = key.replace(/In$/, '');
+    const current = setup[prop];
+    if (!values.map(String).includes(String(current))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function evaluateTriggerCondition(condition) {
+  if (!condition || typeof condition !== 'object') {
+    return false;
+  }
+
+  const field = String(condition.field || '').trim();
+  const op = String(condition.op || '==').trim();
+  const rhs = condition.value;
+  const lhs = resolveTriggerField(field);
+
+  if (op === 'in') {
+    return Array.isArray(rhs) && rhs.map(String).includes(String(lhs));
+  }
+  if (op === 'not_in') {
+    return Array.isArray(rhs) && !rhs.map(String).includes(String(lhs));
+  }
+
+  const leftNum = Number(lhs);
+  const rightNum = Number(rhs);
+  const numeric = Number.isFinite(leftNum) && Number.isFinite(rightNum);
+
+  if (op === '==') return lhs === rhs || String(lhs) === String(rhs);
+  if (op === '!=') return !(lhs === rhs || String(lhs) === String(rhs));
+  if (!numeric) return false;
+  if (op === '>') return leftNum > rightNum;
+  if (op === '>=') return leftNum >= rightNum;
+  if (op === '<') return leftNum < rightNum;
+  if (op === '<=') return leftNum <= rightNum;
+  return false;
+}
+
+function resolveTriggerField(fieldPath) {
+  if (!fieldPath) {
+    return undefined;
+  }
+
+  if (fieldPath.startsWith('status.')) {
+    return state.status[fieldPath.split('.')[1]];
+  }
+  if (fieldPath === 'plant.stageIndex') {
+    return state.plant.stageIndex + 1;
+  }
+  if (fieldPath === 'plant.stageKey') {
+    return state.plant.stageKey;
+  }
+  if (fieldPath === 'plant.size') {
+    const stageIndex = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+    const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+    return clamp(((stageIndex - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
+  }
+  if (fieldPath === 'plant.rootMass') {
+    const stageIndex = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
+    const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
+    return clamp(((stageIndex - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
+  }
+  if (fieldPath.startsWith('setup.')) {
+    return (state.setup || {})[fieldPath.split('.')[1]];
+  }
+  if (fieldPath === 'simulation.isDaytime') {
+    return state.simulation.isDaytime;
+  }
+  if (fieldPath === 'simulation.simDay') {
+    return Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+  }
+
+  const environment = deriveEnvironmentReadout();
+  if (fieldPath === 'env.temperatureC') return environment.temperatureC;
+  if (fieldPath === 'env.humidityPercent') return environment.humidityPercent;
+  if (fieldPath === 'env.vpdKpa') return environment.vpdKpa;
+  if (fieldPath === 'env.airflowScore') return environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30);
+
+  const roots = deriveRootZoneReadout(environment);
+  if (fieldPath === 'root.ph') return Number(roots.ph);
+  if (fieldPath === 'root.ec') return Number(String(roots.ec).replace(/\s*mS$/i, ''));
+  if (fieldPath === 'root.oxygenPercent') return Number(String(roots.oxygen).replace('%', ''));
+  if (fieldPath === 'root.healthPercent') return Number(String(roots.rootHealth).replace('%', ''));
+
+  return undefined;
+}
+
+function getEventFoundationApis() {
+  return {
+    plantState: (typeof window !== 'undefined' && window.GrowSimPlantState) ? window.GrowSimPlantState : null,
+    flags: (typeof window !== 'undefined' && window.GrowSimEventFlags) ? window.GrowSimEventFlags : null,
+    memory: (typeof window !== 'undefined' && window.GrowSimEventMemory) ? window.GrowSimEventMemory : null,
+    resolver: (typeof window !== 'undefined' && window.GrowSimEventResolver) ? window.GrowSimEventResolver : null
+  };
+}
+
+function resolveFoundationCandidateEvent() {
+  const api = getEventFoundationApis();
+  if (!api.plantState || !api.flags || !api.memory || !api.resolver) {
+    return null;
+  }
+
+  const normalizedState = api.plantState.buildNormalizedPlantState(state);
+  const activeFlags = api.flags.getActiveFlags(state.events);
+  const memoryFacade = {
+    getLastDecision: () => api.memory.getLastDecision(state.events),
+    getLastEvents: (count) => api.memory.getLastEvents(state.events, count),
+    getPendingChain: (chainId) => api.memory.getPendingChain(state.events, chainId),
+    getPendingChains: () => api.memory.getPendingChains(state.events)
+  };
+
+  const selectionRandom = () => deterministicUnitFloat(`foundation_resolver:${state.simulation.tickCount}:${state.events.history.length}`);
+
+  return api.resolver.resolveNextEvent({
+    state: normalizedState,
+    flags: activeFlags,
+    memory: memoryFacade,
+    catalog: state.events.catalog,
+    random: selectionRandom
+  });
+}
+
+function applyFoundationFollowUps(choice, eventId) {
+  const api = getEventFoundationApis();
+  if (!api.flags || !api.memory) {
+    return;
+  }
+
+  api.memory.addDecision(state.events, eventId, choice.id, {
+    followUps: Array.isArray(choice.followUps) ? choice.followUps.slice() : []
+  });
+
+  const followUps = Array.isArray(choice.followUps) ? choice.followUps : [];
+  for (const followUp of followUps) {
+    const token = String(followUp || '');
+    if (token.startsWith('set_flag:')) {
+      const flagId = token.slice('set_flag:'.length);
+      api.flags.setFlag(state.events, flagId, true);
+      if (flagId === 'root_stress_pending') {
+        api.memory.setPendingChain(state.events, 'root_stress_followup', {
+          targetEventId: 'root_stress_followup',
+          sourceEventId: eventId,
+          sourceOptionId: choice.id,
+          sourceFlagId: 'root_stress_pending',
+          createdAtRealTimeMs: Date.now(),
+          meta: { createdBy: 'flag_bridge' }
+        });
+      }
+      continue;
+    }
+    if (token.startsWith('clear_flag:')) {
+      const flagId = token.slice('clear_flag:'.length);
+      api.flags.clearFlag(state.events, flagId);
+      if (flagId === 'root_stress_pending') {
+        api.memory.clearPendingChain(state.events, 'root_stress_followup');
+      }
+      continue;
+    }
+    if (token.startsWith('set_chain:')) {
+      const chainId = token.slice('set_chain:'.length);
+      api.memory.setPendingChain(state.events, chainId, {
+        targetEventId: chainId,
+        sourceEventId: eventId,
+        sourceOptionId: choice.id,
+        createdAtRealTimeMs: Date.now(),
+        meta: { createdBy: 'followup_token' }
+      });
+      continue;
+    }
+    if (token.startsWith('clear_chain:')) {
+      const chainId = token.slice('clear_chain:'.length);
+      api.memory.clearPendingChain(state.events, chainId);
+    }
+  }
+}
+
+function onEventOptionClick(optionId) {
+  const controller = getUiController();
+  if (controller && typeof controller.handleEventOption === 'function' && !controller.isDispatching()) {
+    return controller.handleEventOption(optionId);
+  }
+  return onEventOptionClickCore(optionId);
+}
+
+function onEventOptionClickCore(optionId) {
+  if (isPlantDead()) {
+    return;
+  }
+  if (state.events.machineState !== 'activeEvent') {
+    return;
+  }
+
+  const choice = state.events.activeOptions.find((option) => option.id === optionId);
+  if (!choice) {
+    return;
+  }
+
+  const before = snapshotStatus();
+  applyChoiceEffects(choice.effects || {});
+
+  const triggeredSideEffects = [];
+  for (const side of Array.isArray(choice.sideEffects) ? choice.sideEffects : []) {
+    if (!evaluateCondition(side.when || 'true')) {
+      continue;
+    }
+    const chance = clamp(Number(side.chance), 0, 1);
+    const roll = deterministicUnitFloat(`event_side:${state.events.activeEventId}:${choice.id}:${side.id || 'side'}:${state.simulation.tickCount}`);
+    if (roll <= chance) {
+      applyChoiceEffects(side.effects || {});
+      triggeredSideEffects.push(side.id || 'side');
+    }
+  }
+
+  const after = snapshotStatus();
+  const deltaSummary = summarizeDelta(before, after);
+
+  state.events.lastChoiceId = choice.id;
+  state.events.scheduler.lastChoiceId = choice.id;
+  state.events.machineState = 'resolving';
+  state.events.resolvingUntilMs = state.simulation.nowMs + EVENT_RESOLUTION_MS;
+
+  state.events.pendingOutcome = {
+    eventId: state.events.activeEventId,
+    eventTitle: state.events.activeEventTitle,
+    optionId: choice.id,
+    optionLabel: choice.label,
+    summary: classifyOutcome(deltaSummary),
+    learningNote: state.events.activeLearningNote || '',
+    resolvedAfterMs: EVENT_RESOLUTION_MS
+  };
+  state.events.resolvedOutcome = null;
+
+  const triggerSnapshot = {
+    simDay: Math.floor(simDayFloat()),
+    stageIndex: state.plant.stageIndex + 1,
+    water: round2(state.status.water),
+    nutrition: round2(state.status.nutrition),
+    health: round2(state.status.health),
+    stress: round2(state.status.stress),
+    risk: round2(state.status.risk),
+    growth: round2(state.status.growth),
+    setup: {
+      mode: state.setup && state.setup.mode ? state.setup.mode : null,
+      medium: state.setup && state.setup.medium ? state.setup.medium : null,
+      light: state.setup && state.setup.light ? state.setup.light : null
+    }
+  };
+
+  const historyEntry = {
+    type: 'event',
+    eventId: state.events.activeEventId,
+    category: state.events.activeCategory || 'generic',
+    optionId: choice.id,
+    optionLabel: choice.label,
+    learningNote: state.events.activeLearningNote || '',
+    triggerSnapshot,
+    effectsApplied: deltaSummary,
+    sideEffectsTriggered: triggeredSideEffects,
+    atSimTimeMs: state.simulation.simTimeMs,
+    atRealTimeMs: Date.now()
+  };
+
+  state.history.events.push(historyEntry);
+  state.events.history.push(historyEntry);
+
+  applyFoundationFollowUps(choice, state.events.activeEventId);
+
+  addLog('choice', `Option gewählt: ${state.events.activeEventId}/${choice.id}`, {
+    effects: choice.effects || {},
+    sideEffects: triggeredSideEffects,
+    effectsApplied: deltaSummary,
+    followUps: choice.followUps || []
+  });
+
+  runEventStateMachine(state.simulation.nowMs);
+  syncCanonicalStateShape();
+  renderAll();
+  schedulePersistState(true);
+}
+
+function applyChoiceEffects(effects) {
+  for (const [metric, delta] of Object.entries(effects)) {
+    if (!Number.isFinite(delta)) {
+      continue;
+    }
+
+    if (metric === 'growth') {
+      applyGrowthPercentDelta(delta);
+      continue;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(state.status, metric)) {
+      state.status[metric] += delta;
+    }
+  }
+
+  clampStatus();
+}
+
+function applyGrowthPercentDelta(delta) {
+  const current = computeGrowthPercent();
+  const target = clamp(current + delta, 0, 100);
+  setGrowthFromPercent(target);
+  state.status.growth = round2(computeGrowthPercent());
+}
+
+function setGrowthFromPercent(percent) {
+  if (state.plant.phase === 'dead') {
+    return;
+  }
+
+  const targetProgress = clamp(Number(percent) / 100, 0, 1);
+  const nowMs = Date.now();
+  state.simulation.startRealTimeMs = nowMs - (targetProgress * REAL_RUN_DURATION_MS);
+
+  const plantTime = getPlantTimeFromElapsed(nowMs);
+  state.simulation.simTimeMs = plantTime.simTimeMs;
+  state.simulation.lastTickRealTimeMs = nowMs;
+
+  const stage = getCurrentStage(plantTime.simDay);
+  state.plant.stageIndex = stage.stageIndex;
+  state.plant.phase = stage.current.phase;
+  state.plant.stageKey = stageAssetKeyForIndex(stage.stageIndex);
+  state.plant.lastValidStageKey = state.plant.stageKey;
+  state.plant.stageProgress = stage.progressInPhase;
+}
+
+function enterEventCooldown(nowMs) {
+  const activeEventId = state.events.activeEventId;
+  const activeCategory = String(state.events.activeCategory || 'generic');
+  const perEventCooldownMs = Math.round((Number(state.events.activeCooldownRealMinutes) || 120) * 60 * 1000);
+
+  state.events.machineState = 'cooldown';
+  state.events.cooldownUntilMs = nowMs + cooldownMs();
+  state.events.activeEventId = null;
+  state.events.activeEventTitle = '';
+  state.events.activeEventText = '';
+  state.events.activeOptions = [];
+  state.events.activeSeverity = 1;
+  state.events.activeCooldownRealMinutes = 120;
+  state.events.activeCategory = 'generic';
+  state.events.activeTags = [];
+  state.events.resolvingUntilMs = 0;
+  state.events.pendingOutcome = null;
+  state.events.resolvedOutcome = null;
+
+  if (activeEventId) {
+    state.events.scheduler.eventCooldowns[activeEventId] = nowMs + perEventCooldownMs;
+  }
+
+  const categoryKey = activeCategory;
+  const categoryCooldownMs = categoryKey === 'positive'
+    ? Math.max(EVENT_COOLDOWN_MS, 45 * 60 * 1000)
+    : EVENT_COOLDOWN_MS;
+  state.events.scheduler.categoryCooldowns[categoryKey] = nowMs + categoryCooldownMs;
+
+  state.events.active = null;
+  if (state.ui.openSheet === 'event') {
+    state.ui.openSheet = null;
+  }
+
+  addLog('system', 'Ereignis abgeschlossen, Abklingzeit gestartet', {
+    cooldownUntilMs: state.events.cooldownUntilMs,
+    eventId: activeEventId,
+    perEventCooldownMs
+  });
+}
+
+function deterministicRoll() {
+  const bucket = Math.floor(state.events.scheduler.nextEventRealTimeMs / EVENT_ROLL_MIN_REAL_MS);
+  const riskBucket = Math.round(state.status.risk / 5);
+  const pressureBucket = Math.round(computeEnvironmentEventPressure() * 10);
+  return deterministicUnitFloat(`roll:${bucket}:${riskBucket}:${pressureBucket}:${state.simulation.tickCount}`);
+}
+
+function computeEnvironmentEventPressure() {
+  const env = deriveEnvironmentReadout();
+  const root = deriveRootZoneReadout(env);
+
+  const tempPressure = clamp(Math.abs(Number(env.temperatureC) - 25) / 10, 0, 1);
+  const humidityPressure = clamp(Math.abs(Number(env.humidityPercent) - 58) / 28, 0, 1);
+  const vpdPressure = clamp(Math.abs(Number(env.vpdKpa) - 1.15) / 1.0, 0, 1);
+  const airflowScore = env.airflowLabel === 'Good' ? 80 : (env.airflowLabel === 'Mittel' ? 55 : 30);
+  const airflowPressure = clamp((60 - airflowScore) / 60, 0, 1);
+
+  const ph = Number(root.ph);
+  const ec = Number(String(root.ec).replace(/\s*mS$/i, ''));
+  const oxygen = Number(String(root.oxygen).replace('%', ''));
+
+  const phPressure = clamp(Math.abs(ph - 6.0) / 0.9, 0, 1);
+  const ecPressure = clamp(Math.abs(ec - 1.45) / 1.0, 0, 1);
+  const oxygenPressure = clamp((60 - oxygen) / 60, 0, 1);
+
+  return clamp(
+    (tempPressure * 0.18)
+    + (humidityPressure * 0.14)
+    + (vpdPressure * 0.2)
+    + (airflowPressure * 0.1)
+    + (phPressure * 0.14)
+    + (ecPressure * 0.14)
+    + (oxygenPressure * 0.1),
+    0,
+    1
+  );
+}
+
+function eventThreshold() {
+  const base = 0.34;
+  const riskInfluence = state.status.risk / 340;
+  const envInfluence = computeEnvironmentEventPressure() * 0.18;
+  return clamp(base + riskInfluence + envInfluence, 0.15, 0.88);
+}
+
+function shouldTriggerEvent(roll) {
+  return roll < eventThreshold();
+}
+
+function deterministicEventDelayMs(nowMs) {
+  const min = EVENT_ROLL_MIN_REAL_MS;
+  const max = EVENT_ROLL_MAX_REAL_MS;
+  const span = Math.max(0, max - min);
+  const bucket = Math.floor(nowMs / min);
+  const u = deterministicUnitFloat(`delay:${bucket}`);
+  return min + Math.floor(u * span);
+}
+
+function cooldownMs() {
+  return EVENT_COOLDOWN_MS;
+}
+
+function onCareApply() {
+  const controller = getUiController();
+  const result = controller && typeof controller.handleAction === 'function'
+    ? controller.handleAction('watering_medium_deep')
+    : applyAction('watering_medium_deep');
+  if (!result.ok) {
+    addLog('action', `Aktion blockiert: ${result.reason}`, { actionId: 'watering_medium_deep' });
+  }
+
+  closeSheet();
+  renderAll();
+  schedulePersistState(true);
+}
+
+function executeCareAction(actionId) {
+  const controller = getUiController();
+  if (controller && typeof controller.handleAction === 'function') {
+    return controller.handleAction(actionId);
+  }
+  return applyAction(actionId);
+}
+
+function applyAction(actionId) {
+  if (isPlantDead()) {
+    const nowMs = Date.now();
+    state.actions.lastResult = { ok: false, reason: 'dead_run_ended', actionId, atRealTimeMs: nowMs };
+    return { ok: false, reason: 'dead_run_ended' };
+  }
+
+  const action = state.actions.byId[actionId];
+  if (!action) {
+    state.actions.lastResult = { ok: false, reason: `unknown_action:${actionId}`, actionId, atRealTimeMs: Date.now() };
+    return { ok: false, reason: `unknown_action:${actionId}` };
+  }
+
+  const nowMs = Date.now();
+  const cooldownUntil = Number(state.actions.cooldowns[action.id] || 0);
+  if (cooldownUntil > nowMs) {
+    const result = { ok: false, reason: `cooldown_active:${Math.ceil((cooldownUntil - nowMs) / 1000)}s` };
+    state.actions.lastResult = { ok: false, reason: result.reason, actionId: action.id, atRealTimeMs: nowMs };
+    return result;
+  }
+
+  const triggerCheck = validateActionTrigger(action);
+  if (!triggerCheck.ok) {
+    state.actions.lastResult = { ok: false, reason: triggerCheck.reason, actionId: action.id, atRealTimeMs: nowMs };
+    return triggerCheck;
+  }
+
+  const preCheck = validateActionPrerequisites(action);
+  if (!preCheck.ok) {
+    state.actions.lastResult = { ok: false, reason: preCheck.reason, actionId: action.id, atRealTimeMs: nowMs };
+    return preCheck;
+  }
+
+  const before = snapshotStatus();
+
+  applyActionImmediateEffects(action);
+  scheduleActionOverTimeEffect(action, nowMs);
+
+  const triggeredSideEffects = [];
+  for (const side of action.sideEffects) {
+    if (!side || typeof side !== 'object') {
+      continue;
+    }
+    const conditionMet = evaluateCondition(side.when || 'true');
+    if (!conditionMet) {
+      continue;
+    }
+    const chance = clamp(Number(side.chance), 0, 1);
+    const roll = deterministicUnitFloat(`action_side:${action.id}:${side.id || 'side'}:${state.simulation.tickCount}:${Math.floor(state.simulation.simTimeMs / 60000)}`);
+    if (roll <= chance) {
+      applyEffectsObject(side.deltas || {});
+      triggeredSideEffects.push(side.id || 'side_effect');
+    }
+  }
+
+  const cooldownMs = Math.round((Number(action.cooldownRealMinutes) || 0) * 60 * 1000);
+  state.actions.cooldowns[action.id] = nowMs + cooldownMs;
+
+  const after = snapshotStatus();
+  const deltaSummary = summarizeDelta(before, after);
+
+  addLog('action', `Aktion: ${action.label}`, {
+    type: 'action',
+    id: action.id,
+    category: action.category,
+    intensity: action.intensity,
+    label: action.label,
+    simTime: state.simulation.simTimeMs,
+    realTime: nowMs,
+    sideEffects: triggeredSideEffects,
+    deltaSummary
+  });
+
+  clampStatus();
+  updateVisibleOverlays();
+  syncCanonicalStateShape();
+  state.actions.lastResult = { ok: true, reason: 'ok', actionId: action.id, atRealTimeMs: nowMs };
+  schedulePersistState(true);
+
+  return { ok: true, id: action.id, deltaSummary, sideEffects: triggeredSideEffects };
+}
+
+function validateActionTrigger(action) {
+  const trigger = action.trigger || {};
+  if (trigger.timeWindow === 'daytime_only' && !state.simulation.isDaytime) {
+    return { ok: false, reason: 'outside_time_window:daytime_only' };
+  }
+
+  if (Number.isFinite(trigger.minStageIndex) && state.plant.stageIndex < Number(trigger.minStageIndex)) {
+    return { ok: false, reason: `stage_too_low:${state.plant.stageIndex}<${trigger.minStageIndex}` };
+  }
+
+  return { ok: true };
+}
+
+function validateActionPrerequisites(action) {
+  const pre = action.prerequisites || {};
+  const min = pre.min && typeof pre.min === 'object' ? pre.min : {};
+  const max = pre.max && typeof pre.max === 'object' ? pre.max : {};
+
+  for (const [key, value] of Object.entries(min)) {
+    if (!Number.isFinite(Number(value))) {
+      continue;
+    }
+    const current = key in state.status ? state.status[key] : null;
+    if (current !== null && current < Number(value)) {
+      return { ok: false, reason: `prereq_min_failed:${key}` };
+    }
+  }
+
+  for (const [key, value] of Object.entries(max)) {
+    if (!Number.isFinite(Number(value))) {
+      continue;
+    }
+    const current = key in state.status ? state.status[key] : null;
+    if (current !== null && current > Number(value)) {
+      return { ok: false, reason: `prereq_max_failed:${key}` };
+    }
+  }
+
+  return { ok: true };
+}
+
+function scheduleActionOverTimeEffect(action, nowMs) {
+  const durationMs = Math.round((Number(action.effects.durationSimMinutes) || 0) * 60 * 1000);
+  const overTime = action.effects.overTime || {};
+  if (durationMs <= 0 || !Object.keys(overTime).length) {
+    return;
+  }
+
+  state.actions.activeEffects.push({
+    id: `${action.id}:${nowMs}:${state.simulation.tickCount}`,
+    actionId: action.id,
+    remainingSimMs: durationMs,
+    rates: overTime
+  });
+}
+
+function applyActiveActionEffects(elapsedSimMs) {
+  if (!Array.isArray(state.actions.activeEffects) || !state.actions.activeEffects.length) {
+    return;
+  }
+
+  const stillActive = [];
+  for (const effect of state.actions.activeEffects) {
+    const stepMs = clamp(elapsedSimMs, 0, effect.remainingSimMs);
+    if (stepMs > 0) {
+      applyOverTimeRates(effect.rates || {}, stepMs);
+      effect.remainingSimMs -= stepMs;
+    }
+    if (effect.remainingSimMs > 0) {
+      stillActive.push(effect);
+    }
+  }
+
+  state.actions.activeEffects = stillActive;
+  clampStatus();
+}
+
+function applyOverTimeRates(rates, elapsedSimMs) {
+  const simHours = elapsedSimMs / (60 * 60 * 1000);
+  for (const [key, perHour] of Object.entries(rates || {})) {
+    const delta = Number(perHour) * simHours;
+    if (!Number.isFinite(delta)) {
+      continue;
+    }
+
+    if (key === 'growthPerHour') {
+      applyGrowthPercentDelta(delta);
+      continue;
+    }
+
+    const metric = key.replace(/PerHour$/, '');
+    if (Object.prototype.hasOwnProperty.call(state.status, metric)) {
+      state.status[metric] += delta;
+    }
+  }
+}
+
+function applyActionImmediateEffects(action) {
+  const immediate = action && action.effects ? action.effects.immediate : null;
+  if (Array.isArray(immediate)) {
+    applyStructuredEffects(immediate);
+    applyEnvironmentActionInfluence(action);
+    return;
+  }
+  applyEffectsObject(immediate || {});
+  applyEnvironmentActionInfluence(action);
+}
+
+function applyEnvironmentActionInfluence(action) {
+  const controls = ensureEnvironmentControls(state);
+  if (!action || typeof action !== 'object') {
+    return;
+  }
+
+  const category = String(action.category || '').toLowerCase();
+  const intensity = String(action.intensity || 'low').toLowerCase();
+  const intensityFactor = intensity === 'high' ? 1 : intensity === 'medium' ? 0.65 : 0.4;
+
+  if (category === 'fertilizing') {
+    controls.ec = clamp(controls.ec + (0.28 * intensityFactor), 0.6, 2.8);
+    controls.ph = clamp(controls.ph - (0.04 * intensityFactor), 5.0, 7.0);
+  }
+
+  if (category === 'watering') {
+    controls.ec = clamp(controls.ec - (0.10 + (0.08 * intensityFactor)), 0.6, 2.8);
+    const phPull = (6.0 - controls.ph) * (0.20 + (0.15 * intensityFactor));
+    controls.ph = clamp(controls.ph + phPull, 5.0, 7.0);
+  }
+
+  if (category === 'environment') {
+    controls.airflowPercent = clampInt(controls.airflowPercent + Math.round(8 * intensityFactor), 0, 100);
+  }
+}
+
+function applyStructuredEffects(effectsList) {
+  for (const effect of effectsList || []) {
+    if (!effect || typeof effect !== 'object') {
+      continue;
+    }
+
+    const metric = String(effect.stat || '').trim();
+    const mode = String(effect.mode || 'add').trim();
+    const value = Number(effect.value);
+
+    if (!metric || (!Object.prototype.hasOwnProperty.call(state.status, metric) && metric !== 'growth')) {
+      continue;
+    }
+
+    if ((mode !== 'clamp_min' && mode !== 'clamp_max' && mode !== 'reduce_risk' && mode !== 'reduce_salt_load') && !Number.isFinite(value)) {
+      continue;
+    }
+
+    if (metric === 'growth') {
+      if (mode === 'add') {
+        applyGrowthPercentDelta(value);
+      } else if (mode === 'subtract') {
+        applyGrowthPercentDelta(-Math.abs(value));
+      } else if (mode === 'set') {
+        state.plant.progress = clamp(Number(value), 0, 100);
+      }
+      continue;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(state.status, metric)) {
+      continue;
+    }
+
+    if (mode === 'add') {
+      state.status[metric] += value;
+    } else if (mode === 'subtract') {
+      state.status[metric] -= Math.abs(value);
+    } else if (mode === 'set') {
+      state.status[metric] = value;
+    } else if (mode === 'clamp_min') {
+      state.status[metric] = Math.max(state.status[metric], Number(effect.min));
+    } else if (mode === 'clamp_max') {
+      state.status[metric] = Math.min(state.status[metric], Number(effect.max));
+    } else if (mode === 'reduce_risk') {
+      state.status.risk -= Math.abs(Number.isFinite(value) ? value : 0);
+    } else if (mode === 'reduce_salt_load') {
+      state.status.risk -= Math.abs(Number.isFinite(value) ? value : 0);
+    }
+  }
+
+  clampStatus();
+}
+
+function applyEffectsObject(effects) {
+  for (const [metric, deltaRaw] of Object.entries(effects || {})) {
+    const delta = Number(deltaRaw);
+    if (!Number.isFinite(delta)) {
+      continue;
+    }
+
+    if (metric === 'growth') {
+      applyGrowthPercentDelta(delta);
+      continue;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(state.status, metric)) {
+      state.status[metric] += delta;
+    }
+  }
+
+  clampStatus();
+}
+
+function evaluateCondition(conditionExpr) {
+  const expr = String(conditionExpr || 'true').trim();
+  if (!expr || expr.toLowerCase() === 'true') {
+    return true;
+  }
+
+  const orParts = expr.split(/\s+OR\s+/i);
+  for (const part of orParts) {
+    const andParts = part.split(/\s+AND\s+/i);
+    const andResult = andParts.every((token) => evaluateAtomicCondition(token.trim()));
+    if (andResult) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function evaluateAtomicCondition(token) {
+  const m = token.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*(>=|<=|==|>|<)\s*(-?\d+(?:\.\d+)?)$/);
+  if (!m) {
+    return false;
+  }
+
+  const key = m[1];
+  const op = m[2];
+  const rhs = Number(m[3]);
+  const lhs = key in state.status ? Number(state.status[key]) : NaN;
+  if (!Number.isFinite(lhs) || !Number.isFinite(rhs)) {
+    return false;
+  }
+
+  if (op === '>=') return lhs >= rhs;
+  if (op === '<=') return lhs <= rhs;
+  if (op === '==') return lhs === rhs;
+  if (op === '>') return lhs > rhs;
+  if (op === '<') return lhs < rhs;
+  return false;
+}
+
+function snapshotStatus() {
+  return {
+    water: state.status.water,
+    nutrition: state.status.nutrition,
+    health: state.status.health,
+    stress: state.status.stress,
+    risk: state.status.risk,
+    growth: state.status.growth
+  };
+}
+
+function summarizeDelta(before, after) {
+  const out = {};
+  for (const key of Object.keys(before)) {
+    out[key] = round2((after[key] || 0) - (before[key] || 0));
+  }
+  return out;
+}
+
+function consumeBoostUsage(nowMs, actionLabel) {
+  resetBoostDaily(nowMs);
+
+  if (state.boost.boostUsedToday >= state.boost.boostMaxPerDay) {
+    addLog('action', `${actionLabel} wegen Tageslimit blockiert`, { cap: state.boost.boostMaxPerDay });
+    return { ok: false, reason: 'limit_reached' };
+  }
+
+  state.boost.boostUsedToday += 1;
+  return { ok: true, usedToday: state.boost.boostUsedToday };
+}
+
+function getNextDayStartSimTime(simTimeMs) {
+  const shifted = new Date(simTimeMs);
+  if (simHour(simTimeMs) >= SIM_NIGHT_START_HOUR) {
+    shifted.setDate(shifted.getDate() + 1);
+  }
+  shifted.setHours(SIM_DAY_START_HOUR, 0, 0, 0);
+  return shifted.getTime();
+}
+
+function onBoostAction() {
+  if (isPlantDead()) {
+    addLog('action', 'Boost blockiert: Pflanze ist eingegangen', null);
+    renderAll();
+    return;
+  }
+
+  const nowMs = Date.now();
+  const usage = consumeBoostUsage(nowMs, 'Boost');
+  if (!usage.ok) {
+    renderAll();
+    return;
+  }
+
+  applyStatusDrift(BOOST_PLANT_EFFECT_MS);
+  if (typeof applyFairnessSurvivalGuard === 'function') {
+    applyFairnessSurvivalGuard(nowMs);
+  }
+  applyGrowthPercentDelta(BOOST_GROWTH_PERCENT_DELTA);
+
+  if (state.events.machineState === 'idle' || state.events.machineState === 'cooldown') {
+    state.events.scheduler.nextEventRealTimeMs = Math.max(nowMs, state.events.scheduler.nextEventRealTimeMs - BOOST_ADVANCE_MS);
+  }
+
+  if (state.events.machineState === 'cooldown') {
+    state.events.cooldownUntilMs = Math.max(nowMs, state.events.cooldownUntilMs - BOOST_ADVANCE_MS);
+  }
+
+  if (state.events.machineState === 'resolving') {
+    state.events.resolvingUntilMs = Math.max(nowMs, state.events.resolvingUntilMs - BOOST_ADVANCE_MS);
+  }
+
+  runEventStateMachine(nowMs);
+  updateVisibleOverlays();
+
+  addLog('action', 'Ereignis-Boost angewendet (Event-Timer -30 Min, Pflanze leicht angestoßen)', {
+    usedToday: state.boost.boostUsedToday,
+    nextEventAtMs: state.events.scheduler.nextEventRealTimeMs
+  });
+
+  renderAll();
+  schedulePersistState(true);
+}
+
+function onSkipNightAction() {
+  if (isPlantDead()) {
+    addLog('action', 'Nacht überspringen blockiert: Pflanze ist eingegangen', null);
+    renderAll();
+    return;
+  }
+
+  if (state.simulation.isDaytime) {
+    addLog('action', 'Nacht überspringen blockiert: Bereits Tagphase', null);
+    renderAll();
+    return;
+  }
+
+  const nowMs = Date.now();
+  const usage = consumeBoostUsage(nowMs, 'Nacht überspringen');
+  if (!usage.ok) {
+    renderAll();
+    return;
+  }
+
+  const currentSimTimeMs = Number(state.simulation.simTimeMs) || alignToSimStartHour(nowMs, SIM_START_HOUR);
+  const nextDayStartSimMs = getNextDayStartSimTime(currentSimTimeMs);
+  const remainingNightSimMs = Math.max(0, nextDayStartSimMs - currentSimTimeMs);
+
+  if (remainingNightSimMs <= 0) {
+    state.simulation.simTimeMs = nextDayStartSimMs;
+    state.simulation.nowMs = nowMs;
+    state.simulation.lastTickRealTimeMs = nowMs;
+    state.simulation.isDaytime = true;
+    runEventStateMachine(nowMs);
+    renderAll();
+    schedulePersistState(true);
+    return;
+  }
+
+  const ratio = REAL_RUN_DURATION_MS / TOTAL_LIFECYCLE_SIM_MS;
+  const elapsedRealMs = Math.ceil(remainingNightSimMs * ratio);
+  const targetRealMs = nowMs + elapsedRealMs;
+  const wasDeadBeforeSkip = isPlantDead();
+
+  applySimulationDelta(elapsedRealMs, targetRealMs, nowMs, {
+    suppressDeath: true,
+    persistWallNowAsLastTick: true
+  });
+
+  if (!wasDeadBeforeSkip) {
+    state.status.health = Math.max(8, Number(state.status.health) || 0);
+    state.status.water = Math.max(6, Number(state.status.water) || 0);
+    state.status.nutrition = Math.max(6, Number(state.status.nutrition) || 0);
+    state.status.stress = Math.min(98, Number(state.status.stress) || 0);
+    state.status.risk = Math.min(98, Number(state.status.risk) || 0);
+    state.plant.isDead = false;
+    if (state.plant.phase === 'dead') {
+      const safeIndex = clampInt(Number(state.plant.stageIndex) || 0, 0, Math.max(0, getStageTimeline().length - 1));
+      state.plant.phase = getStageTimeline()[safeIndex]?.phase || 'seedling';
+    }
+    state.ui.deathOverlayOpen = false;
+  }
+
+  state.simulation.simTimeMs = nextDayStartSimMs;
+  state.simulation.nowMs = nowMs;
+  state.simulation.lastTickRealTimeMs = nowMs;
+  state.simulation.isDaytime = true;
+  syncCanonicalStateShape();
+  runEventStateMachine(nowMs);
+
+  addLog('action', 'Nacht übersprungen: Tagesbeginn erreicht', {
+    usedToday: state.boost.boostUsedToday,
+    skippedNightSimMinutes: Math.round(remainingNightSimMs / 60000),
+    simTimeAfter: state.simulation.simTimeMs
+  });
+
+  renderAll();
+  schedulePersistState(true);
+}
+
+function onClearLog() {
+  state.history.systemLog = [];
+  state.history = { actions: [], events: [], system: [] };
+  addLog('system', 'Protokoll geleert', null);
+  renderAnalysisPanel(true);
+  schedulePersistState(true);
+}
+
+function resetBoostDaily(nowMs) {
+  const currentStamp = dayStamp(nowMs);
+  if (state.boost.dayStamp !== currentStamp) {
+    state.boost.dayStamp = currentStamp;
+    state.boost.boostUsedToday = 0;
+    addLog('system', 'Täglicher Boost-Zähler zurückgesetzt', { dayStamp: currentStamp });
+  }
+}
+
+function dayStamp(timestampMs) {
+  const d = new Date(timestampMs);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function alignToSimStartHour(realNowMs, startHour) {
+  const d = new Date(realNowMs);
+  d.setHours(clampInt(startHour, 0, 23), 0, 0, 0);
+  return d.getTime();
+}
+
+function simHour(simTimeMs) {
+  return new Date(simTimeMs).getHours();
+}
+
+function isDaytimeAtSimTime(simTimeMs) {
+  const hour = simHour(simTimeMs);
+  return hour >= SIM_DAY_START_HOUR && hour < SIM_NIGHT_START_HOUR;
+}
+
+function nextDaytimeRealMs(realNowMs, simTimeMs) {
+  const simDate = new Date(simTimeMs);
+  const shifted = new Date(simDate.getTime());
+
+  if (simHour(simTimeMs) >= SIM_NIGHT_START_HOUR) {
+    shifted.setDate(shifted.getDate() + 1);
+  }
+
+  shifted.setHours(SIM_DAY_START_HOUR, 0, 0, 0);
+  const simDeltaMs = Math.max(0, shifted.getTime() - simTimeMs);
+  const realDeltaMs = Math.ceil(simDeltaMs * (REAL_RUN_DURATION_MS / TOTAL_LIFECYCLE_SIM_MS));
+  return realNowMs + realDeltaMs;
+}
+
+function formatSimClock(simTimeMs) {
+  return new Date(simTimeMs).toLocaleTimeString('de-DE');
+}
+
+function deterministicUnitFloat(contextKey) {
+  const hash = hashString(`${state.simulation.globalSeed}|${state.simulation.plantId}|${contextKey}`);
+  return (hash % 1_000_000) / 1_000_000;
+}
+
+function hashString(input) {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function clampStatus() {
+  state.status.health = clamp(state.status.health, 0, 100);
+  state.status.stress = clamp(state.status.stress, 0, 100);
+  state.status.water = clamp(state.status.water, 0, 100);
+  state.status.nutrition = clamp(state.status.nutrition, 0, 100);
+  state.status.growth = clamp(state.status.growth, 0, 100);
+  state.status.risk = clamp(state.status.risk, 0, 100);
+}
+
+function updateVisibleOverlays() {
+  const overlays = [];
+
+  if (state.status.stress >= 80) {
+    overlays.push('overlay_burn');
+  }
+  if (state.status.nutrition <= 28) {
+    overlays.push('overlay_def_n');
+  } else if (state.status.nutrition <= 45) {
+    overlays.push('overlay_def_mg');
+  }
+  if (state.status.risk >= 78) {
+    overlays.push('overlay_mold_warning');
+  }
+  if (state.status.risk >= 62) {
+    overlays.push('overlay_pest_mites');
+  }
+  if (state.status.risk >= 70 && state.status.stress >= 55) {
+    overlays.push('overlay_pest_thrips');
+  }
+
+  state.ui.visibleOverlayIds = overlays;
+}
+
+function renderAll() {
+  syncDeathState();
+  renderActiveScreen();
+  renderOverlayModules();
+  renderLanding();
+  renderDeathOverlay();
+}
+
+function renderOverlayModules() {
+  let handled = false;
+
+  if (sheetsOverlayModule && typeof sheetsOverlayModule.update === 'function') {
+    sheetsOverlayModule.update(state, null);
+    handled = true;
+  }
+
+  if (menuOverlayModule && typeof menuOverlayModule.update === 'function') {
+    menuOverlayModule.update(state, null);
+    handled = true;
+  }
+
+  if (handled) {
+    return;
+  }
+
+  renderSheets();
+  renderGameMenu();
+  renderCareSheet();
+  renderEventSheet();
+  renderAnalysisPanel(false);
+  renderSettingsSheet();
+}
+
+function renderActiveScreen() {
+  if (screenRuntimeManager && typeof screenRuntimeManager.render === 'function') {
+    const active = state.ui && typeof state.ui.activeScreen === 'string' ? state.ui.activeScreen : 'home';
+    state.ui.activeScreen = screenRuntimeManager.setActiveScreen(active);
+    screenRuntimeManager.render(state);
+    return;
+  }
+  renderHud();
+}
+
+function buildHomeViewModel(appState = state) {
+  const sourceState = appState && typeof appState === 'object' ? appState : state;
+  const dead = Boolean(sourceState.plant && (sourceState.plant.isDead || sourceState.plant.phase === 'dead'));
+  const phaseCard = typeof getPhaseCardViewModel === 'function'
+    ? getPhaseCardViewModel()
+    : { title: '-', cycleIcon: '-', ageLabel: '-', subtitle: '-', progressPercent: 0, nextLabel: '' };
+  const eventStatus = eventStatusDisplay(sourceState);
+  const simulation = sourceState.simulation || {};
+  const status = sourceState.status || {};
+  const boost = sourceState.boost || {};
+
+  const simDay = Number(simulation.simDay || 0);
+  const xpCurrent = Math.min(8650, 1200 + (simDay * 440));
+  const xpTarget = 8650;
+  const xpRatio = clamp(xpCurrent / xpTarget, 0, 1);
+  const coinBalance = Number(status.coins || (2480 + Math.round(simDay * 28)));
+  const gemBalance = Number(status.gems || (55 + Math.max(0, Math.floor(Number(boost.boostUsedToday || 0) / 2))));
+  const starBalance = Number(status.stars || (114 + Math.round(Number(status.growth || 0) / 2)));
+  const playerLevel = Math.floor(xpCurrent / 1000) + 1;
+
+  const environment = deriveEnvironmentReadout(sourceState);
+  const roots = deriveRootZoneReadout(environment, sourceState);
+  const showSkipNight = !dead && !Boolean(simulation.isDaytime);
+
+  return {
+    id: 'home',
+    dead,
+    phaseCard,
+    eventStatus,
+    boostText: `Event -30 Min · kleiner Pflanzenimpuls · ${Number(boost.boostUsedToday || 0)}/${Number(boost.boostMaxPerDay || 0)} heute`,
+    growthImpulseText: Number(simulation.growthImpulse || 0).toFixed(2),
+    simTimeText: formatSimClock(Number(simulation.simTimeMs || 0)),
+    isDaytime: Boolean(simulation.isDaytime),
+    rings: {
+      health: Number(status.health || 0),
+      stress: Number(status.stress || 0),
+      water: Number(status.water || 0),
+      nutrition: Number(status.nutrition || 0),
+      growth: Number(status.growth || 0),
+      risk: Number(status.risk || 0)
+    },
+    panel: {
+      playerName: 'Marco',
+      playerRole: 'Master Grower',
+      playerLevel: `LVL ${playerLevel}`,
+      xpText: `XP: ${formatCompactNumber(xpCurrent)} / ${formatCompactNumber(xpTarget)}`,
+      xpPercent: Math.round(xpRatio * 100),
+      coinText: formatCompactNumber(coinBalance),
+      gemText: formatCompactNumber(gemBalance),
+      starText: formatCompactNumber(starBalance),
+      envTempText: `${environment.temperatureC.toFixed(1)}°C`,
+      envHumidityText: `${environment.humidityPercent}%`,
+      envVpdText: `${environment.vpdKpa.toFixed(1)} kPa`,
+      envLightText: `${environment.ppfd} PPFD`,
+      envAirflowText: environment.airflowLabel,
+      rootPhText: roots.ph,
+      rootEcText: roots.ec,
+      rootHealthText: roots.rootHealth,
+      rootOxygenText: roots.oxygen
+    },
+    actions: {
+      careDisabled: dead,
+      boostDisabled: dead,
+      diagnosisDisabled: dead,
+      skipNightDisabled: dead || Boolean(simulation.isDaytime),
+      showSkipNight
+    },
+    overlays: Array.isArray(sourceState.ui && sourceState.ui.visibleOverlayIds)
+      ? sourceState.ui.visibleOverlayIds.slice()
+      : []
+  };
+}
+
+function updateHomeFromViewModel(homeVm, prevVm = null) {
+  const vm = homeVm && typeof homeVm === 'object' ? homeVm : buildHomeViewModel(state);
+  const phaseCard = vm.phaseCard || {};
+  const dead = Boolean(vm.dead);
+
+  const phaseCardTitleNode = uiNode('phaseCardTitle', 'phaseCardTitle');
+  const phaseCardCycleNode = uiNode('phaseCardCycle', 'phaseCardCycle');
+  const phaseCardAgeNode = uiNode('phaseCardAge', 'phaseCardAge');
+  const phaseCardSubtitleNode = uiNode('phaseCardSubtitle', 'phaseCardSubtitle');
+  const phaseProgressFillNode = uiNode('phaseProgressFill', 'phaseProgressFill');
+  const phaseCardNode = uiNode('phaseCard', 'phaseCard');
+  const phaseProgressNode = ui.phaseProgress || (phaseCardNode ? phaseCardNode.querySelector('.phase-progress') : null);
+  const phaseProgressMarkerNode = uiNode('phaseProgressMarker', 'phaseProgressMarker');
+
+  if (phaseCardTitleNode && phaseCardTitleNode.textContent !== phaseCard.title) {
+    phaseCardTitleNode.textContent = String(phaseCard.title || '');
+  }
+  if (phaseCardCycleNode && phaseCardCycleNode.textContent !== phaseCard.cycleIcon) {
+    phaseCardCycleNode.textContent = String(phaseCard.cycleIcon || '');
+  }
+  if (phaseCardCycleNode) {
+    phaseCardCycleNode.setAttribute('aria-label', vm.isDaytime ? 'Tag' : 'Nacht');
+  }
+  if (phaseCardAgeNode && phaseCardAgeNode.textContent !== phaseCard.ageLabel) {
+    phaseCardAgeNode.textContent = String(phaseCard.ageLabel || '');
+  }
+  if (phaseCardSubtitleNode && phaseCardSubtitleNode.textContent !== phaseCard.subtitle) {
+    phaseCardSubtitleNode.textContent = String(phaseCard.subtitle || '');
+  }
+  if (phaseProgressFillNode) {
+    phaseProgressFillNode.style.setProperty('--phase-progress', String(Number(phaseCard.progressPercent || 0)));
+  }
+  if (phaseCardNode) {
+    phaseCardNode.classList.toggle('phase-card--complete', Number(phaseCard.progressPercent || 0) >= 100);
+    phaseCardNode.setAttribute(
+      'aria-label',
+      `Phase ${String(phaseCard.title || '-')}. ${String(phaseCard.ageLabel || '-')}. ${String(phaseCard.subtitle || '-')}.`
+    );
+  }
+  if (phaseProgressNode) {
+    phaseProgressNode.setAttribute('aria-valuenow', String(Number(phaseCard.progressPercent || 0)));
+  }
+  if (phaseProgressMarkerNode) {
+    phaseProgressMarkerNode.classList.toggle('hidden', !phaseCard.nextLabel || Number(phaseCard.progressPercent || 0) >= 100);
+  }
+
+  const boostUsageTextNode = uiNode('boostUsageText', 'boostUsageText');
+  if (boostUsageTextNode && boostUsageTextNode.textContent !== vm.boostText) {
+    boostUsageTextNode.textContent = String(vm.boostText || '');
+  }
+
+  setRing(uiNode('healthRing', 'healthRing'), uiNode('healthValue', 'healthValue'), Number(vm.rings && vm.rings.health || 0));
+  setRing(uiNode('stressRing', 'stressRing'), uiNode('stressValue', 'stressValue'), Number(vm.rings && vm.rings.stress || 0));
+  setRing(uiNode('waterRing', 'waterRing'), uiNode('waterValue', 'waterValue'), Number(vm.rings && vm.rings.water || 0));
+  setRing(uiNode('nutritionRing', 'nutritionRing'), uiNode('nutritionValue', 'nutritionValue'), Number(vm.rings && vm.rings.nutrition || 0));
+  setRing(uiNode('growthRing', 'growthRing'), uiNode('growthValue', 'growthValue'), Number(vm.rings && vm.rings.growth || 0));
+  setRing(uiNode('riskRing', 'riskRing'), uiNode('riskValue', 'riskValue'), Number(vm.rings && vm.rings.risk || 0));
+
+  const plantCanvas = uiNode('plantImage', 'plantImage');
+  if (plantCanvas && typeof renderPlantFromSprite === 'function') {
+    renderPlantFromSprite(plantCanvas);
+  }
+
+  const plantStatusChipNode = uiNode('plantStatusChip', 'plantStatusChip');
+  if (plantStatusChipNode) {
+    const stress = Number(vm.rings && vm.rings.stress || 0);
+    const health = Number(vm.rings && vm.rings.health || 0);
+    let statusText = 'Gesund';
+    let statusClass = 'home-progress-status-ok';
+    if (stress > 60) { statusText = 'Stress'; statusClass = 'home-progress-status-stress'; }
+    else if (health < 40) { statusText = 'Kritisch'; statusClass = 'home-progress-status-critical'; }
+    else if (stress > 30) { statusText = 'Achtung'; statusClass = 'home-progress-status-warn'; }
+    
+    if (plantStatusChipNode.textContent !== statusText) {
+      plantStatusChipNode.textContent = statusText;
+      plantStatusChipNode.className = `home-progress-stress-chip ${statusClass}`;
+    }
+  }
+
+  const nextEventValueNode = uiNode('nextEventValue', 'nextEventValue');
+  if (nextEventValueNode) {
+    nextEventValueNode.textContent = String(vm.eventStatus && vm.eventStatus.value ? vm.eventStatus.value : '');
+    const nextLabel = String(vm.eventStatus && vm.eventStatus.label ? vm.eventStatus.label : '');
+    if (nextEventValueNode.dataset.label !== nextLabel) {
+      const labelNode = nextEventValueNode.closest('.info-tile')?.querySelector('.info-label');
+      if (labelNode) {
+        labelNode.textContent = nextLabel;
+      }
+      nextEventValueNode.dataset.label = nextLabel;
+    }
+  }
+
+  const growthImpulseNode = uiNode('growthImpulseValue', 'growthImpulseValue');
+  if (growthImpulseNode && growthImpulseNode.textContent !== vm.growthImpulseText) {
+    growthImpulseNode.textContent = String(vm.growthImpulseText || '0.00');
+  }
+  const simTimeNode = uiNode('simTimeValue', 'simTimeValue');
+  if (simTimeNode && simTimeNode.textContent !== vm.simTimeText) {
+    simTimeNode.textContent = String(vm.simTimeText || '');
+  }
+
+  renderPanelReadouts(vm);
+
+  const careActionBtnNode = uiNode('careActionBtn', 'careActionBtn');
+  const boostActionBtnNode = uiNode('boostActionBtn', 'boostActionBtn');
+  const diagnosisBtnNode = uiNode('openDiagnosisBtn', 'openDiagnosisBtn');
+  const skipNightBtnNode = uiNode('skipNightActionBtn', 'skipNightActionBtn');
+
+  if (careActionBtnNode) {
+    careActionBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.careDisabled);
+  }
+  if (boostActionBtnNode) {
+    boostActionBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.boostDisabled);
+  }
+  if (diagnosisBtnNode) {
+    diagnosisBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.diagnosisDisabled);
+  }
+  if (skipNightBtnNode) {
+    skipNightBtnNode.disabled = Boolean(vm.actions && vm.actions.skipNightDisabled);
+    skipNightBtnNode.classList.toggle('hidden', !Boolean(vm.actions && vm.actions.showSkipNight));
+  }
+
+  renderOverlayVisibility(vm.overlays);
+}
+
+function renderHud() {
+  const homeVm = buildHomeViewModel(state);
+  updateHomeFromViewModel(homeVm, null);
+}
+
+function renderPanelReadouts(homeVm = null) {
+  const vm = homeVm && typeof homeVm === 'object' ? homeVm : buildHomeViewModel(state);
+  const panel = vm.panel || {};
+
+  const playerLevelNode = uiNode('playerLevelBadge', 'playerLevelBadge');
+  if (playerLevelNode && playerLevelNode.textContent !== panel.playerLevel) {
+    playerLevelNode.textContent = String(panel.playerLevel || 'LVL 1');
+  }
+
+  const playerNameNode = uiNode('playerNameValue', 'playerNameValue');
+  if (playerNameNode && playerNameNode.textContent !== panel.playerName) {
+    playerNameNode.textContent = String(panel.playerName || '');
+  }
+  const playerRoleNode = uiNode('playerRoleValue', 'playerRoleValue');
+  if (playerRoleNode && playerRoleNode.textContent !== panel.playerRole) {
+    playerRoleNode.textContent = String(panel.playerRole || '');
+  }
+  const playerXpNode = uiNode('playerXpValue', 'playerXpValue');
+  if (playerXpNode) {
+    playerXpNode.textContent = String(panel.xpText || '');
+  }
+  const playerXpFillNode = uiNode('playerXpFill', 'playerXpFill');
+  if (playerXpFillNode) {
+    playerXpFillNode.style.setProperty('--xp', String(Number(panel.xpPercent || 0)));
+  }
+
+  const coinNode = uiNode('currencyCoinValue', 'playerCoinValue');
+  const gemNode = uiNode('currencyGemValue', 'playerGemValue');
+  const starNode = uiNode('currencyStarValue', 'playerStarValue');
+  if (coinNode) coinNode.textContent = String(panel.coinText || '');
+  if (gemNode) gemNode.textContent = String(panel.gemText || '');
+  if (starNode) starNode.textContent = String(panel.starText || '');
+
+  const envTempNode = uiNode('envTemperatureValue', 'envTempValue');
+  const envHumidityNode = uiNode('envHumidityValue', 'envHumidityValue');
+  const envVpdNode = uiNode('envVpdValue', 'envVpdValue');
+  const envLightNode = uiNode('envLightValue', 'envLightValue');
+  const envAirflowNode = uiNode('envAirflowValue', 'envAirflowValue');
+  if (envTempNode) envTempNode.textContent = String(panel.envTempText || '');
+  if (envHumidityNode) envHumidityNode.textContent = String(panel.envHumidityText || '');
+  if (envVpdNode) envVpdNode.textContent = String(panel.envVpdText || '');
+  if (envLightNode) envLightNode.textContent = String(panel.envLightText || '');
+  if (envAirflowNode) envAirflowNode.textContent = String(panel.envAirflowText || '');
+
+  const rootPhNode = uiNode('rootPhValue', 'rootPhValue');
+  const rootEcNode = uiNode('rootEcValue', 'rootEcValue');
+  const rootHealthNode = uiNode('rootHealthValue', 'rootHealthValue');
+  const rootOxygenNode = uiNode('rootOxygenValue', 'rootOxygenValue');
+  if (rootPhNode) rootPhNode.textContent = String(panel.rootPhText || '');
+  if (rootEcNode) rootEcNode.textContent = String(panel.rootEcText || '');
+  if (rootHealthNode) rootHealthNode.textContent = String(panel.rootHealthText || '');
+  if (rootOxygenNode) rootOxygenNode.textContent = String(panel.rootOxygenText || '');
+
+  const controls = ensureEnvironmentControls(state);
+  const setText = (id, text) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = String(text);
+  };
+  const setRange = (id, value) => {
+    const node = document.getElementById(id);
+    if (node && document.activeElement !== node) {
+      node.value = String(value);
+    }
+  };
+
+  setText('envCtrlTempOut', `${controls.temperatureC.toFixed(1)}°C`);
+  setText('envCtrlHumidityOut', `${controls.humidityPercent}%`);
+  setText('envCtrlAirflowOut', `${controls.airflowPercent}%`);
+  setText('envCtrlPhOut', `${controls.ph.toFixed(1)}`);
+  setText('envCtrlEcOut', `${controls.ec.toFixed(1)} mS`);
+  setText('envCtrlEcHint', 'nur über mineralisches Düngen');
+
+  setRange('envCtrlTemp', controls.temperatureC.toFixed(1));
+  setRange('envCtrlHumidity', controls.humidityPercent);
+  setRange('envCtrlAirflow', controls.airflowPercent);
+  setRange('envCtrlPh', controls.ph.toFixed(1));
+}
+
+window.GrowSimHomeRenderer = Object.freeze({
+  buildViewModel: (appState) => buildHomeViewModel(appState || state),
+  update: (homeVm, prevVm) => updateHomeFromViewModel(homeVm, prevVm)
+});
+
+function getEnvironmentControlDefaults() {
+  return {
+    temperatureC: 25,
+    humidityPercent: 60,
+    airflowPercent: 70,
+    ph: 6.0,
+    ec: 1.4
+  };
+}
+
+function ensureEnvironmentControls(sourceState = state) {
+  const target = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  if (!target.environmentControls || typeof target.environmentControls !== 'object') {
+    target.environmentControls = getEnvironmentControlDefaults();
+  }
+  const controls = target.environmentControls;
+  controls.temperatureC = clamp(Number(controls.temperatureC), 16, 36);
+  controls.humidityPercent = clampInt(Number(controls.humidityPercent), 30, 90);
+  controls.airflowPercent = clampInt(Number(controls.airflowPercent), 0, 100);
+  controls.ph = clamp(Number(controls.ph), 5.0, 7.0);
+  controls.ec = clamp(Number(controls.ec), 0.6, 2.8);
+  return controls;
+}
+
+function deriveAirflowLabel(airflowPercent) {
+  if (airflowPercent >= 75) return 'Stark';
+  if (airflowPercent >= 45) return 'Good';
+  if (airflowPercent >= 25) return 'Mittel';
+  return 'Schwach';
+}
+
+function onEnvironmentControlInput(controlKey, rawValue) {
+  const controls = ensureEnvironmentControls(state);
+  const value = Number(rawValue);
+  if (!Number.isFinite(value)) {
+    return;
+  }
+  if (controlKey === 'temperatureC') controls.temperatureC = clamp(value, 16, 36);
+  if (controlKey === 'humidityPercent') controls.humidityPercent = clampInt(value, 30, 90);
+  if (controlKey === 'airflowPercent') controls.airflowPercent = clampInt(value, 0, 100);
+  if (controlKey === 'ph') controls.ph = clamp(value, 5.0, 7.0);
+  if (controlKey === 'ec') {
+    addLog('action', 'EC ist nicht direkt regelbar. Nutze mineralische Düngung.', { attemptedValue: value });
+    return;
+  }
+  renderHud();
+  schedulePersistState();
+}
+
+function deriveEnvironmentReadout(sourceState = state) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = ensureEnvironmentControls(activeState);
+  const envApi = window.GrowSimEnvModel;
+  if (envApi && typeof envApi.buildEnvironmentModelFromState === 'function') {
+    const model = envApi.buildEnvironmentModelFromState(activeState.status, activeState.simulation, activeState.plant);
+    const temperatureC = clamp(Number(controls.temperatureC), 16, 36);
+    const humidityPercent = clampInt(Number(controls.humidityPercent), 30, 90);
+    const vpdKpa = clamp(0.7 + ((temperatureC - 21) * 0.08) + ((60 - humidityPercent) * 0.012), 0.4, 2.4);
+    return {
+      temperatureC,
+      humidityPercent,
+      vpdKpa,
+      ppfd: model.ppfd,
+      airflowLabel: deriveAirflowLabel(controls.airflowPercent)
+    };
+  }
+
+  const isDay = Boolean(activeState.simulation && activeState.simulation.isDaytime);
+  const temperatureC = clamp(Number(controls.temperatureC), 16, 36);
+  const humidityPercent = clampInt(Number(controls.humidityPercent), 30, 90);
+  const vpdKpa = clamp(0.7 + ((temperatureC - 21) * 0.08) + ((60 - humidityPercent) * 0.012), 0.4, 2.4);
+  const ppfd = isDay ? Math.round(clamp(550 + (Number(activeState.status && activeState.status.growth || 0) * 2.4), 420, 980)) : 45;
+
+  return { temperatureC, humidityPercent, vpdKpa, ppfd, airflowLabel: deriveAirflowLabel(controls.airflowPercent) };
+}
+
+function deriveRootZoneReadout(environment, sourceState = state) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = ensureEnvironmentControls(activeState);
+  const envApi = window.GrowSimEnvModel;
+  if (envApi && typeof envApi.buildRootZoneModelFromState === 'function') {
+    const model = envApi.buildRootZoneModelFromState(activeState.status, environment, activeState.plant);
+    return {
+      ph: Number(controls.ph).toFixed(1),
+      ec: `${Number(controls.ec).toFixed(1)} mS`,
+      rootHealth: `${Math.round(model.rootHealthPercent)}%`,
+      oxygen: `${Math.round(model.oxygenPercent)}%`
+    };
+  }
+
+  const nutrition = clamp(Number(activeState.status && activeState.status.nutrition || 0), 0, 100);
+  const water = clamp(Number(activeState.status && activeState.status.water || 0), 0, 100);
+  const risk = clamp(Number(activeState.status && activeState.status.risk || 0), 0, 100);
+
+  const phValue = clamp(Number(controls.ph), 5.0, 7.0);
+  const ecValue = clamp(Number(controls.ec), 0.6, 2.8);
+  const oxygenPercent = Math.round(clamp(92 - (water * 0.28) - (risk * 0.18), 32, 95));
+  const rootHealthPercent = Math.round(clamp(55 + (nutrition * 0.32) - (risk * 0.25) - ((environment.vpdKpa - 1.2) * 12), 10, 99));
+
+  return {
+    ph: phValue.toFixed(1),
+    ec: `${ecValue.toFixed(1)} mS`,
+    rootHealth: `${rootHealthPercent}%`,
+    oxygen: `${oxygenPercent}%`
+  };
+}
+
+function formatCompactNumber(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return '0';
+  }
+  return Math.round(numeric).toLocaleString('de-DE');
+}
+
+const STAT_RING_UPDATE_IDS = new Set(['waterRing', 'nutritionRing', 'growthRing', 'riskRing']);
+const STAT_UPDATE_ANIMATION_MS = 340;
+
+function triggerStatUpdateFeedback(ringNode, textNode) {
+  if (!ringNode || !textNode) {
+    return;
+  }
+
+  ringNode.classList.remove('stat-ring--updated');
+  textNode.classList.remove('stat-value--updated');
+
+  void ringNode.offsetWidth;
+
+  ringNode.classList.add('stat-ring--updated');
+  textNode.classList.add('stat-value--updated');
+
+  clearTimeout(ringNode._statUpdateTimerId);
+  ringNode._statUpdateTimerId = setTimeout(() => {
+    ringNode.classList.remove('stat-ring--updated');
+    textNode.classList.remove('stat-value--updated');
+  }, STAT_UPDATE_ANIMATION_MS);
+}
+
+function setRing(ringNode, textNode, value) {
+  if (!ringNode || !textNode) {
+    return;
+  }
+  const rounded = Math.round(value);
+  const roundedText = String(rounded);
+  const previousValueText = ringNode.dataset.value;
+  const valueChanged = previousValueText !== roundedText;
+
+  if (valueChanged) {
+    ringNode.style.setProperty('--value', roundedText);
+    ringNode.dataset.value = roundedText;
+
+    if (STAT_RING_UPDATE_IDS.has(ringNode.id) && previousValueText !== undefined) {
+      triggerStatUpdateFeedback(ringNode, textNode);
+    }
+  }
+  if (textNode.textContent !== roundedText) {
+    textNode.textContent = roundedText;
+  }
+}
+
+function renderOverlayVisibility(visibleOverlayIds = null) {
+  const activeOverlays = Array.isArray(visibleOverlayIds)
+    ? visibleOverlayIds
+    : (Array.isArray(state.ui && state.ui.visibleOverlayIds) ? state.ui.visibleOverlayIds : []);
+  const nodes = {
+    overlay_burn: ui.overlayBurn,
+    overlay_def_mg: ui.overlayDefMg,
+    overlay_def_n: ui.overlayDefN,
+    overlay_mold_warning: ui.overlayMoldWarning,
+    overlay_pest_mites: ui.overlayPestMites,
+    overlay_pest_thrips: ui.overlayPestThrips
+  };
+
+  for (const [overlayId, node] of Object.entries(nodes)) {
+    if (!node) {
+      continue;
+    }
+    const hasSource = Boolean(node.getAttribute('src'));
+    const visible = activeOverlays.includes(overlayId) && hasSource;
+    node.classList.toggle('hidden', !visible);
+  }
+}
+
+function renderPlantFallback(targetNode) {
+  if (!targetNode || typeof targetNode.getContext !== 'function') {
+    return;
+  }
+  const canvasMetrics = syncPlantCanvasToContainer(targetNode);
+  const ctx = targetNode.getContext('2d', { alpha: true });
+  if (!ctx) {
+    return;
+  }
+  ctx.clearRect(0, 0, targetNode.width, targetNode.height);
+  const w = canvasMetrics.widthPx;
+  const h = canvasMetrics.heightPx;
+
+  const stageIndex = clampInt(Number(state.plant.stageIndex), 0, PLANT_STAGE_IMAGES.length - 1);
+  const assetPath = appPath(PLANT_STAGE_IMAGES[stageIndex] || PLANT_STAGE_IMAGES[0]);
+
+  const img = new Image();
+  img.onload = () => {
+    const srcW = img.naturalWidth || 512;
+    const srcH = img.naturalHeight || 512;
+    const dstW = w;
+    const dstH = h;
+
+    const containScale = Math.min(dstW / srcW, dstH / srcH);
+    const spriteStage = getPlantSpriteStageFromState(state.plant);
+    const stageScale = HOME_PLANT_STAGE_SCALE[spriteStage] || 1;
+    const fitScale = HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale;
+    const scale = containScale * fitScale;
+
+    const drawW = Math.round(srcW * scale);
+    const drawH = Math.round(srcH * scale);
+    const dx = Math.round((dstW - drawW) / 2);
+    const baselineInset = clampInt(HOME_PLANT_REFERENCE_FIT.baselineInsetPx, 0, dstH);
+    const dy = clampInt(dstH - drawH - baselineInset, 0, dstH - drawH);
+
+    ctx.clearRect(0, 0, targetNode.width, targetNode.height);
+    ctx.drawImage(img, dx, dy, drawW, drawH);
+  };
+  img.onerror = () => {
+    ctx.fillStyle = 'rgba(134, 167, 94, 0.85)';
+    ctx.fillRect(Math.round(w * 0.48), Math.round(h * 0.45), Math.max(2, Math.round(w * 0.04)), Math.round(h * 0.3));
+    ctx.fillStyle = 'rgba(164, 205, 110, 0.78)';
+    ctx.beginPath();
+    ctx.ellipse(Math.round(w * 0.5), Math.round(h * 0.38), Math.round(w * 0.13), Math.round(h * 0.11), 0, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  img.src = assetPath;
+
+  targetNode.dataset.stageName = normalizeStageKey(state.plant.stageKey);
+}
+
+function renderSheets() {
+  const activeSheet = state.ui.openSheet;
+  const showBackdrop = activeSheet !== null;
+
+  ui.backdrop.classList.toggle('hidden', !showBackdrop);
+  ui.backdrop.setAttribute('aria-hidden', String(!showBackdrop));
+
+  toggleSheet(ui.careSheet, activeSheet === 'care');
+  toggleSheet(ui.eventSheet, activeSheet === 'event');
+  toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
+  toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
+  toggleSheet(ui.statDetailSheet, activeSheet === 'statDetail');
+  toggleSheet(ui.missionsSheet, activeSheet === 'missions');
+}
+
+function renderGameMenu() {
+  if (!ui.menuBackdrop || !ui.gameMenu || !ui.menuToggleBtn) {
+    return;
+  }
+
+  const menuOpen = state.ui.menuOpen === true;
+  const dialogOpen = state.ui.menuDialogOpen === true;
+
+  ui.menuBackdrop.classList.toggle('hidden', !menuOpen);
+  ui.menuBackdrop.setAttribute('aria-hidden', String(!menuOpen));
+  ui.gameMenu.classList.toggle('hidden', !menuOpen);
+  ui.gameMenu.setAttribute('aria-hidden', String(!menuOpen));
+  ui.menuToggleBtn.setAttribute('aria-expanded', String(menuOpen));
+
+  if (ui.menuDialog) {
+    ui.menuDialog.classList.toggle('hidden', !dialogOpen);
+    ui.menuDialog.setAttribute('aria-hidden', String(!dialogOpen));
+  }
+
+  renderMenuDynamicRows();
+}
+
+function renderMenuDynamicRows() {
+  if (!ui.menuRescueBtn || !ui.menuRescueSubtext || !ui.menuPushBtn || !ui.menuPushStatus) {
+    return;
+  }
+
+  if (ui.menuStatsBtn) {
+    ui.menuStatsBtn.setAttribute('title', 'Oeffnet denselben Analyse-Report wie Analyse-Button und Death-Flow.');
+  }
+  if (ui.menuSupportBtn) {
+    ui.menuSupportBtn.setAttribute('title', 'Oeffnet Missionen und den aktuellen Fortschritt.');
+  }
+  if (ui.menuAboutBtn) {
+    ui.menuAboutBtn.setAttribute('title', 'Zeigt den aktuellen Projektstatus. Weitere Hilfe folgt spaeter.');
+  }
+  if (ui.menuLanguageBtn) {
+    ui.menuLanguageBtn.setAttribute('title', 'Oeffnet die lokal verfuegbaren Einstellungen.');
+  }
+  if (ui.analyzeActionBtn) {
+    ui.analyzeActionBtn.setAttribute('title', 'Oeffnet den Analyse-Report und den protokollierten Run-Verlauf.');
+  }
+  const menuRescueLabel = document.getElementById('menuRescueLabel');
+  if (ui.menuAchievementsBtn) {
+    ui.menuAchievementsBtn.disabled = true;
+    ui.menuAchievementsBtn.setAttribute('aria-disabled', 'true');
+    ui.menuAchievementsBtn.setAttribute('title', 'Vorbereitet, aktuell ohne Funktion.');
+  }
+  if (ui.menuLeaderboardBtn) {
+    ui.menuLeaderboardBtn.disabled = true;
+    ui.menuLeaderboardBtn.setAttribute('aria-disabled', 'true');
+    ui.menuLeaderboardBtn.setAttribute('title', 'Vorbereitet, aktuell ohne Funktion.');
+  }
+
+  const meta = getCanonicalMeta(state);
+  const rescueUsed = Boolean(meta.rescue.used);
+  const rescueBlocked = rescueAdPending || rescueUsed;
+  const rescueNeeded = Boolean(isPlantDead() || (Number(state.status && state.status.health) || 0) < 20);
+  ui.menuRescueBtn.disabled = rescueBlocked;
+  ui.menuRescueBtn.setAttribute('aria-disabled', String(rescueBlocked));
+  ui.menuRescueBtn.setAttribute('title', 'Kein Inventarsystem. Startet die gleiche einmalige Notfallrettung wie im Death-Overlay.');
+  if (menuRescueLabel) {
+    menuRescueLabel.textContent = 'Notfallrettung';
+  }
+  ui.menuRescueSubtext.textContent = rescueUsed
+    ? '1× pro Run bereits genutzt.'
+    : (meta.rescue.lastResult || (rescueNeeded ? 'Jetzt als Rettungsaktion verfügbar.' : '1× pro Run bei kritischem Zustand.'));
+
+  const notifications = getCanonicalNotificationsSettings(state);
+  const enabled = notifications.enabled === true;
+  ui.menuPushBtn.setAttribute('aria-pressed', String(enabled));
+  ui.menuPushStatus.textContent = notifications.lastMessage
+    ? String(notifications.lastMessage)
+    : (enabled ? 'Aktiviert' : 'Deaktiviert');
+}
+
+function toggleSheet(sheetNode, visible) {
+  sheetNode.classList.toggle('hidden', !visible);
+  sheetNode.setAttribute('aria-hidden', String(!visible));
+}
+
+function renderCareSheet(force = false) {
+  if (!force && state.ui.openSheet !== 'care') {
+    return;
+  }
+
+  if (!ui.careCategoryList || !ui.careActionList || !ui.careFeedback || !ui.careEffectsList || !ui.careExecuteButton) {
+    return;
+  }
+
+  const careMapping = window.GrowSimScreenMappings && window.GrowSimScreenMappings.care;
+  const careViewModel = careMapping && typeof careMapping.toViewModel === 'function'
+    ? careMapping.toViewModel(state)
+    : null;
+
+  const catalog = Array.isArray(state.actions.catalog) ? state.actions.catalog : [];
+  const categoryOrder = careViewModel && Array.isArray(careViewModel.categoryOrder)
+    ? careViewModel.categoryOrder.slice()
+    : ['watering', 'fertilizing', 'training', 'environment'];
+  const categoryLabels = careViewModel && careViewModel.categoryLabels
+    ? careViewModel.categoryLabels
+    : {
+      watering: 'Bewässerung',
+      fertilizing: 'Nährstoffe',
+      training: 'Training',
+      environment: 'Umgebung'
+    };
+  const categoryIcons = {
+    watering: '<img src="assets/ui/icons/icon_water.svg" alt="" aria-hidden="true">',
+    fertilizing: '<img src="assets/ui/icons/icon_nutrients.svg" alt="" aria-hidden="true">',
+    training: '<img src="assets/ui/icons/icon_growth.svg" alt="" aria-hidden="true">',
+    environment: '<img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true">'
+  };
+
+  const availableCategories = careViewModel && Array.isArray(careViewModel.availableCategories)
+    ? careViewModel.availableCategories.slice()
+    : categoryOrder.filter((category) => catalog.some((action) => action.category === category));
+  if (!availableCategories.length) {
+    ui.careCategoryList.replaceChildren();
+    ui.careActionList.replaceChildren();
+    ui.careEffectsList.replaceChildren();
+    ui.careExecuteButton.disabled = true;
+    setCareFeedback('error', 'Keine Aktionen geladen.');
+    return;
+  }
+
+  if (!state.ui.care || !availableCategories.includes(state.ui.care.selectedCategory)) {
+    state.ui.care = state.ui.care || {};
+    state.ui.care.selectedCategory = availableCategories[0];
+  }
+
+  renderCareCategoryButtons(availableCategories, categoryLabels, categoryIcons);
+  renderCareActionButtons(state.ui.care.selectedCategory, careViewModel);
+  renderCareEffectsPanel();
+  renderCareFeedback();
+  renderCareExecuteButton();
+}
+
+function renderCareCategoryButtons(categories, labels, icons) {
+  const signature = categories.join('|') + `|selected:${state.ui.care.selectedCategory}`;
+  if (ui.careCategoryList.dataset.signature === signature) {
+    return;
+  }
+
+  ui.careCategoryList.dataset.signature = signature;
+  ui.careCategoryList.replaceChildren();
+  const primitives = getUiPrimitives();
+
+  for (const category of categories) {
+    const btn = primitives && typeof primitives.button === 'function'
+      ? primitives.button({ className: 'care-category-tab', attrs: { role: 'tab' } })
+      : document.createElement('button');
+    btn.type = 'button';
+    if (!btn.classList.contains('care-category-tab')) {
+      btn.className = 'care-category-tab';
+    }
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', String(state.ui.care.selectedCategory === category));
+    if (state.ui.care.selectedCategory === category) {
+      btn.classList.add('care-category-tab-active');
+    }
+    btn.innerHTML = `<span class="care-category-icon" aria-hidden="true">${icons[category] || '◌'}</span><span class="care-category-label">${labels[category] || category}</span>`;
+    btn.addEventListener('click', () => {
+      state.ui.care.selectedCategory = category;
+      state.ui.care.selectedActionId = null;
+      ui.careCategoryList.dataset.signature = '';
+      ui.careActionList.dataset.signature = '';
+      setCareFeedback('info', `${labels[category] || category} bereit.`);
+      renderCareSheet(true);
+    });
+    ui.careCategoryList.appendChild(btn);
+  }
+}
+
+function renderCareActionButtons(category, careViewModel = null) {
+  const actions = careViewModel && Array.isArray(careViewModel.actions)
+    ? careViewModel.actions
+      .filter((action) => action.category === category)
+      .sort((a, b) => intensityRank(a.intensity) - intensityRank(b.intensity))
+    : state.actions.catalog
+      .filter((action) => action.category === category)
+      .sort((a, b) => intensityRank(a.intensity) - intensityRank(b.intensity));
+
+  const signature = actions.map((action) => {
+    const cooldownUntil = Number(
+      Object.prototype.hasOwnProperty.call(action, 'cooldownUntil')
+        ? action.cooldownUntil
+        : state.actions.cooldowns[action.id] || 0
+    );
+    return `${action.id}:${cooldownUntil}:selected:${state.ui.care.selectedActionId === action.id}`;
+  }).join('|');
+
+  if (ui.careActionList.dataset.signature === signature) {
+    return;
+  }
+
+  ui.careActionList.dataset.signature = signature;
+  ui.careActionList.replaceChildren();
+  const primitives = getUiPrimitives();
+
+  for (const action of actions) {
+    const cooldownUntil = Number(
+      Object.prototype.hasOwnProperty.call(action, 'cooldownUntil')
+        ? action.cooldownUntil
+        : state.actions.cooldowns[action.id] || 0
+    );
+    const cooldownLeft = Math.max(0, cooldownUntil - Date.now());
+    const cooldownText = cooldownLeft > 0
+      ? `${Math.ceil(cooldownLeft / 60000)} min`
+      : `${Math.round(action.cooldownRealMinutes || 0)} min`;
+    const hintText = formatActionHint(action, cooldownLeft);
+
+    const button = primitives && typeof primitives.button === 'function'
+      ? primitives.button({ className: 'care-action-card' })
+      : document.createElement('button');
+    button.type = 'button';
+    if (!button.classList.contains('care-action-card')) {
+      button.className = 'care-action-card';
+    }
+    if (state.ui.care.selectedActionId === action.id) {
+      button.classList.add('is-selected');
+    }
+    if (cooldownLeft > 0) {
+      button.classList.add('is-cooldown');
+    }
+    button.setAttribute('aria-pressed', String(state.ui.care.selectedActionId === action.id));
+
+    button.innerHTML = `
+      <div class="care-action-icon-box">
+        <img src="${getActionIconPath(action)}" class="care-action-card-icon" alt="" aria-hidden="true">
+      </div>
+      <div class="care-action-info-box">
+        <span class="care-action-label">${escapeHtml(action.label)}</span>
+        <span class="care-action-hint" title="${escapeHtml(`Cooldown: ${cooldownText}`)}">${escapeHtml(hintText)}</span>
+      </div>`;
+
+    button.addEventListener('click', () => {
+      state.ui.care.selectedActionId = action.id;
+      ui.careActionList.dataset.signature = '';
+      setCareFeedback('info', `${action.label} ausgewählt.`);
+      renderCareSheet(true);
+    });
+
+    ui.careActionList.appendChild(button);
+  }
+}
+
+function formatEffectsInline(action) {
+  const immediate = action && action.effects && action.effects.immediate ? action.effects.immediate : {};
+  if (Array.isArray(immediate)) {
+    return immediate
+      .map((effect) => (effect && effect.label ? String(effect.label) : null))
+      .filter(Boolean)
+      .slice(0, 2)
+      .join(' · ') || 'Keine direkten Effekte';
+  }
+  const map = [
+    ['water', 'Feuchtigkeit'],
+    ['nutrition', 'Nährstoffe'],
+    ['growth', 'Wachstum'],
+    ['stress', 'Stress'],
+    ['risk', 'Risiko']
+  ];
+  const parts = [];
+  for (const [key, label] of map) {
+    const value = Number(immediate[key] || 0);
+    if (!value) continue;
+    parts.push(`${label} ${value > 0 ? '+' : ''}${round2(value)}`);
+  }
+  return parts.slice(0, 2).join(' · ') || 'Keine direkten Effekte';
+}
+
+function formatActionHint(action, cooldownLeft) {
+  if (cooldownLeft > 0) {
+    return `Cooldown ${Math.ceil(cooldownLeft / 60000)} min`;
+  }
+  const shortCopy = action && action.uxCopy && action.uxCopy.short ? String(action.uxCopy.short) : '';
+  if (shortCopy) {
+    return shortCopy;
+  }
+  return formatEffectsInline(action);
+}
+
+function renderCareEffectsPanel() {
+  ui.careEffectsList.replaceChildren();
+
+  const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
+  if (!selected) {
+    const li = document.createElement('li');
+    li.textContent = 'Keine Aktion ausgewählt.';
+    ui.careEffectsList.appendChild(li);
+    return;
+  }
+
+  const immediate = selected.effects && selected.effects.immediate ? selected.effects.immediate : {};
+  if (Array.isArray(immediate)) {
+    const labels = {
+      water: 'Feuchtigkeit',
+      nutrition: 'Nährstoffe',
+      growth: 'Wachstum',
+      stress: 'Stress',
+      risk: 'Risiko',
+      health: 'Gesundheit'
+    };
+    for (const effect of immediate) {
+      if (!effect || typeof effect !== 'object') {
+        continue;
+      }
+      const li = document.createElement('li');
+      const statLabel = labels[String(effect.stat || '')] || 'System';
+      li.innerHTML = `<span>${escapeHtml(statLabel)}</span><strong>${escapeHtml(String(effect.label || 'Systemeingriff'))}</strong>`;
+      ui.careEffectsList.appendChild(li);
+    }
+
+    if (!ui.careEffectsList.children.length) {
+      const li = document.createElement('li');
+      li.textContent = 'Keine unmittelbaren Effekte.';
+      ui.careEffectsList.appendChild(li);
+    }
+    return;
+  }
+  const effectRows = [
+    ['water', 'Feuchtigkeit'],
+    ['nutrition', 'Nährstoffe'],
+    ['growth', 'Wachstum'],
+    ['stress', 'Stress'],
+    ['risk', 'Risiko'],
+    ['health', 'Gesundheit']
+  ];
+
+  for (const [key, label] of effectRows) {
+    const value = Number(immediate[key] || 0);
+    if (!value) {
+      continue;
+    }
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${label}</span><strong>${value > 0 ? '+' : ''}${round2(value)}</strong>`;
+    ui.careEffectsList.appendChild(li);
+  }
+
+  if (!ui.careEffectsList.children.length) {
+    const li = document.createElement('li');
+    li.textContent = 'Keine unmittelbaren Effekte.';
+    ui.careEffectsList.appendChild(li);
+  }
+}
+
+function renderCareExecuteButton() {
+  const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
+  ui.careExecuteButton.disabled = !selected;
+}
+
+function onCareExecuteAction() {
+  const action = state.actions.byId[state.ui.care.selectedActionId || ''];
+  if (!action) {
+    setCareFeedback('error', 'Bitte zuerst eine Aktion wählen.');
+    renderCareSheet(true);
+    return;
+  }
+
+  const result = executeCareAction(action.id);
+  if (result.ok) {
+    setCareFeedback('success', action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgeführt.`);
+    state.ui.care.selectedActionId = null;
+  } else {
+    setCareFeedback('error', explainActionFailure(result.reason));
+  }
+
+  ui.careActionList.dataset.signature = '';
+  renderCareSheet(true);
+  renderHud();
+}
+
+function renderCareFeedback() {
+  const feedback = (state.ui.care && state.ui.care.feedback) || { kind: 'info', text: 'Wähle eine Aktion.' };
+  ui.careFeedback.textContent = feedback.text;
+  ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');
+  ui.careFeedback.classList.toggle('is-error', feedback.kind === 'error');
+}
+
+function setCareFeedback(kind, text) {
+  state.ui.care = state.ui.care || {};
+  state.ui.care.feedback = { kind, text };
+  renderCareFeedback();
+}
+
+function labelForIntensity(intensity) {
+  if (intensity === 'low') return 'Niedrig';
+  if (intensity === 'high') return 'Hoch';
+  return 'Mittel';
+}
+
+function intensityRank(intensity) {
+  if (intensity === 'low') return 0;
+  if (intensity === 'medium') return 1;
+  if (intensity === 'high') return 2;
+  return 3;
+}
+
+function explainActionFailure(reason) {
+  const value = String(reason || 'action_failed');
+  if (value.startsWith('cooldown_active:')) {
+    return `Aktion blockiert: ${value.replace('cooldown_active:', 'Abklingzeit noch ')}`;
+  }
+  if (value.startsWith('prereq_min_failed:') || value.startsWith('prereq_max_failed:')) {
+    return `Voraussetzung nicht erfüllt (${value.split(':')[1] || 'unbekannt'}).`;
+  }
+  if (value.startsWith('outside_time_window:')) {
+    return 'Aktion nur tagsüber verfügbar.';
+  }
+  if (value.startsWith('stage_too_low:')) {
+    return 'Aktion für diese Phase noch nicht freigeschaltet.';
+  }
+  if (value === 'dead_run_ended') {
+    return 'Aktion nicht möglich: Die Pflanze ist eingegangen.';
+  }
+  return `Aktion blockiert (${value}).`;
+}
+
+function renderEventSheet() {
+  if (state.ui.openSheet !== 'event' && !['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState)) {
+    return;
+  }
+
+  ui.eventStateBadge.textContent = `Status: ${translateEventState(state.events.machineState)}`;
+
+  if (state.events.machineState === 'activeEvent') {
+    ui.eventTitle.textContent = state.events.activeEventTitle;
+    ui.eventText.textContent = state.events.activeEventText;
+    ui.eventMeta.textContent = `Schweregrad: ${state.events.activeSeverity} | Stichwörter: ${state.events.activeTags.join(', ') || '-'}`;
+
+    const optionSignature = `${state.events.activeEventId}|${state.events.activeOptions.map((option) => `${option.id}:${option.label}`).join('|')}`;
+    if (ui.eventOptionList.dataset.signature !== optionSignature) {
+      ui.eventOptionList.dataset.signature = optionSignature;
+      ui.eventOptionList.replaceChildren();
+      const primitives = getUiPrimitives();
+      for (const option of state.events.activeOptions) {
+        const button = primitives && typeof primitives.button === 'function'
+          ? primitives.button({ className: 'event-option-btn' })
+          : document.createElement('button');
+        button.type = 'button';
+        if (!button.classList.contains('event-option-btn')) {
+          button.className = 'event-option-btn';
+        }
+        button.textContent = option.label;
+        button.addEventListener('click', () => {
+          const controller = getUiController();
+          if (controller && typeof controller.handleEventOption === 'function') {
+            controller.handleEventOption(option.id);
+            return;
+          }
+          onEventOptionClick(option.id);
+        });
+        ui.eventOptionList.appendChild(button);
+      }
+    }
+    return;
+  }
+
+  if (state.events.machineState === 'resolving') {
+    const leftMs = state.events.resolvingUntilMs - state.simulation.nowMs;
+    ui.eventTitle.textContent = state.events.activeEventTitle || 'Ereignis wird ausgewertet';
+    ui.eventText.textContent = 'Deine Entscheidung wird jetzt ausgewertet. Das Ergebnis erscheint nach Ablauf des Timers.';
+    ui.eventMeta.textContent = `Ergebnis in: ${formatCountdown(leftMs)}`;
+  } else if (state.events.machineState === 'resolved') {
+    const outcome = state.events.resolvedOutcome;
+    ui.eventTitle.textContent = outcome && outcome.eventTitle ? outcome.eventTitle : 'Ergebnis bereit';
+    ui.eventText.textContent = formatResolvedOutcome(outcome);
+    ui.eventMeta.textContent = 'Ergebnis bereit – schließe das Ereignis, um fortzufahren.';
+  } else if (state.events.machineState === 'cooldown') {
+    const cooldownLeft = state.events.cooldownUntilMs - state.simulation.nowMs;
+    ui.eventTitle.textContent = 'Abklingzeit aktiv';
+    ui.eventText.textContent = 'Das Ereignissystem befindet sich in der Abklingzeit.';
+    ui.eventMeta.textContent = `Abklingzeit: ${formatCountdown(cooldownLeft)}`;
+  } else {
+    ui.eventTitle.textContent = 'Kein aktives Ereignis';
+    ui.eventText.textContent = 'Ein Ereignis erscheint, sobald der nächste Wurf erfolgreich ist.';
+    ui.eventMeta.textContent = `Nächster Wurf: ${formatCountdown(state.events.scheduler.nextEventRealTimeMs - state.simulation.nowMs)}`;
+  }
+
+  if (ui.eventOptionList.childElementCount > 0) {
+    ui.eventOptionList.dataset.signature = '';
+    ui.eventOptionList.replaceChildren();
+  }
+}
+
+function warnMissingUiOnce(key) {
+  if (warnedUiKeys.has(key)) {
+    return;
+  }
+  warnedUiKeys.add(key);
+  console.warn(`Missing analysis UI element: ${key}`);
+}
+
+function renderAnalysisPanel(force = false) {
+  if (!force && state.ui.openSheet !== 'dashboard') {
+    return;
+  }
+
+  if (!ui.analysisTabOverview || !ui.analysisTabDiagnosis || !ui.analysisTabTimeline || !ui.analysisPanelOverview || !ui.analysisPanelDiagnosis || !ui.analysisPanelTimeline) {
+    warnMissingUiOnce('analysis-panel');
+    return;
+  }
+
+  renderPushToggle();
+
+  const activeTab = (state.ui.analysis && state.ui.analysis.activeTab) ? state.ui.analysis.activeTab : 'overview';
+  const tabMap = {
+    overview: ui.analysisPanelOverview,
+    diagnosis: ui.analysisPanelDiagnosis,
+    timeline: ui.analysisPanelTimeline
+  };
+
+  ui.analysisTabOverview.setAttribute('title', 'Zeigt den aktuellen Run-Report mit Status, Trend und Verlaufskurve.');
+  ui.analysisTabDiagnosis.setAttribute('title', 'Zeigt aktuelle Diagnose-Treiber und die empfohlene nächste Pflege.');
+  ui.analysisTabTimeline.setAttribute('title', 'Kein Dateiexport. Zeigt den letzten protokollierten Run-Verlauf.');
+
+  ui.analysisTabOverview.classList.toggle('is-active', activeTab === 'overview');
+  ui.analysisTabDiagnosis.classList.toggle('is-active', activeTab === 'diagnosis');
+  ui.analysisTabTimeline.classList.toggle('is-active', activeTab === 'timeline');
+
+  for (const [tabId, panel] of Object.entries(tabMap)) {
+    panel.classList.toggle('hidden', tabId !== activeTab);
+  }
+
+  renderAnalysisOverview();
+  renderAnalysisDiagnosis();
+  renderAnalysisTimeline();
+}
+
+function renderSettingsSheet() {
+  if (!ui.diagnosisSheet || state.ui.openSheet !== 'diagnosis') {
+    return;
+  }
+
+  migrateSettings(state);
+  renderPushToggle();
+  updateSettingsUI();
+}
+
+function renderPushToggle() {
+  if (!ui.pushToggleBtn || !ui.pushToggleStatus || !ui.pushToggleFeedback || !ui.notifTypeEvents || !ui.notifTypeCritical || !ui.notifTypeReminder) {
+    return;
+  }
+
+  const notifications = getCanonicalNotificationsSettings(state);
+  const enabled = notifications.enabled === true;
+  ui.pushToggleBtn.textContent = enabled ? 'AN' : 'AUS';
+  ui.pushToggleBtn.setAttribute('aria-pressed', String(enabled));
+  ui.pushToggleStatus.textContent = enabled ? 'Aktiv' : 'Deaktiviert';
+
+  ui.notifTypeEvents.checked = notifications.types.events === true;
+  ui.notifTypeCritical.checked = notifications.types.critical === true;
+  ui.notifTypeReminder.checked = notifications.types.reminder === true;
+
+  ui.notifTypeEvents.disabled = !enabled;
+  ui.notifTypeCritical.disabled = !enabled;
+  ui.notifTypeReminder.disabled = !enabled;
+
+  ui.pushToggleFeedback.textContent = notifications.lastMessage ? String(notifications.lastMessage) : '';
+}
+
+function renderAnalysisOverview() {
+  if (!ui.analysisPanelOverview) {
+    warnMissingUiOnce('analysisPanelOverview');
+    return;
+  }
+
+  const status = state.status || {};
+  const environment = deriveEnvironmentReadout(state);
+  const roots = deriveRootZoneReadout(environment, state);
+  const drivers = diagnosisDrivers();
+  const primaryDriver = drivers[0];
+  const trendText = primaryDriver && primaryDriver.label !== 'Stabiler Zustand'
+    ? `48h Verlauf: ${primaryDriver.label}. ${primaryDriver.reason}`
+    : '48h Verlauf: Wasser stabil, Risiko leicht steigend, Stress fallend.';
+
+  const statusRows = [
+    { label: 'Wasser', value: `${Math.round(Number(status.water) || 0)}%`, tone: 'value_gold' },
+    { label: 'Nährstoffe', value: `${Math.round(Number(status.nutrition) || 0)}%`, tone: 'value_gold' },
+    { label: 'Wachstum', value: `${round2(Number(status.growth) || 0)}%`, tone: 'value_green' },
+    { label: 'Risiko', value: `${Math.round(Number(status.risk) || 0)}%`, tone: 'value_orange' },
+    { label: 'Stress', value: `${Math.round(Number(status.stress) || 0)}%`, tone: 'value_gold' }
+  ];
+
+  const rootRows = [
+    { label: 'pH', value: String(roots.ph || '-') },
+    { label: 'EC', value: String(roots.ec || '-') },
+    { label: 'Wurzelgesundheit', value: String(roots.rootHealth || '-') },
+    { label: 'Sauerstoff', value: String(roots.oxygen || '-') }
+  ];
+
+  const rowsToHtml = (rows) => rows.map((row) => `
+      <div class="gs-analysis-status-row">
+        <span>${escapeHtml(String(row.label || '-'))}</span>
+        <strong class="${escapeHtml(String(row.tone || 'value_green'))}">${escapeHtml(String(row.value || '-'))}</strong>
+      </div>
+    `).join('');
+
+  ui.analysisPanelOverview.innerHTML = `
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Historischer Verlauf</h3>
+      <div style="height: 180px; width: 100%; margin-bottom: 15px;">
+        <canvas id="analysisChartCanvas"></canvas>
+      </div>
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Pflanzenstatus</h3>
+      ${rowsToHtml(statusRows)}
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Wurzeln &amp; Boden</h3>
+      ${rowsToHtml(rootRows)}
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Trend</h3>
+      <p class="gs-analysis-trend-text">${escapeHtml(trendText)}</p>
+    </section>
+  `;
+
+  // Init Chart
+  setTimeout(() => {
+    initAnalysisChart();
+  }, 50);
+}
+
+let analysisChart = null;
+
+function renderAnalysisChartFallback(canvas, reason) {
+  if (!canvas) {
+    return;
+  }
+
+  if (analysisChart) {
+    analysisChart.destroy();
+    analysisChart = null;
+  }
+
+  canvas.hidden = true;
+  canvas.setAttribute('aria-hidden', 'true');
+
+  const parent = canvas.parentElement;
+  if (!parent) {
+    return;
+  }
+
+  let note = parent.querySelector('[data-analysis-chart-fallback]');
+  if (!note) {
+    note = document.createElement('p');
+    note.dataset.analysisChartFallback = 'true';
+    note.className = 'sheet-note';
+    parent.appendChild(note);
+  }
+  note.textContent = reason;
+}
+
+function initAnalysisChart() {
+  const canvas = document.getElementById('analysisChartCanvas');
+  if (!canvas) return;
+
+  const parent = canvas.parentElement;
+  const fallbackNode = parent ? parent.querySelector('[data-analysis-chart-fallback]') : null;
+  if (fallbackNode) {
+    fallbackNode.remove();
+  }
+  canvas.hidden = false;
+  canvas.setAttribute('aria-hidden', 'false');
+
+  if (typeof window.Chart !== 'function') {
+    renderAnalysisChartFallback(canvas, 'Diagramm aktuell nicht verfügbar. Analysewerte bleiben weiter nutzbar.');
+    return;
+  }
+
+  const telemetry = state.history.telemetry || [];
+  const labels = telemetry.map(t => `Tag ${t.day}`);
+  
+  if (analysisChart) {
+    analysisChart.destroy();
+  }
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    renderAnalysisChartFallback(canvas, 'Diagramm konnte nicht initialisiert werden.');
+    return;
+  }
+
+  analysisChart = new window.Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Gesundheit',
+          data: telemetry.map(t => t.health),
+          borderColor: '#4ade80',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 0
+        },
+        {
+          label: 'Wasser',
+          data: telemetry.map(t => t.water),
+          borderColor: '#3b82f6',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 0
+        },
+        {
+          label: 'Nährstoffe',
+          data: telemetry.map(t => t.nutrition),
+          borderColor: '#facc15',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 }, maxRotation: 0 }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: 'rgba(255,255,255,0.6)', font: { size: 9 }, boxWidth: 10 }
+        }
+      }
+    }
+  });
+}
+
+function renderAnalysisDiagnosis() {
+  if (!ui.analysisPanelDiagnosis) {
+    warnMissingUiOnce('analysisPanelDiagnosis');
+    return;
+  }
+
+  const drivers = diagnosisDrivers();
+  const top = drivers.slice(0, 3);
+  const recommendation = recommendedCareCategory(top[0]);
+  const recommendationLabel = categoryLabel(recommendation);
+
+  ui.analysisPanelDiagnosis.replaceChildren();
+
+  for (const item of top) {
+    const node = document.createElement('div');
+    node.className = 'gs-analysis-driver';
+    node.innerHTML = `<strong>${escapeHtml(item.label)}</strong><br>${escapeHtml(item.reason)}`;
+    ui.analysisPanelDiagnosis.appendChild(node);
+  }
+
+  const rec = document.createElement('div');
+  rec.className = 'gs-analysis-driver';
+  rec.innerHTML = `<strong>Empfohlene nächste Pflege:</strong> ${escapeHtml(recommendationLabel)}`;
+  ui.analysisPanelDiagnosis.appendChild(rec);
+
+  ui.analysisPanelDiagnosis.setAttribute('title', 'Diagnoseansicht mit aktuellen Treibern. Kein Filtersystem.');
+}
+
+function diagnosisDrivers() {
+  const d = [];
+  const s = state.status || {};
+  const stageIndex = Number(state.plant && state.plant.stageIndex) || 1;
+
+  if ((Number(s.water) || 0) < 35) d.push({ score: 100 - s.water, label: 'Wassermangel', reason: 'Zu trocken erhöht den Stress' });
+  if ((Number(s.water) || 0) > 80) d.push({ score: s.water, label: 'Überwässerung', reason: 'Zu viel Wasser erhöht das Risiko' });
+  if ((Number(s.nutrition) || 0) < 35) d.push({ score: 95 - s.nutrition, label: 'Nährstoffmangel', reason: 'Unterversorgung bremst das Wachstum' });
+  if ((Number(s.nutrition) || 0) > 80) d.push({ score: s.nutrition, label: 'Nährstoffüberschuss', reason: 'Erhöhtes Risiko für Nährstoffbrand' });
+  if ((Number(s.stress) || 0) > 60) d.push({ score: s.stress + 10, label: 'Hoher Stress', reason: 'Hoher Stress blockiert das beste Ergebnis' });
+  if ((Number(s.risk) || 0) > 60) d.push({ score: s.risk + 8, label: 'Hohes Risiko', reason: 'Hohes Risiko erhöht negative Ereignisse' });
+
+  if (stageIndex <= 3 && (Number(s.health) || 0) < 65) {
+    d.push({ score: 70 - (Number(s.health) || 0), label: 'Frühe-Phase-Empfindlichkeit', reason: 'Frühe Phasen brauchen stabile Wasser- und Nährstoffwerte' });
+  }
+
+  if (!d.length) {
+    d.push({ score: 1, label: 'Stabiler Zustand', reason: 'Kein größeres Defizit erkannt' });
+  }
+
+  return d.sort((a, b) => b.score - a.score);
+}
+
+function recommendedCareCategory(primaryDriver) {
+  if (!primaryDriver) return 'environment';
+  const map = {
+    Wassermangel: 'watering',
+    Überwässerung: 'environment',
+    Nährstoffmangel: 'fertilizing',
+    Nährstoffüberschuss: 'environment',
+    'Hoher Stress': 'environment',
+    'Hohes Risiko': 'environment',
+    'Stabiler Zustand': 'training'
+  };
+  return map[primaryDriver.label] || 'environment';
+}
+
+function qualityTierLabel(tier) {
+  if (tier === 'perfect') return 'Perfekt';
+  if (tier === 'degraded') return 'Geschwächt';
+  return 'Normal';
+}
+
+function categoryLabel(category) {
+  const map = {
+    watering: 'Bewässerung',
+    fertilizing: 'Düngung',
+    training: 'Training',
+    environment: 'Umgebung',
+    water: 'Wasser',
+    nutrition: 'Nährstoffe',
+    pest: 'Schädlinge',
+    disease: 'Krankheit',
+    generic: 'Allgemein'
+  };
+  return map[String(category || 'generic')] || String(category || 'Allgemein');
+}
+
+function renderAnalysisTimeline() {
+  if (!ui.analysisPanelTimeline) {
+    warnMissingUiOnce('analysisPanelTimeline');
+    return;
+  }
+
+  const actions = Array.isArray(state.history && state.history.actions) ? state.history.actions : [];
+  const events = Array.isArray(state.history && state.history.events) ? state.history.events : [];
+  const system = Array.isArray(state.history && state.history.system) ? state.history.system : [];
+  const simNow = Number(state.simulation && state.simulation.simTimeMs) || 0;
+
+  const merged = [];
+  for (const item of actions) {
+    merged.push({
+      kind: 'action',
+      atRealTimeMs: Number(item.atRealTimeMs || item.realTime || 0),
+      atSimTimeMs: Number(item.atSimTimeMs || item.simTime || simNow),
+      data: item
+    });
+  }
+  for (const item of events) {
+    merged.push({
+      kind: 'event',
+      atRealTimeMs: Number(item.atRealTimeMs || item.realTime || 0),
+      atSimTimeMs: Number(item.atSimTimeMs || item.simTime || simNow),
+      data: item
+    });
+  }
+  for (const item of system) {
+    const stamp = item && item.timestamp && typeof item.timestamp === 'object' ? item.timestamp : null;
+    merged.push({
+      kind: 'system',
+      atRealTimeMs: Number(item.atRealTimeMs || (stamp && stamp.realMs) || item.realTime || 0),
+      atSimTimeMs: Number(item.atSimTimeMs || (stamp && stamp.simMs) || item.simTime || simNow),
+      data: item
+    });
+  }
+
+  merged.sort((a, b) => (b.atRealTimeMs || b.atSimTimeMs) - (a.atRealTimeMs || a.atSimTimeMs));
+  const latest = merged.slice(0, 10);
+
+  ui.analysisPanelTimeline.replaceChildren();
+  ui.analysisPanelTimeline.setAttribute('title', 'Zeigt die letzten protokollierten Aktionen, Ereignisse und Systemeintraege. Kein Dateiexport.');
+
+  if (!latest.length) {
+    const empty = document.createElement('div');
+    empty.className = 'gs-analysis-timeline-item';
+    empty.textContent = 'Noch keine Aktivitäten';
+    ui.analysisPanelTimeline.appendChild(empty);
+    return;
+  }
+
+  for (const row of latest) {
+    const simStamp = simStampFromMs(row.atSimTimeMs);
+    const node = document.createElement('div');
+    node.className = 'gs-analysis-timeline-item';
+
+    if (row.kind === 'action') {
+      const d = row.data || {};
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Aktion</div><strong>${escapeHtml(String(d.label || d.id || 'Aktion'))}</strong><br>${formatDeltaSummary(d.deltaSummary || {})}`;
+    } else if (row.kind === 'event') {
+      const d = row.data || {};
+      const note = d.learningNote ? `<details><summary>Lernhinweis</summary>${escapeHtml(String(d.learningNote))}</details>` : '';
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Ereignis (${escapeHtml(categoryLabel(String(d.category || 'generic')))})</div><strong>${escapeHtml(String(d.optionLabel || d.optionId || d.eventId || 'Ereignis'))}</strong><br>${formatDeltaSummary(d.effectsApplied || d.deltaSummary || {})}${note}`;
+    } else {
+      const d = row.data || {};
+      const typeLabel = String(d.type || 'system');
+      const label = d.label || d.id || 'System';
+      const wasDeadNote = typeof d.wasDead === 'boolean'
+        ? (d.wasDead ? ' · Reanimation' : ' · Stabilisierung')
+        : '';
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · System (${escapeHtml(typeLabel === 'rescue' ? 'Notfallrettung' : 'System')})</div><strong>${escapeHtml(String(label))}</strong>${wasDeadNote}<br>${formatDeltaSummary(d.effectsApplied || (d.details && d.details.effectsApplied) || {})}`;
+    }
+
+    ui.analysisPanelTimeline.appendChild(node);
+  }
+}
+
+function simStampFromMs(simMs) {
+  const base = Number(state.simulation.startRealTimeMs || simMs || 0);
+  const raw = Number(simMs || base);
+  const delta = Math.max(0, raw - base);
+  const totalDay = Math.floor(delta / (24 * 60 * 60 * 1000));
+  const hh = Math.floor((delta % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  return `Tag ${totalDay} · ${String(hh).padStart(2, '0')}:00`;
+}
+
+function formatDeltaSummary(delta) {
+  const parts = [];
+  for (const [k, v] of Object.entries(delta || {})) {
+    if (!Number.isFinite(Number(v)) || Number(v) === 0) {
+      continue;
+    }
+    const n = round2(Number(v));
+    parts.push(`${k}: ${n > 0 ? '+' : ''}${n}`);
+  }
+  return parts.length ? parts.join(' · ') : 'Keine Nettoänderung';
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+
+const STAT_DETAIL_CONFIG = Object.freeze({
+  water: Object.freeze({
+    title: 'Wasser',
+    buttonLabel: 'Gießen',
+    action: () => openSheet('care'),
+    getValue: () => Math.round(Number(state.status.water) || 0),
+    getStatus: (value) => {
+      if (value >= 80) return 'Optimal';
+      if (value >= 60) return 'Stabil';
+      if (value >= 40) return 'Beobachten';
+      return 'Kritisch';
+    },
+    getExplanation: (value) => {
+      if (value >= 80) return 'Wasser ist aktuell optimal. Die Pflanze bleibt gut versorgt.';
+      if (value >= 60) return 'Wasser ist aktuell stabil. In den nächsten Zyklen noch unkritisch.';
+      if (value >= 40) return 'Wasser wird knapper und sollte beobachtet werden.';
+      return 'Wasser ist niedrig, Trockenstress kann schnell ansteigen.';
+    },
+    getRecommendation: (value) => value < 60
+      ? 'Empfehlung: Pflege öffnen und zeitnah gießen.'
+      : 'Empfehlung: Feuchtigkeit halten und den Verlauf beobachten.'
+  }),
+  nutrition: Object.freeze({
+    title: 'Nährstoffe',
+    buttonLabel: 'Pflege öffnen',
+    action: () => openSheet('care'),
+    getValue: () => Math.round(Number(state.status.nutrition) || 0),
+    getStatus: (value) => {
+      if (value >= 80) return 'Sehr gut';
+      if (value >= 60) return 'Solide';
+      if (value >= 40) return 'Leicht schwach';
+      return 'Mangelrisiko';
+    },
+    getExplanation: (value) => {
+      if (value >= 60) return 'Nährstoffe unterstützen das Wachstum aktuell noch ausreichend.';
+      if (value >= 40) return 'Sinkende Nährstoffe können das Wachstum bald bremsen.';
+      return 'Nährstoffmangel begrenzt Entwicklung und erhöht Stresspotenzial.';
+    },
+    getRecommendation: (value) => value < 60
+      ? 'Empfehlung: Pflege öffnen und eine passende Düngungsmaßnahme prüfen.'
+      : 'Empfehlung: Nährstoffniveau halten und regelmäßig kontrollieren.'
+  }),
+  growth: Object.freeze({
+    title: 'Wachstum',
+    buttonLabel: 'Analyse öffnen',
+    action: () => openSheet('dashboard'),
+    getValue: () => Math.round(Number(state.status.growth) || 0),
+    getStatus: (value, impulse) => {
+      if (value >= 70 || impulse >= 0.12) return 'Guter Fortschritt';
+      if (value >= 40 || impulse >= 0.03) return 'Solide Entwicklung';
+      if (value <= 5 || impulse <= 0.005) return 'Kein aktiver Wachstumsfortschritt';
+      return 'Gebremst';
+    },
+    getExplanation: (_value, impulse) => {
+      if (impulse >= 0.12) return `Das Wachstum läuft stabil. Aktueller Impuls: ${impulse.toFixed(2)}.`;
+      if (impulse >= 0.03) return `Das Wachstum entwickelt sich solide. Impuls: ${impulse.toFixed(2)}.`;
+      return `Das Wachstum ist aktuell gebremst. Impuls: ${impulse.toFixed(2)}.`;
+    },
+    getRecommendation: (value) => value < 40
+      ? 'Empfehlung: Analyse öffnen und Wasser-/Nährstofftreiber prüfen.'
+      : 'Empfehlung: Kurs halten und per Analyse auf Limitierungen achten.'
+  }),
+  risk: Object.freeze({
+    title: 'Risiko',
+    buttonLabel: 'Analyse öffnen',
+    action: () => openSheet('dashboard'),
+    getValue: () => Math.round(Number(state.status.risk) || 0),
+    getStatus: (value) => {
+      if (value >= 75) return 'Kritisch';
+      if (value >= 50) return 'Hoch';
+      if (value >= 25) return 'Erhöht';
+      return 'Niedrig';
+    },
+    getExplanation: (_value) => {
+      const topDriver = diagnosisDrivers()[0];
+      if (!topDriver || topDriver.label === 'Stabiler Zustand') {
+        return 'Aktuell besteht nur geringes Risiko.';
+      }
+      return `Wichtigster Treiber: ${topDriver.label}. ${topDriver.reason}`;
+    },
+    getRecommendation: (value) => value >= 50
+      ? 'Empfehlung: Analyse öffnen und Gegenmaßnahmen priorisieren.'
+      : 'Empfehlung: Entwicklung beobachten und Risikoquellen früh prüfen.'
+  })
+});
+
+function onStatRingPress(statKey) {
+  if (!STAT_DETAIL_CONFIG[statKey]) {
+    return;
+  }
+  state.ui.statDetailKey = statKey;
+  openSheet('statDetail');
+}
+
+function onStatDetailPrimaryAction() {
+  const config = STAT_DETAIL_CONFIG[state.ui.statDetailKey];
+  if (!config || typeof config.action !== 'function') {
+    return;
+  }
+  config.action();
+}
+
+function renderStatDetailSheet() {
+  if (!ui.statDetailSheet || state.ui.openSheet !== 'statDetail') {
+    return;
+  }
+
+  const key = state.ui.statDetailKey;
+  const config = STAT_DETAIL_CONFIG[key];
+  if (!config) {
+    return;
+  }
+
+  const value = config.getValue();
+  const impulse = Number(state.simulation && state.simulation.growthImpulse) || 0;
+  const status = config.getStatus(value, impulse);
+  const explanation = config.getExplanation(value, impulse);
+  const recommendation = config.getRecommendation(value, impulse);
+
+  ui.statDetailTitle.textContent = config.title;
+  ui.statDetailValue.textContent = `${value}`;
+  ui.statDetailStatus.textContent = `Status: ${status}`;
+  ui.statDetailExplanation.textContent = explanation;
+  ui.statDetailRecommendation.textContent = recommendation;
+  ui.statDetailPrimaryBtn.textContent = config.buttonLabel;
+}
+
+function openSheet(name) {
+  if (isPlantDead() && name !== 'dashboard') {
+    return;
+  }
+  if (state.ui.menuOpen) {
+    closeMenu();
+  }
+
+  if (name !== 'statDetail') {
+    state.ui.statDetailKey = null;
+  }
+
+  state.ui.openSheet = name;
+  renderSheets();
+
+  if (name === 'dashboard') {
+    renderAnalysisPanel(true);
+  } else if (name === 'event') {
+    renderEventSheet();
+  } else if (name === 'care') {
+    renderCareSheet(true);
+  } else if (name === 'diagnosis') {
+    renderSettingsSheet();
+  } else if (name === 'missions') {
+    renderMissionsSheet();
+  } else if (name === 'statDetail') {
+    renderStatDetailSheet();
+  }
+}
+
+function renderMissionsSheet() {
+  if (!ui.missionsSheet || state.ui.openSheet !== 'missions') return;
+  ui.missionsList.replaceChildren();
+
+  state.missions.catalog.forEach(mission => {
+    const isCompleted = state.missions.completed.includes(mission.id);
+    const card = document.createElement('div');
+    card.className = `figma-section-card mission-card ${isCompleted ? 'mission-completed' : ''}`;
+    
+    let rewardText = '';
+    if (mission.reward.coins) rewardText += `🪙 ${mission.reward.coins} `;
+    if (mission.reward.gems) rewardText += `💎 ${mission.reward.gems} `;
+    if (mission.reward.stars) rewardText += `⭐ ${mission.reward.stars} `;
+
+    card.innerHTML = `
+      <div class="figma-static-row">
+        <span><strong>${escapeHtml(mission.title)}</strong><br><small>${escapeHtml(mission.description)}</small></span>
+        <span class="value_gold">${isCompleted ? 'Abgeschlossen' : rewardText}</span>
+      </div>
+    `;
+    ui.missionsList.appendChild(card);
+  });
+}
+
+function onMenuToggleClick() {
+  if (state.ui.menuOpen) {
+    closeMenu();
+    return;
+  }
+  openMenu();
+}
+
+function openMenu() {
+  state.ui.openSheet = null;
+  renderSheets();
+  state.ui.menuOpen = true;
+  renderGameMenu();
+}
+
+function closeMenu() {
+  if (state.ui.menuDialogOpen) {
+    closeMenuDialog();
+  }
+  state.ui.menuOpen = false;
+  renderGameMenu();
+}
+
+function openMenuPlaceholder(title, text) {
+  openMenuDialog({
+    title,
+    message: text,
+    cancelLabel: 'Schließen',
+    confirmLabel: '',
+    onConfirm: null
+  });
+}
+
+function onMenuNewRunClick() {
+  openMenuDialog({
+    title: 'Neuen Run starten?',
+    message: 'Deine aktuelle Pflanze wird beendet.',
+    cancelLabel: 'Abbrechen',
+    confirmLabel: 'Neuer Run',
+    onConfirm: async () => {
+      const controller = getUiController();
+      if (controller && typeof controller.handleMenuCommand === 'function') {
+        const commandResult = await controller.handleMenuCommand('new_run');
+        if (commandResult && commandResult.result && typeof commandResult.result.then === 'function') {
+          await commandResult.result;
+        }
+        return;
+      }
+      closeMenu();
+      await resetRun();
+    }
+  });
+}
+
+function openMenuDialog({ title, message, cancelLabel = 'Abbrechen', confirmLabel = 'OK', onConfirm = null }) {
+  if (!ui.menuDialogTitle || !ui.menuDialogText || !ui.menuDialogCancelBtn || !ui.menuDialogConfirmBtn) {
+    return;
+  }
+
+  ui.menuDialogTitle.textContent = title;
+  ui.menuDialogText.textContent = message;
+  ui.menuDialogCancelBtn.textContent = cancelLabel;
+  ui.menuDialogConfirmBtn.textContent = confirmLabel;
+
+  menuDialogConfirmHandler = typeof onConfirm === 'function' ? onConfirm : null;
+  ui.menuDialogConfirmBtn.classList.toggle('hidden', menuDialogConfirmHandler === null || !confirmLabel);
+  ui.menuDialogConfirmBtn.onclick = null;
+  if (menuDialogConfirmHandler) {
+    ui.menuDialogConfirmBtn.onclick = async () => {
+      const handler = menuDialogConfirmHandler;
+      closeMenuDialog();
+      await handler();
+    };
+  }
+
+  state.ui.menuDialogOpen = true;
+  renderGameMenu();
+}
+
+function closeMenuDialog() {
+  state.ui.menuDialogOpen = false;
+  menuDialogConfirmHandler = null;
+  if (ui.menuDialogConfirmBtn) {
+    ui.menuDialogConfirmBtn.onclick = null;
+  }
+  renderGameMenu();
+}
+
+function hasSetup() {
+  const setup = state.setup;
+  if (!setup || typeof setup !== 'object') {
+    return false;
+  }
+
+  const requiredFields = ['mode', 'light', 'medium', 'potSize', 'genetics'];
+  const hasCoreSetup = requiredFields.every((key) => typeof setup[key] === 'string' && setup[key].trim().length > 0);
+  return hasCoreSetup && Number.isFinite(Number(setup.createdAtReal));
+}
+
+function renderLanding() {
+  const landingNode = uiNode('landing', 'landing');
+  if (!landingNode) {
+    return;
+  }
+  const visible = !hasSetup();
+  const appHud = document.getElementById('app-hud');
+  if (appHud) {
+    appHud.classList.toggle('app-hud--blocked', visible);
+    appHud.setAttribute('aria-hidden', String(visible));
+    if ('inert' in appHud) {
+      appHud.inert = visible;
+    }
+  }
+  landingNode.classList.toggle('hidden', !visible);
+  landingNode.setAttribute('aria-hidden', String(!visible));
+}
+
+function renderDeathOverlay() {
+  if (!ui.deathOverlay || !ui.deathDriverList || !ui.deathHistoryList) {
+    return;
+  }
+
+  const visible = Boolean(state.ui.deathOverlayOpen && isPlantDead());
+  ui.deathOverlay.classList.toggle('hidden', !visible);
+  ui.deathOverlay.setAttribute('aria-hidden', String(!visible));
+
+  if (visible && state.ui.menuDialogOpen) {
+    closeMenuDialog();
+  }
+
+  if (!visible) {
+    return;
+  }
+
+  const topDrivers = diagnosisDrivers().slice(0, 3);
+  ui.deathDriverList.replaceChildren();
+  for (const item of topDrivers) {
+    const row = document.createElement('li');
+    row.innerHTML = `<strong>${escapeHtml(String(item.label || 'Unklare Ursache'))}</strong><br>${escapeHtml(String(item.reason || 'Kein Detail verfügbar'))}`;
+    ui.deathDriverList.appendChild(row);
+  }
+
+  const recent = collectRecentHistoryEntries(3);
+  ui.deathHistoryList.replaceChildren();
+  if (!recent.length) {
+    const empty = document.createElement('li');
+    empty.textContent = 'Keine Aktionen oder Ereignisse protokolliert.';
+    ui.deathHistoryList.appendChild(empty);
+  } else {
+    for (const row of recent) {
+      const item = document.createElement('li');
+      item.innerHTML = formatRecentHistoryHtml(row);
+      ui.deathHistoryList.appendChild(item);
+    }
+  }
+
+  if (ui.deathRescueBtn && ui.deathRescueSubtext && ui.deathRescueFeedback) {
+    const meta = getCanonicalMeta(state);
+    const rescueUsed = Boolean(meta.rescue.used);
+    ui.deathRescueBtn.disabled = rescueAdPending || rescueUsed;
+    ui.deathRescueBtn.setAttribute('aria-disabled', String(rescueAdPending || rescueUsed));
+    ui.deathRescueBtn.setAttribute('title', 'Startet die gleiche einmalige Notfallrettung wie der Menü-Eintrag.');
+    ui.deathRescueBtn.textContent = rescueUsed
+      ? 'Notfallrettung bereits genutzt'
+      : 'Notfallrettung nutzen';
+    ui.deathRescueSubtext.textContent = rescueUsed
+      ? '1× pro Run bereits verbraucht.'
+      : '1× pro Run bei kritischem Zustand';
+    ui.deathRescueFeedback.textContent = meta.rescue.lastResult ? String(meta.rescue.lastResult) : '';
+  }
+}
+
+function collectRecentHistoryEntries(limit = 3) {
+  const actions = Array.isArray(state.history && state.history.actions) ? state.history.actions : [];
+  const events = Array.isArray(state.history && state.history.events) ? state.history.events : [];
+  const merged = [];
+
+  for (const action of actions) {
+    merged.push({
+      kind: 'action',
+      atRealTimeMs: Number(action.atRealTimeMs || action.realTime || 0),
+      atSimTimeMs: Number(action.atSimTimeMs || action.simTime || state.simulation.simTimeMs),
+      data: action
+    });
+  }
+
+  for (const eventItem of events) {
+    merged.push({
+      kind: 'event',
+      atRealTimeMs: Number(eventItem.atRealTimeMs || eventItem.realTime || 0),
+      atSimTimeMs: Number(eventItem.atSimTimeMs || eventItem.simTime || state.simulation.simTimeMs),
+      data: eventItem
+    });
+  }
+
+  merged.sort((a, b) => (b.atRealTimeMs || b.atSimTimeMs) - (a.atRealTimeMs || a.atSimTimeMs));
+  return merged.slice(0, limit);
+}
+
+function formatRecentHistoryHtml(row) {
+  const simStamp = simStampFromMs(row.atSimTimeMs);
+  const data = row.data || {};
+  if (row.kind === 'action') {
+    const label = escapeHtml(String(data.label || data.id || 'Aktion'));
+    return `<span class="timeline-meta">${simStamp} · Aktion</span><br><strong>${label}</strong>`;
+  }
+
+  const category = escapeHtml(categoryLabel(data.category || 'generic'));
+  const label = escapeHtml(String(data.optionLabel || data.optionId || data.eventId || 'Ereignis'));
+  return `<span class="timeline-meta">${simStamp} · Ereignis (${category})</span><br><strong>${label}</strong>`;
+}
+
+function onStartRun() {
+  const setup = {
+    mode: document.getElementById('setupMode').value || 'indoor',
+    light: document.getElementById('setupLight').value || 'medium',
+    medium: document.getElementById('setupMedium').value || 'soil',
+    potSize: document.getElementById('setupPotSize').value || 'medium',
+    genetics: document.getElementById('setupGenetics').value || 'auto'
+  };
+
+  const nowMs = Date.now();
+  state.setup = {
+    ...setup,
+    createdAtReal: nowMs
+  };
+
+  // Figma-spec starting resources based on setup
+  const startingCoins = setup.potSize === 'xlarge' ? 1500 : (setup.potSize === 'large' ? 1800 : (setup.potSize === 'medium' ? 2480 : 3200));
+  state.status.coins = startingCoins;
+  state.status.gems = 55;
+  state.status.stars = 10;
+
+  state.simulation.startRealTimeMs = nowMs;
+  state.simulation.lastTickRealTimeMs = nowMs;
+  state.simulation.simEpochMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
+  state.simulation.simTimeMs = state.simulation.simEpochMs;
+  state.status.growth = 0;
+  state.status.health = 100;
+  state.status.water = 80;
+  state.status.nutrition = 70;
+  state.status.stress = 0;
+  state.status.risk = 0;
+  
+  state.plant.stageIndex = 0;
+  state.plant.stageProgress = 0;
+  const initialStage = getCurrentStage(0);
+  state.plant.phase = (initialStage && initialStage.current) ? initialStage.current.phase : 'seedling';
+  state.plant.stageKey = stageAssetKeyForIndex(0);
+  state.plant.lastValidStageKey = state.plant.stageKey;
+
+  syncCanonicalStateShape();
+  renderLanding();
+  renderHud();
+  schedulePersistState(true);
+  addLog('system', 'Neuer Run gestartet (Figma-Setup)', state.setup);
+}
+
+async function onDeathResetClick() {
+  openMenuDialog({
+    title: 'Run verwerfen und neu starten?',
+    message: 'Der aktuelle Durchlauf wird beendet und ein neuer Run gestartet.',
+    cancelLabel: 'Abbrechen',
+    confirmLabel: 'Neuen Run starten',
+    onConfirm: async () => {
+      await resetRun();
+    }
+  });
+}
+
+function onDeathAnalyzeClick() {
+  state.ui.deathOverlayOpen = false;
+  state.ui.deathOverlayAcknowledged = true;
+  openSheet('dashboard');
+  renderDeathOverlay();
+}
+
+async function onDeathRescueClick() {
+  const meta = getCanonicalMeta(state);
+  if (rescueAdPending) {
+    renderGameMenu();
+    return;
+  }
+
+  if (meta.rescue.used) {
+    meta.rescue.lastResult = 'Notfallrettung ist nur 1× pro Run verfügbar.';
+    renderDeathOverlay();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
+
+  const beforeHealth = Number(state.status.health) || 0;
+  const deadNow = isPlantDead();
+  if (!deadNow && beforeHealth >= 20) {
+    meta.rescue.lastResult = 'Notfallrettung ist aktuell nicht erforderlich.';
+    renderDeathOverlay();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
+
+  rescueAdPending = false;
+
+  const rescueResult = applyRescueEffects();
+  if (!rescueResult.ok) {
+    meta.rescue.lastResult = 'Notfallrettung ist aktuell nicht erforderlich.';
+    renderDeathOverlay();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
+
+  const nowMs = Date.now();
+  meta.rescue.used = true;
+  meta.rescue.usedAtRealMs = nowMs;
+  meta.rescue.lastResult = 'Notfallrettung angewendet. Die Pflanze stabilisiert sich.';
+
+  const timestamp = {
+    realMs: nowMs,
+    simMs: Number(state.simulation.simTimeMs || 0),
+    simStamp: simStampFromMs(Number(state.simulation.simTimeMs || 0))
+  };
+  const history = getCanonicalHistory(state);
+  history.system.push({
+    type: 'rescue',
+    label: 'Notfallrettung',
+    effectsApplied: rescueResult.effectsApplied,
+    wasDead: rescueResult.wasDead,
+    timestamp,
+    atRealTimeMs: timestamp.realMs,
+    atSimTimeMs: timestamp.simMs
+  });
+  if (history.system.length > MAX_HISTORY_LOG) {
+    history.system = history.system.slice(-MAX_HISTORY_LOG);
+  }
+
+  updateVisibleOverlays();
+  syncCanonicalStateShape();
+  renderAll();
+  renderGameMenu();
+  schedulePersistState(true);
+}
+
+async function onPushToggleClick() {
+  const notifications = getCanonicalNotificationsSettings(state);
+  const currentlyEnabled = notifications.enabled === true;
+
+  if (currentlyEnabled) {
+    notifications.enabled = false;
+    state.settings.pushNotificationsEnabled = false;
+    notifications.lastMessage = 'Benachrichtigungen deaktiviert.';
+    renderPushToggle();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
+
+  if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
+    notifications.enabled = false;
+    state.settings.pushNotificationsEnabled = false;
+    notifications.lastMessage = 'Benachrichtigungen werden in diesem Browser nicht unterstützt.';
+    renderPushToggle();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
+
+  let permission = Notification.permission;
+  let permissionTimedOut = false;
+  if (permission !== 'granted') {
+    const permissionResult = await requestNotificationPermissionSafe();
+    permission = permissionResult.permission;
+    permissionTimedOut = permissionResult.timedOut === true;
+  }
+
+  if (permission !== 'granted') {
+    notifications.enabled = false;
+    state.settings.pushNotificationsEnabled = false;
+    notifications.lastMessage = permissionTimedOut
+      ? 'Berechtigungsdialog nicht bestätigt. Bitte Benachrichtigungen im Browser erlauben.'
+      : 'Berechtigung nicht erteilt. Bitte Benachrichtigungen im Browser erlauben.';
+    renderPushToggle();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
+
+  if (!navigator.serviceWorker.controller) {
+    notifications.enabled = false;
+    state.settings.pushNotificationsEnabled = false;
+    notifications.lastMessage = 'Service Worker noch nicht aktiv – bitte einmal normal neu laden.';
+    renderPushToggle();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
+
+  notifications.enabled = true;
+  state.settings.pushNotificationsEnabled = true;
+  notifications.lastMessage = 'Benachrichtigungen aktiviert.';
+  renderPushToggle();
+  renderGameMenu();
+  schedulePersistState(true);
+}
+
+async function requestNotificationPermissionSafe(timeoutMs = 1800) {
+  if (typeof Notification === 'undefined' || typeof Notification.requestPermission !== 'function') {
+    return { permission: 'denied', timedOut: false };
+  }
+
+  try {
+    const requestResult = Notification.requestPermission();
+    if (!requestResult || typeof requestResult.then !== 'function') {
+      return { permission: String(requestResult || Notification.permission || 'default'), timedOut: false };
+    }
+
+    let timeoutHandle = null;
+    const timeoutResult = new Promise((resolve) => {
+      timeoutHandle = window.setTimeout(() => resolve({ timedOut: true }), timeoutMs);
+    });
+    const resolvedResult = requestResult
+      .then((value) => ({ permission: String(value || Notification.permission || 'default'), timedOut: false }))
+      .catch(() => ({ permission: String(Notification.permission || 'default'), timedOut: false }));
+
+    const winner = await Promise.race([resolvedResult, timeoutResult]);
+    if (timeoutHandle !== null) {
+      window.clearTimeout(timeoutHandle);
+    }
+
+    if (winner && winner.timedOut) {
+      return { permission: String(Notification.permission || 'default'), timedOut: true };
+    }
+
+    return winner || { permission: String(Notification.permission || 'default'), timedOut: false };
+  } catch (_error) {
+    return { permission: String(Notification.permission || 'default'), timedOut: false };
+  }
+}
+
+function onNotificationTypeToggle() {
+  const notifications = getCanonicalNotificationsSettings(state);
+  notifications.types.events = Boolean(ui.notifTypeEvents && ui.notifTypeEvents.checked);
+  notifications.types.critical = Boolean(ui.notifTypeCritical && ui.notifTypeCritical.checked);
+  notifications.types.reminder = Boolean(ui.notifTypeReminder && ui.notifTypeReminder.checked);
+  renderPushToggle();
+  schedulePersistState(true);
+}
+
+async function onAnalysisResetClick() {
+  const confirmed = window.confirm('Aktuellen Run wirklich zurücksetzen? Dieser Schritt löscht den gespeicherten Fortschritt.');
+  if (!confirmed) {
+    return;
+  }
+  await resetRun();
+}
+
+async function resetRun() {
+  await clearPersistentStorage();
+
+  resetStateToDefaults();
+  ensureStateIntegrity(Date.now());
+  syncRuntimeClocks(Date.now());
+  syncCanonicalStateShape();
+  rescueAdPending = false;
+  const notifications = getCanonicalNotificationsSettings(state);
+  notifications.runtime.lastNotifiedEventId = null;
+  notifications.runtime.lastCriticalAtRealMs = 0;
+  notifications.runtime.lastReminderAtRealMs = 0;
+  wasCriticalHealth = false;
+  if (state.meta && state.meta.rescue) {
+    state.meta.rescue.used = false;
+    state.meta.rescue.usedAtRealMs = null;
+    state.meta.rescue.lastResult = null;
+  }
+
+  state.ui.openSheet = null;
+  state.ui.deathOverlayOpen = false;
+  state.ui.deathOverlayAcknowledged = false;
+  for (const key of Object.keys(actionDebounceUntil)) {
+    delete actionDebounceUntil[key];
+  }
+
+  renderAll();
+  schedulePersistState(true);
+}
+
+async function clearPersistentStorage() {
+  try {
+    localStorage.removeItem(LS_STATE_KEY);
+  } catch (_error) {
+    // non-fatal
+  }
+  try {
+    localStorage.removeItem(PUSH_SUB_KEY);
+  } catch (_error) {
+    // non-fatal
+  }
+
+  if (typeof indexedDB === 'undefined') {
+    return;
+  }
+
+  try {
+    const db = await openDb();
+    await dbDelete(db, DB_KEY);
+    db.close();
+  } catch (_error) {
+    // non-fatal
+  }
+}
+
+function withDebouncedAction(actionKey, buttonNode, callback) {
+  const nowMs = Date.now();
+  if ((actionDebounceUntil[actionKey] || 0) > nowMs) {
+    return;
+  }
+
+  actionDebounceUntil[actionKey] = nowMs + CONFIG.actionDebounceMs;
+  if (buttonNode) {
+    buttonNode.disabled = true;
+    window.setTimeout(() => {
+      buttonNode.disabled = false;
+    }, CONFIG.actionDebounceMs);
+  }
+  callback();
+}
+
+function closeSheet() {
+  const currentSheet = state.ui.openSheet;
+
+  if (currentSheet === 'event' && state.events.machineState === 'activeEvent') {
+    dismissActiveEvent();
+    return;
+  }
+  if (currentSheet === 'event' && state.events.machineState === 'resolved') {
+    enterEventCooldown(state.simulation.nowMs);
+    renderAll();
+    schedulePersistState(true);
+    return;
+  }
+  state.ui.openSheet = null;
+  state.ui.statDetailKey = null;
+  renderSheets();
+}
+
+function dismissActiveEvent() {
+  if (state.events.machineState !== 'activeEvent') {
+    return;
+  }
+
+  const penalty = { health: -1, stress: 2, risk: 2 };
+  const eventId = state.events.activeEventId;
+
+  applyChoiceEffects(penalty);
+  state.events.lastChoiceId = '__dismiss__';
+  state.events.scheduler.lastChoiceId = '__dismiss__';
+  state.events.machineState = 'resolving';
+  state.events.resolvingUntilMs = state.simulation.nowMs + EVENT_RESOLUTION_MS;
+  state.events.pendingOutcome = {
+    eventId,
+    eventTitle: state.events.activeEventTitle,
+    optionId: '__dismiss__',
+    optionLabel: 'Ignoriert',
+    summary: 'bad',
+    learningNote: 'Ignorierte Ereignisse erhöhen meist das Risiko.',
+    resolvedAfterMs: EVENT_RESOLUTION_MS
+  };
+  state.events.resolvedOutcome = null;
+
+  addLog('choice', `Ereignis geschlossen ohne Auswahl: ${eventId}`, {
+    choiceId: '__dismiss__',
+    effects: penalty
+  });
+
+  runEventStateMachine(state.simulation.nowMs);
+  state.ui.openSheet = null;
+  renderAll();
+  schedulePersistState(true);
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'hidden') {
+    schedulePersistState(true);
+    stopLoop();
+    return;
+  }
+
+  if (document.visibilityState === 'visible') {
+    syncSimulationFromElapsedTime(Date.now());
+    startLoopOnce();
+    renderAll();
+    schedulePersistState();
+    if (!loopRunning) {
+      showRuntimeHaltBanner();
+    }
+  }
+}
+
+function onWindowFocus() {
+  if (document.visibilityState !== 'visible') {
+    return;
+  }
+  clearRuntimeHaltBanner();
+  syncSimulationFromElapsedTime(Date.now());
+  renderAll();
+  schedulePersistState();
+}
+
+function onPageShow() {
+  if (document.visibilityState !== 'visible') {
+    return;
+  }
+  clearRuntimeHaltBanner();
+  syncSimulationFromElapsedTime(Date.now());
+  startLoopOnce();
+  renderAll();
+  schedulePersistState();
+}
+
+function showRuntimeHaltBanner() {
+  const existing = document.getElementById('runtimeHaltBanner');
+  if (existing) {
+    return;
+  }
+  const banner = document.createElement('div');
+  banner.id = 'runtimeHaltBanner';
+  banner.className = 'boot-error-banner';
+  banner.innerHTML = '<strong>Simulation angehalten – bitte neu laden.</strong>';
+  document.body.appendChild(banner);
+}
+
+function clearRuntimeHaltBanner() {
+  const existing = document.getElementById('runtimeHaltBanner');
+  if (existing) {
+    existing.remove();
+  }
+}
+
+function addLog(type, message, details) {
+  const timestamp = Date.now();
+  const payload = details || null;
+  const entry = {
+    id: `${timestamp}-${state.simulation.tickCount}-${state.history.systemLog.length}`,
+    atMs: timestamp,
+    t: timestamp,
+    type,
+    message,
+    msg: message,
+    details: payload,
+    data: payload
+  };
+
+  state.history.systemLog.push(entry);
+  if (state.history.systemLog.length > MAX_HISTORY_LOG) {
+    state.history.systemLog = state.history.systemLog.slice(-MAX_HISTORY_LOG);
+  }
+
+  if (!state.history || typeof state.history !== 'object') {
+    state.history = { actions: [], events: [], system: [] };
+  }
+
+  if (type === 'action') {
+    state.history.actions = Array.isArray(state.history.actions) ? state.history.actions : [];
+    state.history.actions.push({
+      type: 'action',
+      id: (payload && payload.id) || message,
+      category: payload && payload.category,
+      intensity: payload && payload.intensity,
+      label: payload && payload.label,
+      atSimTimeMs: state.simulation.simTimeMs,
+      atRealTimeMs: timestamp,
+      result: 'ok',
+      reason: payload && payload.reason,
+      deltaSummary: payload && payload.deltaSummary ? payload.deltaSummary : {},
+      sideEffects: payload && payload.sideEffects ? payload.sideEffects : []
+    });
+  } else if (type === 'event' || type === 'event_shown' || type === 'choice') {
+    state.history.events = Array.isArray(state.history.events) ? state.history.events : [];
+  } else {
+    state.history.system = Array.isArray(state.history.system) ? state.history.system : [];
+    state.history.system.push({
+      type: 'system',
+      id: type,
+      atSimTimeMs: state.simulation.simTimeMs,
+      details: payload || { message }
+    });
+  }
+}
+
+function translateEventState(machineState) {
+  switch (machineState) {
+    case 'idle':
+      return 'inaktiv';
+    case 'activeEvent':
+      return 'aktives Ereignis';
+    case 'resolving':
+      return 'Ergebnis läuft';
+    case 'resolved':
+      return 'Ergebnis bereit';
+    case 'cooldown':
+      return 'Abklingzeit';
+    default:
+      return machineState;
+  }
+}
+
+
+function classifyOutcome(deltaSummary) {
+  const d = deltaSummary || {};
+  const score = (Number(d.health) || 0) + (Number(d.growth) || 0) - (Number(d.stress) || 0) - (Number(d.risk) || 0);
+  if (score >= 1) return 'good';
+  if (score <= -1) return 'bad';
+  return 'mixed';
+}
+
+function formatResolvedOutcome(outcome) {
+  if (!outcome) {
+    return 'Die Auswertung wurde abgeschlossen.';
+  }
+  const tone = outcome.summary === 'good'
+    ? 'Gute Entscheidung.'
+    : (outcome.summary === 'bad' ? 'Eher schlechte Entscheidung.' : 'Gemischtes Ergebnis.');
+  const choice = outcome.optionLabel ? `Gewählt: ${outcome.optionLabel}.` : '';
+  const note = outcome.learningNote ? ` ${outcome.learningNote}` : '';
+  return `${tone} ${choice}${note}`.trim();
+}
+
+function eventStatusDisplay(sourceState = state) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const eventsState = activeState.events || {};
+  const simulation = activeState.simulation || {};
+  const scheduler = eventsState.scheduler || {};
+
+  if (eventsState.machineState === 'activeEvent') {
+    return { label: 'Ereignisstatus', value: 'Ereignis aktiv' };
+  }
+  if (eventsState.machineState === 'resolving') {
+    return { label: 'Ergebnis in', value: formatCountdown(Number(eventsState.resolvingUntilMs || 0) - Number(simulation.nowMs || 0)) };
+  }
+  if (eventsState.machineState === 'resolved') {
+    return { label: 'Ereignisstatus', value: 'Ergebnis bereit' };
+  }
+  return { label: 'Nächstes Ereignis', value: formatCountdown(Number(scheduler.nextEventRealTimeMs || 0) - Number(simulation.nowMs || 0)) };
+}
+
+function formatCountdown(ms) {
+  if (!Number.isFinite(ms) || ms <= 0) {
+    return '00:00';
+  }
+
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes > 99) {
+    return `${minutes}m`;
+  }
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, Number(value) || 0));
+}
+
+function clampInt(value, min, max) {
+  return Math.min(max, Math.max(min, Math.trunc(Number(value) || 0)));
+}
+
+function plantAssetPath(stageName) {
+  const safeStageKey = normalizeStageKey(stageName);
+  const stageIndex = clampInt(Number(safeStageKey.replace('stage_', '')) - 1, 0, STAGE_DEFS.length - 1);
+  const phase = String(getStageTimeline()[stageIndex]?.phase || state.plant.phase || '').toLowerCase();
+
+  let tier = 0;
+  if (phase === 'vegetative') tier = 1;
+  if (phase === 'flowering' || phase === 'harvest' || phase === 'dead') tier = 2;
+
+  return appPath(PLANT_STAGE_IMAGES[tier] || PLANT_STAGE_IMAGES[0]);
+}
+
+function applyBackgroundAsset() {
+  // Home owns the atmospheric background inside #app-hud; body stays neutral.
+  document.body.style.backgroundImage = 'none';
+  document.body.style.backgroundColor = '#04090f';
+
+  const appHud = document.getElementById('app-hud');
+  if (!appHud) {
+    return;
+  }
+
+  const selected = state.ui && typeof state.ui.selectedBackground === 'string'
+    ? state.ui.selectedBackground
+    : 'bg_dark_01.jpg';
+  const mappedFile = selected === 'bg_dark_02.jpg'
+    ? 'bg_dark_02.jpg'
+    : 'Basic screen.jpg';
+
+  const primary = appPath(`assets/ui/backgrounds/${mappedFile}`);
+  appHud.style.setProperty('--home-general-bg', `url("${primary}")`);
+}
+
+async function createStorageAdapter() {
+  if (typeof indexedDB === 'undefined') {
+    return localStorageAdapter();
+  }
+
+  try {
+    const db = await openDb();
+    return {
+      async get() {
+        return dbGet(db, DB_KEY);
+      },
+      async set(snapshot) {
+        await dbSet(db, DB_KEY, snapshot);
+      }
+    };
+  } catch (_error) {
+    return localStorageAdapter();
+  }
+}
+
+function localStorageAdapter() {
+  return {
+    async get() {
+      const raw = localStorage.getItem(LS_STATE_KEY);
+      if (!raw) {
+        return null;
+      }
+      try {
+        return JSON.parse(raw);
+      } catch (_error) {
+        return null;
+      }
+    },
+    async set(snapshot) {
+      localStorage.setItem(LS_STATE_KEY, JSON.stringify(snapshot));
+    }
+  };
+}
+
+function normalizeSpriteStageLabel(rawStage) {
+  const normalized = String(rawStage || '').trim().toLowerCase();
+  if (Object.prototype.hasOwnProperty.call(DEFAULT_PLANT_STAGE_RANGES, normalized)) {
+    return normalized;
+  }
+  if (normalized === 'pre_flower') return 'preflower';
+  if (normalized === 'late-flowering') return 'late_flowering';
+  return '';
+}
+
+function buildStageRangesFromMetadata(frames) {
+  if (!Array.isArray(frames) || !frames.length) {
+    return DEFAULT_PLANT_STAGE_RANGES;
+  }
+
+  const next = {};
+  for (const frame of frames) {
+    const stage = normalizeSpriteStageLabel(frame && frame.stage);
+    const frameNumber = Number(frame && frame.frame);
+    if (!stage || !Number.isFinite(frameNumber)) {
+      continue;
+    }
+
+    if (!next[stage]) {
+      next[stage] = { start: frameNumber, end: frameNumber };
+    } else {
+      next[stage].start = Math.min(next[stage].start, frameNumber);
+      next[stage].end = Math.max(next[stage].end, frameNumber);
+    }
+  }
+
+  const merged = {};
+  for (const stageName of Object.keys(DEFAULT_PLANT_STAGE_RANGES)) {
+    const fallback = DEFAULT_PLANT_STAGE_RANGES[stageName];
+    const candidate = next[stageName];
+    merged[stageName] = Object.freeze({
+      start: Number.isFinite(candidate && candidate.start) ? candidate.start : fallback.start,
+      end: Number.isFinite(candidate && candidate.end) ? candidate.end : fallback.end
+    });
+  }
+
+  return Object.freeze(merged);
+}
+
+function defaultPlantSpriteMetadata() {
+  return {
+    frameWidth: 2048,
+    frameHeight: 2048,
+    columns: 8,
+    rows: 6,
+    totalFrames: 46,
+    frames: []
+  };
+}
+
+function normalizePlantSpriteMetadata(rawMetadata) {
+  const fallback = defaultPlantSpriteMetadata();
+  const frameWidth = clampInt(Number(rawMetadata && rawMetadata.frameWidth), 1, 8192) || fallback.frameWidth;
+  const frameHeight = clampInt(Number(rawMetadata && rawMetadata.frameHeight), 1, 8192) || fallback.frameHeight;
+  const columns = clampInt(Number(rawMetadata && rawMetadata.columns), 1, 256) || fallback.columns;
+  const rows = clampInt(Number(rawMetadata && rawMetadata.rows), 1, 256) || fallback.rows;
+  const totalFrames = clampInt(Number(rawMetadata && rawMetadata.totalFrames), 1, columns * rows) || fallback.totalFrames;
+  const frames = Array.isArray(rawMetadata && rawMetadata.frames) ? rawMetadata.frames : fallback.frames;
+
+  return {
+    frameWidth,
+    frameHeight,
+    columns,
+    rows,
+    totalFrames,
+    frames
+  };
+}
+
+async function loadImageAsset(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Plant sprite konnte nicht geladen werden: ${src}`));
+    image.src = src;
+  });
+}
+
+async function loadPlantSpriteRuntime() {
+  if (plantSpriteRuntime.ready) {
+    return true;
+  }
+  if (plantSpriteRuntime.loadingPromise) {
+    return plantSpriteRuntime.loadingPromise;
+  }
+
+  plantSpriteRuntime.loadingPromise = (async () => {
+    try {
+      const metadataResponse = await fetch(appPath(PLANT_METADATA_ASSET), { cache: 'default' });
+      if (!metadataResponse.ok) {
+        throw new Error(`Metadata HTTP ${metadataResponse.status}`);
+      }
+      const rawMetadata = await metadataResponse.json();
+      const metadata = normalizePlantSpriteMetadata(rawMetadata);
+      const image = await loadImageAsset(appPath(PLANT_SPRITE_ASSET));
+
+      plantSpriteRuntime.metadata = metadata;
+      plantSpriteRuntime.image = image;
+      plantSpriteRuntime.stageRanges = buildStageRangesFromMetadata(metadata.frames);
+      plantSpriteRuntime.ready = true;
+      return true;
+    } catch (error) {
+      console.warn('[plant] Sprite runtime konnte nicht geladen werden.', error);
+      plantSpriteRuntime.ready = false;
+      plantSpriteRuntime.metadata = null;
+      plantSpriteRuntime.image = null;
+      plantSpriteRuntime.stageRanges = DEFAULT_PLANT_STAGE_RANGES;
+      return false;
+    } finally {
+      plantSpriteRuntime.loadingPromise = null;
+    }
+  })();
+
+  return plantSpriteRuntime.loadingPromise;
+}
+
+function getPlantSpriteStageFromState(plantSnapshot) {
+  const snapshot = plantSnapshot || state.plant;
+  const stageIndex = clampInt(Number(snapshot && snapshot.stageIndex), 0, STAGE_INDEX_TO_SPRITE_STAGE.length - 1);
+  if (Number.isFinite(stageIndex) && STAGE_INDEX_TO_SPRITE_STAGE[stageIndex]) {
+    return STAGE_INDEX_TO_SPRITE_STAGE[stageIndex];
+  }
+
+  const phase = String(snapshot && snapshot.phase || '').toLowerCase();
+  if (phase === 'harvest' || phase === 'dead') return 'harvest';
+  if (phase === 'flowering') return 'flowering';
+  if (phase === 'vegetative') return 'vegetative';
+  return 'seedling';
+}
+
+function getPlantFrameIndex(plantSnapshot, metadataOverride) {
+  const metadata = metadataOverride || plantSpriteRuntime.metadata || defaultPlantSpriteMetadata();
+  const totalFrames = clampInt(Number(metadata.totalFrames), 1, 999);
+  const stage = getPlantSpriteStageFromState(plantSnapshot);
+  const range = plantSpriteRuntime.stageRanges[stage] || DEFAULT_PLANT_STAGE_RANGES.seedling;
+
+  const start = clampInt(Number(range.start), 1, totalFrames);
+  const end = clampInt(Number(range.end), start, totalFrames);
+  const span = Math.max(1, end - start + 1);
+  const progress = clamp(Number(plantSnapshot && plantSnapshot.stageProgress), 0, 1);
+  const offset = span <= 1 ? 0 : Math.round(progress * (span - 1));
+  return clampInt(start + offset, 1, totalFrames);
+}
+
+function getSpriteFrameRect(frameIndex, metadata) {
+  const safeIndex = clampInt(frameIndex, 1, metadata.totalFrames) - 1;
+  const frameWidth = metadata.frameWidth;
+  const frameHeight = metadata.frameHeight;
+  const columns = metadata.columns;
+  const col = safeIndex % columns;
+  const row = Math.floor(safeIndex / columns);
+  return {
+    sx: col * frameWidth,
+    sy: row * frameHeight,
+    sw: frameWidth,
+    sh: frameHeight
+  };
+}
+
+function getPlantRenderContainer(targetNode) {
+  if (!targetNode || typeof targetNode.closest !== 'function') {
+    return null;
+  }
+  return targetNode.closest('.plant-container')
+    || targetNode.closest('.hero-stack')
+    || targetNode.parentElement
+    || null;
+}
+
+function syncPlantCanvasToContainer(targetNode) {
+  const container = getPlantRenderContainer(targetNode);
+  const widthCss = Math.max(1, Math.round(Number(container && container.clientWidth) || targetNode.clientWidth || 1));
+  const heightCss = Math.max(1, Math.round(Number(container && container.clientHeight) || targetNode.clientHeight || 1));
+  const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
+  const widthPx = Math.max(1, Math.round(widthCss * dpr));
+  const heightPx = Math.max(1, Math.round(heightCss * dpr));
+
+  if (targetNode.width !== widthPx || targetNode.height !== heightPx) {
+    targetNode.width = widthPx;
+    targetNode.height = heightPx;
+  }
+
+  return { widthCss, heightCss, widthPx, heightPx, dpr };
+}
+
+function ensureFrameBoundsContext(frameWidth, frameHeight) {
+  const safeW = Math.max(1, clampInt(frameWidth, 1, 8192));
+  const safeH = Math.max(1, clampInt(frameHeight, 1, 8192));
+
+  if (!plantSpriteRuntime.boundsCanvas) {
+    plantSpriteRuntime.boundsCanvas = document.createElement('canvas');
+    plantSpriteRuntime.boundsCtx = plantSpriteRuntime.boundsCanvas.getContext('2d', { willReadFrequently: true, alpha: true });
+  }
+
+  if (plantSpriteRuntime.boundsCanvas.width !== safeW || plantSpriteRuntime.boundsCanvas.height !== safeH) {
+    plantSpriteRuntime.boundsCanvas.width = safeW;
+    plantSpriteRuntime.boundsCanvas.height = safeH;
+  }
+
+  return plantSpriteRuntime.boundsCtx;
+}
+
+function getOpaqueBoundsForFrame(frameRect, frameIndex) {
+  const cached = plantSpriteRuntime.frameBoundsCache.get(frameIndex);
+  if (cached) {
+    return cached;
+  }
+
+  const ctx = ensureFrameBoundsContext(frameRect.sw, frameRect.sh);
+  if (!ctx) {
+    const fallback = { x: 0, y: 0, w: frameRect.sw, h: frameRect.sh };
+    plantSpriteRuntime.frameBoundsCache.set(frameIndex, fallback);
+    return fallback;
+  }
+
+  ctx.clearRect(0, 0, frameRect.sw, frameRect.sh);
+  ctx.drawImage(
+    plantSpriteRuntime.image,
+    frameRect.sx,
+    frameRect.sy,
+    frameRect.sw,
+    frameRect.sh,
+    0,
+    0,
+    frameRect.sw,
+    frameRect.sh
+  );
+
+  const imageData = ctx.getImageData(0, 0, frameRect.sw, frameRect.sh);
+  const data = imageData.data;
+  const alphaThreshold = 8;
+  let minX = frameRect.sw;
+  let minY = frameRect.sh;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < frameRect.sh; y += 1) {
+    const rowOffset = y * frameRect.sw * 4;
+    for (let x = 0; x < frameRect.sw; x += 1) {
+      const alpha = data[rowOffset + (x * 4) + 3];
+      if (alpha <= alphaThreshold) {
+        continue;
+      }
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  const hasOpaquePixels = maxX >= minX && maxY >= minY;
+  const bounds = hasOpaquePixels
+    ? { x: minX, y: minY, w: (maxX - minX + 1), h: (maxY - minY + 1) }
+    : { x: 0, y: 0, w: frameRect.sw, h: frameRect.sh };
+
+  plantSpriteRuntime.frameBoundsCache.set(frameIndex, bounds);
+  return bounds;
+}
+
+function renderPlantFromSprite(targetNode) {
+  if (!targetNode || typeof targetNode.getContext !== 'function') {
+    return;
+  }
+  if (!plantSpriteRuntime.ready || !plantSpriteRuntime.image || !plantSpriteRuntime.metadata) {
+    renderPlantFallback(targetNode);
+    return;
+  }
+
+  const metadata = plantSpriteRuntime.metadata;
+  const nextFrameIndex = getPlantFrameIndex(state.plant, metadata);
+  const stageName = normalizeStageKey(state.plant.stageKey);
+  const canvasMetrics = syncPlantCanvasToContainer(targetNode);
+  const currentFrame = Number(targetNode.dataset.frameIndex || 0);
+  const currentStage = targetNode.dataset.stageName || '';
+  const currentCanvasW = Number(targetNode.dataset.canvasWidth || 0);
+  const currentCanvasH = Number(targetNode.dataset.canvasHeight || 0);
+  if (currentFrame === nextFrameIndex
+    && currentStage === stageName
+    && currentCanvasW === canvasMetrics.widthPx
+    && currentCanvasH === canvasMetrics.heightPx) {
+    return;
+  }
+
+  const frameRect = getSpriteFrameRect(nextFrameIndex, metadata);
+  const bounds = getOpaqueBoundsForFrame(frameRect, nextFrameIndex);
+  const srcW = Math.max(1, bounds.w);
+  const srcH = Math.max(1, bounds.h);
+  const dstW = Math.max(1, canvasMetrics.widthPx);
+  const dstH = Math.max(1, canvasMetrics.heightPx);
+
+  const containScale = Math.min(dstW / srcW, dstH / srcH);
+  const spriteStage = getPlantSpriteStageFromState(state.plant);
+  const stageScale = HOME_PLANT_STAGE_SCALE[spriteStage] || 1;
+  const fitScale = clamp(
+    HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale,
+    0.1,
+    1
+  );
+  const scale = containScale * fitScale;
+  const drawW = Math.max(1, Math.round(srcW * scale));
+  const drawH = Math.max(1, Math.round(srcH * scale));
+  const dx = Math.round((dstW - drawW) / 2);
+  const baselineInset = clampInt(HOME_PLANT_REFERENCE_FIT.baselineInsetPx, 0, dstH);
+  const maxDy = Math.max(0, dstH - drawH);
+  const dy = clampInt(dstH - drawH - baselineInset, 0, maxDy);
+
+  const ctx = targetNode.getContext('2d', { alpha: true });
+  if (!ctx) {
+    console.warn('[plant] 2D context unavailable, using fallback render.');
+    renderPlantFallback(targetNode);
+    return;
+  }
+  ctx.clearRect(0, 0, targetNode.width, targetNode.height);
+  ctx.drawImage(
+    plantSpriteRuntime.image,
+    frameRect.sx + bounds.x,
+    frameRect.sy + bounds.y,
+    srcW,
+    srcH,
+    dx,
+    dy,
+    drawW,
+    drawH
+  );
+
+  targetNode.dataset.frameIndex = String(nextFrameIndex);
+  targetNode.dataset.stageName = stageName;
+  targetNode.dataset.spriteStage = spriteStage;
+  targetNode.dataset.fitScale = String(fitScale);
+  targetNode.dataset.canvasWidth = String(canvasMetrics.widthPx);
+  targetNode.dataset.canvasHeight = String(canvasMetrics.heightPx);
+
+  state.plant.assets.basePath = 'assets/plant_growth/';
+  state.plant.assets.resolvedStagePath = plantAssetPath(state.plant.stageKey);
+}
+
+function getCanonicalSimulation(snapshot) {
+  const s = snapshot || state;
+  if (!s.simulation || typeof s.simulation !== 'object') {
+    s.simulation = {};
+  }
+
+  const nowMs = Date.now();
+  if (!Number.isFinite(s.simulation.nowMs)) s.simulation.nowMs = nowMs;
+  if (!Number.isFinite(s.simulation.startRealTimeMs)) s.simulation.startRealTimeMs = nowMs;
+  if (!Number.isFinite(s.simulation.lastTickRealTimeMs)) s.simulation.lastTickRealTimeMs = nowMs;
+  if (!Number.isFinite(s.simulation.simTimeMs)) s.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
+  if (!Number.isFinite(s.simulation.simEpochMs)) s.simulation.simEpochMs = s.simulation.startRealTimeMs;
+  if (!Number.isFinite(s.simulation.simDay)) s.simulation.simDay = 0;
+  if (!Number.isFinite(s.simulation.simHour)) s.simulation.simHour = SIM_START_HOUR;
+  if (!Number.isFinite(s.simulation.simMinute)) s.simulation.simMinute = 0;
+  if (!Number.isFinite(s.simulation.tickCount)) s.simulation.tickCount = 0;
+  if (typeof s.simulation.mode !== 'string') s.simulation.mode = MODE;
+  if (!Number.isFinite(s.simulation.tickIntervalMs)) s.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
+  if (!Number.isFinite(s.simulation.timeCompression)) s.simulation.timeCompression = SIM_TIME_COMPRESSION;
+  if (typeof s.simulation.globalSeed !== 'string') s.simulation.globalSeed = SIM_GLOBAL_SEED;
+  if (typeof s.simulation.plantId !== 'string') s.simulation.plantId = SIM_PLANT_ID;
+  if (!s.simulation.dayWindow || typeof s.simulation.dayWindow !== 'object') s.simulation.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
+  if (typeof s.simulation.isDaytime !== 'boolean') s.simulation.isDaytime = isDaytimeAtSimTime(s.simulation.simTimeMs);
+  if (!Number.isFinite(s.simulation.growthImpulse)) s.simulation.growthImpulse = 0;
+  if (!Number.isFinite(s.simulation.lastPushScheduleAtMs)) s.simulation.lastPushScheduleAtMs = 0;
+  if (!Number.isFinite(s.simulation.fairnessGraceUntilRealMs)) s.simulation.fairnessGraceUntilRealMs = 0;
+
+  return s.simulation;
+}
+
+function getCanonicalPlant(snapshot) {
+  const s = snapshot || state;
+  if (!s.plant || typeof s.plant !== 'object') {
+    s.plant = {};
+  }
+
+  if (typeof s.plant.phase !== 'string') s.plant.phase = 'seedling';
+  if (typeof s.plant.isDead !== 'boolean') s.plant.isDead = false;
+  if (!Number.isFinite(s.plant.stageIndex)) s.plant.stageIndex = 0;
+  if (typeof s.plant.stageKey !== 'string') s.plant.stageKey = 'stage_01';
+  if (!Number.isFinite(s.plant.stageProgress)) s.plant.stageProgress = 0;
+  if (!Number.isFinite(s.plant.stageStartSimDay)) s.plant.stageStartSimDay = 0;
+  if (typeof s.plant.lastValidStageKey !== 'string') s.plant.lastValidStageKey = 'stage_01';
+  if (!Number.isFinite(s.plant.averageHealth)) s.plant.averageHealth = 85;
+  if (!Number.isFinite(s.plant.averageStress)) s.plant.averageStress = 15;
+  if (!Number.isFinite(s.plant.observedSimMs)) s.plant.observedSimMs = 0;
+  if (!s.plant.lifecycle || typeof s.plant.lifecycle !== 'object') {
+    s.plant.lifecycle = { totalSimDays: TOTAL_LIFECYCLE_SIM_DAYS, qualityTier: 'normal', qualityScore: 0, qualityLocked: false };
+  }
+  if (!s.plant.assets || typeof s.plant.assets !== 'object') {
+    s.plant.assets = { basePath: 'assets/plant_growth/', resolvedStagePath: '' };
+  }
+
+  return s.plant;
+}
+
+function getCanonicalEvents(snapshot) {
+  const s = snapshot || state;
+  if (!s.events || typeof s.events !== 'object') {
+    s.events = {};
+  }
+
+  if (typeof s.events.machineState !== 'string') s.events.machineState = 'idle';
+  if (!s.events.scheduler || typeof s.events.scheduler !== 'object') {
+    s.events.scheduler = {
+      nextEventRealTimeMs: Date.now() + EVENT_ROLL_MIN_REAL_MS,
+      lastEventRealTimeMs: 0,
+      lastEventId: null,
+      lastChoiceId: null,
+      lastEventCategory: null,
+      deferredUntilDaytime: false,
+      windowRealMinutes: { min: 30, max: 90 },
+      eventCooldowns: {},
+      categoryCooldowns: {}
+    };
+  }
+  if (!s.events.active || typeof s.events.active !== 'object') {
+    s.events.active = null;
+  }
+  if (!Array.isArray(s.events.history)) s.events.history = [];
+  if (typeof s.events.activeEventId !== 'string') s.events.activeEventId = null;
+  if (typeof s.events.activeEventTitle !== 'string') s.events.activeEventTitle = '';
+  if (typeof s.events.activeEventText !== 'string') s.events.activeEventText = '';
+  if (typeof s.events.activeLearningNote !== 'string') s.events.activeLearningNote = '';
+  if (!Array.isArray(s.events.activeOptions)) s.events.activeOptions = [];
+  if (!Number.isFinite(s.events.activeSeverity)) s.events.activeSeverity = 1;
+  if (!Number.isFinite(s.events.activeCooldownRealMinutes)) s.events.activeCooldownRealMinutes = 120;
+  if (typeof s.events.activeCategory !== 'string') s.events.activeCategory = 'generic';
+  if (!Array.isArray(s.events.activeTags)) s.events.activeTags = [];
+  if (!Number.isFinite(s.events.resolvingUntilMs)) s.events.resolvingUntilMs = 0;
+  if (!s.events.pendingOutcome || typeof s.events.pendingOutcome !== 'object') s.events.pendingOutcome = null;
+  if (!s.events.resolvedOutcome || typeof s.events.resolvedOutcome !== 'object') s.events.resolvedOutcome = null;
+  if (!Number.isFinite(s.events.lastEventAtMs)) s.events.lastEventAtMs = 0;
+  if (!Number.isFinite(s.events.cooldownUntilMs)) s.events.cooldownUntilMs = 0;
+  if (!Array.isArray(s.events.catalog)) s.events.catalog = [];
+
+  return s.events;
+}
+
+function getCanonicalHistory(snapshot) {
+  const s = snapshot || state;
+  if (!s.history || typeof s.history !== 'object') {
+    s.history = { actions: [], events: [], system: [], systemLog: [] };
+  }
+  if (!Array.isArray(s.history.actions)) s.history.actions = [];
+  if (!Array.isArray(s.history.events)) s.history.events = [];
+  if (!Array.isArray(s.history.system)) s.history.system = [];
+  if (!Array.isArray(s.history.systemLog)) s.history.systemLog = [];
+  return s.history;
+}
+
+function getCanonicalMeta(snapshot) {
+  const s = snapshot || state;
+  if (!s.meta || typeof s.meta !== 'object') {
+    s.meta = {};
+  }
+  if (!s.meta.rescue || typeof s.meta.rescue !== 'object') {
+    s.meta.rescue = {};
+  }
+  if (typeof s.meta.rescue.used !== 'boolean') s.meta.rescue.used = false;
+  if (!Number.isFinite(Number(s.meta.rescue.usedAtRealMs))) s.meta.rescue.usedAtRealMs = null;
+  if (s.meta.rescue.lastResult !== null && typeof s.meta.rescue.lastResult !== 'string') s.meta.rescue.lastResult = null;
+  return s.meta;
+}
+function getActionIconPath(action) {
+  const cat = action.category || 'environment';
+  const intensity = action.intensity || 'low';
+  if (cat === 'watering') {
+    return intensity === 'high' ? 'assets/ui/icons/icon_water.svg' : 'assets/ui/icons/icon_water.svg';
+  }
+  if (cat === 'fertilizing') {
+    return 'assets/ui/icons/icon_nutrients.svg';
+  }
+  if (cat === 'training') {
+    return 'assets/ui/icons/icon_growth.svg';
+  }
+  return 'assets/ui/icons/icon_airflow.svg';
+}
+
+function getCanonicalSettings(snapshot) {
+  const s = snapshot || state;
+  if (!s.settings || typeof s.settings !== 'object') {
+    s.settings = {};
+  }
+  const notifications = getCanonicalNotificationsSettings(s);
+  s.settings.notifications = notifications;
+  return s.settings;
+}
+
+function getCanonicalNotificationsSettings(snapshot) {
+  const s = snapshot || state;
+  if (!s.settings || typeof s.settings !== 'object') {
+    s.settings = {};
+  }
+
+  const legacyEnabled = Boolean(s.settings.pushNotificationsEnabled);
+  if (!s.settings.notifications || typeof s.settings.notifications !== 'object') {
+    s.settings.notifications = {};
+  }
+
+  const n = s.settings.notifications;
+  n.enabled = typeof n.enabled === 'boolean' ? n.enabled : legacyEnabled;
+  if (!n.types || typeof n.types !== 'object') {
+    n.types = {};
+  }
+  n.types.events = typeof n.types.events === 'boolean' ? n.types.events : true;
+  n.types.critical = typeof n.types.critical === 'boolean' ? n.types.critical : true;
+  n.types.reminder = typeof n.types.reminder === 'boolean' ? n.types.reminder : true;
+
+  if (!n.runtime || typeof n.runtime !== 'object') {
+    n.runtime = {};
+  }
+  n.runtime.lastNotifiedEventId = (typeof n.runtime.lastNotifiedEventId === 'string' || n.runtime.lastNotifiedEventId === null)
+    ? n.runtime.lastNotifiedEventId
+    : null;
+  n.runtime.lastCriticalAtRealMs = Number.isFinite(Number(n.runtime.lastCriticalAtRealMs)) ? Number(n.runtime.lastCriticalAtRealMs) : 0;
+  n.runtime.lastReminderAtRealMs = Number.isFinite(Number(n.runtime.lastReminderAtRealMs)) ? Number(n.runtime.lastReminderAtRealMs) : 0;
+  n.lastMessage = (typeof n.lastMessage === 'string' || n.lastMessage === null) ? n.lastMessage : null;
+
+  return n;
+}
+
+async function restoreState() {
+  if (!storageAdapter) {
+    return;
+  }
+
+  const saved = await storageAdapter.get();
+  if (!saved || typeof saved !== 'object') {
+    return;
+  }
+
+  const sim = getCanonicalSimulation(state);
+  const plant = getCanonicalPlant(state);
+  const events = getCanonicalEvents(state);
+  const history = getCanonicalHistory(state);
+  const meta = getCanonicalMeta(state);
+  const settings = getCanonicalSettings(state);
+
+  if (saved.simulation && typeof saved.simulation === 'object') {
+    state.simulation = {
+      ...state.simulation,
+      ...saved.simulation
+    };
+  }
+
+  if (saved.plant && typeof saved.plant === 'object') {
+    state.plant = {
+      ...state.plant,
+      ...saved.plant
+    };
+  }
+
+  if (saved.events && typeof saved.events === 'object') {
+    state.events = {
+      ...state.events,
+      ...saved.events,
+      scheduler: {
+        ...events.scheduler,
+        ...((saved.events && saved.events.scheduler) || {})
+      }
+    };
+  }
+
+  if (saved.history && typeof saved.history === 'object') {
+    state.history = {
+      ...state.history,
+      ...saved.history,
+      actions: Array.isArray(saved.history.actions) ? saved.history.actions : history.actions,
+      events: Array.isArray(saved.history.events) ? saved.history.events : history.events,
+      system: Array.isArray(saved.history.system) ? saved.history.system : history.system,
+      systemLog: Array.isArray(saved.history.systemLog) ? saved.history.systemLog : history.systemLog
+    };
+  }
+
+  if (saved.status && typeof saved.status === 'object') {
+    Object.assign(state.status, saved.status);
+  }
+  if (saved.boost && typeof saved.boost === 'object') {
+    Object.assign(state.boost, saved.boost);
+  }
+  if (saved.actions && typeof saved.actions === 'object') {
+    Object.assign(state.actions, saved.actions);
+  }
+  if (saved.ui && typeof saved.ui === 'object') {
+    Object.assign(state.ui, saved.ui);
+    state.ui.openSheet = null;
+    state.ui.menuOpen = false;
+    state.ui.menuDialogOpen = false;
+    state.ui.statDetailKey = null;
+  }
+  if (saved.setup && typeof saved.setup === 'object') {
+    state.setup = { ...saved.setup };
+  }
+  if (saved.meta && typeof saved.meta === 'object') {
+    state.meta = {
+      ...meta,
+      ...saved.meta,
+      rescue: {
+        ...meta.rescue,
+        ...((saved.meta && saved.meta.rescue) || {})
+      }
+    };
+  }
+  if (saved.settings && typeof saved.settings === 'object') {
+    state.settings = {
+      ...settings,
+      ...saved.settings
+    };
+    getCanonicalNotificationsSettings(state);
+  }
+
+  migrateLegacyStateIntoCanonical(saved, state);
+}
+
+function migrateLegacyStateIntoCanonical(saved, targetState) {
+  const sim = getCanonicalSimulation(targetState);
+  const plant = getCanonicalPlant(targetState);
+  const events = getCanonicalEvents(targetState);
+  const history = getCanonicalHistory(targetState);
+
+  if (saved.sim && typeof saved.sim === 'object') {
+    targetState.simulation = {
+      ...sim,
+      ...saved.sim,
+      startRealTimeMs: Number(saved.sim.startRealTimeMs || saved.sim.simEpochMs || sim.startRealTimeMs),
+      lastTickRealTimeMs: Number(saved.sim.lastTickAtMs || sim.lastTickRealTimeMs),
+      simEpochMs: Number(saved.sim.simEpochMs || sim.simEpochMs),
+      tickIntervalMs: Number(saved.sim.tickIntervalMs || sim.tickIntervalMs),
+      growthImpulse: Number(saved.sim.growthImpulse || sim.growthImpulse),
+      lastPushScheduleAtMs: Number(saved.sim.lastPushScheduleAtMs || sim.lastPushScheduleAtMs)
+    };
+  }
+
+  if (saved.growth && typeof saved.growth === 'object') {
+    targetState.plant = {
+      ...plant,
+      phase: String(saved.growth.phase || plant.phase),
+      isDead: Boolean(saved.growth.isDead),
+      stageIndex: clampInt(Number(saved.growth.stageIndex || 0), 0, Math.max(0, getStageTimeline().length - 1)),
+      stageKey: String(saved.growth.stageName || plant.stageKey),
+      stageProgress: clamp(Number(saved.growth.stageProgress || 0), 0, 1),
+      lastValidStageKey: String(saved.growth.lastValidStageName || plant.lastValidStageKey),
+      averageHealth: Number(saved.growth.averageHealth || plant.averageHealth),
+      averageStress: Number(saved.growth.averageStress || plant.averageStress),
+      observedSimMs: Number(saved.growth.observedSimMs || plant.observedSimMs),
+      lifecycle: {
+        ...plant.lifecycle,
+        qualityTier: String(saved.growth.qualityTier || plant.lifecycle.qualityTier),
+        qualityLocked: Boolean(saved.growth.qualityLocked)
+      }
+    };
+  }
+
+  if (saved.event && typeof saved.event === 'object') {
+    const hasUsableEventsState = Boolean(saved.events && typeof saved.events === 'object' && saved.events.scheduler && typeof saved.events.scheduler === 'object');
+
+    if (!hasUsableEventsState) {
+      targetState.events = {
+        ...events,
+        machineState: String(saved.event.machineState || events.machineState),
+        activeEventId: saved.event.activeEventId || null,
+        activeEventTitle: String(saved.event.activeEventTitle || ''),
+        activeEventText: String(saved.event.activeEventText || ''),
+        activeLearningNote: String(saved.event.activeLearningNote || ''),
+        activeOptions: Array.isArray(saved.event.activeOptions) ? saved.event.activeOptions : [],
+        activeSeverity: Number(saved.event.activeSeverity || 1),
+        activeCooldownRealMinutes: Number(saved.event.activeCooldownRealMinutes || 120),
+        activeCategory: String(saved.event.activeCategory || 'generic'),
+        activeTags: Array.isArray(saved.event.activeTags) ? saved.event.activeTags : [],
+        lastEventAtMs: Number(saved.event.lastEventAtMs || 0),
+        cooldownUntilMs: Number(saved.event.cooldownUntilMs || 0),
+        catalog: Array.isArray(saved.event.catalog) ? saved.event.catalog : events.catalog,
+        scheduler: {
+          ...events.scheduler,
+          nextEventRealTimeMs: Number(saved.event.nextEventAtMs || events.scheduler.nextEventRealTimeMs),
+          lastEventRealTimeMs: Number(saved.event.lastEventAtMs || events.scheduler.lastEventRealTimeMs),
+          lastEventId: typeof saved.event.activeEventId === 'string' ? saved.event.activeEventId : events.scheduler.lastEventId,
+          lastChoiceId: typeof saved.event.lastChoiceId === 'string' ? saved.event.lastChoiceId : events.scheduler.lastChoiceId
+        }
+      };
+    }
+  }
+
+  if (Array.isArray(saved.historyLog) && !history.system.length) {
+    targetState.history.system = saved.historyLog.slice(-MAX_HISTORY_LOG).map((entry) => ({
+      type: 'system',
+      id: entry.type || 'legacy_log',
+      atSimTimeMs: Number(entry.timestamp || targetState.simulation.simTimeMs || 0),
+      details: entry
+    }));
+  }
+}
+
+async function persistState() {
+  if (!storageAdapter) {
+    return;
+  }
+
+  try {
+    await storageAdapter.set(state);
+  } catch (_error) {
+    // Persistence failure is non-fatal for runtime behavior.
+  }
+}
+
+function schedulePersistState(immediate = false) {
+  if (immediate) {
+    if (persistTimer !== null) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    persistState();
+    return;
+  }
+
+  if (persistTimer !== null) {
+    return;
+  }
+
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    persistState();
+  }, PERSIST_THROTTLE_MS);
+}
+
+function migrateState() {
+  try {
+    if (!state || typeof state !== 'object') {
+      throw new Error('state object missing');
+    }
+
+    if (!state.setup || typeof state.setup !== 'object') {
+      state.setup = null;
+    }
+
+    if (!state.history || typeof state.history !== 'object') {
+      state.history = { actions: [], events: [], system: [] };
+    }
+
+    if (!state.events || typeof state.events !== 'object') {
+      state.events = {};
+    }
+
+    if (!state.plant || typeof state.plant !== 'object') {
+      state.plant = {};
+    }
+
+    if (!state.simulation || typeof state.simulation !== 'object') {
+      state.simulation = {};
+    }
+
+    if (!state.debug || typeof state.debug !== 'object') {
+      state.debug = { enabled: false, showInternalTicks: false, forceDaytime: false };
+    }
+  } catch (error) {
+    console.warn('State migration fallback to defaults', error);
+    resetStateToDefaults();
+  }
+}
+
+function resetStateToDefaults() {
+  const fallbackNow = Date.now();
+  const fallbackSimStart = alignToSimStartHour(fallbackNow, SIM_START_HOUR);
+  const preservedEventCatalog = Array.isArray(state.events && state.events.catalog) ? state.events.catalog.slice() : [];
+  const preservedActionCatalog = Array.isArray(state.actions && state.actions.catalog) ? state.actions.catalog.slice() : [];
+  const normalizedActions = preservedActionCatalog.map(normalizeAction).filter(Boolean);
+
+  state.schemaVersion = '1.0.0';
+  state.seed = SIM_GLOBAL_SEED;
+  state.plantId = SIM_PLANT_ID;
+  state.setup = {
+    mode: 'indoor',
+    light: 'medium',
+    medium: 'soil',
+    potSize: 'medium',
+    genetics: 'hybrid',
+    createdAtReal: fallbackNow
+  };
+  state.settings = {
+    notifications: {
+      enabled: false,
+      types: {
+        events: true,
+        critical: true,
+        reminder: true
+      },
+      runtime: {
+        lastNotifiedEventId: null,
+        lastCriticalAtRealMs: 0,
+        lastReminderAtRealMs: 0
+      },
+      lastMessage: null
+    },
+    pushNotificationsEnabled: false
+  };
+  state.meta = {
+    rescue: {
+      used: false,
+      usedAtRealMs: null,
+      lastResult: null
+    }
+  };
+  state.environmentControls = {
+    temperatureC: 25,
+    humidityPercent: 60,
+    airflowPercent: 70,
+    ph: 6.0,
+    ec: 1.4
+  };
+  state.history = { actions: [], events: [], system: [], systemLog: [] };
+  state.debug = { enabled: false, showInternalTicks: false, forceDaytime: false };
+
+  state.simulation = {
+    nowMs: fallbackNow,
+    startRealTimeMs: fallbackNow,
+    lastTickRealTimeMs: fallbackNow,
+    simTimeMs: fallbackSimStart,
+    simEpochMs: fallbackSimStart,
+    simDay: 0,
+    simHour: SIM_START_HOUR,
+    simMinute: 0,
+    tickCount: 0,
+    mode: MODE,
+    tickIntervalMs: UI_TICK_INTERVAL_MS,
+    timeCompression: SIM_TIME_COMPRESSION,
+    globalSeed: SIM_GLOBAL_SEED,
+    plantId: SIM_PLANT_ID,
+    dayWindow: { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR },
+    isDaytime: isDaytimeAtSimTime(fallbackSimStart),
+    growthImpulse: 0,
+    lastPushScheduleAtMs: 0
+  };
+
+  state.plant = {
+    phase: 'seedling',
+    isDead: false,
+    stageIndex: 0,
+    stageKey: 'stage_01',
+    stageProgress: 0,
+    stageStartSimDay: 0,
+    lastValidStageKey: 'stage_01',
+    averageHealth: 85,
+    averageStress: 15,
+    observedSimMs: 0,
+    lifecycle: {
+      totalSimDays: TOTAL_LIFECYCLE_SIM_DAYS,
+      qualityTier: 'normal',
+      qualityScore: 77.5,
+      qualityLocked: false
+    },
+    assets: {
+      basePath: 'assets/plant_growth/',
+      resolvedStagePath: ''
+    }
+  };
+
+  state.events = {
+    machineState: 'idle',
+    scheduler: {
+      nextEventRealTimeMs: fallbackNow + EVENT_ROLL_MIN_REAL_MS,
+      lastEventRealTimeMs: 0,
+      lastEventId: null,
+      lastChoiceId: null,
+      lastEventCategory: null,
+      deferredUntilDaytime: false,
+      windowRealMinutes: { min: 30, max: 90 },
+      eventCooldowns: {},
+      categoryCooldowns: {}
+    },
+    active: null,
+    history: [],
+    activeEventId: null,
+    activeEventTitle: '',
+    activeEventText: '',
+    activeLearningNote: '',
+    activeOptions: [],
+    activeSeverity: 1,
+    activeCooldownRealMinutes: 120,
+    activeCategory: 'generic',
+    activeTags: [],
+    lastEventAtMs: 0,
+    cooldownUntilMs: 0,
+    catalog: preservedEventCatalog
+  };
+
+  state.status = {
+    health: 85,
+    stress: 15,
+    water: 70,
+    nutrition: 65,
+    growth: 0,
+    risk: 20
+  };
+
+  state.boost = {
+    boostUsedToday: 0,
+    boostMaxPerDay: 6,
+    dayStamp: dayStamp(fallbackNow)
+  };
+
+  state.actions = {
+    catalog: normalizedActions,
+    byId: Object.fromEntries(normalizedActions.map((action) => [action.id, action])),
+    cooldowns: {},
+    activeEffects: [],
+    lastResult: { ok: true, reason: 'ok', actionId: null, atRealTimeMs: fallbackNow }
+  };
+
+  state.ui = {
+    openSheet: null,
+    menuOpen: false,
+    menuDialogOpen: false,
+    selectedBackground: 'bg_dark_01.jpg',
+    visibleOverlayIds: [],
+    deathOverlayOpen: false,
+    deathOverlayAcknowledged: false,
+    care: {
+      selectedCategory: null,
+      selectedActionId: null,
+      feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
+    },
+    analysis: {
+      activeTab: 'overview'
+    }
+  };
+
+  state.lastEventId = null;
+  state.lastChoiceId = null;
+  state.historyLog = [];
+}
+
+function ensureStateIntegrity(nowMs) {
+  if (typeof state.schemaVersion !== 'string') {
+    state.schemaVersion = '1.0.0';
+  }
+
+  ensureEnvironmentControls(state);
+  state.simulation.mode = MODE;
+  state.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
+  state.simulation.timeCompression = SIM_TIME_COMPRESSION;
+  state.simulation.globalSeed = SIM_GLOBAL_SEED;
+  state.simulation.plantId = SIM_PLANT_ID;
+
+  if (!Number.isFinite(state.simulation.nowMs)) {
+    state.simulation.nowMs = nowMs;
+  }
+  if (!Number.isFinite(state.simulation.startRealTimeMs)) {
+    state.simulation.startRealTimeMs = nowMs;
+  }
+  if (!Number.isFinite(state.simulation.simTimeMs)) {
+    state.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
+  }
+  if (!Number.isFinite(state.simulation.simEpochMs)) {
+    state.simulation.simEpochMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
+  }
+  if (!Number.isFinite(state.simulation.lastTickRealTimeMs)) {
+    state.simulation.lastTickRealTimeMs = nowMs;
+  }
+  if (!Number.isFinite(state.simulation.tickCount)) {
+    state.simulation.tickCount = 0;
+  }
+  if (!Number.isFinite(state.simulation.lastPushScheduleAtMs)) {
+    state.simulation.lastPushScheduleAtMs = 0;
+  }
+  if (!Number.isFinite(state.simulation.growthImpulse)) {
+    state.simulation.growthImpulse = 0;
+  }
+  state.simulation.isDaytime = isDaytimeAtSimTime(state.simulation.simTimeMs);
+
+  const validPhases = new Set(['seedling', 'vegetative', 'flowering', 'harvest']);
+  if (!validPhases.has(state.plant.phase) && state.plant.phase !== 'dead') {
+    state.plant.phase = 'seedling';
+  }
+
+  state.plant.lastValidStageKey = normalizeStageKey(state.plant.lastValidStageKey);
+  const deadByHealth = Number(state.status.health) <= 0;
+  const deadRequested = state.plant.phase === 'dead' || state.plant.isDead === true || deadByHealth;
+  state.plant.isDead = deadRequested;
+
+  if (!deadRequested) {
+    state.plant.stageIndex = clampInt(state.plant.stageIndex, 0, Math.max(0, getStageTimeline().length - 1));
+    state.plant.stageProgress = clamp(state.plant.stageProgress, 0, 1);
+    state.plant.stageKey = normalizeStageKey(stageAssetKeyForIndex(state.plant.stageIndex));
+    state.plant.lastValidStageKey = state.plant.stageKey;
+    state.plant.phase = getStageTimeline()[state.plant.stageIndex]?.phase || 'seedling';
+  } else {
+    state.plant.phase = 'dead';
+    state.plant.stageKey = normalizeStageKey(state.plant.lastValidStageKey || 'stage_01');
+    state.plant.stageProgress = 1;
+  }
+
+  if (!Number.isFinite(state.plant.averageHealth)) {
+    state.plant.averageHealth = state.status.health;
+  }
+  if (!Number.isFinite(state.plant.averageStress)) {
+    state.plant.averageStress = state.status.stress;
+  }
+  if (!Number.isFinite(state.plant.observedSimMs)) {
+    state.plant.observedSimMs = 0;
+  }
+  if (typeof state.plant.lifecycle.qualityTier !== 'string') {
+    state.plant.lifecycle.qualityTier = 'normal';
+  }
+  if (typeof state.plant.lifecycle.qualityLocked !== 'boolean') {
+    state.plant.lifecycle.qualityLocked = false;
+  }
+
+  clampStatus();
+  state.status.growth = round2(computeGrowthPercent());
+
+  state.boost.boostMaxPerDay = 6;
+  if (!Number.isFinite(state.boost.boostUsedToday)) {
+    state.boost.boostUsedToday = 0;
+  }
+  state.boost.boostUsedToday = clampInt(state.boost.boostUsedToday, 0, state.boost.boostMaxPerDay);
+  if (typeof state.boost.dayStamp !== 'string' || !state.boost.dayStamp) {
+    state.boost.dayStamp = dayStamp(nowMs);
+  }
+
+  const machineStates = new Set(['idle', 'activeEvent', 'resolving', 'resolved', 'cooldown']);
+  if (!machineStates.has(state.events.machineState)) {
+    state.events.machineState = 'idle';
+  }
+  if (!Number.isFinite(state.events.scheduler.nextEventRealTimeMs)) {
+    state.events.scheduler.nextEventRealTimeMs = nowMs + deterministicEventDelayMs(nowMs);
+  }
+  if (!Number.isFinite(state.events.cooldownUntilMs)) {
+    state.events.cooldownUntilMs = 0;
+  }
+  if (!Array.isArray(state.events.activeOptions)) {
+    state.events.activeOptions = [];
+  }
+  if (!Array.isArray(state.events.activeTags)) {
+    state.events.activeTags = [];
+  }
+  if (!Array.isArray(state.events.catalog)) {
+    state.events.catalog = [];
+  }
+
+  if (!Array.isArray(state.actions.catalog)) {
+    state.actions.catalog = [];
+  }
+  if (!state.actions.byId || typeof state.actions.byId !== 'object') {
+    state.actions.byId = {};
+  }
+  if (!state.actions.cooldowns || typeof state.actions.cooldowns !== 'object') {
+    state.actions.cooldowns = {};
+  }
+  if (!Array.isArray(state.actions.activeEffects)) {
+    state.actions.activeEffects = [];
+  }
+
+  state.actions.catalog = state.actions.catalog.map(normalizeAction).filter(Boolean);
+  state.actions.byId = Object.fromEntries(state.actions.catalog.map((action) => [action.id, action]));
+
+  for (const [actionId, untilMs] of Object.entries(state.actions.cooldowns)) {
+    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowMs) {
+      delete state.actions.cooldowns[actionId];
+    }
+  }
+
+  state.actions.activeEffects = state.actions.activeEffects
+    .filter((effect) => effect && Number.isFinite(Number(effect.remainingSimMs)) && Number(effect.remainingSimMs) > 0)
+    .map((effect) => ({
+      id: String(effect.id || `${effect.actionId || 'action'}:${nowMs}`),
+      actionId: String(effect.actionId || ''),
+      remainingSimMs: Math.max(0, Number(effect.remainingSimMs)),
+      rates: effect.rates && typeof effect.rates === 'object' ? effect.rates : {}
+    }));
+
+  if (!state.actions.lastResult || typeof state.actions.lastResult !== 'object') {
+    state.actions.lastResult = { ok: true, reason: 'ok', actionId: null, atRealTimeMs: nowMs };
+  }
+
+  const meta = getCanonicalMeta(state);
+  const settings = getCanonicalSettings(state);
+  meta.rescue.used = Boolean(meta.rescue.used);
+  meta.rescue.usedAtRealMs = Number.isFinite(Number(meta.rescue.usedAtRealMs)) ? Number(meta.rescue.usedAtRealMs) : null;
+  meta.rescue.lastResult = (typeof meta.rescue.lastResult === 'string' || meta.rescue.lastResult === null)
+    ? meta.rescue.lastResult
+    : null;
+  getCanonicalNotificationsSettings(state);
+  settings.pushNotificationsEnabled = Boolean(settings.pushNotificationsEnabled);
+
+  if (!state.setup || typeof state.setup !== 'object') {
+    state.setup = null;
+  }
+
+  if (!state.events || typeof state.events !== 'object') {
+    state.events = { scheduler: {}, active: null, history: [] };
+  }
+  if (!state.events.scheduler || typeof state.events.scheduler !== 'object') {
+    state.events.scheduler = {};
+  }
+  if (!state.events.scheduler.eventCooldowns || typeof state.events.scheduler.eventCooldowns !== 'object') {
+    state.events.scheduler.eventCooldowns = {};
+  }
+  if (!state.events.scheduler.categoryCooldowns || typeof state.events.scheduler.categoryCooldowns !== 'object') {
+    state.events.scheduler.categoryCooldowns = {};
+  }
+  for (const [eventId, untilMs] of Object.entries(state.events.scheduler.eventCooldowns)) {
+    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowMs) {
+      delete state.events.scheduler.eventCooldowns[eventId];
+    }
+  }
+  for (const [categoryId, untilMs] of Object.entries(state.events.scheduler.categoryCooldowns)) {
+    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowMs) {
+      delete state.events.scheduler.categoryCooldowns[categoryId];
+    }
+  }
+  if (!Array.isArray(state.events.history)) {
+    state.events.history = [];
+  }
+
+  if (!state.history || typeof state.history !== 'object') {
+    state.history = { actions: [], events: [], system: [] };
+  }
+  if (!Array.isArray(state.history.events)) {
+    state.history.events = [];
+  }
+
+  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis']);
+  if (!validSheets.has(state.ui.openSheet)) {
+    state.ui.openSheet = null;
+  }
+  if (typeof state.ui.menuOpen !== 'boolean') {
+    state.ui.menuOpen = false;
+  }
+  if (typeof state.ui.menuDialogOpen !== 'boolean') {
+    state.ui.menuDialogOpen = false;
+  }
+  if (!Array.isArray(state.ui.visibleOverlayIds)) {
+    state.ui.visibleOverlayIds = [];
+  }
+  if (!state.ui.care || typeof state.ui.care !== 'object') {
+    state.ui.care = { selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'Wähle eine Aktion.' } };
+  }
+  if (typeof state.ui.care.selectedCategory !== 'string') {
+    state.ui.care.selectedCategory = null;
+  }
+  if (typeof state.ui.care.selectedActionId !== 'string') {
+    state.ui.care.selectedActionId = null;
+  }
+  if (!state.ui.care.feedback || typeof state.ui.care.feedback !== 'object') {
+    state.ui.care.feedback = { kind: 'info', text: 'Wähle eine Aktion.' };
+  }
+  if (!state.ui.analysis || typeof state.ui.analysis !== 'object') {
+    state.ui.analysis = { activeTab: 'overview' };
+  }
+  if (!['overview', 'diagnosis', 'timeline'].includes(state.ui.analysis.activeTab)) {
+    state.ui.analysis.activeTab = 'overview';
+  }
+  if (typeof state.ui.deathOverlayOpen !== 'boolean') {
+    state.ui.deathOverlayOpen = false;
+  }
+  if (typeof state.ui.deathOverlayAcknowledged !== 'boolean') {
+    state.ui.deathOverlayAcknowledged = false;
+  }
+  if (typeof state.ui.statDetailKey !== 'string') {
+    state.ui.statDetailKey = null;
+  }
+
+  if (typeof state.events.scheduler.lastEventId !== 'string') {
+    state.events.scheduler.lastEventId = null;
+  }
+  if (typeof state.events.scheduler.lastChoiceId !== 'string') {
+    state.events.scheduler.lastChoiceId = null;
+  }
+}
+
+function syncCanonicalStateShape() {
+  const sim = getCanonicalSimulation(state);
+  const plant = getCanonicalPlant(state);
+  const events = getCanonicalEvents(state);
+  const history = getCanonicalHistory(state);
+  const meta = getCanonicalMeta(state);
+  const settings = getCanonicalSettings(state);
+
+  state.seed = sim.globalSeed;
+  state.plantId = sim.plantId;
+
+  sim.simDay = Math.floor(simDayFloat());
+  sim.simHour = simHour(sim.simTimeMs);
+  sim.simMinute = new Date(sim.simTimeMs).getMinutes();
+  sim.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
+  sim.isDaytime = isDaytimeAtSimTime(sim.simTimeMs);
+
+  plant.stageStartSimDay = getStageTimeline()[Math.max(0, plant.stageIndex)]?.simDayStart || 0;
+  plant.lifecycle = {
+    ...plant.lifecycle,
+    totalSimDays: TOTAL_LIFECYCLE_SIM_DAYS,
+    qualityScore: round2(plant.averageHealth - (plant.averageStress * 0.5))
+  };
+  plant.assets = {
+    ...plant.assets,
+    basePath: 'assets/plant_growth/',
+    resolvedStagePath: plantAssetPath(plant.stageKey)
+  };
+
+  events.scheduler = {
+    ...events.scheduler,
+    nextEventRealTimeMs: Number(events.scheduler.nextEventRealTimeMs || sim.nowMs + EVENT_ROLL_MIN_REAL_MS),
+    lastEventRealTimeMs: Number(events.scheduler.lastEventRealTimeMs || 0),
+    deferredUntilDaytime: !sim.isDaytime,
+    windowRealMinutes: { min: 30, max: 90 },
+    eventCooldowns: events.scheduler.eventCooldowns || {},
+    categoryCooldowns: events.scheduler.categoryCooldowns || {}
+  };
+
+  events.active = ['activeEvent', 'resolving', 'resolved'].includes(events.machineState)
+    ? {
+      id: events.activeEventId,
+      title: events.activeEventTitle,
+      description: events.activeEventText,
+      category: events.activeCategory || 'generic',
+      learningNote: events.activeLearningNote || ''
+    }
+    : null;
+
+  history.actions = Array.isArray(history.actions) ? history.actions : [];
+  history.events = Array.isArray(history.events) ? history.events : [];
+  history.system = Array.isArray(history.system) ? history.system : [];
+  history.systemLog = Array.isArray(history.systemLog) ? history.systemLog : [];
+  meta.rescue.used = Boolean(meta.rescue.used);
+  meta.rescue.usedAtRealMs = Number.isFinite(Number(meta.rescue.usedAtRealMs)) ? Number(meta.rescue.usedAtRealMs) : null;
+  meta.rescue.lastResult = (typeof meta.rescue.lastResult === 'string' || meta.rescue.lastResult === null)
+    ? meta.rescue.lastResult
+    : null;
+  getCanonicalNotificationsSettings(state);
+  settings.pushNotificationsEnabled = Boolean(settings.pushNotificationsEnabled);
+
+  if (Object.prototype.hasOwnProperty.call(state, 'event')) {
+    delete state.event;
+  }
+
+  syncLegacyMirrorsFromCanonical(state);
+}
+
+function syncLegacyMirrorsFromCanonical(snapshot) {
+  const s = snapshot;
+  const sim = getCanonicalSimulation(s);
+  const plant = getCanonicalPlant(s);
+  const events = getCanonicalEvents(s);
+  const history = getCanonicalHistory(s);
+
+  s.sim = {
+    nowMs: sim.nowMs,
+    simTimeMs: sim.simTimeMs,
+    simEpochMs: sim.simEpochMs,
+    tickCount: sim.tickCount,
+    mode: sim.mode,
+    tickIntervalMs: sim.tickIntervalMs,
+    timeCompression: sim.timeCompression,
+    globalSeed: sim.globalSeed,
+    plantId: sim.plantId,
+    isDaytime: sim.isDaytime,
+    lastTickAtMs: sim.lastTickRealTimeMs,
+    growthImpulse: sim.growthImpulse,
+    lastPushScheduleAtMs: sim.lastPushScheduleAtMs
+  };
+
+  s.growth = {
+    phase: plant.phase,
+    isDead: plant.isDead,
+    stageIndex: Math.max(0, plant.stageIndex - 1),
+    stageName: plant.stageKey,
+    stageProgress: plant.stageProgress,
+    lastValidStageName: plant.lastValidStageKey,
+    averageHealth: plant.averageHealth,
+    averageStress: plant.averageStress,
+    observedSimMs: plant.observedSimMs,
+    qualityTier: plant.lifecycle.qualityTier,
+    qualityLocked: Boolean(plant.lifecycle.qualityLocked)
+  };
+
+  s.lastEventId = events.scheduler.lastEventId || null;
+  s.lastChoiceId = events.scheduler.lastChoiceId || null;
+  s.historyLog = Array.isArray(history.systemLog) ? history.systemLog : [];
+}
+
+function requestRescueAd() {
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      resolve({ ok: true });
+    }, 1200);
+  });
+}
+
+function applyRescueEffects() {
+  const before = {
+    health: Number(state.status.health) || 0,
+    stress: Number(state.status.stress) || 0,
+    risk: Number(state.status.risk) || 0,
+    growth: Number(state.status.growth) || 0,
+    water: Number(state.status.water) || 0,
+    nutrition: Number(state.status.nutrition) || 0,
+    qualityScore: Number(state.plant?.lifecycle?.qualityScore) || 0
+  };
+  const wasDead = isPlantDead();
+  const isCriticalAlive = !wasDead && before.health < 20;
+  if (!wasDead && !isCriticalAlive) {
+    return { ok: false };
+  }
+
+  if (wasDead) {
+    state.status.health = 34;
+    state.status.stress = before.stress - 22;
+    state.status.risk = before.risk - 18;
+    state.status.water = Math.max(before.water, 40);
+    state.status.nutrition = Math.max(before.nutrition, 32);
+    state.status.growth = Math.max(4, before.growth - 2);
+    if (state.plant && state.plant.lifecycle && Number.isFinite(before.qualityScore)) {
+      state.plant.lifecycle.qualityScore = round2(Math.max(0, before.qualityScore - 6));
+    }
+    state.plant.isDead = false;
+    if (state.plant.phase === 'dead') {
+      const safeIndex = clampInt(Number(state.plant.stageIndex) || 0, 0, Math.max(0, getStageTimeline().length - 1));
+      state.plant.phase = getStageTimeline()[safeIndex]?.phase || 'seedling';
+    }
+    state.ui.deathOverlayOpen = false;
+    state.ui.deathOverlayAcknowledged = true;
+  } else {
+    state.status.health = before.health + 15;
+    state.status.stress = before.stress - 10;
+    state.status.risk = before.risk - 10;
+  }
+
+  clampStatus();
+
+  const after = {
+    health: Number(state.status.health) || 0,
+    stress: Number(state.status.stress) || 0,
+    risk: Number(state.status.risk) || 0,
+    growth: Number(state.status.growth) || 0,
+    water: Number(state.status.water) || 0,
+    nutrition: Number(state.status.nutrition) || 0,
+    qualityScore: Number(state.plant?.lifecycle?.qualityScore) || 0
+  };
+
+  return {
+    ok: true,
+    wasDead,
+    effectsApplied: {
+      health: round2(after.health - before.health),
+      stress: round2(after.stress - before.stress),
+      risk: round2(after.risk - before.risk),
+      growth: round2(after.growth - before.growth),
+      water: round2(after.water - before.water),
+      nutrition: round2(after.nutrition - before.nutrition),
+      qualityScore: round2(after.qualityScore - before.qualityScore)
+    }
+  };
+}
+
+function syncRuntimeClocks(nowMs) {
+  state.simulation.nowMs = nowMs;
+  if (!Number.isFinite(state.simulation.simTimeMs)) {
+    state.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
+  }
+  state.simulation.isDaytime = isDaytimeAtSimTime(state.simulation.simTimeMs);
+  if (!Number.isFinite(state.simulation.lastTickRealTimeMs)) {
+    state.simulation.lastTickRealTimeMs = nowMs;
+  }
+}
+
+async function loadEventCatalog() {
+  const catalogs = [];
+
+  try {
+    const v1 = await fetch(`./data/events.json?v=${EVENTS_CATALOG_VERSION}`, { cache: 'no-store' });
+    if (v1.ok) {
+      const payload = await v1.json();
+      const events = Array.isArray(payload) ? payload : payload.events;
+      if (Array.isArray(events)) {
+        catalogs.push(...events.map((eventDef) => normalizeEvent(eventDef, 'v1')).filter(Boolean));
+      }
+    }
+  } catch (_error) {
+    // handled by fallback below
+  }
+
+  try {
+    const foundation = await fetch('./data/events.foundation.json', { cache: 'default' });
+    if (foundation.ok) {
+      const payload = await foundation.json();
+      const events = Array.isArray(payload) ? payload : payload.events;
+      if (Array.isArray(events)) {
+        catalogs.push(...events.map((eventDef) => normalizeEvent(eventDef, 'foundation')).filter(Boolean));
+      }
+    }
+  } catch (_error) {
+    // optional foundation catalog
+  }
+
+  try {
+    const v2 = await fetch('./data/events.v2.json', { cache: 'default' });
+    if (v2.ok) {
+      const payload = await v2.json();
+      const events = Array.isArray(payload) ? payload : payload.events;
+      if (Array.isArray(events)) {
+        catalogs.push(...events.map((eventDef) => normalizeEvent(eventDef, 'v2')).filter(Boolean));
+      }
+    }
+  } catch (_error) {
+    // optional catalog, keep working with v1/fallback
+  }
+
+  if (!catalogs.length) {
+    catalogs.push(normalizeEvent({
+      id: 'fallback_soil_check',
+      category: 'water',
+      title: 'Bodenfeuchte prüfen',
+      description: 'Bei der manuellen Kontrolle wurde ungleichmäßige Feuchte festgestellt.',
+      choices: [
+        { id: 'fallback_care', label: 'Ausgewogene Pflege anwenden', effects: { water: 6, stress: -2, health: 2 } },
+        { id: 'fallback_wait', label: 'Einen Zyklus warten', effects: { stress: 2, risk: 2 } },
+        { id: 'fallback_mix', label: 'Obere Schicht vorsichtig auflockern', effects: { health: 1, risk: -1 } }
+      ]
+    }, 'v1'));
+
+    addLog('system', 'events.json/events.v2.json konnten nicht geladen werden, Fallback-Katalog aktiv', null);
+  }
+
+  state.events.catalog = catalogs.filter(Boolean);
+}
+
+async function loadActionsCatalog() {
+  try {
+    let response = null;
+    try {
+      response = await fetch(`./data/actions.json?v=${ACTIONS_CATALOG_VERSION}`, { cache: 'no-store' });
+    } catch (_error) {
+      response = await fetch('./data/actions.json', { cache: 'default' });
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const actions = Array.isArray(payload) ? payload : payload.actions;
+    if (!Array.isArray(actions)) {
+      throw new Error('Invalid actions payload');
+    }
+
+    const normalized = actions.map(normalizeAction).filter(Boolean);
+    state.actions.catalog = normalized;
+    state.actions.byId = Object.fromEntries(normalized.map((action) => [action.id, action]));
+  } catch (error) {
+    state.actions.catalog = [];
+    state.actions.byId = {};
+    addLog('system', 'actions.json konnte nicht geladen werden, Aktionssystem ohne Katalog', {
+      error: error.message
+    });
+  }
+}
+
+function normalizeAction(rawAction) {
+  if (!rawAction || typeof rawAction !== 'object' || !rawAction.id) {
+    return null;
+  }
+
+  const base = {
+    id: String(rawAction.id),
+    category: String(rawAction.category || 'generic'),
+    intensity: String(rawAction.intensity || 'medium'),
+    label: String(rawAction.label || rawAction.id),
+    trigger: rawAction.trigger && typeof rawAction.trigger === 'object' ? rawAction.trigger : {},
+    prerequisites: rawAction.prerequisites && typeof rawAction.prerequisites === 'object' ? rawAction.prerequisites : {},
+    effects: rawAction.effects && typeof rawAction.effects === 'object' ? rawAction.effects : {},
+    cooldownRealMinutes: clamp(rawAction.cooldownRealMinutes, 0, 24 * 60),
+    sideEffects: Array.isArray(rawAction.sideEffects) ? rawAction.sideEffects : []
+  };
+
+  const immediateRaw = base.effects.immediate;
+  if (Array.isArray(immediateRaw)) {
+    base.effects.immediate = immediateRaw
+      .filter((entry) => entry && typeof entry === 'object' && entry.stat)
+      .map((entry) => ({
+        stat: String(entry.stat),
+        mode: String(entry.mode || 'add'),
+        value: Number(entry.value),
+        min: Number(entry.min),
+        max: Number(entry.max),
+        label: entry.label ? String(entry.label) : ''
+      }));
+  } else {
+    base.effects.immediate = immediateRaw && typeof immediateRaw === 'object' ? immediateRaw : {};
+  }
+  base.effects.overTime = base.effects.overTime && typeof base.effects.overTime === 'object' ? base.effects.overTime : {};
+  base.effects.durationSimMinutes = clamp(base.effects.durationSimMinutes, 0, 24 * 60);
+
+  return base;
+}
+
+function normalizeEvent(rawEvent, sourceVersion = 'v1') {
+  if (!rawEvent || typeof rawEvent !== 'object') {
+    return null;
+  }
+  if (!rawEvent.id || !rawEvent.title || !rawEvent.description) {
+    return null;
+  }
+
+  const rawOptions = Array.isArray(rawEvent.options)
+    ? rawEvent.options
+    : (Array.isArray(rawEvent.choices) ? rawEvent.choices : []);
+
+  const options = rawOptions
+    .slice(0, 3)
+    .map((option) => ({
+      id: String(option.id || ''),
+      label: String(option.label || 'Option'),
+      effects: option.effects && typeof option.effects === 'object' ? option.effects : {},
+      sideEffects: Array.isArray(option.sideEffects) ? option.sideEffects : [],
+      followUps: Array.isArray(option.followUps)
+        ? option.followUps.map(String)
+        : (option.followUp ? [String(option.followUp)] : []),
+      uiCopy: option.uiCopy && typeof option.uiCopy === 'object' ? option.uiCopy : {}
+    }))
+    .filter((option) => Boolean(option.id));
+
+  if (!options.length) {
+    return null;
+  }
+
+  const category = String(rawEvent.category || inferCategoryFromTags(rawEvent.tags || []));
+
+  return {
+    id: String(rawEvent.id),
+    category,
+    title: String(rawEvent.title),
+    description: String(rawEvent.description),
+    triggers: rawEvent.triggers && typeof rawEvent.triggers === 'object' ? rawEvent.triggers : {},
+    constraints: inferEventConstraints(rawEvent, category),
+    allowedPhases: Array.isArray(rawEvent.allowedPhases)
+      ? rawEvent.allowedPhases.map((phase) => String(phase)).filter(Boolean)
+      : [],
+    weight: Math.max(0.01, Number(rawEvent.weight) || normalizeSeverity(rawEvent.severity) || 1),
+    cooldownRealMinutes: clamp(Number(rawEvent.cooldownRealMinutes) || 120, 10, 24 * 60),
+    learningNote: String(rawEvent.learningNote || ''),
+    severity: normalizeSeverity(rawEvent.severity),
+    polarity: inferEventPolarity(rawEvent, category),
+    environment: inferEnvironmentScope(rawEvent),
+    tags: Array.isArray(rawEvent.tags) ? rawEvent.tags.map(String) : [],
+    tone: String(rawEvent.tone || ''),
+    isFollowUp: rawEvent.isFollowUp === true,
+    options,
+    sourceVersion
+  };
+}
+
+function inferEventConstraints(rawEvent, category) {
+  const raw = rawEvent && rawEvent.constraints && typeof rawEvent.constraints === 'object'
+    ? rawEvent.constraints
+    : {};
+
+  const stageRule = rawEvent && rawEvent.triggers && rawEvent.triggers.stage && typeof rawEvent.triggers.stage === 'object'
+    ? rawEvent.triggers.stage
+    : {};
+
+  const hasUserConstraints = Object.keys(raw).length > 0;
+  const minStageFromTrigger = Number.isFinite(Number(stageRule.min)) ? Number(stageRule.min) : null;
+
+  const defaultsByCategory = {
+    water: { minDay: 2, minPlantSize: 10, minRootMass: 10 },
+    nutrition: { minDay: 4, minPlantSize: 16, minRootMass: 18 },
+    pest: { minDay: 6, minPlantSize: 20, minRootMass: 18 },
+    disease: { minDay: 7, minPlantSize: 22, minRootMass: 20 },
+    environment: { minDay: 3, minPlantSize: 12, minRootMass: 12 },
+    positive: {
+      minDay: 3,
+      minPlantSize: 10,
+      minRootMass: 10,
+      environmentState: { minTemperatureC: 20, maxTemperatureC: 31, minHumidityPercent: 44, maxHumidityPercent: 72, minVpdKpa: 0.6, maxVpdKpa: 1.45, minAirflowScore: 45 },
+      rootZone: { minPh: 5.6, maxPh: 6.4, minEc: 0.9, maxEc: 1.9, minOxygenPercent: 50 }
+    },
+    generic: { minDay: 3, minPlantSize: 10, minRootMass: 10 }
+  };
+
+  const base = defaultsByCategory[String(category || 'generic')] || defaultsByCategory.generic;
+  const merged = {
+    minStage: minStageFromTrigger,
+    minDay: Number.isFinite(Number(raw.minDay)) ? Number(raw.minDay) : base.minDay,
+    minPlantSize: Number.isFinite(Number(raw.minPlantSize)) ? Number(raw.minPlantSize) : base.minPlantSize,
+    minRootMass: Number.isFinite(Number(raw.minRootMass)) ? Number(raw.minRootMass) : base.minRootMass,
+    maxStage: Number.isFinite(Number(raw.maxStage)) ? Number(raw.maxStage) : null,
+    maxDay: Number.isFinite(Number(raw.maxDay)) ? Number(raw.maxDay) : null,
+    environmentState: raw.environmentState && typeof raw.environmentState === 'object'
+      ? { ...(base.environmentState || {}), ...raw.environmentState }
+      : (base.environmentState || null),
+    rootZone: raw.rootZone && typeof raw.rootZone === 'object'
+      ? { ...(base.rootZone || {}), ...raw.rootZone }
+      : (base.rootZone || null)
+  };
+
+  if (!hasUserConstraints && !Number.isFinite(Number(merged.minStage))) {
+    merged.minStage = base.minPlantSize >= 20 ? 3 : 2;
+  }
+
+  return merged;
+}
+
+function inferCategoryFromTags(tags) {
+  const t = Array.isArray(tags) ? tags.map((x) => String(x).toLowerCase()) : [];
+  if (t.some((x) => x.includes('water') || x.includes('soil'))) return 'water';
+  if (t.some((x) => x.includes('nutri') || x.includes('n'))) return 'nutrition';
+  if (t.some((x) => x.includes('pest'))) return 'pest';
+  if (t.some((x) => x.includes('mold') || x.includes('disease'))) return 'disease';
+  if (t.some((x) => x.includes('train'))) return 'training';
+  if (t.some((x) => x.includes('env') || x.includes('heat') || x.includes('cold') || x.includes('weather'))) return 'environment';
+  if (t.some((x) => x.includes('positive') || x.includes('recovery') || x.includes('ideal'))) return 'positive';
+  return 'generic';
+}
+
+function inferEventPolarity(rawEvent, category) {
+  const explicit = String((rawEvent && rawEvent.polarity) || '').trim().toLowerCase();
+  if (explicit === 'positive' || explicit === 'negative' || explicit === 'neutral') {
+    return explicit;
+  }
+
+  if (String(category) === 'positive') {
+    return 'positive';
+  }
+
+  const tags = Array.isArray(rawEvent && rawEvent.tags)
+    ? rawEvent.tags.map((x) => String(x).toLowerCase())
+    : [];
+
+  if (tags.some((x) => x.includes('positive') || x.includes('ideal') || x.includes('recovery') || x.includes('bonus'))) {
+    return 'positive';
+  }
+
+  return 'negative';
+}
+
+function inferEnvironmentScope(rawEvent) {
+  const setup = rawEvent && rawEvent.triggers && rawEvent.triggers.setup && typeof rawEvent.triggers.setup === 'object'
+    ? rawEvent.triggers.setup
+    : {};
+  const modeIn = Array.isArray(setup.modeIn) ? setup.modeIn.map((x) => String(x).toLowerCase()) : [];
+  if (!modeIn.length) {
+    return 'both';
+  }
+
+  const hasIndoor = modeIn.includes('indoor');
+  const hasOutdoor = modeIn.includes('outdoor') || modeIn.includes('greenhouse');
+
+  if (hasIndoor && hasOutdoor) return 'both';
+  if (hasIndoor) return 'indoor';
+  if (hasOutdoor) return 'outdoor';
+  return 'both';
+}
+
+function syncActiveEventFromCatalog() {
+  if (state.events.machineState !== 'activeEvent' || !state.events.activeEventId) {
+    return;
+  }
+
+  const eventDef = state.events.catalog.find((eventItem) => eventItem.id === state.events.activeEventId);
+  if (!eventDef) {
+    return;
+  }
+
+  state.events.activeEventTitle = eventDef.title;
+  state.events.activeEventText = eventDef.description;
+  state.events.activeLearningNote = eventDef.learningNote || '';
+  state.events.activeSeverity = eventDef.severity;
+  state.events.activeCooldownRealMinutes = eventDef.cooldownRealMinutes || 120;
+  state.events.activeCategory = eventDef.category || 'generic';
+  state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
+
+  const byOptionId = new Map(eventDef.options.map((option) => [option.id, option]));
+  const currentIds = Array.isArray(state.events.activeOptions)
+    ? state.events.activeOptions.map((option) => option.id)
+    : [];
+
+  const localizedOptions = [];
+  for (const optionId of currentIds) {
+    const localizedOption = byOptionId.get(optionId);
+    if (localizedOption) {
+      localizedOptions.push({
+        id: localizedOption.id,
+        label: localizedOption.label,
+        effects: { ...(localizedOption.effects || {}) },
+        sideEffects: Array.isArray(localizedOption.sideEffects) ? localizedOption.sideEffects : [],
+        followUps: Array.isArray(localizedOption.followUps) ? localizedOption.followUps : []
+      });
+    }
+  }
+
+  if (!localizedOptions.length) {
+    for (const option of eventDef.options.slice(0, 3)) {
+      localizedOptions.push({
+        id: option.id,
+        label: option.label,
+        effects: { ...(option.effects || {}) },
+        sideEffects: Array.isArray(option.sideEffects) ? option.sideEffects : [],
+        followUps: Array.isArray(option.followUps) ? option.followUps : []
+      });
+    }
+  }
+
+  state.events.activeOptions = localizedOptions.slice(0, 3);
+}
+
+function normalizeSeverity(rawSeverity) {
+  if (Number.isFinite(rawSeverity)) {
+    return clampInt(rawSeverity, 1, 5);
+  }
+
+  if (typeof rawSeverity === 'string') {
+    const lowered = rawSeverity.trim().toLowerCase();
+    if (lowered === 'low') {
+      return 2;
+    }
+    if (lowered === 'medium') {
+      return 3;
+    }
+    if (lowered === 'high') {
+      return 4;
+    }
+    const asNumber = Number(lowered);
+    if (Number.isFinite(asNumber)) {
+      return clampInt(asNumber, 1, 5);
+    }
+  }
+
+  return 3;
+}
+
+function computeEventDynamicWeight(item) {
+  const base = Math.max(0.01, Number(item.weight) || 1);
+  const risk = Number(state.status.risk) || 0;
+  const stress = Number(state.status.stress) || 0;
+  const health = Number(state.status.health) || 0;
+  const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
+  const envPressure = computeEnvironmentEventPressure();
+
+  const recent = state.events.history.slice(-6);
+  const recentByCategory = recent.reduce((acc, entry) => {
+    const key = String(entry && entry.category || 'generic').toLowerCase();
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  let factor = 1;
+  const category = String(item && item.category || 'generic').toLowerCase();
+  const severeCategory = category === 'pest' || category === 'disease';
+
+  if (category === 'positive') {
+    const negativeRecent = recent
+      .filter((entry) => String(entry && entry.category || '').toLowerCase() !== 'positive')
+      .length;
+    const positiveRecent = recent.length - negativeRecent;
+    const stableWindow = stress <= 34 && risk <= 34 && health >= 70;
+
+    factor += negativeRecent >= 2 ? 0.35 : 0;
+    factor += health < 55 ? 0.2 : 0;
+    factor -= positiveRecent >= 2 ? 0.45 : 0;
+
+    // Frequency smoothing: keep positives present in stable runs, but avoid reward spam.
+    if (stableWindow && positiveRecent === 0) {
+      factor *= 1.18;
+    }
+    if (stableWindow && positiveRecent === 1) {
+      factor *= 1.06;
+    }
+    if (positiveRecent >= 2) {
+      factor *= 0.82;
+    }
+  } else {
+    factor += risk >= 60 ? 0.15 : 0;
+    factor += stress >= 55 ? 0.1 : 0;
+  }
+
+  // Midgame anti-spam: reduce harsh event density unless risk/stress justify it.
+  if (simDay >= 15 && simDay <= 40) {
+    if (severeCategory && risk < 70 && stress < 62) {
+      factor *= 0.72;
+    }
+    if (category === 'environment' && stress < 50 && risk < 50) {
+      factor *= 0.84;
+    }
+  }
+
+  // Soft anti-repeat per category to avoid "everything at once" feeling.
+  const sameCategoryRecent = Number(recentByCategory[category] || 0);
+  if (sameCategoryRecent >= 2) {
+    factor *= 0.78;
+  }
+  if (sameCategoryRecent >= 3) {
+    factor *= 0.7;
+  }
+
+  if (category === 'environment') {
+    factor *= 0.86 + (envPressure * 0.42);
+  }
+
+  if (category === 'pest' || category === 'disease') {
+    factor *= 0.8 + (envPressure * 0.5);
+  }
+
+  if (category === 'nutrition') {
+    factor *= 0.88 + (envPressure * 0.28);
+  }
+
+  if (category === 'positive') {
+    factor *= 1.06 - (envPressure * 0.22);
+  }
+
+  if (category === 'disease' && risk < 40) {
+    factor *= 0.85;
+  }
+
+  return Math.max(0.01, round2(base * factor));
+}
+
+function selectEventDeterministically(catalog, nowMs) {
+  if (!Array.isArray(catalog) || !catalog.length) {
+    return null;
+  }
+
+  let candidates = catalog.slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const lastCategory = state.events.scheduler.lastEventCategory || null;
+  const lastEventId = state.events.scheduler.lastEventId || null;
+
+  if (lastCategory) {
+    const alt = candidates.filter((item) => item.category !== lastCategory);
+    if (alt.length) {
+      candidates = alt;
+    }
+  }
+
+  if (lastEventId) {
+    const noDirectRepeat = candidates.filter((item) => item.id !== lastEventId);
+    if (noDirectRepeat.length) {
+      candidates = noDirectRepeat;
+    }
+  }
+
+  const weighted = candidates.map((item) => ({
+    item,
+    weight: computeEventDynamicWeight(item)
+  }));
+
+  const totalWeight = weighted.reduce((sum, row) => sum + row.weight, 0);
+  if (totalWeight <= 0) {
+    return candidates[0];
+  }
+
+  const simDay = Math.floor(simDayFloat());
+  const signature = candidates.map((item) => item.id).join('|');
+  const purpose = `event_pick:${simDay}:${Math.floor(nowMs / EVENT_ROLL_MIN_REAL_MS)}:${signature}`;
+  const u = deterministicUnitFloat(purpose);
+  let cursor = u * totalWeight;
+
+  for (const row of weighted) {
+    cursor -= row.weight;
+    if (cursor <= 0) {
+      addLog('event_pick', 'Deterministische Eventauswahl', {
+        seed: state.seed,
+        plantId: state.plantId,
+        simDay,
+        purpose,
+        pickedId: row.item.id,
+        pickedCategory: row.item.category,
+        pickedPolarity: row.item.polarity || 'negative',
+        pickedEnvironment: row.item.environment || 'both',
+        eligibleCount: candidates.length
+      });
+      return row.item;
+    }
+  }
+
+  return weighted[weighted.length - 1].item;
+}
+
+function scheduleNextEventRoll(nowMs, reason) {
+  let nextAt = nowMs + deterministicEventDelayMs(nowMs);
+  if (!state.simulation.isDaytime) {
+    nextAt = nextDaytimeRealMs(nowMs, state.simulation.simTimeMs);
+  }
+  state.events.scheduler.nextEventRealTimeMs = nextAt;
+
+  addLog('event_roll', 'Nächster Ereigniswurf geplant', {
+    reason,
+    nextEventAtMs: nextAt,
+    simDaytime: state.simulation.isDaytime
+  });
+}
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register('./sw.js');
+    if (!navigator.serviceWorker.controller) {
+      showServiceWorkerHint();
+    }
+
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+
+    registration.addEventListener('updatefound', () => {
+      const installing = registration.installing;
+      if (!installing) {
+        return;
+      }
+      installing.addEventListener('statechange', () => {
+        if (installing.state === 'installed' && registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!window.__gsSwControllerRefreshed) {
+        window.__gsSwControllerRefreshed = true;
+        window.location.reload();
+      }
+    });
+  } catch (_error) {
+    // SW registration failures should not block app usage.
+  }
+}
+
+function showServiceWorkerHint() {
+  // BLOCK 1: suppress non-critical boot warning banner in normal startup.
+  if (window.__gsShowBootWarnings !== true) {
+    return;
+  }
+
+  if (document.getElementById('swHintBanner')) {
+    return;
+  }
+  const banner = document.createElement('div');
+  banner.id = 'swHintBanner';
+  banner.className = 'boot-error-banner boot-warning-banner';
+  banner.innerHTML = '<strong>Service Worker noch nicht aktiv – bitte einmal normal neu laden.</strong>';
+  document.body.appendChild(banner);
+}
+
+async function schedulePushIfAllowed(_force) {
+  // Lokale Benachrichtigungen nutzen aktuell kein Backend-Push-Scheduling.
+}
+
+function canNotify(type) {
+  const notifications = getCanonicalNotificationsSettings(state);
+  if (notifications.enabled !== true) {
+    return false;
+  }
+
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    return false;
+  }
+
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+    return false;
+  }
+
+  if (type && notifications.types[type] !== true) {
+    return false;
+  }
+
+  return true;
+}
+
+function notify(type, title, body) {
+  if (!canNotify(type)) {
+    return;
+  }
+
+  const tagByType = {
+    events: 'gs-events',
+    critical: 'gs-critical',
+    reminder: 'gs-reminder'
+  };
+  const tag = tagByType[type] || 'gs-generic';
+
+  navigator.serviceWorker.controller.postMessage({
+    type: 'GS_SHOW_NOTIFICATION',
+    title,
+    options: {
+      body,
+      icon: new URL('icons/icon-192.png', self.location).href,
+      badge: new URL('icons/icon-192.png', self.location).href,
+      tag
+    }
+  });
+}
+
+function evaluateNotificationTriggers(nowMs) {
+  notifyEventAvailability();
+  notifyCriticalState(nowMs);
+  notifyReminder(nowMs);
+}
+
+function notifyEventAvailability() {
+  if (state.events.machineState !== 'activeEvent') {
+    return;
+  }
+
+  const notifications = getCanonicalNotificationsSettings(state);
+  const eventId = state.events.activeEventId || null;
+  if (!eventId || notifications.runtime.lastNotifiedEventId === eventId) {
+    return;
+  }
+
+  notify('events', 'Grow Simulator', 'Ein Ereignis ist verfügbar. Tippe, um zu reagieren.');
+  notifications.runtime.lastNotifiedEventId = eventId;
+}
+
+function notifyCriticalState(nowMs) {
+  const notifications = getCanonicalNotificationsSettings(state);
+  const currentNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const cooldownMs = 60 * 1000;
+  if ((currentNowMs - Number(notifications.runtime.lastCriticalAtRealMs || 0)) < cooldownMs) {
+    return;
+  }
+
+  const s = state.status || {};
+  const critical = Number(s.health) <= 15 || Number(s.risk) >= 75 || Number(s.stress) >= 80;
+  if (!critical) {
+    return;
+  }
+
+  const scores = [
+    { key: 'health', score: Math.max(0, 15 - Number(s.health || 0)) },
+    { key: 'risk', score: Math.max(0, Number(s.risk || 0) - 75) },
+    { key: 'stress', score: Math.max(0, Number(s.stress || 0) - 80) }
+  ].sort((a, b) => b.score - a.score || String(a.key).localeCompare(String(b.key)));
+
+  let body = 'Kritischer Zustand: Gesundheit sehr niedrig.';
+  if (scores[0].key === 'risk') {
+    body = 'Kritischer Zustand: Risiko ist sehr hoch.';
+  } else if (scores[0].key === 'stress') {
+    body = 'Kritischer Zustand: Stress ist extrem hoch.';
+  }
+
+  notify('critical', 'Grow Simulator', body);
+  notifications.runtime.lastCriticalAtRealMs = currentNowMs;
+}
+
+async function schedulePushIfAllowed(_force) {
+  // Lokale Benachrichtigungen nutzen aktuell kein Backend-Push-Scheduling.
+}
+
+function notifyReminder(nowMs) {
+  const actions = Array.isArray(state.history && state.history.actions) ? state.history.actions : [];
+  const lastActionAtMs = actions.length
+    ? Number(actions[actions.length - 1].atRealTimeMs || actions[actions.length - 1].realTime || 0)
+    : 0;
+
+  const inactivityMs = 90 * 60 * 1000;
+  if (lastActionAtMs > 0 && (nowMs - lastActionAtMs) < inactivityMs) {
+    return;
+  }
+
+  const s = state.status || {};
+  const notOptimal = Number(s.water) < 50 || Number(s.nutrition) < 50 || Number(s.stress) > 55;
+  if (!notOptimal) {
+    return;
+  }
+
+  const notifications = getCanonicalNotificationsSettings(state);
+  const cooldownMs = 120 * 60 * 1000;
+  if ((nowMs - notifications.runtime.lastReminderAtRealMs) < cooldownMs) {
+    return;
+  }
+
+  notify('reminder', 'Grow Simulator', 'Deine Pflanze braucht Pflege. Öffne die App für eine Maßnahme.');
+  notifications.runtime.lastReminderAtRealMs = nowMs;
+}
+
+function notifyPlantNeedsCare(bodyText) {
+  if (!state.settings || state.settings.pushNotificationsEnabled !== true) {
+    return;
+  }
+
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    return;
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  const payload = {
+    type: 'SHOW_NOTIFICATION',
+    title: 'GrowSim',
+    options: {
+      body: String(bodyText || 'Deine Pflanze braucht Pflege.'),
+      icon: new URL('icons/icon-192.png', self.location).href
+    }
+  };
+
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage(payload);
+    return;
+  }
+
+  navigator.serviceWorker.ready
+    .then((registration) => {
+      if (registration && registration.active) {
+        registration.active.postMessage(payload);
+      }
+    })
+    .catch(() => {
+      // non-fatal
+    });
+}
+
+async function postJsonStub(url, payload) {
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+  } catch (error) {
+    addLog('system', `Stub-Endpunkt fehlgeschlagen: ${url}`, { error: error.message });
+  }
+}
+
+function base64ToU8(value) {
+  const padding = '='.repeat((4 - (value.length % 4)) % 4);
+  const normalized = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(normalized);
+  const output = new Uint8Array(raw.length);
+
+  for (let i = 0; i < raw.length; i += 1) {
+    output[i] = raw.charCodeAt(i);
+  }
+  return output;
+}
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(DB_STORE)) {
+        db.createObjectStore(DB_STORE);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+function dbGet(db, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const store = tx.objectStore(DB_STORE);
+    const request = store.get(key);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result || null);
+  });
+}
+
+function dbSet(db, key, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    const store = tx.objectStore(DB_STORE);
+    const request = store.put(value, key);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+}
+
+function dbDelete(db, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    const store = tx.objectStore(DB_STORE);
+    const request = store.delete(key);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+}
+
+function resolveAppBasePath() {
+  const path = window.location.pathname || '/';
+  if (path === '/' || path.endsWith('/index.html')) {
+    const base = path.replace(/\/index\.html$/, '').replace(/\/$/, '');
+    return base;
+  }
+  return path.replace(/\/$/, '');
+}
+
+function appPath(relativePath) {
+  const normalized = String(relativePath || '').replace(/^\//, '');
+  return `./${normalized}`;
+}
+
+window.checkMissions = function(triggerType, payload) {
+  if (!state.missions || !state.missions.catalog) return;
+  const nowMs = Date.now();
+  state.missions.catalog.forEach(mission => {
+    if (state.missions.completed.includes(mission.id)) return;
+    const cond = mission.condition;
+    if (!cond) return;
+    let isCompleted = false;
+    if (triggerType === 'tick') {
+      if (cond.type === 'min_day') {
+        if (state.simulation.simDay >= cond.value) isCompleted = true;
+      } else if (cond.type === 'min_health') {
+        if (state.plant.averageHealth >= cond.value) isCompleted = true;
+      } else if (cond.type === 'max_stress_duration') {
+         if (state.plant.averageStress < cond.value) {
+            mission._stressStartTime = mission._stressStartTime || state.simulation.simTimeMs;
+            if (state.simulation.simTimeMs - mission._stressStartTime >= (cond.duration * 60000)) {
+               isCompleted = true;
+            }
+         } else {
+            mission._stressStartTime = null;
+         }
+      }
+    } else if (triggerType === 'action') {
+      if (cond.type === 'action_used' && payload && payload.actionId === cond.value) {
+        isCompleted = true;
+      }
+    }
+    if (isCompleted) {
+      window.completeMission(mission);
+    }
+  });
+};
+
+window.completeMission = function(mission) {
+  state.missions.completed.push(mission.id);
+  if (mission.reward) {
+    if (!state.meta.inventory) state.meta.inventory = { coins: 0, gems: 0, stars: 0 };
+    if (mission.reward.coins) state.meta.inventory.coins += mission.reward.coins;
+    if (mission.reward.gems) state.meta.inventory.gems += mission.reward.gems;
+    if (mission.reward.stars) state.meta.inventory.stars += mission.reward.stars;
+  }
+  if (typeof addLog === 'function') {
+    addLog('system', "Mission erfuellt: " + mission.title, { missionId: mission.id, reward: mission.reward });
+  }
+  if (typeof openMenuDialog === 'function') {
+    openMenuDialog({
+      title: 'Mission erfuellt! 🎉',
+      message: "Du hast die Mission " + mission.title + " abgeschlossen!",
+      cancelLabel: 'OK',
+      confirmLabel: null
+    });
+  }
+  if (typeof renderMissionsSheet === 'function' && state.ui.openSheet === 'missions') {
+    renderMissionsSheet();
+  }
+};
+
+function migrateSettings(state) {
+  if (!state.settings || typeof state.settings !== 'object') {
+    state.settings = {};
+  }
+  if (!state.settings.gameplay) {
+    state.settings.gameplay = { simSpeed: 1.0, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
+  }
+  if (!state.settings.audio) {
+    state.settings.audio = { volume: 84, effects: 'Hoch', battery: false, haptic: true };
+  }
+  if (!state.settings.account) {
+    state.settings.account = { cloudSync: false };
+  }
+  state.settings.account.cloudSync = false;
+}
+
+function updateSettingsUI() {
+  const g = state.settings.gameplay;
+  const a = state.settings.audio;
+
+  const simSpeedNode = document.getElementById('settingsSimSpeedValue');
+  if (simSpeedNode) {
+    const runtimeSpeed = round2(Number(state.simulation && state.simulation.timeCompression) || 0);
+    simSpeedNode.textContent = `Fix ${runtimeSpeed}x`;
+    simSpeedNode.className = 'value_gold';
+    simSpeedNode.setAttribute('title', 'Aktiver Runtime-Wert. Im aktuellen UI nicht umschaltbar.');
+  }
+  
+  const eventFreqNode = document.getElementById('settingsEventFrequencyValue');
+  if (eventFreqNode) {
+    const minMinutes = Math.round(EVENT_ROLL_MIN_REAL_MS / 60000);
+    const maxMinutes = Math.round(EVENT_ROLL_MAX_REAL_MS / 60000);
+    eventFreqNode.textContent = `Fix ${minMinutes}-${maxMinutes}m`;
+    eventFreqNode.className = 'value_gold';
+    eventFreqNode.setAttribute('title', 'Aktives Runtime-Fenster. Die Auswahl ist aktuell vorbereitend.');
+  }
+
+  const tutNode = document.getElementById('settingsTutorialValue');
+  if (tutNode) {
+    tutNode.textContent = 'Vorbereitet';
+    tutNode.className = 'subtitle';
+    tutNode.setAttribute('title', 'Aktuell ohne Wirkung im Runtime-Kern.');
+  }
+
+  const autoNode = document.getElementById('settingsAutosaveValue');
+  if (autoNode) {
+    autoNode.textContent = `Lokal ${Math.max(1, Math.round(PERSIST_THROTTLE_MS / 1000))}s`;
+    autoNode.className = 'value_gold';
+    autoNode.setAttribute('title', 'Aktuelles lokales Persistenzintervall. Im aktuellen UI nicht umschaltbar.');
+  }
+
+  const volNode = document.getElementById('settingsVolumeValue');
+  if (volNode) {
+    volNode.textContent = 'Vorbereitet';
+    volNode.className = 'subtitle';
+    volNode.setAttribute('title', 'Aktuell nur lokaler Anzeigezustand ohne Audio-Backend.');
+  }
+
+  const effNode = document.getElementById('settingsEffectsValue');
+  if (effNode) {
+    effNode.textContent = 'Vorbereitet';
+    effNode.className = 'subtitle';
+    effNode.setAttribute('title', 'Aktuell nur lokaler Anzeigezustand ohne Grafik-/FX-Anbindung.');
+  }
+
+  const batNode = document.getElementById('settingsBatteryValue');
+  if (batNode) {
+    batNode.textContent = 'Vorbereitet';
+    batNode.className = 'subtitle';
+    batNode.setAttribute('title', 'Aktuell ohne direkte Runtime-Wirkung.');
+  }
+
+  const hapNode = document.getElementById('settingsHapticValue');
+  if (hapNode) {
+    hapNode.textContent = 'Vorbereitet';
+    hapNode.className = 'subtitle';
+    hapNode.setAttribute('title', 'Aktuell ohne direkte Runtime-Wirkung.');
+  }
+
+  const cloudNode = document.getElementById('settingsCloudSyncValue');
+  if (cloudNode) {
+    cloudNode.textContent = 'Lokal';
+    cloudNode.className = 'value_gold';
+    cloudNode.setAttribute('title', 'Speicherung erfolgt aktuell nur lokal im Browser.');
+  }
+}
+
+function initSettingsEvents() {
+  const byId = (id) => document.getElementById(id);
+
+  const resetBtn = byId('analysisResetBtn');
+  if (resetBtn) {
+    resetBtn.setAttribute('title', 'Setzt den aktuellen Run nach Bestätigung vollständig zurück.');
+  }
+
+  const defBtn = byId('settingsDefaultBtn');
+  if (defBtn) {
+    defBtn.setAttribute('title', 'Setzt lokale Hinweis- und Benachrichtigungseinstellungen auf den Standard zurück.');
+    defBtn.addEventListener('click', () => {
+      state.settings.gameplay = { simSpeed: 1.0, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
+      state.settings.audio = { volume: 84, effects: 'Hoch', battery: false, haptic: true };
+      state.settings.account = { cloudSync: false };
+      updateSettingsUI();
+    });
+  }
+
+  const saveBtn = byId('settingsSaveBtn');
+  if (saveBtn) {
+    saveBtn.setAttribute('title', 'Speichert den aktuellen lokalen Zustand im Browser.');
+  }
+}
+
+const originalRenderDiagnosisSheet = window.renderDiagnosisSheet;
+window.renderDiagnosisSheet = function() {
+  if (originalRenderDiagnosisSheet) originalRenderDiagnosisSheet();
+  migrateSettings(state);
+  updateSettingsUI();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    migrateSettings(state);
+    initSettingsEvents();
+  }, 1000);
+});

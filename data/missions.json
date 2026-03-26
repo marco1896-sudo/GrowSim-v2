@@ -1,0 +1,30 @@
+[
+  {
+    "id": "mission_001",
+    "title": "Erste Schritte",
+    "description": "Erreiche Tag 3 mit deiner Pflanze.",
+    "reward": { "coins": 500, "stars": 5 },
+    "condition": { "type": "min_day", "value": 3 }
+  },
+  {
+    "id": "mission_002",
+    "title": "Stabile Umgebung",
+    "description": "Halte den Stress für 2 Sim-Stunden unter 20%.",
+    "reward": { "coins": 800, "gems": 10 },
+    "condition": { "type": "max_stress_duration", "value": 20, "duration": 120 }
+  },
+  {
+    "id": "mission_003",
+    "title": "Profi-Schnitt",
+    "description": "Wende zum ersten Mal 'Topping' an.",
+    "reward": { "coins": 1200, "stars": 15 },
+    "condition": { "type": "action_used", "value": "training_medium_topping" }
+  },
+  {
+    "id": "mission_004",
+    "title": "Grüner Daumen",
+    "description": "Erreiche eine Pflanzengesundheit von 95%.",
+    "reward": { "coins": 1000, "gems": 5 },
+    "condition": { "type": "min_health", "value": 95 }
+  }
+]

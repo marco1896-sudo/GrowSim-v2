@@ -1,0 +1,2434 @@
+{
+  "VALID_SOURCE_ICONS": [],
+  "BROKEN_SOURCE_ICONS": [],
+  "NEEDS_NORMALIZATION": [
+    {
+      "id": "ui/icons/back",
+      "file": "assets\\ui\\icons\\back.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.6956,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "ui/icons/cancel",
+      "file": "assets\\ui\\icons\\cancel.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        245,
+        246
+      ],
+      "bbox_size": [
+        245,
+        246
+      ],
+      "transparent_ratio": 0.9965,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0215,
+        -0.0195
+      ]
+    },
+    {
+      "id": "ui/icons/close",
+      "file": "assets\\ui\\icons\\close.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.6512,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "ui/icons/confirm",
+      "file": "assets\\ui\\icons\\confirm.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.9162,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "ui/icons/help",
+      "file": "assets\\ui\\icons\\help.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        245,
+        256
+      ],
+      "bbox_size": [
+        245,
+        255
+      ],
+      "transparent_ratio": 0.9526,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0215,
+        0.002
+      ]
+    },
+    {
+      "id": "ui/icons/info",
+      "file": "assets\\ui\\icons\\info.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.67,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "ui/icons/menu",
+      "file": "assets\\ui\\icons\\menu.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        4,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        252,
+        256
+      ],
+      "transparent_ratio": 0.8816,
+      "edge_touch": true,
+      "center_offset": [
+        0.0078,
+        0.0
+      ]
+    },
+    {
+      "id": "ui/icons/pause",
+      "file": "assets\\ui\\icons\\pause.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        4,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        252,
+        256
+      ],
+      "transparent_ratio": 0.99,
+      "edge_touch": true,
+      "center_offset": [
+        0.0078,
+        0.0
+      ]
+    },
+    {
+      "id": "ui/icons/play",
+      "file": "assets\\ui\\icons\\play.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.7833,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "ui/icons/restart",
+      "file": "assets\\ui\\icons\\restart.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.5864,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "ui/icons/save",
+      "file": "assets\\ui\\icons\\save.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.5451,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "ui/icons/settings",
+      "file": "assets\\ui\\icons\\settings.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.6048,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/actions/environment_high_reset",
+      "file": "assets\\gameplay\\actions\\environment_high_reset.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        4,
+        9,
+        243,
+        238
+      ],
+      "bbox_size": [
+        239,
+        229
+      ],
+      "transparent_ratio": 0.9997,
+      "edge_touch": false,
+      "center_offset": [
+        -0.0176,
+        -0.0176
+      ]
+    },
+    {
+      "id": "gameplay/actions/environment_low_airflow",
+      "file": "assets\\gameplay\\actions\\environment_low_airflow.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        255
+      ],
+      "bbox_size": [
+        256,
+        254
+      ],
+      "transparent_ratio": 0.5606,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/actions/environment_medium_climate",
+      "file": "assets\\gameplay\\actions\\environment_medium_climate.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        246,
+        256
+      ],
+      "bbox_size": [
+        246,
+        255
+      ],
+      "transparent_ratio": 0.6774,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0195,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/actions/fertilizing_high_boost",
+      "file": "assets\\gameplay\\actions\\fertilizing_high_boost.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        71,
+        14,
+        148,
+        253
+      ],
+      "bbox_size": [
+        77,
+        239
+      ],
+      "transparent_ratio": 0.9999,
+      "edge_touch": false,
+      "center_offset": [
+        -0.0723,
+        0.0215
+      ]
+    },
+    {
+      "id": "gameplay/actions/fertilizing_low_microfeed",
+      "file": "assets\\gameplay\\actions\\fertilizing_low_microfeed.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        255
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.5627,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        -0.002
+      ]
+    },
+    {
+      "id": "gameplay/actions/fertilizing_medium_balanced",
+      "file": "assets\\gameplay\\actions\\fertilizing_medium_balanced.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        246,
+        255
+      ],
+      "bbox_size": [
+        246,
+        255
+      ],
+      "transparent_ratio": 0.7374,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0195,
+        -0.002
+      ]
+    },
+    {
+      "id": "gameplay/actions/training_high_defoliation",
+      "file": "assets\\gameplay\\actions\\training_high_defoliation.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        252
+      ],
+      "bbox_size": [
+        256,
+        251
+      ],
+      "transparent_ratio": 0.5765,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        -0.0059
+      ]
+    },
+    {
+      "id": "gameplay/actions/training_low_leaf_tuck",
+      "file": "assets\\gameplay\\actions\\training_low_leaf_tuck.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        3,
+        228,
+        255
+      ],
+      "bbox_size": [
+        216,
+        252
+      ],
+      "transparent_ratio": 0.9966,
+      "edge_touch": false,
+      "center_offset": [
+        -0.0312,
+        0.0039
+      ]
+    },
+    {
+      "id": "gameplay/actions/training_medium_lst",
+      "file": "assets\\gameplay\\actions\\training_medium_lst.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        16,
+        0,
+        256,
+        254
+      ],
+      "bbox_size": [
+        240,
+        254
+      ],
+      "transparent_ratio": 0.591,
+      "edge_touch": true,
+      "center_offset": [
+        0.0312,
+        -0.0039
+      ]
+    },
+    {
+      "id": "gameplay/actions/watering_high_flush",
+      "file": "assets\\gameplay\\actions\\watering_high_flush.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        254
+      ],
+      "bbox_size": [
+        256,
+        254
+      ],
+      "transparent_ratio": 0.6072,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        -0.0039
+      ]
+    },
+    {
+      "id": "gameplay/actions/watering_low_mist",
+      "file": "assets\\gameplay\\actions\\watering_low_mist.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        0,
+        252,
+        256
+      ],
+      "bbox_size": [
+        240,
+        256
+      ],
+      "transparent_ratio": 0.9962,
+      "edge_touch": true,
+      "center_offset": [
+        0.0156,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/actions/watering_medium_deep",
+      "file": "assets\\gameplay\\actions\\watering_medium_deep.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        16,
+        0,
+        256,
+        254
+      ],
+      "bbox_size": [
+        240,
+        254
+      ],
+      "transparent_ratio": 0.6201,
+      "edge_touch": true,
+      "center_offset": [
+        0.0312,
+        -0.0039
+      ]
+    },
+    {
+      "id": "gameplay/resources/event_timer",
+      "file": "assets\\gameplay\\resources\\event_timer.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        13,
+        3,
+        198,
+        255
+      ],
+      "bbox_size": [
+        185,
+        252
+      ],
+      "transparent_ratio": 0.9982,
+      "edge_touch": false,
+      "center_offset": [
+        -0.0879,
+        0.0039
+      ]
+    },
+    {
+      "id": "gameplay/resources/growth",
+      "file": "assets\\gameplay\\resources\\growth.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        2,
+        1,
+        251,
+        256
+      ],
+      "bbox_size": [
+        249,
+        255
+      ],
+      "transparent_ratio": 0.5061,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0059,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/resources/health",
+      "file": "assets\\gameplay\\resources\\health.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        21,
+        0,
+        228,
+        255
+      ],
+      "bbox_size": [
+        207,
+        255
+      ],
+      "transparent_ratio": 0.9983,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0137,
+        -0.002
+      ]
+    },
+    {
+      "id": "gameplay/resources/nutrition",
+      "file": "assets\\gameplay\\resources\\nutrition.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.6488,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/resources/risk",
+      "file": "assets\\gameplay\\resources\\risk.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        167,
+        58,
+        168,
+        59
+      ],
+      "bbox_size": [
+        1,
+        1
+      ],
+      "transparent_ratio": 1.0,
+      "edge_touch": false,
+      "center_offset": [
+        0.1543,
+        -0.2715
+      ]
+    },
+    {
+      "id": "gameplay/resources/sim_time",
+      "file": "assets\\gameplay\\resources\\sim_time.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        56,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        200,
+        256
+      ],
+      "transparent_ratio": 0.4832,
+      "edge_touch": true,
+      "center_offset": [
+        0.1094,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/resources/stress",
+      "file": "assets\\gameplay\\resources\\stress.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        55,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        201,
+        256
+      ],
+      "transparent_ratio": 0.5462,
+      "edge_touch": true,
+      "center_offset": [
+        0.1074,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/resources/water",
+      "file": "assets\\gameplay\\resources\\water.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.5396,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/states/dead_plant",
+      "file": "assets\\gameplay\\states\\dead_plant.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        5,
+        224,
+        256
+      ],
+      "bbox_size": [
+        224,
+        251
+      ],
+      "transparent_ratio": 0.9432,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0625,
+        0.0098
+      ]
+    },
+    {
+      "id": "gameplay/states/growth_boost",
+      "file": "assets\\gameplay\\states\\growth_boost.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        5,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        251
+      ],
+      "transparent_ratio": 0.6124,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0098
+      ]
+    },
+    {
+      "id": "gameplay/states/healthy",
+      "file": "assets\\gameplay\\states\\healthy.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        244,
+        255
+      ],
+      "transparent_ratio": 0.999,
+      "edge_touch": true,
+      "center_offset": [
+        0.0234,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/states/mold_warning",
+      "file": "assets\\gameplay\\states\\mold_warning.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.3394,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/states/nutrient_burn",
+      "file": "assets\\gameplay\\states\\nutrient_burn.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        20,
+        1,
+        248,
+        256
+      ],
+      "bbox_size": [
+        228,
+        255
+      ],
+      "transparent_ratio": 0.6083,
+      "edge_touch": true,
+      "center_offset": [
+        0.0234,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/states/nutrient_deficiency",
+      "file": "assets\\gameplay\\states\\nutrient_deficiency.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        31,
+        1,
+        249,
+        256
+      ],
+      "bbox_size": [
+        218,
+        255
+      ],
+      "transparent_ratio": 0.6086,
+      "edge_touch": true,
+      "center_offset": [
+        0.0469,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/states/overwatered",
+      "file": "assets\\gameplay\\states\\overwatered.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        244,
+        256
+      ],
+      "transparent_ratio": 0.9604,
+      "edge_touch": true,
+      "center_offset": [
+        0.0234,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/states/pest_mites",
+      "file": "assets\\gameplay\\states\\pest_mites.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        232,
+        256
+      ],
+      "bbox_size": [
+        232,
+        256
+      ],
+      "transparent_ratio": 0.4721,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0469,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/states/pest_thrips",
+      "file": "assets\\gameplay\\states\\pest_thrips.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        6,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        250,
+        256
+      ],
+      "transparent_ratio": 0.4837,
+      "edge_touch": true,
+      "center_offset": [
+        0.0117,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/states/recovery",
+      "file": "assets\\gameplay\\states\\recovery.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.3538,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/states/slow_growth",
+      "file": "assets\\gameplay\\states\\slow_growth.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        41,
+        233,
+        256
+      ],
+      "bbox_size": [
+        233,
+        215
+      ],
+      "transparent_ratio": 0.3584,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0449,
+        0.0801
+      ]
+    },
+    {
+      "id": "gameplay/states/underwatered",
+      "file": "assets\\gameplay\\states\\underwatered.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        244,
+        256
+      ],
+      "transparent_ratio": 0.9604,
+      "edge_touch": true,
+      "center_offset": [
+        0.0234,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/beneficial_fungi_colonized",
+      "file": "assets\\gameplay\\events\\beneficial_fungi_colonized.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        244,
+        256
+      ],
+      "transparent_ratio": 0.6411,
+      "edge_touch": true,
+      "center_offset": [
+        0.0234,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/calcium_spotting",
+      "file": "assets\\gameplay\\events\\calcium_spotting.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        244,
+        256
+      ],
+      "transparent_ratio": 0.7497,
+      "edge_touch": true,
+      "center_offset": [
+        0.0234,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/cold_root_zone",
+      "file": "assets\\gameplay\\events\\cold_root_zone.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.4115,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/events/dry_pocket",
+      "file": "assets\\gameplay\\events\\dry_pocket.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.4661,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/fungus_gnat_wave",
+      "file": "assets\\gameplay\\events\\fungus_gnat_wave.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.7036,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/hot_dry_day",
+      "file": "assets\\gameplay\\events\\hot_dry_day.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.4122,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/events/late_flower_humidity",
+      "file": "assets\\gameplay\\events\\late_flower_humidity.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.142,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/magnesium_deficit",
+      "file": "assets\\gameplay\\events\\magnesium_deficit.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.6024,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/events/mite_hotspot",
+      "file": "assets\\gameplay\\events\\mite_hotspot.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.4176,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/events/nitrogen_lockout",
+      "file": "assets\\gameplay\\events\\nitrogen_lockout.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.6318,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/overfeeding_warning",
+      "file": "assets\\gameplay\\events\\overfeeding_warning.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        5,
+        224,
+        256
+      ],
+      "bbox_size": [
+        224,
+        251
+      ],
+      "transparent_ratio": 0.8618,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0625,
+        0.0098
+      ]
+    },
+    {
+      "id": "gameplay/events/ph_drift_high",
+      "file": "assets\\gameplay\\events\\ph_drift_high.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.4463,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/root_bound_warning",
+      "file": "assets\\gameplay\\events\\root_bound_warning.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.3421,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/salt_buildup",
+      "file": "assets\\gameplay\\events\\salt_buildup.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.6583,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/events/soil_compaction",
+      "file": "assets\\gameplay\\events\\soil_compaction.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.6349,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/soil_life_decline",
+      "file": "assets\\gameplay\\events\\soil_life_decline.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.1551,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/soil_too_wet",
+      "file": "assets\\gameplay\\events\\soil_too_wet.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.7135,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/events/thrips_early",
+      "file": "assets\\gameplay\\events\\thrips_early.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.4173,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/topsoil_mold",
+      "file": "assets\\gameplay\\events\\topsoil_mold.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.333,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/events/watering_gap",
+      "file": "assets\\gameplay\\events\\watering_gap.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.1631,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/aphids",
+      "file": "assets\\gameplay\\pests\\aphids.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.4173,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/bud_rot",
+      "file": "assets\\gameplay\\pests\\bud_rot.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.142,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/danger",
+      "file": "assets\\gameplay\\pests\\danger.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.142,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/fungus_gnats",
+      "file": "assets\\gameplay\\pests\\fungus_gnats.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.7036,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/infection",
+      "file": "assets\\gameplay\\pests\\infection.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.6318,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/leaf_spot",
+      "file": "assets\\gameplay\\pests\\leaf_spot.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        244,
+        256
+      ],
+      "transparent_ratio": 0.7497,
+      "edge_touch": true,
+      "center_offset": [
+        0.0234,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/mold",
+      "file": "assets\\gameplay\\pests\\mold.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.333,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/pest_mites",
+      "file": "assets\\gameplay\\pests\\pest_mites.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        232,
+        256
+      ],
+      "bbox_size": [
+        232,
+        256
+      ],
+      "transparent_ratio": 0.4721,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0469,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/pest_thrips",
+      "file": "assets\\gameplay\\pests\\pest_thrips.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        6,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        250,
+        256
+      ],
+      "transparent_ratio": 0.4837,
+      "edge_touch": true,
+      "center_offset": [
+        0.0117,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/powdery_mildew",
+      "file": "assets\\gameplay\\pests\\powdery_mildew.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.333,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/spider_mites",
+      "file": "assets\\gameplay\\pests\\spider_mites.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        255
+      ],
+      "transparent_ratio": 0.4176,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/pests/thrips",
+      "file": "assets\\gameplay\\pests\\thrips.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        256
+      ],
+      "transparent_ratio": 0.4173,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": "gameplay/pests/warning",
+      "file": "assets\\gameplay\\pests\\warning.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        167,
+        58,
+        168,
+        59
+      ],
+      "bbox_size": [
+        1,
+        1
+      ],
+      "transparent_ratio": 1.0,
+      "edge_touch": false,
+      "center_offset": [
+        0.1543,
+        -0.2715
+      ]
+    },
+    {
+      "id": "gameplay/progression/early_veg",
+      "file": "assets\\gameplay\\progression\\early_veg.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        256,
+        254
+      ],
+      "bbox_size": [
+        256,
+        253
+      ],
+      "transparent_ratio": 0.7342,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        -0.002
+      ]
+    },
+    {
+      "id": "gameplay/progression/flowering",
+      "file": "assets\\gameplay\\progression\\flowering.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        5,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        251
+      ],
+      "transparent_ratio": 0.5918,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0098
+      ]
+    },
+    {
+      "id": "gameplay/progression/harvest_ready",
+      "file": "assets\\gameplay\\progression\\harvest_ready.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        5,
+        256,
+        256
+      ],
+      "bbox_size": [
+        256,
+        251
+      ],
+      "transparent_ratio": 0.4979,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.0098
+      ]
+    },
+    {
+      "id": "gameplay/progression/late_flower",
+      "file": "assets\\gameplay\\progression\\late_flower.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        8,
+        256,
+        244
+      ],
+      "bbox_size": [
+        256,
+        236
+      ],
+      "transparent_ratio": 0.5085,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        -0.0078
+      ]
+    },
+    {
+      "id": "gameplay/progression/late_veg",
+      "file": "assets\\gameplay\\progression\\late_veg.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        167,
+        58,
+        224,
+        62
+      ],
+      "bbox_size": [
+        57,
+        4
+      ],
+      "transparent_ratio": 1.0,
+      "edge_touch": false,
+      "center_offset": [
+        0.2637,
+        -0.2656
+      ]
+    },
+    {
+      "id": "gameplay/progression/mid_veg",
+      "file": "assets\\gameplay\\progression\\mid_veg.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        1,
+        240,
+        252
+      ],
+      "bbox_size": [
+        240,
+        251
+      ],
+      "transparent_ratio": 0.8861,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0312,
+        -0.0059
+      ]
+    },
+    {
+      "id": "gameplay/progression/preflower",
+      "file": "assets\\gameplay\\progression\\preflower.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        6,
+        181,
+        255
+      ],
+      "bbox_size": [
+        169,
+        249
+      ],
+      "transparent_ratio": 0.998,
+      "edge_touch": false,
+      "center_offset": [
+        -0.123,
+        0.0098
+      ]
+    },
+    {
+      "id": "gameplay/progression/seed",
+      "file": "assets\\gameplay\\progression\\seed.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        12,
+        0,
+        228,
+        255
+      ],
+      "bbox_size": [
+        216,
+        255
+      ],
+      "transparent_ratio": 0.9982,
+      "edge_touch": true,
+      "center_offset": [
+        -0.0312,
+        -0.002
+      ]
+    },
+    {
+      "id": "gameplay/progression/seedling",
+      "file": "assets\\gameplay\\progression\\seedling.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        0,
+        3,
+        256,
+        254
+      ],
+      "bbox_size": [
+        256,
+        251
+      ],
+      "transparent_ratio": 0.8054,
+      "edge_touch": true,
+      "center_offset": [
+        0.0,
+        0.002
+      ]
+    },
+    {
+      "id": "gameplay/progression/sprout",
+      "file": "assets\\gameplay\\progression\\sprout.png",
+      "reasons": [
+        "requires_resize_recenter_padding_normalization",
+        "content_touches_canvas_edge_possible_truncation_risk"
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "bbox": [
+        8,
+        0,
+        256,
+        254
+      ],
+      "bbox_size": [
+        248,
+        254
+      ],
+      "transparent_ratio": 0.8184,
+      "edge_touch": true,
+      "center_offset": [
+        0.0156,
+        -0.0039
+      ]
+    }
+  ]
+}
