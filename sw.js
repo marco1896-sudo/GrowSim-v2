@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'growsim-v1-20260326-care-gameplay-assets-v1';
+const CACHE_VERSION = 'growsim-v1-20260326-care-ui-bugfix-v1';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');

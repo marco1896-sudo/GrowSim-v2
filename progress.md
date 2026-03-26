@@ -60,6 +60,12 @@ Open items:
   - renamed environment actions toward believable grower tasks like airflow clearing, hygiene, and major tent service
   - added lightweight `environmentInfluence` support so only the airflow-care action nudges baseline airflow while hygiene/service skip generic airflow bumps
   - added a training/environment regression test to lock in tradeoffs and realistic environment-task roles
+- Care UI bugfix pass:
+  - repaired broken German care-sheet strings at the catalog source and bumped the actions catalog version for clean reloads
+  - tightened selected-card typography and spacing to remove layered/stacked text artifacts
+  - stabilized care-sheet section sizing so the lower detail area no longer visually collides with surrounding content
+  - integrated the action-list/effects scrollbars with reserved gutter spacing and mobile-friendly scrolling
+  - added a dedicated care-sheet UI regression test for encoding, internal scrolling, and reachable lower controls
 
 Open items:
 - Watch live gameplay frequency of the new climate warnings vs positive rewards before broad balance tweaks.

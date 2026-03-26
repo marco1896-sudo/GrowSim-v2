@@ -93,9 +93,7 @@
       "intensity": "low",
       "label": "Klarwasser leicht",
       "uxCopy": {
-        "short": "Leicht angießen",
-        "success": "Die obere Wurzelzone wurde mit klarem Wasser leicht nachversorgt.",
-        "warning": "Bringt wenig, wenn das Substrat noch gut feucht ist."
+        "short": "Leicht angießen"
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -154,9 +152,7 @@
       "intensity": "medium",
       "label": "Klarwasser gründlich",
       "uxCopy": {
-        "short": "Gründlich gießen",
-        "success": "Das Substrat wurde mit klarem Wasser tief durchfeuchtet.",
-        "warning": "Zu früh wiederholt erhöht es Staunässe- und Sauerstoffrisiko."
+        "short": "Gründlich gießen"
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -216,11 +212,9 @@
       "id": "watering_high_flush",
       "category": "watering",
       "intensity": "high",
-      "label": "Spülen / Rinse",
+      "label": "Wurzelzone spülen",
       "uxCopy": {
-        "short": "Salze ausspülen",
-        "success": "Die Wurzelzone wurde gespült und Salzlast sichtbar entschärft.",
-        "warning": "Hilft bei Druck im Substrat, kann aber Nährstoffe stark auswaschen."
+        "short": "Gründlich spülen"
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -281,9 +275,9 @@
       "intensity": "medium",
       "label": "CalMag-Zusatz",
       "uxCopy": {
-        "short": "Nur ergaenzen",
-        "success": "Ein gezielter Zusatz staerkt Stabilitaet und Versorgung.",
-        "warning": "Ergaenzt die Fuetterung, ersetzt sie aber nicht."
+        "short": "Nur ergänzen",
+        "success": "Ein gezielter Zusatz stärkt Stabilität und Versorgung.",
+        "warning": "Ergänzt die Fütterung, ersetzt sie aber nicht."
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -330,17 +324,17 @@
           "note": "Zusatz auf bereits voller Wurzelzone schafft eher Druck als Nutzen."
         }
       ],
-      "riskNotes": "Ein Zusatz fuer Stabilitaet - kein Ersatz fuer normales Fuettern."
+      "riskNotes": "Ein Zusatz für Stabilität - kein Ersatz für normales Füttern."
     },
     {
       "id": "fertilizing_low_microfeed",
       "category": "fertilizing",
       "intensity": "low",
-      "label": "Leichte F?tterung",
+      "label": "Leichte Fütterung",
       "uxCopy": {
-        "short": "Sanft nachfuettern",
-        "success": "Eine kleine Futtergabe fuer leichte Korrekturen.",
-        "warning": "Gut fuer Feintuning, nicht fuer hungrige Pflanzen."
+        "short": "Sanft nachfüttern",
+        "success": "Eine kleine Futtergabe für leichte Korrekturen.",
+        "warning": "Gut für Feintuning, nicht für hungrige Pflanzen."
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -388,15 +382,15 @@
           "note": "Leichte Fütterung auf trockener oder schon voller Wurzelzone bringt schnell Salzrand."
         }
       ],
-      "riskNotes": "Die kleine Korrekturfuetterung - sicher, aber bewusst schwach."
+      "riskNotes": "Die kleine Korrekturfütterung - sicher, aber bewusst schwach."
     },
     {
       "id": "fertilizing_medium_balanced",
       "category": "fertilizing",
       "intensity": "medium",
-      "label": "Ausgewogene F?tterung",
+      "label": "Ausgewogene Fütterung",
       "uxCopy": {
-        "short": "Standard fuettern",
+        "short": "Standard füttern",
         "success": "Die Pflanze bekam ihre normale, ausgewogene Mahlzeit.",
         "warning": "Die beste Standardwahl, wenn Wasser und Wurzelzone passen."
       },
@@ -448,17 +442,17 @@
           "note": "Volle Fütterung in ein gestresstes oder zu scharfes Medium drückt schnell auf die Wurzelzone."
         }
       ],
-      "riskNotes": "Die normale Hauptfuetterung fuer gesunde Pflanzen."
+      "riskNotes": "Die normale Hauptfütterung für gesunde Pflanzen."
     },
     {
       "id": "fertilizing_high_boost",
       "category": "fertilizing",
       "intensity": "high",
-      "label": "Starke F?tterung / Boost",
+      "label": "Starke Fütterung",
       "uxCopy": {
-        "short": "Kraeftig fuettern",
-        "success": "Die Pflanze bekam bewusst eine starke N?hrstoffladung.",
-        "warning": "Viel Schub, aber auch das hoechste Fehlerrisiko."
+        "short": "Kräftig füttern",
+        "success": "Die Pflanze bekam bewusst eine starke Nährstoffladung.",
+        "warning": "Viel Schub, aber auch das höchste Fehlerrisiko."
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -511,7 +505,7 @@
           "note": "Starke Fütterung auf trockener, gestresster oder schon voller Wurzelzone schlägt schnell in Burn um."
         }
       ],
-      "riskNotes": "Die aggressive Futtergabe fuer starke Pflanzen - grosse Wirkung, klares Burn-Risiko."
+      "riskNotes": "Die aggressive Futtergabe für starke Pflanzen - große Wirkung, klares Burn-Risiko."
     },
     {
       "id": "training_low_leaf_tuck",
@@ -520,7 +514,7 @@
       "label": "Canopy leicht ordnen",
       "uxCopy": {
         "short": "Leicht ordnen",
-        "success": "Ein paar Blaetter wurden nur sanft neu gelegt.",
+        "success": "Ein paar Blätter wurden nur sanft neu gelegt.",
         "warning": "Kleiner Eingriff, kleiner Effekt."
       },
       "trigger": {
@@ -565,7 +559,7 @@
           "note": "Schon gestresste Pflanzen reagieren auf das Umlegen von Blattmasse schneller mit kleinen Schaeden."
         }
       ],
-      "riskNotes": "Leichte Ordnung im Bl?tterdach - sanft, sicher und ohne grossen Eingriff."
+      "riskNotes": "Leichte Ordnung im Blätterdach - sanft, sicher und ohne großen Eingriff."
     },
     {
       "id": "training_medium_lst",
@@ -575,7 +569,7 @@
       "uxCopy": {
         "short": "Aktiv biegen",
         "success": "Triebe wurden bewusst nach unten gezogen und neu ausgerichtet.",
-        "warning": "Mehr Wirkung, aber spuerbar mehr Stress als leichtes Ordnen."
+        "warning": "Mehr Wirkung, aber spürbar mehr Stress als leichtes Ordnen."
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -776,9 +770,9 @@
       "id": "environment_low_airflow",
       "category": "environment",
       "intensity": "low",
-      "label": "Luftweg freiraeumen",
+      "label": "Luftweg freiräumen",
       "uxCopy": {
-        "short": "Luftweg freiraeumen",
+        "short": "Luftweg freiräumen",
         "success": "Ventis und Canopy arbeiten wieder sauber zusammen.",
         "warning": "Auf fast perfektem Setup ist der Gewinn nur klein."
       },
@@ -836,7 +830,7 @@
       "uxCopy": {
         "short": "Kurz sauber machen",
         "success": "Feuchte Stellen und Pflanzenreste wurden schnell entfernt.",
-        "warning": "Kleine Pflege fuer den Alltag, kein grosser Umbau."
+        "warning": "Kleine Pflege für den Alltag, kein großer Umbau."
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -928,11 +922,11 @@
       "id": "environment_high_reset",
       "category": "environment",
       "intensity": "high",
-      "label": "Grosser Zeltservice",
+      "label": "Großer Zeltservice",
       "uxCopy": {
-        "short": "Gruendlich ueberarbeiten",
-        "success": "Das Zelt wurde umfassend aufgeraeumt und neu vorbereitet.",
-        "warning": "Groesserer Eingriff mit mehr Aufwand und spuerbarer Wirkung."
+        "short": "Gründlich überarbeiten",
+        "success": "Das Zelt wurde umfassend aufgeräumt und neu vorbereitet.",
+        "warning": "Größerer Eingriff mit mehr Aufwand und spürbarer Wirkung."
       },
       "trigger": {
         "timeWindow": "daytime_only",
@@ -977,7 +971,7 @@
           "note": "Empfindliche Pflanzen koennen auf den grossen Service kurz mit einem Haenger reagieren."
         }
       ],
-      "riskNotes": "Der grosse Eingriff fuer chaotische Bedingungen - staerker, aber deutlich aufwendiger als eine Hygiene-Runde.",
+      "riskNotes": "Der große Eingriff für chaotische Bedingungen - stärker, aber deutlich aufwendiger als eine Hygiene-Runde.",
       "environmentInfluence": {
         "skipGenericCategoryInfluence": true
       }
@@ -1026,9 +1020,7 @@
       "intensity": "medium",
       "label": "Nährlösung gießen",
       "uxCopy": {
-        "short": "Mit Nährlösung gießen",
-        "success": "Die Pflanze wurde mit Wasser plus milder Nährlösung versorgt.",
-        "warning": "Zu reiches Gießen belastet Wurzelzone und EC schneller."
+        "short": "Mit Nährlösung gießen"
       },
       "trigger": {
         "timeWindow": "daytime_only",

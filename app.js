@@ -60,7 +60,7 @@ const DB_KEY = 'state-v2';
 const LS_STATE_KEY = 'grow-sim-state-v2';
 const PUSH_SUB_KEY = 'grow-sim-push-sub-v1';
 const EVENTS_CATALOG_VERSION = '20260301-de';
-const ACTIONS_CATALOG_VERSION = '20260304-v1';
+const ACTIONS_CATALOG_VERSION = '20260326-care-ui-v1';
 const VAPID_PUBLIC_KEY = 'BElxPLACEHOLDERp8v2C4CwY6ofqP5E8v2rFjQvqW8g4bW2-v8JvKc-l7dXXn4N1xqjY7PqFhL3O8m4jzWzI8v7jA';
 
 const REAL_RUN_DURATION_MS = 7 * 24 * 60 * 60 * 1000;

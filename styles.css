@@ -3157,6 +3157,18 @@ body.panelized-ready :is(
   max-height: none;
 }
 
+#careSheet.figma-sheet .sheet-content {
+  min-height: 0;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overscroll-behavior: contain;
+}
+
+#careSheet .figma-section-card--care {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .figma-sheet .sheet-content,
 .figma-menu-screen .game-menu-content {
   scrollbar-width: none;
@@ -3518,11 +3530,33 @@ body.panelized-ready :is(
 .figma-care-actions {
   border-radius: 8px;
   border: 0.8px solid rgba(212, 175, 55, 0.2);
-  padding: 0 8px;
-  max-height: 182px;
-  overflow: auto;
+  padding: 2px 12px 6px 4px;
+  max-height: min(164px, 28dvh);
+  overflow-y: auto;
+  overflow-x: hidden;
   display: grid;
   align-content: start;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.5) rgba(255, 255, 255, 0.06);
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.figma-care-actions::-webkit-scrollbar {
+  width: 8px;
+}
+
+.figma-care-actions::-webkit-scrollbar-track {
+  margin: 6px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.figma-care-actions::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid rgba(9, 13, 14, 0.92);
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.68), rgba(74, 222, 128, 0.44));
 }
 
 .figma-care-actions .care-action-card {
@@ -3532,13 +3566,15 @@ body.panelized-ready :is(
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
   box-shadow: none;
-  padding: 8px 12px;
+  padding: 9px 10px;
   margin-bottom: 4px;
   display: grid;
-  grid-template-columns: 32px 1fr;
+  grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  transition: background 0.2s ease;
+  gap: 10px;
+  min-width: 0;
+  text-shadow: none;
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .care-action-icon-box {
@@ -3563,48 +3599,78 @@ body.panelized-ready :is(
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
+  gap: 2px;
   min-width: 0;
+  padding-right: 2px;
 }
 
 .care-action-label {
   font-size: 13px;
-  font-weight: 500;
-  color: #ffffff;
-  margin-bottom: 2px;
+  font-weight: 600;
+  color: #f5f7f3;
+  margin-bottom: 0;
+  line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: none;
 }
 
 .care-action-hint {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(223, 234, 221, 0.64);
   text-align: left;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  text-shadow: none;
 }
 
 .figma-care-actions .care-action-card.is-selected {
-  background: rgba(34, 197, 94, 0.2);
-  border-bottom-color: rgba(34, 197, 94, 0.3);
+  background: linear-gradient(180deg, rgba(25, 86, 51, 0.34), rgba(16, 53, 33, 0.3));
+  border-bottom-color: rgba(92, 255, 156, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(92, 255, 156, 0.08);
 }
 
 .figma-care-actions .care-action-card.is-selected .care-action-label {
-  color: #4ade80;
+  color: #ecfff1;
 }
 
 .figma-care-actions .care-action-card.is-selected .care-action-hint {
-  color: #facc15;
+  color: rgba(250, 213, 89, 0.92);
 }
 
 .care-effects-list {
   margin: 0;
-  padding: 0;
+  padding: 0 8px 0 0;
   list-style: none;
   display: grid;
   gap: 6px;
+  max-height: min(222px, 28dvh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.4) rgba(255, 255, 255, 0.05);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.care-effects-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.care-effects-list::-webkit-scrollbar-track {
+  margin: 4px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.care-effects-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.42);
 }
 
 .care-effects-list li {
@@ -3630,10 +3696,11 @@ body.panelized-ready :is(
 .care-preview {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  padding: 8px 0 10px;
-  margin-bottom: 4px;
+  gap: 12px;
+  align-items: start;
+  min-height: 72px;
+  padding: 6px 0 12px;
+  margin-bottom: 6px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -3655,20 +3722,24 @@ body.panelized-ready :is(
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px;
 }
 
 .care-preview-label {
   color: #f5f5f0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-shadow: none;
 }
 
 .care-preview-note {
   color: rgba(223, 234, 221, 0.72);
   font-size: 11px;
   line-height: 1.35;
+  text-shadow: none;
 }
 
 .care-execute-btn {
