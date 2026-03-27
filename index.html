@@ -237,23 +237,21 @@
 
   <section id="careSheet" class="bottom-sheet figma-sheet figma-sheet-care hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Pflege / Aktionen</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <div class="care-sheet-heading">
+        <h2>Pflege / Aktionen</h2>
+        <p class="care-sheet-subtitle">Aktionsdeck</p>
+      </div>
+      <button class="sheet-close care-sheet-close" data-close-sheet type="button" aria-label="Schließen">Schließen</button>
     </header>
     <div class="sheet-content figma-sheet-content">
-      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-        <div class="figma-top-player-title">Aktionsdeck</div>
-        <div class="figma-top-player-subtitle">Pflege und Eingriffe</div>
-      </section>
-
       <section class="figma-section-card figma-section-card--care">
         <h3 class="figma-section-head">Pflegeaktionen</h3>
         <div id="careCategoryList" class="care-category-list figma-care-categories" role="tablist" aria-label="Pflegekategorien"></div>
         <div id="careActionList" class="care-action-list figma-care-actions" aria-live="polite"></div>
       </section>
 
-      <section class="figma-section-card figma-section-card--care">
-        <h3 class="figma-section-head">Zeitaktionen</h3>
+      <section class="figma-section-card figma-section-card--care figma-section-card--care-detail">
+        <h3 class="figma-section-head">Aktionsvorschau</h3>
         <div id="carePreviewWrap" class="care-preview hidden" aria-hidden="true">
           <img id="carePreviewImage" class="care-preview-image" alt="">
           <div class="care-preview-copy">
@@ -262,8 +260,10 @@
           </div>
         </div>
         <ul id="careEffectsList" class="care-effects-list"></ul>
-        <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">Wähle eine Aktion.</p>
-        <button id="careExecuteButton" class="action-btn action-primary care-execute-btn" type="button">Aktion ausführen</button>
+        <div class="care-execute-panel">
+          <button id="careExecuteButton" class="action-btn action-primary care-execute-btn" type="button">Aktion ausführen</button>
+          <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">Wähle eine Aktion.</p>
+        </div>
       </section>
     </div>
   </section>

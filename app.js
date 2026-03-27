@@ -3546,9 +3546,9 @@ function renderCareCategoryButtons(categories, labels, icons) {
     btn.addEventListener('click', () => {
       state.ui.care.selectedCategory = category;
       state.ui.care.selectedActionId = null;
+      state.ui.care.feedback = null;
       ui.careCategoryList.dataset.signature = '';
       ui.careActionList.dataset.signature = '';
-      setCareFeedback('info', `${labels[category] || category} bereit.`);
       renderCareSheet(true);
     });
     ui.careCategoryList.appendChild(btn);
@@ -3619,8 +3619,8 @@ function renderCareActionButtons(category, careViewModel = null) {
 
     button.addEventListener('click', () => {
       state.ui.care.selectedActionId = action.id;
+      state.ui.care.feedback = null;
       ui.careActionList.dataset.signature = '';
-      setCareFeedback('info', `${action.label} ausgewählt.`);
       renderCareSheet(true);
     });
 
@@ -3821,8 +3821,11 @@ function onCareExecuteAction() {
 }
 
 function renderCareFeedback() {
-  const feedback = (state.ui.care && state.ui.care.feedback) || { kind: 'info', text: 'Wähle eine Aktion.' };
+  const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
+  const feedback = (state.ui.care && state.ui.care.feedback)
+    || { kind: 'info', text: selected ? 'Bereit zur Ausführung' : 'Wähle eine Aktion.' };
   ui.careFeedback.textContent = feedback.text;
+  ui.careFeedback.classList.toggle('is-info', feedback.kind === 'info');
   ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');
   ui.careFeedback.classList.toggle('is-error', feedback.kind === 'error');
 }
