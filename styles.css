@@ -3191,8 +3191,9 @@ body.panelized-ready :is(
 
 #careSheet.figma-sheet .sheet-content {
   min-height: 0;
-  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
   grid-template-rows: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  overflow: hidden;
   overscroll-behavior: contain;
 }
 
@@ -3210,8 +3211,8 @@ body.panelized-ready :is(
 #careSheet .figma-section-card--care-detail {
   min-height: 0;
   height: 100%;
-  padding: 14px;
-  grid-template-rows: auto auto minmax(172px, 1fr) auto;
+  padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   align-content: start;
 }
 
@@ -3759,7 +3760,7 @@ body.panelized-ready :is(
   list-style: none;
   display: grid;
   gap: 10px;
-  min-height: 172px;
+  min-height: 0;
   align-content: start;
   max-height: min(360px, 38dvh);
   overflow-y: auto;
@@ -4090,6 +4091,10 @@ body.panelized-ready :is(
     padding: 13px;
   }
 
+  #careSheet .figma-section-card--care-detail {
+    padding-bottom: calc(13px + env(safe-area-inset-bottom));
+  }
+
   #careSheet .figma-sheet-header {
     padding: 0.82rem 0.88rem 0.74rem;
   }
@@ -4162,7 +4167,7 @@ body.panelized-ready :is(
   }
 
   .care-effects-list {
-    min-height: 170px;
+    min-height: 0;
   }
 
   .figma-care-categories {

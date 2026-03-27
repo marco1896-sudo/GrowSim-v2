@@ -20,14 +20,14 @@
   const STAGE_LABELS = Object.freeze([
     'Keimung',
     'Keimling',
-    'Frühe Vegetationsphase',
+    'FrÃ¼he Vegetationsphase',
     'Vegetationsphase',
-    'Späte Vegetationsphase',
-    'Vorblüte',
+    'SpÃ¤te Vegetationsphase',
+    'VorblÃ¼te',
     'Streckphase',
-    'Frühe Blüte',
-    'Blüte',
-    'Spte Blüte',
+    'FrÃ¼he BlÃ¼te',
+    'BlÃ¼te',
+    'Spte BlÃ¼te',
     'Reife',
     'Erntereif'
   ]);
@@ -36,7 +36,7 @@
     genetics: Object.freeze({
       hybrid: Object.freeze({
         title: 'Hybrid',
-        effect: 'Ausgewogener Basistyp für stabile Runs.',
+        effect: 'Ausgewogener Basistyp fÃ¼r stabile Runs.',
         requiredLevel: 1
       }),
       indica: Object.freeze({
@@ -46,7 +46,7 @@
       }),
       sativa: Object.freeze({
         title: 'Sativa Genetics',
-        effect: 'Längerer, wachstumsstarker Run mit höherem Pflege- und Stressdruck.',
+        effect: 'LÃ¤ngerer, wachstumsstarker Run mit hÃ¶herem Pflege- und Stressdruck.',
         requiredLevel: 5
       })
     }),
@@ -65,24 +65,24 @@
     media: Object.freeze({
       soil: Object.freeze({
         title: 'Soil Medium',
-        effect: 'Toleranter Start mit ruhigerem Wasser- und Nährstoffverhalten.',
+        effect: 'Toleranter Start mit ruhigerem Wasser- und NÃ¤hrstoffverhalten.',
         requiredLevel: 1
       }),
       coco: Object.freeze({
         title: 'Coco Medium',
-        effect: 'Reaktiveres Medium mit schnellerem Uptake, aber höherem Gießdruck.',
+        effect: 'Reaktiveres Medium mit schnellerem Uptake, aber hÃ¶herem GieÃŸdruck.',
         requiredLevel: 4
       })
     }),
     lights: Object.freeze({
       medium: Object.freeze({
         title: 'Medium Light',
-        effect: 'Solider Lichtstandard für stabile Indoor-Runs.',
+        effect: 'Solider Lichtstandard fÃ¼r stabile Indoor-Runs.',
         requiredLevel: 1
       }),
       high: Object.freeze({
         title: 'High Output Light',
-        effect: 'Mehr Wachstumsdruck und höheres Potenzial, aber sensibler auf Fehler.',
+        effect: 'Mehr Wachstumsdruck und hÃ¶heres Potenzial, aber sensibler auf Fehler.',
         requiredLevel: 6
       })
     })
@@ -92,9 +92,9 @@
     genetics: Object.freeze({
       hybrid: Object.freeze({
         title: 'Hybrid',
-        effect: 'Ausgewogener Basistyp für stabile Runs.',
+        effect: 'Ausgewogener Basistyp fÃ¼r stabile Runs.',
         tag: 'Ausgewogen',
-        tradeoff: 'Keine extreme Stärke, aber auch keine große Schwäche.',
+        tradeoff: 'Keine extreme StÃ¤rke, aber auch keine groÃŸe SchwÃ¤che.',
         focus: 'Kontrolle',
         tone: 'balanced'
       }),
@@ -102,7 +102,7 @@
         title: 'Hardy Genetics',
         effect: 'Robuster Typ mit mehr Fehlerpuffer, aber langsamerem Wachstum.',
         tag: 'Sicher',
-        tradeoff: 'Fängt Stress leichter ab, verliert aber Tempo und Peak.',
+        tradeoff: 'FÃ¤ngt Stress leichter ab, verliert aber Tempo und Peak.',
         focus: 'Safe',
         tone: 'safe'
       }),
@@ -118,7 +118,7 @@
     setupModes: Object.freeze({
       indoor: Object.freeze({
         tag: 'Kontrolle',
-        tradeoff: 'Planbar und stabil, aber ohne große Outdoor-Spitzen.',
+        tradeoff: 'Planbar und stabil, aber ohne groÃŸe Outdoor-Spitzen.',
         focus: 'Stabil',
         tone: 'balanced'
       }),
@@ -132,13 +132,13 @@
     media: Object.freeze({
       soil: Object.freeze({
         tag: 'Fehlertolerant',
-        tradeoff: 'Verzeiht mehr, reagiert aber etwas träger.',
+        tradeoff: 'Verzeiht mehr, reagiert aber etwas trÃ¤ger.',
         focus: 'Puffer',
         tone: 'safe'
       }),
       coco: Object.freeze({
         tag: 'Reaktiv',
-        tradeoff: 'Kann schneller pushen, kippt aber früher bei Pflegefehlern.',
+        tradeoff: 'Kann schneller pushen, kippt aber frÃ¼her bei Pflegefehlern.',
         focus: 'Tempo',
         tone: 'fast'
       })
@@ -146,15 +146,15 @@
     lights: Object.freeze({
       medium: Object.freeze({
         tag: 'Kontrolle',
-        tradeoff: 'Weniger Peak, dafür gut steuerbar.',
+        tradeoff: 'Weniger Peak, dafÃ¼r gut steuerbar.',
         focus: 'Balance',
         tone: 'balanced'
       }),
       high: Object.freeze({
         title: 'High Output Light',
-        effect: 'Mehr Wachstum und mehr Peak, aber deutlich höherer Verbrauch und Druck.',
+        effect: 'Mehr Wachstum und mehr Peak, aber deutlich hÃ¶herer Verbrauch und Druck.',
         tag: 'Riskant',
-        tradeoff: 'Bringt mehr Output, verlangt aber saubere Wasser- und Nährstoffkontrolle.',
+        tradeoff: 'Bringt mehr Output, verlangt aber saubere Wasser- und NÃ¤hrstoffkontrolle.',
         focus: 'Peak',
         tone: 'risky'
       })
@@ -183,7 +183,7 @@
     ratings: Object.freeze({
       unstable: Object.freeze({
         title: 'Instabiler Grow',
-        hint: 'Der Run ist früh oder unter zu viel Druck weggebrochen.'
+        hint: 'Der Run ist frÃ¼h oder unter zu viel Druck weggebrochen.'
       }),
       rough: Object.freeze({
         title: 'Wackeliger Run',
@@ -199,52 +199,52 @@
       }),
       near_perfect: Object.freeze({
         title: 'Nahezu perfekt',
-        hint: 'Sehr sauber gespielt: stabil, effizient und bis tief in die späte Phase getragen.'
+        hint: 'Sehr sauber gespielt: stabil, effizient und bis tief in die spÃ¤te Phase getragen.'
       })
     }),
     highlights: Object.freeze({
       harvest_finish: 'Bis zur Ernte durchgezogen.',
       rescue_comeback: 'Fast verloren, aber noch einmal stabilisiert.',
-      stable_phase: 'Sehr stabile Wachstumsphase über weite Strecken.',
+      stable_phase: 'Sehr stabile Wachstumsphase Ã¼ber weite Strecken.',
       low_stress_finish: 'Stress blieb bis zum Ende erstaunlich niedrig.',
-      long_run: 'Der Run hielt lange durch und erreichte eine späte Phase.',
+      long_run: 'Der Run hielt lange durch und erreichte eine spÃ¤te Phase.',
       event_handling: 'Mehrere Event-Entscheidungen aktiv ausgespielt.',
       water_window: 'Wasserwerte blieben am Ende im stabilen Bereich.',
-      nutrition_window: 'Die Nährstoffbalance blieb gut steuerbar.',
+      nutrition_window: 'Die NÃ¤hrstoffbalance blieb gut steuerbar.',
       critical_stress: 'Zum Ende hin baute sich kritischer Stress auf.',
-      early_collapse: 'Der Run kippte schon in einer frühen Phase.',
-      high_risk: 'Das Risiko lief spürbar aus dem Ruder.'
+      early_collapse: 'Der Run kippte schon in einer frÃ¼hen Phase.',
+      high_risk: 'Das Risiko lief spÃ¼rbar aus dem Ruder.'
     }),
     mistakes: Object.freeze({
-      early_death: 'Der Run brach zu früh weg, bevor er richtig Tempo aufnehmen konnte.',
-      late_stress: 'Zu viel Stress in der späten Phase hat den Run deutlich gedrückt.',
+      early_death: 'Der Run brach zu frÃ¼h weg, bevor er richtig Tempo aufnehmen konnte.',
+      late_stress: 'Zu viel Stress in der spÃ¤ten Phase hat den Run deutlich gedrÃ¼ckt.',
       high_risk: 'Das Risiko war zu lange zu hoch und hat den Spielraum verkleinert.',
       water_instability: 'Die Wasserwerte waren nicht stabil genug.',
-      nutrition_instability: 'Die Nährstoffwerte liefen aus dem Gleichgewicht.',
-      weak_finish: 'Zum Run-Ende fehlte der Pflanze die nötige Gesundheitsreserve.',
-      slow_progress: 'Der Fortschritt blieb für die Run-Dauer zu langsam.'
+      nutrition_instability: 'Die NÃ¤hrstoffwerte liefen aus dem Gleichgewicht.',
+      weak_finish: 'Zum Run-Ende fehlte der Pflanze die nÃ¶tige Gesundheitsreserve.',
+      slow_progress: 'Der Fortschritt blieb fÃ¼r die Run-Dauer zu langsam.'
     }),
     positives: Object.freeze({
       reached_harvest: 'Du hast den Run bis zur Ernte gebracht.',
-      healthy_core: 'Die Pflanze blieb über weite Strecken gesund.',
+      healthy_core: 'Die Pflanze blieb Ã¼ber weite Strecken gesund.',
       low_stress: 'Stress blieb lange unter Kontrolle.',
       stable_water: 'Der Wasserhaushalt war gut lesbar und stabil.',
-      stable_nutrition: 'Die Nährstoffbalance war für V1 solide.',
+      stable_nutrition: 'Die NÃ¤hrstoffbalance war fÃ¼r V1 solide.',
       active_decisions: 'Du hast mehrere Situationen aktiv ausgespielt.',
       comeback: 'Du hast dich aus einer kritischen Lage wieder herausgezogen.'
     }),
     xp: Object.freeze({
       base: 'Run abgeschlossen',
-      survival: 'lange überlebt',
-      stage: 'späte Phase erreicht',
+      survival: 'lange Ã¼berlebt',
+      stage: 'spÃ¤te Phase erreicht',
       quality: 'saubere Werte',
       outcome_harvest: 'Ernte geschafft',
       outcome_death: 'Abschluss-XP'
     }),
     fallbacks: Object.freeze({
-      highlight: 'Der Run hat dir neue Daten für den nächsten Versuch geliefert.',
+      highlight: 'Der Run hat dir neue Daten fÃ¼r den nÃ¤chsten Versuch geliefert.',
       mistake: 'Keine einzelne Schwachstelle stach klar heraus.',
-      positive: 'Du hast wieder Fortschritt für den nächsten Run gesichert.'
+      positive: 'Du hast wieder Fortschritt fÃ¼r den nÃ¤chsten Run gesichert.'
     })
   });
 
@@ -258,8 +258,8 @@
     }),
     reach_flowering: Object.freeze({
       id: 'reach_flowering',
-      title: 'Bringe die Pflanze in die Blüte',
-      description: 'Führe den Run sicher bis in die Blütephase.',
+      title: 'Bringe die Pflanze in die BlÃ¼te',
+      description: 'FÃ¼hre den Run sicher bis in die BlÃ¼tephase.',
       rewardXp: 55,
       target: 6
     }),
@@ -273,7 +273,7 @@
     clean_finish: Object.freeze({
       id: 'clean_finish',
       title: 'Beende sauber',
-      description: 'Schließe den Run mit mindestens 70 Qualität ab.',
+      description: 'SchlieÃŸe den Run mit mindestens 70 QualitÃ¤t ab.',
       rewardXp: 70,
       target: 70
     }),
@@ -358,7 +358,7 @@
       return null;
     }
     const status = String(goalLike.status || 'active');
-    const safeStatus = ['active', 'completed', 'failed'].includes(status)  status : 'active';
+    const safeStatus = ['active', 'completed', 'failed'].includes(status) ? status : 'active';
     const progress = Math.max(0, Math.trunc(Number(goalLike.progress) || 0));
     const target = Math.max(1, Math.trunc(Number(goalLike.target) || definition.target || 1));
     return {
@@ -369,19 +369,19 @@
       progress,
       target,
       rewardXp: Math.max(0, Math.trunc(Number(goalLike.rewardXp) || definition.rewardXp || 0)),
-      progressText: typeof goalLike.progressText === 'string'  goalLike.progressText : '',
-      statusText: typeof goalLike.statusText === 'string'  goalLike.statusText : '',
-      resultText: typeof goalLike.resultText === 'string'  goalLike.resultText : ''
+      progressText: typeof goalLike.progressText === 'string' ? goalLike.progressText : '',
+      statusText: typeof goalLike.statusText === 'string' ? goalLike.statusText : '',
+      resultText: typeof goalLike.resultText === 'string' ? goalLike.resultText : ''
     };
   }
 
   function chooseRunGoal(profileLike, runLike) {
     const profile = normalizeProfile(profileLike);
     const run = normalizeRunState(runLike);
-    const setup = run.setupSnapshot && typeof run.setupSnapshot === 'object'  run.setupSnapshot : {};
+    const setup = run.setupSnapshot && typeof run.setupSnapshot === 'object' ? run.setupSnapshot : {};
     const isFragileBuild = setup.genetics === 'sativa' || setup.light === 'high' || setup.medium === 'coco';
     const pool = isFragileBuild
-       ['survive_day_20', 'reach_flowering', 'reach_flowering']
+      ? ['survive_day_20', 'reach_flowering', 'reach_flowering']
       : ['survive_day_20', 'reach_flowering', 'stable_grow'];
     if (profile.level >= 2) {
       pool.push('clean_finish');
@@ -417,15 +417,15 @@
       }
       normalized.push(value);
     }
-    return normalized.length  normalized : fallbackValues.slice();
+    return normalized.length ? normalized : fallbackValues.slice();
   }
 
   function normalizeProfile(profileLike) {
     const defaults = getDefaultProfile();
-    const profile = profileLike && typeof profileLike === 'object'  profileLike : {};
-    const unlocks = profile.unlocks && typeof profile.unlocks === 'object'  profile.unlocks : {};
+    const profile = profileLike && typeof profileLike === 'object' ? profileLike : {};
+    const unlocks = profile.unlocks && typeof profile.unlocks === 'object' ? profile.unlocks : {};
     const normalized = {
-      displayName: typeof profile.displayName === 'string' && profile.displayName.trim()  profile.displayName.trim() : defaults.displayName,
+      displayName: typeof profile.displayName === 'string' && profile.displayName.trim() ? profile.displayName.trim() : defaults.displayName,
       totalXp: Math.max(0, Math.trunc(Number(profile.totalXp) || 0)),
       level: 1,
       unlocks: {
@@ -442,7 +442,7 @@
         bestQualityScore: round2(Math.max(0, Number(profile.stats && profile.stats.bestQualityScore) || 0))
       },
       lastRunSummary: profile.lastRunSummary && typeof profile.lastRunSummary === 'object'
-         { ...profile.lastRunSummary }
+        ? { ...profile.lastRunSummary }
         : null
     };
 
@@ -452,20 +452,20 @@
 
   function normalizeRunState(runLike) {
     const defaults = getDefaultRunState();
-    const run = runLike && typeof runLike === 'object'  runLike : {};
+    const run = runLike && typeof runLike === 'object' ? runLike : {};
     const status = String(run.status || defaults.status);
     const allowedStatuses = new Set(['idle', 'active', 'downed', 'ended']);
     return {
       id: Math.max(0, Math.trunc(Number(run.id) || 0)),
-      status: allowedStatuses.has(status)  status : defaults.status,
-      endReason: run.endReason === 'death' || run.endReason === 'harvest'  run.endReason : null,
-      startedAtRealMs: Number.isFinite(Number(run.startedAtRealMs))  Number(run.startedAtRealMs) : null,
-      endedAtRealMs: Number.isFinite(Number(run.endedAtRealMs))  Number(run.endedAtRealMs) : null,
+      status: allowedStatuses.has(status) ? status : defaults.status,
+      endReason: run.endReason === 'death' || run.endReason === 'harvest' ? run.endReason : null,
+      startedAtRealMs: Number.isFinite(Number(run.startedAtRealMs)) ? Number(run.startedAtRealMs) : null,
+      endedAtRealMs: Number.isFinite(Number(run.endedAtRealMs)) ? Number(run.endedAtRealMs) : null,
       finalizedAtRealMs: run.finalizedAtRealMs == null || run.finalizedAtRealMs === ''
-         null
-        : (Number.isFinite(Number(run.finalizedAtRealMs))  Number(run.finalizedAtRealMs) : null),
+        ? null
+        : (Number.isFinite(Number(run.finalizedAtRealMs)) ? Number(run.finalizedAtRealMs) : null),
       setupSnapshot: run.setupSnapshot && typeof run.setupSnapshot === 'object'
-         { ...run.setupSnapshot }
+        ? { ...run.setupSnapshot }
         : null,
       goal: normalizeRunGoal(run.goal)
     };
@@ -490,12 +490,12 @@
 
   function getLevelThreshold(level) {
     const entry = LEVEL_THRESHOLDS.find((candidate) => candidate.level === Number(level));
-    return entry  entry.xp : LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1].xp;
+    return entry ? entry.xp : LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1].xp;
   }
 
   function getNextLevelThreshold(level) {
     const entry = LEVEL_THRESHOLDS.find((candidate) => candidate.level === Number(level) + 1);
-    return entry  entry.xp : null;
+    return entry ? entry.xp : null;
   }
 
   function getLevelProgress(profileLike) {
@@ -535,7 +535,7 @@
     }
     const baseMeta = group[String(value || '')] || null;
     const detailGroup = SETUP_OPTION_DETAILS[String(category || '')];
-    const detailMeta = detailGroup  (detailGroup[String(value || '')] || null) : null;
+    const detailMeta = detailGroup ? (detailGroup[String(value || '')] || null) : null;
     if (!baseMeta && !detailMeta) {
       return null;
     }
@@ -576,7 +576,7 @@
   }
 
   function getRunBuildPresentation(setupLike) {
-    const setup = setupLike && typeof setupLike === 'object'  setupLike : {};
+    const setup = setupLike && typeof setupLike === 'object' ? setupLike : {};
     const geneticsMeta = getUnlockMeta('genetics', setup.genetics || 'hybrid') || {};
     const mediumMeta = getUnlockMeta('media', setup.medium || 'soil') || {};
     const lightMeta = getUnlockMeta('lights', setup.light || 'medium') || {};
@@ -585,32 +585,32 @@
     let title = 'Balanced Control';
     let tag = 'Ausgewogen';
     let description = 'Solider Kontroll-Run mit guter Fehlertoleranz und ohne harte Peaks.';
-    let tradeoff = 'Kein extremer Vorteil, aber auch keine große Sollbruchstelle.';
+    let tradeoff = 'Kein extremer Vorteil, aber auch keine groÃŸe Sollbruchstelle.';
     let tone = 'balanced';
 
     if (String(setup.light || '') === 'high') {
       title = 'High Pressure Push';
       tag = 'Riskant';
-      description = 'Mehr Lichtdruck für starken Output, aber nur wenn Wasser und Nahrung sauber nachkommen.';
+      description = 'Mehr Lichtdruck fÃ¼r starken Output, aber nur wenn Wasser und Nahrung sauber nachkommen.';
       tradeoff = 'Hherer Verbrauch und deutlich mehr Stress bei Fehlern.';
       tone = 'risky';
     } else if (String(setup.genetics || '') === 'sativa') {
       title = 'Fast Cycle';
       tag = 'Schnell';
-      description = 'Spiel auf Tempo: früherer Fortschritt, aber sensibler gegen Klima- und Pflegefehler.';
-      tradeoff = 'Der Run kippt schneller, wenn Wasser, Klima oder Nährstoffe nicht sitzen.';
+      description = 'Spiel auf Tempo: frÃ¼herer Fortschritt, aber sensibler gegen Klima- und Pflegefehler.';
+      tradeoff = 'Der Run kippt schneller, wenn Wasser, Klima oder NÃ¤hrstoffe nicht sitzen.';
       tone = 'fast';
     } else if (String(setup.genetics || '') === 'indica') {
       title = 'Safe Control';
       tag = 'Sicher';
-      description = 'Mehr Fehlerpuffer und ruhigere Stresskurven für kontrollierte Runs.';
+      description = 'Mehr Fehlerpuffer und ruhigere Stresskurven fÃ¼r kontrollierte Runs.';
       tradeoff = 'Weniger Wachstumstempo und weniger Peak-Potenzial.';
       tone = 'safe';
     } else if (String(setup.medium || '') === 'coco') {
       title = 'Reactive Feed';
       tag = 'Reaktiv';
       description = 'Coco reagiert schnell und kann pushen, will aber konstante Pflege.';
-      tradeoff = 'Mehr Wasser- und Nährstoffdruck über den ganzen Run.';
+      tradeoff = 'Mehr Wasser- und NÃ¤hrstoffdruck Ã¼ber den ganzen Run.';
       tone = 'fast';
     }
 
@@ -618,7 +618,7 @@
       geneticsMeta.title || String(setup.genetics || 'Hybrid'),
       mediumMeta.title || String(setup.medium || 'Soil'),
       lightMeta.title || String(setup.light || 'Medium')
-    ].join(' · ');
+    ].join(' Â· ');
 
     return {
       title,
@@ -632,7 +632,7 @@
   }
 
   function deriveQualityScoreFromState(snapshot) {
-    const stateLike = snapshot && typeof snapshot === 'object'  snapshot : {};
+    const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
     const lifecycleScore = Number(stateLike.plant && stateLike.plant.lifecycle && stateLike.plant.lifecycle.qualityScore);
     if (Number.isFinite(lifecycleScore)) {
       return round2(clamp(lifecycleScore, 0, 100));
@@ -659,20 +659,20 @@
   }
 
   function computeXpBreakdown(summaryLike) {
-    const summary = summaryLike && typeof summaryLike === 'object'  summaryLike : {};
+    const summary = summaryLike && typeof summaryLike === 'object' ? summaryLike : {};
     const simDay = Math.max(0, Math.trunc(Number(summary.simDay) || 0));
     const stageIndex = clampInt(Number(summary.stageIndex) || 0, 0, 11);
     const qualityScore = clamp(Number(summary.qualityScore) || 0, 0, 100);
-    const goal = summary.goal && typeof summary.goal === 'object'  summary.goal : null;
+    const goal = summary.goal && typeof summary.goal === 'object' ? summary.goal : null;
     const isHarvest = String(summary.endReason || '') === 'harvest';
     const breakdown = {
-      base: isHarvest  40 : 24,
+      base: isHarvest ? 40 : 24,
       survival: Math.min(80, simDay * 4),
       stage: stageIndex * 12,
       quality: Math.round(qualityScore / 6),
-      outcome: isHarvest  90 : 0,
+      outcome: isHarvest ? 90 : 0,
       goal: goal && goal.status === 'completed'
-         Math.max(0, Math.trunc(Number(goal.rewardXp) || 0))
+        ? Math.max(0, Math.trunc(Number(goal.rewardXp) || 0))
         : 0
     };
     const total = Object.values(breakdown).reduce((sum, value) => sum + (Number(value) || 0), 0);
@@ -725,7 +725,7 @@
 
   function buildHighlights(summary) {
     const highlights = [];
-    const setup = summary.setup && typeof summary.setup === 'object'  summary.setup : {};
+    const setup = summary.setup && typeof summary.setup === 'object' ? summary.setup : {};
     if (summary.endReason === 'harvest') {
       addUniqueFeedback(highlights, 'harvest_finish', SUMMARY_TEXT.highlights.harvest_finish, 4);
     }
@@ -736,10 +736,10 @@
       addUniqueFeedback(highlights, 'hardy_cushion', 'Hardy Genetics haben Stressspitzen sichtbar abgefedert.', 4);
     }
     if (String(setup.genetics || '') === 'sativa' && summary.stageIndex >= 7) {
-      addUniqueFeedback(highlights, 'fast_cycle', 'Fast Genetics haben das Wachstum bis in späte Phasen beschleunigt.', 4);
+      addUniqueFeedback(highlights, 'fast_cycle', 'Fast Genetics haben das Wachstum bis in spÃ¤te Phasen beschleunigt.', 4);
     }
     if (String(setup.light || '') === 'high' && summary.stageIndex >= 7) {
-      addUniqueFeedback(highlights, 'high_output_push', 'High Output Light hat den Run früh auf Output getrimmt.', 4);
+      addUniqueFeedback(highlights, 'high_output_push', 'High Output Light hat den Run frÃ¼h auf Output getrimmt.', 4);
     }
     if (summary.qualityScore >= 80) {
       addUniqueFeedback(highlights, 'stable_phase', SUMMARY_TEXT.highlights.stable_phase, 4);
@@ -776,7 +776,7 @@
 
   function buildMistakes(summary) {
     const mistakes = [];
-    const setup = summary.setup && typeof summary.setup === 'object'  summary.setup : {};
+    const setup = summary.setup && typeof summary.setup === 'object' ? summary.setup : {};
     if (summary.endReason === 'death' && summary.simDay < 24) {
       addUniqueFeedback(mistakes, 'early_death', SUMMARY_TEXT.mistakes.early_death, 3);
     }
@@ -799,10 +799,10 @@
       addUniqueFeedback(mistakes, 'slow_progress', SUMMARY_TEXT.mistakes.slow_progress, 3);
     }
     if (String(setup.genetics || '') === 'sativa' && (summary.finalStress >= 54 || summary.finalRisk >= 52)) {
-      addUniqueFeedback(mistakes, 'fast_genetics_pressure', 'Fast Genetics haben den Run deutlich anfälliger für Druck und Fehler gemacht.', 3);
+      addUniqueFeedback(mistakes, 'fast_genetics_pressure', 'Fast Genetics haben den Run deutlich anfÃ¤lliger fÃ¼r Druck und Fehler gemacht.', 3);
     }
     if (String(setup.light || '') === 'high' && (summary.finalWater <= 38 || summary.finalNutrition <= 38 || summary.finalStress >= 58)) {
-      addUniqueFeedback(mistakes, 'high_output_pressure', 'High Output Light hat Wasser-, Futter- und Stressdruck sichtbar erhöht.', 3);
+      addUniqueFeedback(mistakes, 'high_output_pressure', 'High Output Light hat Wasser-, Futter- und Stressdruck sichtbar erhÃ¶ht.', 3);
     }
     if (String(setup.genetics || '') === 'indica' && summary.endReason === 'death' && summary.stageIndex <= 5) {
       addUniqueFeedback(mistakes, 'hardy_tempo_loss', 'Der sichere Build hat Zeit gekauft, aber das langsamere Tempo blieb ein Nachteil.', 3);
@@ -815,7 +815,7 @@
 
   function buildPositives(summary) {
     const positives = [];
-    const setup = summary.setup && typeof summary.setup === 'object'  summary.setup : {};
+    const setup = summary.setup && typeof summary.setup === 'object' ? summary.setup : {};
     if (summary.endReason === 'harvest') {
       addUniqueFeedback(positives, 'reached_harvest', SUMMARY_TEXT.positives.reached_harvest, 2);
     }
@@ -844,7 +844,7 @@
       addUniqueFeedback(positives, 'fast_progress', 'Fast Genetics haben Tempo in den Run gebracht, ohne komplett zu kollabieren.', 2);
     }
     if (String(setup.light || '') === 'high' && summary.endReason === 'harvest' && summary.qualityScore >= 72) {
-      addUniqueFeedback(positives, 'high_output_reward', 'High Output Light hat den zusätzlichen Druck in echten Fortschritt verwandelt.', 2);
+      addUniqueFeedback(positives, 'high_output_reward', 'High Output Light hat den zusÃ¤tzlichen Druck in echten Fortschritt verwandelt.', 2);
     }
     if (!positives.length) {
       addUniqueFeedback(positives, 'fallback', SUMMARY_TEXT.fallbacks.positive, 2);
@@ -860,7 +860,7 @@
       { key: 'survival', label: SUMMARY_TEXT.xp.survival },
       { key: 'stage', label: SUMMARY_TEXT.xp.stage },
       { key: 'quality', label: SUMMARY_TEXT.xp.quality },
-      { key: 'outcome', label: summary.endReason === 'harvest'  SUMMARY_TEXT.xp.outcome_harvest : SUMMARY_TEXT.xp.outcome_death },
+      { key: 'outcome', label: summary.endReason === 'harvest' ? SUMMARY_TEXT.xp.outcome_harvest : SUMMARY_TEXT.xp.outcome_death },
       { key: 'goal', label: 'Run-Ziel geschafft' }
     ];
     for (const entry of mapping) {
@@ -878,7 +878,7 @@
   }
 
   function buildSummaryInsights(summaryLike) {
-    const summary = summaryLike && typeof summaryLike === 'object'  summaryLike : {};
+    const summary = summaryLike && typeof summaryLike === 'object' ? summaryLike : {};
     const rating = resolveRunRating(summary);
     return {
       rating,
@@ -890,23 +890,23 @@
   }
 
   function buildRunSummaryFromState(snapshot, reason, nowMs) {
-    const stateLike = snapshot && typeof snapshot === 'object'  snapshot : {};
+    const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
     const run = normalizeRunState(stateLike.run);
     const setup = stateLike.setup && typeof stateLike.setup === 'object'
-       { ...stateLike.setup }
-      : (run.setupSnapshot  { ...run.setupSnapshot } : null);
+      ? { ...stateLike.setup }
+      : (run.setupSnapshot ? { ...run.setupSnapshot } : null);
     const simDay = Math.max(0, Math.trunc(Number(stateLike.simulation && stateLike.simulation.simDay) || 0));
     const stageIndex = clampInt(Number(stateLike.plant && stateLike.plant.stageIndex) || 0, 0, 11);
     const qualityScore = deriveQualityScoreFromState(stateLike);
     const qualityTier = getQualityTier(qualityScore);
-    const actions = Array.isArray(stateLike.history && stateLike.history.actions)  stateLike.history.actions : [];
-    const events = Array.isArray(stateLike.history && stateLike.history.events)  stateLike.history.events : [];
+    const actions = Array.isArray(stateLike.history && stateLike.history.actions) ? stateLike.history.actions : [];
+    const events = Array.isArray(stateLike.history && stateLike.history.events) ? stateLike.history.events : [];
     const rescueUsed = Boolean(stateLike.meta && stateLike.meta.rescue && stateLike.meta.rescue.used);
 
     return {
       runId: run.id,
-      endedAtRealMs: Number.isFinite(Number(nowMs))  Number(nowMs) : Date.now(),
-      endReason: reason === 'harvest'  'harvest' : 'death',
+      endedAtRealMs: Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now(),
+      endReason: reason === 'harvest' ? 'harvest' : 'death',
       simDay,
       stageIndex,
       stageLabel: STAGE_LABELS[stageIndex] || 'Unbekannte Phase',
@@ -942,7 +942,7 @@
   }
 
   function goalFailureText(definition, summaryLike) {
-    const summary = summaryLike && typeof summaryLike === 'object'  summaryLike : {};
+    const summary = summaryLike && typeof summaryLike === 'object' ? summaryLike : {};
     const simDay = Math.max(0, Math.trunc(Number(summary.simDay) || 0));
     const stageLabel = String(summary.stageLabel || 'frühe Phase');
     const qualityScore = clamp(Number(summary.qualityScore) || 0, 0, 100);
@@ -955,19 +955,19 @@
         return `Die Pflanze blieb vor der Blüte stecken und endete in ${stageLabel}.`;
       case 'stable_grow':
         return simDay < definition.target
-           `Der Grow kam nur bis Tag ${simDay} und blieb damit unter dem Stabilitätsziel.`
+          ? `Der Grow kam nur bis Tag ${simDay} und blieb damit unter dem Stabilitätsziel.`
           : `Der Durchschnittsstress lag mit ${averageStress.toFixed(1)} zu hoch für einen stabilen Durchgang.`;
       case 'clean_finish':
         return `Der Abschluss lag mit Qualität ${qualityScore.toFixed(1)} unter dem Zielwert von ${definition.target}.`;
       case 'reach_harvest':
-        return `Die Pflanze erreichte die Erntephase nicht.`;
+        return 'Die Pflanze erreichte die Erntephase nicht.';
       default:
         return 'Dieses Run-Ziel wurde knapp verfehlt.';
     }
   }
 
   function evaluateRunGoal(goalLike, snapshot, options = {}) {
-    const stateLike = snapshot && typeof snapshot === 'object'  snapshot : {};
+    const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
     const goal = normalizeRunGoal(goalLike);
     if (!goal) {
       return null;
@@ -978,7 +978,7 @@
     }
 
     const finalize = Boolean(options && options.finalize);
-    const endReason = options && options.endReason === 'harvest'  'harvest' : 'death';
+    const endReason = options && options.endReason === 'harvest' ? 'harvest' : 'death';
     const simDay = Math.max(0, Math.trunc(Number(stateLike.simulation && stateLike.simulation.simDay) || 0));
     const stageIndex = clampInt(Number(stateLike.plant && stateLike.plant.stageIndex) || 0, 0, 11);
     const phase = String(stateLike.plant && stateLike.plant.phase || '');
@@ -986,7 +986,7 @@
     const averageStress = round2(Number(stateLike.plant && stateLike.plant.averageStress) || Number(stateLike.status && stateLike.status.stress) || 0);
 
     let progress = goal.progress;
-    let status = goal.status === 'completed'  'completed' : (goal.status === 'failed'  'failed' : 'active');
+    let status = goal.status === 'completed' ? 'completed' : (goal.status === 'failed' ? 'failed' : 'active');
     let progressText = goal.progressText;
     let statusText = goal.statusText;
     let resultText = goal.resultText;
@@ -998,7 +998,7 @@
         if (simDay >= definition.target) {
           status = 'completed';
           statusText = 'Ziel erreicht';
-          resultText = 'Du hast die kritische Frhphase überstanden und Tag 20 erreicht.';
+          resultText = 'Du hast die kritische Frühphase überstanden und Tag 20 erreicht.';
         } else if (finalize) {
           status = 'failed';
           statusText = 'Ziel verfehlt';
@@ -1009,9 +1009,9 @@
         break;
       }
       case 'reach_flowering': {
-        progress = Math.min(definition.target, phase === 'flowering' || endReason === 'harvest'  definition.target : stageIndex);
+        progress = Math.min(definition.target, phase === 'flowering' || endReason === 'harvest' ? definition.target : stageIndex);
         progressText = phase === 'flowering' || endReason === 'harvest'
-           'Blüte erreicht'
+          ? 'Blüte erreicht'
           : `Phase ${Math.max(0, progress)}/${definition.target}`;
         if (phase === 'flowering' || endReason === 'harvest') {
           status = 'completed';
@@ -1045,7 +1045,7 @@
           });
         } else {
           status = 'active';
-          statusText = averageStress <= 30  'Stabil' : 'Unter Druck';
+          statusText = averageStress <= 30 ? 'Stabil' : 'Unter Druck';
         }
         break;
       }
@@ -1055,7 +1055,7 @@
         if (finalize && endReason === 'harvest' && qualityScore >= definition.target) {
           status = 'completed';
           statusText = 'Ziel erreicht';
-          resultText = 'Der Run wurde mit einer starken Abschlussqualitt beendet.';
+          resultText = 'Der Run wurde mit einer starken Abschlussqualität beendet.';
         } else if (finalize) {
           status = 'failed';
           statusText = 'Ziel verfehlt';
@@ -1066,11 +1066,11 @@
         break;
       }
       case 'reach_harvest': {
-        progress = endReason === 'harvest' || phase === 'harvest'  definition.target : stageIndex;
+        progress = endReason === 'harvest' || phase === 'harvest' ? definition.target : stageIndex;
         progress = Math.min(definition.target, progress);
         progressText = endReason === 'harvest' || phase === 'harvest'
-           'Ernte erreicht'
-          : `${STAGE_LABELS[Math.max(0, stageIndex)] || 'Frhe Phase'}`;
+          ? 'Ernte erreicht'
+          : `${STAGE_LABELS[Math.max(0, stageIndex)] || 'Frühe Phase'}`;
         if (endReason === 'harvest' || phase === 'harvest') {
           status = 'completed';
           statusText = 'Ziel erreicht';
@@ -1117,8 +1117,8 @@
           category: reward.category,
           value: reward.value,
           level,
-          title: meta  meta.title : reward.value,
-          effect: meta  meta.effect : ''
+          title: meta ? meta.title : reward.value,
+          effect: meta ? meta.effect : ''
         });
       }
     }
@@ -1142,7 +1142,7 @@
   }
 
   function finalizeRunState(snapshot, reason, nowMs) {
-    const stateLike = snapshot && typeof snapshot === 'object'  snapshot : {};
+    const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
     stateLike.profile = normalizeProfile(stateLike.profile);
     stateLike.run = normalizeRunState(stateLike.run);
 
@@ -1156,8 +1156,8 @@
       };
     }
 
-    const safeReason = reason === 'harvest'  'harvest' : 'death';
-    const endedAtRealMs = Number.isFinite(Number(nowMs))  Number(nowMs) : Date.now();
+    const safeReason = reason === 'harvest' ? 'harvest' : 'death';
+    const endedAtRealMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
     const summary = buildRunSummaryFromState(stateLike, safeReason, endedAtRealMs);
     summary.goal = evaluateRunGoal(stateLike.run.goal, stateLike, {
       finalize: true,
@@ -1213,7 +1213,7 @@
   }
 
   function shouldAutoFinalizeHarvest(snapshot) {
-    const stateLike = snapshot && typeof snapshot === 'object'  snapshot : {};
+    const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
     const run = normalizeRunState(stateLike.run);
     if (run.status !== 'active' || isRunFinalized(run)) {
       return false;
@@ -1263,4 +1263,4 @@
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = api;
   }
-}(typeof window !== 'undefined'  window : globalThis));
+}(typeof window !== 'undefined' ? window : globalThis));

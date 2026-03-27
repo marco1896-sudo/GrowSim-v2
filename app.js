@@ -3060,7 +3060,8 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   const nextEventValueNode = uiNode('nextEventValue', 'nextEventValue');
   if (nextEventValueNode) { nextEventValueNode.textContent = String(vm.eventStatus && vm.eventStatus.value ? vm.eventStatus.value : ''); const nextLabel = String(vm.eventStatus && vm.eventStatus.label ? vm.eventStatus.label : '');
     if (nextEventValueNode.dataset.label !== nextLabel) {
-      const labelNode = nextEventValueNode.closest('.info-tile').querySelector('.info-label');
+      const infoTile = nextEventValueNode.closest('.info-tile');
+      const labelNode = infoTile ? infoTile.querySelector('.info-label') : null;
       if (labelNode) {
         labelNode.textContent = nextLabel;
       }
@@ -3628,6 +3629,10 @@ function renderCareSheet(force = false) {
 
   const availableCategories = careViewModel && Array.isArray(careViewModel.availableCategories) ? careViewModel.availableCategories.slice() : categoryOrder.filter((category) => catalog.some((action) => action.category === category));
   if (!availableCategories.length) {
+    console.warn('[care] renderCareSheet called with empty actions catalog', {
+      catalogCount: catalog.length,
+      selectedCategory: state.ui && state.ui.care ? state.ui.care.selectedCategory : null
+    });
     ui.careCategoryList.replaceChildren();
     ui.careActionList.replaceChildren();
     ui.careEffectsList.replaceChildren();
@@ -7413,33 +7418,58 @@ async function loadEventCatalog() {
 }
 
 async function loadActionsCatalog() {
-  try {
-    let response = null;
+  const requestUrls = [
+    { url: `./data/actions.json?v=${ACTIONS_CATALOG_VERSION}`, cache: 'no-store' },
+    { url: './data/actions.json', cache: 'default' }
+  ];
+  const attemptErrors = [];
+
+  for (const request of requestUrls) {
     try {
-      response = await fetch(`./data/actions.jsonv=${ACTIONS_CATALOG_VERSION}`, { cache: 'no-store' });
-    } catch (_error) {
-      response = await fetch('./data/actions.json', { cache: 'default' });
-    }
+      const response = await fetch(request.url, { cache: request.cache });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+      const payload = repairRuntimeTextEncoding(await response.json());
+      const actions = Array.isArray(payload) ? payload : payload.actions;
+      if (!Array.isArray(actions)) {
+        throw new Error('Invalid actions payload');
+      }
 
-    const payload = repairRuntimeTextEncoding(await response.json()); const actions = Array.isArray(payload) ? payload : payload.actions;
-    if (!Array.isArray(actions)) {
-      throw new Error('Invalid actions payload');
-    }
+      const normalized = actions.map(normalizeAction).filter(Boolean);
+      state.actions.catalog = normalized;
+      state.actions.byId = Object.fromEntries(normalized.map((action) => [action.id, action]));
 
-    const normalized = actions.map(normalizeAction).filter(Boolean);
-    state.actions.catalog = normalized;
-    state.actions.byId = Object.fromEntries(normalized.map((action) => [action.id, action]));
-  } catch (error) {
-    state.actions.catalog = [];
-    state.actions.byId = {};
-    addLog('system', 'actions.json konnte nicht geladen werden, Aktionssystem ohne Katalog', {
-      error: error.message
-    });
+      console.log('[care] actions catalog loaded', {
+        url: request.url,
+        count: normalized.length
+      });
+
+      if (!normalized.length) {
+        console.warn('[care] actions catalog loaded but empty', {
+          url: request.url
+        });
+      }
+
+      if (state.ui && state.ui.openSheet === 'care' && typeof renderCareSheet === 'function') {
+        renderCareSheet(true);
+      }
+      return;
+    } catch (error) {
+      attemptErrors.push({
+        url: request.url,
+        message: error && error.message ? error.message : String(error)
+      });
+    }
   }
+
+  state.actions.catalog = [];
+  state.actions.byId = {};
+  console.error('[care] failed to load actions catalog', attemptErrors);
+  addLog('system', 'actions.json konnte nicht geladen werden, Aktionssystem ohne Katalog', {
+    error: attemptErrors.map((entry) => `${entry.url}: ${entry.message}`).join(' | ')
+  });
 }
 
 function normalizeAction(rawAction) {

@@ -120,14 +120,24 @@ async function main() {
     await page.waitForFunction(() => window.getCanonicalRun().status === 'active');
     const runGoalHud = await page.evaluate(() => ({
       goalId: window.getCanonicalRun().goal && window.getCanonicalRun().goal.id,
-      hidden: document.getElementById('runGoalCard').classList.contains('hidden'),
-      title: document.getElementById('runGoalTitle').textContent.trim(),
-      progress: document.getElementById('runGoalProgress').textContent.trim()
+      hidden: document.getElementById('homeMetaToggle').classList.contains('hidden'),
+      title: document.getElementById('homeMetaGoalCompact').textContent.trim(),
+      progress: document.getElementById('homeMetaGoalProgress').textContent.trim(),
+      status: document.getElementById('homeMetaGoalStatus').textContent.trim(),
+      level: document.getElementById('playerLevelBadge').textContent.trim(),
+      xp: document.getElementById('playerXpValue').textContent.trim(),
+      playerName: document.getElementById('playerNameValue').textContent.trim(),
+      playerRole: document.getElementById('playerRoleValue').textContent.trim()
     }));
     assert.ok(runGoalHud.goalId, 'run start should assign a goal into run state');
-    assert.strictEqual(runGoalHud.hidden, false, 'goal card should be visible during an active run');
-    assert.ok(runGoalHud.title.length > 0, 'goal card should show a title');
-    assert.ok(runGoalHud.progress.length > 0, 'goal card should show progress text');
+    assert.strictEqual(runGoalHud.hidden, false, 'goal strip should be visible during an active run');
+    assert.ok(runGoalHud.title.length > 0, 'goal strip should show a title');
+    assert.ok(runGoalHud.progress.length > 0, 'goal strip should show progress text');
+    assert.ok(runGoalHud.status.length > 0, 'goal strip should show status text');
+    assert.ok(runGoalHud.level.length > 0, 'player card should show the current level');
+    assert.ok(runGoalHud.xp.length > 0, 'player card should show XP progress');
+    assert.ok(runGoalHud.playerName.length > 0, 'player card should show the player name');
+    assert.ok(runGoalHud.playerRole.length > 0, 'player card should show the player role');
 
     await page.evaluate(() => {
       const s = window.__gsState;

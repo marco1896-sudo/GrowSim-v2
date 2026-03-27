@@ -4,6 +4,30 @@ let homeBindingsBound = false;
 let menuOverlayBindingsBound = false;
 let sheetsOverlayBindingsBound = false;
 let homeMetaExpanded = false;
+const warnedMissingUiKeys = new Set();
+
+function firstExistingNode(...selectors) {
+  for (const selector of selectors) {
+    if (!selector) {
+      continue;
+    }
+    const node = document.querySelector(selector);
+    if (node) {
+      return node;
+    }
+  }
+  return null;
+}
+
+function warnMissingCoreUi(key, selectors = []) {
+  const normalizedKey = String(key || '').trim();
+  if (!normalizedKey || warnedMissingUiKeys.has(normalizedKey)) {
+    return;
+  }
+  warnedMissingUiKeys.add(normalizedKey);
+  const selectorText = Array.isArray(selectors) && selectors.length ? ` (${selectors.join(' | ')})` : '';
+  console.warn(`[ui] missing core element: ${normalizedKey}${selectorText}`);
+}
 
 function showBootError(error) {
   const stack = error && error.stack ? error.stack : String(error && error.message ? error.message : error);
@@ -42,12 +66,16 @@ function cacheUi() {
   ui.phaseProgressFill = document.getElementById('phaseProgressFill');
   ui.phaseProgressMarker = document.getElementById('phaseProgressMarker');
   ui.phaseProgress = ui.phaseCard ? ui.phaseCard.querySelector('.phase-progress') : null;
-  ui.homePlayerPanel = document.querySelector('.home-player-panel');
-  ui.homeMetaToggle = document.getElementById('homeMetaToggle');
-  ui.homeMetaGoalCompact = document.getElementById('homeMetaGoalCompact');
-  ui.homeMetaGoalProgress = document.getElementById('homeMetaGoalProgress');
-  ui.homeMetaGoalStatus = document.getElementById('homeMetaGoalStatus');
-  ui.homeMetaBuildChip = document.getElementById('homeMetaBuildChip');
+  ui.homePlayerPanel = firstExistingNode('.home-player-panel', '.player-card', '[data-player-card]');
+  ui.homeMetaToggle = document.getElementById('homeMetaToggle') || firstExistingNode('.goal-inline', '.run-goal');
+  ui.homeMetaGoalCompact = document.getElementById('homeMetaGoalCompact')
+    || (ui.homeMetaToggle ? ui.homeMetaToggle.querySelector('.home-meta-title, .goal-title') : null);
+  ui.homeMetaGoalProgress = document.getElementById('homeMetaGoalProgress')
+    || (ui.homeMetaToggle ? ui.homeMetaToggle.querySelector('.home-meta-progress, .goal-progress') : null);
+  ui.homeMetaGoalStatus = document.getElementById('homeMetaGoalStatus')
+    || (ui.homeMetaToggle ? ui.homeMetaToggle.querySelector('.home-meta-status, [data-goal-status]') : null);
+  ui.homeMetaBuildChip = document.getElementById('homeMetaBuildChip')
+    || (ui.homeMetaToggle ? ui.homeMetaToggle.querySelector('.home-meta-build-chip, [data-build-chip]') : null);
   ui.homeMetaDetail = document.getElementById('homeMetaDetail');
   ui.homeMetaDetailStatus = document.getElementById('homeMetaDetailStatus');
   ui.homeMetaDetailTitle = document.getElementById('homeMetaDetailTitle');
@@ -223,6 +251,13 @@ function cacheUi() {
   ui.runSummaryAnalyzeBtn = document.getElementById('runSummaryAnalyzeBtn');
   ui.screenViews = Array.from(document.querySelectorAll('.hud-screen[data-screen]'));
   ui.screenNavButtons = Array.from(document.querySelectorAll('[data-screen-target]'));
+
+  if (!ui.homePlayerPanel) {
+    warnMissingCoreUi('homePlayerPanel', ['.home-player-panel', '.player-card', '[data-player-card]']);
+  }
+  if (!ui.homeMetaToggle) {
+    warnMissingCoreUi('homeMetaToggle', ['#homeMetaToggle', '.goal-inline', '.run-goal']);
+  }
 }
 
 function bindUi() {
@@ -635,11 +670,25 @@ function bindSetupOptionButtons() {
 }
 
 function ensureRequiredUi() {
+  const optionalKeys = new Set([
+    'homeMetaToggle',
+    'homeMetaGoalCompact',
+    'homeMetaGoalProgress',
+    'homeMetaGoalStatus',
+    'homeMetaBuildChip',
+    'homeMetaDetail',
+    'homeMetaDetailStatus',
+    'homeMetaDetailTitle',
+    'homeMetaDetailDescription',
+    'homeMetaDetailProgress',
+    'homeMetaDetailReward',
+    'homeMetaDetailBuildTag',
+    'homeMetaDetailBuildTitle',
+    'homeMetaDetailBuildEffect',
+    'homeMetaDetailBuildLoadout'
+  ]);
   const requiredKeys = [
     'phaseCard', 'phaseCardTitle', 'phaseCardCycle', 'phaseCardSubtitle', 'phaseProgressFill', 'phaseProgressMarker', 'phaseProgress',
-    'homeMetaToggle', 'homeMetaGoalCompact', 'homeMetaGoalProgress', 'homeMetaGoalStatus', 'homeMetaBuildChip',
-    'homeMetaDetail', 'homeMetaDetailStatus', 'homeMetaDetailTitle', 'homeMetaDetailDescription', 'homeMetaDetailProgress',
-    'homeMetaDetailReward', 'homeMetaDetailBuildTag', 'homeMetaDetailBuildTitle', 'homeMetaDetailBuildEffect', 'homeMetaDetailBuildLoadout',
     'healthRing', 'stressRing', 'waterRing', 'nutritionRing', 'growthRing', 'riskRing',
     'healthValue', 'stressValue', 'waterValue', 'nutritionValue', 'growthValue', 'riskValue',
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
@@ -663,7 +712,7 @@ function ensureRequiredUi() {
     'runSummaryUnlocks', 'runSummaryNewRunBtn', 'runSummaryAnalyzeBtn'
   ];
 
-  const missing = requiredKeys.filter((key) => !ui[key]);
+  const missing = requiredKeys.filter((key) => !ui[key] && !optionalKeys.has(key));
   ensureRequiredUi.lastMissing = missing;
   if (missing.length) {
     const preview = missing.slice(0, 12).join(', ');
