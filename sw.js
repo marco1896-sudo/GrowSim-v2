@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'growsim-v1-20260327-care-hints-v1';
+const CACHE_VERSION = 'growsim-v1-20260327-utf8-fix-v2';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');
@@ -18,6 +18,7 @@ const APP_SHELL_FILES = [
   appPath('ui.js'),
   appPath('storage.js'),
   appPath('notifications.js'),
+  appPath('src/utils/textEncoding.js'),
   appPath('src/simulation/plantState.js'),
   appPath('src/events/eventFlags.js'),
   appPath('src/events/eventMemory.js'),

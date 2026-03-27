@@ -3,8 +3,8 @@
 (function attachCareMapping(globalScope) {
   const categoryOrder = Object.freeze(['watering', 'fertilizing', 'training', 'environment']);
   const categoryLabels = Object.freeze({
-    watering: 'BewÃ¤sserung',
-    fertilizing: 'NÃ¤hrstoffe',
+    watering: 'Bewässerung',
+    fertilizing: 'Nährstoffe',
     training: 'Training',
     environment: 'Umgebung'
   });
@@ -100,7 +100,7 @@
         open: ui.openSheet === 'care',
         selectedCategory,
         selectedActionId: careUi.selectedActionId || null,
-        feedback: careUi.feedback || { kind: 'info', text: 'WÃ¤hle eine Aktion.' },
+        feedback: careUi.feedback || { kind: 'info', text: 'Wähle eine Aktion.' },
         categoryOrder,
         categoryLabels,
         availableCategories,

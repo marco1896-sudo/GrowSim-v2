@@ -865,6 +865,13 @@ async function initOrMigrateState() {
   ensureStateIntegrity(Date.now());
 }
 
+function repairRuntimeTextEncoding(value) {
+  const api = window.GrowSimTextEncoding;
+  return api && typeof api.deepRepairMojibake === 'function'
+    ? api.deepRepairMojibake(value)
+    : value;
+}
+
 async function loadCatalogs() {
   await loadEventCatalog();
   await loadActionsCatalog();
@@ -875,7 +882,7 @@ async function loadMissionsCatalog() {
   try {
     const response = await fetch('./data/missions.json', { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const missions = await response.json();
+    const missions = repairRuntimeTextEncoding(await response.json());
     state.missions.catalog = missions;
     state.missions.byId = Object.fromEntries(missions.map(m => [m.id, m]));
   } catch (error) {
@@ -5528,7 +5535,7 @@ async function loadPlantSpriteRuntime() {
       if (!metadataResponse.ok) {
         throw new Error(`Metadata HTTP ${metadataResponse.status}`);
       }
-      const rawMetadata = await metadataResponse.json();
+    const rawMetadata = repairRuntimeTextEncoding(await metadataResponse.json());
       const metadata = normalizePlantSpriteMetadata(rawMetadata);
       const image = await loadImageAsset(appPath(PLANT_SPRITE_ASSET));
 
@@ -6860,7 +6867,7 @@ async function loadEventCatalog() {
   try {
     const v1 = await fetch(`./data/events.json?v=${EVENTS_CATALOG_VERSION}`, { cache: 'no-store' });
     if (v1.ok) {
-      const payload = await v1.json();
+      const payload = repairRuntimeTextEncoding(await v1.json());
       const events = Array.isArray(payload) ? payload : payload.events;
       if (Array.isArray(events)) {
         catalogs.push(...events.map((eventDef) => normalizeEvent(eventDef, 'v1')).filter(Boolean));
@@ -6873,7 +6880,7 @@ async function loadEventCatalog() {
   try {
     const foundation = await fetch('./data/events.foundation.json', { cache: 'default' });
     if (foundation.ok) {
-      const payload = await foundation.json();
+      const payload = repairRuntimeTextEncoding(await foundation.json());
       const events = Array.isArray(payload) ? payload : payload.events;
       if (Array.isArray(events)) {
         catalogs.push(...events.map((eventDef) => normalizeEvent(eventDef, 'foundation')).filter(Boolean));
@@ -6886,7 +6893,7 @@ async function loadEventCatalog() {
   try {
     const v2 = await fetch('./data/events.v2.json', { cache: 'default' });
     if (v2.ok) {
-      const payload = await v2.json();
+      const payload = repairRuntimeTextEncoding(await v2.json());
       const events = Array.isArray(payload) ? payload : payload.events;
       if (Array.isArray(events)) {
         catalogs.push(...events.map((eventDef) => normalizeEvent(eventDef, 'v2')).filter(Boolean));
@@ -6928,7 +6935,7 @@ async function loadActionsCatalog() {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const payload = await response.json();
+    const payload = repairRuntimeTextEncoding(await response.json());
     const actions = Array.isArray(payload) ? payload : payload.actions;
     if (!Array.isArray(actions)) {
       throw new Error('Invalid actions payload');

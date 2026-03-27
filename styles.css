@@ -57,8 +57,11 @@ body {
   margin: 0;
   min-height: 100%;
   color: var(--text-main);
-  font-family: "Trebuchet MS", "Gill Sans", "Verdana", sans-serif;
+  font-family: "Exo 2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #04090f;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -679,8 +682,10 @@ body {
 
 .action-orb__label {
   color: #f4f9ff;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
-  line-height: 1.05;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+  line-height: 1.18;
+  text-shadow: none;
 }
 
 #phaseCardCycle {
@@ -3048,10 +3053,10 @@ body.panelized-ready :is(
 .action-orb__label {
   margin-top: 0.12rem;
   font-size: 0.94rem;
-  line-height: 1;
+  line-height: 1.18;
   letter-spacing: 0.04em;
   color: #f8d631;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  text-shadow: none;
 }
 
 .action-orb .boost-sub {
@@ -3252,12 +3257,13 @@ body.panelized-ready :is(
 .figma-section-head {
   margin: 0;
   color: #d4af37;
-  font-family: "Exo 2", "Trebuchet MS", sans-serif;
-  font-size: 10px;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
+  font-size: 11px;
   line-height: 1.2;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 500;
+  opacity: 0.72;
 }
 
 .figma-static-row {
@@ -3666,24 +3672,27 @@ body.panelized-ready :is(
 }
 
 .care-action-label {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   color: #f5f7f3;
   margin-bottom: 0;
-  line-height: 1.2;
+  line-height: 1.28;
   white-space: normal;
   text-align: left;
   text-shadow: none;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .care-action-hint {
-  font-size: 11px;
-  color: rgba(223, 234, 221, 0.7);
+  font-size: 12px;
+  color: rgba(223, 234, 221, 0.72);
   text-align: left;
   line-height: 1.4;
   white-space: normal;
   max-width: 100%;
   text-shadow: none;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
 }
 
 .figma-care-actions .care-action-card.is-selected {
@@ -3742,10 +3751,13 @@ body.panelized-ready :is(
   margin: 4px 0 2px;
   padding-top: 2px;
   color: rgba(212, 175, 55, 0.82);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  line-height: 1.2;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
+  opacity: 0.7;
 }
 
 .care-section-label--hints {
@@ -3789,11 +3801,13 @@ body.panelized-ready :is(
   align-items: center;
   gap: 8px;
   color: rgba(241, 244, 228, 0.92);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
+  line-height: 1.2;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .care-hint-item > span::before {
@@ -3808,10 +3822,11 @@ body.panelized-ready :is(
 
 .care-hint-item > strong {
   color: #f1f6ec;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.46;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
   overflow-wrap: anywhere;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .care-hint-item--positive {
@@ -3866,9 +3881,10 @@ body.panelized-ready :is(
   align-items: center;
   gap: 12px;
   padding: 5px 0;
-  font-size: 12px;
+  font-size: 13px;
   color: #dfeadd;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .care-effect-row:last-child {
@@ -3876,14 +3892,17 @@ body.panelized-ready :is(
 }
 
 .care-effect-row > span {
-  color: rgba(214, 225, 220, 0.72);
+  color: rgba(214, 225, 220, 0.85);
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .care-effect-row > strong {
   color: rgba(245, 247, 243, 0.9);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.015em;
   text-align: right;
+  line-height: 1.4;
 }
 
 .care-empty-row {
@@ -3932,18 +3951,21 @@ body.panelized-ready :is(
 .care-preview-label {
   color: #f5f5f0;
   font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.015em;
-  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.3;
   text-shadow: none;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .care-preview-note {
   color: rgba(223, 234, 221, 0.78);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.4;
   text-shadow: none;
   max-width: 34ch;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
 }
 
 .care-execute-panel {
@@ -3960,13 +3982,15 @@ body.panelized-ready :is(
   border: 0;
   background: transparent;
   text-align: center;
-  font-size: 11px;
-  line-height: 1.45;
-  color: rgba(214, 225, 220, 0.7);
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(214, 225, 220, 0.6);
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
 }
 
 .care-feedback.is-info {
-  color: rgba(214, 225, 220, 0.7);
+  color: rgba(214, 225, 220, 0.6);
 }
 
 .care-feedback.is-success {
@@ -4019,18 +4043,18 @@ body.panelized-ready :is(
   }
 
   .care-preview-label {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   .care-preview-note {
-    font-size: 11px;
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.4;
     max-width: none;
   }
 
   .care-section-label {
-    font-size: 9px;
-    letter-spacing: 0.11em;
+    font-size: 10px;
+    letter-spacing: 0.08em;
   }
 
   .care-hint-item {
@@ -4040,16 +4064,16 @@ body.panelized-ready :is(
   }
 
   .care-hint-item > span {
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .care-hint-item > strong {
-    font-size: 11px;
-    line-height: 1.4;
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   .care-effect-row {
-    font-size: 11px;
+    font-size: 12px;
     gap: 8px;
     min-height: 32px;
   }
@@ -4091,7 +4115,7 @@ body.panelized-ready :is(
 
   .care-action-hint,
   .care-feedback {
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 
@@ -4410,34 +4434,37 @@ body.panelized-ready :is(
 
 .home-player-name {
   display: block;
-  font-size: 12px;
-  line-height: 1.04;
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  line-height: 1.22;
+  letter-spacing: 0.01em;
   font-weight: 600;
   color: #e8f5e9;
   white-space: nowrap;
   margin-bottom: 3px;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .home-player-role {
   display: block;
   color: rgba(134, 197, 144, 0.75);
-  font-size: 10px;
-  line-height: 0.69;
-  letter-spacing: 0.08em;
-  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  font-weight: 500;
   text-transform: uppercase;
   margin-bottom: 4px;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .home-player-xp {
   order: 4;
   margin: 2px 0 0;
   color: rgba(134, 197, 144, 0.65);
-  font-size: 10px;
-  line-height: 0.62;
-  letter-spacing: 0.02em;
-  font-weight: 300;
+  font-size: 11px;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  font-weight: 400;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .home-player-xp-track {
@@ -4585,8 +4612,10 @@ body.panelized-ready :is(
   grid-template-columns: 12px 1fr auto;
   align-items: center;
   gap: 6px;
-  font-size: 8px;
-  color: rgba(255, 255, 255, 0.52);
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.64);
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .home-env-row img {
@@ -4595,7 +4624,9 @@ body.panelized-ready :is(
 }
 
 .home-env-row strong {
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
   color: #f0f6f0;
 }
 
@@ -4862,11 +4893,12 @@ body.panelized-ready :is(
   white-space: nowrap;
   color: #ffd700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   font-size: 18px;
   font-weight: 500;
-  line-height: 1;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+  line-height: 1.15;
+  text-shadow: none;
+  font-family: "Exo 2", system-ui, -apple-system, sans-serif;
 }
 
 .home-boost-tag {
@@ -5461,10 +5493,10 @@ body.panelized-ready :is(
 .home-action-panel .home-action-title {
   bottom: 6px;
   font-size: 17px;
-  line-height: 1;
-  letter-spacing: 0.03em;
-  font-weight: 400;
-  text-shadow: 0 0 6px rgba(255, 215, 0, 0.24);
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  text-shadow: none;
 }
 
 .home-action-panel .home-boost-tag {
@@ -5472,7 +5504,7 @@ body.panelized-ready :is(
   right: 10px;
   font-size: 18px;
   font-weight: 500;
-  text-shadow: 0 0 6px rgba(255, 215, 0, 0.28);
+  text-shadow: none;
 }
 
 .home-action-panel .boost-sub {

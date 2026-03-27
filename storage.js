@@ -1,5 +1,12 @@
 'use strict';
 
+function repairStoredTextEncoding(value) {
+  const api = window.GrowSimTextEncoding;
+  return api && typeof api.deepRepairMojibake === 'function'
+    ? api.deepRepairMojibake(value)
+    : value;
+}
+
 function localStorageAdapter() {
   return {
     async get() {
@@ -8,7 +15,7 @@ function localStorageAdapter() {
         return null;
       }
       try {
-        return JSON.parse(raw);
+        return repairStoredTextEncoding(JSON.parse(raw));
       } catch (_error) {
         return null;
       }

@@ -1,14 +1,17 @@
 ﻿<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0d111a">
   <title>Grow-Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260326e">
+  <link rel="stylesheet" href="styles.css?v=20260327a">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -21,7 +24,7 @@
           </div>
           <div class="home-player-meta">
             <strong id="playerNameValue" class="home-player-name">Max Mustergrower</strong>
-            <span id="playerRoleValue" class="home-player-role">G&Auml;RTNER</span>
+            <span id="playerRoleValue" class="home-player-role">Gärtner</span>
             <p id="playerXpValue" class="home-player-xp">XP: 7.350 / 8.650</p>
             <div class="home-player-xp-track" aria-hidden="true">
               <span id="playerXpFill" class="home-player-xp-fill" style="--xp:84;"></span>
@@ -504,7 +507,8 @@
     </div>
   </section>
 
-<script src="sim.js?v=20260326a" defer></script>
+<script src="src/utils/textEncoding.js?v=20260327a" defer></script>
+<script src="sim.js?v=20260327b" defer></script>
   <script src="src/simulation/plantState.js?v=20260319c" defer></script>
   <script src="src/events/eventFlags.js?v=20260319c" defer></script>
   <script src="src/events/eventMemory.js?v=20260319c" defer></script>
@@ -512,15 +516,15 @@
   <script src="src/events/eventResolver.js?v=20260319c" defer></script>
   <script src="events.js?v=20260319c" defer></script>
   <script src="ui.js?v=20260319c" defer></script>
-  <script src="storage.js?v=20260319c" defer></script>
+  <script src="storage.js?v=20260327a" defer></script>
   <script src="notifications.js?v=20260319c" defer></script>
   <script src="src/ui/components/primitives.js?v=20260319d" defer></script>
   <script src="src/ui/controller/uiController.js?v=20260319d" defer></script>
   <script src="src/ui/runtime/screenRuntimeManager.js?v=20260319d" defer></script>
   <script src="src/ui/mappings/homeMapping.js?v=20260319d" defer></script>
   <script src="src/ui/care/careActionHints.js?v=20260327a" defer></script>
-  <script src="src/ui/mappings/careMapping.js?v=20260319d" defer></script>
+  <script src="src/ui/mappings/careMapping.js?v=20260327a" defer></script>
   <script src="src/ui/screens/screenModules.js?v=20260319d" defer></script>
-  <script src="app.js?v=20260326c" defer></script>
+  <script src="app.js?v=20260327d" defer></script>
 </body>
 </html>
