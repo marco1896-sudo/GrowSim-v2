@@ -3671,6 +3671,71 @@ function formatActionHint(action, cooldownLeft) {
   return formatEffectsInline(action);
 }
 
+const CARE_HINT_COPY_BY_KEY = Object.freeze({
+  watering_late_flower_humid: ['Zusätzliches Gießen erhöht hier gerade den Krankheitsdruck.', 'In der späten Blüte bleibt die Zone unter feuchten Bedingungen leichter zu nass.'],
+  watering_root_pressure: ['Mehr Wasser verschärft hier gerade den Druck an den Wurzeln.', 'Das Medium wirkt bereits stark belastet.'],
+  watering_still_wet: ['Mehr Wasser belastet die Wurzelzone gerade eher.', 'Das Medium ist noch recht feucht.'],
+  watering_good_fit: ['Diese Bewässerung passt gerade gut.', 'Das Medium wirkt trocken genug.'],
+  watering_feed_solution_pressure: ['Nährlösung kann die Wurzelzone gerade stärker belasten.', 'Sie trägt schon spürbar Druck.'],
+  watering_feed_solution_positive: ['Nährlösung passt gerade gut.', 'Die Pflanze wirkt aufnahmefähig.'],
+  watering_flush_positive: ['Spülen kann hier gerade etwas Druck aus der Wurzelzone nehmen.', 'Die Zone wirkt belastet.'],
+  watering_flush_caution: ['Spülen zieht hier leicht unnötig Substanz aus dem Medium.', 'Die Pflanze wirkt aktuell nicht stark belastet.'],
+  watering_dry_air: ['Stärkeres Gießen beruhigt das Klima gerade kaum.', 'Die Luft ist sehr trocken und der Rhythmus wird dadurch eher unruhig.'],
+  fertilizing_seedling_warning: ['Kräftige Fütterung kostet hier schnell Stabilität.', 'Junge Pflanzen reagieren darauf besonders empfindlich.'],
+  fertilizing_pressure_warning: ['Mehr Futter erhöht hier gerade das Risiko.', 'Die Wurzelzone steht schon unter Nährstoffdruck.'],
+  fertilizing_stressed_warning: ['Zusätzliche Nährstoffe belasten die Pflanze gerade eher.', 'Sie steht bereits unter Druck.'],
+  fertilizing_dry_medium: ['Fütterung fällt im trockenen Medium gerade härter aus.', 'Etwas sanftere Versorgung wäre jetzt schonender.'],
+  fertilizing_positive: ['Eine passende Fütterung ist gerade sinnvoll.', 'Die Pflanze wirkt aufnahmefähig.'],
+  fertilizing_late_flower_caution: ['Zusätzlicher Druck wirkt jetzt schneller nach.', 'In der späten Blüte zahlt sich stabile Führung besonders aus.'],
+  training_seedling_warning: ['Training kostet dich hier gerade Stabilität.', 'Junge Pflanzen reagieren empfindlich auf Eingriffe.'],
+  training_late_flower_warning: ['Stärkere Eingriffe kosten jetzt deutlich mehr Erholung.', 'In der späten Blüte kommt Stabilität langsamer zurück.'],
+  training_early_flower_caution: ['Zu viel Eingriff kostet jetzt leichter Energie.', 'In der frühen Blüte sollte Training vorsichtiger werden.'],
+  training_stress_warning: ['Training kostet gerade eher Erholung als Fortschritt.', 'Die Pflanze steht bereits unter Druck.'],
+  training_dry_air_caution: ['Eingriffe fühlen sich jetzt deutlich härter an.', 'Die Luft wirkt gerade ziehend und fordernd.'],
+  training_heat_caution: ['Wärme macht Eingriffe gerade deutlich belastender.', 'Etwas mehr Ruhe wäre jetzt oft sauberer.'],
+  training_positive: ['Leichtes Training passt in dieser Phase gut.', 'Die Pflanze wirkt stabil.'],
+  environment_humid_warning: ['Eine Umgebungsmaßnahme ist hier jetzt besonders sinnvoll.', 'Feuchte Luft steht gerade zu lange im Bestand.'],
+  environment_late_flower_caution: ['Stehende Feuchte wird jetzt schneller problematisch.', 'In der späten Blüte passt ein saubereres Klima besonders gut.'],
+  environment_low_pressure: ['Der direkte Effekt dürfte gerade eher klein sein.', 'Aktuell ist wenig Druck im System.'],
+  environment_positive: ['Die Lage spricht gerade klar für eine Umgebungsmaßnahme.', 'Sie kann Druck senken, ohne die Pflanze direkt zu belasten.']
+});
+
+function splitCareHintMessage(message) {
+  const text = String(message || '').trim();
+  if (!text) {
+    return { headline: '', explanation: '' };
+  }
+
+  const parts = text
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 2) {
+    return {
+      headline: parts[0],
+      explanation: parts.slice(1).join(' ')
+    };
+  }
+
+  return {
+    headline: text,
+    explanation: ''
+  };
+}
+
+function getCareHintCopy(hint) {
+  const key = hint && hint.key ? String(hint.key) : '';
+  const mapped = key ? CARE_HINT_COPY_BY_KEY[key] : null;
+  if (mapped) {
+    return {
+      headline: String(mapped[0] || '').trim(),
+      explanation: String(mapped[1] || '').trim()
+    };
+  }
+  return splitCareHintMessage(hint && hint.message);
+}
+
 function renderCareEffectsPanel(careViewModel = null) {
   ui.careEffectsList.replaceChildren();
 
@@ -3742,7 +3807,15 @@ function renderCareEffectsPanel(careViewModel = null) {
       const label = hint.severity === 'warning'
         ? 'Warnung'
         : (hint.severity === 'caution' ? 'Vorsicht' : 'Empfehlung');
-      li.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(hint.message)}</strong>`;
+      const hintCopy = getCareHintCopy(hint);
+      li.innerHTML = `
+        <div class="care-hint-head">
+          <span class="care-hint-marker" aria-hidden="true"></span>
+          <span class="care-hint-kicker">${escapeHtml(label)}</span>
+        </div>
+        <strong class="care-hint-headline">${escapeHtml(hintCopy.headline || hint.message)}</strong>
+        ${hintCopy.explanation ? `<p class="care-hint-message">${escapeHtml(hintCopy.explanation)}</p>` : ''}
+      `;
       ui.careEffectsList.appendChild(li);
       renderedHints += 1;
     }
