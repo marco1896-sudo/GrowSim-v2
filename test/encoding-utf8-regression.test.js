@@ -57,7 +57,7 @@ function main() {
   assert.ok(indexHtml.includes('src/utils/textEncoding.js'), 'index.html should load the text encoding guard');
 
   const swSource = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-  assert.ok(swSource.includes('utf8-fix-v2'), 'service worker cache version should be bumped for UTF-8 fix');
+  assert.ok(swSource.includes('care-detail-fix-v3'), 'service worker cache version should be bumped for the latest text-safe shell');
   assert.ok(swSource.includes("appPath('src/utils/textEncoding.js')"), 'service worker should cache the text encoding helper');
 }
 

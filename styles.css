@@ -3165,13 +3165,20 @@ body.panelized-ready :is(
 #careSheet.figma-sheet .sheet-content {
   min-height: 0;
   padding-bottom: calc(18px + env(safe-area-inset-bottom));
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   overscroll-behavior: contain;
 }
 
 #careSheet .figma-section-card--care {
   min-height: 0;
   overflow: hidden;
+}
+
+#careSheet .figma-section-card--care-detail {
+  min-height: 0;
+  height: 100%;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-content: start;
 }
 
 #careSheet .figma-sheet-header {
@@ -3718,6 +3725,8 @@ body.panelized-ready :is(
   list-style: none;
   display: grid;
   gap: 10px;
+  min-height: 148px;
+  align-content: start;
   max-height: min(360px, 38dvh);
   overflow-y: auto;
   overflow-x: hidden;
@@ -4076,6 +4085,10 @@ body.panelized-ready :is(
     font-size: 12px;
     gap: 8px;
     min-height: 32px;
+  }
+
+  .care-effects-list {
+    min-height: 136px;
   }
 
   .figma-care-categories {

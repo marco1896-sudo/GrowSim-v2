@@ -105,7 +105,6 @@ async function main() {
       return node && !node.classList.contains('hidden');
     });
 
-    await page.click('#careCategoryList [role="tab"]:nth-child(2)');
     await page.click('#careActionList .care-action-card:first-child');
 
     const careUiState = await page.evaluate(() => {
@@ -113,6 +112,7 @@ async function main() {
       const actionList = document.getElementById('careActionList');
       const previewLabel = document.getElementById('carePreviewLabel');
       const previewNote = document.getElementById('carePreviewNote');
+      const effectsList = document.getElementById('careEffectsList');
       const executeButton = document.getElementById('careExecuteButton');
 
       const text = document.getElementById('careSheet').textContent || '';
@@ -123,12 +123,16 @@ async function main() {
       const actionListStyle = window.getComputedStyle(actionList);
       const previewLabelStyle = window.getComputedStyle(previewLabel);
       const previewNoteStyle = window.getComputedStyle(previewNote);
+      const effectsListStyle = window.getComputedStyle(effectsList);
 
       return {
         text,
         actionListOverflowY: actionListStyle.overflowY,
         actionListPaddingRight: actionListStyle.paddingRight,
         actionListScrollbarGutter: actionListStyle.scrollbarGutter || '',
+        effectsListOverflowY: effectsListStyle.overflowY,
+        effectsListHeight: effectsList.getBoundingClientRect().height,
+        effectsListChildCount: effectsList.children.length,
         previewLabelLineHeight: previewLabelStyle.lineHeight,
         previewNoteLineHeight: previewNoteStyle.lineHeight,
         previewNoteText: previewNote.textContent.trim(),
@@ -148,6 +152,11 @@ async function main() {
     assert.ok(careUiState.previewNoteText.length > 0, 'selected care preview should expose a subtitle');
     assert.notStrictEqual(careUiState.previewLabelLineHeight, 'normal', 'preview title should have an explicit line-height');
     assert.notStrictEqual(careUiState.previewNoteLineHeight, 'normal', 'preview subtitle should have an explicit line-height');
+    assert.strictEqual(careUiState.effectsListOverflowY, 'auto', 'care detail list should support internal scrolling when needed');
+    assert.ok(careUiState.effectsListChildCount >= 4, 'care detail list should render hints and effect rows');
+    assert.ok(careUiState.effectsListHeight >= 120, 'care detail list should retain enough visible height for hints and effects');
+    assert.ok(/Hinweise zur aktuellen Lage/.test(careUiState.text), 'care detail should visibly include the hints section');
+    assert.ok(/Auswirkungen der Aktion/.test(careUiState.text), 'care detail should visibly include the effects section');
     assert.ok(careUiState.executeReachable, 'care sheet should allow reaching the execute button after scrolling');
     assert.ok(!careUiState.needsScroll || careUiState.sheetScrollTop > 0, 'care sheet content should scroll when the content actually exceeds the viewport');
   } finally {
