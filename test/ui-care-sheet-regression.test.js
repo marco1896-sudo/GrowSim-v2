@@ -110,6 +110,7 @@ async function main() {
     const careUiState = await page.evaluate(() => {
       const sheetContent = document.querySelector('#careSheet .sheet-content');
       const actionList = document.getElementById('careActionList');
+      const previewWrap = document.getElementById('carePreviewWrap');
       const previewLabel = document.getElementById('carePreviewLabel');
       const previewNote = document.getElementById('carePreviewNote');
       const effectsList = document.getElementById('careEffectsList');
@@ -130,6 +131,7 @@ async function main() {
         actionListOverflowY: actionListStyle.overflowY,
         actionListPaddingRight: actionListStyle.paddingRight,
         actionListScrollbarGutter: actionListStyle.scrollbarGutter || '',
+        previewHeight: previewWrap.getBoundingClientRect().height,
         effectsListOverflowY: effectsListStyle.overflowY,
         effectsListHeight: effectsList.getBoundingClientRect().height,
         effectsListChildCount: effectsList.children.length,
@@ -152,9 +154,10 @@ async function main() {
     assert.ok(careUiState.previewNoteText.length > 0, 'selected care preview should expose a subtitle');
     assert.notStrictEqual(careUiState.previewLabelLineHeight, 'normal', 'preview title should have an explicit line-height');
     assert.notStrictEqual(careUiState.previewNoteLineHeight, 'normal', 'preview subtitle should have an explicit line-height');
+    assert.ok(careUiState.previewHeight >= 100 && careUiState.previewHeight <= 140, 'care preview should stay within the compact target height range');
     assert.strictEqual(careUiState.effectsListOverflowY, 'auto', 'care detail list should support internal scrolling when needed');
     assert.ok(careUiState.effectsListChildCount >= 4, 'care detail list should render hints and effect rows');
-    assert.ok(careUiState.effectsListHeight >= 120, 'care detail list should retain enough visible height for hints and effects');
+    assert.ok(careUiState.effectsListHeight >= 180, 'care detail list should retain enough visible height for hints and effects');
     assert.ok(/Hinweise zur aktuellen Lage/.test(careUiState.text), 'care detail should visibly include the hints section');
     assert.ok(/Auswirkungen der Aktion/.test(careUiState.text), 'care detail should visibly include the effects section');
     assert.ok(careUiState.executeReachable, 'care sheet should allow reaching the execute button after scrolling');
