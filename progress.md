@@ -70,3 +70,49 @@ Open items:
 Open items:
 - Watch live gameplay frequency of the new climate warnings vs positive rewards before broad balance tweaks.
 - If players want stronger visual distinction later, event image styling can be refined without touching the event engine.
+
+2026-03-27
+- Started vertical-slice implementation for persistent meta progression and repeatable run loop.
+- Added a dedicated progression helper module with:
+  - persistent profile defaults
+  - explicit XP thresholds
+  - unlock catalog / readable UI labels
+  - run finalization / summary generation
+- Home HUD top-module polish pass:
+  - removed the large in-layout run-goal card from the main scroll stack
+  - merged player identity, active goal, and build identity into a compact top command header
+  - added an inline expand/collapse detail area for goal/build details instead of a second heavy card
+  - verified collapsed and expanded states visually in-browser with screenshots (`home-top-module-collapsed.png`, `home-top-module-expanded.png`)
+- Wired `storage.js` to migrate and persist `state.profile` and `state.run`, including old-save fallback for active runs without the new run block.
+- Added first run-summary overlay and extended landing setup with unlock-gated medium/light choices.
+- Switched HUD level/xp display from fake sim-day placeholders to real persistent profile progression.
+- Added `resetRunPreservingProfile()` and summary-driven new-run loop while keeping hard-reset behavior in `resetRun()`.
+- Added death/downed persistence and guarded harvest finalization path in the simulation loop.
+- Added lightweight real gameplay effects for unlocked setup choices:
+  - outdoor already meaningful via existing mode handling
+  - coco medium increases drain / slightly increases growth pressure
+  - genetics now lightly changes stress/health/growth behavior
+
+Open items:
+- Verify controller/menu path and summary overlay path together in automated tests and live browser flow.
+- If the new progression UI feels too subtle, add stronger in-HUD level-up feedback without changing save/state architecture.
+
+- Summary motivation pass:
+  - added central run-feedback text catalog in `src/progression/progression.js`
+  - summary now derives a readable overall rating, highlight list, mistake list, positive list, and compact XP notices
+  - overlay order now emphasizes interpretation first, numbers second
+  - added logic coverage to keep bad runs explanatory and good runs affirming
+- Mission Light pass:
+  - added one active run goal per run with lightweight selection in `src/progression/progression.js`
+  - goals are now persisted on `state.run.goal`, restored for old active saves, and re-evaluated during runtime sync
+  - added compact HUD goal card with title, description, status, and progress
+  - summary now shows goal result plus mission bonus XP
+  - completed goals now add a dedicated XP bonus without changing the larger progression structure
+  - added regression coverage for goal assignment, migration safety, bonus XP, and HUD/summary visibility
+- Run identity / strategy pass:
+  - sharpened three unlock-driven run archetypes around Hardy Genetics, Fast Genetics, and High Output Light
+  - strengthened simulation-side tradeoffs so safe / fast / high-pressure runs now diverge more clearly in growth, stress, and resource pressure
+  - added setup comparison text directly to landing options plus a compact run-profile preview card
+  - active run HUD now keeps the chosen build visible next to the current mission
+  - run summary now includes the selected build and setup-aware highlight/mistake/positive feedback
+  - added regression coverage for build identity, strategic start preview, and summary references to the chosen setup

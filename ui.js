@@ -3,6 +3,7 @@
 let homeBindingsBound = false;
 let menuOverlayBindingsBound = false;
 let sheetsOverlayBindingsBound = false;
+let homeMetaExpanded = false;
 
 function showBootError(error) {
   const stack = error && error.stack ? error.stack : String(error && error.message ? error.message : error);
@@ -41,6 +42,22 @@ function cacheUi() {
   ui.phaseProgressFill = document.getElementById('phaseProgressFill');
   ui.phaseProgressMarker = document.getElementById('phaseProgressMarker');
   ui.phaseProgress = ui.phaseCard ? ui.phaseCard.querySelector('.phase-progress') : null;
+  ui.homePlayerPanel = document.querySelector('.home-player-panel');
+  ui.homeMetaToggle = document.getElementById('homeMetaToggle');
+  ui.homeMetaGoalCompact = document.getElementById('homeMetaGoalCompact');
+  ui.homeMetaGoalProgress = document.getElementById('homeMetaGoalProgress');
+  ui.homeMetaGoalStatus = document.getElementById('homeMetaGoalStatus');
+  ui.homeMetaBuildChip = document.getElementById('homeMetaBuildChip');
+  ui.homeMetaDetail = document.getElementById('homeMetaDetail');
+  ui.homeMetaDetailStatus = document.getElementById('homeMetaDetailStatus');
+  ui.homeMetaDetailTitle = document.getElementById('homeMetaDetailTitle');
+  ui.homeMetaDetailDescription = document.getElementById('homeMetaDetailDescription');
+  ui.homeMetaDetailProgress = document.getElementById('homeMetaDetailProgress');
+  ui.homeMetaDetailReward = document.getElementById('homeMetaDetailReward');
+  ui.homeMetaDetailBuildTag = document.getElementById('homeMetaDetailBuildTag');
+  ui.homeMetaDetailBuildTitle = document.getElementById('homeMetaDetailBuildTitle');
+  ui.homeMetaDetailBuildEffect = document.getElementById('homeMetaDetailBuildEffect');
+  ui.homeMetaDetailBuildLoadout = document.getElementById('homeMetaDetailBuildLoadout');
   ui.healthRing = document.getElementById('healthRing');
   ui.stressRing = document.getElementById('stressRing');
   ui.waterRing = document.getElementById('waterRing');
@@ -166,6 +183,11 @@ function cacheUi() {
   ui.setupPotSize = document.getElementById('setupPotSize');
   ui.setupGenetics = document.getElementById('setupGenetics');
   ui.setupOptionButtons = Array.from(document.querySelectorAll('[data-setup-select][data-setup-value]'));
+  ui.setupStrategyTag = document.getElementById('setupStrategyTag');
+  ui.setupStrategyTitle = document.getElementById('setupStrategyTitle');
+  ui.setupStrategyDescription = document.getElementById('setupStrategyDescription');
+  ui.setupStrategyTradeoff = document.getElementById('setupStrategyTradeoff');
+  ui.setupStrategyLoadout = document.getElementById('setupStrategyLoadout');
 
   ui.deathOverlay = document.getElementById('deathOverlay');
   ui.deathDriverList = document.getElementById('deathDriverList');
@@ -175,6 +197,30 @@ function cacheUi() {
   ui.deathRescueBtn = document.getElementById('deathRescueBtn');
   ui.deathRescueSubtext = document.getElementById('deathRescueSubtext');
   ui.deathRescueFeedback = document.getElementById('deathRescueFeedback');
+  ui.runSummaryOverlay = document.getElementById('runSummaryOverlay');
+  ui.runSummaryBadge = document.getElementById('runSummaryBadge');
+  ui.runSummaryTitle = document.getElementById('runSummaryTitle');
+  ui.runSummarySubtitle = document.getElementById('runSummarySubtitle');
+  ui.runSummaryRating = document.getElementById('runSummaryRating');
+  ui.runSummaryDay = document.getElementById('runSummaryDay');
+  ui.runSummaryStage = document.getElementById('runSummaryStage');
+  ui.runSummaryBuild = document.getElementById('runSummaryBuild');
+  ui.runSummaryQuality = document.getElementById('runSummaryQuality');
+  ui.runSummaryActions = document.getElementById('runSummaryActions');
+  ui.runSummaryEvents = document.getElementById('runSummaryEvents');
+  ui.runSummaryHighlights = document.getElementById('runSummaryHighlights');
+  ui.runSummaryMistakes = document.getElementById('runSummaryMistakes');
+  ui.runSummaryPositives = document.getElementById('runSummaryPositives');
+  ui.runSummaryXpNotices = document.getElementById('runSummaryXpNotices');
+  ui.runSummaryXpRows = document.getElementById('runSummaryXpRows');
+  ui.runSummaryLevel = document.getElementById('runSummaryLevel');
+  ui.runSummaryGoalTitle = document.getElementById('runSummaryGoalTitle');
+  ui.runSummaryGoalStatus = document.getElementById('runSummaryGoalStatus');
+  ui.runSummaryGoalDescription = document.getElementById('runSummaryGoalDescription');
+  ui.runSummaryGoalReward = document.getElementById('runSummaryGoalReward');
+  ui.runSummaryUnlocks = document.getElementById('runSummaryUnlocks');
+  ui.runSummaryNewRunBtn = document.getElementById('runSummaryNewRunBtn');
+  ui.runSummaryAnalyzeBtn = document.getElementById('runSummaryAnalyzeBtn');
   ui.screenViews = Array.from(document.querySelectorAll('.hud-screen[data-screen]'));
   ui.screenNavButtons = Array.from(document.querySelectorAll('[data-screen-target]'));
 }
@@ -214,6 +260,12 @@ function bindUi() {
   }
   if (ui.deathRescueBtn) {
     ui.deathRescueBtn.addEventListener('click', onDeathRescueClick);
+  }
+  if (ui.runSummaryNewRunBtn) {
+    ui.runSummaryNewRunBtn.addEventListener('click', onRunSummaryNewRunClick);
+  }
+  if (ui.runSummaryAnalyzeBtn) {
+    ui.runSummaryAnalyzeBtn.addEventListener('click', onRunSummaryAnalyzeClick);
   }
 
   for (const navButton of ui.screenNavButtons || []) {
@@ -288,6 +340,22 @@ function bindHomeScreenEvents(controller = null) {
     }));
   }
 
+  if (ui.homeMetaToggle) {
+    const toggleHomeMeta = () => {
+      if (ui.homeMetaToggle.classList.contains('hidden')) {
+        return;
+      }
+      setHomeMetaExpanded(!homeMetaExpanded);
+    };
+    ui.homeMetaToggle.addEventListener('click', toggleHomeMeta);
+    ui.homeMetaToggle.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleHomeMeta();
+      }
+    });
+  }
+
   const statRingBindings = [
     { node: ui.waterRing, key: 'water' },
     { node: ui.nutritionRing, key: 'nutrition' },
@@ -350,6 +418,24 @@ function bindHomeScreenEvents(controller = null) {
 
   homeBindingsBound = true;
 }
+
+function setHomeMetaExpanded(expanded) {
+  homeMetaExpanded = Boolean(expanded);
+  if (ui.homeMetaToggle) {
+    ui.homeMetaToggle.setAttribute('aria-expanded', String(homeMetaExpanded));
+    ui.homeMetaToggle.classList.toggle('is-expanded', homeMetaExpanded);
+  }
+  if (ui.homeMetaDetail) {
+    const visible = homeMetaExpanded && !ui.homeMetaDetail.classList.contains('home-meta-detail--disabled');
+    ui.homeMetaDetail.classList.toggle('hidden', !visible);
+    ui.homeMetaDetail.setAttribute('aria-hidden', String(!visible));
+  }
+  if (ui.homePlayerPanel) {
+    ui.homePlayerPanel.classList.toggle('home-player-panel--meta-open', homeMetaExpanded);
+  }
+}
+
+window.setHomeMetaExpanded = setHomeMetaExpanded;
 function bindMenuOverlayEvents(controller = null) {
   if (menuOverlayBindingsBound) {
     return;
@@ -459,7 +545,7 @@ function bindSheetsOverlayEvents(controller = null) {
 
   const settingsSupportBtn = document.getElementById('settingsSupportBtn');
   if (settingsSupportBtn) {
-    settingsSupportBtn.addEventListener('click', () => openMenuPlaceholder('Support', 'Support-Optionen folgen in einem spaeteren Update.'));
+    settingsSupportBtn.addEventListener('click', () => openMenuPlaceholder('Support', 'Support-Optionen folgen in einem späteren Update.'));
   }
 
   if (ui.backdrop) {
@@ -524,6 +610,9 @@ function bindSetupOptionButtons() {
     }
     button.dataset.setupBound = 'true';
     button.addEventListener('click', () => {
+      if (button.disabled || button.getAttribute('aria-disabled') === 'true') {
+        return;
+      }
       const selectId = String(button.dataset.setupSelect || '');
       const value = String(button.dataset.setupValue || '');
       const selectNode = document.getElementById(selectId);
@@ -532,17 +621,25 @@ function bindSetupOptionButtons() {
       }
       selectNode.value = value;
       syncGroup(selectId);
+      if (typeof renderSetupOptionLocks === 'function') {
+        renderSetupOptionLocks();
+      }
     });
   }
 
   syncGroup('setupPotSize');
   syncGroup('setupGenetics');
   syncGroup('setupMode');
+  syncGroup('setupMedium');
+  syncGroup('setupLight');
 }
 
 function ensureRequiredUi() {
   const requiredKeys = [
     'phaseCard', 'phaseCardTitle', 'phaseCardCycle', 'phaseCardSubtitle', 'phaseProgressFill', 'phaseProgressMarker', 'phaseProgress',
+    'homeMetaToggle', 'homeMetaGoalCompact', 'homeMetaGoalProgress', 'homeMetaGoalStatus', 'homeMetaBuildChip',
+    'homeMetaDetail', 'homeMetaDetailStatus', 'homeMetaDetailTitle', 'homeMetaDetailDescription', 'homeMetaDetailProgress',
+    'homeMetaDetailReward', 'homeMetaDetailBuildTag', 'homeMetaDetailBuildTitle', 'homeMetaDetailBuildEffect', 'homeMetaDetailBuildLoadout',
     'healthRing', 'stressRing', 'waterRing', 'nutritionRing', 'growthRing', 'riskRing',
     'healthValue', 'stressValue', 'waterValue', 'nutritionValue', 'growthValue', 'riskValue',
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
@@ -557,7 +654,13 @@ function ensureRequiredUi() {
     'analysisTabOverview', 'analysisTabDiagnosis', 'analysisTabTimeline', 'analysisPanelOverview', 'analysisPanelDiagnosis', 'analysisPanelTimeline',
     'analysisResetBtn',
     'landing', 'startRunBtn', 'setupMode', 'setupLight', 'setupMedium', 'setupPotSize', 'setupGenetics',
-    'deathOverlay', 'deathDriverList', 'deathHistoryList', 'deathResetBtn', 'deathAnalyzeBtn'
+    'setupStrategyTag', 'setupStrategyTitle', 'setupStrategyDescription', 'setupStrategyTradeoff', 'setupStrategyLoadout',
+    'deathOverlay', 'deathDriverList', 'deathHistoryList', 'deathResetBtn', 'deathAnalyzeBtn',
+    'runSummaryOverlay', 'runSummaryBadge', 'runSummaryTitle', 'runSummarySubtitle', 'runSummaryRating',
+    'runSummaryDay', 'runSummaryStage', 'runSummaryBuild', 'runSummaryQuality', 'runSummaryActions', 'runSummaryEvents',
+    'runSummaryHighlights', 'runSummaryMistakes', 'runSummaryPositives', 'runSummaryXpNotices',
+    'runSummaryXpRows', 'runSummaryLevel', 'runSummaryGoalTitle', 'runSummaryGoalStatus', 'runSummaryGoalDescription', 'runSummaryGoalReward',
+    'runSummaryUnlocks', 'runSummaryNewRunBtn', 'runSummaryAnalyzeBtn'
   ];
 
   const missing = requiredKeys.filter((key) => !ui[key]);
@@ -1356,7 +1459,7 @@ function openMenuPlaceholder(title, text) {
 
 function onMenuNewRunClick() {
   openMenuDialog({
-    title: 'Neuen Run starten?',
+    title: 'Neuen Run starten',
     message: 'Deine aktuelle Pflanze wird beendet.',
     cancelLabel: 'Abbrechen',
     confirmLabel: 'Neuer Run',
@@ -1537,7 +1640,7 @@ function onStartRun() {
 
 async function onDeathResetClick() {
   openMenuDialog({
-    title: 'Neuen Run starten?',
+    title: 'Neuen Run starten',
     message: 'Der aktuelle Durchlauf wird beendet und ein neuer Run gestartet.',
     cancelLabel: 'Abbrechen',
     confirmLabel: 'Neuen Run starten',
@@ -1683,7 +1786,7 @@ function onNotificationTypeToggle() {
 }
 
 async function onAnalysisResetClick() {
-  const confirmed = window.confirm('Aktuellen Run wirklich zurücksetzen? Dieser Schritt löscht den gespeicherten Fortschritt.');
+  const confirmed = window.confirm('Aktuellen Run wirklich zurücksetzen Dieser Schritt löscht den gespeicherten Fortschritt.');
   if (!confirmed) {
     return;
   }

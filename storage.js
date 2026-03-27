@@ -60,6 +60,11 @@ function getClimateApi() {
   return api && typeof api === 'object' ? api : null;
 }
 
+function getProgressionApi() {
+  const api = window.GrowSimProgression;
+  return api && typeof api === 'object' ? api : null;
+}
+
 function normalizeEnvironmentState(snapshot = state) {
   const s = snapshot || state;
   const climateApi = getClimateApi();
@@ -104,6 +109,7 @@ function getCanonicalSimulation(snapshot) {
   if (!s.simulation.dayWindow || typeof s.simulation.dayWindow !== 'object') s.simulation.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
   if (typeof s.simulation.isDaytime !== 'boolean') s.simulation.isDaytime = isDaytimeAtSimTime(s.simulation.simTimeMs);
   if (!Number.isFinite(s.simulation.growthImpulse)) s.simulation.growthImpulse = 0;
+  if (!Number.isFinite(s.simulation.tempoOffsetDays)) s.simulation.tempoOffsetDays = 0;
   if (!Number.isFinite(s.simulation.lastPushScheduleAtMs)) s.simulation.lastPushScheduleAtMs = 0;
 
   return s.simulation;
@@ -252,6 +258,67 @@ function getCanonicalNotificationsSettings(snapshot) {
   return n;
 }
 
+function getCanonicalProfile(snapshot) {
+  const s = snapshot || state;
+  const progressionApi = getProgressionApi();
+  if (!progressionApi || typeof progressionApi.normalizeProfile !== 'function') {
+    if (!s.profile || typeof s.profile !== 'object') {
+      s.profile = {
+        displayName: 'Marco',
+        totalXp: 0,
+        level: 1,
+        unlocks: {
+          setupModes: ['indoor'],
+          media: ['soil'],
+          lights: ['medium'],
+          genetics: ['hybrid']
+        },
+        stats: {
+          totalRuns: 0,
+          deathRuns: 0,
+          harvestRuns: 0,
+          bestSimDay: 0,
+          bestQualityScore: 0
+        },
+        lastRunSummary: null
+      };
+    }
+    return s.profile;
+  }
+
+  s.profile = progressionApi.normalizeProfile(s.profile);
+  return s.profile;
+}
+
+function getCanonicalRun(snapshot) {
+  const s = snapshot || state;
+  const progressionApi = getProgressionApi();
+  if (!progressionApi || typeof progressionApi.normalizeRunState !== 'function') {
+    if (!s.run || typeof s.run !== 'object') {
+      s.run = {
+        id: 0,
+        status: 'idle',
+        endReason: null,
+        startedAtRealMs: null,
+        endedAtRealMs: null,
+        finalizedAtRealMs: null,
+        setupSnapshot: null,
+        goal: null
+      };
+    }
+    return s.run;
+  }
+
+  s.run = progressionApi.normalizeRunState(s.run);
+  return s.run;
+}
+
+function isRunFinalized(runLike) {
+  return runLike != null
+    && runLike.finalizedAtRealMs != null
+    && Number.isFinite(Number(runLike.finalizedAtRealMs));
+}
+
 function normalizeSetupState(setupLike, simulationLike) {
   if (!setupLike || typeof setupLike !== 'object') {
     return null;
@@ -304,6 +371,8 @@ async function restoreState() {
   const history = getCanonicalHistory(state);
   const meta = getCanonicalMeta(state);
   const settings = getCanonicalSettings(state);
+  const profile = getCanonicalProfile(state);
+  const run = getCanonicalRun(state);
 
   if (saved.simulation && typeof saved.simulation === 'object') {
     state.simulation = {
@@ -389,6 +458,18 @@ async function restoreState() {
       ...saved.settings
     };
     getCanonicalNotificationsSettings(state);
+  }
+  if (saved.profile && typeof saved.profile === 'object') {
+    state.profile = {
+      ...profile,
+      ...saved.profile
+    };
+  }
+  if (saved.run && typeof saved.run === 'object') {
+    state.run = {
+      ...run,
+      ...saved.run
+    };
   }
 
   migrateLegacyStateIntoCanonical(saved, state);
@@ -552,6 +633,13 @@ function resetStateToDefaults() {
   state.seed = SIM_GLOBAL_SEED;
   state.plantId = SIM_PLANT_ID;
   state.setup = null;
+  const progressionApi = getProgressionApi();
+  state.profile = progressionApi && typeof progressionApi.getDefaultProfile === 'function'
+    ? progressionApi.getDefaultProfile()
+    : getCanonicalProfile({});
+  state.run = progressionApi && typeof progressionApi.getDefaultRunState === 'function'
+    ? progressionApi.getDefaultRunState()
+    : getCanonicalRun({});
   state.settings = {
     notifications: {
       enabled: false,
@@ -602,6 +690,7 @@ function resetStateToDefaults() {
     dayWindow: { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR },
     isDaytime: isDaytimeAtSimTime(fallbackSimStart),
     growthImpulse: 0,
+    tempoOffsetDays: 0,
     lastPushScheduleAtMs: 0
   };
 
@@ -681,6 +770,7 @@ function resetStateToDefaults() {
   };
 
   state.ui = {
+    activeScreen: 'home',
     openSheet: null,
     menuOpen: false,
     menuDialogOpen: false,
@@ -688,6 +778,7 @@ function resetStateToDefaults() {
     visibleOverlayIds: [],
     deathOverlayOpen: false,
     deathOverlayAcknowledged: false,
+    runSummaryOpen: false,
     care: {
       selectedCategory: null,
       feedback: { kind: 'info', text: 'Bereit.' }
@@ -733,6 +824,8 @@ function ensureStateIntegrity(nowMs) {
     state.simulation.lastPushScheduleAtMs = 0;
   }
   state.simulation.isDaytime = isDaytimeAtSimTime(state.simulation.simTimeMs);
+  getCanonicalProfile(state);
+  getCanonicalRun(state);
 
   const validPhases = new Set(['seedling', 'vegetative', 'flowering', 'harvest']);
   if (!validPhases.has(state.plant.phase) && state.plant.phase !== 'dead') {
@@ -919,12 +1012,58 @@ function ensureStateIntegrity(nowMs) {
   if (typeof state.ui.deathOverlayAcknowledged !== 'boolean') {
     state.ui.deathOverlayAcknowledged = false;
   }
+  if (typeof state.ui.runSummaryOpen !== 'boolean') {
+    state.ui.runSummaryOpen = false;
+  }
 
   if (typeof state.events.scheduler.lastEventId !== 'string') {
     state.events.scheduler.lastEventId = null;
   }
   if (typeof state.events.scheduler.lastChoiceId !== 'string') {
     state.events.scheduler.lastChoiceId = null;
+  }
+
+  const run = getCanonicalRun(state);
+  const profile = getCanonicalProfile(state);
+  const hasPersistedSetup = Boolean(state.setup && typeof state.setup === 'object' && typeof state.setup.mode === 'string');
+  if (hasPersistedSetup && run.status === 'idle' && !isRunFinalized(run)) {
+    run.status = state.plant.isDead ? 'downed' : 'active';
+    run.startedAtRealMs = Number.isFinite(Number(run.startedAtRealMs))
+      ? Number(run.startedAtRealMs)
+      : Number(state.simulation.startRealTimeMs || nowMs);
+    run.setupSnapshot = run.setupSnapshot && typeof run.setupSnapshot === 'object'
+      ? run.setupSnapshot
+      : { ...state.setup };
+  }
+  if (!hasPersistedSetup && (run.status === 'active' || run.status === 'downed')) {
+    run.status = 'idle';
+  }
+  if (state.plant.isDead && run.status === 'active' && !isRunFinalized(run)) {
+    run.status = 'downed';
+  }
+  if (run.status === 'downed' && isRunFinalized(run)) {
+    run.status = 'ended';
+  }
+  const progressionApi = getProgressionApi();
+  if (progressionApi && typeof progressionApi.chooseRunGoal === 'function') {
+    if ((run.status === 'active' || run.status === 'downed' || run.status === 'ended') && !run.goal && (run.setupSnapshot || state.setup)) {
+      run.goal = progressionApi.chooseRunGoal(profile, run);
+    }
+    if (run.goal && typeof progressionApi.evaluateRunGoal === 'function') {
+      run.goal = progressionApi.evaluateRunGoal(run.goal, state, {
+        finalize: isRunFinalized(run),
+        endReason: run.endReason === 'harvest' ? 'harvest' : 'death'
+      });
+    }
+  }
+  if (run.status === 'ended') {
+    state.ui.deathOverlayOpen = false;
+    state.ui.runSummaryOpen = Boolean(profile.lastRunSummary);
+  } else if (run.status === 'downed' && !isRunFinalized(run)) {
+    state.ui.deathOverlayOpen = true;
+    state.ui.runSummaryOpen = false;
+  } else if (run.status === 'idle') {
+    state.ui.runSummaryOpen = false;
   }
 }
 
@@ -935,6 +1074,17 @@ function syncCanonicalStateShape() {
   const history = getCanonicalHistory(state);
   const meta = getCanonicalMeta(state);
   const settings = getCanonicalSettings(state);
+  const profile = getCanonicalProfile(state);
+  const run = getCanonicalRun(state);
+  if (state.setup && typeof state.setup === 'object' && run.status === 'idle' && !isRunFinalized(run)) {
+    run.status = plant.isDead ? 'downed' : 'active';
+    run.startedAtRealMs = Number.isFinite(Number(run.startedAtRealMs))
+      ? Number(run.startedAtRealMs)
+      : Number(sim.startRealTimeMs || sim.nowMs);
+    run.setupSnapshot = run.setupSnapshot && typeof run.setupSnapshot === 'object'
+      ? run.setupSnapshot
+      : { ...state.setup };
+  }
 
   state.seed = sim.globalSeed;
   state.plantId = sim.plantId;
@@ -989,6 +1139,36 @@ function syncCanonicalStateShape() {
   getCanonicalNotificationsSettings(state);
   settings.pushNotificationsEnabled = Boolean(settings.pushNotificationsEnabled);
 
+  profile.level = getProgressionApi() && typeof getProgressionApi().getLevelForXp === 'function'
+    ? getProgressionApi().getLevelForXp(profile.totalXp)
+    : profile.level;
+
+  if (plant.isDead && run.status === 'active' && !isRunFinalized(run)) {
+    run.status = 'downed';
+  }
+  if (run.status === 'downed' && isRunFinalized(run)) {
+    run.status = 'ended';
+  }
+  const progressionApi = getProgressionApi();
+  if (progressionApi && typeof progressionApi.chooseRunGoal === 'function') {
+    if ((run.status === 'active' || run.status === 'downed' || run.status === 'ended') && !run.goal && (run.setupSnapshot || state.setup)) {
+      run.goal = progressionApi.chooseRunGoal(profile, run);
+    }
+    if (run.goal && typeof progressionApi.evaluateRunGoal === 'function') {
+      run.goal = progressionApi.evaluateRunGoal(run.goal, state, {
+        finalize: isRunFinalized(run),
+        endReason: run.endReason === 'harvest' ? 'harvest' : 'death'
+      });
+    }
+  }
+  if (run.status === 'ended') {
+    state.ui.runSummaryOpen = Boolean(profile.lastRunSummary);
+    state.ui.deathOverlayOpen = false;
+  } else if (run.status === 'downed' && !isRunFinalized(run)) {
+    state.ui.runSummaryOpen = false;
+    state.ui.deathOverlayOpen = true;
+  }
+
   if (Object.prototype.hasOwnProperty.call(state, 'event')) {
     delete state.event;
   }
@@ -1016,6 +1196,7 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
     isDaytime: sim.isDaytime,
     lastTickAtMs: sim.lastTickRealTimeMs,
     growthImpulse: sim.growthImpulse,
+    tempoOffsetDays: sim.tempoOffsetDays,
     lastPushScheduleAtMs: sim.lastPushScheduleAtMs
   };
 
@@ -1047,6 +1228,8 @@ window.GrowSimStorage = Object.freeze({
   getCanonicalMeta,
   getCanonicalSettings,
   getCanonicalNotificationsSettings,
+  getCanonicalProfile,
+  getCanonicalRun,
   restoreState,
   persistState,
   schedulePersistState,

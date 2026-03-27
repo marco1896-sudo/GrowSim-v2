@@ -196,7 +196,7 @@ async function main() {
       resetTitle: document.getElementById('analysisResetBtn')?.getAttribute('title') || null
     }));
     assert.strictEqual(menuState.statsLabel, 'Analyse', 'menu analysis entry should describe the actual dashboard path');
-    assert.strictEqual(menuState.statsTitle, 'Oeffnet denselben Analyse-Report wie Analyse-Button und Death-Flow.', 'menu analysis entry should explain the shared report path');
+    assert.strictEqual(menuState.statsTitle, 'Öffnet denselben Analyse-Report wie Analyse-Button und Death-Flow.', 'menu analysis entry should explain the shared report path');
     assert.strictEqual(menuState.rescueLabel, 'Notfallrettung', 'menu rescue entry should describe the actual rescue mechanic');
     assert.strictEqual(menuState.rescueSubtitle, '1× pro Run bei kritischem Zustand.', 'menu rescue subtitle should describe the actual availability');
     assert.strictEqual(menuState.rescueTitle, 'Kein Inventarsystem. Startet die gleiche einmalige Notfallrettung wie im Death-Overlay.', 'menu rescue entry should explain that it is the same rescue path');

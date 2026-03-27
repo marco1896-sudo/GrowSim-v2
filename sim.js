@@ -655,9 +655,25 @@ function tick() {
   const nowMs = Date.now();
   const prevOpenSheet = state.ui.openSheet;
   const prevTickRealTimeMs = Number(state.simulation.lastTickRealTimeMs) || nowMs;
+  const run = state.run && typeof state.run === 'object' ? state.run : null;
 
   state.simulation.nowMs = nowMs;
   state.simulation.tickCount += 1;
+
+  if (run && run.status === 'ended') {
+    state.simulation.lastTickRealTimeMs = nowMs;
+    state.simulation.growthImpulse = 0;
+    syncCanonicalStateShape();
+    renderHud();
+    renderEventSheet();
+    renderAnalysisPanel();
+    renderDeathOverlay();
+    if (typeof renderRunSummaryOverlay === 'function') {
+      renderRunSummaryOverlay();
+    }
+    schedulePersistState();
+    return;
+  }
 
   if (syncDeathState() && FREEZE_SIM_ON_DEATH) {
     state.simulation.lastTickRealTimeMs = nowMs;
@@ -795,6 +811,12 @@ function syncSimulationFromElapsedTime(nowMs) {
   state.simulation.nowMs = safeNowMs;
 
   try {
+    if (state.run && state.run.status === 'ended') {
+      state.simulation.lastTickRealTimeMs = safeNowMs;
+      state.simulation.growthImpulse = 0;
+      syncCanonicalStateShape();
+      return;
+    }
     if (syncDeathState() && FREEZE_SIM_ON_DEATH) {
       state.simulation.lastTickRealTimeMs = safeNowMs;
       state.simulation.growthImpulse = 0;
@@ -1008,9 +1030,31 @@ function applyStatusDrift(elapsedMs) {
 
   const envStress = clamp(envStressBase + (profileEnvPenalty * 0.22), 0, 2);
   const rootStress = clamp(rootStressBase + (profileRootPenalty * 0.26), 0, 2);
+  const setup = state.setup && typeof state.setup === 'object' ? state.setup : {};
+  const genetics = String(setup.genetics || 'hybrid');
+  const medium = String(setup.medium || 'soil');
+  const light = String(setup.light || 'medium');
+  const geneticsStressModifier = genetics === 'indica' ? 0.76 : (genetics === 'sativa' ? 1.18 : 1);
+  const geneticsHealthModifier = genetics === 'indica' ? 1.14 : (genetics === 'sativa' ? 0.93 : 1);
+  const geneticsGrowthModifier = genetics === 'indica' ? 0.84 : (genetics === 'sativa' ? 1.16 : 1);
+  const geneticsWaterModifier = genetics === 'indica' ? 0.94 : (genetics === 'sativa' ? 1.12 : 1);
+  const geneticsNutritionModifier = genetics === 'indica' ? 0.96 : (genetics === 'sativa' ? 1.1 : 1);
+  const geneticsPressureModifier = genetics === 'indica' ? 0.86 : (genetics === 'sativa' ? 1.1 : 1);
+  const geneticsTempoModifier = genetics === 'indica' ? -0.07 : (genetics === 'sativa' ? 0.2 : 0);
+  const mediumWaterModifier = medium === 'coco' ? 1.22 : 1;
+  const mediumNutritionModifier = medium === 'coco' ? 1.14 : 1;
+  const mediumGrowthModifier = medium === 'coco' ? 1.08 : 1;
+  const mediumPressureModifier = medium === 'coco' ? 1.08 : 1;
+  const mediumTempoModifier = medium === 'coco' ? 0.04 : 0;
+  const lightWaterModifier = light === 'high' ? 1.22 : 1;
+  const lightNutritionModifier = light === 'high' ? 1.18 : 1;
+  const lightGrowthModifier = light === 'high' ? 1.16 : 1;
+  const lightPressureModifier = light === 'high' ? 1.12 : 1;
+  const lightTempoModifier = light === 'high' ? 0.15 : 0;
 
   const stageIndexOneBased = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, 12);
   const stagePressure = clamp((stageIndexOneBased - 1) / 11, 0, 1);
+  const earlyPhaseRelief = 0.8 + (stagePressure * 0.2);
   const envInfluence = 0.78 + (stagePressure * 0.34);
   const rootInfluence = 0.76 + (stagePressure * 0.38);
 
@@ -1020,8 +1064,8 @@ function applyStatusDrift(elapsedMs) {
   const waterDrainPerMin = 0.10 + (transpiration * 0.054) + (envStress * 0.038 * envInfluence);
   const nutritionDrainPerMin = 0.078 + (0.048 * (1 - uptakePenalty)) + (0.024 * rootStress * rootInfluence);
 
-  state.status.water -= waterDrainPerMin * minutes;
-  state.status.nutrition -= nutritionDrainPerMin * minutes;
+  state.status.water -= (waterDrainPerMin * mediumWaterModifier * geneticsWaterModifier * lightWaterModifier) * minutes * earlyPhaseRelief;
+  state.status.nutrition -= (nutritionDrainPerMin * mediumNutritionModifier * geneticsNutritionModifier * lightNutritionModifier) * minutes * earlyPhaseRelief;
 
   const inRecoveryBand = (
     state.status.water >= 45 && state.status.water <= 72 &&
@@ -1037,47 +1081,47 @@ function applyStatusDrift(elapsedMs) {
   const nutritionCritical = clamp((NUTRITION_CRITICAL_THRESHOLD - state.status.nutrition) / NUTRITION_CRITICAL_THRESHOLD, 0, 1);
 
   let stressDelta = (-0.02 * minutes)
-    + (waterDeficiency * 0.10 * minutes)
-    + (waterCritical * 0.30 * minutes)
-    + (nutritionDeficiency * 0.08 * minutes)
-    + (nutritionCritical * 0.10 * minutes)
-    + (envStress * 0.14 * envInfluence * minutes)
-    + (rootStress * 0.12 * rootInfluence * minutes);
+    + (waterDeficiency * 0.10 * minutes * earlyPhaseRelief)
+    + (waterCritical * 0.30 * minutes * earlyPhaseRelief)
+    + (nutritionDeficiency * 0.08 * minutes * earlyPhaseRelief)
+    + (nutritionCritical * 0.10 * minutes * earlyPhaseRelief)
+    + (envStress * 0.14 * envInfluence * minutes * earlyPhaseRelief)
+    + (rootStress * 0.12 * rootInfluence * minutes * earlyPhaseRelief);
   if (inRecoveryBand) {
     stressDelta -= 0.10 * minutes;
   }
-  state.status.stress += stressDelta;
+  state.status.stress += stressDelta * geneticsStressModifier * geneticsPressureModifier * mediumPressureModifier * lightPressureModifier;
 
   const stressPressure = clamp((state.status.stress - 52) / 48, 0, 1);
-  const deficiencyPressure = (waterDeficiency * 0.25) + (waterCritical * 1.0) + (nutritionDeficiency * 0.1);
+  const deficiencyPressure = ((waterDeficiency * 0.25) + (waterCritical * 1.0) + (nutritionDeficiency * 0.1)) * earlyPhaseRelief;
   let riskDelta = (-0.004 * minutes)
-    + (stressPressure * 0.08 * minutes)
+    + (stressPressure * 0.08 * minutes * earlyPhaseRelief)
     + (deficiencyPressure * 0.06 * minutes)
-    + (envStress * 0.08 * envInfluence * minutes)
-    + (rootStress * 0.10 * rootInfluence * minutes);
+    + (envStress * 0.08 * envInfluence * minutes * earlyPhaseRelief)
+    + (rootStress * 0.10 * rootInfluence * minutes * earlyPhaseRelief);
   if (inRecoveryBand) {
     riskDelta -= 0.05 * minutes;
   }
   if (state.status.water > 97 || state.status.water < 12) {
     riskDelta += 0.08 * minutes;
   }
-  state.status.risk += riskDelta;
+  state.status.risk += riskDelta * geneticsStressModifier * geneticsPressureModifier * lightPressureModifier;
 
   const stressHealthPressure = clamp((state.status.stress - 55) / 45, 0, 1);
   const riskHealthPressure = clamp((state.status.risk - 60) / 40, 0, 1);
   let healthDelta = (-0.008 * minutes)
-    - (stressHealthPressure * 0.08 * minutes)
-    - (riskHealthPressure * 0.07 * minutes)
-    - (waterCritical * 0.08 * minutes)
-    - (envStress * 0.045 * envInfluence * minutes)
-    - (rootStress * 0.05 * rootInfluence * minutes);
+    - (stressHealthPressure * 0.08 * minutes * earlyPhaseRelief)
+    - (riskHealthPressure * 0.07 * minutes * earlyPhaseRelief)
+    - (waterCritical * 0.08 * minutes * earlyPhaseRelief)
+    - (envStress * 0.045 * envInfluence * minutes * earlyPhaseRelief)
+    - (rootStress * 0.05 * rootInfluence * minutes * earlyPhaseRelief);
   if (inRecoveryBand && state.status.risk <= 45) {
     healthDelta += 0.20 * minutes;
   }
   if (state.status.water < 12) {
     healthDelta -= 0.06 * minutes;
   }
-  state.status.health += healthDelta;
+  state.status.health += healthDelta * geneticsHealthModifier;
 
   // Record telemetry for charts
   if (!state.history.telemetry) state.history.telemetry = [];
@@ -1095,8 +1139,19 @@ function applyStatusDrift(elapsedMs) {
   }
 
   const ecoEfficiency = clamp(1 - (envStress * 0.5) - (rootStress * 0.5), 0, 1);
-  const impulseRaw = ((state.status.health - state.status.stress - (state.status.risk * 0.45)) / 35) * (0.7 + (ecoEfficiency * 0.6));
+  const impulseRaw = ((state.status.health - state.status.stress - (state.status.risk * 0.45)) / 35)
+    * (0.7 + (ecoEfficiency * 0.6))
+    * geneticsGrowthModifier
+    * mediumGrowthModifier
+    * lightGrowthModifier;
   state.simulation.growthImpulse = clamp(impulseRaw, -3, 3);
+
+  const tempoBuildModifier = geneticsTempoModifier + mediumTempoModifier + lightTempoModifier;
+  const positiveTempoMomentum = clamp((state.simulation.growthImpulse - 0.2) / 2.2, 0, 1);
+  const negativeTempoMomentum = clamp((-state.simulation.growthImpulse - 0.4) / 2.6, 0, 1);
+  const tempoDeltaDays = ((tempoBuildModifier * positiveTempoMomentum) - (0.05 * negativeTempoMomentum)) * (minutes / (24 * 60));
+  const currentTempoOffsetDays = Number(state.simulation.tempoOffsetDays) || 0;
+  state.simulation.tempoOffsetDays = clamp(currentTempoOffsetDays + tempoDeltaDays, -4, 8);
 
   clampStatus();
 }
@@ -1138,6 +1193,12 @@ function advanceGrowthTick(elapsedSimMs, options = {}) {
   state.plant.lastValidStageKey = state.plant.stageKey;
   state.plant.stageProgress = stage.progressInPhase;
   state.status.growth = round2(computeGrowthPercent(state.simulation.nowMs));
+
+  if (window.GrowSimProgression && typeof window.GrowSimProgression.shouldAutoFinalizeHarvest === 'function'
+    && window.GrowSimProgression.shouldAutoFinalizeHarvest(state)
+    && typeof window.__gsFinalizeRun === 'function') {
+    window.__gsFinalizeRun('harvest');
+  }
 
   if (state.debug.enabled && state.debug.showInternalTicks && state.simulation.tickCount % CONFIG.logTickEveryNTicks === 0) {
     console.debug('[growth]', {
@@ -1199,6 +1260,9 @@ function enterDeadPhase() {
   state.plant.isDead = true;
   state.plant.stageProgress = 1;
   state.plant.stageKey = state.plant.lastValidStageKey || 'stage_01';
+  if (state.run && state.run.status === 'active' && state.run.finalizedAtRealMs == null) {
+    state.run.status = 'downed';
+  }
   state.ui.deathOverlayOpen = true;
   state.ui.deathOverlayAcknowledged = false;
   if (!wasDead) {
@@ -1211,6 +1275,12 @@ function isPlantDead() {
 }
 
 function syncDeathState() {
+  if (state.run && state.run.status === 'ended' && state.run.finalizedAtRealMs != null && Number.isFinite(Number(state.run.finalizedAtRealMs))) {
+    state.ui.deathOverlayOpen = false;
+    state.ui.deathOverlayAcknowledged = true;
+    return false;
+  }
+
   if (isDeathSuppressedForFairness(Date.now())) {
     applyFairnessSurvivalGuard(Date.now());
     state.plant.isDead = false;
@@ -1222,6 +1292,9 @@ function syncDeathState() {
 
   if (!isPlantDead()) {
     state.plant.isDead = false;
+    if (state.run && state.run.status === 'downed' && state.run.finalizedAtRealMs == null) {
+      state.run.status = 'active';
+    }
     return false;
   }
 
@@ -1233,6 +1306,9 @@ function syncDeathState() {
   if (!inAnalysis) {
     state.ui.deathOverlayOpen = true;
     state.ui.deathOverlayAcknowledged = false;
+  }
+  if (state.run && state.run.status === 'active' && state.run.finalizedAtRealMs == null) {
+    state.run.status = 'downed';
   }
   return true;
 }
@@ -1250,13 +1326,15 @@ function getTotalRunProgress(nowMs) {
 function getPlantTimeFromElapsed(nowMs) {
   const totalRunProgress = getTotalRunProgress(nowMs);
   const elapsedPlantMs = totalRunProgress * TOTAL_LIFECYCLE_SIM_MS;
-  const simTimeMs = Number(state.simulation.simEpochMs) + elapsedPlantMs;
+  const tempoOffsetDays = clamp(Number(state.simulation.tempoOffsetDays) || 0, -4, 8);
+  const adjustedElapsedPlantMs = clamp(elapsedPlantMs + (tempoOffsetDays * SIM_DAY_MS), 0, TOTAL_LIFECYCLE_SIM_MS);
+  const simTimeMs = Number(state.simulation.simEpochMs) + adjustedElapsedPlantMs;
 
   return {
     totalRunProgress,
-    elapsedPlantMs,
+    elapsedPlantMs: adjustedElapsedPlantMs,
     simTimeMs,
-    simDay: clamp(elapsedPlantMs / SIM_DAY_MS, 0, TOTAL_LIFECYCLE_SIM_DAYS)
+    simDay: clamp(adjustedElapsedPlantMs / SIM_DAY_MS, 0, TOTAL_LIFECYCLE_SIM_DAYS)
   };
 }
 
@@ -1325,7 +1403,7 @@ function computeGrowthPercent(nowMs = Date.now()) {
   if (state.plant.phase === 'dead') {
     return 0;
   }
-  return round2(getTotalRunProgress(nowMs) * 100);
+  return round2((getPlantTimeFromElapsed(nowMs).simDay / TOTAL_LIFECYCLE_SIM_DAYS) * 100);
 }
 
 function computeStageProgress(simDay, stageIndex) {

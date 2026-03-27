@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260327e">
+  <link rel="stylesheet" href="styles.css?v=20260327i">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -19,21 +19,70 @@
     <main class="hud-main hud-screen is-active home-screen" data-screen="home">
       <section class="home-stage" aria-label="Home HUD">
         <article class="home-player-panel" aria-label="Spielerpanel">
-          <div class="home-avatar-shell">
-            <span class="home-level-pill" id="playerLevelBadge">LVL 9</span>
-          </div>
-          <div class="home-player-meta">
-            <strong id="playerNameValue" class="home-player-name">Max Mustergrower</strong>
-            <span id="playerRoleValue" class="home-player-role">Gärtner</span>
-            <p id="playerXpValue" class="home-player-xp">XP: 7.350 / 8.650</p>
-            <div class="home-player-xp-track" aria-hidden="true">
-              <span id="playerXpFill" class="home-player-xp-fill" style="--xp:84;"></span>
+          <div class="home-player-header">
+            <div class="home-avatar-shell">
+              <span class="home-level-pill" id="playerLevelBadge">LVL 9</span>
+            </div>
+            <div class="home-player-meta">
+              <strong id="playerNameValue" class="home-player-name">Max Mustergrower</strong>
+              <span id="playerRoleValue" class="home-player-role">Gärtner</span>
+              <p id="playerXpValue" class="home-player-xp">XP: 7.350 / 8.650</p>
+              <div class="home-player-xp-track" aria-hidden="true">
+                <span id="playerXpFill" class="home-player-xp-fill" style="--xp:84;"></span>
+              </div>
+            </div>
+            <div class="home-player-tools">
+              <div class="home-currency-stack" aria-label="Währungen">
+                <div class="home-currency-row home-currency-row--gold"><span>&#x1FA99;</span><strong id="playerCoinValue">2.480</strong></div>
+                <div class="home-currency-row home-currency-row--cyan"><span>&#x1F48E;</span><strong id="playerGemValue">55</strong></div>
+                <div class="home-currency-row home-currency-row--star"><span>&#x2B50;</span><strong id="playerStarValue">114</strong></div>
+              </div>
+              <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
+                <img src="assets/ui/icons/menu.png" alt="" aria-hidden="true">
+                <span class="visually-hidden">Menü öffnen</span>
+              </button>
             </div>
           </div>
-          <div class="home-currency-stack" aria-label="Währungen">
-            <div class="home-currency-row home-currency-row--gold"><span>&#x1FA99;</span><strong id="playerCoinValue">2.480</strong></div>
-            <div class="home-currency-row home-currency-row--cyan"><span>&#x1F48E;</span><strong id="playerGemValue">55</strong></div>
-            <div class="home-currency-row home-currency-row--star"><span>&#x2B50;</span><strong id="playerStarValue">114</strong></div>
+          <button id="homeMetaToggle" class="home-meta-strip hidden" type="button" aria-expanded="false" aria-controls="homeMetaDetail" aria-hidden="true">
+            <span class="home-meta-icon" aria-hidden="true"></span>
+            <span class="home-meta-copy">
+              <strong id="homeMetaGoalCompact" class="home-meta-title">Tag 20</strong>
+              <span class="home-meta-subline">
+                <span id="homeMetaGoalProgress" class="home-meta-progress">0/20</span>
+                <span id="homeMetaGoalStatus" class="home-meta-status" data-status="active">Läuft</span>
+              </span>
+            </span>
+            <span id="homeMetaBuildChip" class="home-meta-build-chip" data-tone="balanced">Ausgewogen</span>
+            <span class="home-meta-caret" aria-hidden="true"></span>
+          </button>
+          <div id="homeMetaDetail" class="home-meta-detail hidden" aria-hidden="true">
+            <section class="home-meta-detail-block home-meta-detail-block--goal" aria-label="Run-Ziel Details">
+              <div class="home-meta-detail-top">
+                <span class="home-meta-detail-kicker">Run-Ziel</span>
+                <strong id="homeMetaDetailStatus" class="home-meta-detail-status" data-status="active">Läuft</strong>
+              </div>
+              <strong id="homeMetaDetailTitle" class="home-meta-detail-title">Erreiche Tag 20</strong>
+              <p id="homeMetaDetailDescription" class="home-meta-detail-copy">Halte die Pflanze bis mindestens Tag 20 am Leben.</p>
+              <div class="home-meta-detail-grid">
+                <div class="home-meta-detail-stat">
+                  <span>Fortschritt</span>
+                  <strong id="homeMetaDetailProgress">Tag 0/20</strong>
+                </div>
+                <div class="home-meta-detail-stat">
+                  <span>Bonus</span>
+                  <strong id="homeMetaDetailReward">+45 XP</strong>
+                </div>
+              </div>
+            </section>
+            <section class="home-meta-detail-block home-meta-detail-block--build" aria-label="Build Details">
+              <div class="home-meta-detail-top">
+                <span class="home-meta-detail-kicker">Build</span>
+                <strong id="homeMetaDetailBuildTag" class="home-meta-build-pill" data-tone="balanced">Ausgewogen</strong>
+              </div>
+              <strong id="homeMetaDetailBuildTitle" class="home-meta-detail-title">Balanced Control</strong>
+              <p id="homeMetaDetailBuildEffect" class="home-meta-detail-copy">Solider Kontroll-Run mit guter Fehlertoleranz und ohne harte Peaks.</p>
+              <p id="homeMetaDetailBuildLoadout" class="home-meta-detail-footnote">Hybrid · Soil Medium · Medium Light</p>
+            </section>
           </div>
         </article>
 
@@ -51,11 +100,6 @@
         </div>
 
         <div class="home-right-column">
-          <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
-            <img src="assets/ui/icons/menu.png" alt="" aria-hidden="true">
-            <span class="visually-hidden">Menü öffnen</span>
-          </button>
-
           <section class="home-env-panel" aria-label="Umgebungsdaten">
             <div class="home-env-row"><img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true"><span id="envTempLabel">Temperatur</span><strong id="envTempValue">25.3°C</strong></div>
             <div class="home-env-row"><img src="assets/ui/icons/icon_humidity.svg" alt="" aria-hidden="true"><span id="envHumidityLabel">Luftfeuchte</span><strong id="envHumidityValue">61%</strong></div>
@@ -331,7 +375,7 @@
     <section id="diagnosisSheet" class="bottom-sheet figma-sheet figma-sheet-settings hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2>Settings</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schliessen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
@@ -428,6 +472,29 @@
         <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupMode" data-setup-value="outdoor"><span>Foto Setup</span><span class="subtitle">Manuell</span></button>
       </section>
 
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Substrat</h3>
+        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupMedium" data-setup-value="soil"><span>Soil</span><span class="badge">Stabil</span></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupMedium" data-setup-value="coco"><span>Coco</span><span class="subtitle">Reaktiv</span></button>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Lichtprofil</h3>
+        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupLight" data-setup-value="medium"><span>Medium Light</span><span class="badge">Kontrolle</span></button>
+        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupLight" data-setup-value="high"><span>High Output</span><span class="subtitle">Mehr Druck</span></button>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding setup-strategy-card">
+        <div class="setup-strategy-top">
+          <h3 class="figma-section-head">Run-Profil</h3>
+          <strong id="setupStrategyTag" class="setup-strategy-tag" data-tone="balanced">Ausgewogen</strong>
+        </div>
+        <strong id="setupStrategyTitle" class="setup-strategy-title">Balanced Control</strong>
+        <p id="setupStrategyDescription" class="sheet-note">Solider Kontroll-Run mit guter Fehlertoleranz und ohne harte Peaks.</p>
+        <p id="setupStrategyTradeoff" class="setup-strategy-tradeoff">Kein extremer Vorteil, aber auch keine große Sollbruchstelle.</p>
+        <div id="setupStrategyLoadout" class="setup-strategy-loadout">Hybrid · Soil Medium · Medium Light · Mode: Indoor Run</div>
+      </section>
+
       <div class="figma-onboarding-actions">
         <button id="setupBackBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfügbar">Zurück</button>
         <button id="setupPresetBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfügbar">Preset</button>
@@ -457,6 +524,69 @@
         <span id="deathRescueFeedback" class="sheet-note"></span>
         <button id="deathResetBtn" class="action-btn action-secondary" type="button" title="Verwirft den aktuellen Run und startet nach Bestätigung neu.">Run verwerfen &amp; neu starten</button>
         <button id="deathAnalyzeBtn" class="action-btn action-ghost" type="button" title="Öffnet den Analyse-Report für den beendeten Run.">Analyse öffnen</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="runSummaryOverlay" class="landing-overlay hidden" aria-hidden="true">
+    <div class="landing-card run-summary-card">
+      <span id="runSummaryBadge" class="sheet-badge">Run beendet</span>
+      <h2 id="runSummaryTitle">Run abgeschlossen</h2>
+      <p id="runSummarySubtitle" class="sheet-note">Zusammenfassung</p>
+      <div id="runSummaryRating" class="run-summary-rating">Solider Run</div>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Run-Report</h3>
+        <div class="figma-static-row"><span>Tag</span><strong id="runSummaryDay">0</strong></div>
+        <div class="figma-static-row"><span>Phase</span><strong id="runSummaryStage">-</strong></div>
+        <div class="figma-static-row"><span>Build</span><strong id="runSummaryBuild">-</strong></div>
+        <div class="figma-static-row"><span>Qualität</span><strong id="runSummaryQuality">0</strong></div>
+        <div class="figma-static-row"><span>Aktionen</span><strong id="runSummaryActions">0</strong></div>
+        <div class="figma-static-row"><span>Events</span><strong id="runSummaryEvents">0</strong></div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Highlights</h3>
+        <div id="runSummaryHighlights" class="run-summary-list" aria-live="polite"></div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Was dich gebremst hat</h3>
+        <div id="runSummaryMistakes" class="run-summary-list" aria-live="polite"></div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Was gut lief</h3>
+        <div id="runSummaryPositives" class="run-summary-list" aria-live="polite"></div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <div class="run-summary-goal-head">
+          <h3 class="figma-section-head">Run-Ziel</h3>
+          <strong id="runSummaryGoalStatus" class="run-summary-goal-status" data-status="failed">Verfehlt</strong>
+        </div>
+        <div class="run-summary-goal-card">
+          <strong id="runSummaryGoalTitle">Erreiche Tag 20</strong>
+          <p id="runSummaryGoalDescription" class="sheet-note">Das Ziel wurde knapp verfehlt.</p>
+          <div class="figma-static-row"><span>Bonus</span><strong id="runSummaryGoalReward">Kein Missionsbonus</strong></div>
+        </div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">XP & Fortschritt</h3>
+        <div id="runSummaryXpNotices" class="run-summary-list run-summary-list--xp" aria-live="polite"></div>
+        <div id="runSummaryXpRows" class="run-summary-list" aria-live="polite"></div>
+        <div class="figma-static-row"><span>Neues Level</span><strong id="runSummaryLevel">LVL 1</strong></div>
+      </section>
+
+      <section class="figma-section-card figma-section-card--onboarding">
+        <h3 class="figma-section-head">Neue Unlocks</h3>
+        <div id="runSummaryUnlocks" class="run-summary-list run-summary-list--unlock" aria-live="polite"></div>
+      </section>
+
+      <div class="death-actions">
+        <button id="runSummaryNewRunBtn" class="action-btn action-primary" type="button">Neuen Run starten</button>
+        <button id="runSummaryAnalyzeBtn" class="action-btn action-ghost" type="button">Analyse öffnen</button>
       </div>
     </div>
   </section>
@@ -515,7 +645,8 @@
   <script src="src/events/eventAnalysis.js?v=20260319c" defer></script>
   <script src="src/events/eventResolver.js?v=20260319c" defer></script>
   <script src="events.js?v=20260319c" defer></script>
-  <script src="ui.js?v=20260319c" defer></script>
+<script src="ui.js?v=20260327d" defer></script>
+  <script src="src/progression/progression.js?v=20260327a" defer></script>
   <script src="storage.js?v=20260327a" defer></script>
   <script src="notifications.js?v=20260319c" defer></script>
   <script src="src/ui/components/primitives.js?v=20260319d" defer></script>
@@ -525,6 +656,6 @@
   <script src="src/ui/care/careActionHints.js?v=20260327a" defer></script>
   <script src="src/ui/mappings/careMapping.js?v=20260327a" defer></script>
   <script src="src/ui/screens/screenModules.js?v=20260319d" defer></script>
-  <script src="app.js?v=20260327d" defer></script>
+  <script src="app.js?v=20260327e" defer></script>
 </body>
 </html>
