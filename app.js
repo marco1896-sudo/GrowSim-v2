@@ -3514,7 +3514,7 @@ function renderCareSheet(force = false) {
 
   renderCareCategoryButtons(availableCategories, categoryLabels, categoryIcons);
   renderCareActionButtons(state.ui.care.selectedCategory, careViewModel);
-  renderCareEffectsPanel();
+  renderCareEffectsPanel(careViewModel);
   renderCareFeedback();
   renderCareExecuteButton();
 }
@@ -3664,8 +3664,22 @@ function formatActionHint(action, cooldownLeft) {
   return formatEffectsInline(action);
 }
 
-function renderCareEffectsPanel() {
+function renderCareEffectsPanel(careViewModel = null) {
   ui.careEffectsList.replaceChildren();
+
+  const appendSectionLabel = (text, tone = '') => {
+    const li = document.createElement('li');
+    li.className = tone ? `care-section-label care-section-label--${tone}` : 'care-section-label';
+    li.textContent = text;
+    ui.careEffectsList.appendChild(li);
+  };
+
+  const appendEmptyRow = (text) => {
+    const li = document.createElement('li');
+    li.className = 'care-empty-row';
+    li.textContent = text;
+    ui.careEffectsList.appendChild(li);
+  };
 
   const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
   if (ui.carePreviewWrap && ui.carePreviewImage && ui.carePreviewLabel && ui.carePreviewNote) {
@@ -3690,11 +3704,44 @@ function renderCareEffectsPanel() {
   }
 
   if (!selected) {
-    const li = document.createElement('li');
-    li.textContent = 'Keine Aktion ausgewählt.';
-    ui.careEffectsList.appendChild(li);
+    appendEmptyRow('Keine Aktion ausgewählt.');
     return;
   }
+
+  const hintApi = window.GrowSimCareActionHints;
+  let renderedHints = 0;
+  if (hintApi && typeof hintApi.buildCareActionContext === 'function' && typeof hintApi.selectTopHints === 'function') {
+    const baseContext = careViewModel && careViewModel.context ? careViewModel.context : state;
+    const hintContext = hintApi.buildCareActionContext(baseContext, selected);
+    let hints = [];
+
+    if (selected.category === 'watering' && typeof hintApi.evaluateWateringHints === 'function') {
+      hints = hintApi.evaluateWateringHints(hintContext);
+    } else if (selected.category === 'fertilizing' && typeof hintApi.evaluateFertilizingHints === 'function') {
+      hints = hintApi.evaluateFertilizingHints(hintContext);
+    } else if (selected.category === 'training' && typeof hintApi.evaluateTrainingHints === 'function') {
+      hints = hintApi.evaluateTrainingHints(hintContext);
+    } else if (selected.category === 'environment' && typeof hintApi.evaluateEnvironmentHints === 'function') {
+      hints = hintApi.evaluateEnvironmentHints(hintContext);
+    }
+
+    const topHints = hintApi.selectTopHints(hints, 2);
+    if (topHints.length) {
+      appendSectionLabel('Hinweise zur aktuellen Lage', 'hints');
+    }
+    for (const hint of topHints) {
+      const li = document.createElement('li');
+      li.className = `care-hint-item care-hint-item--${hint.severity}`;
+      const label = hint.severity === 'warning'
+        ? 'Warnung'
+        : (hint.severity === 'caution' ? 'Vorsicht' : 'Empfehlung');
+      li.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(hint.message)}</strong>`;
+      ui.careEffectsList.appendChild(li);
+      renderedHints += 1;
+    }
+  }
+
+  appendSectionLabel('Auswirkungen der Aktion', renderedHints ? 'effects' : '');
 
   const immediate = selected.effects && selected.effects.immediate ? selected.effects.immediate : {};
   if (Array.isArray(immediate)) {
@@ -3711,15 +3758,14 @@ function renderCareEffectsPanel() {
         continue;
       }
       const li = document.createElement('li');
+      li.className = 'care-effect-row';
       const statLabel = labels[String(effect.stat || '')] || 'System';
       li.innerHTML = `<span>${escapeHtml(statLabel)}</span><strong>${escapeHtml(String(effect.label || 'Systemeingriff'))}</strong>`;
       ui.careEffectsList.appendChild(li);
     }
 
     if (!ui.careEffectsList.children.length) {
-      const li = document.createElement('li');
-      li.textContent = 'Keine unmittelbaren Effekte.';
-      ui.careEffectsList.appendChild(li);
+      appendEmptyRow('Keine unmittelbaren Effekte.');
     }
     return;
   }
@@ -3738,14 +3784,13 @@ function renderCareEffectsPanel() {
       continue;
     }
     const li = document.createElement('li');
+    li.className = 'care-effect-row';
     li.innerHTML = `<span>${label}</span><strong>${value > 0 ? '+' : ''}${round2(value)}</strong>`;
     ui.careEffectsList.appendChild(li);
   }
 
-  if (!ui.careEffectsList.children.length) {
-    const li = document.createElement('li');
-    li.textContent = 'Keine unmittelbaren Effekte.';
-    ui.careEffectsList.appendChild(li);
+  if (!ui.careEffectsList.querySelector('.care-effect-row')) {
+    appendEmptyRow('Keine unmittelbaren Effekte.');
   }
 }
 

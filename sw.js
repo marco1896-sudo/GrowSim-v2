@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'growsim-v1-20260326-care-ui-bugfix-v1';
+const CACHE_VERSION = 'growsim-v1-20260327-care-hints-v1';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');
@@ -27,6 +27,7 @@ const APP_SHELL_FILES = [
   appPath('src/ui/controller/uiController.js'),
   appPath('src/ui/runtime/screenRuntimeManager.js'),
   appPath('src/ui/mappings/homeMapping.js'),
+  appPath('src/ui/care/careActionHints.js'),
   appPath('src/ui/mappings/careMapping.js'),
   appPath('src/ui/screens/screenModules.js'),
   appPath('manifest.webmanifest'),

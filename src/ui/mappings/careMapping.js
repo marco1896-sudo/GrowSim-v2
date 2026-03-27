@@ -3,8 +3,8 @@
 (function attachCareMapping(globalScope) {
   const categoryOrder = Object.freeze(['watering', 'fertilizing', 'training', 'environment']);
   const categoryLabels = Object.freeze({
-    watering: 'Bewässerung',
-    fertilizing: 'Nährstoffe',
+    watering: 'BewÃ¤sserung',
+    fertilizing: 'NÃ¤hrstoffe',
     training: 'Training',
     environment: 'Umgebung'
   });
@@ -19,20 +19,38 @@
       'actions.byId',
       'actions.cooldowns',
       'simulation.nowMs',
+      'simulation.isDaytime',
+      'plant.stageIndex',
+      'plant.phase',
       'status.water',
       'status.nutrition',
       'status.growth',
       'status.stress',
-      'status.risk'
+      'status.risk',
+      'status.health',
+      'climate.tent.temperatureC',
+      'climate.tent.humidityPercent',
+      'climate.tent.vpdKpa',
+      'climate.tent.airflowScore',
+      'climate.tent.airflowLabel'
     ]),
     toViewModel(state) {
       const safeState = state && typeof state === 'object' ? state : {};
       const ui = safeState.ui || {};
       const careUi = ui.care || {};
       const actions = safeState.actions || {};
+      const plant = safeState.plant || {};
+      const status = safeState.status || {};
+      const simulation = safeState.simulation || {};
+      const tentClimate = safeState.climate && safeState.climate.tent && typeof safeState.climate.tent === 'object'
+        ? safeState.climate.tent
+        : {};
       const catalog = Array.isArray(actions.catalog) ? actions.catalog.slice() : [];
       const cooldowns = actions.cooldowns || {};
       const nowMs = Date.now();
+      const hintApi = globalScope.GrowSimCareActionHints;
+      const stageIndex = Number(plant.stageIndex || 0);
+      const plantPhase = String(plant.phase || '');
 
       const availableCategories = categoryOrder.filter((category) => catalog.some((action) => action && action.category === category));
       const selectedCategory = availableCategories.includes(careUi.selectedCategory)
@@ -56,15 +74,38 @@
           };
         });
 
+      const context = {
+        stageIndex,
+        plantPhase,
+        phaseModel: hintApi && typeof hintApi.mapPlantProgressPhase === 'function'
+          ? hintApi.mapPlantProgressPhase(stageIndex, plantPhase)
+          : 'vegetative',
+        isDaytime: Boolean(simulation.isDaytime),
+        health: Number(status.health || 0),
+        water: Number(status.water || 0),
+        nutrition: Number(status.nutrition || 0),
+        growth: Number(status.growth || 0),
+        stress: Number(status.stress || 0),
+        risk: Number(status.risk || 0),
+        climate: {
+          temperatureC: Number.isFinite(Number(tentClimate.temperatureC)) ? Number(tentClimate.temperatureC) : null,
+          humidityPercent: Number.isFinite(Number(tentClimate.humidityPercent)) ? Number(tentClimate.humidityPercent) : null,
+          vpdKpa: Number.isFinite(Number(tentClimate.vpdKpa)) ? Number(tentClimate.vpdKpa) : null,
+          airflowScore: Number.isFinite(Number(tentClimate.airflowScore)) ? Number(tentClimate.airflowScore) : null,
+          airflowLabel: tentClimate.airflowLabel ? String(tentClimate.airflowLabel) : ''
+        }
+      };
+
       return {
         open: ui.openSheet === 'care',
         selectedCategory,
         selectedActionId: careUi.selectedActionId || null,
-        feedback: careUi.feedback || { kind: 'info', text: 'Wähle eine Aktion.' },
+        feedback: careUi.feedback || { kind: 'info', text: 'WÃ¤hle eine Aktion.' },
         categoryOrder,
         categoryLabels,
         availableCategories,
-        actions: visibleActions
+        actions: visibleActions,
+        context
       };
     }
   });

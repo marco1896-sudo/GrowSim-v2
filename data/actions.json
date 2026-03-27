@@ -100,15 +100,7 @@
         "requiresNoActiveCooldown": true,
         "minStageIndex": 0
       },
-      "prerequisites": {
-        "min": {
-          "health": 0
-        },
-        "max": {
-          "water": 90,
-          "risk": 90
-        }
-      },
+      "prerequisites": {},
       "effects": {
         "immediate": {
           "water": 10,
@@ -159,15 +151,7 @@
         "requiresNoActiveCooldown": true,
         "minStageIndex": 1
       },
-      "prerequisites": {
-        "min": {
-          "health": 10
-        },
-        "max": {
-          "water": 82,
-          "risk": 85
-        }
-      },
+      "prerequisites": {},
       "effects": {
         "immediate": {
           "water": 20,
@@ -221,14 +205,7 @@
         "requiresNoActiveCooldown": true,
         "minStageIndex": 4
       },
-      "prerequisites": {
-        "min": {
-          "health": 20
-        },
-        "max": {
-          "risk": 90
-        }
-      },
+      "prerequisites": {},
       "effects": {
         "immediate": {
           "water": 26,
@@ -1027,16 +1004,7 @@
         "requiresNoActiveCooldown": true,
         "minStageIndex": 2
       },
-      "prerequisites": {
-        "min": {
-          "health": 5,
-          "water": 20
-        },
-        "max": {
-          "water": 78,
-          "nutrition": 86
-        }
-      },
+      "prerequisites": {},
       "effects": {
         "immediate": {
           "water": 15,
