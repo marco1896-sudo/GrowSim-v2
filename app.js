@@ -3792,7 +3792,7 @@ const CARE_HINT_COPY_BY_KEY = Object.freeze({
   watering_late_flower_humid: ['Zusätzliches Gießen erhöht hier gerade den Krankheitsdruck.', 'In der späten Blüte bleibt die Zone unter feuchten Bedingungen leichter zu nass.'],
   watering_root_pressure: ['Mehr Wasser verschärft hier gerade den Druck an den Wurzeln.', 'Das Medium wirkt bereits stark belastet.'],
   watering_still_wet: ['Mehr Wasser belastet die Wurzelzone gerade eher.', 'Das Medium ist noch recht feucht.'],
-  watering_good_fit: ['Diese Bewässerung passt gerade gut.', 'Das Medium wirkt trocken genug.'],
+  watering_good_fit: ['Diese Wassergabe passt gerade gut.', 'Das Medium wirkt trocken genug.'],
   watering_feed_solution_pressure: ['Nährlösung kann die Wurzelzone gerade stärker belasten.', 'Sie trägt schon spürbar Druck.'],
   watering_feed_solution_positive: ['Nährlösung passt gerade gut.', 'Die Pflanze wirkt aufnahmefähig.'],
   watering_flush_positive: ['Spülen kann hier gerade etwas Druck aus der Wurzelzone nehmen.', 'Die Zone wirkt belastet.'],
@@ -3810,7 +3810,7 @@ const CARE_HINT_COPY_BY_KEY = Object.freeze({
   training_stress_warning: ['Training kostet gerade eher Erholung als Fortschritt.', 'Die Pflanze steht bereits unter Druck.'],
   training_dry_air_caution: ['Eingriffe fühlen sich jetzt deutlich härter an.', 'Die Luft wirkt gerade ziehend und fordernd.'],
   training_heat_caution: ['Wärme macht Eingriffe gerade deutlich belastender.', 'Etwas mehr Ruhe wäre jetzt oft sauberer.'],
-  training_positive: ['Leichtes Training passt in dieser Phase gut.', 'Die Pflanze wirkt stabil.'],
+  training_positive: ['Leichtes Training passt gerade gut.', 'Die Pflanze wirkt stabil.'],
   environment_humid_warning: ['Eine Umgebungsmaßnahme ist hier jetzt besonders sinnvoll.', 'Feuchte Luft steht gerade zu lange im Bestand.'],
   environment_late_flower_caution: ['Stehende Feuchte wird jetzt schneller problematisch.', 'In der späten Blüte passt ein saubereres Klima besonders gut.'],
   environment_low_pressure: ['Der direkte Effekt dürfte gerade eher klein sein.', 'Aktuell ist wenig Druck im System.'],
@@ -3868,22 +3868,19 @@ function renderCareEffectsPanel(careViewModel = null) {
   };
 
   const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
-  if (ui.carePreviewWrap && ui.carePreviewImage && ui.carePreviewLabel && ui.carePreviewNote) { const imagePath = selected ? (getCareActionAssetPath(selected) || getActionIconPath(selected)) : '';
-    if (selected && imagePath) {
-      ui.carePreviewImage.src = imagePath;
-      ui.carePreviewImage.alt = `${selected.label} – Aktionsvorschau`;
-      ui.carePreviewLabel.textContent = selected.label;
-      ui.carePreviewNote.textContent = selected.uxCopy && selected.uxCopy.short ? String(selected.uxCopy.short) : (selected.riskNotes ? String(selected.riskNotes) : 'Pflegeaktion');
-      ui.carePreviewWrap.classList.remove('hidden');
-      ui.carePreviewWrap.setAttribute('aria-hidden', 'false');
-    } else {
-      ui.carePreviewImage.removeAttribute('src');
-      ui.carePreviewImage.alt = '';
-      ui.carePreviewLabel.textContent = 'Aktion auswählen';
-      ui.carePreviewNote.textContent = 'Gameplay-Vorschau';
-      ui.carePreviewWrap.classList.add('hidden');
-      ui.carePreviewWrap.setAttribute('aria-hidden', 'true');
-    }
+  if (ui.carePreviewWrap) {
+    ui.carePreviewWrap.classList.add('hidden');
+    ui.carePreviewWrap.setAttribute('aria-hidden', 'true');
+  }
+  if (ui.carePreviewImage) {
+    ui.carePreviewImage.removeAttribute('src');
+    ui.carePreviewImage.alt = '';
+  }
+  if (ui.carePreviewLabel) {
+    ui.carePreviewLabel.textContent = '';
+  }
+  if (ui.carePreviewNote) {
+    ui.carePreviewNote.textContent = '';
   }
 
   if (!selected) {
@@ -3914,12 +3911,12 @@ function renderCareEffectsPanel(careViewModel = null) {
     for (const hint of topHints) {
       const li = document.createElement('li');
       li.className = `care-hint-item care-hint-item--${hint.severity}`;
-      const label = hint.severity === 'warning' ? 'Warnung' : (hint.severity === 'caution' ? 'Vorsicht' : 'Empfehlung');
       const hintCopy = getCareHintCopy(hint);
+      const severityLabel = hint.severity === 'warning' ? 'Warnung' : (hint.severity === 'caution' ? 'Vorsicht' : 'Empfehlung');
+      li.setAttribute('aria-label', severityLabel);
       li.innerHTML = `
         <div class="care-hint-head">
           <span class="care-hint-marker" aria-hidden="true"></span>
-          <span class="care-hint-kicker">${escapeHtml(label)}</span>
         </div>
         <strong class="care-hint-headline">${escapeHtml(hintCopy.headline || hint.message)}</strong>${hintCopy.explanation ? `<p class="care-hint-message">${escapeHtml(hintCopy.explanation)}</p>` : ''}
       `;

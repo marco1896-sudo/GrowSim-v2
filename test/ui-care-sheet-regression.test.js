@@ -92,10 +92,6 @@ async function main() {
       const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
       const careSheet = document.getElementById('careSheet');
       const actionList = document.getElementById('careActionList');
-      const previewWrap = document.getElementById('carePreviewWrap');
-      const previewImage = document.getElementById('carePreviewImage');
-      const previewLabel = document.getElementById('carePreviewLabel');
-      const previewNote = document.getElementById('carePreviewNote');
       const effectsList = document.getElementById('careEffectsList');
       const executeButton = document.getElementById('careExecuteButton');
       const feedback = document.getElementById('careFeedback');
@@ -122,21 +118,15 @@ async function main() {
         </button>
       `;
 
-      previewWrap.classList.remove('hidden');
-      previewWrap.setAttribute('aria-hidden', 'false');
-      previewImage.src = transparentPixel;
-      previewLabel.textContent = 'Leicht gießen';
-      previewNote.textContent = 'Sanfte Wassergabe für den aktuellen Rhythmus.';
-
       effectsList.innerHTML = `
         <li class="care-section-label care-section-label--hints">Hinweise zur aktuellen Lage</li>
         <li class="care-hint-item care-hint-item--warning">
-          <div class="care-hint-head"><span class="care-hint-marker" aria-hidden="true"></span><span class="care-hint-kicker">Warnung</span></div>
+          <div class="care-hint-head"><span class="care-hint-marker" aria-hidden="true"></span></div>
           <strong class="care-hint-headline">Mehr Wasser erhöht hier gerade den Druck an den Wurzeln.</strong>
           <p class="care-hint-message">Das Medium wirkt bereits stark belastet.</p>
         </li>
         <li class="care-hint-item care-hint-item--caution">
-          <div class="care-hint-head"><span class="care-hint-marker" aria-hidden="true"></span><span class="care-hint-kicker">Vorsicht</span></div>
+          <div class="care-hint-head"><span class="care-hint-marker" aria-hidden="true"></span></div>
           <strong class="care-hint-headline">Stärkeres Gießen beruhigt das Klima gerade kaum.</strong>
           <p class="care-hint-message">Die Luft ist sehr trocken und der Rhythmus wird dadurch eher unruhig.</p>
         </li>
@@ -155,9 +145,6 @@ async function main() {
     const careUiState = await page.evaluate(() => {
       const sheetContent = document.querySelector('#careSheet .sheet-content');
       const actionList = document.getElementById('careActionList');
-      const previewWrap = document.getElementById('carePreviewWrap');
-      const previewLabel = document.getElementById('carePreviewLabel');
-      const previewNote = document.getElementById('carePreviewNote');
       const effectsList = document.getElementById('careEffectsList');
       const executeButton = document.getElementById('careExecuteButton');
 
@@ -168,8 +155,6 @@ async function main() {
 
       const actionListStyle = window.getComputedStyle(actionList);
       const sheetContentStyle = window.getComputedStyle(sheetContent);
-      const previewLabelStyle = window.getComputedStyle(previewLabel);
-      const previewNoteStyle = window.getComputedStyle(previewNote);
       const effectsListStyle = window.getComputedStyle(effectsList);
 
       return {
@@ -179,14 +164,9 @@ async function main() {
         actionListPaddingRight: actionListStyle.paddingRight,
         actionListScrollbarGutter: actionListStyle.scrollbarGutter || '',
         actionListHeight: actionList.getBoundingClientRect().height,
-        previewHeight: previewWrap.getBoundingClientRect().height,
         effectsListOverflowY: effectsListStyle.overflowY,
         effectsListHeight: effectsList.getBoundingClientRect().height,
         effectsListChildCount: effectsList.children.length,
-        previewLabelLineHeight: previewLabelStyle.lineHeight,
-        previewNoteLineHeight: previewNoteStyle.lineHeight,
-        previewNoteText: previewNote.textContent.trim(),
-        previewLabelText: previewLabel.textContent.trim(),
         executeReachable: executeRect.bottom <= sheetRect.bottom + 1,
         sheetScrollTop: sheetContent.scrollTop,
         needsScroll: sheetContent.scrollHeight > sheetContent.clientHeight + 1
@@ -200,16 +180,12 @@ async function main() {
     assert.ok(parseFloat(careUiState.actionListPaddingRight) >= 10, 'care action list should reserve space next to the scrollbar');
     assert.ok(/stable/i.test(careUiState.actionListScrollbarGutter), 'care action list should reserve a stable scrollbar gutter');
     assert.ok(careUiState.actionListHeight >= 150, 'care action list should keep enough visible height to show multiple actions');
-    assert.ok(careUiState.previewLabelText.length > 0, 'selected care preview should expose a title');
-    assert.ok(careUiState.previewNoteText.length > 0, 'selected care preview should expose a subtitle');
-    assert.notStrictEqual(careUiState.previewLabelLineHeight, 'normal', 'preview title should have an explicit line-height');
-    assert.notStrictEqual(careUiState.previewNoteLineHeight, 'normal', 'preview subtitle should have an explicit line-height');
-    assert.ok(careUiState.previewHeight >= 60 && careUiState.previewHeight <= 85, 'care preview should stay compact and secondary to the decision content');
     assert.strictEqual(careUiState.effectsListOverflowY, 'auto', 'care detail list should support internal scrolling when needed');
     assert.ok(careUiState.effectsListChildCount >= 4, 'care detail list should render hints and effect rows');
-    assert.ok(careUiState.effectsListHeight >= 120, 'care detail list should retain readable height while leaving room for the CTA');
+    assert.ok(careUiState.effectsListHeight >= 170, 'care detail list should gain more readable height once the preview is removed');
     assert.ok(/Hinweise zur aktuellen Lage/.test(careUiState.text), 'care detail should visibly include the hints section');
     assert.ok(/Auswirkungen der Aktion/.test(careUiState.text), 'care detail should visibly include the effects section');
+    assert.ok(!/Warnung|Vorsicht|Empfehlung/.test(careUiState.text), 'care hints should no longer show visible severity words');
     assert.ok(careUiState.executeReachable, 'care execute button should remain visible and reachable on mobile');
     assert.ok(!careUiState.needsScroll, 'care sheet root should not need to scroll once internal owners are set correctly');
   } finally {
