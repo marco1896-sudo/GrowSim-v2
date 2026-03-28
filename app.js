@@ -3247,10 +3247,11 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   const envVpdNode = uiNode('envVpdValue', 'envVpdValue');
   const envLightNode = uiNode('envLightValue', 'envLightValue');
   const envAirflowNode = uiNode('envAirflowValue', 'envAirflowValue');
+  const compactLightText = String(panel.envLightText || '').replace(/\s*PPFD\s*$/i, '').trim();
   if (envTempNode) envTempNode.textContent = String(panel.envTempText || '');
   if (envHumidityNode) envHumidityNode.textContent = String(panel.envHumidityText || '');
   if (envVpdNode) envVpdNode.textContent = String(panel.envVpdText || '');
-  if (envLightNode) envLightNode.textContent = String(panel.envLightText || '');
+  if (envLightNode) envLightNode.textContent = compactLightText;
   if (envAirflowNode) envAirflowNode.textContent = String(panel.envAirflowText || '');
 
   const rootPhNode = uiNode('rootPhValue', 'rootPhValue');
@@ -3274,6 +3275,77 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
     }
   };
 
+  setText('climateLiveTempValue', panel.envTempText || '');
+  setText('climateLiveHumidityValue', panel.envHumidityText || '');
+  setText('climateLiveVpdValue', panel.envVpdText || '');
+  setText('climateLiveLightValue', panel.envLightText || '');
+  setText('climateLiveAirflowValue', panel.envAirflowText || '');
+  const liveReadout = deriveEnvironmentReadout(state);
+  const homeClimateBadge = document.getElementById('homeClimateBadge');
+  const homeClimateCard = document.getElementById('homeClimateCard');
+  const climateStatusBadge = document.getElementById('climateStatusBadge');
+  const climateStatusText = document.getElementById('climateStatusText');
+  const climateModeAuto = document.getElementById('climateModeAuto');
+  const climateModeManual = document.getElementById('climateModeManual');
+  const climateModeDay = document.getElementById('climateModeDay');
+  const climateModeNight = document.getElementById('climateModeNight');
+  const climateModeSummary = document.getElementById('climateModeSummary');
+  const climateModeCycleInfo = document.getElementById('climateModeCycleInfo');
+  const climatePhaseValue = document.getElementById('climatePhaseValue');
+  if (homeClimateBadge || homeClimateCard) {
+    const vpd = Number(liveReadout && liveReadout.vpdKpa || 0);
+    const climateState = (vpd >= 0.9 && vpd <= 1.5)
+      ? 'optimal'
+      : ((vpd >= 0.7 && vpd <= 1.7) ? 'watch' : 'alert');
+    const climateLabel = climateState === 'optimal'
+      ? 'Optimal'
+      : (climateState === 'watch' ? 'Beobachten' : 'Alarm');
+    if (homeClimateBadge) {
+      homeClimateBadge.textContent = climateLabel;
+      homeClimateBadge.dataset.state = climateState;
+    }
+    if (homeClimateCard) {
+      homeClimateCard.dataset.state = climateState;
+    }
+    if (climateStatusBadge) {
+      climateStatusBadge.textContent = climateLabel;
+      climateStatusBadge.dataset.state = climateState;
+    }
+    if (climateStatusText) {
+      climateStatusText.textContent = climateState === 'optimal'
+        ? 'VPD liegt im Zielkorridor und die Umgebung wirkt stabil.'
+        : (climateState === 'watch'
+          ? 'Die Umgebung ist noch kontrollierbar, braucht aber etwas Aufmerksamkeit.'
+          : 'Klima driftet deutlich. Regelung oder Zielwerte sollten geprüft werden.');
+    }
+  }
+  const autoModeActive = Boolean(controls.vpdTargetEnabled);
+  if (climateModeAuto) {
+    climateModeAuto.dataset.active = String(autoModeActive);
+  }
+  if (climateModeManual) {
+    climateModeManual.dataset.active = String(!autoModeActive);
+  }
+  if (climateModeSummary) {
+    climateModeSummary.textContent = autoModeActive
+      ? 'Auto-Regelung priorisiert den VPD-Korridor bei laufender Gegensteuerung.'
+      : 'Direkte Zielwerte stehen im Vordergrund. VPD-Regelung ist aktuell deaktiviert.';
+  }
+  const isDaytimeActive = Boolean(vm.isDaytime);
+  if (climateModeDay) {
+    climateModeDay.dataset.active = String(isDaytimeActive);
+  }
+  if (climateModeNight) {
+    climateModeNight.dataset.active = String(!isDaytimeActive);
+  }
+  if (climateModeCycleInfo) {
+    climateModeCycleInfo.textContent = isDaytimeActive
+      ? 'Aktuell Tagphase. Tagesziele sind aktiv.'
+      : 'Aktuell Nachtphase. Nachtziele steuern das Klima.';
+  }
+  if (climatePhaseValue) {
+    climatePhaseValue.textContent = String(PHASE_LABEL_DE[state.plant.phase] || panel.phaseTitle || 'Unbekannt');
+  }
   setText('envCtrlTempOut', `${controls.targets.day.temperatureC.toFixed(1)}°C`);
   setText('envCtrlHumidityOut', `${controls.targets.day.humidityPercent}%`);
   setText('envCtrlAirflowOut', `${controls.fan.minPercent}%`);
@@ -3286,7 +3358,8 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   setText('envCtrlHumidityBufferOut', `${controls.buffers.humidityPercent}%`);
   setText('envCtrlVpdBufferOut', `${controls.buffers.vpdKpa.toFixed(2)} kPa`);
   setText('envCtrlRampOut', `${Math.round(controls.ramp.percentPerMinute)}%/min`);
-  setText('envCtrlTransitionOut', `${Math.round(controls.transitionMinutes)} min`); setText('envCtrlVpdEnabledOut', controls.vpdTargetEnabled ? 'An' : 'Aus');
+  setText('envCtrlTransitionOut', `${Math.round(controls.transitionMinutes)} min`);
+  setText('envCtrlVpdEnabledOut', controls.vpdTargetEnabled ? 'An' : 'Aus');
   setText('envCtrlPhOut', `${controls.ph.toFixed(1)}`);
   setText('envCtrlEcOut', `${controls.ec.toFixed(1)} mS`);
   setText('envCtrlEcHint', 'nur über mineralisches Düngen');
@@ -3384,6 +3457,12 @@ function deriveAirflowLabel(airflowPercent) {
 
 function onEnvironmentControlInput(controlKey, rawValue) {
   const controls = ensureEnvironmentControls(state);
+  if (controlKey === 'vpdTargetEnabled') {
+    controls.vpdTargetEnabled = Boolean(rawValue);
+    renderHud();
+    schedulePersistState();
+    return;
+  }
   const value = Number(rawValue);
   if (!Number.isFinite(value)) {
     return;
@@ -3413,7 +3492,6 @@ function onEnvironmentControlInput(controlKey, rawValue) {
   if (controlKey === 'rampPercentPerMinute') controls.ramp.percentPerMinute = clamp(value, 1, 100);
   if (controlKey === 'transitionMinutes') controls.transitionMinutes = clamp(value, 1, 180);
   if (controlKey === 'ph') controls.ph = clamp(value, 5.0, 7.0);
-  if (controlKey === 'vpdTargetEnabled') controls.vpdTargetEnabled = Boolean(rawValue);
   if (controlKey === 'ec') {
     addLog('action', 'EC ist nicht direkt regelbar. Nutze mineralische Düngung.', { attemptedValue: value });
     return;
@@ -3621,6 +3699,7 @@ function renderSheets() {
   ui.backdrop.setAttribute('aria-hidden', String(!showBackdrop));
 
   toggleSheet(ui.careSheet, activeSheet === 'care');
+  toggleSheet(ui.climateSheet, activeSheet === 'climate');
   toggleSheet(ui.eventSheet, activeSheet === 'event');
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
@@ -5352,6 +5431,8 @@ function openSheet(name) {
     renderEventSheet();
   } else if (name === 'care') {
     renderCareSheet(true);
+  } else if (name === 'climate') {
+    renderHud();
   } else if (name === 'diagnosis') {
     renderSettingsSheet();
   } else if (name === 'missions') {
@@ -7868,7 +7949,7 @@ function ensureStateIntegrity(nowMs) {
     state.history.events = [];
   }
 
-  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis', 'statDetail']);
+  const validSheets = new Set([null, 'care', 'climate', 'event', 'dashboard', 'diagnosis', 'statDetail']);
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }

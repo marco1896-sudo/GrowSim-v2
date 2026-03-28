@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260327j">
+  <link rel="stylesheet" href="styles.css?v=20260328b">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -100,87 +100,39 @@
         </div>
 
         <div class="home-right-column">
-          <section class="home-env-panel" aria-label="Umgebungsdaten">
-            <div class="home-env-row"><img src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true"><span id="envTempLabel">Temperatur</span><strong id="envTempValue">25.3°C</strong></div>
-            <div class="home-env-row"><img src="assets/ui/icons/icon_humidity.svg" alt="" aria-hidden="true"><span id="envHumidityLabel">Luftfeuchte</span><strong id="envHumidityValue">61%</strong></div>
-            <div class="home-env-row"><img src="assets/ui/icons/icon_vpd.svg" alt="" aria-hidden="true"><span id="envVpdLabel">VPD</span><strong id="envVpdValue">1.2 kPa</strong></div>
-            <div class="home-env-row"><img src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true"><span id="envLightLabel">Licht</span><strong id="envLightValue">720 PPFD</strong></div>
-            <div class="home-env-row"><img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true"><span id="envAirflowLabel">Luftstrom</span><strong id="envAirflowValue">Good</strong></div>
-
-            <button id="toggleEnvControlsBtn" class="home-env-toggle-btn" type="button">
-              <span>Umwelt-Steuerung</span>
-              <span class="toggle-icon">▼</span>
-            </button>
-
-        <div id="homeEnvControls" class="home-env-controls hidden" aria-label="Feinsteuerung Umwelt und Wurzeln">
-        <div class="home-env-hint" aria-label="Hinweis zu Klimawerten und Steuerung">
-          <span class="home-env-hint-dot" aria-hidden="true"></span>
-          <span class="home-env-hint-text">Oben Istwerte · unten Ziele &amp; Controller</span>
-        </div>
-
-              <div class="home-env-controls-section" aria-label="Basis-Klimaziele">
-                <div class="home-env-section-title">Basis</div>
-                <label class="home-env-control" for="envCtrlTemp"><span>Tag Temp Ziel</span><strong id="envCtrlTempOut">25.0°C</strong></label>
-                <input id="envCtrlTemp" type="range" min="16" max="36" step="0.1" value="25">
-
-                <label class="home-env-control" for="envCtrlHumidity"><span>Tag rF Ziel</span><strong id="envCtrlHumidityOut">60%</strong></label>
-                <input id="envCtrlHumidity" type="range" min="30" max="90" step="1" value="60">
-
-                <label class="home-env-control" for="envCtrlAirflow"><span>Min. Abluft</span><strong id="envCtrlAirflowOut">70%</strong></label>
-                <input id="envCtrlAirflow" type="range" min="0" max="100" step="1" value="70">
-                <small class="home-env-note">Basis-Lüfterstufe für den Controller. Höhere Werte tauschen Luft schneller mit dem Raum.</small>
+          <button id="homeClimateCard" class="home-climate-card" type="button" aria-label="Klima-Steuerung öffnen">
+            <div class="home-climate-card__header">
+              <div class="home-climate-card__copy">
+                <span class="home-climate-card__eyebrow">Climate</span>
+                <div class="home-climate-card__headline">
+                  <strong id="envVpdValue" class="home-climate-card__hero-value">1.2 kPa</strong>
+                </div>
               </div>
+              <span id="homeClimateBadge" class="home-climate-card__badge">Optimal</span>
+            </div>
 
-              <div class="home-env-controls-section home-env-controls-section--advanced" aria-label="Erweiterte Klimaeinstellungen">
-                <div class="home-env-section-title">Erweitert</div>
-
-                <label class="home-env-control" for="envCtrlNightTemp"><span>Nacht Temp</span><strong id="envCtrlNightTempOut">21.0°C</strong></label>
-                <input id="envCtrlNightTemp" type="range" min="16" max="36" step="0.1" value="21">
-
-                <label class="home-env-control" for="envCtrlNightHumidity"><span>Nacht rF</span><strong id="envCtrlNightHumidityOut">55%</strong></label>
-                <input id="envCtrlNightHumidity" type="range" min="30" max="90" step="1" value="55">
-
-                <label class="home-env-control" for="envCtrlDayVpd"><span>Tag VPD</span><strong id="envCtrlDayVpdOut">1.3 kPa</strong></label>
-                <input id="envCtrlDayVpd" type="range" min="0.2" max="3.0" step="0.01" value="1.3">
-
-                <label class="home-env-control" for="envCtrlNightVpd"><span>Nacht VPD</span><strong id="envCtrlNightVpdOut">1.1 kPa</strong></label>
-                <input id="envCtrlNightVpd" type="range" min="0.2" max="3.0" step="0.01" value="1.1">
-
-                <label class="home-env-control" for="envCtrlFanMax"><span>Max. Abluft</span><strong id="envCtrlFanMaxOut">100%</strong></label>
-                <input id="envCtrlFanMax" type="range" min="0" max="100" step="1" value="100">
-
-                <label class="home-env-control" for="envCtrlTempBuffer"><span>Temp Buffer</span><strong id="envCtrlTempBufferOut">0.7°C</strong></label>
-                <input id="envCtrlTempBuffer" type="range" min="0.1" max="4" step="0.1" value="0.7">
-
-                <label class="home-env-control" for="envCtrlHumidityBuffer"><span>rF Buffer</span><strong id="envCtrlHumidityBufferOut">4%</strong></label>
-                <input id="envCtrlHumidityBuffer" type="range" min="1" max="20" step="1" value="4">
-
-                <label class="home-env-control" for="envCtrlVpdBuffer"><span>VPD Buffer</span><strong id="envCtrlVpdBufferOut">0.12 kPa</strong></label>
-                <input id="envCtrlVpdBuffer" type="range" min="0.02" max="0.6" step="0.01" value="0.12">
-
-                <label class="home-env-control" for="envCtrlRamp"><span>Ramp</span><strong id="envCtrlRampOut">18%/min</strong></label>
-                <input id="envCtrlRamp" type="range" min="1" max="100" step="1" value="18">
-
-                <label class="home-env-control" for="envCtrlTransition"><span>Übergang</span><strong id="envCtrlTransitionOut">45 min</strong></label>
-                <input id="envCtrlTransition" type="range" min="1" max="180" step="1" value="45">
-
-                <label class="home-env-control home-env-control--toggle" for="envCtrlVpdEnabled">
-                  <span>VPD Ziel aktiv</span>
-                  <strong id="envCtrlVpdEnabledOut">Aus</strong>
-                </label>
-                <input id="envCtrlVpdEnabled" type="checkbox">
+            <div class="home-climate-card__metrics" aria-label="Klima-Istwerte">
+              <div class="home-climate-metric" aria-label="Temperatur">
+                <img class="home-climate-metric__icon" src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true">
+                <strong id="envTempValue" class="home-climate-metric__value">25.3°C</strong>
               </div>
-
-              <div class="home-env-controls-section home-env-controls-section--root" aria-label="Wurzelsteuerung">
-                <div class="home-env-section-title">Wurzelzone</div>
-                <label class="home-env-control" for="envCtrlPh"><span>pH</span><strong id="envCtrlPhOut">6.0</strong></label>
-                <input id="envCtrlPh" type="range" min="5.0" max="7.0" step="0.1" value="6.0">
-
-                <div class="home-env-control home-env-control--readonly"><span>EC</span><strong id="envCtrlEcOut">1.4 mS</strong></div>
-                <small id="envCtrlEcHint" class="home-env-note">nur über mineralisches Düngen</small>
+              <div class="home-climate-metric" aria-label="Luftfeuchte">
+                <img class="home-climate-metric__icon" src="assets/ui/icons/icon_humidity.svg" alt="" aria-hidden="true">
+                <strong id="envHumidityValue" class="home-climate-metric__value">61%</strong>
               </div>
             </div>
-          </section>
+
+            <div class="home-climate-card__footer" aria-label="Licht">
+              <img class="home-climate-metric__icon home-climate-metric__icon--tiny" src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true">
+              <strong id="envLightValue" class="home-climate-card__footer-value">720</strong>
+              <span id="envLightLabel" class="home-climate-card__footer-unit">PPFD</span>
+            </div>
+
+            <span id="envTempLabel" class="home-climate-card__sr-only">Temperatur</span>
+            <span id="envHumidityLabel" class="home-climate-card__sr-only">Luftfeuchte</span>
+            <span id="envAirflowLabel" class="home-climate-card__sr-only">Luftstrom</span>
+            <span id="envAirflowValue" class="home-climate-card__sr-only">Good</span>
+          </button>
         </div>
 
         <div class="home-content-scroll">
@@ -304,6 +256,298 @@
           <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">Wähle eine Aktion.</p>
         </div>
       </section>
+    </div>
+  </section>
+
+  <section id="climateSheet" class="bottom-sheet climate-sheet hidden" aria-hidden="true">
+    <div class="climate-sheet__shell">
+      <header class="sheet-header climate-sheet__header">
+        <div class="climate-sheet__heading">
+          <span class="climate-sheet__eyebrow">Environment Control</span>
+          <h2>Klima &amp; Umwelt</h2>
+          <p class="climate-sheet__subtitle">Status zuerst. Hauptentscheidungen vorne. Feintuning nur dort, wo es wirklich hilft.</p>
+        </div>
+        <button class="sheet-close climate-sheet__close" data-close-sheet type="button" aria-label="Schließen">Schließen</button>
+      </header>
+
+      <div class="sheet-content climate-sheet__content">
+        <section class="climate-status" aria-label="Status">
+          <div class="climate-status__hero">
+            <div class="climate-status__copy">
+              <span class="climate-section__eyebrow">Status</span>
+              <strong id="climateLiveVpdValue" class="climate-status__value">1.2 kPa</strong>
+              <div class="climate-status__row">
+                <span class="climate-status__label">VPD</span>
+                <span id="climateStatusBadge" class="climate-status__badge">Optimal</span>
+              </div>
+              <p id="climateStatusText" class="climate-status__text">VPD liegt im Zielkorridor und die Umgebung wirkt stabil.</p>
+            </div>
+            <div class="climate-status__meta">
+              <div class="climate-metric">
+                <span class="climate-metric__label">Temperatur</span>
+                <strong id="climateLiveTempValue" class="climate-metric__value">25.3°C</strong>
+              </div>
+              <div class="climate-metric">
+                <span class="climate-metric__label">Luftfeuchte</span>
+                <strong id="climateLiveHumidityValue" class="climate-metric__value">61%</strong>
+              </div>
+              <div class="climate-metric">
+                <span class="climate-metric__label">PPFD</span>
+                <strong id="climateLiveLightValue" class="climate-metric__value">720 PPFD</strong>
+              </div>
+              <div class="climate-metric">
+                <span class="climate-metric__label">Luftstrom</span>
+                <strong id="climateLiveAirflowValue" class="climate-metric__value">Good</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="climate-section climate-section--mode" aria-label="Modus und Steuerlogik">
+          <div class="climate-section__top">
+            <span class="climate-section__eyebrow">Steuerlogik</span>
+            <strong class="climate-section__title">Modus &amp; Kontext</strong>
+          </div>
+
+          <div class="climate-mode-grid">
+            <article class="climate-mode-card climate-mode-card--wide">
+              <span class="climate-mode-card__label">Controller</span>
+              <div class="climate-segmented climate-segmented--static" aria-label="Controller-Modus">
+                <span id="climateModeAuto" class="climate-segmented__item">Auto</span>
+                <span id="climateModeManual" class="climate-segmented__item">Manuell</span>
+              </div>
+              <small id="climateModeSummary" class="climate-note">Direkte Zielwerte aktiv. Auto-Regelung nur bei Bedarf einschalten.</small>
+            </article>
+
+            <article class="climate-mode-card">
+              <span class="climate-mode-card__label">Tagesprofil</span>
+              <div class="climate-segmented climate-segmented--static" aria-label="Tagesprofil">
+                <span id="climateModeDay" class="climate-segmented__item">Tag</span>
+                <span id="climateModeNight" class="climate-segmented__item">Nacht</span>
+              </div>
+              <small id="climateModeCycleInfo" class="climate-note">Aktuell Tagphase.</small>
+            </article>
+
+            <article class="climate-mode-card">
+              <span class="climate-mode-card__label">Pflanzenphase</span>
+              <strong id="climatePhaseValue" class="climate-mode-card__value">Vegetativ</strong>
+              <small class="climate-note">Nur als Kontext, keine zusätzliche Logik.</small>
+            </article>
+          </div>
+        </section>
+
+        <section class="climate-section climate-section--quick" aria-label="Schnelle Steuerung">
+          <div class="climate-section__top">
+            <span class="climate-section__eyebrow">Kernsteuerung</span>
+            <strong class="climate-section__title">Schnelle Entscheidungen</strong>
+          </div>
+
+          <div class="climate-primary-grid">
+            <article class="climate-primary-card">
+              <span class="climate-primary-card__label">Tag Temp Ziel</span>
+              <strong id="envCtrlTempOut" class="climate-primary-card__value">25.0°C</strong>
+              <small class="climate-primary-card__hint">Temperatur am Lichttag</small>
+              <div class="climate-stepper climate-stepper--primary" role="group" aria-label="Tag Temperatur Ziel">
+                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlTemp" data-env-step-key="temperatureC" data-env-step-dir="-1">−</button>
+                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlTemp" data-env-step-key="temperatureC" data-env-step-dir="1">+</button>
+              </div>
+              <input id="envCtrlTemp" class="climate-native-input" type="range" min="16" max="36" step="0.1" value="25">
+            </article>
+
+            <article class="climate-primary-card">
+              <span class="climate-primary-card__label">Tag rF Ziel</span>
+              <strong id="envCtrlHumidityOut" class="climate-primary-card__value">60%</strong>
+              <small class="climate-primary-card__hint">Luftfeuchte am Lichttag</small>
+              <div class="climate-stepper climate-stepper--primary" role="group" aria-label="Tag Luftfeuchte Ziel">
+                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlHumidity" data-env-step-key="humidityPercent" data-env-step-dir="-1">−</button>
+                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlHumidity" data-env-step-key="humidityPercent" data-env-step-dir="1">+</button>
+              </div>
+              <input id="envCtrlHumidity" class="climate-native-input" type="range" min="30" max="90" step="1" value="60">
+            </article>
+
+            <article class="climate-primary-card">
+              <span class="climate-primary-card__label">Nacht Temp</span>
+              <strong id="envCtrlNightTempOut" class="climate-primary-card__value">21.0°C</strong>
+              <small class="climate-primary-card__hint">Temperatur bei Dunkelphase</small>
+              <div class="climate-stepper climate-stepper--primary" role="group" aria-label="Nacht Temperatur Ziel">
+                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlNightTemp" data-env-step-key="nightTemperatureC" data-env-step-dir="-1">−</button>
+                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlNightTemp" data-env-step-key="nightTemperatureC" data-env-step-dir="1">+</button>
+              </div>
+              <input id="envCtrlNightTemp" class="climate-native-input" type="range" min="16" max="36" step="0.1" value="21">
+            </article>
+
+            <article class="climate-primary-card">
+              <span class="climate-primary-card__label">Nacht rF</span>
+              <strong id="envCtrlNightHumidityOut" class="climate-primary-card__value">55%</strong>
+              <small class="climate-primary-card__hint">Luftfeuchte bei Dunkelphase</small>
+              <div class="climate-stepper climate-stepper--primary" role="group" aria-label="Nacht Luftfeuchte Ziel">
+                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlNightHumidity" data-env-step-key="nightHumidityPercent" data-env-step-dir="-1">−</button>
+                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlNightHumidity" data-env-step-key="nightHumidityPercent" data-env-step-dir="1">+</button>
+              </div>
+              <input id="envCtrlNightHumidity" class="climate-native-input" type="range" min="30" max="90" step="1" value="55">
+            </article>
+          </div>
+        </section>
+
+        <section class="climate-section climate-section--regulation" aria-label="Regelung">
+          <div class="climate-section__top">
+            <span class="climate-section__eyebrow">Regelung</span>
+            <strong class="climate-section__title">Controller &amp; Luftführung</strong>
+          </div>
+
+          <div class="climate-regulation-grid">
+            <div class="climate-toggle-card climate-toggle-card--primary">
+              <div class="climate-toggle-card__copy">
+                <span class="climate-toggle-card__label">VPD Ziel aktiv</span>
+                <strong id="envCtrlVpdEnabledOut" class="climate-toggle-card__value">Aus</strong>
+              </div>
+              <label class="climate-switch" for="envCtrlVpdEnabled">
+                <input id="envCtrlVpdEnabled" type="checkbox">
+                <span class="climate-switch__track" aria-hidden="true"></span>
+              </label>
+            </div>
+
+            <article class="climate-control-card">
+              <div class="climate-control-card__head">
+                <span class="climate-control-card__label">Min. Abluft</span>
+                <strong id="envCtrlAirflowOut" class="climate-control-card__value">70%</strong>
+              </div>
+              <small class="climate-note">Grundlast für den Luftaustausch.</small>
+              <div class="climate-stepper climate-stepper--compact" role="group" aria-label="Minimale Abluft">
+                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlAirflow" data-env-step-key="airflowPercent" data-env-step-dir="-1">−</button>
+                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlAirflow" data-env-step-key="airflowPercent" data-env-step-dir="1">+</button>
+              </div>
+              <input id="envCtrlAirflow" class="climate-native-input" type="range" min="0" max="100" step="1" value="70">
+            </article>
+
+            <article class="climate-control-card">
+              <div class="climate-control-card__head">
+                <span class="climate-control-card__label">Max. Abluft</span>
+                <strong id="envCtrlFanMaxOut" class="climate-control-card__value">100%</strong>
+              </div>
+              <small class="climate-note">Obergrenze für starke Gegensteuerung.</small>
+              <div class="climate-stepper climate-stepper--compact" role="group" aria-label="Maximale Abluft">
+                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlFanMax" data-env-step-key="fanMaxPercent" data-env-step-dir="-1">−</button>
+                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlFanMax" data-env-step-key="fanMaxPercent" data-env-step-dir="1">+</button>
+              </div>
+              <input id="envCtrlFanMax" class="climate-native-input" type="range" min="0" max="100" step="1" value="100">
+            </article>
+
+            <article class="climate-control-card">
+              <div class="climate-control-card__head">
+                <span class="climate-control-card__label">Übergang</span>
+                <strong id="envCtrlTransitionOut" class="climate-control-card__value">45 min</strong>
+              </div>
+              <small class="climate-note">Wechsel zwischen Tag- und Nachtprofil.</small>
+              <div class="climate-stepper climate-stepper--compact" role="group" aria-label="Übergangszeit">
+                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlTransition" data-env-step-key="transitionMinutes" data-env-step-dir="-1">−</button>
+                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlTransition" data-env-step-key="transitionMinutes" data-env-step-dir="1">+</button>
+              </div>
+              <input id="envCtrlTransition" class="climate-native-input" type="range" min="1" max="180" step="1" value="45">
+            </article>
+          </div>
+        </section>
+
+        <details class="climate-advanced-panel">
+          <summary class="climate-advanced-panel__summary">
+            <span class="climate-advanced-panel__copy">
+              <span class="climate-section__eyebrow">Erweitert</span>
+              <strong class="climate-section__title">Feintuning</strong>
+            </span>
+            <span class="climate-advanced-panel__hint">sekundär</span>
+          </summary>
+
+          <div class="climate-advanced-panel__body">
+            <div class="climate-compact-grid">
+              <article class="climate-compact-card">
+                <span class="climate-compact-card__label">Tag VPD</span>
+                <strong id="envCtrlDayVpdOut" class="climate-compact-card__value">1.3 kPa</strong>
+                <div class="climate-stepper climate-stepper--compact">
+                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="-1">−</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="1">+</button>
+                </div>
+                <input id="envCtrlDayVpd" class="climate-native-input" type="range" min="0.2" max="3.0" step="0.01" value="1.3">
+              </article>
+
+              <article class="climate-compact-card">
+                <span class="climate-compact-card__label">Nacht VPD</span>
+                <strong id="envCtrlNightVpdOut" class="climate-compact-card__value">1.1 kPa</strong>
+                <div class="climate-stepper climate-stepper--compact">
+                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="-1">−</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="1">+</button>
+                </div>
+                <input id="envCtrlNightVpd" class="climate-native-input" type="range" min="0.2" max="3.0" step="0.01" value="1.1">
+              </article>
+
+              <article class="climate-compact-card">
+                <span class="climate-compact-card__label">Temp Buffer</span>
+                <strong id="envCtrlTempBufferOut" class="climate-compact-card__value">0.7°C</strong>
+                <div class="climate-stepper climate-stepper--compact">
+                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlTempBuffer" data-env-step-key="tempBufferC" data-env-step-dir="-1">−</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlTempBuffer" data-env-step-key="tempBufferC" data-env-step-dir="1">+</button>
+                </div>
+                <input id="envCtrlTempBuffer" class="climate-native-input" type="range" min="0.1" max="4" step="0.1" value="0.7">
+              </article>
+
+              <article class="climate-compact-card">
+                <span class="climate-compact-card__label">rF Buffer</span>
+                <strong id="envCtrlHumidityBufferOut" class="climate-compact-card__value">4%</strong>
+                <div class="climate-stepper climate-stepper--compact">
+                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlHumidityBuffer" data-env-step-key="humidityBufferPercent" data-env-step-dir="-1">−</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlHumidityBuffer" data-env-step-key="humidityBufferPercent" data-env-step-dir="1">+</button>
+                </div>
+                <input id="envCtrlHumidityBuffer" class="climate-native-input" type="range" min="1" max="20" step="1" value="4">
+              </article>
+
+              <article class="climate-compact-card">
+                <span class="climate-compact-card__label">VPD Buffer</span>
+                <strong id="envCtrlVpdBufferOut" class="climate-compact-card__value">0.12 kPa</strong>
+                <div class="climate-stepper climate-stepper--compact">
+                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlVpdBuffer" data-env-step-key="vpdBufferKpa" data-env-step-dir="-1">−</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlVpdBuffer" data-env-step-key="vpdBufferKpa" data-env-step-dir="1">+</button>
+                </div>
+                <input id="envCtrlVpdBuffer" class="climate-native-input" type="range" min="0.02" max="0.6" step="0.01" value="0.12">
+              </article>
+
+              <article class="climate-compact-card">
+                <span class="climate-compact-card__label">Ramp</span>
+                <strong id="envCtrlRampOut" class="climate-compact-card__value">18%/min</strong>
+                <div class="climate-stepper climate-stepper--compact">
+                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlRamp" data-env-step-key="rampPercentPerMinute" data-env-step-dir="-1">−</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlRamp" data-env-step-key="rampPercentPerMinute" data-env-step-dir="1">+</button>
+                </div>
+                <input id="envCtrlRamp" class="climate-native-input" type="range" min="1" max="100" step="1" value="18">
+              </article>
+            </div>
+          </div>
+        </details>
+
+        <section class="climate-section climate-section--root" aria-label="Wurzelsteuerung">
+          <div class="climate-section__top">
+            <span class="climate-section__eyebrow">Wurzelzone</span>
+            <strong class="climate-section__title">Medium &amp; Lösung</strong>
+          </div>
+
+          <div class="climate-root-grid">
+            <article class="climate-root-card">
+              <span class="climate-root-card__label">pH</span>
+              <strong id="envCtrlPhOut" class="climate-root-card__value">6.0</strong>
+              <small class="climate-note">Direkt im Zielbereich nachfuehren.</small>
+              <div class="climate-stepper climate-stepper--compact" role="group" aria-label="pH Ziel">
+                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlPh" data-env-step-key="ph" data-env-step-dir="-1">−</button>
+                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlPh" data-env-step-key="ph" data-env-step-dir="1">+</button>
+              </div>
+              <input id="envCtrlPh" class="climate-native-input" type="range" min="5.0" max="7.0" step="0.1" value="6.0">
+            </article>
+
+            <article class="climate-root-card climate-root-card--readonly">
+              <span class="climate-root-card__label">EC</span>
+              <strong id="envCtrlEcOut" class="climate-root-card__value">1.4 mS</strong>
+              <small id="envCtrlEcHint" class="climate-note">nur über mineralisches Düngen</small>
+            </article>
+          </div>
+        </section>
+      </div>
     </div>
   </section>
 
@@ -653,6 +897,6 @@
   <script src="src/ui/care/careActionHints.js?v=20260327a" defer></script>
   <script src="src/ui/mappings/careMapping.js?v=20260327a" defer></script>
   <script src="src/ui/screens/screenModules.js?v=20260319d" defer></script>
-  <script src="app.js?v=20260327e" defer></script>
+<script src="app.js?v=20260328b" defer></script>
 </body>
 </html>

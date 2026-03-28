@@ -120,6 +120,7 @@ function cacheUi() {
   ui.openDiagnosisBtn = document.getElementById('openDiagnosisBtn');
   ui.eventsActionBtn = document.getElementById('eventsActionBtn');
   ui.menuToggleBtn = document.getElementById('menuToggleBtn');
+  ui.homeClimateCard = document.getElementById('homeClimateCard');
   ui.envCtrlTemp = document.getElementById('envCtrlTemp');
   ui.envCtrlHumidity = document.getElementById('envCtrlHumidity');
   ui.envCtrlAirflow = document.getElementById('envCtrlAirflow');
@@ -139,6 +140,7 @@ function cacheUi() {
 
   ui.backdrop = document.getElementById('sheetBackdrop');
   ui.careSheet = document.getElementById('careSheet');
+  ui.climateSheet = document.getElementById('climateSheet');
   ui.eventSheet = document.getElementById('eventSheet');
   ui.dashboardSheet = document.getElementById('dashboardSheet');
   ui.diagnosisSheet = document.getElementById('diagnosisSheet');
@@ -316,6 +318,53 @@ function bindUi() {
   visibilityHandlerBound = true;
 }
 
+function getEnvironmentStepperSize(controlKey, inputNode) {
+  const steppedControls = {
+    temperatureC: 0.5,
+    nightTemperatureC: 0.5,
+    humidityPercent: 1,
+    nightHumidityPercent: 1,
+    airflowPercent: 5,
+    fanMaxPercent: 5,
+    dayVpdKpa: 0.05,
+    nightVpdKpa: 0.05,
+    tempBufferC: 0.1,
+    humidityBufferPercent: 1,
+    vpdBufferKpa: 0.01,
+    rampPercentPerMinute: 1,
+    transitionMinutes: 5,
+    ph: 0.1
+  };
+  if (Object.prototype.hasOwnProperty.call(steppedControls, controlKey)) {
+    return steppedControls[controlKey];
+  }
+  return Number(inputNode && inputNode.step) || 1;
+}
+
+function stepEnvironmentControl(controlKey, inputId, direction) {
+  const inputNode = document.getElementById(inputId);
+  if (!inputNode || typeof onEnvironmentControlInput !== 'function') {
+    return;
+  }
+
+  const currentValue = Number(inputNode.value);
+  const min = Number(inputNode.min);
+  const max = Number(inputNode.max);
+  const step = getEnvironmentStepperSize(controlKey, inputNode);
+  const nextValue = Math.min(
+    Number.isFinite(max) ? max : currentValue,
+    Math.max(
+      Number.isFinite(min) ? min : currentValue,
+      currentValue + (step * Number(direction || 0))
+    )
+  );
+
+  const precision = String(step).includes('.') ? String(step).split('.')[1].length : 0;
+  const normalizedValue = precision > 0 ? Number(nextValue.toFixed(precision)) : Math.round(nextValue);
+  inputNode.value = String(normalizedValue);
+  onEnvironmentControlInput(controlKey, normalizedValue);
+}
+
 function bindHomeScreenEvents(controller = null) {
   if (homeBindingsBound) {
     return;
@@ -373,6 +422,17 @@ function bindHomeScreenEvents(controller = null) {
       }
       openSheet('event');
     }));
+  }
+
+  if (ui.homeClimateCard) {
+    ui.homeClimateCard.addEventListener('click', () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('climate');
+        return;
+      }
+      openSheet('climate');
+    });
   }
 
   if (ui.homeMetaToggle) {
@@ -442,12 +502,13 @@ function bindHomeScreenEvents(controller = null) {
     });
   }
 
-  const toggleBtn = document.getElementById('toggleEnvControlsBtn');
-  const controlsDiv = document.getElementById('homeEnvControls');
-  if (toggleBtn && controlsDiv) {
-    toggleBtn.addEventListener('click', () => {
-      const isHidden = controlsDiv.classList.toggle('hidden');
-      toggleBtn.classList.toggle('is-open', !isHidden);
+  for (const stepperButton of document.querySelectorAll('[data-env-step-input][data-env-step-key][data-env-step-dir]')) {
+    stepperButton.addEventListener('click', () => {
+      stepEnvironmentControl(
+        stepperButton.dataset.envStepKey,
+        stepperButton.dataset.envStepInput,
+        Number(stepperButton.dataset.envStepDir)
+      );
     });
   }
 
@@ -903,6 +964,7 @@ function renderSheets() {
   ui.backdrop.setAttribute('aria-hidden', String(!showBackdrop));
 
   toggleSheet(ui.careSheet, activeSheet === 'care');
+  toggleSheet(ui.climateSheet, activeSheet === 'climate');
   toggleSheet(ui.eventSheet, activeSheet === 'event');
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
@@ -1470,6 +1532,8 @@ function openSheet(name) {
     renderEventSheet();
   } else if (name === 'care') {
     renderCareSheet(true);
+  } else if (name === 'climate') {
+    renderHud();
   }
 }
 
