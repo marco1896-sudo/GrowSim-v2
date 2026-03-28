@@ -2106,6 +2106,14 @@ function applyAction(actionId) {
   clampStatus();
   updateVisibleOverlays();
   syncCanonicalStateShape();
+  if (typeof window.checkMissions === 'function') {
+    window.checkMissions('action', {
+      actionId: action.id,
+      category: action.category,
+      deltaSummary,
+      sideEffects: triggeredSideEffects
+    });
+  }
   state.actions.lastResult = { ok: true, reason: 'ok', actionId: action.id, atRealTimeMs: nowMs };
   schedulePersistState(true);
 
@@ -2901,7 +2909,13 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const environment = deriveEnvironmentReadout(sourceState);
   const roots = deriveRootZoneReadout(environment, sourceState);
   const showSkipNight = !dead && !Boolean(simulation.isDaytime);
-  const runGoal = run && run.goal && typeof run.goal === 'object' ? run.goal : null;
+  const storedRunGoal = run && run.goal && typeof run.goal === 'object' ? run.goal : null;
+  const runGoal = progressionApi && typeof progressionApi.evaluateRunGoal === 'function' && storedRunGoal
+    ? progressionApi.evaluateRunGoal(storedRunGoal, sourceState, {
+      finalize: false,
+      endReason: run && run.endReason === 'harvest' ? 'harvest' : 'death'
+    })
+    : storedRunGoal;
   const activeSetup = sourceState.setup && typeof sourceState.setup === 'object' ? sourceState.setup : (run && run.setupSnapshot ? run.setupSnapshot : null);
   const runBuild = progressionApi && typeof progressionApi.getRunBuildPresentation === 'function' && activeSetup ? progressionApi.getRunBuildPresentation(activeSetup) : null;
   const showRunGoal = Boolean(runGoal && (run.status === 'active' || run.status === 'downed'));
@@ -2957,6 +2971,7 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
         compactTitle: getCompactRunGoalTitle(runGoal),
         title: String(runGoal.title || 'Run-Ziel'),
         description: String(runGoal.description || ''),
+        focusText: String(runGoal.focusText || ''),
         status: String(runGoal.status || 'active'),
         statusText: String(runGoal.statusText || (runGoal.status === 'completed' ? 'Ziel erreicht' : 'Läuft')),
         progressText: String(runGoal.progressText || ''),
@@ -2976,6 +2991,7 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
         compactTitle: '',
         title: '',
         description: '',
+        focusText: '',
         status: 'active',
         statusText: '',
         progressText: '',
@@ -3089,7 +3105,7 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
     homeMetaDetailTitleNode.textContent = String(runGoalVm.title || 'Run-Ziel');
   }
   if (homeMetaDetailDescriptionNode) {
-    homeMetaDetailDescriptionNode.textContent = String(runGoalVm.description || '');
+    homeMetaDetailDescriptionNode.textContent = String([runGoalVm.description, runGoalVm.focusText].filter(Boolean).join(' '));
   }
   if (homeMetaDetailProgressNode) {
     homeMetaDetailProgressNode.textContent = String(runGoalVm.progressText || '');
@@ -4265,6 +4281,123 @@ function explainActionFailure(reason) {
   return `Aktion blockiert (${value}).`;
 }
 
+function describeActiveEventContext(eventDef) {
+  const eventId = String(eventDef && eventDef.id || '');
+  const category = String(eventDef && eventDef.category || state.events.activeCategory || 'generic').toLowerCase();
+  const tags = Array.isArray(eventDef && eventDef.tags) ? eventDef.tags.map((tag) => String(tag).toLowerCase()) : [];
+  const env = deriveEnvironmentReadout();
+  const roots = deriveRootZoneReadout(env);
+
+  const temperature = Number(env.temperatureC || 0);
+  const humidity = Number(env.humidityPercent || 0);
+  const vpd = Number(env.vpdKpa || 0);
+  const airflow = Number.isFinite(Number(env.airflowScore))
+    ? Number(env.airflowScore)
+    : (env.airflowLabel === 'Good' ? 80 : (env.airflowLabel === 'Mittel' ? 55 : 30));
+  const instability = Number(env.instabilityScore || 0);
+  const rootOxygen = Number(String(roots.oxygen || '').replace('%', '')) || 0;
+  const rootHealth = Number(String(roots.rootHealth || '').replace('%', '')) || 0;
+  const rootEc = Number(String(roots.ec || '').replace(/\s*mS$/i, '')) || 0;
+  const rootPh = Number(roots.ph || 0);
+
+  if (eventId === 'v2_water_dry_pot') {
+    return {
+      cause: 'Topf und Blattmasse ziehen gerade zu stark am Wasserhaushalt.',
+      focus: 'Langsam und gleichmaessig rehydrieren, nicht nur schnell nachkippen.'
+    };
+  }
+  if (eventId === 'v2_water_overwater_warning' || eventId === 'v2_disease_root_warning') {
+    return {
+      cause: `Die Wurzelzone bleibt zu nass; Sauerstoff und Root-Health geraten unter Druck (${Math.round(rootOxygen)}% O2).`,
+      focus: 'Jetzt Wasserdruck rausnehmen und die Wurzelzone wieder atmen lassen.'
+    };
+  }
+  if (eventId === 'v2_nutrition_lockout') {
+    return {
+      cause: `Die Aufnahme stockt trotz voller Naehrstofflage; EC/pH deuten auf Wurzeldruck (${rootEc.toFixed(1)} mS, pH ${rootPh.toFixed(1)}).`,
+      focus: 'Nicht weiter pushen; zuerst die Wurzelzone wieder aufnahmefaehig machen.'
+    };
+  }
+  if (eventId === 'v2_environment_heat_spike' || eventId === 'v2_climate_heat_stress') {
+    return {
+      cause: `Hitze und VPD treiben den Wasserverlust hoch (${temperature.toFixed(1)} C, VPD ${vpd.toFixed(2)}).`,
+      focus: 'Klimalast senken; zusaetzliches Futter loest dieses Problem nicht.'
+    };
+  }
+  if (eventId === 'v2_environment_cold_night') {
+    return {
+      cause: `Die Nacht ist fuer die aktuelle Belastung zu kuehl geworden (${temperature.toFixed(1)} C).`,
+      focus: 'Temperatur beruhigen statt tagsueber aggressiver gegensteuern.'
+    };
+  }
+  if (
+    eventId === 'v2_disease_mold_pocket'
+    || eventId === 'v2_outdoor_rain_series'
+    || eventId === 'v2_climate_flower_humidity_risk'
+    || eventId === 'v2_climate_stagnant_air_warning'
+  ) {
+    return {
+      cause: `Feuchte Luft und stehende Zonen bauen Krankheitsdruck auf (${Math.round(humidity)}% RH, Airflow ${Math.round(airflow)}).`,
+      focus: 'Luftbewegung und trockenere Mikroklimata helfen hier mehr als weitere Fuetterung.'
+    };
+  }
+  if (eventId === 'v2_outdoor_storm_front' || eventId === 'v2_special_weather_shift' || eventId === 'v2_climate_instability_warning') {
+    return {
+      cause: `Das Mikroklima schwankt zu stark und erzeugt unruhigen Belastungsdruck (Instabilitaet ${Math.round(instability)}).`,
+      focus: 'Kurz stabilisieren und danach beobachten, statt hektisch mehrere Systeme zu ziehen.'
+    };
+  }
+  if (
+    eventId === 'v2_positive_ideal_mild_days'
+    || eventId === 'v2_positive_outdoor_sun_window'
+    || eventId === 'v2_climate_ideal_vpd_boost'
+    || eventId === 'v2_climate_stable_comfort_bonus'
+    || eventId === 'v2_climate_airflow_mold_guard'
+    || eventId === 'v2_climate_veg_leaf_expansion'
+  ) {
+    return {
+      cause: `Klima, Stress und Wurzelzone laufen gerade sauber zusammen (${Math.round(rootHealth)}% Root-Health).`,
+      focus: 'Das ist ein verdientes Stabilitaetsfenster, kein Freifahrtschein fuer harte Eingriffe.'
+    };
+  }
+
+  if (category === 'water') {
+    return {
+      cause: 'Der Wasserhaushalt ist aus dem Gleichgewicht geraten.',
+      focus: 'Erst den Wasserzustand sauber einfangen, dann weiter optimieren.'
+    };
+  }
+  if (category === 'nutrition') {
+    return {
+      cause: 'Die Naehrstofflage passt nicht mehr sauber zur Aufnahmefaehigkeit der Wurzeln.',
+      focus: 'Korrektur vor Eskalation: Ursache pruefen, nicht blind nachlegen.'
+    };
+  }
+  if (category === 'environment' || tags.includes('climate')) {
+    return {
+      cause: 'Klima und Belastung laufen gerade nicht sauber zusammen.',
+      focus: 'Mit kleinen Klimakorrekturen Druck rausnehmen, statt auf einen Wert zu starren.'
+    };
+  }
+  if (category === 'disease' || category === 'pest') {
+    return {
+      cause: 'Risiko, Feuchte oder Stress haben ein biologisches Folgeproblem beguenstigt.',
+      focus: 'Frueh gegensteuern, bevor aus Warnzeichen ein echter Schaden wird.'
+    };
+  }
+  if (category === 'positive') {
+    return {
+      cause: 'Die Pflanze laeuft gerade in einem ruhigen, belastbaren Fenster.',
+      focus: 'Stabil bleiben; nur kleine, passende Schritte nutzen dieses Momentum sauber.'
+    };
+  }
+
+  return {
+    cause: '',
+    focus: ''
+  };
+}
+
 function renderEventSheet() {
   if (state.ui.openSheet !== 'event' && !['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState)) {
     return;
@@ -4286,9 +4419,17 @@ function renderEventSheet() {
   ui.eventStateBadge.textContent = `Status: ${translateEventState(state.events.machineState)}`;
 
   if (state.events.machineState === 'activeEvent') {
+    const eventDef = Array.isArray(state.events.catalog)
+      ? state.events.catalog.find((entry) => entry && entry.id === state.events.activeEventId)
+      : null;
+    const eventContext = describeActiveEventContext(eventDef);
     ui.eventTitle.textContent = state.events.activeEventTitle;
     ui.eventText.textContent = state.events.activeEventText;
-    ui.eventMeta.textContent = `Schweregrad: ${state.events.activeSeverity} | Stichwörter: ${state.events.activeTags.join(', ') || '-'}`;
+    ui.eventMeta.textContent = [
+      `Schweregrad: ${state.events.activeSeverity}`,
+      eventContext.cause ? `Warum jetzt: ${eventContext.cause}` : '',
+      eventContext.focus ? `Fokus: ${eventContext.focus}` : ''
+    ].filter(Boolean).join(' | ');
 
     const optionSignature = `${state.events.activeEventId}|${state.events.activeOptions.map((option) => `${option.id}:${option.label}`).join('|')}`;
     if (ui.eventOptionList.dataset.signature !== optionSignature) {
@@ -4423,11 +4564,14 @@ function renderAnalysisOverview() {
   const status = state.status || {};
   const environment = deriveEnvironmentReadout(state);
   const roots = deriveRootZoneReadout(environment, state);
-  const drivers = diagnosisDrivers();
-  const primaryDriver = drivers[0];
-  const trendText = primaryDriver && primaryDriver.label !== 'Stabiler Zustand'
-    ? `48h Verlauf: ${primaryDriver.label}. ${primaryDriver.reason}`
-    : '48h Verlauf: Wasser stabil, Risiko leicht steigend, Stress fallend.';
+  const diagnosis = diagnosePlantState();
+  const primaryIssue = diagnosis.primaryIssue || null;
+  const trendText = primaryIssue
+    ? `${primaryIssue.title}. ${primaryIssue.cause}`
+    : 'Aktuell kein klarer Hauptdruck. Werte wirken insgesamt stabil.';
+  const nextCareText = primaryIssue
+    ? describeDiagnosisRecommendation(primaryIssue)
+    : 'Beobachten und nur bei klarer Abweichung eingreifen.';
 
   const statusRows = [
     { label: 'Wasser', value: `${Math.round(Number(status.water) || 0)}%`, tone: 'value_gold' },
@@ -4469,6 +4613,10 @@ function renderAnalysisOverview() {
     <section class="gs-analysis-overview-section">
       <h3 class="figma-section-head">Trend</h3>
       <p class="gs-analysis-trend-text">${escapeHtml(trendText)}</p>
+      <div class="gs-analysis-overview-meta">
+        <span>Nächster sinnvoller Schritt</span>
+        <strong>${escapeHtml(nextCareText)}</strong>
+      </div>
     </section>
   `;
 
@@ -4603,49 +4751,296 @@ function renderAnalysisDiagnosis() {
     return;
   }
 
-  const drivers = diagnosisDrivers();
-  const top = drivers.slice(0, 3);
-  const recommendation = recommendedCareCategory(top[0]);
-  const recommendationLabel = categoryLabel(recommendation);
+  const diagnosis = diagnosePlantState();
+  const primary = diagnosis.primaryIssue || null;
+  const secondary = Array.isArray(diagnosis.secondaryIssues) ? diagnosis.secondaryIssues : [];
 
   ui.analysisPanelDiagnosis.replaceChildren();
 
-  for (const item of top) {
+  if (primary) {
     const node = document.createElement('div');
-    node.className = 'gs-analysis-driver';
-    node.innerHTML = `<strong>${escapeHtml(item.label)}</strong><br>${escapeHtml(item.reason)}`;
+    node.className = 'gs-analysis-driver gs-analysis-driver--primary';
+    node.innerHTML = `
+      <div class="gs-analysis-driver-head">
+        <strong>Hauptproblem: ${escapeHtml(primary.title)}</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(primary.severity)}">${escapeHtml(primary.severityLabel)}</span>
+      </div>
+      <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(primary.cause)}</p>
+      <p class="gs-analysis-driver-line"><span>Auswirkung:</span> ${escapeHtml(primary.effect)}</p>
+      <p class="gs-analysis-driver-line"><span>Empfehlung:</span> ${escapeHtml(describeDiagnosisRecommendation(primary))}</p>
+      <p class="gs-analysis-driver-line gs-analysis-driver-line--limit"><span>Grenze:</span> ${escapeHtml(primary.limit)}</p>
+    `;
     ui.analysisPanelDiagnosis.appendChild(node);
   }
 
-  const rec = document.createElement('div');
-  rec.className = 'gs-analysis-driver';
-  rec.innerHTML = `<strong>Empfohlene nächste Pflege:</strong> ${escapeHtml(recommendationLabel)}`;
-  ui.analysisPanelDiagnosis.appendChild(rec);
+  for (const item of secondary) {
+    const node = document.createElement('div');
+    node.className = 'gs-analysis-driver';
+    node.innerHTML = `
+      <div class="gs-analysis-driver-head">
+        <strong>${escapeHtml(item.title)}</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(item.severity)}">${escapeHtml(item.severityLabel)}</span>
+      </div>
+      <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(item.cause)}</p>
+      <p class="gs-analysis-driver-line"><span>Nächster Schritt:</span> ${escapeHtml(describeDiagnosisRecommendation(item))}</p>
+    `;
+    ui.analysisPanelDiagnosis.appendChild(node);
+  }
+
+  if (!primary) {
+    const stableNode = document.createElement('div');
+    stableNode.className = 'gs-analysis-driver';
+    stableNode.innerHTML = `
+      <div class="gs-analysis-driver-head">
+        <strong>Aktuell kein akutes Hauptproblem</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--low">Beobachten</span>
+      </div>
+      <p class="gs-analysis-driver-line"><span>Lage:</span> Wasser, Nährstoffe und Druckwerte wirken aktuell vergleichsweise ruhig.</p>
+      <p class="gs-analysis-driver-line"><span>Nächster Schritt:</span> Keine harte Gegenmaßnahme nötig. Werte weiter beobachten und nur bei klarer Abweichung eingreifen.</p>
+    `;
+    ui.analysisPanelDiagnosis.appendChild(stableNode);
+  }
 
   ui.analysisPanelDiagnosis.setAttribute('title', 'Diagnoseansicht mit aktuellen Treibern. Kein Filtersystem.');
 }
 
+function diagnosisSeverityFromScore(score) {
+  const safeScore = Number(score) || 0;
+  if (safeScore >= 92) return { id: 'critical', label: 'Akut' };
+  if (safeScore >= 72) return { id: 'high', label: 'Wichtig' };
+  if (safeScore >= 52) return { id: 'medium', label: 'Relevant' };
+  return { id: 'low', label: 'Beobachten' };
+}
+
+function buildDiagnosisIssue(definition) {
+  const safe = definition && typeof definition === 'object' ? definition : {};
+  const severity = diagnosisSeverityFromScore(safe.score);
+  return {
+    id: String(safe.id || 'issue'),
+    score: Number(safe.score) || 0,
+    title: String(safe.title || 'Hinweis'),
+    cause: String(safe.cause || 'Keine klare Ursache erkannt.'),
+    effect: String(safe.effect || 'Die Entwicklung sollte beobachtet werden.'),
+    recommendation: String(safe.recommendation || 'Werte beobachten.'),
+    limit: String(safe.limit || 'Keine klare Einschränkung erkannt.'),
+    carePlan: safe.carePlan || null,
+    severity: severity.id,
+    severityLabel: severity.label
+  };
+}
+
+function getCarePlanForCategory(category) {
+  const catalog = Array.isArray(state.actions && state.actions.catalog) ? state.actions.catalog : [];
+  const tierOrder = { primary: 0, secondary: 1, cooldown: 2, blocked: 3 };
+  const entries = catalog
+    .filter((action) => action && action.category === category)
+    .map((action) => {
+      const cooldownUntil = Number(state.actions && state.actions.cooldowns ? state.actions.cooldowns[action.id] || 0 : 0);
+      const cooldownLeftMs = Math.max(0, cooldownUntil - Date.now());
+      const availability = getActionAvailability(action);
+      const priority = getActionPriorityTier(action, availability, cooldownLeftMs);
+      return {
+        id: action.id,
+        label: action.label,
+        category: action.category,
+        availability,
+        cooldownLeftMs,
+        tier: priority.tier
+      };
+    })
+    .sort((a, b) => {
+      if (tierOrder[a.tier] !== tierOrder[b.tier]) {
+        return tierOrder[a.tier] - tierOrder[b.tier];
+      }
+      return intensityRank((state.actions.byId[a.id] || {}).intensity) - intensityRank((state.actions.byId[b.id] || {}).intensity);
+    });
+
+  return {
+    category,
+    categoryLabel: categoryLabel(category),
+    actions: entries,
+    best: entries.find((entry) => entry.tier === 'primary')
+      || entries.find((entry) => entry.tier === 'secondary')
+      || entries.find((entry) => entry.tier === 'cooldown')
+      || entries[0]
+      || null
+  };
+}
+
+function describeDiagnosisRecommendation(issue) {
+  const problem = issue && typeof issue === 'object' ? issue : {};
+  const carePlan = problem.carePlan || null;
+  if (!carePlan || !carePlan.best) {
+    return String(problem.recommendation || 'Beobachten und gezielt nachsteuern.');
+  }
+
+  const best = carePlan.best;
+  if (best.tier === 'primary' || best.tier === 'secondary') {
+    return `${String(best.label)} über ${String(carePlan.categoryLabel)}. ${String(problem.recommendation || '')}`.trim();
+  }
+  if (best.tier === 'cooldown') {
+    return `${String(carePlan.categoryLabel)} wäre passend, aber die beste Maßnahme lädt noch nach. ${String(problem.recommendation || '')}`.trim();
+  }
+  return String(problem.recommendation || `Aktuell keine saubere ${String(carePlan.categoryLabel)}-Maßnahme verfügbar.`);
+}
+
+function diagnosePlantState() {
+  const status = state.status || {};
+  const environment = deriveEnvironmentReadout(state);
+  const roots = deriveRootZoneReadout(environment, state);
+  const stageIndex = Number(state.plant && state.plant.stageIndex) || 0;
+  const water = clamp(Number(status.water) || 0, 0, 100);
+  const nutrition = clamp(Number(status.nutrition) || 0, 0, 100);
+  const stress = clamp(Number(status.stress) || 0, 0, 100);
+  const risk = clamp(Number(status.risk) || 0, 0, 100);
+  const health = clamp(Number(status.health) || 0, 0, 100);
+  const humidity = clamp(Number(environment.humidityPercent) || 0, 0, 100);
+  const airflow = clamp(Number(environment.airflowScore) || 0, 0, 100);
+  const vpd = Number(environment.vpdKpa) || 0;
+  const ph = Number.parseFloat(String(roots.ph || '').replace(',', '.'));
+  const ec = Number.parseFloat(String(roots.ec || '').replace(',', '.'));
+  const oxygen = Number.parseFloat(String(roots.oxygen || '').replace('%', '').replace(',', '.'));
+
+  const wateringPlan = getCarePlanForCategory('watering');
+  const fertilizingPlan = getCarePlanForCategory('fertilizing');
+  const environmentPlan = getCarePlanForCategory('environment');
+  const trainingPlan = getCarePlanForCategory('training');
+  const issues = [];
+  const lateFlower = stageIndex >= 8;
+
+  if (water <= 34 || (water <= 42 && vpd >= 1.45)) {
+    issues.push(buildDiagnosisIssue({
+      id: 'dry_root_zone',
+      score: (100 - water) + (vpd >= 1.45 ? 18 : 0) + (stress >= 55 ? 10 : 0),
+      title: 'Trockenstress baut sich auf',
+      cause: vpd >= 1.45
+        ? 'Die Pflanze verliert gerade viel Wasser, weil das Medium trocken wird und das Klima zusätzlichen Zug aufbaut.'
+        : 'Das Medium ist deutlich trocken und deckt den Wasserbedarf nicht mehr sauber ab.',
+      effect: 'Stress steigt, Nährstoffaufnahme wird unruhiger und Wachstum bremst schneller weg.',
+      recommendation: 'Eine passende Wassergabe beruhigt die Lage am schnellsten.',
+      limit: vpd >= 1.45
+        ? 'Gießen hilft kurzfristig, aber ein ziehendes Klima treibt den Bedarf weiter hoch.'
+        : 'Mehr Wasser löst nur dieses Problem, nicht automatisch andere Stressquellen.',
+      carePlan: wateringPlan
+    }));
+  }
+
+  if (water >= 82 || (Number.isFinite(oxygen) && oxygen <= 58)) {
+    issues.push(buildDiagnosisIssue({
+      id: 'wet_root_zone',
+      score: water + (Number.isFinite(oxygen) ? Math.max(0, 70 - oxygen) : 0) + (risk >= 55 ? 12 : 0),
+      title: 'Die Wurzelzone ist zu nass',
+      cause: Number.isFinite(oxygen) && oxygen <= 58
+        ? 'Zu viel Feuchte drückt Sauerstoff aus dem Wurzelbereich und hält das Medium unnötig schwer.'
+        : 'Das Medium ist bereits sehr feucht und trocknet noch nicht sauber zurück.',
+      effect: 'Wurzelstress und Krankheitsdruck steigen leichter, obwohl die Pflanze oberirdisch noch nicht sofort kollabiert.',
+      recommendation: 'Jetzt vor allem nicht weiter gießen; Umgebung nur unterstützend sauber halten.',
+      limit: 'Eine Umgebungsmaßnahme kann Begleitdruck senken, behebt die eigentliche Ursache aber nicht sofort.',
+      carePlan: environmentPlan
+    }));
+  }
+
+  if ((nutrition <= 38 && water >= 36 && water <= 76) || (nutrition <= 45 && health <= 48)) {
+    issues.push(buildDiagnosisIssue({
+      id: 'nutrient_deficit',
+      score: (95 - nutrition) + (health <= 48 ? 12 : 0) + (stress >= 50 ? 6 : 0),
+      title: 'Die Versorgung wird zu knapp',
+      cause: water >= 36 && water <= 76
+        ? 'Wasser ist grundsätzlich verfügbar, aber das Nährstoffniveau trägt das Wachstum nicht mehr sauber.'
+        : 'Die Pflanze wirkt geschwächt und die Versorgung reicht nicht mehr als stabile Grundlage.',
+      effect: 'Wachstum verliert Tempo und die Pflanze baut unter Druck schneller Reserve ab.',
+      recommendation: 'Eine passende Fütterung hilft, wenn der Wasserhaushalt halbwegs ruhig bleibt.',
+      limit: water < 36
+        ? 'Mehr Futter löst das Problem nicht sauber, solange das Medium zu trocken bleibt.'
+        : 'Zu harte Fütterung bringt hier eher Druck als Erholung.',
+      carePlan: fertilizingPlan
+    }));
+  }
+
+  if (nutrition >= 80 || (Number.isFinite(ec) && ec >= 2.05) || (nutrition >= 72 && risk >= 60)) {
+    issues.push(buildDiagnosisIssue({
+      id: 'nutrient_pressure',
+      score: nutrition + (Number.isFinite(ec) ? Math.max(0, (ec - 1.8) * 28) : 0) + (risk >= 60 ? 12 : 0),
+      title: 'Zu viel Druck in der Wurzelzone',
+      cause: Number.isFinite(ec) && ec >= 2.05
+        ? 'Die Salz- und Nährstoffdichte wirkt bereits hoch und drückt auf die Wurzelaufnahme.'
+        : 'Die Nährstofflage ist schon sehr voll und lässt wenig Puffer für weitere Fütterung.',
+      effect: 'Burn-Risiko, zusätzlicher Stress und unruhige Entwicklung werden wahrscheinlicher.',
+      recommendation: 'Keine weitere Fütterung; falls nötig, eher Druck aus dem Medium nehmen als noch mehr nachlegen.',
+      limit: 'Eine Umgebungsmaßnahme senkt nur Begleitsymptome. Der eigentliche Druck sitzt in der Wurzelzone.',
+      carePlan: wateringPlan
+    }));
+  }
+
+  if ((humidity >= 68 && airflow <= 45) || (lateFlower && humidity >= 64) || (risk >= 62 && airflow <= 50)) {
+    issues.push(buildDiagnosisIssue({
+      id: 'humid_stagnant_air',
+      score: risk + (humidity >= 68 ? 16 : 8) + (lateFlower ? 12 : 0) + (airflow <= 45 ? 14 : 0),
+      title: 'Feuchte Luft bleibt zu lange stehen',
+      cause: lateFlower
+        ? 'In der späten Blüte trifft hohe Luftfeuchte auf zu wenig Bewegung im Bestand.'
+        : 'Feuchte Luft und schwacher Luftstrom bleiben zu lange in Blatt- und Bud-Zonen stehen.',
+      effect: 'Das Risiko zieht an, selbst wenn Wasser und Fütterung nicht völlig entgleist sind.',
+      recommendation: 'Eine Umgebungsmaßnahme senkt den Druck jetzt direkter als weitere Fütterung oder Training.',
+      limit: 'Sie hilft beim Risikodruck, behebt aber keinen Wasser- oder Salzfehler in der Wurzelzone.',
+      carePlan: environmentPlan
+    }));
+  }
+
+  if ((stress >= 62 || health <= 40) && issues.length < 3) {
+    issues.push(buildDiagnosisIssue({
+      id: 'general_recovery',
+      score: Math.max(stress + 8, 100 - health),
+      title: 'Die Pflanze läuft unter Gesamtbelastung',
+      cause: stress >= 62
+        ? 'Mehrere Druckfaktoren wirken gleichzeitig, sodass sich die Pflanze nicht sauber erholt.'
+        : 'Die Gesundheitsreserve ist niedrig und kleine Fehler schlagen jetzt härter durch.',
+      effect: 'Erholung, Uptake und Wachstum bleiben flach, bis der Hauptdruck klarer gesenkt wird.',
+      recommendation: 'Erst den größten Treiber beruhigen, statt mehrere Eingriffe gleichzeitig zu stapeln.',
+      limit: 'Eine einzelne Pflegeaktion kann die Pflanze stabilisieren, aber selten die komplette Ursache allein lösen.',
+      carePlan: environmentPlan.best ? environmentPlan : trainingPlan
+    }));
+  }
+
+  if (!issues.length) {
+    issues.push(buildDiagnosisIssue({
+      id: 'stable_state',
+      score: 18,
+      title: 'Aktuell kein klarer Problemdruck',
+      cause: 'Wasser, Versorgung und Risiko wirken im Moment vergleichsweise ruhig.',
+      effect: 'Die Pflanze kann ihren Rhythmus halten, solange du keine unnötigen Eingriffe stapelst.',
+      recommendation: 'Beobachten und nur bei einer klaren Abweichung eingreifen.',
+      limit: 'Mehr Aktion bringt hier nicht automatisch mehr Fortschritt.',
+      carePlan: trainingPlan
+    }));
+  }
+
+  const sorted = issues
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+
+  return {
+    primaryIssue: sorted[0] && sorted[0].id !== 'stable_state' ? sorted[0] : null,
+    secondaryIssues: sorted[0] && sorted[0].id !== 'stable_state' ? sorted.slice(1, 3) : [],
+    allIssues: sorted
+  };
+}
+
 function diagnosisDrivers() {
-  const d = [];
-  const s = state.status || {};
-  const stageIndex = Number(state.plant && state.plant.stageIndex) || 1;
-
-  if ((Number(s.water) || 0) < 35) d.push({ score: 100 - s.water, label: 'Wassermangel', reason: 'Zu trocken erhöht den Stress' });
-  if ((Number(s.water) || 0) > 80) d.push({ score: s.water, label: 'Überwässerung', reason: 'Zu viel Wasser erhöht das Risiko' });
-  if ((Number(s.nutrition) || 0) < 35) d.push({ score: 95 - s.nutrition, label: 'Nährstoffmangel', reason: 'Unterversorgung bremst das Wachstum' });
-  if ((Number(s.nutrition) || 0) > 80) d.push({ score: s.nutrition, label: 'Nährstoffüberschuss', reason: 'Erhöhtes Risiko für Nährstoffbrand' });
-  if ((Number(s.stress) || 0) > 60) d.push({ score: s.stress + 10, label: 'Hoher Stress', reason: 'Hoher Stress blockiert das beste Ergebnis' });
-  if ((Number(s.risk) || 0) > 60) d.push({ score: s.risk + 8, label: 'Hohes Risiko', reason: 'Hohes Risiko erhöht negative Ereignisse' });
-
-  if (stageIndex <= 3 && (Number(s.health) || 0) < 65) {
-    d.push({ score: 70 - (Number(s.health) || 0), label: 'Frühe-Phase-Empfindlichkeit', reason: 'Frühe Phasen brauchen stabile Wasser- und Nährstoffwerte' });
+  const diagnosis = diagnosePlantState();
+  const issues = Array.isArray(diagnosis.allIssues) ? diagnosis.allIssues : [];
+  if (!issues.length) {
+    return [{ score: 1, label: 'Stabiler Zustand', reason: 'Kein größeres Defizit erkannt' }];
   }
-
-  if (!d.length) {
-    d.push({ score: 1, label: 'Stabiler Zustand', reason: 'Kein größeres Defizit erkannt' });
-  }
-
-  return d.sort((a, b) => b.score - a.score);
+  return issues.map((issue) => ({
+    score: issue.score,
+    label: issue.title,
+    reason: issue.cause,
+    effect: issue.effect,
+    recommendation: describeDiagnosisRecommendation(issue),
+    limit: issue.limit,
+    severity: issue.severity
+  }));
 }
 
 function recommendedCareCategory(primaryDriver) {
@@ -4803,9 +5198,15 @@ const STAT_DETAIL_CONFIG = Object.freeze({
       if (value >= 40) return 'Wasser wird knapper und sollte beobachtet werden.';
       return 'Wasser ist niedrig, Trockenstress kann schnell ansteigen.';
     },
-    getRecommendation: (value) => value < 60
-      ? 'Empfehlung: Pflege öffnen und zeitnah gießen.'
-      : 'Empfehlung: Feuchtigkeit halten und den Verlauf beobachten.'
+    getRecommendation: (value) => {
+      const dryIssue = diagnosePlantState().allIssues.find((entry) => entry.id === 'dry_root_zone');
+      if (dryIssue) {
+        return `Empfehlung: ${describeDiagnosisRecommendation(dryIssue)}`;
+      }
+      return value < 60
+        ? 'Empfehlung: Pflege öffnen und zeitnah gießen.'
+        : 'Empfehlung: Feuchtigkeit halten und den Verlauf beobachten.';
+    }
   }),
   nutrition: Object.freeze({
     title: 'Nährstoffe',
@@ -4823,9 +5224,15 @@ const STAT_DETAIL_CONFIG = Object.freeze({
       if (value >= 40) return 'Sinkende Nährstoffe können das Wachstum bald bremsen.';
       return 'Nährstoffmangel begrenzt Entwicklung und erhöht Stresspotenzial.';
     },
-    getRecommendation: (value) => value < 60
-      ? 'Empfehlung: Pflege öffnen und eine passende Düngungsmaßnahme prüfen.'
-      : 'Empfehlung: Nährstoffniveau halten und regelmäßig kontrollieren.'
+    getRecommendation: (value) => {
+      const issue = diagnosePlantState().allIssues.find((entry) => entry.id === 'nutrient_deficit' || entry.id === 'nutrient_pressure');
+      if (issue) {
+        return `Empfehlung: ${describeDiagnosisRecommendation(issue)}`;
+      }
+      return value < 60
+        ? 'Empfehlung: Pflege öffnen und eine passende Düngungsmaßnahme prüfen.'
+        : 'Empfehlung: Nährstoffniveau halten und regelmäßig kontrollieren.';
+    }
   }),
   growth: Object.freeze({
     title: 'Wachstum',
@@ -4843,9 +5250,15 @@ const STAT_DETAIL_CONFIG = Object.freeze({
       if (impulse >= 0.03) return `Das Wachstum entwickelt sich solide. Impuls: ${impulse.toFixed(2)}.`;
       return `Das Wachstum ist aktuell gebremst. Impuls: ${impulse.toFixed(2)}.`;
     },
-    getRecommendation: (value) => value < 40
-      ? 'Empfehlung: Analyse öffnen und Wasser-/Nährstofftreiber prüfen.'
-      : 'Empfehlung: Kurs halten und per Analyse auf Limitierungen achten.'
+    getRecommendation: (value) => {
+      const primary = diagnosePlantState().primaryIssue;
+      if (primary) {
+        return `Empfehlung: ${describeDiagnosisRecommendation(primary)}`;
+      }
+      return value < 40
+        ? 'Empfehlung: Analyse öffnen und Wasser-/Nährstofftreiber prüfen.'
+        : 'Empfehlung: Kurs halten und per Analyse auf Limitierungen achten.';
+    }
   }),
   risk: Object.freeze({
     title: 'Risiko',
@@ -4865,9 +5278,15 @@ const STAT_DETAIL_CONFIG = Object.freeze({
       }
       return `Wichtigster Treiber: ${topDriver.label}. ${topDriver.reason}`;
     },
-    getRecommendation: (value) => value >= 50
-      ? 'Empfehlung: Analyse öffnen und Gegenmaßnahmen priorisieren.'
-      : 'Empfehlung: Entwicklung beobachten und Risikoquellen früh prüfen.'
+    getRecommendation: (value) => {
+      const primary = diagnosePlantState().primaryIssue;
+      if (primary) {
+        return `Empfehlung: ${describeDiagnosisRecommendation(primary)}`;
+      }
+      return value >= 50
+        ? 'Empfehlung: Analyse öffnen und Gegenmaßnahmen priorisieren.'
+        : 'Empfehlung: Entwicklung beobachten und Risikoquellen früh prüfen.';
+    }
   })
 });
 
@@ -4942,12 +5361,64 @@ function openSheet(name) {
   }
 }
 
+function getMissionProgressView(mission) {
+  const safeMission = mission && typeof mission === 'object' ? mission : {};
+  const condition = safeMission.condition && typeof safeMission.condition === 'object' ? safeMission.condition : {};
+  const simDay = Math.max(0, Number(state.simulation && state.simulation.simDay) || 0);
+  const simTimeMs = Math.max(0, Number(state.simulation && state.simulation.simTimeMs) || 0);
+  const averageStress = Math.max(0, Number(state.plant && state.plant.averageStress) || Number(state.status && state.status.stress) || 0);
+  const health = Math.max(0, Number(state.plant && state.plant.averageHealth) || Number(state.status && state.status.health) || 0);
+
+  switch (condition.type) {
+    case 'min_day': {
+      const targetDay = Math.max(1, Number(condition.value) || 1);
+      return {
+        progressText: `Fortschritt: Tag ${Math.min(simDay, targetDay)}/${targetDay}`,
+        statusText: simDay >= targetDay ? 'Lauf geschafft.' : `Noch ${Math.max(0, targetDay - simDay).toFixed(1)} Tage durchhalten.`
+      };
+    }
+    case 'min_health': {
+      const targetHealth = Math.max(0, Number(condition.value) || 0);
+      return {
+        progressText: `Fortschritt: Gesundheit ${Math.round(Math.min(health, targetHealth))}/${Math.round(targetHealth)}`,
+        statusText: health >= targetHealth ? 'Gesundheitsziel erreicht.' : 'Gesundheit weiter stabilisieren.'
+      };
+    }
+    case 'max_stress_duration': {
+      const limit = Math.max(0, Number(condition.value) || 0);
+      const durationMinutes = Math.max(1, Number(condition.duration) || 1);
+      const stressStartTime = Number.isFinite(Number(safeMission._stressStartTime)) ? Number(safeMission._stressStartTime) : null;
+      const isWithinLimit = averageStress < limit;
+      const elapsedMinutes = isWithinLimit && stressStartTime != null
+        ? Math.max(0, (simTimeMs - stressStartTime) / 60000)
+        : 0;
+      return {
+        progressText: `Fortschritt: ${Math.min(durationMinutes, elapsedMinutes).toFixed(0)}/${durationMinutes} Min unter ${limit}% Stress`,
+        statusText: isWithinLimit
+          ? (elapsedMinutes >= durationMinutes ? 'Ruhefenster gehalten.' : 'Ruhefenster laeuft, jetzt nicht ueberreizen.')
+          : 'Zu viel Druck. Erst Hauptproblem beruhigen.'
+      };
+    }
+    case 'action_used':
+      return {
+        progressText: 'Fortschritt: wartet auf die passende Aktion',
+        statusText: 'Nur sinnvoll, wenn die Lage die Aktion wirklich traegt.'
+      };
+    default:
+      return {
+        progressText: '',
+        statusText: ''
+      };
+  }
+}
+
 function renderMissionsSheet() {
   if (!ui.missionsSheet || state.ui.openSheet !== 'missions') return;
   ui.missionsList.replaceChildren();
 
   state.missions.catalog.forEach(mission => {
     const isCompleted = state.missions.completed.includes(mission.id);
+    const progressView = getMissionProgressView(mission);
     const card = document.createElement('div'); card.className = `figma-section-card mission-card ${isCompleted ? 'mission-completed' : ''}`;
     
     let rewardText = '';
@@ -4957,7 +5428,7 @@ function renderMissionsSheet() {
 
     card.innerHTML = `
       <div class="figma-static-row">
-        <span><strong>${escapeHtml(mission.title)}</strong><br><small>${escapeHtml(mission.description)}</small></span><span class="value_gold">${isCompleted ? 'Abgeschlossen' : rewardText}</span>
+        <span><strong>${escapeHtml(mission.title)}</strong><br><small>${escapeHtml(mission.description)}</small><br><small>${escapeHtml(isCompleted ? 'Mission abgeschlossen.' : progressView.progressText)}</small><br><small>${escapeHtml(isCompleted ? 'Belohnung gesichert.' : progressView.statusText)}</small></span><span class="value_gold">${isCompleted ? 'Abgeschlossen' : rewardText}</span>
       </div>
     `;
     ui.missionsList.appendChild(card);
@@ -5018,16 +5489,62 @@ function onMenuNewRunClick() {
   });
 }
 
-function openMenuDialog({ title, message, cancelLabel = 'Abbrechen', confirmLabel = 'OK', onConfirm = null }) {
+function renderMenuDialogRewards(items) {
+  const rewardSection = document.getElementById('menuDialogRewardSection');
+  const rewardList = document.getElementById('menuDialogRewardList');
+  if (!rewardSection || !rewardList) {
+    return;
+  }
+
+  const rewards = Array.isArray(items) ? items.filter(Boolean) : [];
+  rewardList.replaceChildren();
+  rewardSection.classList.toggle('hidden', !rewards.length);
+  rewardSection.setAttribute('aria-hidden', String(!rewards.length));
+
+  for (const item of rewards) {
+    const chip = document.createElement('div');
+    chip.className = `menu-dialog-reward-chip menu-dialog-reward-chip--${String(item.tone || 'gold')}`;
+    chip.innerHTML = `
+      <span class="menu-dialog-reward-chip-icon">${escapeHtml(String(item.icon || '•'))}</span>
+      <span class="menu-dialog-reward-chip-copy">
+        <strong>${escapeHtml(String(item.value || ''))}</strong>
+        <small>${escapeHtml(String(item.label || 'Belohnung'))}</small>
+      </span>
+    `;
+    rewardList.appendChild(chip);
+  }
+}
+
+function openMenuDialog({ title, message, cancelLabel = 'Abbrechen', confirmLabel = 'OK', onConfirm = null, variant = 'default', kicker = '', rewards = [] }) {
   if (!ui.menuDialogTitle || !ui.menuDialogText || !ui.menuDialogCancelBtn || !ui.menuDialogConfirmBtn) {
     return;
   }
 
+  const safeVariant = String(variant || 'default');
+  const dialogCard = ui.menuDialog ? ui.menuDialog.querySelector('.menu-dialog-card') : null;
+  const kickerNode = document.getElementById('menuDialogKicker');
+  const showMissionReward = safeVariant === 'mission-reward';
+
   ui.menuDialogTitle.textContent = title;
   ui.menuDialogText.textContent = message;
   ui.menuDialogCancelBtn.textContent = cancelLabel;
-  ui.menuDialogConfirmBtn.textContent = confirmLabel; menuDialogConfirmHandler = typeof onConfirm === 'function' ? onConfirm : null;
+  ui.menuDialogConfirmBtn.textContent = confirmLabel;
+  menuDialogConfirmHandler = typeof onConfirm === 'function' ? onConfirm : null;
+  if (ui.menuDialog) {
+    ui.menuDialog.dataset.variant = safeVariant;
+  }
+  if (dialogCard) {
+    dialogCard.classList.toggle('menu-dialog-card--mission', showMissionReward);
+  }
+  if (kickerNode) {
+    kickerNode.textContent = kicker || '';
+    kickerNode.classList.toggle('hidden', !String(kicker || '').trim());
+  }
+  renderMenuDialogRewards(showMissionReward ? rewards : []);
   ui.menuDialogConfirmBtn.classList.toggle('hidden', menuDialogConfirmHandler === null || !confirmLabel);
+  ui.menuDialogConfirmBtn.classList.toggle('menu-dialog-premium-btn', showMissionReward);
+  ui.menuDialogCancelBtn.classList.toggle('menu-dialog-premium-btn', showMissionReward && !confirmLabel);
+  ui.menuDialogCancelBtn.classList.toggle('menu-dialog-dismiss-btn', showMissionReward);
   ui.menuDialogConfirmBtn.onclick = null;
   if (menuDialogConfirmHandler) {
     ui.menuDialogConfirmBtn.onclick = async () => {
@@ -5044,8 +5561,25 @@ function openMenuDialog({ title, message, cancelLabel = 'Abbrechen', confirmLabe
 function closeMenuDialog() {
   state.ui.menuDialogOpen = false;
   menuDialogConfirmHandler = null;
+  if (ui.menuDialog) {
+    ui.menuDialog.dataset.variant = 'default';
+  }
+  const dialogCard = ui.menuDialog ? ui.menuDialog.querySelector('.menu-dialog-card') : null;
+  if (dialogCard) {
+    dialogCard.classList.remove('menu-dialog-card--mission');
+  }
+  const kickerNode = document.getElementById('menuDialogKicker');
+  if (kickerNode) {
+    kickerNode.textContent = '';
+    kickerNode.classList.add('hidden');
+  }
+  renderMenuDialogRewards([]);
   if (ui.menuDialogConfirmBtn) {
     ui.menuDialogConfirmBtn.onclick = null;
+    ui.menuDialogConfirmBtn.classList.remove('menu-dialog-premium-btn');
+  }
+  if (ui.menuDialogCancelBtn) {
+    ui.menuDialogCancelBtn.classList.remove('menu-dialog-premium-btn', 'menu-dialog-dismiss-btn');
   }
   renderGameMenu();
 }
@@ -5308,11 +5842,14 @@ function renderRunSummaryOverlay() {
       survival: 'Tagesfortschritt',
       stage: 'Phasenfortschritt',
       quality: 'Qualitätsbonus',
+      management: 'Pflegequalität',
+      prevention: 'Stabilitätsbonus',
+      events: 'Event-Reaktion',
       outcome: summary.endReason === 'harvest' ? 'Erntebonus' : 'Abschlussbonus',
       goal: 'Run-Ziel',
       total: 'Gesamt'
     };
-    for (const key of ['base', 'survival', 'stage', 'quality', 'outcome', 'goal', 'total']) {
+    for (const key of ['base', 'survival', 'stage', 'quality', 'management', 'prevention', 'events', 'outcome', 'goal', 'total']) {
       const row = document.createElement('div');
       row.className = 'figma-static-row run-summary-row';
       row.innerHTML = `<span>${escapeHtml(labels[key] || key)}</span><strong>${escapeHtml(String(Number(breakdown[key] || 0)))} XP</strong>`;
@@ -8451,11 +8988,20 @@ window.completeMission = function(mission) {
     addLog('system', "Mission erfuellt: " + mission.title, { missionId: mission.id, reward: mission.reward });
   }
   if (typeof openMenuDialog === 'function') {
+    const reward = mission && mission.reward && typeof mission.reward === 'object' ? mission.reward : {};
+    const rewardItems = [
+      reward.coins ? { icon: 'C', value: `+${reward.coins}`, label: 'Coins', tone: 'gold' } : null,
+      reward.gems ? { icon: 'G', value: `+${reward.gems}`, label: 'Gems', tone: 'mint' } : null,
+      reward.stars ? { icon: 'S', value: `+${reward.stars}`, label: 'Stars', tone: 'violet' } : null
+    ].filter(Boolean);
     openMenuDialog({
-      title: 'Mission erfuellt! 🎉',
-      message: "Du hast die Mission " + mission.title + " abgeschlossen!",
-      cancelLabel: 'OK',
-      confirmLabel: null
+      title: mission.title,
+      message: mission.description || 'Die Belohnung wurde deinem Profil gutgeschrieben.',
+      cancelLabel: 'Belohnung sichern',
+      confirmLabel: null,
+      variant: 'mission-reward',
+      kicker: 'Mission geschafft',
+      rewards: rewardItems
     });
   }
   if (typeof renderMissionsSheet === 'function' && state.ui.openSheet === 'missions') {

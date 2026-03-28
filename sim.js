@@ -664,6 +664,9 @@ function tick() {
     state.simulation.lastTickRealTimeMs = nowMs;
     state.simulation.growthImpulse = 0;
     syncCanonicalStateShape();
+    if (typeof window.checkMissions === 'function') {
+      window.checkMissions('tick');
+    }
     renderHud();
     renderEventSheet();
     renderAnalysisPanel();
@@ -679,6 +682,9 @@ function tick() {
     state.simulation.lastTickRealTimeMs = nowMs;
     state.simulation.growthImpulse = 0;
     syncCanonicalStateShape();
+    if (typeof window.checkMissions === 'function') {
+      window.checkMissions('tick');
+    }
 
     if (state.ui.openSheet !== prevOpenSheet) {
       renderSheets();
@@ -698,6 +704,9 @@ function tick() {
     : 0;
   const effectiveNowMs = prevTickRealTimeMs + elapsedRealMs;
   applySimulationDelta(elapsedRealMs, effectiveNowMs, nowMs);
+  if (typeof window.checkMissions === 'function') {
+    window.checkMissions('tick');
+  }
 
   if (state.ui.openSheet !== prevOpenSheet) {
     renderSheets();

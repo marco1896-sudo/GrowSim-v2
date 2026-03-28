@@ -251,36 +251,36 @@
   const GOAL_DEFS = Object.freeze({
     survive_day_20: Object.freeze({
       id: 'survive_day_20',
-      title: 'Erreiche Tag 20',
-      description: 'Halte die Pflanze bis mindestens Tag 20 am Leben.',
+      title: 'Bring die Jungpflanze durch',
+      description: 'Fuehre die Pflanze stabil bis mindestens Tag 20 durch die Fruehphase.',
       rewardXp: 45,
       target: 20
     }),
     reach_flowering: Object.freeze({
       id: 'reach_flowering',
-      title: 'Bringe die Pflanze in die BlÃ¼te',
-      description: 'FÃ¼hre den Run sicher bis in die BlÃ¼tephase.',
+      title: 'Stressarm in die Bluete',
+      description: 'Fuehre den Run sauber bis in die Bluetephase.',
       rewardXp: 55,
       target: 6
     }),
     stable_grow: Object.freeze({
       id: 'stable_grow',
-      title: 'Halte den Grow stabil',
-      description: 'Erreiche mindestens Tag 30 und halte den Durchschnittsstress niedrig.',
+      title: 'Stabilitaet halten',
+      description: 'Bringe den Run bis mindestens Tag 30 und halte den Durchschnittsstress niedrig.',
       rewardXp: 65,
       target: 30
     }),
     clean_finish: Object.freeze({
       id: 'clean_finish',
-      title: 'Beende sauber',
-      description: 'SchlieÃŸe den Run mit mindestens 70 QualitÃ¤t ab.',
+      title: 'Sauber auslaufen lassen',
+      description: 'Halte Qualitaet und Gesundheit hoch fuer einen kontrollierten Abschluss.',
       rewardXp: 70,
       target: 70
     }),
     reach_harvest: Object.freeze({
       id: 'reach_harvest',
-      title: 'Erreiche die Ernte',
-      description: 'Trage die Pflanze bis zur Erntephase durch.',
+      title: 'Bis zur Ernte tragen',
+      description: 'Halte die Pflanze durch den kompletten Zyklus bis zur Erntephase.',
       rewardXp: 90,
       target: 11
     })
@@ -371,7 +371,8 @@
       rewardXp: Math.max(0, Math.trunc(Number(goalLike.rewardXp) || definition.rewardXp || 0)),
       progressText: typeof goalLike.progressText === 'string' ? goalLike.progressText : '',
       statusText: typeof goalLike.statusText === 'string' ? goalLike.statusText : '',
-      resultText: typeof goalLike.resultText === 'string' ? goalLike.resultText : ''
+      resultText: typeof goalLike.resultText === 'string' ? goalLike.resultText : '',
+      focusText: typeof goalLike.focusText === 'string' ? goalLike.focusText : ''
     };
   }
 
@@ -380,20 +381,18 @@
     const run = normalizeRunState(runLike);
     const setup = run.setupSnapshot && typeof run.setupSnapshot === 'object' ? run.setupSnapshot : {};
     const isFragileBuild = setup.genetics === 'sativa' || setup.light === 'high' || setup.medium === 'coco';
-    const pool = isFragileBuild
-      ? ['survive_day_20', 'reach_flowering', 'reach_flowering']
-      : ['survive_day_20', 'reach_flowering', 'stable_grow'];
+    const pool = ['survive_day_20', 'reach_flowering', 'stable_grow'];
+    if (isFragileBuild) {
+      pool.push('survive_day_20');
+    }
     if (profile.level >= 2) {
       pool.push('clean_finish');
     }
-    if (!isFragileBuild && profile.level >= 3) {
+    if (profile.level >= 3) {
       pool.push('reach_harvest');
     }
     if (isFragileBuild && profile.level >= 4) {
       pool.push('stable_grow');
-    }
-    if (isFragileBuild && profile.level >= 5) {
-      pool.push('reach_harvest');
     }
     const seed = Math.max(
       0,
@@ -658,6 +657,119 @@
     return 'degraded';
   }
 
+  function scoreDeltaQuality(deltaLike) {
+    const delta = deltaLike && typeof deltaLike === 'object' ? deltaLike : {};
+    let score = 0;
+
+    score += Math.max(0, Number(delta.health) || 0) * 1.2;
+    score += Math.max(0, -(Number(delta.stress) || 0)) * 1.5;
+    score += Math.max(0, -(Number(delta.risk) || 0)) * 1.5;
+    score += Math.max(0, Number(delta.growth) || 0) * 0.8;
+
+    score -= Math.max(0, Number(delta.stress) || 0) * 1.4;
+    score -= Math.max(0, Number(delta.risk) || 0) * 1.4;
+    score -= Math.max(0, -(Number(delta.health) || 0)) * 1.6;
+
+    return round2(score);
+  }
+
+  function analyzeActionHistory(actionsLike, simDay) {
+    const actions = Array.isArray(actionsLike) ? actionsLike : [];
+    let effectiveActions = 0;
+    let harmfulActions = 0;
+    let sideEffectHits = 0;
+
+    for (const action of actions) {
+      const deltaSummary = action && action.deltaSummary && typeof action.deltaSummary === 'object'
+        ? action.deltaSummary
+        : {};
+      const quality = scoreDeltaQuality(deltaSummary);
+      const sideEffects = Array.isArray(action && action.sideEffects) ? action.sideEffects.length : 0;
+      sideEffectHits += sideEffects;
+
+      if (quality >= 2.5 && sideEffects === 0) {
+        effectiveActions += 1;
+      } else if (quality <= -1 || sideEffects > 0) {
+        harmfulActions += 1;
+      }
+    }
+
+    const safeDay = Math.max(1, Number(simDay) || 1);
+    const actionDensity = actions.length / safeDay;
+    let spamPenalty = 0;
+    if (actionDensity > 1.1) spamPenalty += 5;
+    else if (actionDensity > 0.8) spamPenalty += 2;
+    if (harmfulActions > effectiveActions && actions.length >= 4) spamPenalty += 4;
+
+    const xp = clamp((effectiveActions * 4) - (harmfulActions * 3) - sideEffectHits - spamPenalty, 0, 24);
+
+    return {
+      effectiveActions,
+      harmfulActions,
+      sideEffectHits,
+      actionDensity: round2(actionDensity),
+      spamPenalty,
+      xp: Math.round(xp)
+    };
+  }
+
+  function analyzeEventHistory(eventsLike) {
+    const events = Array.isArray(eventsLike) ? eventsLike : [];
+    let goodResponses = 0;
+    let badResponses = 0;
+
+    for (const entry of events) {
+      const deltaSummary = entry && entry.effectsApplied && typeof entry.effectsApplied === 'object'
+        ? entry.effectsApplied
+        : {};
+      const score = scoreDeltaQuality(deltaSummary);
+      if (score >= 1) {
+        goodResponses += 1;
+      } else if (score <= -1) {
+        badResponses += 1;
+      }
+    }
+
+    return {
+      goodResponses,
+      badResponses,
+      xp: Math.round(clamp((goodResponses * 6) - (badResponses * 4), 0, 18))
+    };
+  }
+
+  function analyzePrevention(summaryLike) {
+    const summary = summaryLike && typeof summaryLike === 'object' ? summaryLike : {};
+    let xp = 0;
+
+    if (Number(summary.averageStress) <= 28) xp += 8;
+    else if (Number(summary.averageStress) <= 38) xp += 4;
+
+    if (Number(summary.finalRisk) <= 30) xp += 6;
+    else if (Number(summary.finalRisk) <= 42) xp += 3;
+
+    if (Number(summary.finalWater) >= 48 && Number(summary.finalWater) <= 76) xp += 4;
+    if (Number(summary.finalNutrition) >= 42 && Number(summary.finalNutrition) <= 74) xp += 4;
+    if (!summary.rescueUsed && Number(summary.simDay) >= 28) xp += 4;
+    if (String(summary.endReason || '') === 'harvest' && Number(summary.qualityScore) >= 72) xp += 4;
+
+    return {
+      xp: Math.round(clamp(xp, 0, 22))
+    };
+  }
+
+  function analyzeRunManagement(summaryLike, actionsLike, eventsLike) {
+    const summary = summaryLike && typeof summaryLike === 'object' ? summaryLike : {};
+    const care = analyzeActionHistory(actionsLike, summary.simDay);
+    const events = analyzeEventHistory(eventsLike);
+    const prevention = analyzePrevention(summary);
+
+    return {
+      care,
+      events,
+      prevention
+    };
+  }
+
   function computeXpBreakdown(summaryLike) {
     const summary = summaryLike && typeof summaryLike === 'object' ? summaryLike : {};
     const simDay = Math.max(0, Math.trunc(Number(summary.simDay) || 0));
@@ -665,12 +777,19 @@
     const qualityScore = clamp(Number(summary.qualityScore) || 0, 0, 100);
     const goal = summary.goal && typeof summary.goal === 'object' ? summary.goal : null;
     const isHarvest = String(summary.endReason || '') === 'harvest';
+    const management = summary.management && typeof summary.management === 'object' ? summary.management : {};
+    const careXp = Math.max(0, Math.trunc(Number(management.care && management.care.xp) || 0));
+    const preventionXp = Math.max(0, Math.trunc(Number(management.prevention && management.prevention.xp) || 0));
+    const eventXp = Math.max(0, Math.trunc(Number(management.events && management.events.xp) || 0));
     const breakdown = {
-      base: isHarvest ? 40 : 24,
-      survival: Math.min(80, simDay * 4),
-      stage: stageIndex * 12,
-      quality: Math.round(qualityScore / 6),
-      outcome: isHarvest ? 90 : 0,
+      base: isHarvest ? 18 : 8,
+      survival: isHarvest ? Math.min(40, Math.round(simDay * 0.5)) : Math.min(18, Math.round(simDay * 0.4)),
+      stage: stageIndex * 6,
+      quality: Math.round(qualityScore / 4),
+      management: careXp,
+      prevention: preventionXp,
+      events: eventXp,
+      outcome: isHarvest ? 36 : 0,
       goal: goal && goal.status === 'completed'
         ? Math.max(0, Math.trunc(Number(goal.rewardXp) || 0))
         : 0
@@ -726,6 +845,7 @@
   function buildHighlights(summary) {
     const highlights = [];
     const setup = summary.setup && typeof summary.setup === 'object' ? summary.setup : {};
+    const management = summary.management && typeof summary.management === 'object' ? summary.management : {};
     if (summary.endReason === 'harvest') {
       addUniqueFeedback(highlights, 'harvest_finish', SUMMARY_TEXT.highlights.harvest_finish, 4);
     }
@@ -759,6 +879,9 @@
     if (summary.finalNutrition >= 42 && summary.finalNutrition <= 74) {
       addUniqueFeedback(highlights, 'nutrition_window', SUMMARY_TEXT.highlights.nutrition_window, 4);
     }
+    if (Number(management.care && management.care.effectiveActions) >= 4 && Number(management.care && management.care.harmfulActions) <= 1) {
+      addUniqueFeedback(highlights, 'care_discipline', 'Mehrere Pflegeeingriffe haben sauber stabilisiert statt neue Probleme aufzumachen.', 4);
+    }
     if (summary.finalStress >= 72) {
       addUniqueFeedback(highlights, 'critical_stress', SUMMARY_TEXT.highlights.critical_stress, 4);
     }
@@ -777,6 +900,7 @@
   function buildMistakes(summary) {
     const mistakes = [];
     const setup = summary.setup && typeof summary.setup === 'object' ? summary.setup : {};
+    const management = summary.management && typeof summary.management === 'object' ? summary.management : {};
     if (summary.endReason === 'death' && summary.simDay < 24) {
       addUniqueFeedback(mistakes, 'early_death', SUMMARY_TEXT.mistakes.early_death, 3);
     }
@@ -807,6 +931,9 @@
     if (String(setup.genetics || '') === 'indica' && summary.endReason === 'death' && summary.stageIndex <= 5) {
       addUniqueFeedback(mistakes, 'hardy_tempo_loss', 'Der sichere Build hat Zeit gekauft, aber das langsamere Tempo blieb ein Nachteil.', 3);
     }
+    if (Number(management.care && management.care.harmfulActions) >= 3 || Number(management.care && management.care.spamPenalty) >= 4) {
+      addUniqueFeedback(mistakes, 'care_overreach', 'Zu viele unruhige oder ungünstige Eingriffe haben den Run zusätzlich belastet.', 3);
+    }
     if (!mistakes.length) {
       addUniqueFeedback(mistakes, 'fallback', SUMMARY_TEXT.fallbacks.mistake, 3);
     }
@@ -816,6 +943,7 @@
   function buildPositives(summary) {
     const positives = [];
     const setup = summary.setup && typeof summary.setup === 'object' ? summary.setup : {};
+    const management = summary.management && typeof summary.management === 'object' ? summary.management : {};
     if (summary.endReason === 'harvest') {
       addUniqueFeedback(positives, 'reached_harvest', SUMMARY_TEXT.positives.reached_harvest, 2);
     }
@@ -833,6 +961,9 @@
     }
     if (summary.eventsCount >= 3) {
       addUniqueFeedback(positives, 'active_decisions', SUMMARY_TEXT.positives.active_decisions, 2);
+    }
+    if (Number(management.events && management.events.goodResponses) >= 2 && Number(management.events && management.events.badResponses) === 0) {
+      addUniqueFeedback(positives, 'smart_event_response', 'Eventlagen wurden meist sauber gelesen und sinnvoll ausgespielt.', 2);
     }
     if (summary.rescueUsed && summary.endReason === 'harvest') {
       addUniqueFeedback(positives, 'comeback', SUMMARY_TEXT.positives.comeback, 2);
@@ -860,6 +991,9 @@
       { key: 'survival', label: SUMMARY_TEXT.xp.survival },
       { key: 'stage', label: SUMMARY_TEXT.xp.stage },
       { key: 'quality', label: SUMMARY_TEXT.xp.quality },
+      { key: 'management', label: 'gute Pflege-Entscheidungen' },
+      { key: 'prevention', label: 'stabile Führung' },
+      { key: 'events', label: 'saubere Event-Reaktionen' },
       { key: 'outcome', label: summary.endReason === 'harvest' ? SUMMARY_TEXT.xp.outcome_harvest : SUMMARY_TEXT.xp.outcome_death },
       { key: 'goal', label: 'Run-Ziel geschafft' }
     ];
@@ -928,6 +1062,16 @@
         finalize: false,
         endReason: reason
       }),
+      management: analyzeRunManagement({
+        simDay,
+        endReason: reason === 'harvest' ? 'harvest' : 'death',
+        qualityScore,
+        averageStress: round2(Number(stateLike.plant && stateLike.plant.averageStress) || 0),
+        finalRisk: clamp(Number(stateLike.status && stateLike.status.risk) || 0, 0, 100),
+        finalWater: clamp(Number(stateLike.status && stateLike.status.water) || 0, 0, 100),
+        finalNutrition: clamp(Number(stateLike.status && stateLike.status.nutrition) || 0, 0, 100),
+        rescueUsed
+      }, actions, events),
       xpBreakdown: null,
       awardedXp: 0,
       levelBefore: 1,
@@ -966,6 +1110,53 @@
     }
   }
 
+  function describeGoalFocus(goalId, stateLike) {
+    const status = stateLike && typeof stateLike.status === 'object' ? stateLike.status : {};
+    const plant = stateLike && typeof stateLike.plant === 'object' ? stateLike.plant : {};
+    const water = clamp(Number(status.water) || 0, 0, 100);
+    const nutrition = clamp(Number(status.nutrition) || 0, 0, 100);
+    const stress = clamp(Number(status.stress) || Number(plant.averageStress) || 0, 0, 100);
+    const risk = clamp(Number(status.risk) || 0, 0, 100);
+    const health = clamp(Number(status.health) || Number(plant.averageHealth) || 0, 0, 100);
+
+    if (risk >= 62) {
+      return 'Fokus: Risiko zuerst senken. Anhaltender Umwelt- oder Krankheitsdruck kippt jedes Langzeitziel.';
+    }
+    if (stress >= 58) {
+      return 'Fokus: Stress beruhigen. Unter Druck verliert die Pflanze schnell Kontrolle und Tempo.';
+    }
+    if (water <= 34) {
+      return 'Fokus: Wasserhaushalt stabilisieren. Trockenstress frisst gerade Fortschritt.';
+    }
+    if (water >= 82) {
+      return 'Fokus: Wurzelzone entlasten. Zu viel Naesse drueckt Sauerstoff und bremst die Erholung.';
+    }
+    if (nutrition <= 30 && water >= 36) {
+      return 'Fokus: Naehrstofflage vorsichtig nachziehen, aber nur auf tragfaehigem Wasserfenster.';
+    }
+    if (nutrition >= 78) {
+      return 'Fokus: Naehrstoffdruck beobachten. Mehr Futter bringt jetzt eher Folgeprobleme als Tempo.';
+    }
+    if (health <= 52) {
+      return 'Fokus: Erst stabilisieren, dann pushen. Die Pflanze faengt weiteren Druck nur begrenzt ab.';
+    }
+
+    switch (goalId) {
+      case 'survive_day_20':
+        return 'Fokus: Die Fruehphase ruhig halten und grobe Wasser- oder Risikospitzen vermeiden.';
+      case 'reach_flowering':
+        return 'Fokus: Wachstum sauber tragen, damit die Pflanze stressarm in die Bluete wechseln kann.';
+      case 'stable_grow':
+        return 'Fokus: Stressspitzen klein halten und den Run ueber mehrere Tage ruhig fuehren.';
+      case 'clean_finish':
+        return 'Fokus: Qualitaet sichern statt kurzfristig zu pushen. Saubere Werte zahlen sich am Ende aus.';
+      case 'reach_harvest':
+        return 'Fokus: Durchhaltefaehigkeit ueber mehrere Phasen sichern, ohne die Pflanze auszureizen.';
+      default:
+        return '';
+    }
+  }
+
   function evaluateRunGoal(goalLike, snapshot, options = {}) {
     const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
     const goal = normalizeRunGoal(goalLike);
@@ -990,21 +1181,22 @@
     let progressText = goal.progressText;
     let statusText = goal.statusText;
     let resultText = goal.resultText;
+    let focusText = describeGoalFocus(definition.id, stateLike);
 
     switch (definition.id) {
       case 'survive_day_20': {
         progress = Math.min(definition.target, simDay);
-        progressText = `Tag ${progress}/${definition.target}`;
+        progressText = `Tag ${progress}/${definition.target} · Stress ${averageStress.toFixed(1)}`;
         if (simDay >= definition.target) {
           status = 'completed';
           statusText = 'Ziel erreicht';
-          resultText = 'Du hast die kritische Frühphase überstanden und Tag 20 erreicht.';
+          resultText = 'Du hast die kritische Fruehphase ueberstanden und Tag 20 erreicht.';
         } else if (finalize) {
           status = 'failed';
           statusText = 'Ziel verfehlt';
           resultText = goalFailureText(definition, { simDay });
         } else {
-          statusText = 'Läuft';
+          statusText = averageStress <= 32 ? 'Fruehphase stabil' : 'Fruehphase absichern';
         }
         break;
       }
@@ -1012,7 +1204,7 @@
         progress = Math.min(definition.target, phase === 'flowering' || endReason === 'harvest' ? definition.target : stageIndex);
         progressText = phase === 'flowering' || endReason === 'harvest'
           ? 'Blüte erreicht'
-          : `Phase ${Math.max(0, progress)}/${definition.target}`;
+          : `${STAGE_LABELS[Math.max(0, stageIndex)] || 'Fruehe Phase'} · ${Math.max(0, progress)}/${definition.target}`;
         if (phase === 'flowering' || endReason === 'harvest') {
           status = 'completed';
           statusText = 'Ziel erreicht';
@@ -1024,7 +1216,7 @@
             stageLabel: STAGE_LABELS[stageIndex] || 'frühe Phase'
           });
         } else {
-          statusText = 'Läuft';
+          statusText = averageStress <= 35 ? 'Wechsel vorbereiten' : 'Zu viel Druck fuer den Wechsel';
         }
         break;
       }
@@ -1046,12 +1238,14 @@
         } else {
           status = 'active';
           statusText = averageStress <= 30 ? 'Stabil' : 'Unter Druck';
+          statusText = averageStress <= 22 ? 'Saubere Linie' : (averageStress <= 30 ? 'Stabil halten' : 'Stress drueckt das Ziel');
         }
         break;
       }
       case 'clean_finish': {
         progress = Math.min(definition.target, Math.round(qualityScore));
         progressText = `Qualität ${progress}/${definition.target}`;
+        progressText = `Qualitaet ${progress}/${definition.target} · Gesundheit ${clamp(Number(stateLike.status && stateLike.status.health) || 0, 0, 100).toFixed(0)}`;
         if (finalize && endReason === 'harvest' && qualityScore >= definition.target) {
           status = 'completed';
           statusText = 'Ziel erreicht';
@@ -1062,6 +1256,7 @@
           resultText = goalFailureText(definition, { qualityScore });
         } else {
           statusText = 'In Arbeit';
+          statusText = qualityScore >= definition.target ? 'Qualitaet steht' : 'Qualitaet aufbauen';
         }
         break;
       }
@@ -1071,6 +1266,9 @@
         progressText = endReason === 'harvest' || phase === 'harvest'
           ? 'Ernte erreicht'
           : `${STAGE_LABELS[Math.max(0, stageIndex)] || 'Frühe Phase'}`;
+        if (!(endReason === 'harvest' || phase === 'harvest')) {
+          progressText = `${STAGE_LABELS[Math.max(0, stageIndex)] || 'Fruehe Phase'} · Tag ${simDay}`;
+        }
         if (endReason === 'harvest' || phase === 'harvest') {
           status = 'completed';
           statusText = 'Ziel erreicht';
@@ -1080,7 +1278,7 @@
           statusText = 'Ziel verfehlt';
           resultText = goalFailureText(definition, {});
         } else {
-          statusText = 'Läuft';
+          statusText = stageIndex >= 8 ? 'Endphase absichern' : 'Run sauber tragen';
         }
         break;
       }
@@ -1098,7 +1296,8 @@
       status,
       statusText,
       progressText,
-      resultText
+      resultText,
+      focusText
     };
   }
 

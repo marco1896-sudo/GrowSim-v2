@@ -620,8 +620,13 @@
 
   <section id="menuDialog" class="menu-dialog hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="menuDialogTitle">
     <div class="menu-dialog-card">
+      <p id="menuDialogKicker" class="menu-dialog-kicker hidden">Erfolg</p>
       <h3 id="menuDialogTitle">Hinweis</h3>
       <p id="menuDialogText" class="sheet-note">Text</p>
+      <div id="menuDialogRewardSection" class="menu-dialog-reward-section hidden" aria-hidden="true">
+        <span class="menu-dialog-reward-label">Belohnung</span>
+        <div id="menuDialogRewardList" class="menu-dialog-reward-list"></div>
+      </div>
       <div class="menu-dialog-actions">
         <button id="menuDialogCancelBtn" class="ghost-btn" type="button">Abbrechen</button>
         <button id="menuDialogConfirmBtn" class="action-btn action-primary" type="button">OK</button>

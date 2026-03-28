@@ -675,27 +675,43 @@ function eligibleEventsForNow(nowMs) {
 
 function fallbackEventsForCurrentPhase(nowMs) {
   const phase = String(state.plant.phase || '');
-  const fallback = state.events.catalog.filter((eventDef) => {
-    if (!eventDef || !eventDef.id || !isEventPhaseAllowed(eventDef)) {
-      return false;
-    }
-    if (!evaluateEventConstraints(eventDef)) {
-      return false;
-    }
-    const cooldowns = state.events.scheduler.eventCooldowns || {};
-    const blockedUntil = Number(cooldowns[eventDef.id] || 0);
-    return blockedUntil <= nowMs;
-  });
+  const fallback = state.events.catalog
+    .map((eventDef) => {
+      if (!eventDef || !eventDef.id || !isEventPhaseAllowed(eventDef)) {
+        return null;
+      }
+      if (!evaluateEventConstraints(eventDef)) {
+        return null;
+      }
+      const cooldowns = state.events.scheduler.eventCooldowns || {};
+      const blockedUntil = Number(cooldowns[eventDef.id] || 0);
+      if (blockedUntil > nowMs) {
+        return null;
+      }
+
+      const signalScore = getEventTriggerSignalScore(eventDef.triggers || {});
+      if (signalScore < 0.6) {
+        return null;
+      }
+
+      return {
+        eventDef,
+        signalScore
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.signalScore - a.signalScore || String(a.eventDef.id).localeCompare(String(b.eventDef.id)));
 
   if (fallback.length) {
-    addLog('event_roll', 'Fallback-Ereignispool genutzt (Phase-only)', {
+    addLog('event_roll', 'Fallback-Ereignispool genutzt (weiche Trigger-Naehe)', {
       phase,
       candidateCount: fallback.length,
+      topSignalScore: round2(Number(fallback[0].signalScore) || 0),
       at: nowMs
     });
   }
 
-  return fallback.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  return fallback.map((entry) => entry.eventDef);
 }
 
 function isEventEligible(eventDef, cooldowns, nowMs) {
@@ -899,6 +915,40 @@ function evaluateEventTriggers(triggers) {
   }
 
   return true;
+}
+
+function getEventTriggerSignalScore(triggers) {
+  const t = triggers && typeof triggers === 'object' ? triggers : {};
+
+  if (t.stage && typeof t.stage === 'object') {
+    const stageIndex = state.plant.stageIndex + 1;
+    if (Number.isFinite(Number(t.stage.min)) && stageIndex < Number(t.stage.min)) {
+      return 0;
+    }
+    if (Number.isFinite(Number(t.stage.max)) && stageIndex > Number(t.stage.max)) {
+      return 0;
+    }
+  }
+
+  if (t.setup && typeof t.setup === 'object' && !evaluateSetupConstraints(t.setup)) {
+    return 0;
+  }
+
+  const all = Array.isArray(t.all) ? t.all : [];
+  const any = Array.isArray(t.any) ? t.any : [];
+
+  const allScore = all.length
+    ? all.filter((condition) => evaluateTriggerCondition(condition)).length / all.length
+    : 1;
+  const anyScore = any.length
+    ? (any.some((condition) => evaluateTriggerCondition(condition)) ? 1 : 0)
+    : 1;
+
+  if (any.length && anyScore <= 0) {
+    return 0;
+  }
+
+  return clamp(any.length ? ((allScore + anyScore) / 2) : allScore, 0, 1);
 }
 
 function evaluateSetupConstraints(setupRule) {

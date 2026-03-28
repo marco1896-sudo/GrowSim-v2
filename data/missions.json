@@ -15,10 +15,10 @@
   },
   {
     "id": "mission_003",
-    "title": "Profi-Schnitt",
-    "description": "Wende zum ersten Mal 'Topping' an.",
+    "title": "Ruhige Hand",
+    "description": "Halte den Durchschnittsstress für 6 Sim-Stunden unter 30%.",
     "reward": { "coins": 1200, "stars": 15 },
-    "condition": { "type": "action_used", "value": "training_medium_topping" }
+    "condition": { "type": "max_stress_duration", "value": 30, "duration": 360 }
   },
   {
     "id": "mission_004",
