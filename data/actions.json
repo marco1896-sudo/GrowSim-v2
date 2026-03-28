@@ -100,7 +100,11 @@
         "requiresNoActiveCooldown": true,
         "minStageIndex": 0
       },
-      "prerequisites": {},
+      "prerequisites": {
+        "max": {
+          "water": 82
+        }
+      },
       "effects": {
         "immediate": {
           "water": 10,
@@ -151,7 +155,11 @@
         "requiresNoActiveCooldown": true,
         "minStageIndex": 1
       },
-      "prerequisites": {},
+      "prerequisites": {
+        "max": {
+          "water": 68
+        }
+      },
       "effects": {
         "immediate": {
           "water": 20,
@@ -205,7 +213,14 @@
         "requiresNoActiveCooldown": true,
         "minStageIndex": 4
       },
-      "prerequisites": {},
+      "prerequisites": {
+        "min": {
+          "nutrition": 58
+        },
+        "max": {
+          "water": 82
+        }
+      },
       "effects": {
         "immediate": {
           "water": 26,
@@ -263,24 +278,27 @@
       },
       "prerequisites": {
         "min": {
-          "water": 30
+          "water": 34
         },
         "max": {
-          "nutrition": 90
+          "nutrition": 78,
+          "stress": 60,
+          "risk": 72
         }
       },
       "effects": {
         "immediate": {
-          "health": 4,
+          "health": 3,
           "stress": -2,
-          "nutrition": 2,
-          "risk": -1,
-          "growth": 0.2
+          "nutrition": 1,
+          "risk": -2,
+          "growth": 0.1
         },
         "durationSimMinutes": 180,
         "overTime": {
-          "healthPerHour": 0.35,
-          "stressPerHour": -0.08
+          "healthPerHour": 0.28,
+          "stressPerHour": -0.08,
+          "riskPerHour": -0.05
         }
       },
       "rootZoneInfluence": {
@@ -320,21 +338,21 @@
       },
       "prerequisites": {
         "min": {
-          "water": 28
+          "water": 34
         },
         "max": {
-          "nutrition": 88,
-          "risk": 88
+          "nutrition": 72,
+          "risk": 78
         }
       },
       "effects": {
         "immediate": {
           "water": -1,
-          "nutrition": 6,
+          "nutrition": 5,
           "health": 1,
           "stress": 0,
           "risk": 1,
-          "growth": 0.4
+          "growth": 0.3
         },
         "durationSimMinutes": 180,
         "overTime": {
@@ -378,12 +396,13 @@
       },
       "prerequisites": {
         "min": {
-          "water": 35,
+          "water": 40,
           "health": 20
         },
         "max": {
-          "nutrition": 84,
-          "stress": 72
+          "nutrition": 78,
+          "stress": 68,
+          "risk": 74
         }
       },
       "effects": {
@@ -393,7 +412,7 @@
           "health": 2,
           "stress": 1,
           "risk": 2,
-          "growth": 1.2
+          "growth": 0.9
         },
         "durationSimMinutes": 240,
         "overTime": {
@@ -504,7 +523,8 @@
           "health": 20
         },
         "max": {
-          "stress": 85
+          "stress": 78,
+          "risk": 78
         }
       },
       "effects": {
@@ -512,9 +532,9 @@
           "water": 0,
           "nutrition": 0,
           "health": 0,
-          "stress": 2,
+          "stress": 1,
           "risk": -2,
-          "growth": 0.3
+          "growth": 0.2
         },
         "durationSimMinutes": 210,
         "overTime": {
@@ -615,7 +635,8 @@
           "health": 60
         },
         "max": {
-          "stress": 40
+          "stress": 40,
+          "risk": 55
         }
       },
       "effects": {
@@ -675,7 +696,7 @@
         "immediate": {
           "stress": 15,
           "risk": -8,
-          "growth": 1.2
+          "growth": 0.8
         },
         "durationSimMinutes": 600,
         "overTime": {
@@ -717,13 +738,14 @@
           "nutrition": -2,
           "health": -1,
           "stress": 8,
-          "risk": 2,
-          "growth": 2.1
+          "risk": -3,
+          "growth": 0.9
         },
         "durationSimMinutes": 420,
         "overTime": {
           "stressPerHour": -0.45,
-          "growthPerHour": 0.62
+          "growthPerHour": 0.54,
+          "riskPerHour": -0.12
         }
       },
       "cooldownRealMinutes": 180,
@@ -760,7 +782,8 @@
       },
       "prerequisites": {
         "min": {
-          "health": 0
+          "health": 0,
+          "risk": 32
         },
         "max": {
           "risk": 100
@@ -772,8 +795,8 @@
           "nutrition": 0,
           "health": 0,
           "stress": -1,
-          "risk": -4,
-          "growth": 0.2
+          "risk": -5,
+          "growth": 0.1
         },
         "durationSimMinutes": 240,
         "overTime": {
@@ -816,7 +839,8 @@
       },
       "prerequisites": {
         "min": {
-          "health": 15
+          "health": 15,
+          "risk": 42
         },
         "max": {
           "risk": 95
@@ -827,9 +851,9 @@
           "water": -1,
           "nutrition": 0,
           "health": 1,
-          "stress": -3,
+          "stress": -2,
           "risk": -7,
-          "growth": 0.3
+          "growth": 0.1
         },
         "durationSimMinutes": 300,
         "overTime": {
@@ -873,11 +897,12 @@
       "prerequisites": {
         "min": {
           "health": 75,
-          "water": 60,
-          "nutrition": 60
+          "water": 64,
+          "nutrition": 64
         },
         "max": {
-          "stress": 30
+          "stress": 26,
+          "risk": 22
         }
       },
       "effects": {
@@ -912,7 +937,8 @@
       },
       "prerequisites": {
         "min": {
-          "health": 25
+          "health": 25,
+          "risk": 58
         },
         "max": {
           "risk": 100
@@ -925,7 +951,7 @@
           "health": 1,
           "stress": -4,
           "risk": -11,
-          "growth": 0.4
+          "growth": 0.2
         },
         "durationSimMinutes": 360,
         "overTime": {
@@ -974,7 +1000,7 @@
         },
         "max": {
           "stress": 45,
-          "risk": 60
+          "risk": 55
         }
       },
       "effects": {
@@ -1004,7 +1030,16 @@
         "requiresNoActiveCooldown": true,
         "minStageIndex": 2
       },
-      "prerequisites": {},
+      "prerequisites": {
+        "min": {
+          "water": 30
+        },
+        "max": {
+          "water": 72,
+          "nutrition": 78,
+          "stress": 60
+        }
+      },
       "effects": {
         "immediate": {
           "water": 15,

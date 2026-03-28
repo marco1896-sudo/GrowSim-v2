@@ -2149,6 +2149,93 @@ function validateActionPrerequisites(action) {
   return { ok: true };
 }
 
+function getActionAvailability(action) {
+  if (!action || typeof action !== 'object') {
+    return { ok: false, reason: 'unknown_action' };
+  }
+  const triggerCheck = validateActionTrigger(action);
+  if (!triggerCheck.ok) {
+    return triggerCheck;
+  }
+  return validateActionPrerequisites(action);
+}
+
+function evaluateActionPriorityHints(action, careViewModel = null) {
+  const hintApi = window.GrowSimCareActionHints;
+  if (!hintApi
+    || typeof hintApi.buildCareActionContext !== 'function'
+    || typeof hintApi.selectTopHints !== 'function') {
+    return {
+      hints: [],
+      topHint: null,
+      hasPositive: false,
+      hasWarning: false,
+      hasCaution: false
+    };
+  }
+
+  const baseContext = careViewModel && careViewModel.context ? careViewModel.context : state;
+  const hintContext = hintApi.buildCareActionContext(baseContext, action);
+  let hints = [];
+
+  if (action.category === 'watering' && typeof hintApi.evaluateWateringHints === 'function') {
+    hints = hintApi.evaluateWateringHints(hintContext);
+  } else if (action.category === 'fertilizing' && typeof hintApi.evaluateFertilizingHints === 'function') {
+    hints = hintApi.evaluateFertilizingHints(hintContext);
+  } else if (action.category === 'training' && typeof hintApi.evaluateTrainingHints === 'function') {
+    hints = hintApi.evaluateTrainingHints(hintContext);
+  } else if (action.category === 'environment' && typeof hintApi.evaluateEnvironmentHints === 'function') {
+    hints = hintApi.evaluateEnvironmentHints(hintContext);
+  }
+
+  const topHint = hintApi.selectTopHints(hints, 1)[0] || null;
+  return {
+    hints,
+    topHint,
+    hasPositive: hints.some((hint) => hint && hint.severity === 'positive'),
+    hasWarning: hints.some((hint) => hint && hint.severity === 'warning'),
+    hasCaution: hints.some((hint) => hint && hint.severity === 'caution')
+  };
+}
+
+function getActionPriorityTier(action, availability, cooldownLeftMs, careViewModel = null) {
+  const hintSummary = evaluateActionPriorityHints(action, careViewModel);
+  let tier = 'secondary';
+
+  if (cooldownLeftMs > 0) {
+    tier = 'cooldown';
+  } else if (!availability.ok) {
+    tier = 'blocked';
+  } else if (hintSummary.hasWarning) {
+    tier = 'blocked';
+  } else if (hintSummary.hasPositive) {
+    tier = 'primary';
+  }
+
+  return {
+    tier,
+    hintSummary
+  };
+}
+
+function getCompactActionSummaryText(actionEntry) {
+  const action = actionEntry || {};
+  if (action.tier === 'cooldown') {
+    return `Wieder in ${Math.max(1, Math.ceil((Number(action.cooldownLeftMs) || 0) / 60000))} min sinnvoll.`;
+  }
+
+  if (action.availability && !action.availability.ok) {
+    return explainActionFailure(action.availability.reason);
+  }
+
+  if (action.hintSummary && action.hintSummary.topHint) {
+    const hintCopy = getCareHintCopy(action.hintSummary.topHint);
+    return hintCopy.headline || hintCopy.explanation || action.hintSummary.topHint.message || 'Gerade keine gute Idee.';
+  }
+
+  return 'Gerade keine gute Idee.';
+}
+
 function scheduleActionOverTimeEffect(action, nowMs) {
   const durationMs = Math.round((Number(action.effects.durationSimMinutes) || 0) * 60 * 1000);
   const overTime = action.effects.overTime || {};
@@ -2436,7 +2523,7 @@ function evaluateCondition(conditionExpr) {
 }
 
 function evaluateAtomicCondition(token) {
-  const m = token.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*(>=|<=|==|>|<)\s*(-\d+(:\.\d+))$/);
+  const m = token.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*(>=|<=|==|>|<)\s*(-?\d+(?:\.\d+)?)$/);
   if (!m) {
     return false;
   }
@@ -3690,19 +3777,52 @@ function renderCareCategoryButtons(categories, labels, icons) {
 }
 
 function renderCareActionButtons(category, careViewModel = null) {
-  const actions = careViewModel && Array.isArray(careViewModel.actions)
+  const rawActions = careViewModel && Array.isArray(careViewModel.actions)
     ? careViewModel.actions
       .filter((action) => action.category === category)
-      .sort((a, b) => intensityRank(a.intensity) - intensityRank(b.intensity))
     : state.actions.catalog
       .filter((action) => action.category === category)
-      .sort((a, b) => intensityRank(a.intensity) - intensityRank(b.intensity));
+      .slice();
+
+  const actions = rawActions
+    .map((action) => {
+      const cooldownUntil = Number(
+        Object.prototype.hasOwnProperty.call(action, 'cooldownUntil') ? action.cooldownUntil : state.actions.cooldowns[action.id] || 0
+      );
+      const cooldownLeftMs = Math.max(0, cooldownUntil - Date.now());
+      const availability = getActionAvailability(state.actions.byId[action.id] || action);
+      const priority = getActionPriorityTier(state.actions.byId[action.id] || action, availability, cooldownLeftMs, careViewModel);
+      return {
+        ...action,
+        cooldownUntil,
+        cooldownLeftMs,
+        availability,
+        tier: priority.tier,
+        hintSummary: priority.hintSummary
+      };
+    })
+    .sort((a, b) => {
+      const tierOrder = {
+        primary: 0,
+        secondary: 1,
+        cooldown: 2,
+        blocked: 3
+      };
+      if (tierOrder[a.tier] !== tierOrder[b.tier]) {
+        return tierOrder[a.tier] - tierOrder[b.tier];
+      }
+      return intensityRank(a.intensity) - intensityRank(b.intensity);
+    });
+
+  const selectableIds = new Set(actions
+    .filter((action) => action.tier === 'primary' || action.tier === 'secondary')
+    .map((action) => action.id));
+  if (state.ui.care.selectedActionId && !selectableIds.has(state.ui.care.selectedActionId)) {
+    state.ui.care.selectedActionId = null;
+  }
 
   const signature = actions.map((action) => {
-    const cooldownUntil = Number(
-      Object.prototype.hasOwnProperty.call(action, 'cooldownUntil') ? action.cooldownUntil : state.actions.cooldowns[action.id] || 0
-    );
-    return `${action.id}:${cooldownUntil}:selected:${state.ui.care.selectedActionId === action.id}`;
+    return `${action.id}:${action.cooldownUntil}:${action.tier}:${action.availability.reason || 'ok'}:selected:${state.ui.care.selectedActionId === action.id}`;
   }).join('|');
 
   if (ui.careActionList.dataset.signature === signature) {
@@ -3712,14 +3832,27 @@ function renderCareActionButtons(category, careViewModel = null) {
   ui.careActionList.dataset.signature = signature;
   ui.careActionList.replaceChildren();
   const primitives = getUiPrimitives();
+  const primaryActions = actions.filter((action) => action.tier === 'primary');
+  const secondaryActions = actions.filter((action) => action.tier === 'secondary');
+  const cooldownActions = actions.filter((action) => action.tier === 'cooldown');
+  const blockedActions = actions.filter((action) => action.tier === 'blocked');
 
-  for (const action of actions) {
-    const cooldownUntil = Number(
-      Object.prototype.hasOwnProperty.call(action, 'cooldownUntil') ? action.cooldownUntil : state.actions.cooldowns[action.id] || 0
-    );
-    const cooldownLeft = Math.max(0, cooldownUntil - Date.now());
+  const appendSectionLabel = (text, tone = 'default') => {
+    const section = document.createElement('div');
+    section.className = `care-action-section-label care-action-section-label--${tone}`;
+    section.textContent = text;
+    ui.careActionList.appendChild(section);
+  };
+
+  const appendFullActionCard = (action) => {
+    const cooldownLeft = Math.max(0, Number(action.cooldownLeftMs) || 0);
     const cooldownText = cooldownLeft > 0 ? `${Math.ceil(cooldownLeft / 60000)} min` : `${Math.round(action.cooldownRealMinutes || 0)} min`;
-    const hintText = formatActionHint(action, cooldownLeft);
+    const hintText = action.hintSummary && action.hintSummary.topHint
+      ? (() => {
+        const hintCopy = getCareHintCopy(action.hintSummary.topHint);
+        return hintCopy.headline || hintCopy.explanation || formatActionHint(action, cooldownLeft);
+      })()
+      : formatActionHint(action, cooldownLeft);
 
     const button = primitives && typeof primitives.button === 'function'
       ? primitives.button({ className: 'care-action-card' })
@@ -3731,10 +3864,12 @@ function renderCareActionButtons(category, careViewModel = null) {
     if (state.ui.care.selectedActionId === action.id) {
       button.classList.add('is-selected');
     }
-    if (cooldownLeft > 0) {
-      button.classList.add('is-cooldown');
+    if (action.tier === 'primary') {
+      button.classList.add('is-primary');
     }
     button.setAttribute('aria-pressed', String(state.ui.care.selectedActionId === action.id));
+    button.disabled = false;
+    button.setAttribute('aria-disabled', 'false');
 
     button.innerHTML = `
       <div class="care-action-icon-box">
@@ -3753,6 +3888,55 @@ function renderCareActionButtons(category, careViewModel = null) {
     });
 
     ui.careActionList.appendChild(button);
+  };
+
+  const appendCompactActionGroup = (entries, tone, maxVisible, hiddenSummaryText) => {
+    if (!entries.length) {
+      return;
+    }
+    const list = document.createElement('div');
+    list.className = `care-action-compact-list care-action-compact-list--${tone}`;
+    const visibleEntries = entries.slice(0, maxVisible);
+
+    for (const action of visibleEntries) {
+      const row = document.createElement('div');
+      row.className = `care-action-compact-card care-action-compact-card--${tone}`;
+      row.innerHTML = `
+        <span class="care-action-compact-label">${escapeHtml(action.label)}</span>
+        <span class="care-action-compact-hint">${escapeHtml(getCompactActionSummaryText(action))}</span>
+      `;
+      list.appendChild(row);
+    }
+
+    const hiddenCount = Math.max(0, entries.length - visibleEntries.length);
+    if (hiddenCount > 0) {
+      const more = document.createElement('div');
+      more.className = 'care-action-compact-more';
+      more.textContent = hiddenSummaryText.replace('{count}', String(hiddenCount));
+      list.appendChild(more);
+    }
+
+    ui.careActionList.appendChild(list);
+  };
+
+  if (primaryActions.length) {
+    appendSectionLabel('Jetzt sinnvoll', 'primary');
+    primaryActions.forEach(appendFullActionCard);
+  }
+
+  if (secondaryActions.length) {
+    appendSectionLabel(primaryActions.length ? 'Situativ möglich' : 'Aktuell am ehesten passend', primaryActions.length ? 'secondary' : 'primary');
+    secondaryActions.forEach(appendFullActionCard);
+  }
+
+  if (cooldownActions.length) {
+    appendSectionLabel('Gerade im Cooldown', 'cooldown');
+    appendCompactActionGroup(cooldownActions, 'cooldown', 2, '+ {count} weitere Aktionen laden noch nach.');
+  }
+
+  if (blockedActions.length) {
+    appendSectionLabel('Gerade keine gute Idee', 'blocked');
+    appendCompactActionGroup(blockedActions, 'blocked', 2, '+ {count} weitere Aktionen passen gerade nicht.');
   }
 }
 
@@ -3977,7 +4161,9 @@ function renderCareEffectsPanel(careViewModel = null) {
 
 function renderCareExecuteButton() {
   const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
-  ui.careExecuteButton.disabled = !selected;
+  const availability = selected ? getActionAvailability(selected) : { ok: false };
+  const cooldownUntil = selected ? Number(state.actions.cooldowns[selected.id] || 0) : 0;
+  ui.careExecuteButton.disabled = !selected || !availability.ok || cooldownUntil > Date.now();
 }
 
 function onCareExecuteAction() {
@@ -4002,8 +4188,11 @@ function onCareExecuteAction() {
 
 function renderCareFeedback() {
   const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
+  const availability = selected ? getActionAvailability(selected) : null;
+  const cooldownUntil = selected ? Number(state.actions.cooldowns[selected.id] || 0) : 0;
+  const cooldownReason = cooldownUntil > Date.now() ? `cooldown_active:${Math.ceil((cooldownUntil - Date.now()) / 1000)}s` : '';
   const feedback = (state.ui.care && state.ui.care.feedback)
-    || { kind: 'info', text: selected ? 'Bereit zur Ausführung' : 'Wähle eine Aktion.' };
+    || { kind: 'info', text: selected ? (cooldownReason ? explainActionFailure(cooldownReason) : (availability && !availability.ok ? explainActionFailure(availability.reason) : 'Bereit zur Ausführung')) : 'Wähle eine Aktion.' };
   ui.careFeedback.textContent = feedback.text;
   ui.careFeedback.classList.toggle('is-info', feedback.kind === 'info');
   ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');
@@ -4035,7 +4224,34 @@ function explainActionFailure(reason) {
     return `Aktion blockiert: ${value.replace('cooldown_active:', 'Abklingzeit noch ')}`;
   }
   if (value.startsWith('prereq_min_failed:') || value.startsWith('prereq_max_failed:')) {
-    return `Voraussetzung nicht erfüllt (${value.split(':')[1] || 'unbekannt'}).`;
+    const [prefix, rawMetric] = value.split(':');
+    const metric = String(rawMetric || '').trim();
+    const metricLabels = {
+      water: {
+        min: 'Das Medium ist dafür noch zu trocken oder instabil.',
+        max: 'Das Medium ist dafür aktuell zu feucht.'
+      },
+      nutrition: {
+        min: 'Die Nährstofflage ist dafür noch zu leer.',
+        max: 'Die Wurzelzone steht dafür schon unter Nährstoffdruck.'
+      },
+      health: {
+        min: 'Die Pflanze sollte dafür erst stabiler sein.',
+        max: 'Dafür ist gerade kein echter Gesundheitsdruck da.'
+      },
+      stress: {
+        min: 'Dafür fehlt gerade der nötige Problemdruck.',
+        max: 'Die Pflanze ist dafür aktuell zu gestresst.'
+      },
+      risk: {
+        min: 'Dafür fehlt gerade ein echter Risikoanlass.',
+        max: 'Die Lage ist dafür aktuell zu kritisch.'
+      }
+    };
+    const typeKey = prefix === 'prereq_min_failed' ? 'min' : 'max';
+    return metricLabels[metric] && metricLabels[metric][typeKey]
+      ? metricLabels[metric][typeKey]
+      : `Voraussetzung nicht erfüllt (${metric || 'unbekannt'}).`;
   }
   if (value.startsWith('outside_time_window:')) {
     return 'Aktion nur tagsüber verfügbar.';
