@@ -101,9 +101,6 @@
         "minStageIndex": 0
       },
       "prerequisites": {
-        "max": {
-          "water": 82
-        }
       },
       "effects": {
         "immediate": {
@@ -156,9 +153,6 @@
         "minStageIndex": 1
       },
       "prerequisites": {
-        "max": {
-          "water": 68
-        }
       },
       "effects": {
         "immediate": {
@@ -216,9 +210,6 @@
       "prerequisites": {
         "min": {
           "nutrition": 58
-        },
-        "max": {
-          "water": 82
         }
       },
       "effects": {
@@ -783,7 +774,7 @@
       "prerequisites": {
         "min": {
           "health": 0,
-          "risk": 32
+          "risk": 0
         },
         "max": {
           "risk": 100
@@ -791,7 +782,7 @@
       },
       "effects": {
         "immediate": {
-          "water": -1,
+          "water": 0,
           "nutrition": 0,
           "health": 0,
           "stress": -1,
@@ -804,7 +795,7 @@
           "riskPerHour": -0.3
         }
       },
-      "cooldownRealMinutes": 35,
+      "cooldownRealMinutes": 25,
       "sideEffects": [
         {
           "id": "airflow_dry",
@@ -839,8 +830,8 @@
       },
       "prerequisites": {
         "min": {
-          "health": 15,
-          "risk": 42
+          "health": 0,
+          "risk": 30
         },
         "max": {
           "risk": 95
@@ -1033,11 +1024,6 @@
       "prerequisites": {
         "min": {
           "water": 30
-        },
-        "max": {
-          "water": 72,
-          "nutrition": 78,
-          "stress": 60
         }
       },
       "effects": {

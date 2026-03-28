@@ -20,14 +20,14 @@
   const STAGE_LABELS = Object.freeze([
     'Keimung',
     'Keimling',
-    'FrÃ¼he Vegetationsphase',
+    'Frühe Vegetationsphase',
     'Vegetationsphase',
-    'SpÃ¤te Vegetationsphase',
-    'VorblÃ¼te',
+    'Späte Vegetationsphase',
+    'Vorblüte',
     'Streckphase',
-    'FrÃ¼he BlÃ¼te',
-    'BlÃ¼te',
-    'Spte BlÃ¼te',
+    'Frühe Blüte',
+    'Blüte',
+    'Spte Blüte',
     'Reife',
     'Erntereif'
   ]);
@@ -36,7 +36,7 @@
     genetics: Object.freeze({
       hybrid: Object.freeze({
         title: 'Hybrid',
-        effect: 'Ausgewogener Basistyp fÃ¼r stabile Runs.',
+        effect: 'Ausgewogener Basistyp für stabile Runs.',
         requiredLevel: 1
       }),
       indica: Object.freeze({
@@ -46,7 +46,7 @@
       }),
       sativa: Object.freeze({
         title: 'Sativa Genetics',
-        effect: 'LÃ¤ngerer, wachstumsstarker Run mit hÃ¶herem Pflege- und Stressdruck.',
+        effect: 'Längerer, wachstumsstarker Run mit höherem Pflege- und Stressdruck.',
         requiredLevel: 5
       })
     }),
@@ -65,24 +65,24 @@
     media: Object.freeze({
       soil: Object.freeze({
         title: 'Soil Medium',
-        effect: 'Toleranter Start mit ruhigerem Wasser- und NÃ¤hrstoffverhalten.',
+        effect: 'Toleranter Start mit ruhigerem Wasser- und Nährstoffverhalten.',
         requiredLevel: 1
       }),
       coco: Object.freeze({
         title: 'Coco Medium',
-        effect: 'Reaktiveres Medium mit schnellerem Uptake, aber hÃ¶herem GieÃŸdruck.',
+        effect: 'Reaktiveres Medium mit schnellerem Uptake, aber höherem Gießdruck.',
         requiredLevel: 4
       })
     }),
     lights: Object.freeze({
       medium: Object.freeze({
         title: 'Medium Light',
-        effect: 'Solider Lichtstandard fÃ¼r stabile Indoor-Runs.',
+        effect: 'Solider Lichtstandard für stabile Indoor-Runs.',
         requiredLevel: 1
       }),
       high: Object.freeze({
         title: 'High Output Light',
-        effect: 'Mehr Wachstumsdruck und hÃ¶heres Potenzial, aber sensibler auf Fehler.',
+        effect: 'Mehr Wachstumsdruck und höheres Potenzial, aber sensibler auf Fehler.',
         requiredLevel: 6
       })
     })
@@ -92,9 +92,9 @@
     genetics: Object.freeze({
       hybrid: Object.freeze({
         title: 'Hybrid',
-        effect: 'Ausgewogener Basistyp fÃ¼r stabile Runs.',
+        effect: 'Ausgewogener Basistyp für stabile Runs.',
         tag: 'Ausgewogen',
-        tradeoff: 'Keine extreme StÃ¤rke, aber auch keine groÃŸe SchwÃ¤che.',
+        tradeoff: 'Keine extreme Stärke, aber auch keine große Schwäche.',
         focus: 'Kontrolle',
         tone: 'balanced'
       }),
@@ -102,7 +102,7 @@
         title: 'Hardy Genetics',
         effect: 'Robuster Typ mit mehr Fehlerpuffer, aber langsamerem Wachstum.',
         tag: 'Sicher',
-        tradeoff: 'FÃ¤ngt Stress leichter ab, verliert aber Tempo und Peak.',
+        tradeoff: 'Fängt Stress leichter ab, verliert aber Tempo und Peak.',
         focus: 'Safe',
         tone: 'safe'
       }),
@@ -118,7 +118,7 @@
     setupModes: Object.freeze({
       indoor: Object.freeze({
         tag: 'Kontrolle',
-        tradeoff: 'Planbar und stabil, aber ohne groÃŸe Outdoor-Spitzen.',
+        tradeoff: 'Planbar und stabil, aber ohne große Outdoor-Spitzen.',
         focus: 'Stabil',
         tone: 'balanced'
       }),
@@ -132,13 +132,13 @@
     media: Object.freeze({
       soil: Object.freeze({
         tag: 'Fehlertolerant',
-        tradeoff: 'Verzeiht mehr, reagiert aber etwas trÃ¤ger.',
+        tradeoff: 'Verzeiht mehr, reagiert aber etwas träger.',
         focus: 'Puffer',
         tone: 'safe'
       }),
       coco: Object.freeze({
         tag: 'Reaktiv',
-        tradeoff: 'Kann schneller pushen, kippt aber frÃ¼her bei Pflegefehlern.',
+        tradeoff: 'Kann schneller pushen, kippt aber früher bei Pflegefehlern.',
         focus: 'Tempo',
         tone: 'fast'
       })
@@ -146,15 +146,15 @@
     lights: Object.freeze({
       medium: Object.freeze({
         tag: 'Kontrolle',
-        tradeoff: 'Weniger Peak, dafÃ¼r gut steuerbar.',
+        tradeoff: 'Weniger Peak, dafür gut steuerbar.',
         focus: 'Balance',
         tone: 'balanced'
       }),
       high: Object.freeze({
         title: 'High Output Light',
-        effect: 'Mehr Wachstum und mehr Peak, aber deutlich hÃ¶herer Verbrauch und Druck.',
+        effect: 'Mehr Wachstum und mehr Peak, aber deutlich höherer Verbrauch und Druck.',
         tag: 'Riskant',
-        tradeoff: 'Bringt mehr Output, verlangt aber saubere Wasser- und NÃ¤hrstoffkontrolle.',
+        tradeoff: 'Bringt mehr Output, verlangt aber saubere Wasser- und Nährstoffkontrolle.',
         focus: 'Peak',
         tone: 'risky'
       })
@@ -183,7 +183,7 @@
     ratings: Object.freeze({
       unstable: Object.freeze({
         title: 'Instabiler Grow',
-        hint: 'Der Run ist frÃ¼h oder unter zu viel Druck weggebrochen.'
+        hint: 'Der Run ist früh oder unter zu viel Druck weggebrochen.'
       }),
       rough: Object.freeze({
         title: 'Wackeliger Run',
@@ -199,52 +199,52 @@
       }),
       near_perfect: Object.freeze({
         title: 'Nahezu perfekt',
-        hint: 'Sehr sauber gespielt: stabil, effizient und bis tief in die spÃ¤te Phase getragen.'
+        hint: 'Sehr sauber gespielt: stabil, effizient und bis tief in die späte Phase getragen.'
       })
     }),
     highlights: Object.freeze({
       harvest_finish: 'Bis zur Ernte durchgezogen.',
       rescue_comeback: 'Fast verloren, aber noch einmal stabilisiert.',
-      stable_phase: 'Sehr stabile Wachstumsphase Ã¼ber weite Strecken.',
+      stable_phase: 'Sehr stabile Wachstumsphase über weite Strecken.',
       low_stress_finish: 'Stress blieb bis zum Ende erstaunlich niedrig.',
-      long_run: 'Der Run hielt lange durch und erreichte eine spÃ¤te Phase.',
+      long_run: 'Der Run hielt lange durch und erreichte eine späte Phase.',
       event_handling: 'Mehrere Event-Entscheidungen aktiv ausgespielt.',
       water_window: 'Wasserwerte blieben am Ende im stabilen Bereich.',
-      nutrition_window: 'Die NÃ¤hrstoffbalance blieb gut steuerbar.',
+      nutrition_window: 'Die Nährstoffbalance blieb gut steuerbar.',
       critical_stress: 'Zum Ende hin baute sich kritischer Stress auf.',
-      early_collapse: 'Der Run kippte schon in einer frÃ¼hen Phase.',
-      high_risk: 'Das Risiko lief spÃ¼rbar aus dem Ruder.'
+      early_collapse: 'Der Run kippte schon in einer frühen Phase.',
+      high_risk: 'Das Risiko lief spürbar aus dem Ruder.'
     }),
     mistakes: Object.freeze({
-      early_death: 'Der Run brach zu frÃ¼h weg, bevor er richtig Tempo aufnehmen konnte.',
-      late_stress: 'Zu viel Stress in der spÃ¤ten Phase hat den Run deutlich gedrÃ¼ckt.',
+      early_death: 'Der Run brach zu früh weg, bevor er richtig Tempo aufnehmen konnte.',
+      late_stress: 'Zu viel Stress in der späten Phase hat den Run deutlich gedrückt.',
       high_risk: 'Das Risiko war zu lange zu hoch und hat den Spielraum verkleinert.',
       water_instability: 'Die Wasserwerte waren nicht stabil genug.',
-      nutrition_instability: 'Die NÃ¤hrstoffwerte liefen aus dem Gleichgewicht.',
-      weak_finish: 'Zum Run-Ende fehlte der Pflanze die nÃ¶tige Gesundheitsreserve.',
-      slow_progress: 'Der Fortschritt blieb fÃ¼r die Run-Dauer zu langsam.'
+      nutrition_instability: 'Die Nährstoffwerte liefen aus dem Gleichgewicht.',
+      weak_finish: 'Zum Run-Ende fehlte der Pflanze die nötige Gesundheitsreserve.',
+      slow_progress: 'Der Fortschritt blieb für die Run-Dauer zu langsam.'
     }),
     positives: Object.freeze({
       reached_harvest: 'Du hast den Run bis zur Ernte gebracht.',
-      healthy_core: 'Die Pflanze blieb Ã¼ber weite Strecken gesund.',
+      healthy_core: 'Die Pflanze blieb über weite Strecken gesund.',
       low_stress: 'Stress blieb lange unter Kontrolle.',
       stable_water: 'Der Wasserhaushalt war gut lesbar und stabil.',
-      stable_nutrition: 'Die NÃ¤hrstoffbalance war fÃ¼r V1 solide.',
+      stable_nutrition: 'Die Nährstoffbalance war für V1 solide.',
       active_decisions: 'Du hast mehrere Situationen aktiv ausgespielt.',
       comeback: 'Du hast dich aus einer kritischen Lage wieder herausgezogen.'
     }),
     xp: Object.freeze({
       base: 'Run abgeschlossen',
-      survival: 'lange Ã¼berlebt',
-      stage: 'spÃ¤te Phase erreicht',
+      survival: 'lange überlebt',
+      stage: 'späte Phase erreicht',
       quality: 'saubere Werte',
       outcome_harvest: 'Ernte geschafft',
       outcome_death: 'Abschluss-XP'
     }),
     fallbacks: Object.freeze({
-      highlight: 'Der Run hat dir neue Daten fÃ¼r den nÃ¤chsten Versuch geliefert.',
+      highlight: 'Der Run hat dir neue Daten für den nächsten Versuch geliefert.',
       mistake: 'Keine einzelne Schwachstelle stach klar heraus.',
-      positive: 'Du hast wieder Fortschritt fÃ¼r den nÃ¤chsten Run gesichert.'
+      positive: 'Du hast wieder Fortschritt für den nächsten Run gesichert.'
     })
   });
 
@@ -381,7 +381,9 @@
     const run = normalizeRunState(runLike);
     const setup = run.setupSnapshot && typeof run.setupSnapshot === 'object' ? run.setupSnapshot : {};
     const isFragileBuild = setup.genetics === 'sativa' || setup.light === 'high' || setup.medium === 'coco';
-    const pool = ['survive_day_20', 'reach_flowering', 'stable_grow'];
+    const pool = isFragileBuild
+      ? ['survive_day_20', 'reach_flowering']
+      : ['survive_day_20', 'reach_flowering', 'stable_grow'];
     if (isFragileBuild) {
       pool.push('survive_day_20');
     }
@@ -584,32 +586,32 @@
     let title = 'Balanced Control';
     let tag = 'Ausgewogen';
     let description = 'Solider Kontroll-Run mit guter Fehlertoleranz und ohne harte Peaks.';
-    let tradeoff = 'Kein extremer Vorteil, aber auch keine groÃŸe Sollbruchstelle.';
+    let tradeoff = 'Kein extremer Vorteil, aber auch keine große Sollbruchstelle.';
     let tone = 'balanced';
 
     if (String(setup.light || '') === 'high') {
       title = 'High Pressure Push';
       tag = 'Riskant';
-      description = 'Mehr Lichtdruck fÃ¼r starken Output, aber nur wenn Wasser und Nahrung sauber nachkommen.';
+      description = 'Mehr Lichtdruck für starken Output, aber nur wenn Wasser und Nahrung sauber nachkommen.';
       tradeoff = 'Hherer Verbrauch und deutlich mehr Stress bei Fehlern.';
       tone = 'risky';
     } else if (String(setup.genetics || '') === 'sativa') {
       title = 'Fast Cycle';
       tag = 'Schnell';
-      description = 'Spiel auf Tempo: frÃ¼herer Fortschritt, aber sensibler gegen Klima- und Pflegefehler.';
-      tradeoff = 'Der Run kippt schneller, wenn Wasser, Klima oder NÃ¤hrstoffe nicht sitzen.';
+      description = 'Spiel auf Tempo: früherer Fortschritt, aber sensibler gegen Klima- und Pflegefehler.';
+      tradeoff = 'Der Run kippt schneller, wenn Wasser, Klima oder Nährstoffe nicht sitzen.';
       tone = 'fast';
     } else if (String(setup.genetics || '') === 'indica') {
       title = 'Safe Control';
       tag = 'Sicher';
-      description = 'Mehr Fehlerpuffer und ruhigere Stresskurven fÃ¼r kontrollierte Runs.';
+      description = 'Mehr Fehlerpuffer und ruhigere Stresskurven für kontrollierte Runs.';
       tradeoff = 'Weniger Wachstumstempo und weniger Peak-Potenzial.';
       tone = 'safe';
     } else if (String(setup.medium || '') === 'coco') {
       title = 'Reactive Feed';
       tag = 'Reaktiv';
       description = 'Coco reagiert schnell und kann pushen, will aber konstante Pflege.';
-      tradeoff = 'Mehr Wasser- und NÃ¤hrstoffdruck Ã¼ber den ganzen Run.';
+      tradeoff = 'Mehr Wasser- und Nährstoffdruck über den ganzen Run.';
       tone = 'fast';
     }
 
@@ -617,7 +619,7 @@
       geneticsMeta.title || String(setup.genetics || 'Hybrid'),
       mediumMeta.title || String(setup.medium || 'Soil'),
       lightMeta.title || String(setup.light || 'Medium')
-    ].join(' Â· ');
+    ].join(' · ');
 
     return {
       title,
@@ -782,14 +784,14 @@
     const preventionXp = Math.max(0, Math.trunc(Number(management.prevention && management.prevention.xp) || 0));
     const eventXp = Math.max(0, Math.trunc(Number(management.events && management.events.xp) || 0));
     const breakdown = {
-      base: isHarvest ? 18 : 8,
+      base: isHarvest ? 18 : 24,
       survival: isHarvest ? Math.min(40, Math.round(simDay * 0.5)) : Math.min(18, Math.round(simDay * 0.4)),
       stage: stageIndex * 6,
       quality: Math.round(qualityScore / 4),
       management: careXp,
       prevention: preventionXp,
       events: eventXp,
-      outcome: isHarvest ? 36 : 0,
+      outcome: isHarvest ? 51 : 0,
       goal: goal && goal.status === 'completed'
         ? Math.max(0, Math.trunc(Number(goal.rewardXp) || 0))
         : 0
@@ -856,10 +858,10 @@
       addUniqueFeedback(highlights, 'hardy_cushion', 'Hardy Genetics haben Stressspitzen sichtbar abgefedert.', 4);
     }
     if (String(setup.genetics || '') === 'sativa' && summary.stageIndex >= 7) {
-      addUniqueFeedback(highlights, 'fast_cycle', 'Fast Genetics haben das Wachstum bis in spÃ¤te Phasen beschleunigt.', 4);
+      addUniqueFeedback(highlights, 'fast_cycle', 'Fast Genetics haben das Wachstum bis in späte Phasen beschleunigt.', 4);
     }
     if (String(setup.light || '') === 'high' && summary.stageIndex >= 7) {
-      addUniqueFeedback(highlights, 'high_output_push', 'High Output Light hat den Run frÃ¼h auf Output getrimmt.', 4);
+      addUniqueFeedback(highlights, 'high_output_push', 'High Output Light hat den Run früh auf Output getrimmt.', 4);
     }
     if (summary.qualityScore >= 80) {
       addUniqueFeedback(highlights, 'stable_phase', SUMMARY_TEXT.highlights.stable_phase, 4);
@@ -923,10 +925,10 @@
       addUniqueFeedback(mistakes, 'slow_progress', SUMMARY_TEXT.mistakes.slow_progress, 3);
     }
     if (String(setup.genetics || '') === 'sativa' && (summary.finalStress >= 54 || summary.finalRisk >= 52)) {
-      addUniqueFeedback(mistakes, 'fast_genetics_pressure', 'Fast Genetics haben den Run deutlich anfÃ¤lliger fÃ¼r Druck und Fehler gemacht.', 3);
+      addUniqueFeedback(mistakes, 'fast_genetics_pressure', 'Fast Genetics haben den Run deutlich anfälliger für Druck und Fehler gemacht.', 3);
     }
     if (String(setup.light || '') === 'high' && (summary.finalWater <= 38 || summary.finalNutrition <= 38 || summary.finalStress >= 58)) {
-      addUniqueFeedback(mistakes, 'high_output_pressure', 'High Output Light hat Wasser-, Futter- und Stressdruck sichtbar erhÃ¶ht.', 3);
+      addUniqueFeedback(mistakes, 'high_output_pressure', 'High Output Light hat Wasser-, Futter- und Stressdruck sichtbar erhöht.', 3);
     }
     if (String(setup.genetics || '') === 'indica' && summary.endReason === 'death' && summary.stageIndex <= 5) {
       addUniqueFeedback(mistakes, 'hardy_tempo_loss', 'Der sichere Build hat Zeit gekauft, aber das langsamere Tempo blieb ein Nachteil.', 3);
@@ -975,7 +977,7 @@
       addUniqueFeedback(positives, 'fast_progress', 'Fast Genetics haben Tempo in den Run gebracht, ohne komplett zu kollabieren.', 2);
     }
     if (String(setup.light || '') === 'high' && summary.endReason === 'harvest' && summary.qualityScore >= 72) {
-      addUniqueFeedback(positives, 'high_output_reward', 'High Output Light hat den zusÃ¤tzlichen Druck in echten Fortschritt verwandelt.', 2);
+      addUniqueFeedback(positives, 'high_output_reward', 'High Output Light hat den zusätzlichen Druck in echten Fortschritt verwandelt.', 2);
     }
     if (!positives.length) {
       addUniqueFeedback(positives, 'fallback', SUMMARY_TEXT.fallbacks.positive, 2);

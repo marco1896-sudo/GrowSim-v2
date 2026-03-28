@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'growsim-v1-20260327-care-cta-fix-v5';
+const CACHE_VERSION = 'growsim-v1-20260327-care-cta-fix-v5-care-detail-fix-v3';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');

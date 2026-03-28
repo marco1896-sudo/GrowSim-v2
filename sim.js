@@ -664,7 +664,7 @@ function tick() {
     state.simulation.lastTickRealTimeMs = nowMs;
     state.simulation.growthImpulse = 0;
     syncCanonicalStateShape();
-    if (typeof window.checkMissions === 'function') {
+    if (typeof window !== 'undefined' && typeof window.checkMissions === 'function') {
       window.checkMissions('tick');
     }
     renderHud();
@@ -682,7 +682,7 @@ function tick() {
     state.simulation.lastTickRealTimeMs = nowMs;
     state.simulation.growthImpulse = 0;
     syncCanonicalStateShape();
-    if (typeof window.checkMissions === 'function') {
+    if (typeof window !== 'undefined' && typeof window.checkMissions === 'function') {
       window.checkMissions('tick');
     }
 
@@ -704,7 +704,7 @@ function tick() {
     : 0;
   const effectiveNowMs = prevTickRealTimeMs + elapsedRealMs;
   applySimulationDelta(elapsedRealMs, effectiveNowMs, nowMs);
-  if (typeof window.checkMissions === 'function') {
+  if (typeof window !== 'undefined' && typeof window.checkMissions === 'function') {
     window.checkMissions('tick');
   }
 
@@ -1719,7 +1719,7 @@ function syncRuntimeClocks(nowMs) {
 }
 
 function repairRuntimeTextEncoding(value) {
-  const api = window.GrowSimTextEncoding;
+  const api = typeof window !== 'undefined' ? window.GrowSimTextEncoding : null;
   return api && typeof api.deepRepairMojibake === 'function'
     ? api.deepRepairMojibake(value)
     : value;
