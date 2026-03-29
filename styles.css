@@ -1584,11 +1584,45 @@ body {
 
 .sheet-backdrop[data-sheet="climate"] {
   background:
-    radial-gradient(ellipse at 50% 56%, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.6) 60%, rgba(0, 0, 0, 0.85) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.75) 100%),
-    radial-gradient(ellipse at 52% 52%, rgba(72, 132, 114, 0.14) 0%, rgba(72, 132, 114, 0.08) 42%, rgba(72, 132, 114, 0) 100%);
-  -webkit-backdrop-filter: blur(6px) saturate(74%) contrast(90%) brightness(0.85);
-  backdrop-filter: blur(6px) saturate(74%) contrast(90%) brightness(0.85);
+    radial-gradient(
+      ellipse at center,
+      rgba(0, 0, 0, 0) 42%,
+      rgba(0, 0, 0, 0.18) 62%,
+      rgba(0, 0, 0, 0.42) 82%,
+      rgba(0, 0, 0, 0.65) 100%
+    );
+  -webkit-backdrop-filter: blur(5px) saturate(0.82) brightness(0.82);
+  backdrop-filter: blur(5px) saturate(0.82) brightness(0.82);
+}
+
+.sheet-backdrop[data-sheet="climate"]::before,
+.sheet-backdrop[data-sheet="climate"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sheet-backdrop[data-sheet="climate"]::before {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5, 10, 16, 0.72) 0%,
+      rgba(4, 8, 14, 0.82) 45%,
+      rgba(2, 5, 10, 0.9) 100%
+    );
+}
+
+.sheet-backdrop[data-sheet="climate"]::after {
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 255, 255, 0.035) 0%,
+      rgba(120, 160, 190, 0.025) 18%,
+      rgba(0, 0, 0, 0.16) 42%,
+      rgba(0, 0, 0, 0.42) 68%,
+      rgba(0, 0, 0, 0.72) 100%
+    );
 }
 
 .menu-backdrop {
