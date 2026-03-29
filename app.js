@@ -3283,6 +3283,7 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   const liveReadout = deriveEnvironmentReadout(state);
   const homeClimateBadge = document.getElementById('homeClimateBadge');
   const homeClimateCard = document.getElementById('homeClimateCard');
+  const climateSheet = document.getElementById('climateSheet');
   const climateStatusBadge = document.getElementById('climateStatusBadge');
   const climateStatusText = document.getElementById('climateStatusText');
   const climateModeAuto = document.getElementById('climateModeAuto');
@@ -3292,11 +3293,15 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   const climateModeSummary = document.getElementById('climateModeSummary');
   const climateModeCycleInfo = document.getElementById('climateModeCycleInfo');
   const climatePhaseValue = document.getElementById('climatePhaseValue');
-  if (homeClimateBadge || homeClimateCard) {
+  const climatePrimaryCards = document.querySelectorAll('.climate-primary-card');
+  if (homeClimateBadge || homeClimateCard || climateSheet || climateStatusBadge || climateStatusText) {
     const vpd = Number(liveReadout && liveReadout.vpdKpa || 0);
     const climateState = (vpd >= 0.9 && vpd <= 1.5)
       ? 'optimal'
       : ((vpd >= 0.7 && vpd <= 1.7) ? 'watch' : 'alert');
+    const climateTension = climateState === 'optimal'
+      ? 'calm'
+      : (climateState === 'watch' ? 'elevated' : 'critical');
     const climateLabel = climateState === 'optimal'
       ? 'Optimal'
       : (climateState === 'watch' ? 'Beobachten' : 'Alarm');
@@ -3306,6 +3311,14 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
     }
     if (homeClimateCard) {
       homeClimateCard.dataset.state = climateState;
+    }
+    if (climateSheet) {
+      climateSheet.dataset.state = climateState;
+      climateSheet.dataset.tension = climateTension;
+    }
+    for (const card of climatePrimaryCards) {
+      card.dataset.state = climateState;
+      card.dataset.tension = climateTension;
     }
     if (climateStatusBadge) {
       climateStatusBadge.textContent = climateLabel;
@@ -3695,8 +3708,15 @@ function renderSheets() {
   const activeSheet = state.ui.openSheet;
   const showBackdrop = activeSheet !== null;
 
-  ui.backdrop.classList.toggle('hidden', !showBackdrop);
-  ui.backdrop.setAttribute('aria-hidden', String(!showBackdrop));
+  if (ui.backdrop) {
+    ui.backdrop.classList.toggle('hidden', !showBackdrop);
+    ui.backdrop.setAttribute('aria-hidden', String(!showBackdrop));
+    if (showBackdrop && activeSheet) {
+      ui.backdrop.dataset.sheet = String(activeSheet);
+    } else {
+      ui.backdrop.removeAttribute('data-sheet');
+    }
+  }
 
   toggleSheet(ui.careSheet, activeSheet === 'care');
   toggleSheet(ui.climateSheet, activeSheet === 'climate');

@@ -365,6 +365,70 @@ function stepEnvironmentControl(controlKey, inputId, direction) {
   onEnvironmentControlInput(controlKey, normalizedValue);
 }
 
+function bindEnvironmentStepperButton(stepperButton) {
+  if (!stepperButton) {
+    return;
+  }
+
+  let holdDelayTimer = null;
+  let holdRepeatTimer = null;
+  let holdTriggered = false;
+
+  const runStep = () => {
+    stepEnvironmentControl(
+      stepperButton.dataset.envStepKey,
+      stepperButton.dataset.envStepInput,
+      Number(stepperButton.dataset.envStepDir)
+    );
+  };
+
+  const stopHold = () => {
+    if (holdDelayTimer) {
+      window.clearTimeout(holdDelayTimer);
+      holdDelayTimer = null;
+    }
+    if (holdRepeatTimer) {
+      window.clearInterval(holdRepeatTimer);
+      holdRepeatTimer = null;
+    }
+  };
+
+  const startHold = () => {
+    stopHold();
+    holdTriggered = false;
+    holdDelayTimer = window.setTimeout(() => {
+      holdTriggered = true;
+      runStep();
+      holdRepeatTimer = window.setInterval(runStep, 85);
+    }, 320);
+  };
+
+  stepperButton.addEventListener('click', (event) => {
+    if (holdTriggered) {
+      event.preventDefault();
+      holdTriggered = false;
+      return;
+    }
+    runStep();
+  });
+
+  stepperButton.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) {
+      return;
+    }
+    startHold();
+  });
+
+  for (const eventName of ['pointerup', 'pointerleave', 'pointercancel', 'blur']) {
+    stepperButton.addEventListener(eventName, () => {
+      stopHold();
+      if (eventName !== 'pointerup') {
+        holdTriggered = false;
+      }
+    });
+  }
+}
+
 function bindHomeScreenEvents(controller = null) {
   if (homeBindingsBound) {
     return;
@@ -503,13 +567,7 @@ function bindHomeScreenEvents(controller = null) {
   }
 
   for (const stepperButton of document.querySelectorAll('[data-env-step-input][data-env-step-key][data-env-step-dir]')) {
-    stepperButton.addEventListener('click', () => {
-      stepEnvironmentControl(
-        stepperButton.dataset.envStepKey,
-        stepperButton.dataset.envStepInput,
-        Number(stepperButton.dataset.envStepDir)
-      );
-    });
+    bindEnvironmentStepperButton(stepperButton);
   }
 
   homeBindingsBound = true;
@@ -960,8 +1018,15 @@ function renderSheets() {
   const activeSheet = state.ui.openSheet;
   const showBackdrop = activeSheet !== null;
 
-  ui.backdrop.classList.toggle('hidden', !showBackdrop);
-  ui.backdrop.setAttribute('aria-hidden', String(!showBackdrop));
+  if (ui.backdrop) {
+    ui.backdrop.classList.toggle('hidden', !showBackdrop);
+    ui.backdrop.setAttribute('aria-hidden', String(!showBackdrop));
+    if (showBackdrop && activeSheet) {
+      ui.backdrop.dataset.sheet = String(activeSheet);
+    } else {
+      ui.backdrop.removeAttribute('data-sheet');
+    }
+  }
 
   toggleSheet(ui.careSheet, activeSheet === 'care');
   toggleSheet(ui.climateSheet, activeSheet === 'climate');

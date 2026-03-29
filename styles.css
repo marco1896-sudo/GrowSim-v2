@@ -1577,7 +1577,18 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.48);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   z-index: 18;
+}
+
+.sheet-backdrop[data-sheet="climate"] {
+  background:
+    radial-gradient(ellipse at 50% 56%, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.6) 60%, rgba(0, 0, 0, 0.85) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.75) 100%),
+    radial-gradient(ellipse at 52% 52%, rgba(72, 132, 114, 0.14) 0%, rgba(72, 132, 114, 0.08) 42%, rgba(72, 132, 114, 0) 100%);
+  -webkit-backdrop-filter: blur(6px) saturate(74%) contrast(90%) brightness(0.85);
+  backdrop-filter: blur(6px) saturate(74%) contrast(90%) brightness(0.85);
 }
 
 .menu-backdrop {
@@ -6075,7 +6086,7 @@ body.panelized-ready :is(
 
 .home-right-column {
   position: absolute;
-  top: 96px;
+  top: 122px;
   right: 12px;
   width: 115px;
   display: flex;
@@ -6262,7 +6273,7 @@ body.panelized-ready :is(
 
 @media (max-width: 393px) {
   .home-right-column {
-    top: 88px;
+    top: 124px;
     right: 10px;
     width: 115px;
   }
@@ -6601,6 +6612,8 @@ body.panelized-ready :is(
 }
 
 .climate-sheet__shell {
+  --climate-panel-glow: url("assets/ui/panels/climate_panel_glow.svg");
+  --climate-glass-overlay: url("assets/ui/panels/climate_glass_overlay.svg");
   min-height: 0;
   max-height: inherit;
   display: grid;
@@ -6608,6 +6621,8 @@ body.panelized-ready :is(
   border-radius: 24px 24px 0 0;
   border: 1px solid rgba(190, 214, 202, 0.13);
   background:
+    var(--climate-glass-overlay),
+    var(--climate-panel-glow),
     linear-gradient(180deg, rgba(5, 10, 10, 0.99), rgba(7, 12, 12, 0.98)),
     radial-gradient(circle at top right, rgba(122, 236, 176, 0.08), rgba(122, 236, 176, 0) 36%);
   box-shadow:
@@ -6648,8 +6663,8 @@ body.panelized-ready :is(
   min-height: 0;
   overflow-y: auto;
   display: grid;
-  gap: 10px;
-  padding: 10px 10px calc(12px + env(safe-area-inset-bottom));
+  gap: 8px;
+  padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
@@ -6661,13 +6676,16 @@ body.panelized-ready :is(
 .climate-status__hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(158px, 0.95fr);
-  gap: 8px;
-  padding: 10px;
-  border-radius: 16px;
-  border: 1px solid rgba(160, 221, 192, 0.14);
+  gap: 7px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(160, 221, 192, 0.1);
   background:
-    linear-gradient(180deg, rgba(15, 24, 22, 0.88), rgba(9, 14, 14, 0.96)),
-    radial-gradient(circle at top right, rgba(133, 236, 183, 0.12), rgba(133, 236, 183, 0) 42%);
+    var(--climate-glass-overlay),
+    var(--climate-panel-glow),
+    linear-gradient(180deg, rgba(13, 22, 20, 0.9), rgba(9, 14, 14, 0.95)),
+    radial-gradient(circle at top right, rgba(133, 236, 183, 0.08), rgba(133, 236, 183, 0) 42%);
+  box-shadow: inset 0 0 20px rgba(150, 232, 192, 0.05);
   box-sizing: border-box;
 }
 
@@ -6709,17 +6727,17 @@ body.panelized-ready :is(
 .climate-status__meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 5px;
   align-content: start;
 }
 
 .climate-metric {
   display: grid;
   gap: 2px;
-  padding: 8px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 6px 7px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.035);
 }
 
 .climate-metric__label,
@@ -6743,8 +6761,14 @@ body.panelized-ready :is(
 
 .climate-section {
   display: grid;
-  gap: 8px;
-  padding-top: 0;
+  gap: 6px;
+  padding: 6px 7px 5px;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 68%);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 22px rgba(94, 184, 140, 0.04);
 }
 
 .climate-section__title {
@@ -6759,7 +6783,7 @@ body.panelized-ready :is(
 .climate-compact-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .climate-mode-card,
@@ -6768,11 +6792,12 @@ body.panelized-ready :is(
 .climate-compact-card,
 .climate-toggle-card {
   display: grid;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.025);
+  gap: 4px;
+  padding: 7px 8px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  background: rgba(255, 255, 255, 0.015);
+  box-shadow: inset 0 0 14px rgba(164, 229, 193, 0.03);
 }
 
 .climate-mode-card--wide,
@@ -6823,80 +6848,225 @@ body.panelized-ready :is(
 .climate-primary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .climate-primary-card {
   display: grid;
-  gap: 6px;
-  padding: 10px;
-  height: 128px;
-  min-height: 128px;
-  max-height: 128px;
-  border-radius: 14px;
-  border: 1px solid rgba(169, 228, 196, 0.11);
+  gap: 4px;
+  padding: 8px 9px;
+  min-height: 88px;
+  border-radius: 11px;
+  border: 1px solid rgba(169, 228, 196, 0.08);
   background:
-    linear-gradient(180deg, rgba(18, 28, 26, 0.7), rgba(10, 16, 15, 0.9)),
-    radial-gradient(circle at top right, rgba(113, 231, 173, 0.08), rgba(113, 231, 173, 0) 38%);
+    var(--climate-glass-overlay),
+    var(--climate-panel-glow),
+    linear-gradient(180deg, rgba(16, 24, 23, 0.76), rgba(10, 16, 15, 0.88)),
+    radial-gradient(circle at top right, rgba(113, 231, 173, 0.06), rgba(113, 231, 173, 0) 40%);
+  box-shadow:
+    inset 0 0 20px rgba(150, 233, 192, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .climate-primary-card__value {
   color: #f3fbf5;
-  font-size: 23px;
-  line-height: 0.95;
+  font-size: clamp(27px, 5.2vw, 34px);
+  line-height: 0.9;
   letter-spacing: -0.03em;
+  font-weight: 700;
+  margin-top: 1px;
 }
 
 .climate-primary-card__hint {
-  color: rgba(212, 224, 217, 0.62);
-  font-size: 9px;
-  line-height: 1.15;
+  display: none;
 }
 
 .climate-control-card__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+}
+
+.climate-control-module {
+  align-content: start;
+  position: relative;
+}
+
+.climate-control-module::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 120%, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 58%);
+}
+
+.climate-inline-controls {
+  margin-top: auto;
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.climate-inline-control {
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  min-height: 25px;
+  padding: 0;
+  border: 1px solid rgba(201, 232, 217, 0.12);
+  background:
+    var(--climate-glass-overlay),
+    linear-gradient(180deg, rgba(244, 255, 249, 0.14), rgba(213, 247, 229, 0.06)),
+    radial-gradient(circle at 30% 18%, rgba(214, 255, 234, 0.16), rgba(214, 255, 234, 0) 62%);
+  color: rgba(188, 246, 218, 0.92);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  opacity: 0.62;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 0 10px rgba(144, 228, 185, 0.12);
+  transition: opacity 140ms ease, transform 120ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.climate-inline-control:hover,
+.climate-inline-control:focus-visible {
+  opacity: 1;
+  color: #effff6;
+  border-color: rgba(167, 236, 198, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 12px rgba(144, 228, 185, 0.2),
+    0 0 18px rgba(123, 229, 176, 0.34);
+}
+
+.climate-inline-control:active {
+  transform: scale(0.95);
+}
+
+.climate-inline-control__icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 4px rgba(139, 233, 187, 0.5));
+}
+
+.climate-inline-control__icon--prev {
+  transform: none;
+}
+
+.climate-sheet[data-state="optimal"] .climate-status__hero,
+.climate-sheet[data-state="optimal"] .climate-primary-card {
+  border-color: rgba(138, 229, 184, 0.16);
+  box-shadow:
+    inset 0 0 18px rgba(141, 232, 188, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.climate-sheet[data-state="watch"] .climate-status__hero,
+.climate-sheet[data-state="watch"] .climate-primary-card {
+  border-color: rgba(228, 181, 120, 0.16);
+  box-shadow:
+    inset 0 0 18px rgba(226, 175, 98, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.climate-sheet[data-state="alert"] .climate-status__hero,
+.climate-sheet[data-state="alert"] .climate-primary-card {
+  border-color: rgba(228, 116, 116, 0.18);
+  box-shadow:
+    inset 0 0 20px rgba(220, 97, 97, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.climate-sheet[data-tension="calm"] .climate-inline-control {
+  box-shadow: 0 0 0 rgba(118, 224, 172, 0);
+}
+
+.climate-sheet[data-tension="elevated"] .climate-inline-control {
+  box-shadow: 0 0 10px rgba(222, 169, 100, 0.08);
+}
+
+.climate-sheet[data-tension="critical"] .climate-inline-control {
+  box-shadow: 0 0 12px rgba(214, 101, 101, 0.14);
 }
 
 .climate-stepper {
   display: inline-grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, 25px);
   gap: 5px;
+  width: fit-content;
 }
 
 .climate-stepper--primary {
-  margin-top: 2px;
+  margin-top: auto;
 }
 
 .climate-stepper--compact {
-  gap: 6px;
+  gap: 4px;
 }
 
 .climate-stepper__btn {
-  min-height: 30px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: #eef7ef;
-  font-size: 16px;
+  width: 25px;
+  min-width: 25px;
+  height: 25px;
+  min-height: 25px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(196, 224, 210, 0.12);
+  background:
+    var(--climate-glass-overlay),
+    linear-gradient(180deg, rgba(244, 255, 249, 0.14), rgba(213, 247, 229, 0.06)),
+    radial-gradient(circle at 30% 18%, rgba(214, 255, 234, 0.16), rgba(214, 255, 234, 0) 62%);
+  color: rgba(188, 246, 218, 0.92);
+  font-size: 0;
   line-height: 1;
   cursor: pointer;
-  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 10px rgba(144, 228, 185, 0.12);
+  transition: transform 120ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .climate-stepper__btn:hover,
 .climate-stepper__btn:focus-visible {
-  transform: translateY(-1px);
-  border-color: rgba(164, 231, 193, 0.22);
-  background: rgba(121, 228, 176, 0.12);
+  color: #effff6;
+  border-color: rgba(167, 236, 198, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 12px rgba(144, 228, 185, 0.22),
+    0 0 18px rgba(123, 229, 176, 0.34);
 }
 
-.climate-stepper__btn--plus {
-  color: #9cf0be;
+.climate-stepper__btn:active {
+  transform: scale(0.95);
+}
+
+.climate-stepper__icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 4px rgba(139, 233, 187, 0.5));
+}
+
+.climate-stepper__icon--prev {
+  transform: none;
+}
+
+.climate-stepper__btn--next .climate-stepper__icon {
+  opacity: 0.96;
 }
 
 .climate-toggle-card {
@@ -7025,8 +7195,8 @@ body.panelized-ready :is(
   }
 
   .climate-sheet__content {
-    padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
-    gap: 12px;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    gap: 10px;
   }
 
   .climate-status__hero {
@@ -7040,12 +7210,11 @@ body.panelized-ready :is(
   }
 
   .climate-primary-card {
-    min-height: 132px;
-    max-height: 140px;
+    min-height: 96px;
   }
 
   .climate-primary-card__value {
-    font-size: 27px;
+    font-size: clamp(30px, 3vw, 38px);
   }
 }
 
@@ -7086,8 +7255,8 @@ body.panelized-ready :is(
 
   .climate-status__hero {
     grid-template-columns: minmax(0, 1fr) minmax(144px, 0.96fr);
-    min-height: 132px;
-    max-height: 140px;
+    min-height: 112px;
+    max-height: 124px;
   }
 
   .climate-status__value {
@@ -7095,9 +7264,7 @@ body.panelized-ready :is(
   }
 
   .climate-primary-card {
-    height: 124px;
-    min-height: 124px;
-    max-height: 124px;
+    min-height: 86px;
   }
 }
 

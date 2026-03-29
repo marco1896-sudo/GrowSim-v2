@@ -1,0 +1,9 @@
+<svg width="320" height="240" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="panelGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(238 24) rotate(123) scale(180 230)">
+      <stop stop-color="#87F2B7" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#87F2B7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="320" height="240" fill="url(#panelGlow)"/>
+</svg>

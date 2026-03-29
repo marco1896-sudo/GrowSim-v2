@@ -11,10 +11,38 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260328b">
+  <link rel="stylesheet" href="styles.css?v=20260329c">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <svg class="ui-icon-sprite" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <symbol id="icon-arrow-left" viewBox="0 0 24 24">
+        <path d="M14.75 5.75L8.5 12l6.25 6.25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="icon-arrow-right" viewBox="0 0 24 24">
+        <path d="M9.25 5.75L15.5 12l-6.25 6.25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="icon-arrow-up" viewBox="0 0 24 24">
+        <path d="M5.75 14.75L12 8.5l6.25 6.25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="icon-arrow-down" viewBox="0 0 24 24">
+        <path d="M5.75 9.25L12 15.5l6.25-6.25" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="icon-plus" viewBox="0 0 24 24">
+        <path d="M12 6.5v11M6.5 12h11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="icon-minus" viewBox="0 0 24 24">
+        <path d="M6.5 12h11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="icon-close" viewBox="0 0 24 24">
+        <path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24">
+        <path d="M5.75 12.5l4.3 4.3 8.2-8.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+    </defs>
+  </svg>
   <div id="app-hud" class="app-hud">
     <main class="hud-main hud-screen is-active home-screen" data-screen="home">
       <section class="home-stage" aria-label="Home HUD">
@@ -343,46 +371,42 @@
           </div>
 
           <div class="climate-primary-grid">
-            <article class="climate-primary-card">
+            <article class="climate-primary-card climate-control-module">
               <span class="climate-primary-card__label">Tag Temp Ziel</span>
               <strong id="envCtrlTempOut" class="climate-primary-card__value">25.0°C</strong>
-              <small class="climate-primary-card__hint">Temperatur am Lichttag</small>
-              <div class="climate-stepper climate-stepper--primary" role="group" aria-label="Tag Temperatur Ziel">
-                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlTemp" data-env-step-key="temperatureC" data-env-step-dir="-1">−</button>
-                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlTemp" data-env-step-key="temperatureC" data-env-step-dir="1">+</button>
+              <div class="climate-inline-controls" role="group" aria-label="Tag Temperatur Ziel">
+                <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlTemp" data-env-step-key="temperatureC" data-env-step-dir="-1" aria-label="Tag Temperatur verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-inline-control climate-inline-control--next" type="button" data-env-step-input="envCtrlTemp" data-env-step-key="temperatureC" data-env-step-dir="1" aria-label="Tag Temperatur erhöhen"><svg class="climate-inline-control__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
               </div>
               <input id="envCtrlTemp" class="climate-native-input" type="range" min="16" max="36" step="0.1" value="25">
             </article>
 
-            <article class="climate-primary-card">
+            <article class="climate-primary-card climate-control-module">
               <span class="climate-primary-card__label">Tag rF Ziel</span>
               <strong id="envCtrlHumidityOut" class="climate-primary-card__value">60%</strong>
-              <small class="climate-primary-card__hint">Luftfeuchte am Lichttag</small>
-              <div class="climate-stepper climate-stepper--primary" role="group" aria-label="Tag Luftfeuchte Ziel">
-                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlHumidity" data-env-step-key="humidityPercent" data-env-step-dir="-1">−</button>
-                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlHumidity" data-env-step-key="humidityPercent" data-env-step-dir="1">+</button>
+              <div class="climate-inline-controls" role="group" aria-label="Tag Luftfeuchte Ziel">
+                <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlHumidity" data-env-step-key="humidityPercent" data-env-step-dir="-1" aria-label="Tag Luftfeuchte verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-inline-control climate-inline-control--next" type="button" data-env-step-input="envCtrlHumidity" data-env-step-key="humidityPercent" data-env-step-dir="1" aria-label="Tag Luftfeuchte erhöhen"><svg class="climate-inline-control__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
               </div>
               <input id="envCtrlHumidity" class="climate-native-input" type="range" min="30" max="90" step="1" value="60">
             </article>
 
-            <article class="climate-primary-card">
+            <article class="climate-primary-card climate-control-module">
               <span class="climate-primary-card__label">Nacht Temp</span>
               <strong id="envCtrlNightTempOut" class="climate-primary-card__value">21.0°C</strong>
-              <small class="climate-primary-card__hint">Temperatur bei Dunkelphase</small>
-              <div class="climate-stepper climate-stepper--primary" role="group" aria-label="Nacht Temperatur Ziel">
-                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlNightTemp" data-env-step-key="nightTemperatureC" data-env-step-dir="-1">−</button>
-                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlNightTemp" data-env-step-key="nightTemperatureC" data-env-step-dir="1">+</button>
+              <div class="climate-inline-controls" role="group" aria-label="Nacht Temperatur Ziel">
+                <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlNightTemp" data-env-step-key="nightTemperatureC" data-env-step-dir="-1" aria-label="Nacht Temperatur verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-inline-control climate-inline-control--next" type="button" data-env-step-input="envCtrlNightTemp" data-env-step-key="nightTemperatureC" data-env-step-dir="1" aria-label="Nacht Temperatur erhöhen"><svg class="climate-inline-control__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
               </div>
               <input id="envCtrlNightTemp" class="climate-native-input" type="range" min="16" max="36" step="0.1" value="21">
             </article>
 
-            <article class="climate-primary-card">
+            <article class="climate-primary-card climate-control-module">
               <span class="climate-primary-card__label">Nacht rF</span>
               <strong id="envCtrlNightHumidityOut" class="climate-primary-card__value">55%</strong>
-              <small class="climate-primary-card__hint">Luftfeuchte bei Dunkelphase</small>
-              <div class="climate-stepper climate-stepper--primary" role="group" aria-label="Nacht Luftfeuchte Ziel">
-                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlNightHumidity" data-env-step-key="nightHumidityPercent" data-env-step-dir="-1">−</button>
-                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlNightHumidity" data-env-step-key="nightHumidityPercent" data-env-step-dir="1">+</button>
+              <div class="climate-inline-controls" role="group" aria-label="Nacht Luftfeuchte Ziel">
+                <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlNightHumidity" data-env-step-key="nightHumidityPercent" data-env-step-dir="-1" aria-label="Nacht Luftfeuchte verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-inline-control climate-inline-control--next" type="button" data-env-step-input="envCtrlNightHumidity" data-env-step-key="nightHumidityPercent" data-env-step-dir="1" aria-label="Nacht Luftfeuchte erhöhen"><svg class="climate-inline-control__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
               </div>
               <input id="envCtrlNightHumidity" class="climate-native-input" type="range" min="30" max="90" step="1" value="55">
             </article>
@@ -414,8 +438,8 @@
               </div>
               <small class="climate-note">Grundlast für den Luftaustausch.</small>
               <div class="climate-stepper climate-stepper--compact" role="group" aria-label="Minimale Abluft">
-                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlAirflow" data-env-step-key="airflowPercent" data-env-step-dir="-1">−</button>
-                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlAirflow" data-env-step-key="airflowPercent" data-env-step-dir="1">+</button>
+                <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlAirflow" data-env-step-key="airflowPercent" data-env-step-dir="-1" aria-label="Minimale Abluft verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlAirflow" data-env-step-key="airflowPercent" data-env-step-dir="1" aria-label="Minimale Abluft erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
               </div>
               <input id="envCtrlAirflow" class="climate-native-input" type="range" min="0" max="100" step="1" value="70">
             </article>
@@ -427,8 +451,8 @@
               </div>
               <small class="climate-note">Obergrenze für starke Gegensteuerung.</small>
               <div class="climate-stepper climate-stepper--compact" role="group" aria-label="Maximale Abluft">
-                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlFanMax" data-env-step-key="fanMaxPercent" data-env-step-dir="-1">−</button>
-                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlFanMax" data-env-step-key="fanMaxPercent" data-env-step-dir="1">+</button>
+                <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlFanMax" data-env-step-key="fanMaxPercent" data-env-step-dir="-1" aria-label="Maximale Abluft verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlFanMax" data-env-step-key="fanMaxPercent" data-env-step-dir="1" aria-label="Maximale Abluft erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
               </div>
               <input id="envCtrlFanMax" class="climate-native-input" type="range" min="0" max="100" step="1" value="100">
             </article>
@@ -440,8 +464,8 @@
               </div>
               <small class="climate-note">Wechsel zwischen Tag- und Nachtprofil.</small>
               <div class="climate-stepper climate-stepper--compact" role="group" aria-label="Übergangszeit">
-                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlTransition" data-env-step-key="transitionMinutes" data-env-step-dir="-1">−</button>
-                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlTransition" data-env-step-key="transitionMinutes" data-env-step-dir="1">+</button>
+                <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlTransition" data-env-step-key="transitionMinutes" data-env-step-dir="-1" aria-label="Übergangszeit verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlTransition" data-env-step-key="transitionMinutes" data-env-step-dir="1" aria-label="Übergangszeit erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
               </div>
               <input id="envCtrlTransition" class="climate-native-input" type="range" min="1" max="180" step="1" value="45">
             </article>
@@ -463,8 +487,8 @@
                 <span class="climate-compact-card__label">Tag VPD</span>
                 <strong id="envCtrlDayVpdOut" class="climate-compact-card__value">1.3 kPa</strong>
                 <div class="climate-stepper climate-stepper--compact">
-                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="-1">−</button>
-                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="1">+</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="-1" aria-label="Tag VPD verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                  <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="1" aria-label="Tag VPD erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
                 </div>
                 <input id="envCtrlDayVpd" class="climate-native-input" type="range" min="0.2" max="3.0" step="0.01" value="1.3">
               </article>
@@ -473,8 +497,8 @@
                 <span class="climate-compact-card__label">Nacht VPD</span>
                 <strong id="envCtrlNightVpdOut" class="climate-compact-card__value">1.1 kPa</strong>
                 <div class="climate-stepper climate-stepper--compact">
-                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="-1">−</button>
-                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="1">+</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="-1" aria-label="Nacht VPD verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                  <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="1" aria-label="Nacht VPD erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
                 </div>
                 <input id="envCtrlNightVpd" class="climate-native-input" type="range" min="0.2" max="3.0" step="0.01" value="1.1">
               </article>
@@ -483,8 +507,8 @@
                 <span class="climate-compact-card__label">Temp Buffer</span>
                 <strong id="envCtrlTempBufferOut" class="climate-compact-card__value">0.7°C</strong>
                 <div class="climate-stepper climate-stepper--compact">
-                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlTempBuffer" data-env-step-key="tempBufferC" data-env-step-dir="-1">−</button>
-                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlTempBuffer" data-env-step-key="tempBufferC" data-env-step-dir="1">+</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlTempBuffer" data-env-step-key="tempBufferC" data-env-step-dir="-1" aria-label="Temperatur-Buffer verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                  <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlTempBuffer" data-env-step-key="tempBufferC" data-env-step-dir="1" aria-label="Temperatur-Buffer erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
                 </div>
                 <input id="envCtrlTempBuffer" class="climate-native-input" type="range" min="0.1" max="4" step="0.1" value="0.7">
               </article>
@@ -493,8 +517,8 @@
                 <span class="climate-compact-card__label">rF Buffer</span>
                 <strong id="envCtrlHumidityBufferOut" class="climate-compact-card__value">4%</strong>
                 <div class="climate-stepper climate-stepper--compact">
-                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlHumidityBuffer" data-env-step-key="humidityBufferPercent" data-env-step-dir="-1">−</button>
-                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlHumidityBuffer" data-env-step-key="humidityBufferPercent" data-env-step-dir="1">+</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlHumidityBuffer" data-env-step-key="humidityBufferPercent" data-env-step-dir="-1" aria-label="Luftfeuchte-Buffer verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                  <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlHumidityBuffer" data-env-step-key="humidityBufferPercent" data-env-step-dir="1" aria-label="Luftfeuchte-Buffer erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
                 </div>
                 <input id="envCtrlHumidityBuffer" class="climate-native-input" type="range" min="1" max="20" step="1" value="4">
               </article>
@@ -503,8 +527,8 @@
                 <span class="climate-compact-card__label">VPD Buffer</span>
                 <strong id="envCtrlVpdBufferOut" class="climate-compact-card__value">0.12 kPa</strong>
                 <div class="climate-stepper climate-stepper--compact">
-                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlVpdBuffer" data-env-step-key="vpdBufferKpa" data-env-step-dir="-1">−</button>
-                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlVpdBuffer" data-env-step-key="vpdBufferKpa" data-env-step-dir="1">+</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlVpdBuffer" data-env-step-key="vpdBufferKpa" data-env-step-dir="-1" aria-label="VPD-Buffer verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                  <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlVpdBuffer" data-env-step-key="vpdBufferKpa" data-env-step-dir="1" aria-label="VPD-Buffer erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
                 </div>
                 <input id="envCtrlVpdBuffer" class="climate-native-input" type="range" min="0.02" max="0.6" step="0.01" value="0.12">
               </article>
@@ -513,8 +537,8 @@
                 <span class="climate-compact-card__label">Ramp</span>
                 <strong id="envCtrlRampOut" class="climate-compact-card__value">18%/min</strong>
                 <div class="climate-stepper climate-stepper--compact">
-                  <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlRamp" data-env-step-key="rampPercentPerMinute" data-env-step-dir="-1">−</button>
-                  <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlRamp" data-env-step-key="rampPercentPerMinute" data-env-step-dir="1">+</button>
+                  <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlRamp" data-env-step-key="rampPercentPerMinute" data-env-step-dir="-1" aria-label="Ramp verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                  <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlRamp" data-env-step-key="rampPercentPerMinute" data-env-step-dir="1" aria-label="Ramp erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
                 </div>
                 <input id="envCtrlRamp" class="climate-native-input" type="range" min="1" max="100" step="1" value="18">
               </article>
@@ -534,8 +558,8 @@
               <strong id="envCtrlPhOut" class="climate-root-card__value">6.0</strong>
               <small class="climate-note">Direkt im Zielbereich nachfuehren.</small>
               <div class="climate-stepper climate-stepper--compact" role="group" aria-label="pH Ziel">
-                <button class="climate-stepper__btn" type="button" data-env-step-input="envCtrlPh" data-env-step-key="ph" data-env-step-dir="-1">−</button>
-                <button class="climate-stepper__btn climate-stepper__btn--plus" type="button" data-env-step-input="envCtrlPh" data-env-step-key="ph" data-env-step-dir="1">+</button>
+                <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlPh" data-env-step-key="ph" data-env-step-dir="-1" aria-label="pH verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlPh" data-env-step-key="ph" data-env-step-dir="1" aria-label="pH erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
               </div>
               <input id="envCtrlPh" class="climate-native-input" type="range" min="5.0" max="7.0" step="0.1" value="6.0">
             </article>
@@ -886,7 +910,7 @@
   <script src="src/events/eventAnalysis.js?v=20260319c" defer></script>
   <script src="src/events/eventResolver.js?v=20260319c" defer></script>
   <script src="events.js?v=20260319c" defer></script>
-<script src="ui.js?v=20260327d" defer></script>
+<script src="ui.js?v=20260329a" defer></script>
   <script src="src/progression/progression.js?v=20260327a" defer></script>
   <script src="storage.js?v=20260327a" defer></script>
   <script src="notifications.js?v=20260319c" defer></script>
@@ -900,3 +924,7 @@
 <script src="app.js?v=20260328b" defer></script>
 </body>
 </html>
+
+
+
+
