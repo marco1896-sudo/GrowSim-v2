@@ -32,6 +32,217 @@ function localStorageAdapter() {
   };
 }
 
+const REMOTE_SAVE_PATH = '/save';
+const REMOTE_SYNC_MIN_INTERVAL_MS = 30 * 1000;
+
+const remoteSyncRuntime = {
+  loadAttempted: false,
+  authBlocked: false,
+  inFlightSave: null,
+  lastSaveAttemptAtMs: 0
+};
+
+function getRemoteApiFetch() {
+  if (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function') {
+    return window.GrowSimApi.apiFetch;
+  }
+
+  return async function fallbackApiFetch(path, options = {}) {
+    const baseUrl = 'https://api.growsimulator.tech';
+    const prefix = '/api';
+    const normalizedPath = String(path || '').startsWith('/') ? String(path) : `/${String(path || '')}`;
+    const apiPath = normalizedPath.startsWith(`${prefix}/`) || normalizedPath === prefix
+      ? normalizedPath
+      : `${prefix}${normalizedPath}`;
+    return fetch(`${baseUrl}${apiPath}`, options);
+  };
+}
+
+function getRemoteAuthToken() {
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.getToken !== 'function') {
+    return '';
+  }
+
+  const token = authApi.getToken();
+  return typeof token === 'string' ? token.trim() : '';
+}
+
+function getRemoteAuthHeaders() {
+  const token = getRemoteAuthToken();
+
+  if (!token) {
+    return {};
+  }
+
+  return {
+    Authorization: `Bearer ${token}`
+  };
+}
+
+function looksLikeStatePayload(candidate) {
+  if (!candidate || typeof candidate !== 'object') {
+    return false;
+  }
+
+  const stateKeys = [
+    'simulation', 'plant', 'events', 'history', 'status', 'actions', 'ui',
+    'setup', 'meta', 'settings', 'profile', 'run', 'sim', 'growth', 'event'
+  ];
+
+  return stateKeys.some((key) => Object.prototype.hasOwnProperty.call(candidate, key));
+}
+
+function extractStateFromRemotePayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const saveObject = payload.save && typeof payload.save === 'object' ? payload.save : null;
+  const dataObject = payload.data && typeof payload.data === 'object' ? payload.data : null;
+
+  const candidates = [
+    payload.state,
+    saveObject && saveObject.state,
+    dataObject && dataObject.state,
+    saveObject,
+    dataObject,
+    payload
+  ];
+
+  for (const candidate of candidates) {
+    if (looksLikeStatePayload(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+async function loadRemoteSave(options = {}) {
+  const force = Boolean(options && options.force === true);
+  if (!force && remoteSyncRuntime.loadAttempted) {
+    return null;
+  }
+  remoteSyncRuntime.loadAttempted = true;
+
+  console.info('[remote-load] requested');
+
+  try {
+    const apiFetch = getRemoteApiFetch();
+    const response = await apiFetch(REMOTE_SAVE_PATH, {
+      method: 'GET',
+      headers: {
+        ...getRemoteAuthHeaders()
+      }
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      remoteSyncRuntime.authBlocked = true;
+      console.info('[remote-load] fallback (auth required)');
+      return null;
+    }
+
+    if (response.status === 404) {
+      console.info('[remote-load] fallback (no remote save)');
+      return null;
+    }
+
+    if (!response.ok) {
+      console.warn('[remote-load] failed', { status: response.status });
+      return null;
+    }
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (_error) {
+      console.info('[remote-load] fallback (invalid payload)');
+      return null;
+    }
+
+    const remoteState = extractStateFromRemotePayload(payload);
+    if (!remoteState) {
+      console.info('[remote-load] fallback (state missing)');
+      return null;
+    }
+
+    console.info('[remote-load] success');
+    return repairStoredTextEncoding(remoteState);
+  } catch (error) {
+    console.warn('[remote-load] failed', { message: error && error.message ? error.message : String(error) });
+    return null;
+  }
+}
+
+async function saveRemoteState(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return false;
+  }
+
+  const hasAuthToken = Boolean(getRemoteAuthToken());
+  if (hasAuthToken) {
+    remoteSyncRuntime.authBlocked = false;
+  }
+
+  if (remoteSyncRuntime.authBlocked) {
+    console.info('[remote-save] fallback (auth required)');
+    return false;
+  }
+
+  const nowMs = Date.now();
+  if (
+    remoteSyncRuntime.inFlightSave
+    || (nowMs - Number(remoteSyncRuntime.lastSaveAttemptAtMs || 0)) < REMOTE_SYNC_MIN_INTERVAL_MS
+  ) {
+    return false;
+  }
+
+  remoteSyncRuntime.lastSaveAttemptAtMs = nowMs;
+  console.info('[remote-save] requested');
+
+  const request = (async () => {
+    try {
+      const apiFetch = getRemoteApiFetch();
+      const response = await apiFetch(REMOTE_SAVE_PATH, {
+        method: 'POST',
+        headers: {
+          ...getRemoteAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          state: snapshot,
+          savedAtMs: nowMs,
+          schemaVersion: String(snapshot.schemaVersion || '1.0.0'),
+          client: 'growsim-v2-frontend'
+        })
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        remoteSyncRuntime.authBlocked = true;
+        console.info('[remote-save] fallback (auth required)');
+        return false;
+      }
+
+      if (!response.ok) {
+        console.warn('[remote-save] failed', { status: response.status });
+        return false;
+      }
+
+      console.info('[remote-save] success');
+      return true;
+    } catch (error) {
+      console.warn('[remote-save] failed', { message: error && error.message ? error.message : String(error) });
+      return false;
+    } finally {
+      remoteSyncRuntime.inFlightSave = null;
+    }
+  })();
+
+  remoteSyncRuntime.inFlightSave = request;
+  return request;
+}
+
 
 function normalizePendingChainsForStorage(store) {
   if (!store || typeof store !== 'object') {
@@ -366,12 +577,20 @@ async function restoreState() {
     return;
   }
 
-  let saved = null;
-  try {
-    saved = await storageAdapter.get();
-  } catch (error) {
-    console.warn('[storage] state restore read failed', error);
-    return;
+  let saved = await loadRemoteSave();
+
+  if (!saved) {
+    try {
+      saved = await storageAdapter.get();
+      if (saved && typeof saved === 'object') {
+        console.info('[remote-load] fallback (using local save)');
+      } else {
+        console.info('[remote-load] fallback (no local save)');
+      }
+    } catch (error) {
+      console.warn('[storage] state restore read failed', error);
+      return;
+    }
   }
   if (!saved || typeof saved !== 'object') {
     return;
@@ -577,6 +796,10 @@ async function persistState() {
   } catch (error) {
     console.warn('[storage] persist failed', error);
   }
+
+  saveRemoteState(state).catch((error) => {
+    console.warn('[remote-save] failed', { message: error && error.message ? error.message : String(error) });
+  });
 }
 
 function schedulePersistState(immediate = false) {
@@ -1237,6 +1460,8 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
 
 window.GrowSimStorage = Object.freeze({
   localStorageAdapter,
+  loadRemoteSave,
+  saveRemoteState,
   getCanonicalSimulation,
   getCanonicalPlant,
   getCanonicalEvents,

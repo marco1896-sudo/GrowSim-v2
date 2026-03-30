@@ -796,6 +796,13 @@ async function boot() {
     bootStep = 'storage_adapter';
     storageAdapter = await createStorageAdapter();
     logBootStep('boot:storage_adapter');
+    bootStep = 'auth_restore';
+    if (window.GrowSimAuth && typeof window.GrowSimAuth.restoreSession === 'function') {
+      await window.GrowSimAuth.restoreSession();
+    }
+    logBootStep('boot:auth_restore', {
+      authenticated: Boolean(window.GrowSimAuth && typeof window.GrowSimAuth.isAuthenticated === 'function' && window.GrowSimAuth.isAuthenticated())
+    });
     bootStep = 'state_restore';
     await initOrMigrateState();
     logBootStep('boot:state_restore', {
@@ -9264,9 +9271,63 @@ function updateSettingsUI() {
 
   const cloudNode = document.getElementById('settingsCloudSyncValue');
   if (cloudNode) {
-    cloudNode.textContent = 'Lokal';
-    cloudNode.className = 'value_gold';
-    cloudNode.setAttribute('title', 'Speicherung erfolgt aktuell nur lokal im Browser.');
+    const authApi = window.GrowSimAuth;
+    const isAuthed = Boolean(authApi && typeof authApi.isAuthenticated === 'function' && authApi.isAuthenticated());
+    cloudNode.textContent = isAuthed ? 'Verbunden' : 'Lokal';
+    cloudNode.className = isAuthed ? 'value_green' : 'value_gold';
+    cloudNode.setAttribute(
+      'title',
+      isAuthed
+        ? 'Cloud Sync aktiv. Klick für Login/Register/Logout Optionen.'
+        : 'Speicherung erfolgt aktuell nur lokal im Browser.'
+    );
+  }
+}
+
+async function openCloudAuthPromptFlow() {
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.login !== 'function' || typeof authApi.register !== 'function' || typeof authApi.logout !== 'function') {
+    return;
+  }
+
+  const actionRaw = prompt('Cloud Sync Aktion: login | register | logout', 'login');
+  const action = String(actionRaw || '').trim().toLowerCase();
+  if (!action) {
+    return;
+  }
+
+  if (action === 'logout') {
+    authApi.logout();
+    updateSettingsUI();
+    return;
+  }
+
+  if (action !== 'login' && action !== 'register') {
+    alert('Ungültige Aktion. Nutze: login, register oder logout.');
+    return;
+  }
+
+  const email = String(prompt('E-Mail', '') || '').trim();
+  const password = String(prompt('Passwort (min. 8 Zeichen)', '') || '');
+  if (!email || !password) {
+    return;
+  }
+
+  try {
+    if (action === 'register') {
+      await authApi.register(email, password);
+    } else {
+      await authApi.login(email, password);
+    }
+
+    schedulePersistState(true);
+    updateSettingsUI();
+    alert('Auth erfolgreich. Die App lädt neu, damit Cloud Save/Load aktiv ist.');
+    window.location.reload();
+  } catch (error) {
+    const message = error && error.message ? error.message : 'Auth fehlgeschlagen';
+    alert(`Auth fehlgeschlagen: ${message}`);
+    updateSettingsUI();
   }
 }
 
@@ -9292,6 +9353,14 @@ function initSettingsEvents() {
   const saveBtn = byId('settingsSaveBtn');
   if (saveBtn) {
     saveBtn.setAttribute('title', 'Speichert den aktuellen lokalen Zustand im Browser.');
+  }
+
+  const cloudNode = byId('settingsCloudSyncValue');
+  if (cloudNode) {
+    cloudNode.style.cursor = 'pointer';
+    cloudNode.addEventListener('click', () => {
+      openCloudAuthPromptFlow();
+    });
   }
 }
 
