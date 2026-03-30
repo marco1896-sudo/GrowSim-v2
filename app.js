@@ -7,39 +7,41 @@ ASSUMPTIONS:
 
 'use strict';
 
-const apiBaseUrl = (window.GrowSimApi && typeof window.GrowSimApi.API_BASE_URL === 'string')
-  ? window.GrowSimApi.API_BASE_URL
-  : 'https://api.growsimulator.tech';
-const apiPrefix = (window.GrowSimApi && typeof window.GrowSimApi.API_PREFIX === 'string')
-  ? window.GrowSimApi.API_PREFIX
-  : '/api';
+function appApiFetch(path, options = {}) {
+  if (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function') {
+    return window.GrowSimApi.apiFetch(path, options);
+  }
 
-const apiFetch = (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function')
-  ? window.GrowSimApi.apiFetch
-  : async function apiFetchFallback(path, options = {}) {
-    const rawPath = String(path || '');
-    let targetUrl;
-    if (/^https?:\/\//i.test(rawPath)) {
-      const parsed = new URL(rawPath);
-      if (parsed.origin === apiBaseUrl && !parsed.pathname.startsWith(`${apiPrefix}/`) && parsed.pathname !== apiPrefix) {
-        parsed.pathname = `${apiPrefix}${parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`}`;
-      }
-      targetUrl = parsed.toString();
-    } else {
-      const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
-      const apiPath = normalizedPath.startsWith(`${apiPrefix}/`) || normalizedPath === apiPrefix
-        ? normalizedPath
-        : `${apiPrefix}${normalizedPath}`;
-      targetUrl = `${apiBaseUrl}${apiPath}`;
+  const apiBaseUrl = (window.GrowSimApi && typeof window.GrowSimApi.API_BASE_URL === 'string')
+    ? window.GrowSimApi.API_BASE_URL
+    : 'https://api.growsimulator.tech';
+  const apiPrefix = (window.GrowSimApi && typeof window.GrowSimApi.API_PREFIX === 'string')
+    ? window.GrowSimApi.API_PREFIX
+    : '/api';
+
+  const rawPath = String(path || '');
+  let targetUrl;
+  if (/^https?:\/\//i.test(rawPath)) {
+    const parsed = new URL(rawPath);
+    if (parsed.origin === apiBaseUrl && !parsed.pathname.startsWith(`${apiPrefix}/`) && parsed.pathname !== apiPrefix) {
+      parsed.pathname = `${apiPrefix}${parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`}`;
     }
-    return fetch(targetUrl, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {})
-      },
-      ...options
-    });
-  };
+    targetUrl = parsed.toString();
+  } else {
+    const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+    const apiPath = normalizedPath.startsWith(`${apiPrefix}/`) || normalizedPath === apiPrefix
+      ? normalizedPath
+      : `${apiPrefix}${normalizedPath}`;
+    targetUrl = `${apiBaseUrl}${apiPath}`;
+  }
+  return fetch(targetUrl, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
+    ...options
+  });
+}
 
 const CONFIG = Object.freeze({
   MODE: 'prod',
@@ -9073,7 +9075,7 @@ function notifyPlantNeedsCare(bodyText) {
 
 async function postJsonStub(url, payload) {
   try {
-    const response = await apiFetch(url, {
+    const response = await appApiFetch(url, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
