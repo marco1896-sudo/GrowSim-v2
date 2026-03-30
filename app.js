@@ -7,11 +7,14 @@ ASSUMPTIONS:
 
 'use strict';
 
-const API_BASE_URL = (window.GrowSimApi && window.GrowSimApi.API_BASE_URL)
-  ? window.GrowSimApi.API_BASE_URL
+const apiConfig = window.GrowSimApi && typeof window.GrowSimApi === 'object'
+  ? window.GrowSimApi
+  : null;
+const apiBaseUrl = apiConfig && typeof apiConfig.API_BASE_URL === 'string'
+  ? apiConfig.API_BASE_URL
   : 'https://api.growsimulator.tech';
-const API_PREFIX = (window.GrowSimApi && window.GrowSimApi.API_PREFIX)
-  ? window.GrowSimApi.API_PREFIX
+const apiPrefix = apiConfig && typeof apiConfig.API_PREFIX === 'string'
+  ? apiConfig.API_PREFIX
   : '/api';
 
 const apiFetch = (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function')
@@ -21,16 +24,16 @@ const apiFetch = (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'fu
     let targetUrl;
     if (/^https?:\/\//i.test(rawPath)) {
       const parsed = new URL(rawPath);
-      if (parsed.origin === API_BASE_URL && !parsed.pathname.startsWith(`${API_PREFIX}/`) && parsed.pathname !== API_PREFIX) {
-        parsed.pathname = `${API_PREFIX}${parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`}`;
+      if (parsed.origin === apiBaseUrl && !parsed.pathname.startsWith(`${apiPrefix}/`) && parsed.pathname !== apiPrefix) {
+        parsed.pathname = `${apiPrefix}${parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`}`;
       }
       targetUrl = parsed.toString();
     } else {
       const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
-      const apiPath = normalizedPath.startsWith(`${API_PREFIX}/`) || normalizedPath === API_PREFIX
+      const apiPath = normalizedPath.startsWith(`${apiPrefix}/`) || normalizedPath === apiPrefix
         ? normalizedPath
-        : `${API_PREFIX}${normalizedPath}`;
-      targetUrl = `${API_BASE_URL}${apiPath}`;
+        : `${apiPrefix}${normalizedPath}`;
+      targetUrl = `${apiBaseUrl}${apiPath}`;
     }
     return fetch(targetUrl, {
       headers: {
