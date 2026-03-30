@@ -1,4 +1,4 @@
-﻿const { chromium } = require('playwright');
+const { chromium } = require('playwright');
 const path = require('path');
 const assert = require('assert');
 const http = require('http');
@@ -6,7 +6,7 @@ const fs = require('fs');
 
 async function runOfflineRegressionTest() {
   const ROOT = path.resolve(__dirname, '..');
-  const HOST = '127.0.0.1';
+  const HOST = '0.0.0.0';
   const PORT = 4175;
 
   function contentTypeFor(filePath) {

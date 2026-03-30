@@ -2,10 +2,44 @@
 ASSUMPTIONS:
 - This Phase-1 implementation follows docs/PLAN.md architecture with one nested state object and one central tick loop.
 - Runtime mode defaults to "dev" for faster verification and can be switched via CONFIG.MODE.
-- /api/push/subscribe and /api/push/schedule are backend stubs; failures are logged but never break the app.
+- Push scheduling stubs can target the production backend; failures are logged but never break the app.
 */
 
 'use strict';
+
+const API_BASE_URL = (window.GrowSimApi && window.GrowSimApi.API_BASE_URL)
+  ? window.GrowSimApi.API_BASE_URL
+  : 'https://api.growsimulator.tech';
+const API_PREFIX = (window.GrowSimApi && window.GrowSimApi.API_PREFIX)
+  ? window.GrowSimApi.API_PREFIX
+  : '/api';
+
+const apiFetch = (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function')
+  ? window.GrowSimApi.apiFetch
+  : async function apiFetchFallback(path, options = {}) {
+    const rawPath = String(path || '');
+    let targetUrl;
+    if (/^https?:\/\//i.test(rawPath)) {
+      const parsed = new URL(rawPath);
+      if (parsed.origin === API_BASE_URL && !parsed.pathname.startsWith(`${API_PREFIX}/`) && parsed.pathname !== API_PREFIX) {
+        parsed.pathname = `${API_PREFIX}${parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`}`;
+      }
+      targetUrl = parsed.toString();
+    } else {
+      const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+      const apiPath = normalizedPath.startsWith(`${API_PREFIX}/`) || normalizedPath === API_PREFIX
+        ? normalizedPath
+        : `${API_PREFIX}${normalizedPath}`;
+      targetUrl = `${API_BASE_URL}${apiPath}`;
+    }
+    return fetch(targetUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      },
+      ...options
+    });
+  };
 
 const CONFIG = Object.freeze({
   MODE: 'prod',
@@ -9000,9 +9034,8 @@ function notifyPlantNeedsCare(bodyText) {
 
 async function postJsonStub(url, payload) {
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if (!response.ok) {

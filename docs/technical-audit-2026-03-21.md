@@ -12,7 +12,7 @@
 
 - The app boots reliably and the current simulation/event regression suite is green.
 - The frontend runtime is still split between large legacy root files (`app.js`, `ui.js`, `sim.js`, `events.js`) and a newer modular `src/ui` architecture.
-- The backend auth/save API exists, but the current frontend does not call `/api/auth` or `/api/save`.
+- The backend auth/save API exists, but the current frontend does not call `https://api.growsimulator.tech/api/auth` or `https://api.growsimulator.tech/api/save`.
 - The UI is visually close to the referenced Figma screens, but several account/profile/menu surfaces are still placeholder or local-only.
 
 ## Confirmed Issues

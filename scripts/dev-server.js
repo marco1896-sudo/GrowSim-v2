@@ -6,7 +6,7 @@ const http = require('http');
 const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
-const host = process.env.HOST || '127.0.0.1';
+const host = process.env.HOST || '0.0.0.0';
 const port = Number(process.env.PORT || 5173);
 
 const contentTypes = {

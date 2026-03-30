@@ -1,4 +1,4 @@
-ï»¿import fs from 'node:fs';
+import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { chromium } from 'playwright';
@@ -47,7 +47,7 @@ function startStaticServer(rootDir, port) {
 
   return new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, '127.0.0.1', () => resolve(server));
+    server.listen(port, '0.0.0.0', () => resolve(server));
   });
 }
 
@@ -115,8 +115,8 @@ async function main() {
       name: '01-default-live',
       nextEvent: '29:18',
       growthImpulse: '1.75',
-      dayTime: 'Tag 24 Â· 14:32',
-      phase: 'BlÃ¼te',
+      dayTime: 'Tag 24 · 14:32',
+      phase: 'Blüte',
       phaseAge: 'Tag 24',
       phaseSubtitle: '68% -> Reife',
       water: 70,
@@ -128,7 +128,7 @@ async function main() {
       rootHealth: '78%',
       oxygen: '78%',
       ppfd: '720 PPFD',
-      temperature: '25.3Â°C',
+      temperature: '25.3°C',
       humidity: '61%',
       airflow: 'Gut',
     },
@@ -136,8 +136,8 @@ async function main() {
       name: '02-high-risk-stress',
       nextEvent: '04:50',
       growthImpulse: '0.82',
-      dayTime: 'Tag 31 Â· 22:40',
-      phase: 'SpÃ¤te BlÃ¼te',
+      dayTime: 'Tag 31 · 22:40',
+      phase: 'Späte Blüte',
       phaseAge: 'Tag 31',
       phaseSubtitle: '89% -> Ernte',
       water: 34,
@@ -149,7 +149,7 @@ async function main() {
       rootHealth: '55%',
       oxygen: '49%',
       ppfd: '540 PPFD',
-      temperature: '29.4Â°C',
+      temperature: '29.4°C',
       humidity: '72%',
       airflow: 'Schwach',
     },
@@ -157,8 +157,8 @@ async function main() {
       name: '03-healthy-peak',
       nextEvent: '43:09',
       growthImpulse: '2.06',
-      dayTime: 'Tag 40 Â· 10:16',
-      phase: 'Premium-BlÃ¼te',
+      dayTime: 'Tag 40 · 10:16',
+      phase: 'Premium-Blüte',
       phaseAge: 'Tag 40',
       phaseSubtitle: '94% -> Finale',
       water: 86,
@@ -170,14 +170,14 @@ async function main() {
       rootHealth: '94%',
       oxygen: '91%',
       ppfd: '890 PPFD',
-      temperature: '24.1Â°C',
+      temperature: '24.1°C',
       humidity: '56%',
       airflow: 'Stark',
     },
   ];
 
   try {
-    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'networkidle' });
+    await page.goto(`http://0.0.0.0:${PORT}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1800);
     for (const state of states) {
       await applyHudVisualState(page, state);

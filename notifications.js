@@ -1,5 +1,39 @@
 'use strict';
 
+const API_BASE_URL = (window.GrowSimApi && window.GrowSimApi.API_BASE_URL)
+  ? window.GrowSimApi.API_BASE_URL
+  : 'https://api.growsimulator.tech';
+const API_PREFIX = (window.GrowSimApi && window.GrowSimApi.API_PREFIX)
+  ? window.GrowSimApi.API_PREFIX
+  : '/api';
+
+const apiFetch = (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function')
+  ? window.GrowSimApi.apiFetch
+  : async function apiFetchFallback(path, options = {}) {
+    const rawPath = String(path || '');
+    let targetUrl;
+    if (/^https?:\/\//i.test(rawPath)) {
+      const parsed = new URL(rawPath);
+      if (parsed.origin === API_BASE_URL && !parsed.pathname.startsWith(`${API_PREFIX}/`) && parsed.pathname !== API_PREFIX) {
+        parsed.pathname = `${API_PREFIX}${parsed.pathname.startsWith('/') ? parsed.pathname : `/${parsed.pathname}`}`;
+      }
+      targetUrl = parsed.toString();
+    } else {
+      const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+      const apiPath = normalizedPath.startsWith(`${API_PREFIX}/`) || normalizedPath === API_PREFIX
+        ? normalizedPath
+        : `${API_PREFIX}${normalizedPath}`;
+      targetUrl = `${API_BASE_URL}${apiPath}`;
+    }
+    return fetch(targetUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      },
+      ...options
+    });
+  };
+
 function showServiceWorkerHint() {
   if (document.getElementById('swHintBanner')) {
     return;
@@ -188,9 +222,8 @@ function notifyPlantNeedsCare(bodyText) {
 
 async function postJsonStub(url, payload) {
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if (!response.ok) {

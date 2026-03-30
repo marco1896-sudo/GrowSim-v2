@@ -63,7 +63,7 @@ node dev/verify_core_syntax.js
 Run:
 ```bash
 python -m http.server 5173
-python dev/verify_boot_smoke.py --url http://127.0.0.1:5173
+python dev/verify_boot_smoke.py --url http://0.0.0.0:5173
 ```
 
 ## Intentionally not addressed in this recovery pass

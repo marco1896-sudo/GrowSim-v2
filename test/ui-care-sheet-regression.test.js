@@ -8,7 +8,7 @@ const path = require('path');
 const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
-const HOST = '127.0.0.1';
+const HOST = '0.0.0.0';
 const PORT = 4177;
 
 function contentTypeFor(filePath) {

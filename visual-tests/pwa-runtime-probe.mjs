@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs';
+import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { chromium } from 'playwright';
@@ -54,7 +54,7 @@ function startStaticServer(rootDir, port) {
 
   return new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, '127.0.0.1', () => resolve(server));
+    server.listen(port, '0.0.0.0', () => resolve(server));
   });
 }
 
@@ -140,7 +140,7 @@ async function main() {
     requestFailed.push(`${req.url()} :: ${req.failure() ? req.failure().errorText : 'failed'}`);
   });
 
-  const url = `http://127.0.0.1:${PORT}/`;
+  const url = `http://0.0.0.0:${PORT}/`;
   const report = {
     url,
     startedAt: new Date().toISOString(),
