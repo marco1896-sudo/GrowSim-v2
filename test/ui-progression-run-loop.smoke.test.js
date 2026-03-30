@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
 const HOST = '127.0.0.1';
-const PORT = 4177;
+const PORT = 4178;
 
 function contentTypeFor(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -170,7 +170,15 @@ async function main() {
       renderAll();
     });
     await page.click('#deathResetBtn');
-    await page.click('#menuDialogConfirmBtn');
+    await page.waitForFunction(() => {
+      const confirmBtn = document.getElementById('menuDialogConfirmBtn');
+      if (!confirmBtn) return false;
+      const isHiddenByClass = confirmBtn.classList.contains('hidden');
+      const isVisible = window.getComputedStyle(confirmBtn).display !== 'none'
+        && window.getComputedStyle(confirmBtn).visibility !== 'hidden';
+      return !isHiddenByClass && isVisible;
+    }, null, { timeout: 10000 });
+    await page.click('#menuDialogConfirmBtn', { force: true });
     await page.waitForFunction(() => window.getCanonicalRun().status === 'ended');
     await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
 

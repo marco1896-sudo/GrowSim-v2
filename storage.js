@@ -10,7 +10,13 @@ function repairStoredTextEncoding(value) {
 function localStorageAdapter() {
   return {
     async get() {
-      const raw = localStorage.getItem(LS_STATE_KEY);
+      let raw = null;
+      try {
+        raw = localStorage.getItem(LS_STATE_KEY);
+      } catch (error) {
+        console.warn('[storage] localStorage read failed', error);
+        return null;
+      }
       if (!raw) {
         return null;
       }
@@ -360,7 +366,13 @@ async function restoreState() {
     return;
   }
 
-  const saved = await storageAdapter.get();
+  let saved = null;
+  try {
+    saved = await storageAdapter.get();
+  } catch (error) {
+    console.warn('[storage] state restore read failed', error);
+    return;
+  }
   if (!saved || typeof saved !== 'object') {
     return;
   }
@@ -562,8 +574,8 @@ async function persistState() {
 
   try {
     await storageAdapter.set(state);
-  } catch (_error) {
-    // Persistence failure is non-fatal for runtime behavior.
+  } catch (error) {
+    console.warn('[storage] persist failed', error);
   }
 }
 
@@ -781,7 +793,8 @@ function resetStateToDefaults() {
     runSummaryOpen: false,
     care: {
       selectedCategory: null,
-      feedback: { kind: 'info', text: 'Bereit.' }
+      selectedActionId: null,
+      feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
     },
     analysis: {
       activeTab: 'overview'
@@ -877,7 +890,7 @@ function ensureStateIntegrity(nowMs) {
     state.boost.dayStamp = dayStamp(nowMs);
   }
 
-  const machineStates = new Set(['idle', 'activeEvent', 'resolved', 'cooldown']);
+  const machineStates = new Set(['idle', 'activeEvent', 'resolving', 'resolved', 'cooldown']);
   if (!machineStates.has(state.events.machineState)) {
     state.events.machineState = 'idle';
   }
@@ -978,7 +991,7 @@ function ensureStateIntegrity(nowMs) {
     state.history.events = [];
   }
 
-  const validSheets = new Set([null, 'care', 'event', 'dashboard', 'diagnosis', 'statDetail']);
+  const validSheets = new Set([null, 'care', 'climate', 'event', 'dashboard', 'diagnosis', 'statDetail', 'missions']);
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }
@@ -992,13 +1005,16 @@ function ensureStateIntegrity(nowMs) {
     state.ui.visibleOverlayIds = [];
   }
   if (!state.ui.care || typeof state.ui.care !== 'object') {
-    state.ui.care = { selectedCategory: null, feedback: { kind: 'info', text: 'Bereit.' } };
+    state.ui.care = { selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'Wähle eine Aktion.' } };
   }
   if (typeof state.ui.care.selectedCategory !== 'string') {
     state.ui.care.selectedCategory = null;
   }
+  if (typeof state.ui.care.selectedActionId !== 'string') {
+    state.ui.care.selectedActionId = null;
+  }
   if (!state.ui.care.feedback || typeof state.ui.care.feedback !== 'object') {
-    state.ui.care.feedback = { kind: 'info', text: 'Bereit.' };
+    state.ui.care.feedback = { kind: 'info', text: 'Wähle eine Aktion.' };
   }
   if (!state.ui.analysis || typeof state.ui.analysis !== 'object') {
     state.ui.analysis = { activeTab: 'overview' };
@@ -1117,7 +1133,7 @@ function syncCanonicalStateShape() {
     categoryCooldowns: events.scheduler.categoryCooldowns || {}
   };
 
-  events.active = events.machineState === 'activeEvent'
+  events.active = ['activeEvent', 'resolving', 'resolved'].includes(events.machineState)
     ? {
       id: events.activeEventId,
       title: events.activeEventTitle,

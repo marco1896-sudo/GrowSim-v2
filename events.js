@@ -486,6 +486,25 @@ function applyFoundationFollowUps(choice, eventId) {
 }
 
 function runEventStateMachine(nowMs, isCatchUp = false) {
+  if (state.events.machineState === 'resolving') {
+    const resolvingUntilMs = Number(state.events.resolvingUntilMs || 0);
+    if (nowMs >= resolvingUntilMs) {
+      state.events.machineState = 'resolved';
+      if (!state.events.resolvedOutcome && state.events.pendingOutcome && typeof state.events.pendingOutcome === 'object') {
+        state.events.resolvedOutcome = { ...state.events.pendingOutcome };
+      }
+      state.events.pendingOutcome = null;
+      addLog('system', 'Ereignisausgang aus Legacy-Status übernommen', {
+        eventId: state.events.activeEventId,
+        chosenOptionId: state.events.lastChoiceId,
+        resolvedAtMs: nowMs
+      });
+    } else if (nowMs >= state.events.scheduler.nextEventRealTimeMs) {
+      scheduleNextEventRoll(nowMs, 'resolving_event_pending');
+      schedulePushIfAllowed(false);
+    }
+  }
+
   if (state.events.machineState === 'resolved') {
     enterEventCooldown(nowMs);
   }

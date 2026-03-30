@@ -6789,7 +6789,13 @@ async function createStorageAdapter() {
 function localStorageAdapter() {
   return {
     async get() {
-      const raw = localStorage.getItem(LS_STATE_KEY);
+      let raw = null;
+      try {
+        raw = localStorage.getItem(LS_STATE_KEY);
+      } catch (error) {
+        console.warn('[storage:fallback] localStorage read failed', error);
+        return null;
+      }
       if (!raw) {
         return null;
       }
@@ -7376,7 +7382,13 @@ async function restoreState() {
     return;
   }
 
-  const saved = await storageAdapter.get();
+  let saved = null;
+  try {
+    saved = await storageAdapter.get();
+  } catch (error) {
+    console.warn('[storage:fallback] state restore read failed', error);
+    return;
+  }
   if (!saved || typeof saved !== 'object') {
     return;
   }
@@ -7551,8 +7563,8 @@ async function persistState() {
 
   try {
     await storageAdapter.set(state);
-  } catch (_error) {
-    // Persistence failure is non-fatal for runtime behavior.
+  } catch (error) {
+    console.warn('[storage:fallback] persist failed', error);
   }
 }
 
@@ -7969,7 +7981,7 @@ function ensureStateIntegrity(nowMs) {
     state.history.events = [];
   }
 
-  const validSheets = new Set([null, 'care', 'climate', 'event', 'dashboard', 'diagnosis', 'statDetail']);
+  const validSheets = new Set([null, 'care', 'climate', 'event', 'dashboard', 'diagnosis', 'statDetail', 'missions']);
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }
@@ -8212,17 +8224,39 @@ function syncRuntimeClocks(nowMs) {
 
 async function loadEventCatalog() {
   const catalogs = [];
+  let primaryCatalogLoaded = false;
+  let primaryCatalogFailure = null;
 
-  try {
-    const v1 = await fetch(`./data/events.jsonv=${EVENTS_CATALOG_VERSION}`, { cache: 'no-store' });
-    if (v1.ok) {
-      const payload = repairRuntimeTextEncoding(await v1.json()); const events = Array.isArray(payload) ? payload : payload.events;
+  const primaryRequests = [
+    { url: `./data/events.json?v=${EVENTS_CATALOG_VERSION}`, cache: 'no-store', label: 'versioned' },
+    { url: './data/events.json', cache: 'default', label: 'unversioned_fallback' }
+  ];
+
+  for (const request of primaryRequests) {
+    if (primaryCatalogLoaded) {
+      break;
+    }
+
+    try {
+      const response = await fetch(request.url, { cache: request.cache });
+      if (!response.ok) {
+        primaryCatalogFailure = `${request.label}: HTTP ${response.status}`;
+        continue;
+      }
+
+      const payload = repairRuntimeTextEncoding(await response.json()); const events = Array.isArray(payload) ? payload : payload.events;
       if (Array.isArray(events)) {
         catalogs.push(...events.map((eventDef) => normalizeEvent(eventDef, 'v1')).filter(Boolean));
+        primaryCatalogLoaded = true;
+        if (request.label !== 'versioned') {
+          console.warn('[events] primärer Katalog über unversionierten Fallback geladen', { url: request.url });
+        }
+      } else {
+        primaryCatalogFailure = `${request.label}: Invalid events payload`;
       }
+    } catch (error) {
+      primaryCatalogFailure = `${request.label}: ${error && error.message ? error.message : String(error)}`;
     }
-  } catch (_error) {
-    // handled by fallback below
   }
 
   try {
@@ -8263,6 +8297,12 @@ async function loadEventCatalog() {
     }, 'v1'));
 
     addLog('system', 'events.json/events.v2.json konnten nicht geladen werden, Fallback-Katalog aktiv', null);
+  }
+
+  if (!primaryCatalogLoaded) {
+    console.warn('[events] primärer Katalog events.json nicht verfügbar, Fallback-Kataloge aktiv', {
+      reason: primaryCatalogFailure || 'unbekannt'
+    });
   }
 
   state.events.catalog = catalogs.filter(Boolean);
