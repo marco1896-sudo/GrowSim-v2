@@ -7,14 +7,11 @@ ASSUMPTIONS:
 
 'use strict';
 
-const apiConfig = window.GrowSimApi && typeof window.GrowSimApi === 'object'
-  ? window.GrowSimApi
-  : null;
-const apiBaseUrl = apiConfig && typeof apiConfig.API_BASE_URL === 'string'
-  ? apiConfig.API_BASE_URL
+const apiBaseUrl = (window.GrowSimApi && typeof window.GrowSimApi.API_BASE_URL === 'string')
+  ? window.GrowSimApi.API_BASE_URL
   : 'https://api.growsimulator.tech';
-const apiPrefix = apiConfig && typeof apiConfig.API_PREFIX === 'string'
-  ? apiConfig.API_PREFIX
+const apiPrefix = (window.GrowSimApi && typeof window.GrowSimApi.API_PREFIX === 'string')
+  ? window.GrowSimApi.API_PREFIX
   : '/api';
 
 const apiFetch = (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function')
