@@ -428,6 +428,7 @@ let uiController = null;
 let screenRuntimeManager = null;
 let menuOverlayModule = null;
 let sheetsOverlayModule = null;
+let authGateActive = false;
 
 const actionDebounceUntil = Object.create(null);
 
@@ -802,6 +803,7 @@ async function boot() {
     if (window.GrowSimAuth && typeof window.GrowSimAuth.restoreSession === 'function') {
       await window.GrowSimAuth.restoreSession();
     }
+    authGateActive = !isAuthSessionValid();
     logBootStep('boot:auth_restore', {
       authenticated: Boolean(window.GrowSimAuth && typeof window.GrowSimAuth.isAuthenticated === 'function' && window.GrowSimAuth.isAuthenticated())
     });
@@ -863,6 +865,10 @@ async function boot() {
     startLoopOnce();
     startHeartbeatWatchdog();
     renderAll();
+    if (authGateActive) {
+      console.info('[auth] startup gate active');
+      openCloudAuthModal({ gate: true });
+    }
     renderLanding();
     window.__gsBootOk = true;
     state.ui.lastRenderRealMs = Date.now();
@@ -5506,6 +5512,10 @@ function renderStatDetailSheet() {
 }
 
 function openSheet(name) {
+  if (authGateActive) {
+    openCloudAuthModal({ gate: true });
+    return;
+  }
   if (isPlantDead() && name !== 'dashboard') {
     return;
   }
@@ -5612,6 +5622,10 @@ function renderMissionsSheet() {
 }
 
 function onMenuToggleClick() {
+  if (authGateActive) {
+    openCloudAuthModal({ gate: true });
+    return;
+  }
   if (state.ui.menuOpen) {
     closeMenu();
     return;
@@ -5620,6 +5634,10 @@ function onMenuToggleClick() {
 }
 
 function openMenu() {
+  if (authGateActive) {
+    openCloudAuthModal({ gate: true });
+    return;
+  }
   state.ui.openSheet = null;
   renderSheets();
   state.ui.menuOpen = true;
@@ -9321,9 +9339,26 @@ function updateSettingsUI() {
 let authModalMode = 'login';
 let authModalBusy = false;
 
+function isAuthSessionValid() {
+  const authApi = window.GrowSimAuth;
+  return Boolean(authApi && typeof authApi.isAuthenticated === 'function' && authApi.isAuthenticated());
+}
+
+function setAuthGateActive(active) {
+  authGateActive = Boolean(active);
+  if (!authGateActive) {
+    return;
+  }
+  state.ui.openSheet = null;
+  state.ui.menuOpen = false;
+  state.ui.menuDialogOpen = false;
+  state.ui.statDetailKey = null;
+}
+
 function getAuthModalNodes() {
   return {
     modal: document.getElementById('authModal'),
+    title: document.getElementById('authModalTitle'),
     loggedOutView: document.getElementById('authModalLoggedOutView'),
     loggedInView: document.getElementById('authModalLoggedInView'),
     tabLogin: document.getElementById('authTabLogin'),
@@ -9396,7 +9431,11 @@ function setAuthModalMode(mode = 'login') {
   setAuthModalError('');
 }
 
-function closeCloudAuthModal() {
+function closeCloudAuthModal(options = {}) {
+  const force = Boolean(options && options.force === true);
+  if (authGateActive && !force) {
+    return;
+  }
   const nodes = getAuthModalNodes();
   if (!nodes.modal) {
     return;
@@ -9415,6 +9454,18 @@ function syncAuthModalContent() {
 
   const authIdentity = getAuthDisplayIdentity();
   const isAuthed = Boolean(authIdentity);
+  const gateMode = authGateActive && !isAuthed;
+
+  if (nodes.title) {
+    nodes.title.textContent = gateMode ? 'Anmeldung erforderlich' : 'Account';
+  }
+  if (nodes.cancelBtn) {
+    nodes.cancelBtn.classList.toggle('hidden', gateMode);
+  }
+  if (nodes.modal) {
+    nodes.modal.dataset.gate = gateMode ? 'required' : 'optional';
+  }
+
   nodes.loggedOutView.classList.toggle('hidden', isAuthed);
   nodes.loggedOutView.setAttribute('aria-hidden', String(isAuthed));
   nodes.loggedInView.classList.toggle('hidden', !isAuthed);
@@ -9454,7 +9505,10 @@ async function refreshStateAfterAuth() {
   renderAll();
 }
 
-function openCloudAuthModal() {
+function openCloudAuthModal(options = {}) {
+  if (options && options.gate === true) {
+    setAuthGateActive(true);
+  }
   const nodes = getAuthModalNodes();
   if (!nodes.modal) {
     return;
@@ -9515,7 +9569,8 @@ async function submitAuthModal() {
       console.info('[auth] login success');
     }
 
-    closeCloudAuthModal();
+    setAuthGateActive(false);
+    closeCloudAuthModal({ force: true });
     await refreshStateAfterAuth();
     schedulePersistState(true);
   } catch (error) {
@@ -9534,9 +9589,11 @@ function performAuthLogout() {
   }
   authApi.logout();
   console.info('[auth] logout success');
-  closeCloudAuthModal();
+  setAuthGateActive(true);
+  closeCloudAuthModal({ force: true });
   updateSettingsUI();
   renderAll();
+  openCloudAuthModal({ gate: true });
   schedulePersistState(true);
 }
 
@@ -9622,6 +9679,9 @@ function initSettingsEvents() {
   const authModal = byId('authModal');
   if (authModal) {
     authModal.addEventListener('click', (event) => {
+      if (authGateActive) {
+        return;
+      }
       if (event.target === authModal) {
         closeCloudAuthModal();
       }
@@ -9630,6 +9690,9 @@ function initSettingsEvents() {
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') {
+      return;
+    }
+    if (authGateActive) {
       return;
     }
     const modal = byId('authModal');
