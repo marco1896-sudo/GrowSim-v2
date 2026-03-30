@@ -2918,6 +2918,29 @@ function getCompactRunGoalTitle(runGoal) {
   }
 }
 
+function getAuthDisplayIdentity() {
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.isAuthenticated !== 'function' || typeof authApi.getUser !== 'function') {
+    return null;
+  }
+
+  if (!authApi.isAuthenticated()) {
+    return null;
+  }
+
+  const user = authApi.getUser();
+  if (!user || typeof user !== 'object') {
+    return null;
+  }
+
+  const displayName = typeof user.displayName === 'string' ? user.displayName.trim() : '';
+  const email = typeof user.email === 'string' ? user.email.trim() : '';
+  return {
+    displayName: displayName || null,
+    email: email || null
+  };
+}
+
 function buildHomeViewModel(appState = state) { const sourceState = appState && typeof appState === 'object' ? appState : state;
   const dead = Boolean(sourceState.plant && (sourceState.plant.isDead || sourceState.plant.phase === 'dead'));
   const phaseCard = typeof getPhaseCardViewModel === 'function' ? getPhaseCardViewModel() : { title: '-', cycleIcon: '-', ageLabel: '-', subtitle: '-', progressPercent: 0, nextLabel: '' };
@@ -2979,7 +3002,16 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       risk: Number(status.risk || 0)
     },
     panel: {
-      playerName: profile.displayName || 'Marco',
+      playerName: (() => {
+        const authIdentity = getAuthDisplayIdentity();
+        if (authIdentity && authIdentity.displayName) {
+          return authIdentity.displayName;
+        }
+        if (authIdentity && authIdentity.email) {
+          return authIdentity.email;
+        }
+        return profile.displayName || 'Marco';
+      })(),
       playerRole,
       playerLevel: `LVL ${playerLevel}`,
       xpText: xpTarget > xpCurrent
@@ -9271,64 +9303,239 @@ function updateSettingsUI() {
 
   const cloudNode = document.getElementById('settingsCloudSyncValue');
   if (cloudNode) {
-    const authApi = window.GrowSimAuth;
-    const isAuthed = Boolean(authApi && typeof authApi.isAuthenticated === 'function' && authApi.isAuthenticated());
-    cloudNode.textContent = isAuthed ? 'Verbunden' : 'Lokal';
+    const authIdentity = getAuthDisplayIdentity();
+    const isAuthed = Boolean(authIdentity);
+    cloudNode.textContent = isAuthed ? (authIdentity.email || 'Verbunden') : 'Nicht verbunden';
     cloudNode.className = isAuthed ? 'value_green' : 'value_gold';
     cloudNode.setAttribute(
       'title',
       isAuthed
-        ? 'Cloud Sync aktiv. Klick für Login/Register/Logout Optionen.'
-        : 'Speicherung erfolgt aktuell nur lokal im Browser.'
+        ? 'Cloud Sync aktiv. Klick öffnet Account-Optionen.'
+        : 'Nicht mit Cloud verbunden. Klick öffnet Login/Registrierung.'
     );
   }
 }
 
-async function openCloudAuthPromptFlow() {
-  const authApi = window.GrowSimAuth;
-  if (!authApi || typeof authApi.login !== 'function' || typeof authApi.register !== 'function' || typeof authApi.logout !== 'function') {
+let authModalMode = 'login';
+let authModalBusy = false;
+
+function getAuthModalNodes() {
+  return {
+    modal: document.getElementById('authModal'),
+    loggedOutView: document.getElementById('authModalLoggedOutView'),
+    loggedInView: document.getElementById('authModalLoggedInView'),
+    tabLogin: document.getElementById('authTabLogin'),
+    tabRegister: document.getElementById('authTabRegister'),
+    displayNameLabel: document.getElementById('authDisplayNameLabel'),
+    displayNameInput: document.getElementById('authDisplayNameInput'),
+    emailInput: document.getElementById('authEmailInput'),
+    passwordInput: document.getElementById('authPasswordInput'),
+    errorNode: document.getElementById('authModalError'),
+    primaryBtn: document.getElementById('authModalPrimaryBtn'),
+    cancelBtn: document.getElementById('authModalCancelBtn'),
+    closeBtn: document.getElementById('authModalCloseBtn'),
+    logoutBtn: document.getElementById('authModalLogoutBtn'),
+    loggedInEmail: document.getElementById('authLoggedInEmailValue'),
+    loggedInName: document.getElementById('authLoggedInNameValue')
+  };
+}
+
+function setAuthModalError(message = '') {
+  const nodes = getAuthModalNodes();
+  if (!nodes.errorNode) {
+    return;
+  }
+  const text = typeof message === 'string' ? message.trim() : '';
+  nodes.errorNode.textContent = text;
+  nodes.errorNode.classList.toggle('hidden', !text);
+}
+
+function setAuthModalBusyState(isBusy) {
+  authModalBusy = Boolean(isBusy);
+  const nodes = getAuthModalNodes();
+  const controls = [
+    nodes.tabLogin,
+    nodes.tabRegister,
+    nodes.displayNameInput,
+    nodes.emailInput,
+    nodes.passwordInput,
+    nodes.primaryBtn,
+    nodes.cancelBtn,
+    nodes.closeBtn,
+    nodes.logoutBtn
+  ];
+
+  controls.forEach((node) => {
+    if (node) {
+      node.disabled = authModalBusy;
+    }
+  });
+}
+
+function setAuthModalMode(mode = 'login') {
+  authModalMode = mode === 'register' ? 'register' : 'login';
+  const nodes = getAuthModalNodes();
+  const isRegister = authModalMode === 'register';
+  if (nodes.tabLogin) {
+    nodes.tabLogin.classList.toggle('is-active', !isRegister);
+  }
+  if (nodes.tabRegister) {
+    nodes.tabRegister.classList.toggle('is-active', isRegister);
+  }
+  if (nodes.displayNameLabel) {
+    nodes.displayNameLabel.classList.toggle('hidden', !isRegister);
+  }
+  if (nodes.primaryBtn) {
+    nodes.primaryBtn.textContent = isRegister ? 'Registrieren' : 'Login';
+  }
+  if (nodes.passwordInput) {
+    nodes.passwordInput.setAttribute('autocomplete', isRegister ? 'new-password' : 'current-password');
+  }
+  setAuthModalError('');
+}
+
+function closeCloudAuthModal() {
+  const nodes = getAuthModalNodes();
+  if (!nodes.modal) {
+    return;
+  }
+  nodes.modal.classList.add('hidden');
+  nodes.modal.setAttribute('aria-hidden', 'true');
+  setAuthModalError('');
+  setAuthModalBusyState(false);
+}
+
+function syncAuthModalContent() {
+  const nodes = getAuthModalNodes();
+  if (!nodes.modal || !nodes.loggedOutView || !nodes.loggedInView) {
     return;
   }
 
-  const actionRaw = prompt('Cloud Sync Aktion: login | register | logout', 'login');
-  const action = String(actionRaw || '').trim().toLowerCase();
-  if (!action) {
+  const authIdentity = getAuthDisplayIdentity();
+  const isAuthed = Boolean(authIdentity);
+  nodes.loggedOutView.classList.toggle('hidden', isAuthed);
+  nodes.loggedOutView.setAttribute('aria-hidden', String(isAuthed));
+  nodes.loggedInView.classList.toggle('hidden', !isAuthed);
+  nodes.loggedInView.setAttribute('aria-hidden', String(!isAuthed));
+
+  if (isAuthed) {
+    if (nodes.loggedInEmail) {
+      nodes.loggedInEmail.textContent = authIdentity.email || '-';
+    }
+    if (nodes.loggedInName) {
+      nodes.loggedInName.textContent = authIdentity.displayName || '-';
+    }
     return;
   }
 
-  if (action === 'logout') {
-    authApi.logout();
-    updateSettingsUI();
-    return;
+  setAuthModalMode(authModalMode);
+  if (nodes.emailInput) {
+    nodes.emailInput.value = '';
   }
-
-  if (action !== 'login' && action !== 'register') {
-    alert('Ungültige Aktion. Nutze: login, register oder logout.');
-    return;
+  if (nodes.passwordInput) {
+    nodes.passwordInput.value = '';
   }
-
-  const email = String(prompt('E-Mail', '') || '').trim();
-  const password = String(prompt('Passwort (min. 8 Zeichen)', '') || '');
-  if (!email || !password) {
-    return;
+  if (nodes.displayNameInput && authModalMode !== 'register') {
+    nodes.displayNameInput.value = '';
   }
+}
 
+async function refreshStateAfterAuth() {
   try {
-    if (action === 'register') {
-      await authApi.register(email, password);
+    await initOrMigrateState();
+    console.info('[auth] remote load success/fallback');
+  } catch (error) {
+    console.info('[auth] remote load failed');
+  }
+
+  updateSettingsUI();
+  renderAll();
+}
+
+function openCloudAuthModal() {
+  const nodes = getAuthModalNodes();
+  if (!nodes.modal) {
+    return;
+  }
+  syncAuthModalContent();
+  nodes.modal.classList.remove('hidden');
+  nodes.modal.setAttribute('aria-hidden', 'false');
+  setAuthModalBusyState(false);
+  setAuthModalError('');
+
+  const authIdentity = getAuthDisplayIdentity();
+  if (authIdentity) {
+    if (nodes.closeBtn) {
+      nodes.closeBtn.focus();
+    }
+    return;
+  }
+
+  if (nodes.emailInput) {
+    nodes.emailInput.focus();
+  }
+}
+
+async function submitAuthModal() {
+  if (authModalBusy) {
+    return;
+  }
+
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.login !== 'function' || typeof authApi.register !== 'function') {
+    setAuthModalError('Auth API ist nicht verfügbar.');
+    return;
+  }
+
+  const nodes = getAuthModalNodes();
+  const email = String((nodes.emailInput && nodes.emailInput.value) || '').trim();
+  const password = String((nodes.passwordInput && nodes.passwordInput.value) || '');
+  const displayName = String((nodes.displayNameInput && nodes.displayNameInput.value) || '').trim();
+  const isRegister = authModalMode === 'register';
+
+  if (!email || !password) {
+    setAuthModalError('Bitte E-Mail und Passwort eingeben.');
+    return;
+  }
+  if (isRegister && !displayName) {
+    setAuthModalError('Bitte einen Anzeigenamen eingeben.');
+    return;
+  }
+
+  setAuthModalBusyState(true);
+  setAuthModalError('');
+  try {
+    if (isRegister) {
+      await authApi.register(email, password, displayName);
+      console.info('[auth] register success');
     } else {
       await authApi.login(email, password);
+      console.info('[auth] login success');
     }
 
+    closeCloudAuthModal();
+    await refreshStateAfterAuth();
     schedulePersistState(true);
-    updateSettingsUI();
-    alert('Auth erfolgreich. Die App lädt neu, damit Cloud Save/Load aktiv ist.');
-    window.location.reload();
   } catch (error) {
-    const message = error && error.message ? error.message : 'Auth fehlgeschlagen';
-    alert(`Auth fehlgeschlagen: ${message}`);
-    updateSettingsUI();
+    console.info(isRegister ? '[auth] register failed' : '[auth] login failed');
+    const message = error && error.message ? String(error.message) : 'Authentifizierung fehlgeschlagen';
+    setAuthModalError(message);
+  } finally {
+    setAuthModalBusyState(false);
   }
+}
+
+function performAuthLogout() {
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.logout !== 'function') {
+    return;
+  }
+  authApi.logout();
+  console.info('[auth] logout success');
+  closeCloudAuthModal();
+  updateSettingsUI();
+  renderAll();
+  schedulePersistState(true);
 }
 
 function initSettingsEvents() {
@@ -9355,11 +9562,88 @@ function initSettingsEvents() {
     saveBtn.setAttribute('title', 'Speichert den aktuellen lokalen Zustand im Browser.');
   }
 
-  const cloudNode = byId('settingsCloudSyncValue');
-  if (cloudNode) {
-    cloudNode.style.cursor = 'pointer';
-    cloudNode.addEventListener('click', () => {
-      openCloudAuthPromptFlow();
+  const cloudRow = byId('settingsCloudSyncRow');
+  if (cloudRow) {
+    cloudRow.addEventListener('click', () => {
+      openCloudAuthModal();
+    });
+    cloudRow.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openCloudAuthModal();
+      }
+    });
+  }
+
+  const authTabLogin = byId('authTabLogin');
+  if (authTabLogin) {
+    authTabLogin.addEventListener('click', () => {
+      setAuthModalMode('login');
+    });
+  }
+
+  const authTabRegister = byId('authTabRegister');
+  if (authTabRegister) {
+    authTabRegister.addEventListener('click', () => {
+      setAuthModalMode('register');
+    });
+  }
+
+  const authModalCancelBtn = byId('authModalCancelBtn');
+  if (authModalCancelBtn) {
+    authModalCancelBtn.addEventListener('click', () => {
+      closeCloudAuthModal();
+    });
+  }
+
+  const authModalPrimaryBtn = byId('authModalPrimaryBtn');
+  if (authModalPrimaryBtn) {
+    authModalPrimaryBtn.addEventListener('click', () => {
+      submitAuthModal();
+    });
+  }
+
+  const authModalCloseBtn = byId('authModalCloseBtn');
+  if (authModalCloseBtn) {
+    authModalCloseBtn.addEventListener('click', () => {
+      closeCloudAuthModal();
+    });
+  }
+
+  const authModalLogoutBtn = byId('authModalLogoutBtn');
+  if (authModalLogoutBtn) {
+    authModalLogoutBtn.addEventListener('click', () => {
+      performAuthLogout();
+    });
+  }
+
+  const authModal = byId('authModal');
+  if (authModal) {
+    authModal.addEventListener('click', (event) => {
+      if (event.target === authModal) {
+        closeCloudAuthModal();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') {
+      return;
+    }
+    const modal = byId('authModal');
+    if (!modal || modal.classList.contains('hidden')) {
+      return;
+    }
+    closeCloudAuthModal();
+  });
+
+  const authPasswordInput = byId('authPasswordInput');
+  if (authPasswordInput) {
+    authPasswordInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        submitAuthModal();
+      }
     });
   }
 }
@@ -9375,5 +9659,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     migrateSettings(state);
     initSettingsEvents();
+    updateSettingsUI();
   }, 1000);
 });

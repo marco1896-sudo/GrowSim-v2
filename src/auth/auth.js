@@ -122,14 +122,19 @@ async function login(email, password) {
   return getUser();
 }
 
-async function register(email, password) {
+async function register(email, password, displayName = '') {
   const apiFetch = getApiFetch();
+  const requestBody = { email, password };
+  const normalizedDisplayName = typeof displayName === 'string' ? displayName.trim() : '';
+  if (normalizedDisplayName) {
+    requestBody.displayName = normalizedDisplayName;
+  }
   const response = await apiFetch('/auth/register', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify(requestBody)
   });
 
   const payload = await readJsonOrNull(response);

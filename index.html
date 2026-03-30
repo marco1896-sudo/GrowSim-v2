@@ -661,7 +661,10 @@
 
       <section class="figma-section-card figma-settings-card figma-settings-card--account">
         <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;">ACCOUNT</h3>
-        <div class="figma-static-row"><span>Speicherstatus</span><strong id="settingsCloudSyncValue" class="value_gold">Lokal</strong></div>
+        <div id="settingsCloudSyncRow" class="figma-static-row settings-link-row" role="button" tabindex="0" aria-label="Cloud Sync öffnen">
+          <span>Cloud Sync</span>
+          <strong id="settingsCloudSyncValue" class="value_gold">Nicht verbunden</strong>
+        </div>
         <div class="figma-static-row"><span>Push-Steuerung</span><span class="subtitle">im Menü</span></div>
         
         <div class="figma-settings-actions" style="display: flex; justify-content: space-between; margin-top: 20px;">
@@ -898,6 +901,49 @@
       <div class="menu-dialog-actions">
         <button id="menuDialogCancelBtn" class="ghost-btn" type="button">Abbrechen</button>
         <button id="menuDialogConfirmBtn" class="action-btn action-primary" type="button">OK</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="authModal" class="menu-dialog hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="menu-dialog-card auth-modal-card">
+      <p class="menu-dialog-kicker">Cloud Sync</p>
+      <h3 id="authModalTitle">Account</h3>
+      <div id="authModalLoggedOutView">
+        <div class="auth-modal-tabs" role="tablist" aria-label="Auth Modus">
+          <button id="authTabLogin" class="auth-tab is-active" type="button">Login</button>
+          <button id="authTabRegister" class="auth-tab" type="button">Registrieren</button>
+        </div>
+        <div class="auth-modal-form-grid">
+          <label id="authDisplayNameLabel" class="auth-field hidden">
+            <span>Anzeigename</span>
+            <input id="authDisplayNameInput" type="text" autocomplete="nickname" maxlength="64" />
+          </label>
+          <label class="auth-field">
+            <span>E-Mail</span>
+            <input id="authEmailInput" type="email" autocomplete="email" />
+          </label>
+          <label class="auth-field">
+            <span>Passwort</span>
+            <input id="authPasswordInput" type="password" autocomplete="current-password" />
+          </label>
+        </div>
+        <p id="authModalError" class="sheet-note auth-modal-error hidden" aria-live="polite"></p>
+        <div class="menu-dialog-actions">
+          <button id="authModalCancelBtn" class="ghost-btn" type="button">Abbrechen</button>
+          <button id="authModalPrimaryBtn" class="action-btn action-primary" type="button">Login</button>
+        </div>
+      </div>
+      <div id="authModalLoggedInView" class="hidden" aria-hidden="true">
+        <div class="auth-modal-status">
+          <div class="figma-static-row"><span>Status</span><strong class="value_green">Verbunden</strong></div>
+          <div class="figma-static-row"><span>E-Mail</span><strong id="authLoggedInEmailValue" class="value_gold">-</strong></div>
+          <div class="figma-static-row"><span>Anzeigename</span><strong id="authLoggedInNameValue" class="value_gold">-</strong></div>
+        </div>
+        <div class="menu-dialog-actions">
+          <button id="authModalCloseBtn" class="ghost-btn" type="button">Schließen</button>
+          <button id="authModalLogoutBtn" class="action-btn action-primary" type="button">Logout</button>
+        </div>
       </div>
     </div>
   </section>
