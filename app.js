@@ -438,15 +438,340 @@ wireDomainOwnership();
 
 window.__gsBootOk = false;
 window.__gsBootTrace = [];
+window.__gsBootState = {
+  step: 'init',
+  progress: 0,
+  message: ''
+};
 const LOADING_SCREEN_MIN_VISIBLE_MS = 1000;
 const LOADING_SCREEN_FADE_MS = 420;
+const BOOT_TIMEOUT_MS = 10000;
+const BOOT_PROGRESS_BY_STEP = Object.freeze({
+  init: 5,
+  restore_session: 20,
+  load_data: 45,
+  init_simulation: 70,
+  render_ui: 90,
+  ready: 100
+});
+const BOOT_USER_MESSAGES = Object.freeze({
+  init: 'System wird gestartet...',
+  restore_session: 'Sitzung wird wiederhergestellt...',
+  load_data: 'Spieldaten werden geladen...',
+  init_simulation: 'Spielwelt wird vorbereitet...',
+  render_ui: 'Oberfläche wird aufgebaut...',
+  ready: 'Bereit'
+});
 const loadingScreenState = {
   startedAtMs: Date.now(),
   hidden: false,
-  hidePromise: null
+  hidePromise: null,
+  timeoutShown: false
 };
 let bootFailed = false;
-let windowLoaded = document.readyState === 'complete';
+let bootTimedOut = false;
+let bootTimeoutHandle = null;
+let bootCompleted = false;
+const bootDiagnostics = {
+  startedAtMs: 0,
+  currentPhase: null,
+  currentPhaseStartedAtMs: 0,
+  phaseOrder: [],
+  phaseDurationsMs: {},
+  substepDurationsMs: {},
+  lastSuccessfulPhase: null
+};
+
+function getBootUserMessage(step) {
+  const key = String(step || 'init');
+  return BOOT_USER_MESSAGES[key] || 'Start wird vorbereitet...';
+}
+
+function getBootTimeoutMessage(step) {
+  const base = getBootUserMessage(step).replace(/\.\.\.$/, '');
+  return `${base}... Das dauert ungewöhnlich lange.`;
+}
+
+function startBootDiagnostics() {
+  bootDiagnostics.startedAtMs = Date.now();
+  bootDiagnostics.currentPhase = null;
+  bootDiagnostics.currentPhaseStartedAtMs = 0;
+  bootDiagnostics.phaseOrder = [];
+  bootDiagnostics.phaseDurationsMs = {};
+  bootDiagnostics.substepDurationsMs = {};
+  bootDiagnostics.lastSuccessfulPhase = null;
+}
+
+function closeCurrentBootPhase(nowMs, options = {}) {
+  const markSuccessful = options.markSuccessful !== false;
+  const phase = bootDiagnostics.currentPhase;
+  const startMs = bootDiagnostics.currentPhaseStartedAtMs;
+  if (!phase || !startMs) {
+    return;
+  }
+  const durationMs = Math.max(0, nowMs - startMs);
+  bootDiagnostics.phaseDurationsMs[phase] = (bootDiagnostics.phaseDurationsMs[phase] || 0) + durationMs;
+  if (markSuccessful) {
+    bootDiagnostics.lastSuccessfulPhase = phase;
+  }
+  console.info('[boot][timing][phase]', phase, `${durationMs}ms`);
+}
+
+function trackBootPhaseTransition(nextPhase) {
+  if (!bootDiagnostics.startedAtMs) {
+    return;
+  }
+  const phase = String(nextPhase || 'init');
+  const nowMs = Date.now();
+  if (bootDiagnostics.currentPhase === phase) {
+    return;
+  }
+  closeCurrentBootPhase(nowMs, { markSuccessful: true });
+  bootDiagnostics.currentPhase = phase;
+  bootDiagnostics.currentPhaseStartedAtMs = nowMs;
+  if (!bootDiagnostics.phaseOrder.includes(phase)) {
+    bootDiagnostics.phaseOrder.push(phase);
+  }
+}
+
+function recordBootSubstepDuration(name, durationMs) {
+  const key = String(name || 'unknown');
+  const safeDurationMs = Math.max(0, Math.round(Number(durationMs) || 0));
+  bootDiagnostics.substepDurationsMs[key] = safeDurationMs;
+  console.info('[boot][timing][substep]', key, `${safeDurationMs}ms`);
+}
+
+async function runBootSubstep(name, task) {
+  const startedAtMs = Date.now();
+  try {
+    return await Promise.resolve().then(task);
+  } finally {
+    recordBootSubstepDuration(name, Date.now() - startedAtMs);
+  }
+}
+
+function finalizeBootDiagnostics(options = {}) {
+  const success = options.success === true;
+  const failedPhase = options.failedPhase ? String(options.failedPhase) : null;
+  const nowMs = Date.now();
+  closeCurrentBootPhase(nowMs, { markSuccessful: success });
+  if (!success && !failedPhase && bootDiagnostics.currentPhase) {
+    // no-op: failed phase defaults to current phase below
+  }
+
+  const effectiveFailedPhase = success ? null : (failedPhase || bootDiagnostics.currentPhase || null);
+  const totalBootDurationMs = bootDiagnostics.startedAtMs
+    ? Math.max(0, nowMs - bootDiagnostics.startedAtMs)
+    : 0;
+
+  const report = {
+    success,
+    totalBootDurationMs,
+    lastSuccessfulPhase: bootDiagnostics.lastSuccessfulPhase || null,
+    failedPhase: effectiveFailedPhase,
+    phaseDurationsMs: { ...bootDiagnostics.phaseDurationsMs },
+    substepDurationsMs: { ...bootDiagnostics.substepDurationsMs }
+  };
+
+  if (options.error) {
+    const err = options.error;
+    report.error = {
+      name: err && err.name ? String(err.name) : 'Error',
+      message: err && err.message ? String(err.message) : String(err)
+    };
+  }
+
+  if (success) {
+    console.info('[boot][report:success]', report);
+  } else {
+    console.error('[boot][report:failure]', report);
+  }
+
+  window.__gsBootDiagnosticsReport = report;
+  return report;
+}
+
+function ensureLoadingScreenUi() {
+  const overlay = document.getElementById('appLoadingScreen');
+  if (!overlay) {
+    return null;
+  }
+
+  let status = document.getElementById('appLoadingStatus');
+  if (!status) {
+    status = document.createElement('div');
+    status.id = 'appLoadingStatus';
+    status.style.position = 'absolute';
+    status.style.left = '50%';
+    status.style.bottom = 'max(32px, calc(env(safe-area-inset-bottom) + 20px))';
+    status.style.transform = 'translateX(-50%)';
+    status.style.width = 'min(90vw, 360px)';
+    status.style.textAlign = 'center';
+    status.style.color = '#d8d8d8';
+    status.style.fontSize = '14px';
+    status.style.lineHeight = '1.35';
+    status.style.letterSpacing = '0.01em';
+    status.style.fontFamily = '"Exo 2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    overlay.appendChild(status);
+  }
+
+  let note = document.getElementById('appLoadingNote');
+  if (!note) {
+    note = document.createElement('div');
+    note.id = 'appLoadingNote';
+    note.style.position = 'absolute';
+    note.style.left = '50%';
+    note.style.bottom = 'max(14px, calc(env(safe-area-inset-bottom) + 2px))';
+    note.style.transform = 'translateX(-50%)';
+    note.style.width = 'min(88vw, 360px)';
+    note.style.textAlign = 'center';
+    note.style.color = 'rgba(216, 216, 216, 0.68)';
+    note.style.fontSize = '12px';
+    note.style.lineHeight = '1.3';
+    note.style.letterSpacing = '0.01em';
+    note.style.fontFamily = '"Exo 2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    note.style.display = 'none';
+    overlay.appendChild(note);
+  }
+
+  let progressTrack = document.getElementById('appLoadingProgressTrack');
+  if (!progressTrack) {
+    progressTrack = document.createElement('div');
+    progressTrack.id = 'appLoadingProgressTrack';
+    progressTrack.style.position = 'absolute';
+    progressTrack.style.left = '50%';
+    progressTrack.style.bottom = 'max(56px, calc(env(safe-area-inset-bottom) + 42px))';
+    progressTrack.style.transform = 'translateX(-50%)';
+    progressTrack.style.width = 'min(82vw, 280px)';
+    progressTrack.style.height = '4px';
+    progressTrack.style.borderRadius = '999px';
+    progressTrack.style.background = 'rgba(255, 255, 255, 0.16)';
+    progressTrack.style.overflow = 'hidden';
+    progressTrack.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.06)';
+    overlay.appendChild(progressTrack);
+  }
+
+  let progressFill = document.getElementById('appLoadingProgressFill');
+  if (!progressFill) {
+    progressFill = document.createElement('span');
+    progressFill.id = 'appLoadingProgressFill';
+    progressFill.style.display = 'block';
+    progressFill.style.width = '0%';
+    progressFill.style.height = '100%';
+    progressFill.style.borderRadius = 'inherit';
+    progressFill.style.background = 'linear-gradient(90deg, rgba(210,210,210,0.9), rgba(244,244,244,0.98))';
+    progressFill.style.transition = 'width 300ms ease, background 260ms ease';
+    progressTrack.appendChild(progressFill);
+  }
+
+  let progressMeta = document.getElementById('appLoadingProgressMeta');
+  if (!progressMeta) {
+    progressMeta = document.createElement('div');
+    progressMeta.id = 'appLoadingProgressMeta';
+    progressMeta.style.position = 'absolute';
+    progressMeta.style.left = '50%';
+    progressMeta.style.bottom = 'max(64px, calc(env(safe-area-inset-bottom) + 50px))';
+    progressMeta.style.transform = 'translateX(-50%)';
+    progressMeta.style.width = 'min(82vw, 280px)';
+    progressMeta.style.textAlign = 'right';
+    progressMeta.style.color = 'rgba(216, 216, 216, 0.74)';
+    progressMeta.style.fontSize = '11px';
+    progressMeta.style.lineHeight = '1';
+    progressMeta.style.letterSpacing = '0.03em';
+    progressMeta.style.fontFamily = '"Exo 2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    progressMeta.textContent = '0%';
+    overlay.appendChild(progressMeta);
+  }
+
+  let retryBtn = document.getElementById('appLoadingRetryBtn');
+  if (!retryBtn) {
+    retryBtn = document.createElement('button');
+    retryBtn.id = 'appLoadingRetryBtn';
+    retryBtn.type = 'button';
+    retryBtn.textContent = 'Erneut versuchen';
+    retryBtn.style.position = 'absolute';
+    retryBtn.style.left = '50%';
+    retryBtn.style.bottom = 'max(8px, env(safe-area-inset-bottom))';
+    retryBtn.style.transform = 'translateX(-50%)';
+    retryBtn.style.minHeight = '40px';
+    retryBtn.style.padding = '10px 16px';
+    retryBtn.style.borderRadius = '10px';
+    retryBtn.style.border = '1px solid rgba(255,255,255,0.22)';
+    retryBtn.style.background = 'rgba(255,255,255,0.1)';
+    retryBtn.style.color = '#ffffff';
+    retryBtn.style.fontSize = '14px';
+    retryBtn.style.fontWeight = '600';
+    retryBtn.style.cursor = 'pointer';
+    retryBtn.style.display = 'none';
+    retryBtn.addEventListener('click', () => {
+      window.location.reload();
+    });
+    overlay.appendChild(retryBtn);
+  }
+
+  return { overlay, status, note, retryBtn, progressFill, progressMeta };
+}
+
+function updateLoadingScreenFromBootState() {
+  const ui = ensureLoadingScreenUi();
+  if (!ui) {
+    return;
+  }
+
+  const bootState = window.__gsBootState || { step: 'init', progress: 0, message: '' };
+  const message = String(bootState.message || '').trim() || 'Wird vorbereitet...';
+  const progress = Math.max(0, Math.min(100, Math.round(Number(bootState.progress) || 0)));
+  ui.status.textContent = message;
+  ui.progressFill.style.width = `${progress}%`;
+  ui.progressMeta.textContent = `${progress}%`;
+  ui.retryBtn.style.display = loadingScreenState.timeoutShown || bootFailed ? 'inline-flex' : 'none';
+
+  if (bootFailed) {
+    ui.status.style.color = '#f2d2d2';
+    ui.progressFill.style.background = 'linear-gradient(90deg, rgba(230,140,140,0.9), rgba(248,176,176,0.98))';
+    ui.note.style.display = 'block';
+    ui.note.style.color = 'rgba(242, 210, 210, 0.78)';
+    ui.note.textContent = 'Der Start konnte nicht abgeschlossen werden.';
+    return;
+  }
+
+  if (loadingScreenState.timeoutShown) {
+    ui.status.style.color = '#e9dcc2';
+    ui.progressFill.style.background = 'linear-gradient(90deg, rgba(218,184,124,0.92), rgba(238,214,169,0.98))';
+    ui.note.style.display = 'block';
+    ui.note.style.color = 'rgba(233, 220, 194, 0.76)';
+    ui.note.textContent = 'Du kannst warten oder den Start neu versuchen.';
+    return;
+  }
+
+  ui.status.style.color = '#d8d8d8';
+  ui.progressFill.style.background = 'linear-gradient(90deg, rgba(210,210,210,0.9), rgba(244,244,244,0.98))';
+  ui.note.style.display = 'none';
+}
+
+function setBootStep(step, message = '') {
+  const normalizedStep = String(step || 'init');
+  const progress = Object.prototype.hasOwnProperty.call(BOOT_PROGRESS_BY_STEP, normalizedStep)
+    ? BOOT_PROGRESS_BY_STEP[normalizedStep]
+    : (window.__gsBootState && Number.isFinite(window.__gsBootState.progress) ? window.__gsBootState.progress : 0);
+  trackBootPhaseTransition(normalizedStep);
+
+  window.__gsBootState = {
+    step: normalizedStep,
+    progress,
+    message: String(message || getBootUserMessage(normalizedStep))
+  };
+
+  console.info(`[boot] ${normalizedStep} (${progress}%) ${window.__gsBootState.message}`);
+
+  window.dispatchEvent(new CustomEvent('boot:step', {
+    detail: { ...window.__gsBootState }
+  }));
+
+  updateLoadingScreenFromBootState();
+}
+
+window.setBootStep = setBootStep;
 
 function hideLoadingScreen() {
   if (loadingScreenState.hidden) {
@@ -489,24 +814,36 @@ function hideLoadingScreen() {
 }
 
 window.hideLoadingScreen = hideLoadingScreen;
+window.addEventListener('boot:step', () => {
+  updateLoadingScreenFromBootState();
+});
+updateLoadingScreenFromBootState();
 
 document.addEventListener('DOMContentLoaded', () => {
+  startBootDiagnostics();
+  setBootStep('init', getBootUserMessage('init'));
+  bootTimeoutHandle = window.setTimeout(() => {
+    if (bootCompleted || window.__gsBootState.step === 'ready') {
+      return;
+    }
+    bootTimedOut = true;
+    loadingScreenState.timeoutShown = true;
+    setBootStep(window.__gsBootState.step, getBootTimeoutMessage(window.__gsBootState.step));
+  }, BOOT_TIMEOUT_MS);
+
   boot().catch((error) => {
     bootFailed = true;
+    loadingScreenState.timeoutShown = true;
     console.error('Boot promise failed', error);
+    const failedPhase = (error && error.__gsBootMeta && error.__gsBootMeta.failedPhase)
+      ? String(error.__gsBootMeta.failedPhase)
+      : String((window.__gsBootState && window.__gsBootState.step) || 'init');
+    const failureMessage = `${getBootUserMessage(failedPhase).replace(/\.\.\.$/, '')} konnte nicht abgeschlossen werden. Bitte erneut versuchen.`;
+    setBootStep(failedPhase, failureMessage);
+    finalizeBootDiagnostics({ success: false, failedPhase, error });
     showBootError(error);
-    if (windowLoaded) {
-      hideLoadingScreen();
-    }
   });
 });
-
-window.addEventListener('load', () => {
-  windowLoaded = true;
-  if (bootFailed && !window.__gsBootOk) {
-    hideLoadingScreen();
-  }
-}, { once: true });
 
 function wireDomainOwnership() {
   const ownership = {
@@ -844,33 +1181,38 @@ function initUiArchitecture() {
 async function boot() {
   let bootStep = 'start';
   try {
+    setBootStep('init', getBootUserMessage('init'));
     logBootStep('boot:start');
     bootStep = 'mount_hud_components';
-    mountHudComponents();
+    await runBootSubstep('mount_hud_components', () => mountHudComponents());
     logBootStep('boot:mount_hud_components');
     bootStep = 'cache_ui';
-    cacheUi();
+    await runBootSubstep('cache_ui', () => cacheUi());
     logBootStep('boot:cache_ui');
     bootStep = 'validate_ui';
-    if (!ensureRequiredUi()) { const missing = Array.isArray(ensureRequiredUi.lastMissing) ? ensureRequiredUi.lastMissing : [];
+    const hasRequiredUi = await runBootSubstep('validate_required_ui', () => ensureRequiredUi());
+    if (!hasRequiredUi) { const missing = Array.isArray(ensureRequiredUi.lastMissing) ? ensureRequiredUi.lastMissing : [];
       throw new Error(`Required UI elements missing: ${missing.join(', ')}`);
     }
     logBootStep('boot:validate_ui');
-    applyOverlayAssets();
+    await runBootSubstep('apply_overlay_assets', () => applyOverlayAssets());
 
+    setBootStep('restore_session', getBootUserMessage('restore_session'));
     bootStep = 'storage_adapter';
-    storageAdapter = await createStorageAdapter();
+    storageAdapter = await runBootSubstep('create_storage_adapter', () => createStorageAdapter());
     logBootStep('boot:storage_adapter');
     bootStep = 'auth_restore';
     if (window.GrowSimAuth && typeof window.GrowSimAuth.restoreSession === 'function') {
-      await window.GrowSimAuth.restoreSession();
+      await runBootSubstep('restore_auth_session', () => window.GrowSimAuth.restoreSession());
     }
     authGateActive = !isAuthSessionValid();
     logBootStep('boot:auth_restore', {
       authenticated: Boolean(window.GrowSimAuth && typeof window.GrowSimAuth.isAuthenticated === 'function' && window.GrowSimAuth.isAuthenticated())
     });
+
+    setBootStep('load_data', getBootUserMessage('load_data'));
     bootStep = 'state_restore';
-    await initOrMigrateState();
+    await runBootSubstep('restore_or_migrate_state', () => initOrMigrateState());
     logBootStep('boot:state_restore', {
       simTimeMs: state.simulation.simTimeMs,
       nextEventRealTimeMs: state.events.scheduler.nextEventRealTimeMs,
@@ -878,8 +1220,8 @@ async function boot() {
     });
 
     bootStep = 'catalogs';
-    await loadCatalogs();
-    await loadPlantSpriteRuntime();
+    await runBootSubstep('load_catalogs', () => loadCatalogs());
+    await runBootSubstep('load_plant_sprite_runtime', () => loadPlantSpriteRuntime());
     logBootStep('boot:catalogs', {
       events: state.events.catalog.length,
       actions: state.actions.catalog.length,
@@ -887,26 +1229,27 @@ async function boot() {
     });
 
     bootStep = 'bind_ui';
-    bindUi();
+    await runBootSubstep('bind_ui', () => bindUi());
     logBootStep('boot:bind_ui');
     bootStep = 'ui_architecture';
-    initUiArchitecture();
+    await runBootSubstep('init_ui_architecture', () => initUiArchitecture());
     logBootStep('boot:ui_architecture', {
       controller: Boolean(uiController),
       runtime: Boolean(screenRuntimeManager)
     });
-    applyBackgroundAsset();
+    await runBootSubstep('apply_background_asset', () => applyBackgroundAsset());
     bootStep = 'service_worker';
-    await registerServiceWorker();
+    await runBootSubstep('register_service_worker', () => registerServiceWorker());
     logBootStep('boot:service_worker');
 
+    setBootStep('init_simulation', getBootUserMessage('init_simulation'));
     bootStep = 'runtime_sync';
-    const bootNowMs = Date.now();
-    syncSimulationFromElapsedTime(bootNowMs);
-    syncRuntimeClocks(bootNowMs);
-    syncActiveEventFromCatalog();
-    updateVisibleOverlays();
-    syncCanonicalStateShape();
+    const bootNowMs = await runBootSubstep('runtime_now_timestamp', () => Date.now());
+    await runBootSubstep('sync_simulation_from_elapsed_time', () => syncSimulationFromElapsedTime(bootNowMs));
+    await runBootSubstep('sync_runtime_clocks', () => syncRuntimeClocks(bootNowMs));
+    await runBootSubstep('sync_active_event_from_catalog', () => syncActiveEventFromCatalog());
+    await runBootSubstep('update_visible_overlays', () => updateVisibleOverlays());
+    await runBootSubstep('sync_canonical_state_shape', () => syncCanonicalStateShape());
     logBootStep('boot:runtime_sync', {
       nowMs: state.simulation.nowMs,
       simTimeMs: state.simulation.simTimeMs,
@@ -914,40 +1257,64 @@ async function boot() {
       growthImpulse: state.simulation.growthImpulse
     });
 
-    addLog('system', 'Runtime initialisiert', {
+    await runBootSubstep('log_runtime_initialized', () => addLog('system', 'Runtime initialisiert', {
       mode: state.simulation.mode,
       events: state.events.catalog.length,
       actions: state.actions.catalog.length
+    }));
+
+    await runBootSubstep('bind_dev_helpers', () => {
+      window.__applyAction = (id) => applyAction(id);
+      window.__devSelfTest = () => runDevSelfTest();
     });
 
-    window.__applyAction = (id) => applyAction(id);
-    window.__devSelfTest = () => runDevSelfTest();
-
+    setBootStep('render_ui', getBootUserMessage('render_ui'));
     bootStep = 'loop_and_render';
-    startLoopOnce();
-    startHeartbeatWatchdog();
-    renderAll();
+    await runBootSubstep('start_main_loop_once', () => startLoopOnce());
+    await runBootSubstep('start_heartbeat_watchdog', () => startHeartbeatWatchdog());
+    await runBootSubstep('render_all', () => renderAll());
     if (authGateActive) {
       console.info('[auth] startup gate active');
-      openCloudAuthModal({ gate: true });
+      await runBootSubstep('open_auth_gate_modal', () => openCloudAuthModal({ gate: true }));
     }
-    renderLanding();
+    await runBootSubstep('render_landing', () => renderLanding());
+    setBootStep('render_ui', 'Fast bereit...');
     window.__gsBootOk = true;
     state.ui.lastRenderRealMs = Date.now();
     logBootStep('boot:render_complete');
-    hideLoadingScreen();
+
+    setBootStep('ready', getBootUserMessage('ready'));
+    bootCompleted = true;
+    await runBootSubstep('hide_loading_screen', () => hideLoadingScreen());
+    if (bootTimeoutHandle) {
+      window.clearTimeout(bootTimeoutHandle);
+      bootTimeoutHandle = null;
+    }
 
     bootStep = 'persist';
-    await schedulePushIfAllowed(true);
-    await persistState();
+    await runBootSubstep('schedule_push_if_allowed', () => schedulePushIfAllowed(true));
+    await runBootSubstep('persist_state', () => persistState());
     logBootStep('boot:done');
+    finalizeBootDiagnostics({ success: true });
   } catch (error) {
+    bootCompleted = false;
+    if (bootTimeoutHandle) {
+      window.clearTimeout(bootTimeoutHandle);
+      bootTimeoutHandle = null;
+    }
     logBootStep('boot:failed', {
       step: bootStep,
       message: error && error.message ? error.message : String(error)
     });
     console.error('Boot failed', { step: bootStep, error });
-    showBootError(error);
+    if (error && typeof error === 'object') {
+      error.__gsBootMeta = {
+        failedPhase: (window.__gsBootState && window.__gsBootState.step) ? String(window.__gsBootState.step) : 'init',
+        lastSuccessfulPhase: bootDiagnostics.lastSuccessfulPhase || null,
+        internalStep: bootStep
+      };
+    }
+    throw error;
   }
 }
 
