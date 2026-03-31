@@ -446,7 +446,6 @@ window.__gsBootState = {
 const LOADING_SCREEN_MIN_VISIBLE_MS = 1000;
 const LOADING_SCREEN_FADE_MS = 420;
 const BOOT_TIMEOUT_MS = 10000;
-const LOADING_HIDE_REMOVAL_GRACE_MS = 220;
 const BOOT_PROGRESS_BY_STEP = Object.freeze({
   init: 5,
   restore_session: 20,
@@ -467,10 +466,7 @@ const loadingScreenState = {
   startedAtMs: Date.now(),
   hidden: false,
   hidePromise: null,
-  timeoutShown: false,
-  hideRequestedAtMs: 0,
-  hideCallCount: 0,
-  overlayRemoved: false
+  timeoutShown: false
 };
 let bootFailed = false;
 let bootTimedOut = false;
@@ -483,10 +479,7 @@ const bootDiagnostics = {
   phaseOrder: [],
   phaseDurationsMs: {},
   substepDurationsMs: {},
-  lastSuccessfulPhase: null,
-  readyReached: false,
-  hideLoadingScreenCalled: false,
-  loadingOverlayRemoved: false
+  lastSuccessfulPhase: null
 };
 
 function getBootUserMessage(step) {
@@ -507,9 +500,6 @@ function startBootDiagnostics() {
   bootDiagnostics.phaseDurationsMs = {};
   bootDiagnostics.substepDurationsMs = {};
   bootDiagnostics.lastSuccessfulPhase = null;
-  bootDiagnostics.readyReached = false;
-  bootDiagnostics.hideLoadingScreenCalled = false;
-  bootDiagnostics.loadingOverlayRemoved = false;
 }
 
 function closeCurrentBootPhase(nowMs, options = {}) {
@@ -580,10 +570,7 @@ function finalizeBootDiagnostics(options = {}) {
     lastSuccessfulPhase: bootDiagnostics.lastSuccessfulPhase || null,
     failedPhase: effectiveFailedPhase,
     phaseDurationsMs: { ...bootDiagnostics.phaseDurationsMs },
-    substepDurationsMs: { ...bootDiagnostics.substepDurationsMs },
-    readyReached: bootDiagnostics.readyReached === true,
-    hideLoadingScreenCalled: bootDiagnostics.hideLoadingScreenCalled === true,
-    loadingOverlayRemoved: bootDiagnostics.loadingOverlayRemoved === true
+    substepDurationsMs: { ...bootDiagnostics.substepDurationsMs }
   };
 
   if (options.error) {
@@ -730,23 +717,6 @@ function updateLoadingScreenFromBootState() {
   if (!ui) {
     return;
   }
-  const video = ui.overlay ? ui.overlay.querySelector('video') : null;
-  const shouldFreezeLoadingVideo = bootFailed || loadingScreenState.timeoutShown;
-  if (video) {
-    if (shouldFreezeLoadingVideo) {
-      video.loop = false;
-      try {
-        video.pause();
-      } catch (_error) {
-        // ignore
-      }
-    } else {
-      video.loop = true;
-      if (typeof video.play === 'function') {
-        video.play().catch(() => {});
-      }
-    }
-  }
 
   const bootState = window.__gsBootState || { step: 'init', progress: 0, message: '' };
   const message = String(bootState.message || '').trim() || 'Wird vorbereitet...';
@@ -804,16 +774,7 @@ function setBootStep(step, message = '') {
 window.setBootStep = setBootStep;
 
 function hideLoadingScreen() {
-  bootDiagnostics.hideLoadingScreenCalled = true;
-  loadingScreenState.hideCallCount += 1;
-  loadingScreenState.hideRequestedAtMs = Date.now();
-  console.info('[boot][loading] hideLoadingScreen called', {
-    hideCallCount: loadingScreenState.hideCallCount,
-    step: window.__gsBootState && window.__gsBootState.step ? window.__gsBootState.step : 'unknown'
-  });
-
   if (loadingScreenState.hidden) {
-    console.info('[boot][loading] overlay already hidden');
     return Promise.resolve();
   }
 
@@ -824,9 +785,6 @@ function hideLoadingScreen() {
   const overlay = document.getElementById('appLoadingScreen');
   if (!overlay) {
     loadingScreenState.hidden = true;
-    loadingScreenState.overlayRemoved = true;
-    bootDiagnostics.loadingOverlayRemoved = true;
-    console.info('[boot][loading] overlay not found (already removed)');
     return Promise.resolve();
   }
 
@@ -834,46 +792,21 @@ function hideLoadingScreen() {
   const waitMs = Math.max(0, LOADING_SCREEN_MIN_VISIBLE_MS - elapsedMs);
 
   loadingScreenState.hidePromise = new Promise((resolve) => {
-    const finalizeRemoval = () => {
-      if (!overlay.isConnected) {
-        loadingScreenState.hidden = true;
-        loadingScreenState.overlayRemoved = true;
-        bootDiagnostics.loadingOverlayRemoved = true;
-        console.info('[boot][loading] overlay already disconnected');
-        resolve();
-        return;
-      }
-      if (overlay.parentNode) {
-        overlay.parentNode.removeChild(overlay);
-      }
-      loadingScreenState.hidden = true;
-      loadingScreenState.overlayRemoved = true;
-      bootDiagnostics.loadingOverlayRemoved = true;
-      console.info('[boot][loading] overlay removed');
-      resolve();
-    };
-
     window.setTimeout(() => {
       if (!overlay.isConnected) {
         loadingScreenState.hidden = true;
-        loadingScreenState.overlayRemoved = true;
-        bootDiagnostics.loadingOverlayRemoved = true;
-        console.info('[boot][loading] overlay disconnected before fade');
         resolve();
         return;
       }
 
       overlay.classList.add('is-hiding');
-      console.info('[boot][loading] fade-out started');
-      const removeOnTransitionEnd = () => {
-        overlay.removeEventListener('transitionend', removeOnTransitionEnd);
-        finalizeRemoval();
-      };
-      overlay.addEventListener('transitionend', removeOnTransitionEnd, { once: true });
       window.setTimeout(() => {
-        overlay.removeEventListener('transitionend', removeOnTransitionEnd);
-        finalizeRemoval();
-      }, LOADING_SCREEN_FADE_MS + LOADING_HIDE_REMOVAL_GRACE_MS);
+        if (overlay.parentNode) {
+          overlay.parentNode.removeChild(overlay);
+        }
+        loadingScreenState.hidden = true;
+        resolve();
+      }, LOADING_SCREEN_FADE_MS);
     }, waitMs);
   });
 
@@ -890,18 +823,11 @@ document.addEventListener('DOMContentLoaded', () => {
   startBootDiagnostics();
   setBootStep('init', getBootUserMessage('init'));
   bootTimeoutHandle = window.setTimeout(() => {
-    if (bootCompleted || loadingScreenState.hidden) {
+    if (bootCompleted || window.__gsBootState.step === 'ready') {
       return;
     }
     bootTimedOut = true;
-    bootFailed = true;
     loadingScreenState.timeoutShown = true;
-    console.error('[boot][loading] boot timeout reached', {
-      step: window.__gsBootState && window.__gsBootState.step ? window.__gsBootState.step : 'unknown',
-      readyReached: bootDiagnostics.readyReached === true,
-      hideLoadingScreenCalled: bootDiagnostics.hideLoadingScreenCalled === true,
-      loadingOverlayRemoved: bootDiagnostics.loadingOverlayRemoved === true
-    });
     setBootStep(window.__gsBootState.step, getBootTimeoutMessage(window.__gsBootState.step));
   }, BOOT_TIMEOUT_MS);
 
@@ -1358,10 +1284,8 @@ async function boot() {
     logBootStep('boot:render_complete');
 
     setBootStep('ready', getBootUserMessage('ready'));
-    bootDiagnostics.readyReached = true;
-    console.info('[boot][loading] ready reached');
-    await runBootSubstep('hide_loading_screen', () => hideLoadingScreen());
     bootCompleted = true;
+    await runBootSubstep('hide_loading_screen', () => hideLoadingScreen());
     if (bootTimeoutHandle) {
       window.clearTimeout(bootTimeoutHandle);
       bootTimeoutHandle = null;
