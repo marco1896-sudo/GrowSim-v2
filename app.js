@@ -472,6 +472,13 @@ let bootFailed = false;
 let bootTimedOut = false;
 let bootTimeoutHandle = null;
 let bootCompleted = false;
+const bootLoaderLifecycle = {
+  readyReached: false,
+  hideCalled: false,
+  overlayRemoved: false,
+  lastHideCallAtMs: 0
+};
+window.__gsBootLoaderLifecycle = bootLoaderLifecycle;
 const bootDiagnostics = {
   startedAtMs: 0,
   currentPhase: null,
@@ -596,6 +603,7 @@ function ensureLoadingScreenUi() {
   if (!overlay) {
     return null;
   }
+  const video = overlay.querySelector('video');
 
   let status = document.getElementById('appLoadingStatus');
   if (!status) {
@@ -709,7 +717,7 @@ function ensureLoadingScreenUi() {
     overlay.appendChild(retryBtn);
   }
 
-  return { overlay, status, note, retryBtn, progressFill, progressMeta };
+  return { overlay, video, status, note, retryBtn, progressFill, progressMeta };
 }
 
 function updateLoadingScreenFromBootState() {
@@ -727,6 +735,10 @@ function updateLoadingScreenFromBootState() {
   ui.retryBtn.style.display = loadingScreenState.timeoutShown || bootFailed ? 'inline-flex' : 'none';
 
   if (bootFailed) {
+    if (ui.video) {
+      ui.video.loop = false;
+      ui.video.pause();
+    }
     ui.status.style.color = '#f2d2d2';
     ui.progressFill.style.background = 'linear-gradient(90deg, rgba(230,140,140,0.9), rgba(248,176,176,0.98))';
     ui.note.style.display = 'block';
@@ -736,6 +748,10 @@ function updateLoadingScreenFromBootState() {
   }
 
   if (loadingScreenState.timeoutShown) {
+    if (ui.video) {
+      ui.video.loop = false;
+      ui.video.pause();
+    }
     ui.status.style.color = '#e9dcc2';
     ui.progressFill.style.background = 'linear-gradient(90deg, rgba(218,184,124,0.92), rgba(238,214,169,0.98))';
     ui.note.style.display = 'block';
@@ -747,6 +763,15 @@ function updateLoadingScreenFromBootState() {
   ui.status.style.color = '#d8d8d8';
   ui.progressFill.style.background = 'linear-gradient(90deg, rgba(210,210,210,0.9), rgba(244,244,244,0.98))';
   ui.note.style.display = 'none';
+  if (ui.video) {
+    ui.video.loop = true;
+    if (ui.video.paused) {
+      const playPromise = ui.video.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+      }
+    }
+  }
 }
 
 function setBootStep(step, message = '') {
@@ -763,6 +788,10 @@ function setBootStep(step, message = '') {
   };
 
   console.info(`[boot] ${normalizedStep} (${progress}%) ${window.__gsBootState.message}`);
+  if (normalizedStep === 'ready') {
+    bootLoaderLifecycle.readyReached = true;
+    console.info('[boot][loader] ready phase reached');
+  }
 
   window.dispatchEvent(new CustomEvent('boot:step', {
     detail: { ...window.__gsBootState }
@@ -775,26 +804,39 @@ window.setBootStep = setBootStep;
 
 function hideLoadingScreen() {
   if (loadingScreenState.hidden) {
+    console.info('[boot][loader] hide called but loader is already hidden');
     return Promise.resolve();
   }
 
   if (loadingScreenState.hidePromise) {
+    console.info('[boot][loader] hide already in progress');
     return loadingScreenState.hidePromise;
   }
 
   const overlay = document.getElementById('appLoadingScreen');
   if (!overlay) {
     loadingScreenState.hidden = true;
+    bootLoaderLifecycle.overlayRemoved = true;
+    console.warn('[boot][loader] hide called but overlay element was not found');
     return Promise.resolve();
   }
 
   const elapsedMs = Date.now() - loadingScreenState.startedAtMs;
   const waitMs = Math.max(0, LOADING_SCREEN_MIN_VISIBLE_MS - elapsedMs);
+  bootLoaderLifecycle.hideCalled = true;
+  bootLoaderLifecycle.lastHideCallAtMs = Date.now();
+  console.info('[boot][loader] hide requested', {
+    waitMs,
+    elapsedMs,
+    step: window.__gsBootState && window.__gsBootState.step ? window.__gsBootState.step : 'unknown'
+  });
 
   loadingScreenState.hidePromise = new Promise((resolve) => {
     window.setTimeout(() => {
       if (!overlay.isConnected) {
         loadingScreenState.hidden = true;
+        bootLoaderLifecycle.overlayRemoved = true;
+        console.info('[boot][loader] overlay already detached before fade-out');
         resolve();
         return;
       }
@@ -805,6 +847,8 @@ function hideLoadingScreen() {
           overlay.parentNode.removeChild(overlay);
         }
         loadingScreenState.hidden = true;
+        bootLoaderLifecycle.overlayRemoved = true;
+        console.info('[boot][loader] overlay removed after fade-out');
         resolve();
       }, LOADING_SCREEN_FADE_MS);
     }, waitMs);
@@ -829,6 +873,12 @@ document.addEventListener('DOMContentLoaded', () => {
     bootTimedOut = true;
     loadingScreenState.timeoutShown = true;
     setBootStep(window.__gsBootState.step, getBootTimeoutMessage(window.__gsBootState.step));
+    console.warn('[boot][loader] timeout state active', {
+      step: window.__gsBootState.step,
+      readyReached: bootLoaderLifecycle.readyReached,
+      hideCalled: bootLoaderLifecycle.hideCalled,
+      overlayRemoved: bootLoaderLifecycle.overlayRemoved
+    });
   }, BOOT_TIMEOUT_MS);
 
   boot().catch((error) => {
@@ -841,6 +891,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const failureMessage = `${getBootUserMessage(failedPhase).replace(/\.\.\.$/, '')} konnte nicht abgeschlossen werden. Bitte erneut versuchen.`;
     setBootStep(failedPhase, failureMessage);
     finalizeBootDiagnostics({ success: false, failedPhase, error });
+    console.error('[boot][loader] failure state', {
+      failedPhase,
+      readyReached: bootLoaderLifecycle.readyReached,
+      hideCalled: bootLoaderLifecycle.hideCalled,
+      overlayRemoved: bootLoaderLifecycle.overlayRemoved
+    });
     showBootError(error);
   });
 });
