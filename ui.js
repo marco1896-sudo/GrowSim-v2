@@ -895,7 +895,16 @@ function switchHudScreen(screenId) {
 function renderHud() {
   const dead = isPlantDead();
   const phaseCard = getPhaseCardViewModel();
-  const boostText = `Werbeunterstützt · ${state.boost.boostUsedToday}/${state.boost.boostMaxPerDay} heute`;
+  const remainingBoostMs = typeof getRemainingBoostMs === 'function' ? getRemainingBoostMs(Date.now()) : 0;
+  const effectiveSpeed = typeof getEffectiveSimulationSpeed === 'function'
+    ? getEffectiveSimulationSpeed(Date.now())
+    : Number(state.simulation && state.simulation.effectiveSpeed) || 0;
+  const baseSpeed = typeof normalizeBaseSimulationSpeed === 'function'
+    ? normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed)
+    : Number(state.simulation && state.simulation.baseSpeed) || 0;
+  const boostText = remainingBoostMs > 0
+    ? `Zeit-Boost aktiv · ${Math.ceil(remainingBoostMs / 60000)} Min · ${effectiveSpeed}x`
+    : `Basis ${baseSpeed}x · Boost 24x`;
 
   if (ui.phaseCardTitle && ui.phaseCardTitle.textContent !== phaseCard.title) {
     ui.phaseCardTitle.textContent = phaseCard.title;
@@ -944,7 +953,7 @@ function renderHud() {
     ui.plantImage.dataset.stageName = state.plant.stageKey;
   }
 
-  const eventInMs = state.events.scheduler.nextEventRealTimeMs - state.simulation.nowMs;
+  const eventInMs = Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
   ui.nextEventValue.textContent = formatCountdown(eventInMs);
   ui.growthImpulseValue.textContent = state.simulation.growthImpulse.toFixed(2);
   ui.simTimeValue.textContent = formatSimClock(state.simulation.simTimeMs);
@@ -1275,14 +1284,14 @@ function renderEventSheet() {
   }
 
   if (state.events.machineState === 'cooldown') {
-    const cooldownLeft = state.events.cooldownUntilMs - state.simulation.nowMs;
+    const cooldownLeft = Number(state.events.cooldownUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
     ui.eventTitle.textContent = 'Abklingzeit aktiv';
     ui.eventText.textContent = 'Das Ereignissystem befindet sich in der Abklingzeit.';
     ui.eventMeta.textContent = `Abklingzeit: ${formatCountdown(cooldownLeft)}`;
   } else {
     ui.eventTitle.textContent = 'Kein aktives Ereignis';
     ui.eventText.textContent = 'Ein Ereignis erscheint, sobald der nächste Wurf erfolgreich ist.';
-    ui.eventMeta.textContent = `Nächster Wurf: ${formatCountdown(state.events.scheduler.nextEventRealTimeMs - state.simulation.nowMs)}`;
+    ui.eventMeta.textContent = `Nächster Wurf: ${formatCountdown(Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0))}`;
   }
 
   if (ui.eventOptionList.childElementCount > 0) {
@@ -1552,7 +1561,7 @@ function renderAnalysisTimeline() {
 }
 
 function simStampFromMs(simMs) {
-  const base = Number(state.simulation.startRealTimeMs || simMs || 0);
+  const base = Number(state.simulation.simEpochMs || simMs || 0);
   const raw = Number(simMs || base);
   const delta = Math.max(0, raw - base);
   const totalDay = Math.floor(delta / (24 * 60 * 60 * 1000));

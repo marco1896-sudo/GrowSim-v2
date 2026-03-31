@@ -654,7 +654,6 @@ __gsGlobal.GrowSimEnvModel = __gsGlobal.GrowSimEnvModel || Object.freeze({
 function tick() {
   const nowMs = Date.now();
   const prevOpenSheet = state.ui.openSheet;
-  const prevTickRealTimeMs = Number(state.simulation.lastTickRealTimeMs) || nowMs;
   const run = state.run && typeof state.run === 'object' ? state.run : null;
 
   state.simulation.nowMs = nowMs;
@@ -698,12 +697,7 @@ function tick() {
     return;
   }
 
-  const rawElapsed = nowMs - prevTickRealTimeMs;
-  const elapsedRealMs = Number.isFinite(rawElapsed) && rawElapsed > 0
-    ? clamp(rawElapsed, 0, MAX_ELAPSED_PER_TICK_MS)
-    : 0;
-  const effectiveNowMs = prevTickRealTimeMs + elapsedRealMs;
-  applySimulationDelta(elapsedRealMs, effectiveNowMs, nowMs);
+  advanceSimulationTime(nowMs, { reason: 'live_tick' });
   if (typeof window !== 'undefined' && typeof window.checkMissions === 'function') {
     window.checkMissions('tick');
   }
@@ -720,64 +714,226 @@ function tick() {
   schedulePersistState();
 }
 
-function resolveEffectiveSimulationNowMs(candidateNowMs, elapsedRealMs) {
-  const rawCandidate = Number(candidateNowMs);
-  if (Number.isFinite(rawCandidate)) {
-    return rawCandidate;
-  }
-
-  const previousTickMs = Number(state.simulation.lastTickRealTimeMs);
-  const safePreviousTickMs = Number.isFinite(previousTickMs) ? previousTickMs : Date.now();
-  const safeElapsedRealMs = Number.isFinite(elapsedRealMs) && elapsedRealMs > 0 ? elapsedRealMs : 0;
-  return safePreviousTickMs + safeElapsedRealMs;
+function getRealNowMs() {
+  return Date.now();
 }
 
-function applySimulationDelta(elapsedRealMs, effectiveNowMs, wallNowMs = effectiveNowMs) {
-  const options = arguments[3] && typeof arguments[3] === 'object' ? arguments[3] : {};
-  const suppressEvents = Boolean(options.suppressEvents);
-  const suppressDeath = Boolean(options.suppressDeath);
-  const persistWallNowAsLastTick = Boolean(options.persistWallNowAsLastTick);
-  const safeElapsedRealMs = Number.isFinite(elapsedRealMs) && elapsedRealMs > 0 ? elapsedRealMs : 0;
-  const safeEffectiveNowMs = resolveEffectiveSimulationNowMs(effectiveNowMs, safeElapsedRealMs);
-  const safeWallNowMs = Number.isFinite(Number(wallNowMs)) ? Number(wallNowMs) : safeEffectiveNowMs;
+function normalizeBaseSimulationSpeed(value) {
+  const numericValue = Number(value);
+  return SIM_SPEED_OPTIONS.includes(numericValue) ? numericValue : DEFAULT_BASE_SIM_SPEED;
+}
 
-  const plantTime = getPlantTimeFromElapsed(safeEffectiveNowMs);
-  const previousSimTimeMs = Number(state.simulation.simTimeMs) || Number(state.simulation.simEpochMs) || plantTime.simTimeMs;
-  const elapsedSimMs = Math.max(0, plantTime.simTimeMs - previousSimTimeMs);
+function isSpeedBoostActive(nowMs = getRealNowMs()) {
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
+  const boostEndsAtMs = Number(state.boost && state.boost.boostEndsAtMs);
+  return Number.isFinite(boostEndsAtMs) && boostEndsAtMs > safeNowMs;
+}
+
+function getRemainingBoostMs(nowMs = getRealNowMs()) {
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
+  const boostEndsAtMs = Number(state.boost && state.boost.boostEndsAtMs);
+  if (!Number.isFinite(boostEndsAtMs)) {
+    return 0;
+  }
+  return Math.max(0, boostEndsAtMs - safeNowMs);
+}
+
+function getEffectiveSimulationSpeed(nowMs = getRealNowMs()) {
+  return isSpeedBoostActive(nowMs) ? BOOST_SIM_SPEED : normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed);
+}
+
+function computeSimulationDeltaMs(startRealMs, endRealMs) {
+  const safeStartMs = Number.isFinite(Number(startRealMs)) ? Number(startRealMs) : getRealNowMs();
+  const safeEndMs = Number.isFinite(Number(endRealMs)) ? Number(endRealMs) : safeStartMs;
+  if (safeEndMs <= safeStartMs) {
+    return 0;
+  }
+
+  const baseSpeed = normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed);
+  const boostEndsAtMs = Number(state.boost && state.boost.boostEndsAtMs);
+  let cursorMs = safeStartMs;
+  let simDeltaMs = 0;
+
+  if (Number.isFinite(boostEndsAtMs) && boostEndsAtMs > cursorMs) {
+    const boostSegmentEndMs = Math.min(safeEndMs, boostEndsAtMs);
+    simDeltaMs += Math.max(0, boostSegmentEndMs - cursorMs) * BOOST_SIM_SPEED;
+    cursorMs = boostSegmentEndMs;
+  }
+
+  if (cursorMs < safeEndMs) {
+    simDeltaMs += (safeEndMs - cursorMs) * baseSpeed;
+  }
+
+  return simDeltaMs;
+}
+
+function convertSimDeltaToFutureRealDeltaMs(simDeltaMs, fromRealNowMs = getRealNowMs()) {
+  let remainingSimMs = Math.max(0, Number(simDeltaMs) || 0);
+  if (remainingSimMs <= 0) {
+    return 0;
+  }
+
+  const safeStartMs = Number.isFinite(Number(fromRealNowMs)) ? Number(fromRealNowMs) : getRealNowMs();
+  const boostRemainingMs = getRemainingBoostMs(safeStartMs);
+  let totalRealDeltaMs = 0;
+
+  if (boostRemainingMs > 0) {
+    const boostSimCapacityMs = boostRemainingMs * BOOST_SIM_SPEED;
+    if (remainingSimMs <= boostSimCapacityMs) {
+      return Math.ceil(remainingSimMs / BOOST_SIM_SPEED);
+    }
+
+    totalRealDeltaMs += boostRemainingMs;
+    remainingSimMs -= boostSimCapacityMs;
+  }
+
+  const baseSpeed = normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed);
+  totalRealDeltaMs += Math.ceil(remainingSimMs / baseSpeed);
+  return totalRealDeltaMs;
+}
+
+function updateEffectiveSpeedState(nowMs, options = {}) {
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
+  const previousEffectiveSpeed = Number.isFinite(Number(state.simulation.effectiveSpeed))
+    ? Number(state.simulation.effectiveSpeed)
+    : normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
+  const previousBoostActive = Boolean(options.previousBoostActive);
+  const currentBoostActive = isSpeedBoostActive(safeNowMs);
+  const nextEffectiveSpeed = currentBoostActive ? BOOST_SIM_SPEED : normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
+
+  state.simulation.baseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
+  state.simulation.effectiveSpeed = nextEffectiveSpeed;
+  state.simulation.timeCompression = nextEffectiveSpeed;
+
+  if (!currentBoostActive && Number(state.boost.boostEndsAtMs) <= safeNowMs) {
+    state.boost.boostEndsAtMs = 0;
+  }
+
+  if (options.suppressLogs) {
+    return nextEffectiveSpeed;
+  }
+
+  if (previousBoostActive && !currentBoostActive) {
+    addLog('system', 'Zeit-Boost beendet', {
+      atRealTimeMs: safeNowMs,
+      effectiveSpeed: nextEffectiveSpeed
+    });
+  }
+
+  if (previousEffectiveSpeed !== nextEffectiveSpeed) {
+    addLog('system', 'Effektive Simulationsgeschwindigkeit geändert', {
+      from: previousEffectiveSpeed,
+      to: nextEffectiveSpeed,
+      reason: options.reason || (currentBoostActive ? 'boost_active' : 'base_speed')
+    });
+  }
+
+  return nextEffectiveSpeed;
+}
+
+function setSimulationTimeMs(targetSimTimeMs, nowMs = getRealNowMs(), options = {}) {
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
+  const safeSimTimeMs = Math.max(
+    Number(state.simulation.simEpochMs) || alignToSimStartHour(safeNowMs, SIM_START_HOUR),
+    Number.isFinite(Number(targetSimTimeMs)) ? Number(targetSimTimeMs) : Number(state.simulation.simTimeMs) || 0
+  );
+  const previousSimTimeMs = Number(state.simulation.simTimeMs) || Number(state.simulation.simEpochMs) || safeSimTimeMs;
+  const elapsedSimMs = Math.max(0, safeSimTimeMs - previousSimTimeMs);
   const wasDaytimeBefore = isDaytimeAtSimTime(previousSimTimeMs);
-  const nowDaytime = isDaytimeAtSimTime(plantTime.simTimeMs);
+  const nowDaytime = isDaytimeAtSimTime(safeSimTimeMs);
 
-  state.simulation.simTimeMs = plantTime.simTimeMs;
+  state.simulation.nowMs = safeNowMs;
+  state.simulation.simTimeMs = safeSimTimeMs;
+  state.simulation.lastTickRealTimeMs = safeNowMs;
   state.simulation.isDaytime = nowDaytime;
-  state.simulation.lastTickRealTimeMs = persistWallNowAsLastTick ? safeWallNowMs : safeEffectiveNowMs;
 
   if (!wasDaytimeBefore && nowDaytime) {
     state.simulation.fairnessGraceUntilRealMs = Math.max(
       Number(state.simulation.fairnessGraceUntilRealMs) || 0,
-      safeWallNowMs + FAIRNESS_REACTION_GRACE_MS
+      safeNowMs + FAIRNESS_REACTION_GRACE_MS
     );
-    addLog('system', 'Tagphase erreicht: kurze Reaktionszeit aktiv', {
-      graceUntilRealMs: state.simulation.fairnessGraceUntilRealMs
+    if (!options.suppressLogs) {
+      addLog('system', 'Tagphase erreicht: kurze Reaktionszeit aktiv', {
+        graceUntilRealMs: state.simulation.fairnessGraceUntilRealMs
+      });
+    }
+  }
+
+  return { elapsedSimMs };
+}
+
+function advanceSimulationTime(targetRealNowMs, options = {}) {
+  const safeTargetRealNowMs = Number.isFinite(Number(targetRealNowMs)) ? Number(targetRealNowMs) : getRealNowMs();
+  const previousTickMs = Number.isFinite(Number(state.simulation.lastTickRealTimeMs))
+    ? Number(state.simulation.lastTickRealTimeMs)
+    : safeTargetRealNowMs;
+  const safePreviousTickMs = Math.min(previousTickMs, safeTargetRealNowMs);
+  const realDeltaMs = Math.max(0, safeTargetRealNowMs - safePreviousTickMs);
+  const previousBoostActive = isSpeedBoostActive(safePreviousTickMs);
+
+  if (realDeltaMs <= 0) {
+    state.simulation.nowMs = safeTargetRealNowMs;
+    state.simulation.lastTickRealTimeMs = safeTargetRealNowMs;
+    updateEffectiveSpeedState(safeTargetRealNowMs, {
+      suppressLogs: Boolean(options.suppressLogs),
+      previousBoostActive,
+      reason: options.reason || 'advance'
+    });
+    syncCanonicalStateShape();
+    return { elapsedRealMs: 0, elapsedSimMs: 0 };
+  }
+
+  const previousSimTimeMs = Number(state.simulation.simTimeMs)
+    || Number(state.simulation.simEpochMs)
+    || alignToSimStartHour(safeTargetRealNowMs, SIM_START_HOUR);
+  const elapsedSimMs = computeSimulationDeltaMs(safePreviousTickMs, safeTargetRealNowMs);
+
+  if (!options.suppressLogs && realDeltaMs >= LARGE_TIME_JUMP_LOG_MS) {
+    addLog('system', 'Großer Realzeit-Sprung erkannt', {
+      realDeltaMs,
+      effectiveSpeedBefore: getEffectiveSimulationSpeed(safePreviousTickMs)
     });
   }
 
-  applyStatusDrift(safeElapsedRealMs);
+  const timeResult = setSimulationTimeMs(previousSimTimeMs + elapsedSimMs, safeTargetRealNowMs, {
+    suppressLogs: Boolean(options.suppressLogs)
+  });
+
+  applyStatusDrift(realDeltaMs);
   const criticalNow = Number(state.status.health) < 20;
   if (criticalNow && !wasCriticalHealth) {
     notifyPlantNeedsCare('Deine Pflanze ist kritisch und braucht Pflege.');
   }
   wasCriticalHealth = criticalNow;
-  applyActiveActionEffects(elapsedSimMs);
-  const suppressDeathForLockedWindow = suppressDeath || isDeathSuppressedForFairness(safeWallNowMs);
-  advanceGrowthTick(elapsedSimMs, { suppressDeath: suppressDeathForLockedWindow });
-  applyFairnessSurvivalGuard(safeWallNowMs);
-  if (!suppressEvents) {
-    runEventStateMachine(safeEffectiveNowMs);
+  applyActiveActionEffects(timeResult.elapsedSimMs);
+  const suppressDeathForLockedWindow = Boolean(options.suppressDeath) || isDeathSuppressedForFairness(safeTargetRealNowMs);
+  advanceGrowthTick(timeResult.elapsedSimMs, { suppressDeath: suppressDeathForLockedWindow });
+  applyFairnessSurvivalGuard(safeTargetRealNowMs);
+  if (!options.suppressEvents) {
+    runEventStateMachine(safeTargetRealNowMs);
   }
-  resetBoostDaily(safeWallNowMs);
+  resetBoostDaily(safeTargetRealNowMs);
   updateVisibleOverlays();
+  updateEffectiveSpeedState(safeTargetRealNowMs, {
+    suppressLogs: Boolean(options.suppressLogs),
+    previousBoostActive,
+    reason: options.reason || 'advance'
+  });
   syncCanonicalStateShape();
-  evaluateNotificationTriggers(safeWallNowMs);
+  evaluateNotificationTriggers(safeTargetRealNowMs);
+
+  return {
+    elapsedRealMs: realDeltaMs,
+    elapsedSimMs
+  };
+}
+
+function applySimulationDelta(elapsedRealMs, effectiveNowMs) {
+  const safeElapsedRealMs = Math.max(0, Number(elapsedRealMs) || 0);
+  const safeEffectiveNowMs = Number.isFinite(Number(effectiveNowMs))
+    ? Number(effectiveNowMs)
+    : ((Number(state.simulation.lastTickRealTimeMs) || getRealNowMs()) + safeElapsedRealMs);
+  return advanceSimulationTime(safeEffectiveNowMs, arguments[3] && typeof arguments[3] === 'object' ? arguments[3] : {});
 }
 
 function isDeathSuppressedForFairness(nowMs) {
@@ -833,71 +989,9 @@ function syncSimulationFromElapsedTime(nowMs) {
       return;
     }
 
-    const previousTickMs = Number(state.simulation.lastTickRealTimeMs);
-    const safePreviousTickMs = Number.isFinite(previousTickMs) ? previousTickMs : safeNowMs;
-    const elapsedRealMs = Math.max(0, safeNowMs - safePreviousTickMs);
-    const effectiveElapsedRealMs = Math.min(elapsedRealMs, MAX_OFFLINE_SIM_MS);
-    const effectiveNowMs = safePreviousTickMs + effectiveElapsedRealMs;
-    const discardedElapsedRealMs = Math.max(0, elapsedRealMs - effectiveElapsedRealMs);
-    const wasDeadBeforeCatchUp = isPlantDead();
-    const beforeStats = {
-      health: round2(state.status.health),
-      stress: round2(state.status.stress),
-      risk: round2(state.status.risk),
-      water: round2(state.status.water)
-    };
-
-    if (state.debug && state.debug.enabled) {
-      console.debug('[offline]', {
-        requestedNowMs: safeNowMs,
-        previousTickMs: safePreviousTickMs,
-        elapsedRealMs,
-        effectiveElapsedRealMs,
-        maxOfflineSimMs: MAX_OFFLINE_SIM_MS,
-        discardMs: discardedElapsedRealMs,
-        eventsSuppressed: true
-      });
-    }
-
-    if (elapsedRealMs > MAX_OFFLINE_SIM_MS) {
-      addLog('system', 'Du warst lange weg. Offline-Simulation wurde begrenzt.', {
-        offlineElapsedHours: round2(elapsedRealMs / (60 * 60 * 1000)),
-        simulatedHours: round2(MAX_OFFLINE_SIM_MS / (60 * 60 * 1000))
-      });
-    }
-
-    applySimulationDelta(effectiveElapsedRealMs, effectiveNowMs, safeNowMs, {
-      suppressEvents: true,
-      suppressDeath: true,
-      persistWallNowAsLastTick: true
+    advanceSimulationTime(safeNowMs, {
+      reason: 'resume'
     });
-
-    if (discardedElapsedRealMs > 0 && Number.isFinite(Number(state.simulation.startRealTimeMs))) {
-      state.simulation.startRealTimeMs += discardedElapsedRealMs;
-    }
-
-    if (!wasDeadBeforeCatchUp) {
-      applyOfflineFairnessFloor();
-      if (isPlantDead() && shouldProtectOfflineNightDeath(safePreviousTickMs, safeNowMs)) {
-        applyOfflineNightSurvivalClamp();
-      }
-      syncCanonicalStateShape();
-    }
-
-    if (state.debug && state.debug.enabled) {
-      console.debug('[offline:result]', {
-        healthBefore: beforeStats.health,
-        healthAfter: round2(state.status.health),
-        stressBefore: beforeStats.stress,
-        stressAfter: round2(state.status.stress),
-        riskBefore: beforeStats.risk,
-        riskAfter: round2(state.status.risk),
-        waterBefore: beforeStats.water,
-        waterAfter: round2(state.status.water),
-        deathProtected: !wasDeadBeforeCatchUp && !isPlantDead(),
-        lastTickRealTimeMs: state.simulation.lastTickRealTimeMs
-      });
-    }
   } catch (error) {
     console.error('[offline] catch-up failed', error);
     state.simulation.lastTickRealTimeMs = safeNowMs;
@@ -1201,7 +1295,7 @@ function advanceGrowthTick(elapsedSimMs, options = {}) {
   state.plant.stageKey = stageAssetKeyForIndex(stage.stageIndex);
   state.plant.lastValidStageKey = state.plant.stageKey;
   state.plant.stageProgress = stage.progressInPhase;
-  state.status.growth = round2(computeGrowthPercent(state.simulation.nowMs));
+  state.status.growth = round2(computeGrowthPercent());
 
   if (window.GrowSimProgression && typeof window.GrowSimProgression.shouldAutoFinalizeHarvest === 'function'
     && window.GrowSimProgression.shouldAutoFinalizeHarvest(state)
@@ -1328,22 +1422,21 @@ function getElapsedRealMsSinceRunStart(nowMs) {
   return clamp(nowMs - safeStartMs, 0, REAL_RUN_DURATION_MS);
 }
 
-function getTotalRunProgress(nowMs) {
-  return clamp(getElapsedRealMsSinceRunStart(nowMs) / REAL_RUN_DURATION_MS, 0, 1);
+function getTotalRunProgress() {
+  const elapsedPlantMs = Math.max(0, Number(state.simulation.simTimeMs) - Number(state.simulation.simEpochMs || 0));
+  return clamp(elapsedPlantMs / TOTAL_LIFECYCLE_SIM_MS, 0, 1);
 }
 
-function getPlantTimeFromElapsed(nowMs) {
-  const totalRunProgress = getTotalRunProgress(nowMs);
-  const elapsedPlantMs = totalRunProgress * TOTAL_LIFECYCLE_SIM_MS;
-  const tempoOffsetDays = clamp(Number(state.simulation.tempoOffsetDays) || 0, -4, 8);
-  const adjustedElapsedPlantMs = clamp(elapsedPlantMs + (tempoOffsetDays * SIM_DAY_MS), 0, TOTAL_LIFECYCLE_SIM_MS);
-  const simTimeMs = Number(state.simulation.simEpochMs) + adjustedElapsedPlantMs;
+function getPlantTimeFromElapsed() {
+  const simEpochMs = Number(state.simulation.simEpochMs) || alignToSimStartHour(getRealNowMs(), SIM_START_HOUR);
+  const simTimeMs = Math.max(simEpochMs, Number(state.simulation.simTimeMs) || simEpochMs);
+  const elapsedPlantMs = Math.max(0, simTimeMs - simEpochMs);
 
   return {
-    totalRunProgress,
-    elapsedPlantMs: adjustedElapsedPlantMs,
+    totalRunProgress: clamp(elapsedPlantMs / TOTAL_LIFECYCLE_SIM_MS, 0, 1),
+    elapsedPlantMs,
     simTimeMs,
-    simDay: clamp(adjustedElapsedPlantMs / SIM_DAY_MS, 0, TOTAL_LIFECYCLE_SIM_DAYS)
+    simDay: clamp(elapsedPlantMs / SIM_DAY_MS, 0, TOTAL_LIFECYCLE_SIM_DAYS)
   };
 }
 
@@ -1408,11 +1501,11 @@ function getCurrentStage(simDay) {
   };
 }
 
-function computeGrowthPercent(nowMs = Date.now()) {
+function computeGrowthPercent() {
   if (state.plant.phase === 'dead') {
     return 0;
   }
-  return round2((getPlantTimeFromElapsed(nowMs).simDay / TOTAL_LIFECYCLE_SIM_DAYS) * 100);
+  return round2((getPlantTimeFromElapsed().simDay / TOTAL_LIFECYCLE_SIM_DAYS) * 100);
 }
 
 function computeStageProgress(simDay, stageIndex) {
@@ -1615,6 +1708,85 @@ function dayStamp(timestampMs) {
   return `${y}-${m}-${day}`;
 }
 
+function onBoostAction() {
+  if (isPlantDead()) {
+    addLog('action', 'Boost blockiert: Pflanze ist eingegangen', null);
+    renderAll();
+    return;
+  }
+
+  activateSpeedBoost(Date.now());
+  renderAll();
+  schedulePersistState(true);
+}
+
+function activateSpeedBoost(nowMs = getRealNowMs()) {
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
+  advanceSimulationTime(safeNowMs, {
+    reason: 'boost_sync',
+    suppressLogs: true
+  });
+
+  const remainingBoostMs = getRemainingBoostMs(safeNowMs);
+  const nextRemainingBoostMs = Math.min(BOOST_MAX_REMAINING_REAL_MS, remainingBoostMs + BOOST_DURATION_REAL_MS);
+  const previousBoostActive = remainingBoostMs > 0;
+
+  state.boost.boostEndsAtMs = safeNowMs + nextRemainingBoostMs;
+  updateEffectiveSpeedState(safeNowMs, {
+    previousBoostActive,
+    reason: previousBoostActive ? 'boost_extend' : 'boost_start'
+  });
+
+  addLog('action', previousBoostActive ? 'Zeit-Boost verlängert' : 'Zeit-Boost aktiviert', {
+    boostEndsAtMs: state.boost.boostEndsAtMs,
+    remainingBoostMs: nextRemainingBoostMs,
+    effectiveSpeed: getEffectiveSimulationSpeed(safeNowMs)
+  });
+  syncCanonicalStateShape();
+
+  if (typeof schedulePersistState === 'function') {
+    schedulePersistState(true);
+  }
+
+  return state.boost.boostEndsAtMs;
+}
+
+function setBaseSimulationSpeed(value, nowMs = getRealNowMs()) {
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
+  const nextBaseSpeed = normalizeBaseSimulationSpeed(value);
+  const previousBaseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
+
+  advanceSimulationTime(safeNowMs, {
+    reason: 'base_speed_sync',
+    suppressLogs: true
+  });
+
+  state.simulation.baseSpeed = nextBaseSpeed;
+  addLog('system', 'Basis-Simulationsgeschwindigkeit geändert', {
+    from: previousBaseSpeed,
+    to: nextBaseSpeed
+  });
+  updateEffectiveSpeedState(safeNowMs, {
+    previousBoostActive: isSpeedBoostActive(safeNowMs),
+    reason: 'base_speed_change'
+  });
+  syncCanonicalStateShape();
+
+  if (typeof schedulePersistState === 'function') {
+    schedulePersistState(true);
+  }
+
+  return nextBaseSpeed;
+}
+
+function resetBoostDaily(nowMs) {
+  const currentStamp = dayStamp(nowMs);
+  if (state.boost.dayStamp !== currentStamp) {
+    state.boost.dayStamp = currentStamp;
+    state.boost.boostUsedToday = 0;
+  }
+}
+
 function alignToSimStartHour(realNowMs, startHour) {
   const d = new Date(realNowMs);
   d.setHours(clampInt(startHour, 0, 23), 0, 0, 0);
@@ -1640,7 +1812,7 @@ function nextDaytimeRealMs(realNowMs, simTimeMs) {
 
   shifted.setHours(SIM_DAY_START_HOUR, 0, 0, 0);
   const simDeltaMs = Math.max(0, shifted.getTime() - simTimeMs);
-  const realDeltaMs = Math.ceil(simDeltaMs * (REAL_RUN_DURATION_MS / TOTAL_LIFECYCLE_SIM_MS));
+  const realDeltaMs = convertSimDeltaToFutureRealDeltaMs(simDeltaMs, realNowMs);
   return realNowMs + realDeltaMs;
 }
 

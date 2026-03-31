@@ -1,0 +1,308 @@
+const { chromium } = require('playwright');
+const assert = require('assert');
+const fs = require('fs');
+const http = require('http');
+const path = require('path');
+
+const ROOT = path.resolve(__dirname, '..');
+const HOST = '0.0.0.0';
+const CLIENT_HOST = '127.0.0.1';
+const PORT = 4176;
+const APP_URL = `http://${CLIENT_HOST}:${PORT}/`;
+const LS_STATE_KEY = 'grow-sim-state-v2';
+
+function contentTypeFor(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const byExt = {
+    '.css': 'text/css; charset=utf-8',
+    '.html': 'text/html; charset=utf-8',
+    '.ico': 'image/x-icon',
+    '.jpeg': 'image/jpeg',
+    '.jpg': 'image/jpeg',
+    '.js': 'text/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml; charset=utf-8',
+    '.webmanifest': 'application/manifest+json; charset=utf-8',
+    '.webp': 'image/webp'
+  };
+  return byExt[ext] || 'application/octet-stream';
+}
+
+function createStaticServer(rootDir) {
+  return http.createServer((req, res) => {
+    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
+    const relativePath = decodeURIComponent(requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname);
+    const safeRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
+    const filePath = path.join(rootDir, safeRelativePath);
+
+    if (!filePath.startsWith(rootDir)) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+
+    fs.readFile(filePath, (error, data) => {
+      if (error) {
+        res.writeHead(error.code === 'ENOENT' ? 404 : 500);
+        res.end(error.code === 'ENOENT' ? 'Not found' : 'Internal server error');
+        return;
+      }
+
+      res.writeHead(200, {
+        'Content-Type': contentTypeFor(filePath),
+        'Cache-Control': 'no-store'
+      });
+      res.end(data);
+    });
+  });
+}
+
+function assertApproxRatio(label, simDeltaMs, realDeltaMs, expectedSpeed, tolerance = 1.5) {
+  const ratio = simDeltaMs / realDeltaMs;
+  assert(
+    Math.abs(ratio - expectedSpeed) <= tolerance,
+    `${label}: expected ratio near ${expectedSpeed}x, got ${ratio.toFixed(2)}x`
+  );
+}
+
+async function getSnapshot(page) {
+  return page.evaluate(() => ({
+    realNowMs: Date.now(),
+    simTimeMs: Number(window.__gsState && window.__gsState.simulation && window.__gsState.simulation.simTimeMs),
+    simEpochMs: Number(window.__gsState && window.__gsState.simulation && window.__gsState.simulation.simEpochMs),
+    lastTickRealTimeMs: Number(window.__gsState && window.__gsState.simulation && window.__gsState.simulation.lastTickRealTimeMs),
+    baseSpeed: Number(window.__gsState && window.__gsState.simulation && window.__gsState.simulation.baseSpeed),
+    effectiveSpeed: Number(window.__gsState && window.__gsState.simulation && window.__gsState.simulation.effectiveSpeed),
+    boostEndsAtMs: Number(window.__gsState && window.__gsState.boost && window.__gsState.boost.boostEndsAtMs),
+    remainingBoostMs: typeof getRemainingBoostMs === 'function' ? Number(getRemainingBoostMs(Date.now())) : null,
+    isDaytime: Boolean(window.__gsState && window.__gsState.simulation && window.__gsState.simulation.isDaytime)
+  }));
+}
+
+async function evaluateWithRetry(page, fn, arg) {
+  try {
+    return await page.evaluate(fn, arg);
+  } catch (error) {
+    const message = String(error && error.message || '');
+    if (!message.includes('Execution context was destroyed')) {
+      throw error;
+    }
+    await page.waitForLoadState('domcontentloaded');
+    return page.evaluate(fn, arg);
+  }
+}
+
+async function waitForRuntime(page) {
+  await page.waitForFunction(() => {
+    return window.__gsBootOk === true
+      && window.__gsState
+      && window.__gsState.simulation
+      && Number.isFinite(window.__gsState.simulation.simTimeMs)
+      && Number.isFinite(window.__gsState.simulation.lastTickRealTimeMs);
+  });
+}
+
+async function clearPersistence(page) {
+  await page.goto(APP_URL, { waitUntil: 'networkidle' });
+  await evaluateWithRetry(page, async (stateKey) => {
+    localStorage.removeItem(stateKey);
+    if (typeof indexedDB !== 'undefined') {
+      await new Promise((resolve) => {
+        const request = indexedDB.deleteDatabase('grow-sim-db');
+        request.onsuccess = () => resolve();
+        request.onerror = () => resolve();
+        request.onblocked = () => resolve();
+      });
+    }
+  }, LS_STATE_KEY);
+}
+
+async function startFreshRun(page) {
+  await clearPersistence(page);
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('#landing:not(.hidden)');
+  await page.click('#startRunBtn');
+  await page.waitForFunction(() => {
+    const node = document.getElementById('landing');
+    return Boolean(node && node.classList.contains('hidden'));
+  });
+  await waitForRuntime(page);
+  await page.waitForTimeout(1200);
+}
+
+async function mutateStoredState(page, mutatorSource, arg) {
+  await page.evaluate(({ stateKey, mutatorSource, argValue }) => {
+    const raw = localStorage.getItem(stateKey);
+    const parsed = raw ? JSON.parse(raw) : {};
+    const mutator = new Function('state', 'arg', mutatorSource);
+    mutator(parsed, argValue);
+    localStorage.setItem(stateKey, JSON.stringify(parsed));
+  }, { stateKey: LS_STATE_KEY, mutatorSource, argValue: arg });
+}
+
+async function scenarioLiveX12(page) {
+  await startFreshRun(page);
+  await page.evaluate(() => setBaseSimulationSpeed(12, Date.now()));
+  const before = await getSnapshot(page);
+  await page.waitForTimeout(3200);
+  const after = await getSnapshot(page);
+  assertApproxRatio('live x12 progression', after.simTimeMs - before.simTimeMs, after.realNowMs - before.realNowMs, 12, 1.8);
+}
+
+async function scenarioBaseSpeedChanges(page) {
+  await startFreshRun(page);
+  const beforeChange = await getSnapshot(page);
+  await page.evaluate(() => setBaseSimulationSpeed(4, Date.now()));
+  const afterImmediate4 = await getSnapshot(page);
+  assert(
+    Math.abs(afterImmediate4.simTimeMs - beforeChange.simTimeMs) < 15000,
+    'base speed change to x4 caused a time jump'
+  );
+  await page.waitForTimeout(4200);
+  const afterRun4 = await getSnapshot(page);
+  assertApproxRatio('live x4 progression', afterRun4.simTimeMs - afterImmediate4.simTimeMs, afterRun4.realNowMs - afterImmediate4.realNowMs, 4, 1.2);
+
+  await page.evaluate(() => setBaseSimulationSpeed(16, Date.now()));
+  const afterImmediate16 = await getSnapshot(page);
+  assert(
+    Math.abs(afterImmediate16.simTimeMs - afterRun4.simTimeMs) < 15000,
+    'base speed change to x16 caused a time jump'
+  );
+  await page.waitForTimeout(5200);
+  const afterRun16 = await getSnapshot(page);
+  assertApproxRatio('live x16 progression', afterRun16.simTimeMs - afterImmediate16.simTimeMs, afterRun16.realNowMs - afterImmediate16.realNowMs, 16, 3.0);
+}
+
+async function scenarioBoostActivationAndExpiry(page) {
+  await startFreshRun(page);
+  await page.evaluate(() => setBaseSimulationSpeed(12, Date.now()));
+  await page.evaluate(() => activateSpeedBoost(Date.now()));
+  const active = await getSnapshot(page);
+  assert.strictEqual(active.effectiveSpeed, 24, 'boost activation did not produce x24 effective speed');
+  assert(active.remainingBoostMs > (29 * 60 * 1000), 'boost activation did not set a ~30 minute remaining duration');
+
+  await page.evaluate(() => {
+    window.__gsState.boost.boostEndsAtMs = Date.now() + 1200;
+    advanceSimulationTime(Date.now(), { reason: 'test_boost_shorten', suppressLogs: true });
+  });
+  await page.waitForTimeout(2200);
+  const expired = await getSnapshot(page);
+  assert.strictEqual(expired.effectiveSpeed, 12, 'boost expiry did not return to base speed');
+  assert.strictEqual(expired.boostEndsAtMs, 0, 'expired boost was not cleared');
+}
+
+async function scenarioReloadDuringActiveBoost(page) {
+  await startFreshRun(page);
+  await page.evaluate(() => {
+    setBaseSimulationSpeed(8, Date.now());
+    activateSpeedBoost(Date.now());
+  });
+  const beforeReload = await getSnapshot(page);
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForRuntime(page);
+  const afterReload = await getSnapshot(page);
+  assert.strictEqual(afterReload.baseSpeed, 8, 'base speed did not persist through active-boost reload');
+  assert.strictEqual(afterReload.effectiveSpeed, 24, 'active boost did not persist through reload');
+  assert(afterReload.remainingBoostMs > 0, 'active boost lost remaining duration on reload');
+  assert(afterReload.remainingBoostMs < beforeReload.remainingBoostMs, 'active boost remaining time did not decay across reload');
+}
+
+async function scenarioReloadAfterExpiredBoost(page) {
+  await startFreshRun(page);
+  await page.evaluate(() => {
+    setBaseSimulationSpeed(16, Date.now());
+    window.__gsState.simulation.baseSpeed = 16;
+    window.__gsState.simulation.effectiveSpeed = 24;
+    window.__gsState.simulation.timeCompression = 24;
+    window.__gsState.boost.boostEndsAtMs = Date.now() - 1000;
+    if (typeof schedulePersistState === 'function') {
+      schedulePersistState(true);
+    }
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForRuntime(page);
+  const afterReload = await getSnapshot(page);
+  assert.strictEqual(afterReload.baseSpeed, 16, 'base speed did not persist after expired boost reload');
+  assert.strictEqual(afterReload.effectiveSpeed, 16, 'expired boost still affected effective speed after reload');
+  assert.strictEqual(afterReload.boostEndsAtMs, 0, 'expired boost was not cleared on reload');
+}
+
+async function scenarioOfflineResume(page) {
+  await startFreshRun(page);
+  await page.evaluate(() => setBaseSimulationSpeed(12, Date.now()));
+  const before = await getSnapshot(page);
+  const tenSecondsAgo = Date.now() - 10000;
+  await page.evaluate((timestamp) => {
+    window.__gsState.simulation.lastTickRealTimeMs = timestamp;
+    if (typeof syncCanonicalStateShape === 'function') {
+      syncCanonicalStateShape();
+    }
+    if (typeof schedulePersistState === 'function') {
+      schedulePersistState(true);
+    }
+  }, tenSecondsAgo);
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForRuntime(page);
+  const after = await getSnapshot(page);
+  const simDeltaMs = after.simTimeMs - before.simTimeMs;
+  const expectedSimDeltaMs = (after.realNowMs - tenSecondsAgo) * 12;
+  assert(
+    Math.abs(simDeltaMs - expectedSimDeltaMs) <= 25000,
+    `offline resume expected about ${expectedSimDeltaMs} sim ms, got ${simDeltaMs}`
+  );
+}
+
+async function scenarioSkipNight(page) {
+  await startFreshRun(page);
+  const result = await page.evaluate(() => {
+    const nowMs = Date.now();
+    setBaseSimulationSpeed(8, nowMs);
+    const currentSimTimeMs = Number(window.__gsState.simulation.simEpochMs) + (15 * 60 * 60 * 1000);
+    setSimulationTimeMs(currentSimTimeMs, nowMs, { suppressLogs: true });
+    const nextDayStartSimMs = getNextDayStartSimTime(currentSimTimeMs);
+    const remainingNightSimMs = nextDayStartSimMs - currentSimTimeMs;
+    const expectedRealDeltaMs = convertSimDeltaToFutureRealDeltaMs(remainingNightSimMs, nowMs);
+    onSkipNightAction();
+    return {
+      expectedSimTimeMs: nextDayStartSimMs,
+      actualSimTimeMs: Number(window.__gsState.simulation.simTimeMs),
+      isDaytime: Boolean(window.__gsState.simulation.isDaytime),
+      expectedRealDeltaMs
+    };
+  });
+
+  assert(
+    Math.abs(result.actualSimTimeMs - result.expectedSimTimeMs) <= (60 * 60 * 1000),
+    `skip night landed outside the expected next-day window (${result.actualSimTimeMs} vs ${result.expectedSimTimeMs})`
+  );
+  assert.strictEqual(result.isDaytime, true, 'skip night did not end in daytime');
+  assert(result.expectedRealDeltaMs > 0, 'skip night did not use shared sim-to-real delta conversion');
+}
+
+async function main() {
+  const server = createStaticServer(ROOT);
+  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+
+  try {
+    await scenarioLiveX12(page);
+    await scenarioBaseSpeedChanges(page);
+    await scenarioBoostActivationAndExpiry(page);
+    await scenarioReloadDuringActiveBoost(page);
+    await scenarioReloadAfterExpiredBoost(page);
+    await scenarioOfflineResume(page);
+    await scenarioSkipNight(page);
+    console.log('time-system-runtime: all scenarios passed');
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

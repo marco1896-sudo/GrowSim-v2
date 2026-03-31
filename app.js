@@ -72,11 +72,12 @@ const EVENT_ROLL_MAX_REAL_MS = CONFIG.timing.eventRollMaxRealMs;
 const EVENT_COOLDOWN_MS = CONFIG.timing.eventCooldownMs;
 const EVENT_RESOLUTION_MS = 10 * 60 * 1000;
 const BOOST_ADVANCE_MS = CONFIG.boostAdvanceMs;
-// Absichtlich limitierter Boost: Event-Timer um 30 Min vorziehen,
-// Pflanzenwerte nur leicht anstoßen (kein vollständiger 30-Minuten-Simulationssprung).
-const BOOST_PLANT_EFFECT_MS = 3 * 60 * 1000;
-const BOOST_GROWTH_PERCENT_DELTA = 0.02;
-const SIM_TIME_COMPRESSION = CONFIG.simulation.timeCompression;
+const DEFAULT_BASE_SIM_SPEED = CONFIG.simulation.timeCompression;
+const SIM_SPEED_OPTIONS = Object.freeze([4, 8, 12, 16]);
+const BOOST_SIM_SPEED = 24;
+const BOOST_DURATION_REAL_MS = 30 * 60 * 1000;
+const BOOST_MAX_REMAINING_REAL_MS = 60 * 60 * 1000;
+const SIM_TIME_COMPRESSION = DEFAULT_BASE_SIM_SPEED;
 const SIM_DAY_START_HOUR = CONFIG.simulation.dayStartHour;
 const SIM_NIGHT_START_HOUR = CONFIG.simulation.nightStartHour;
 const SIM_START_HOUR = CONFIG.simulation.startHour;
@@ -86,6 +87,7 @@ const MAX_HISTORY_LOG = CONFIG.maxHistoryLog;
 const PERSIST_THROTTLE_MS = CONFIG.persistThrottleMs;
 const MAX_ELAPSED_PER_TICK_MS = 5000;
 const MAX_OFFLINE_SIM_MS = 8 * 60 * 60 * 1000;
+const LARGE_TIME_JUMP_LOG_MS = 60 * 1000;
 const APP_BASE_PATH = resolveAppBasePath();
 const FREEZE_SIM_ON_DEATH = true; // Für Klarheit: Simulation pausiert nach Tod der Pflanze.
 
@@ -99,7 +101,7 @@ const ACTIONS_CATALOG_VERSION = '20260326-care-ui-v1';
 const VAPID_PUBLIC_KEY = 'BElxPLACEHOLDERp8v2C4CwY6ofqP5E8v2rFjQvqW8g4bW2-v8JvKc-l7dXXn4N1xqjY7PqFhL3O8m4jzWzI8v7jA';
 
 const REAL_RUN_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-const TOTAL_LIFECYCLE_SIM_DAYS = 88;
+const TOTAL_LIFECYCLE_SIM_DAYS = 84;
 const SIM_DAY_MS = 24 * 60 * 60 * 1000;
 const TOTAL_LIFECYCLE_SIM_MS = TOTAL_LIFECYCLE_SIM_DAYS * SIM_DAY_MS;
 
@@ -293,7 +295,9 @@ const state = {
     tickCount: 0,
     mode: MODE,
     tickIntervalMs: UI_TICK_INTERVAL_MS,
-    timeCompression: SIM_TIME_COMPRESSION,
+    timeCompression: DEFAULT_BASE_SIM_SPEED,
+    baseSpeed: DEFAULT_BASE_SIM_SPEED,
+    effectiveSpeed: DEFAULT_BASE_SIM_SPEED,
     globalSeed: SIM_GLOBAL_SEED,
     plantId: SIM_PLANT_ID,
     dayWindow: { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR },
@@ -329,7 +333,9 @@ const state = {
   events: {
     machineState: 'idle',
     scheduler: {
+      nextEventSimTimeMs: initialSimTimeMs + (EVENT_ROLL_MIN_REAL_MS * DEFAULT_BASE_SIM_SPEED),
       nextEventRealTimeMs: now + EVENT_ROLL_MIN_REAL_MS,
+      lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
       lastEventId: null,
       lastChoiceId: null,
@@ -337,7 +343,9 @@ const state = {
       deferredUntilDaytime: false,
       windowRealMinutes: { min: 30, max: 90 },
       eventCooldowns: {},
-      categoryCooldowns: {}
+      categoryCooldowns: {},
+      eventCooldownsSim: {},
+      categoryCooldownsSim: {}
     },
     active: null,
     history: [],
@@ -352,10 +360,12 @@ const state = {
     activeTags: [],
     activeImagePath: '',
     resolvingUntilMs: 0,
+    resolvingUntilSimTimeMs: 0,
     pendingOutcome: null,
     resolvedOutcome: null,
     lastEventAtMs: 0,
     cooldownUntilMs: 0,
+    cooldownUntilSimTimeMs: 0,
     catalog: [],
     foundation: {
       flags: {},
@@ -380,7 +390,8 @@ const state = {
   boost: {
     boostUsedToday: 0,
     boostMaxPerDay: 6,
-    dayStamp: dayStamp(now)
+    dayStamp: dayStamp(now),
+    boostEndsAtMs: 0
   },
   actions: {
     catalog: [],
@@ -955,7 +966,7 @@ function wireDomainOwnership() {
     selectEventDeterministically = eventsApi.selectEventDeterministically;
     scheduleNextEventRoll = eventsApi.scheduleNextEventRoll;
     registerServiceWorker = eventsApi.registerServiceWorker;
-    ownership.events = 'events_module';
+    ownership.events = 'events.js';
   }
 
   const storageApi = window.GrowSimStorage;
@@ -1198,7 +1209,7 @@ function initUiArchitecture() {
   if (controllerApi && typeof controllerApi.createUIController === 'function') {
     uiController = controllerApi.createUIController({
       applyAction: (actionId) => applyAction(actionId),
-      applyEventOption: (optionId) => onEventOptionClickCore(optionId),
+      applyEventOption: (optionId) => callCanonicalEventsRuntime('onEventOptionClick', optionId),
       openSheet: (sheetName) => openSheet(sheetName),
       closeSheet: () => closeSheet(),
       closeMenu: () => closeMenu(),
@@ -1732,171 +1743,16 @@ function normalizeStageKey(rawStageKey) {
 }
 
 function runEventStateMachine(nowMs) {
-  if (state.events.machineState === 'resolving') {
-    if (nowMs >= state.events.resolvingUntilMs) {
-      state.events.machineState = 'resolved';
-      addLog('system', 'Ereignisausgang ist bereit', {
-        eventId: state.events.activeEventId,
-        chosenOptionId: state.events.lastChoiceId,
-        resolvedAtMs: nowMs
-      });
-    } else if (state.events.scheduler.nextEventRealTimeMs <= nowMs) {
-      scheduleNextEventRoll(nowMs, 'resolving_event_pending');
-      schedulePushIfAllowed(false);
-    }
-  }
-
-  if (state.events.machineState === 'resolved' && !state.events.resolvedOutcome && state.events.pendingOutcome) {
-    state.events.resolvedOutcome = { ...state.events.pendingOutcome };
-    state.events.pendingOutcome = null;
-  }
-
-  if (state.events.machineState === 'cooldown') {
-    if (nowMs >= state.events.cooldownUntilMs) {
-      state.events.machineState = 'idle';
-      addLog('system', 'Abklingzeit beendet, Status wieder inaktiv', null);
-    }
-    if (nowMs >= state.events.scheduler.nextEventRealTimeMs) {
-      scheduleNextEventRoll(nowMs, 'cooldown');
-      schedulePushIfAllowed(false);
-    }
-  }
-
-  if ((state.events.machineState === 'activeEvent' || state.events.machineState === 'resolved')
-    && nowMs >= state.events.scheduler.nextEventRealTimeMs) {
-    scheduleNextEventRoll(nowMs, `${state.events.machineState}_event_pending`);
-    schedulePushIfAllowed(false);
-  }
-
-  if (state.events.machineState === 'idle' && nowMs >= state.events.scheduler.nextEventRealTimeMs) {
-    if (!state.simulation.isDaytime) {
-      state.events.scheduler.nextEventRealTimeMs = nextDaytimeRealMs(nowMs, state.simulation.simTimeMs);
-      addLog('event_roll', 'Nachtphase: Ereigniswurf auf Tagesbeginn verschoben', {
-        nextEventAtMs: state.events.scheduler.nextEventRealTimeMs
-      });
-      schedulePushIfAllowed(false);
-      return;
-    }
-
-    const roll = deterministicRoll();
-    addLog('event_roll', 'Ereignisgrenze erreicht, Ereignis wird aktiviert', {
-      roll,
-      threshold: eventThreshold(),
-      simHour: simHour(state.simulation.simTimeMs),
-      at: nowMs
-    });
-
-    const activated = activateEvent(nowMs);
-    if (activated) {
-      state.ui.openSheet = 'event';
-      schedulePushIfAllowed(false);
-      return;
-    }
-
-    addLog('event_roll', 'Ereignisgrenze bleibt aktiv: Kein Ereignis aktivierbar', {
-      at: nowMs,
-      phase: state.plant.phase
-    });
-    state.events.scheduler.nextEventRealTimeMs = nowMs;
-    schedulePushIfAllowed(false);
-    return;
-  }
-
-  if (state.events.machineState === 'activeEvent') {
-    state.ui.openSheet = 'event';
-  }
+  return callCanonicalEventsRuntime('runEventStateMachine', nowMs);
 }
 
 function activateEvent(nowMs) {
-  const catalog = state.events.catalog;
-  if (!Array.isArray(catalog) || !catalog.length) {
-    return false;
-  }
-
-  const eligible = eligibleEventsForNow(nowMs);
-  let pool = eligible;
-  if (!pool.length) {
-    pool = fallbackEventsForCurrentPhase(nowMs);
-  }
-
-  if (!pool.length) {
-    addLog('event_roll', 'Keine passenden Ereignisse für aktuellen Zustand', {
-      simDay: Math.floor(simDayFloat()),
-      at: nowMs
-    });
-    return false;
-  }
-
-  const foundationCandidate = resolveFoundationCandidateEvent();
-  const forcedEvent = foundationCandidate && foundationCandidate.eventId ? pool.find((event) => event && event.id === foundationCandidate.eventId) : null;
-
-  const eventDef = forcedEvent || selectEventDeterministically(pool, nowMs);
-  if (!eventDef) {
-    return false;
-  }
-
-  const foundationApi = getEventFoundationApis();
-  let consumedPendingChain = null;
-  if (foundationApi.memory && typeof foundationApi.memory.consumePendingChain === 'function') {
-    consumedPendingChain = foundationApi.memory.consumePendingChain(state.events, eventDef.id);
-  }
-  if (foundationApi.memory && eventDef.id === 'stable_growth_reward' && typeof foundationApi.memory.clearPendingChain === 'function') {
-    foundationApi.memory.clearPendingChain(state.events, 'root_stress_followup');
-  }
-
-  const options = eventDef.options.slice(0, 3);
-
-  state.events.machineState = 'activeEvent';
-  state.events.activeEventId = eventDef.id;
-  state.events.scheduler.lastEventId = eventDef.id;
-  state.events.activeEventTitle = eventDef.title;
-  state.events.activeEventText = eventDef.description;
-  state.events.activeLearningNote = eventDef.learningNote || '';
-  state.events.activeOptions = options;
-  state.events.activeSeverity = eventDef.severity || 3;
-  state.events.activeCooldownRealMinutes = clamp(Number(eventDef.cooldownRealMinutes) || 120, 10, 24 * 60);
-  state.events.activeCategory = eventDef.category || 'generic'; state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
-  state.events.scheduler.lastEventRealTimeMs = nowMs;
-
-  state.events.scheduler.lastEventId = eventDef.id;
-  state.events.scheduler.lastEventRealTimeMs = nowMs;
-  state.events.scheduler.lastEventCategory = eventDef.category || 'generic';
-  state.events.active = {
-    id: eventDef.id,
-    title: eventDef.title,
-    description: eventDef.description,
-    category: eventDef.category || 'generic',
-    learningNote: eventDef.learningNote || ''
-  };
-
-  addLog('event_shown', `Ereignis ausgewählt: ${eventDef.id}`, {
-    title: eventDef.title,
-    severity: state.events.activeSeverity,
-    category: eventDef.category || 'generic',
-    foundationReason: foundationCandidate && foundationCandidate.eventId === eventDef.id ? foundationCandidate.reason : null,
-    consumedPendingChainId: consumedPendingChain ? consumedPendingChain.chainId : null
-  });
-
-  if (foundationApi.memory) {
-    foundationApi.memory.addEvent(state.events, eventDef.id, {
-      phase: state.plant.phase,
-      reason: foundationCandidate && foundationCandidate.eventId === eventDef.id ? foundationCandidate.reason : 'default_selection',
-      consumedChainId: consumedPendingChain ? consumedPendingChain.chainId : null,
-      sourceEventId: consumedPendingChain ? consumedPendingChain.sourceEventId : null,
-      sourceOptionId: consumedPendingChain ? consumedPendingChain.sourceOptionId : null
-    });
-  }
-
-  notifyPlantNeedsCare('Deine Pflanze braucht Pflege.');
-  return true;
+  return callCanonicalEventsRuntime('activateEvent', nowMs);
 }
 
 
 function eligibleEventsForNow(nowMs) {
-  const cooldowns = state.events.scheduler.eventCooldowns || {};
-  return state.events.catalog
-    .filter((eventDef) => isEventEligible(eventDef, cooldowns, nowMs))
-    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  return callCanonicalEventsRuntime('eligibleEventsForNow', nowMs);
 }
 
 function fallbackEventsForCurrentPhase(nowMs) {
@@ -1925,31 +1781,7 @@ function fallbackEventsForCurrentPhase(nowMs) {
 }
 
 function isEventEligible(eventDef, cooldowns, nowMs) {
-  if (!eventDef || !eventDef.id) {
-    return false;
-  }
-
-  if (!isEventPhaseAllowed(eventDef)) {
-    return false;
-  }
-
-  if (!evaluateEventConstraints(eventDef)) {
-    return false;
-  }
-
-  const blockedUntil = Number(cooldowns[eventDef.id] || 0);
-  if (blockedUntil > nowMs) {
-    return false;
-  }
-
-  const categoryCooldowns = state.events && state.events.scheduler && state.events.scheduler.categoryCooldowns ? state.events.scheduler.categoryCooldowns : {};
-  const categoryKey = String(eventDef.category || 'generic');
-  const categoryBlockedUntil = Number(categoryCooldowns[categoryKey] || 0);
-  if (categoryBlockedUntil > nowMs) {
-    return false;
-  }
-
-  return evaluateEventTriggers(eventDef.triggers || {});
+  return callCanonicalEventsRuntime('isEventEligible', eventDef, cooldowns, nowMs);
 }
 
 function isEventPhaseAllowed(eventDef) {
@@ -2082,129 +1914,20 @@ function evaluateEventConstraints(eventDef) {
   return true;
 }
 
-function evaluateEventTriggers(triggers) { const t = triggers && typeof triggers === 'object' ? triggers : {};
-
-  if (t.stage && typeof t.stage === 'object') {
-    const stageIndex = state.plant.stageIndex + 1;
-    if (Number.isFinite(Number(t.stage.min)) && stageIndex < Number(t.stage.min)) {
-      return false;
-    }
-    if (Number.isFinite(Number(t.stage.max)) && stageIndex > Number(t.stage.max)) {
-      return false;
-    }
-  }
-
-  if (t.setup && typeof t.setup === 'object') {
-    if (!evaluateSetupConstraints(t.setup)) {
-      return false;
-    }
-  } const all = Array.isArray(t.all) ? t.all : []; const any = Array.isArray(t.any) ? t.any : [];
-
-  if (all.length && !all.every(evaluateTriggerCondition)) {
-    return false;
-  }
-  if (any.length && !any.some(evaluateTriggerCondition)) {
-    return false;
-  }
-
-  return true;
+function evaluateEventTriggers(triggers) {
+  return callCanonicalEventsRuntime('evaluateEventTriggers', triggers);
 }
 
 function evaluateSetupConstraints(setupRule) {
-  const setup = state.setup || {};
-  for (const [key, values] of Object.entries(setupRule)) {
-    if (!Array.isArray(values)) {
-      continue;
-    }
-    const prop = key.replace(/In$/, '');
-    const current = setup[prop];
-    if (!values.map(String).includes(String(current))) {
-      return false;
-    }
-  }
-  return true;
+  return callCanonicalEventsRuntime('evaluateSetupConstraints', setupRule);
 }
 
 function evaluateTriggerCondition(condition) {
-  if (!condition || typeof condition !== 'object') {
-    return false;
-  }
-
-  const field = String(condition.field || '').trim();
-  const op = String(condition.op || '==').trim();
-  const rhs = condition.value;
-  const lhs = resolveTriggerField(field);
-
-  if (op === 'in') {
-    return Array.isArray(rhs) && rhs.map(String).includes(String(lhs));
-  }
-  if (op === 'not_in') {
-    return Array.isArray(rhs) && !rhs.map(String).includes(String(lhs));
-  }
-
-  const leftNum = Number(lhs);
-  const rightNum = Number(rhs);
-  const numeric = Number.isFinite(leftNum) && Number.isFinite(rightNum);
-
-  if (op === '==') return lhs === rhs || String(lhs) === String(rhs);
-  if (op === '!=') return !(lhs === rhs || String(lhs) === String(rhs));
-  if (!numeric) return false;
-  if (op === '>') return leftNum > rightNum;
-  if (op === '>=') return leftNum >= rightNum;
-  if (op === '<') return leftNum < rightNum;
-  if (op === '<=') return leftNum <= rightNum;
-  return false;
+  return callCanonicalEventsRuntime('evaluateTriggerCondition', condition);
 }
 
 function resolveTriggerField(fieldPath) {
-  if (!fieldPath) {
-    return undefined;
-  }
-
-  if (fieldPath.startsWith('status.')) {
-    return state.status[fieldPath.split('.')[1]];
-  }
-  if (fieldPath === 'plant.stageIndex') {
-    return state.plant.stageIndex + 1;
-  }
-  if (fieldPath === 'plant.stageKey') {
-    return state.plant.stageKey;
-  }
-  if (fieldPath === 'plant.size') {
-    const stageIndex = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
-    const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
-    return clamp(((stageIndex - 1) * 8.5) + (stageProgress * 8.5), 0, 100);
-  }
-  if (fieldPath === 'plant.rootMass') {
-    const stageIndex = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, STAGE_DEFS.length);
-    const stageProgress = clamp(Number(state.plant.stageProgress || 0), 0, 1);
-    return clamp(((stageIndex - 1) * 8.2) + (stageProgress * 7.8), 0, 100);
-  }
-  if (fieldPath.startsWith('setup.')) {
-    return (state.setup || {})[fieldPath.split('.')[1]];
-  }
-  if (fieldPath === 'simulation.isDaytime') {
-    return state.simulation.isDaytime;
-  }
-  if (fieldPath === 'simulation.simDay') {
-    return Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
-  }
-
-  const environment = deriveEnvironmentReadout();
-  if (fieldPath === 'env.temperatureC') return environment.temperatureC;
-  if (fieldPath === 'env.humidityPercent') return environment.humidityPercent;
-  if (fieldPath === 'env.vpdKpa') return environment.vpdKpa;
-  if (fieldPath === 'env.airflowScore') {
-    return Number.isFinite(Number(environment.airflowScore)) ? clamp(Number(environment.airflowScore), 0, 100) : (environment.airflowLabel === 'Good' ? 80 : (environment.airflowLabel === 'Mittel' ? 55 : 30));
-  }
-
-  const roots = deriveRootZoneReadout(environment);
-  if (fieldPath === 'root.ph') return Number(roots.ph);
-  if (fieldPath === 'root.ec') return Number(String(roots.ec).replace(/\s*mS$/i, ''));
-  if (fieldPath === 'root.oxygenPercent') return Number(String(roots.oxygen).replace('%', ''));
-  if (fieldPath === 'root.healthPercent') return Number(String(roots.rootHealth).replace('%', ''));
-
-  return undefined;
+  return callCanonicalEventsRuntime('resolveTriggerField', fieldPath);
 }
 
 function getEventFoundationApis() {
@@ -2295,106 +2018,11 @@ function applyFoundationFollowUps(choice, eventId) {
 }
 
 function onEventOptionClick(optionId) {
-  const controller = getUiController();
-  if (controller && typeof controller.handleEventOption === 'function' && !controller.isDispatching()) {
-    return controller.handleEventOption(optionId);
-  }
-  return onEventOptionClickCore(optionId);
+  return callCanonicalEventsRuntime('onEventOptionClick', optionId);
 }
 
 function onEventOptionClickCore(optionId) {
-  if (isPlantDead()) {
-    return;
-  }
-  if (state.events.machineState !== 'activeEvent') {
-    return;
-  }
-
-  const choice = state.events.activeOptions.find((option) => option.id === optionId);
-  if (!choice) {
-    return;
-  }
-
-  const before = snapshotStatus();
-  applyChoiceEffects(choice.effects || {});
-
-  const triggeredSideEffects = []; for (const side of Array.isArray(choice.sideEffects) ? choice.sideEffects : []) {
-    if (!evaluateCondition(side.when || 'true')) {
-      continue;
-    }
-    const chance = clamp(Number(side.chance), 0, 1);
-    const roll = deterministicUnitFloat(`event_side:${state.events.activeEventId}:${choice.id}:${side.id || 'side'}:${state.simulation.tickCount}`);
-    if (roll <= chance) {
-      applyChoiceEffects(side.effects || {});
-      triggeredSideEffects.push(side.id || 'side');
-    }
-  }
-
-  const after = snapshotStatus();
-  const deltaSummary = summarizeDelta(before, after);
-
-  state.events.lastChoiceId = choice.id;
-  state.events.scheduler.lastChoiceId = choice.id;
-  state.events.machineState = 'resolving';
-  state.events.resolvingUntilMs = state.simulation.nowMs + EVENT_RESOLUTION_MS;
-
-  state.events.pendingOutcome = {
-    eventId: state.events.activeEventId,
-    eventTitle: state.events.activeEventTitle,
-    optionId: choice.id,
-    optionLabel: choice.label,
-    summary: classifyOutcome(deltaSummary),
-    learningNote: state.events.activeLearningNote || '',
-    resolvedAfterMs: EVENT_RESOLUTION_MS
-  };
-  state.events.resolvedOutcome = null;
-
-  const triggerSnapshot = {
-    simDay: Math.floor(simDayFloat()),
-    stageIndex: state.plant.stageIndex + 1,
-    water: round2(state.status.water),
-    nutrition: round2(state.status.nutrition),
-    health: round2(state.status.health),
-    stress: round2(state.status.stress),
-    risk: round2(state.status.risk),
-    growth: round2(state.status.growth),
-    setup: {
-      mode: state.setup && state.setup.mode ? state.setup.mode : null,
-      medium: state.setup && state.setup.medium ? state.setup.medium : null,
-      light: state.setup && state.setup.light ? state.setup.light : null
-    }
-  };
-
-  const historyEntry = {
-    type: 'event',
-    eventId: state.events.activeEventId,
-    category: state.events.activeCategory || 'generic',
-    optionId: choice.id,
-    optionLabel: choice.label,
-    learningNote: state.events.activeLearningNote || '',
-    triggerSnapshot,
-    effectsApplied: deltaSummary,
-    sideEffectsTriggered: triggeredSideEffects,
-    atSimTimeMs: state.simulation.simTimeMs,
-    atRealTimeMs: Date.now()
-  };
-
-  state.history.events.push(historyEntry);
-  state.events.history.push(historyEntry);
-
-  applyFoundationFollowUps(choice, state.events.activeEventId);
-
-  addLog('choice', `Option gewählt: ${state.events.activeEventId}/${choice.id}`, {
-    effects: choice.effects || {},
-    sideEffects: triggeredSideEffects,
-    effectsApplied: deltaSummary,
-    followUps: choice.followUps || []
-  });
-
-  runEventStateMachine(state.simulation.nowMs);
-  syncCanonicalStateShape();
-  renderAll();
-  schedulePersistState(true);
+  return callCanonicalEventsRuntime('onEventOptionClick', optionId);
 }
 
 function applyChoiceEffects(effects) {
@@ -2430,13 +2058,11 @@ function setGrowthFromPercent(percent) {
 
   const targetProgress = clamp(Number(percent) / 100, 0, 1);
   const nowMs = Date.now();
-  state.simulation.startRealTimeMs = nowMs - (targetProgress * REAL_RUN_DURATION_MS);
+  const targetSimTimeMs = Number(state.simulation.simEpochMs || alignToSimStartHour(nowMs, SIM_START_HOUR))
+    + (targetProgress * TOTAL_LIFECYCLE_SIM_MS);
+  setSimulationTimeMs(targetSimTimeMs, nowMs, { suppressLogs: true });
 
-  const plantTime = getPlantTimeFromElapsed(nowMs);
-  state.simulation.simTimeMs = plantTime.simTimeMs;
-  state.simulation.lastTickRealTimeMs = nowMs;
-
-  const stage = getCurrentStage(plantTime.simDay);
+  const stage = getCurrentStage(getPlantTimeFromElapsed().simDay);
   state.plant.stageIndex = stage.stageIndex;
   state.plant.phase = stage.current.phase;
   state.plant.stageKey = stageAssetKeyForIndex(stage.stageIndex);
@@ -2445,49 +2071,11 @@ function setGrowthFromPercent(percent) {
 }
 
 function enterEventCooldown(nowMs) {
-  const activeEventId = state.events.activeEventId;
-  const activeCategory = String(state.events.activeCategory || 'generic');
-  const perEventCooldownMs = Math.round((Number(state.events.activeCooldownRealMinutes) || 120) * 60 * 1000);
-
-  state.events.machineState = 'cooldown';
-  state.events.cooldownUntilMs = nowMs + cooldownMs();
-  state.events.activeEventId = null;
-  state.events.activeEventTitle = '';
-  state.events.activeEventText = '';
-  state.events.activeOptions = [];
-  state.events.activeSeverity = 1;
-  state.events.activeCooldownRealMinutes = 120;
-  state.events.activeCategory = 'generic';
-  state.events.activeTags = [];
-  state.events.resolvingUntilMs = 0;
-  state.events.pendingOutcome = null;
-  state.events.resolvedOutcome = null;
-
-  if (activeEventId) {
-    state.events.scheduler.eventCooldowns[activeEventId] = nowMs + perEventCooldownMs;
-  }
-
-  const categoryKey = activeCategory;
-  const categoryCooldownMs = categoryKey === 'positive' ? Math.max(EVENT_COOLDOWN_MS, 45 * 60 * 1000) : EVENT_COOLDOWN_MS;
-  state.events.scheduler.categoryCooldowns[categoryKey] = nowMs + categoryCooldownMs;
-
-  state.events.active = null;
-  if (state.ui.openSheet === 'event') {
-    state.ui.openSheet = null;
-  }
-
-  addLog('system', 'Ereignis abgeschlossen, Abklingzeit gestartet', {
-    cooldownUntilMs: state.events.cooldownUntilMs,
-    eventId: activeEventId,
-    perEventCooldownMs
-  });
+  return callCanonicalEventsRuntime('enterEventCooldown', nowMs);
 }
 
 function deterministicRoll() {
-  const bucket = Math.floor(state.events.scheduler.nextEventRealTimeMs / EVENT_ROLL_MIN_REAL_MS);
-  const riskBucket = Math.round(state.status.risk / 5);
-  const pressureBucket = Math.round(computeEnvironmentEventPressure() * 10);
-  return deterministicUnitFloat(`roll:${bucket}:${riskBucket}:${pressureBucket}:${state.simulation.tickCount}`);
+  return callCanonicalEventsRuntime('deterministicRoll');
 }
 
 function computeEnvironmentEventPressure() {
@@ -2522,27 +2110,19 @@ function computeEnvironmentEventPressure() {
 }
 
 function eventThreshold() {
-  const base = 0.34;
-  const riskInfluence = state.status.risk / 340;
-  const envInfluence = computeEnvironmentEventPressure() * 0.18;
-  return clamp(base + riskInfluence + envInfluence, 0.15, 0.88);
+  return callCanonicalEventsRuntime('eventThreshold');
 }
 
 function shouldTriggerEvent(roll) {
-  return roll < eventThreshold();
+  return callCanonicalEventsRuntime('shouldTriggerEvent', roll);
 }
 
 function deterministicEventDelayMs(nowMs) {
-  const min = EVENT_ROLL_MIN_REAL_MS;
-  const max = EVENT_ROLL_MAX_REAL_MS;
-  const span = Math.max(0, max - min);
-  const bucket = Math.floor(nowMs / min);
-  const u = deterministicUnitFloat(`delay:${bucket}`);
-  return min + Math.floor(u * span);
+  return callCanonicalEventsRuntime('deterministicEventDelayMs', nowMs);
 }
 
 function cooldownMs() {
-  return EVENT_COOLDOWN_MS;
+  return callCanonicalEventsRuntime('cooldownMs');
 }
 
 function onCareApply() {
@@ -3133,38 +2713,7 @@ function onBoostAction() {
     return;
   }
 
-  const nowMs = Date.now();
-  const usage = consumeBoostUsage(nowMs, 'Boost');
-  if (!usage.ok) {
-    renderAll();
-    return;
-  }
-
-  applyStatusDrift(BOOST_PLANT_EFFECT_MS);
-  if (typeof applyFairnessSurvivalGuard === 'function') {
-    applyFairnessSurvivalGuard(nowMs);
-  }
-  applyGrowthPercentDelta(BOOST_GROWTH_PERCENT_DELTA);
-
-  if (state.events.machineState === 'idle' || state.events.machineState === 'cooldown') {
-    state.events.scheduler.nextEventRealTimeMs = Math.max(nowMs, state.events.scheduler.nextEventRealTimeMs - BOOST_ADVANCE_MS);
-  }
-
-  if (state.events.machineState === 'cooldown') {
-    state.events.cooldownUntilMs = Math.max(nowMs, state.events.cooldownUntilMs - BOOST_ADVANCE_MS);
-  }
-
-  if (state.events.machineState === 'resolving') {
-    state.events.resolvingUntilMs = Math.max(nowMs, state.events.resolvingUntilMs - BOOST_ADVANCE_MS);
-  }
-
-  runEventStateMachine(nowMs);
-  updateVisibleOverlays();
-
-  addLog('action', 'Ereignis-Boost angewendet (Event-Timer -30 Min, Pflanze leicht angestoßen)', {
-    usedToday: state.boost.boostUsedToday,
-    nextEventAtMs: state.events.scheduler.nextEventRealTimeMs
-  });
+  activateSpeedBoost(Date.now());
 
   renderAll();
   schedulePersistState(true);
@@ -3195,24 +2744,20 @@ function onSkipNightAction() {
   const remainingNightSimMs = Math.max(0, nextDayStartSimMs - currentSimTimeMs);
 
   if (remainingNightSimMs <= 0) {
-    state.simulation.simTimeMs = nextDayStartSimMs;
-    state.simulation.nowMs = nowMs;
-    state.simulation.lastTickRealTimeMs = nowMs;
-    state.simulation.isDaytime = true;
+    setSimulationTimeMs(nextDayStartSimMs, nowMs, { suppressLogs: true });
     runEventStateMachine(nowMs);
     renderAll();
     schedulePersistState(true);
     return;
   }
 
-  const ratio = REAL_RUN_DURATION_MS / TOTAL_LIFECYCLE_SIM_MS;
-  const elapsedRealMs = Math.ceil(remainingNightSimMs * ratio);
+  const elapsedRealMs = convertSimDeltaToFutureRealDeltaMs(remainingNightSimMs, nowMs);
   const targetRealMs = nowMs + elapsedRealMs;
   const wasDeadBeforeSkip = isPlantDead();
 
-  applySimulationDelta(elapsedRealMs, targetRealMs, nowMs, {
+  advanceSimulationTime(targetRealMs, {
     suppressDeath: true,
-    persistWallNowAsLastTick: true
+    reason: 'skip_night'
   });
 
   if (!wasDeadBeforeSkip) {
@@ -3229,10 +2774,7 @@ function onSkipNightAction() {
     state.ui.deathOverlayOpen = false;
   }
 
-  state.simulation.simTimeMs = nextDayStartSimMs;
-  state.simulation.nowMs = nowMs;
-  state.simulation.lastTickRealTimeMs = nowMs;
-  state.simulation.isDaytime = true;
+  setSimulationTimeMs(nextDayStartSimMs, nowMs, { suppressLogs: true });
   syncCanonicalStateShape();
   runEventStateMachine(nowMs);
 
@@ -3259,8 +2801,25 @@ function resetBoostDaily(nowMs) {
   if (state.boost.dayStamp !== currentStamp) {
     state.boost.dayStamp = currentStamp;
     state.boost.boostUsedToday = 0;
-    addLog('system', 'Täglicher Boost-Zähler zurückgesetzt', { dayStamp: currentStamp });
   }
+}
+
+// Legacy app.js event entry points must delegate into events.js.
+function getCanonicalEventsRuntime() {
+  const api = window.GrowSimEvents;
+  if (!api || typeof api !== 'object') {
+    throw new Error('GrowSimEvents runtime ist nicht verfügbar');
+  }
+  return api;
+}
+
+function callCanonicalEventsRuntime(fnName, ...args) {
+  const runtime = getCanonicalEventsRuntime();
+  const fn = runtime[fnName];
+  if (typeof fn !== 'function') {
+    throw new Error(`GrowSimEvents.${fnName} ist nicht verfügbar`);
+  }
+  return fn(...args);
 }
 
 function dayStamp(timestampMs) {
@@ -3296,7 +2855,7 @@ function nextDaytimeRealMs(realNowMs, simTimeMs) {
 
   shifted.setHours(SIM_DAY_START_HOUR, 0, 0, 0);
   const simDeltaMs = Math.max(0, shifted.getTime() - simTimeMs);
-  const realDeltaMs = Math.ceil(simDeltaMs * (REAL_RUN_DURATION_MS / TOTAL_LIFECYCLE_SIM_MS));
+  const realDeltaMs = convertSimDeltaToFutureRealDeltaMs(simDeltaMs, realNowMs);
   return realNowMs + realDeltaMs;
 }
 
@@ -3460,7 +3019,7 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const xpTarget = Number(levelProgress.nextThreshold || xpCurrent);
   const xpRatio = clamp((Number(levelProgress.xpPercent || 0) / 100), 0, 1);
   const coinBalance = Number(status.coins || (2480 + Math.round(simDay * 28)));
-  const gemBalance = Number(status.gems || (55 + Math.max(0, Math.floor(Number(boost.boostUsedToday || 0) / 2))));
+  const gemBalance = Number(status.gems || 55);
   const starBalance = Number(status.stars || (114 + Math.round(Number(status.growth || 0) / 2)));
   const playerLevel = Number(profile.level || 1); const playerRole = playerLevel >= 6 ? 'Master Grower' : (playerLevel >= 4 ? 'Lead Grower' : (playerLevel >= 2 ? 'Grow Operator' : 'Starter'));
 
@@ -3483,7 +3042,15 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
     dead,
     phaseCard,
     eventStatus,
-    boostText: `Event -30 Min · kleiner Pflanzenimpuls · ${Number(boost.boostUsedToday || 0)}/${Number(boost.boostMaxPerDay || 0)} heute`,
+    boostText: (() => {
+      const remainingBoostMs = getRemainingBoostMs(Date.now());
+      const baseSpeed = normalizeBaseSimulationSpeed(simulation.baseSpeed);
+      const effectiveSpeed = getEffectiveSimulationSpeed(Date.now());
+      if (remainingBoostMs > 0) {
+        return `Zeit-Boost aktiv · ${Math.ceil(remainingBoostMs / 60000)} Min · ${effectiveSpeed}x`;
+      }
+      return `Basis ${baseSpeed}x · Boost ${BOOST_SIM_SPEED}x für 30 Min`;
+    })(),
     growthImpulseText: Number(simulation.growthImpulse || 0).toFixed(2),
     simTimeText: formatSimClock(Number(simulation.simTimeMs || 0)),
     isDaytime: Boolean(simulation.isDaytime),
@@ -5126,7 +4693,7 @@ function renderEventSheet() {
   }
 
   if (state.events.machineState === 'resolving') {
-    const leftMs = state.events.resolvingUntilMs - state.simulation.nowMs;
+const leftMs = Number(state.events.resolvingUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
     ui.eventTitle.textContent = state.events.activeEventTitle || 'Ereignis wird ausgewertet';
     ui.eventText.textContent = 'Deine Entscheidung wird jetzt ausgewertet. Das Ergebnis erscheint nach Ablauf des Timers.';
     ui.eventMeta.textContent = `Ergebnis in: ${formatCountdown(leftMs)}`;
@@ -5135,14 +4702,14 @@ function renderEventSheet() {
     ui.eventText.textContent = formatResolvedOutcome(outcome);
     ui.eventMeta.textContent = 'Ergebnis bereit – schließe das Ereignis, um fortzufahren.';
   } else if (state.events.machineState === 'cooldown') {
-    const cooldownLeft = state.events.cooldownUntilMs - state.simulation.nowMs;
+const cooldownLeft = Number(state.events.cooldownUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
     ui.eventTitle.textContent = 'Abklingzeit aktiv';
     ui.eventText.textContent = 'Das Ereignissystem befindet sich in der Abklingzeit.';
     ui.eventMeta.textContent = `Abklingzeit: ${formatCountdown(cooldownLeft)}`;
   } else {
     ui.eventTitle.textContent = 'Kein aktives Ereignis';
     ui.eventText.textContent = 'Ein Ereignis erscheint, sobald der nächste Wurf erfolgreich ist.';
-    ui.eventMeta.textContent = `Nächster Wurf: ${formatCountdown(state.events.scheduler.nextEventRealTimeMs - state.simulation.nowMs)}`;
+ui.eventMeta.textContent = `Nächster Wurf: ${formatCountdown(Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0))}`;
   }
 
   if (ui.eventOptionList.childElementCount > 0) {
@@ -5817,7 +5384,7 @@ function renderAnalysisTimeline() {
 }
 
 function simStampFromMs(simMs) {
-  const base = Number(state.simulation.startRealTimeMs || simMs || 0);
+  const base = Number(state.simulation.simEpochMs || simMs || 0);
   const raw = Number(simMs || base);
   const delta = Math.max(0, raw - base);
   const totalDay = Math.floor(delta / (24 * 60 * 60 * 1000));
@@ -6779,6 +6346,10 @@ function onStartRun() {
   state.simulation.lastTickRealTimeMs = nowMs;
   state.simulation.simEpochMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
   state.simulation.simTimeMs = state.simulation.simEpochMs;
+  state.boost.boostEndsAtMs = 0;
+  state.simulation.baseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
+  state.simulation.effectiveSpeed = state.simulation.baseSpeed;
+  state.simulation.timeCompression = state.simulation.effectiveSpeed;
   state.status.growth = 0;
   state.status.health = 100;
   state.status.water = 80;
@@ -7282,12 +6853,12 @@ function eventStatusDisplay(sourceState = state) { const activeState = sourceSta
     return { label: 'Ereignisstatus', value: 'Ereignis aktiv' };
   }
   if (eventsState.machineState === 'resolving') {
-    return { label: 'Ergebnis in', value: formatCountdown(Number(eventsState.resolvingUntilMs || 0) - Number(simulation.nowMs || 0)) };
+return { label: 'Ergebnis in', value: formatCountdown(Number(eventsState.resolvingUntilSimTimeMs || 0) - Number(simulation.simTimeMs || 0)) };
   }
   if (eventsState.machineState === 'resolved') {
     return { label: 'Ereignisstatus', value: 'Ergebnis bereit' };
   }
-  return { label: 'Nächstes Ereignis', value: formatCountdown(Number(scheduler.nextEventRealTimeMs || 0) - Number(simulation.nowMs || 0)) };
+return { label: 'Nächstes Ereignis', value: formatCountdown(Number(scheduler.nextEventSimTimeMs || 0) - Number(simulation.simTimeMs || 0)) };
 }
 
 function formatCountdown(ms) {
@@ -7740,14 +7311,17 @@ function getCanonicalSimulation(snapshot) {
   if (!Number.isFinite(s.simulation.startRealTimeMs)) s.simulation.startRealTimeMs = nowMs;
   if (!Number.isFinite(s.simulation.lastTickRealTimeMs)) s.simulation.lastTickRealTimeMs = nowMs;
   if (!Number.isFinite(s.simulation.simTimeMs)) s.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
-  if (!Number.isFinite(s.simulation.simEpochMs)) s.simulation.simEpochMs = s.simulation.startRealTimeMs;
+  if (!Number.isFinite(s.simulation.simEpochMs)) s.simulation.simEpochMs = alignToSimStartHour(s.simulation.startRealTimeMs, SIM_START_HOUR);
   if (!Number.isFinite(s.simulation.simDay)) s.simulation.simDay = 0;
   if (!Number.isFinite(s.simulation.simHour)) s.simulation.simHour = SIM_START_HOUR;
   if (!Number.isFinite(s.simulation.simMinute)) s.simulation.simMinute = 0;
   if (!Number.isFinite(s.simulation.tickCount)) s.simulation.tickCount = 0;
   if (typeof s.simulation.mode !== 'string') s.simulation.mode = MODE;
   if (!Number.isFinite(s.simulation.tickIntervalMs)) s.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
-  if (!Number.isFinite(s.simulation.timeCompression)) s.simulation.timeCompression = SIM_TIME_COMPRESSION;
+  if (!Number.isFinite(s.simulation.baseSpeed)) s.simulation.baseSpeed = normalizeBaseSimulationSpeed(s.simulation.timeCompression);
+  s.simulation.baseSpeed = normalizeBaseSimulationSpeed(s.simulation.baseSpeed);
+  if (!Number.isFinite(s.simulation.effectiveSpeed)) s.simulation.effectiveSpeed = s.simulation.baseSpeed;
+  if (!Number.isFinite(s.simulation.timeCompression)) s.simulation.timeCompression = s.simulation.effectiveSpeed;
   if (typeof s.simulation.globalSeed !== 'string') s.simulation.globalSeed = SIM_GLOBAL_SEED;
   if (typeof s.simulation.plantId !== 'string') s.simulation.plantId = SIM_PLANT_ID;
   if (!s.simulation.dayWindow || typeof s.simulation.dayWindow !== 'object') s.simulation.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
@@ -7756,6 +7330,8 @@ function getCanonicalSimulation(snapshot) {
   if (!Number.isFinite(s.simulation.tempoOffsetDays)) s.simulation.tempoOffsetDays = 0;
   if (!Number.isFinite(s.simulation.lastPushScheduleAtMs)) s.simulation.lastPushScheduleAtMs = 0;
   if (!Number.isFinite(s.simulation.fairnessGraceUntilRealMs)) s.simulation.fairnessGraceUntilRealMs = 0;
+  if (!s.boost || typeof s.boost !== 'object') s.boost = {};
+  if (!Number.isFinite(s.boost.boostEndsAtMs)) s.boost.boostEndsAtMs = 0;
 
   return s.simulation;
 }
@@ -7788,6 +7364,7 @@ function getCanonicalPlant(snapshot) {
 
 function getCanonicalEvents(snapshot) {
   const s = snapshot || state;
+  const sim = getCanonicalSimulation(s);
   if (!s.events || typeof s.events !== 'object') {
     s.events = {};
   }
@@ -7795,7 +7372,9 @@ function getCanonicalEvents(snapshot) {
   if (typeof s.events.machineState !== 'string') s.events.machineState = 'idle';
   if (!s.events.scheduler || typeof s.events.scheduler !== 'object') {
     s.events.scheduler = {
+      nextEventSimTimeMs: Number(sim.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * Number(sim.effectiveSpeed || sim.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12)),
       nextEventRealTimeMs: Date.now() + EVENT_ROLL_MIN_REAL_MS,
+      lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
       lastEventId: null,
       lastChoiceId: null,
@@ -7803,9 +7382,15 @@ function getCanonicalEvents(snapshot) {
       deferredUntilDaytime: false,
       windowRealMinutes: { min: 30, max: 90 },
       eventCooldowns: {},
-      categoryCooldowns: {}
+      categoryCooldowns: {},
+      eventCooldownsSim: {},
+      categoryCooldownsSim: {}
     };
   }
+  if (!Number.isFinite(s.events.scheduler.nextEventSimTimeMs)) s.events.scheduler.nextEventSimTimeMs = Number(sim.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * Number(sim.effectiveSpeed || sim.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12));
+  if (!Number.isFinite(s.events.scheduler.lastEventSimTimeMs)) s.events.scheduler.lastEventSimTimeMs = 0;
+  if (!s.events.scheduler.eventCooldownsSim || typeof s.events.scheduler.eventCooldownsSim !== 'object') s.events.scheduler.eventCooldownsSim = {};
+  if (!s.events.scheduler.categoryCooldownsSim || typeof s.events.scheduler.categoryCooldownsSim !== 'object') s.events.scheduler.categoryCooldownsSim = {};
   if (!s.events.active || typeof s.events.active !== 'object') {
     s.events.active = null;
   }
@@ -7821,10 +7406,12 @@ function getCanonicalEvents(snapshot) {
   if (!Array.isArray(s.events.activeTags)) s.events.activeTags = [];
   if (typeof s.events.activeImagePath !== 'string') s.events.activeImagePath = '';
   if (!Number.isFinite(s.events.resolvingUntilMs)) s.events.resolvingUntilMs = 0;
+  if (!Number.isFinite(s.events.resolvingUntilSimTimeMs)) s.events.resolvingUntilSimTimeMs = 0;
   if (!s.events.pendingOutcome || typeof s.events.pendingOutcome !== 'object') s.events.pendingOutcome = null;
   if (!s.events.resolvedOutcome || typeof s.events.resolvedOutcome !== 'object') s.events.resolvedOutcome = null;
   if (!Number.isFinite(s.events.lastEventAtMs)) s.events.lastEventAtMs = 0;
   if (!Number.isFinite(s.events.cooldownUntilMs)) s.events.cooldownUntilMs = 0;
+  if (!Number.isFinite(s.events.cooldownUntilSimTimeMs)) s.events.cooldownUntilSimTimeMs = 0;
   if (!Array.isArray(s.events.catalog)) s.events.catalog = [];
 
   return s.events;
@@ -8069,6 +7656,8 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
       lastTickRealTimeMs: Number(saved.sim.lastTickAtMs || sim.lastTickRealTimeMs),
       simEpochMs: Number(saved.sim.simEpochMs || sim.simEpochMs),
       tickIntervalMs: Number(saved.sim.tickIntervalMs || sim.tickIntervalMs),
+      baseSpeed: normalizeBaseSimulationSpeed(saved.sim.baseSpeed || saved.sim.timeCompression || sim.baseSpeed),
+      effectiveSpeed: Number(saved.sim.effectiveSpeed || saved.sim.timeCompression || sim.effectiveSpeed),
       growthImpulse: Number(saved.sim.growthImpulse || sim.growthImpulse),
       lastPushScheduleAtMs: Number(saved.sim.lastPushScheduleAtMs || sim.lastPushScheduleAtMs)
     };
@@ -8113,13 +7702,19 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
         activeImagePath: String(saved.event.activeImagePath || ''),
         lastEventAtMs: Number(saved.event.lastEventAtMs || 0),
         cooldownUntilMs: Number(saved.event.cooldownUntilMs || 0),
+        cooldownUntilSimTimeMs: Number(saved.event.cooldownUntilSimTimeMs || 0),
+        resolvingUntilSimTimeMs: Number(saved.event.resolvingUntilSimTimeMs || 0),
         catalog: Array.isArray(saved.event.catalog) ? saved.event.catalog : events.catalog,
         scheduler: {
           ...events.scheduler,
+          nextEventSimTimeMs: Number(saved.event.nextEventSimTimeMs || 0),
           nextEventRealTimeMs: Number(saved.event.nextEventAtMs || events.scheduler.nextEventRealTimeMs),
+          lastEventSimTimeMs: Number(saved.event.lastEventSimTimeMs || 0),
           lastEventRealTimeMs: Number(saved.event.lastEventAtMs || events.scheduler.lastEventRealTimeMs),
           lastEventId: typeof saved.event.activeEventId === 'string' ? saved.event.activeEventId : events.scheduler.lastEventId,
-          lastChoiceId: typeof saved.event.lastChoiceId === 'string' ? saved.event.lastChoiceId : events.scheduler.lastChoiceId
+          lastChoiceId: typeof saved.event.lastChoiceId === 'string' ? saved.event.lastChoiceId : events.scheduler.lastChoiceId,
+          eventCooldownsSim: saved.event.eventCooldownsSim && typeof saved.event.eventCooldownsSim === 'object' ? saved.event.eventCooldownsSim : {},
+          categoryCooldownsSim: saved.event.categoryCooldownsSim && typeof saved.event.categoryCooldownsSim === 'object' ? saved.event.categoryCooldownsSim : {}
         }
       };
     }
@@ -8264,7 +7859,9 @@ function resetStateToDefaults() {
     tickCount: 0,
     mode: MODE,
     tickIntervalMs: UI_TICK_INTERVAL_MS,
-    timeCompression: SIM_TIME_COMPRESSION,
+    timeCompression: DEFAULT_BASE_SIM_SPEED,
+    baseSpeed: DEFAULT_BASE_SIM_SPEED,
+    effectiveSpeed: DEFAULT_BASE_SIM_SPEED,
     globalSeed: SIM_GLOBAL_SEED,
     plantId: SIM_PLANT_ID,
     dayWindow: { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR },
@@ -8300,7 +7897,9 @@ function resetStateToDefaults() {
   state.events = {
     machineState: 'idle',
     scheduler: {
+      nextEventSimTimeMs: fallbackSimTime + (EVENT_ROLL_MIN_REAL_MS * DEFAULT_BASE_SIM_SPEED),
       nextEventRealTimeMs: fallbackNow + EVENT_ROLL_MIN_REAL_MS,
+      lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
       lastEventId: null,
       lastChoiceId: null,
@@ -8308,7 +7907,9 @@ function resetStateToDefaults() {
       deferredUntilDaytime: false,
       windowRealMinutes: { min: 30, max: 90 },
       eventCooldowns: {},
-      categoryCooldowns: {}
+      categoryCooldowns: {},
+      eventCooldownsSim: {},
+      categoryCooldownsSim: {}
     },
     active: null,
     history: [],
@@ -8322,8 +7923,10 @@ function resetStateToDefaults() {
     activeCategory: 'generic',
     activeTags: [],
     activeImagePath: '',
+    resolvingUntilSimTimeMs: 0,
     lastEventAtMs: 0,
     cooldownUntilMs: 0,
+    cooldownUntilSimTimeMs: 0,
     catalog: preservedEventCatalog
   };
 
@@ -8339,7 +7942,8 @@ function resetStateToDefaults() {
   state.boost = {
     boostUsedToday: 0,
     boostMaxPerDay: 6,
-    dayStamp: dayStamp(fallbackNow)
+    dayStamp: dayStamp(fallbackNow),
+    boostEndsAtMs: 0
   };
 
   state.actions = {
@@ -8381,7 +7985,9 @@ function ensureStateIntegrity(nowMs) {
   ensureEnvironmentControls(state);
   state.simulation.mode = MODE;
   state.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
-  state.simulation.timeCompression = SIM_TIME_COMPRESSION;
+  state.simulation.baseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed || state.simulation.timeCompression);
+  state.simulation.effectiveSpeed = getEffectiveSimulationSpeed(nowMs);
+  state.simulation.timeCompression = state.simulation.effectiveSpeed;
   state.simulation.globalSeed = SIM_GLOBAL_SEED;
   state.simulation.plantId = SIM_PLANT_ID;
 
@@ -8457,6 +8063,9 @@ function ensureStateIntegrity(nowMs) {
     state.boost.boostUsedToday = 0;
   }
   state.boost.boostUsedToday = clampInt(state.boost.boostUsedToday, 0, state.boost.boostMaxPerDay);
+  if (!Number.isFinite(state.boost.boostEndsAtMs)) {
+    state.boost.boostEndsAtMs = 0;
+  }
   if (typeof state.boost.dayStamp !== 'string' || !state.boost.dayStamp) {
     state.boost.dayStamp = dayStamp(nowMs);
   }
@@ -8465,11 +8074,24 @@ function ensureStateIntegrity(nowMs) {
   if (!machineStates.has(state.events.machineState)) {
     state.events.machineState = 'idle';
   }
+  if (!Number.isFinite(state.events.scheduler.nextEventSimTimeMs)) {
+    const fallbackSpeed = Number(state.simulation.effectiveSpeed || state.simulation.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12);
+    state.events.scheduler.nextEventSimTimeMs = Number(state.simulation.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * fallbackSpeed);
+  }
   if (!Number.isFinite(state.events.scheduler.nextEventRealTimeMs)) {
-    state.events.scheduler.nextEventRealTimeMs = nowMs + deterministicEventDelayMs(nowMs);
+    state.events.scheduler.nextEventRealTimeMs = nowMs + EVENT_ROLL_MIN_REAL_MS;
+  }
+  if (!Number.isFinite(state.events.scheduler.lastEventSimTimeMs)) {
+    state.events.scheduler.lastEventSimTimeMs = 0;
   }
   if (!Number.isFinite(state.events.cooldownUntilMs)) {
     state.events.cooldownUntilMs = 0;
+  }
+  if (!Number.isFinite(state.events.cooldownUntilSimTimeMs)) {
+    state.events.cooldownUntilSimTimeMs = 0;
+  }
+  if (!Number.isFinite(state.events.resolvingUntilSimTimeMs)) {
+    state.events.resolvingUntilSimTimeMs = 0;
   }
   if (!Array.isArray(state.events.activeOptions)) {
     state.events.activeOptions = [];
@@ -8539,15 +8161,25 @@ function ensureStateIntegrity(nowMs) {
   if (!state.events.scheduler.categoryCooldowns || typeof state.events.scheduler.categoryCooldowns !== 'object') {
     state.events.scheduler.categoryCooldowns = {};
   }
-  for (const [eventId, untilMs] of Object.entries(state.events.scheduler.eventCooldowns)) {
-    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowMs) {
-      delete state.events.scheduler.eventCooldowns[eventId];
+  if (!state.events.scheduler.eventCooldownsSim || typeof state.events.scheduler.eventCooldownsSim !== 'object') {
+    state.events.scheduler.eventCooldownsSim = {};
+  }
+  if (!state.events.scheduler.categoryCooldownsSim || typeof state.events.scheduler.categoryCooldownsSim !== 'object') {
+    state.events.scheduler.categoryCooldownsSim = {};
+  }
+  const nowSimMs = Number(state.simulation.simTimeMs || 0);
+  for (const [eventId, untilMs] of Object.entries(state.events.scheduler.eventCooldownsSim)) {
+    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowSimMs) {
+      delete state.events.scheduler.eventCooldownsSim[eventId];
     }
   }
-  for (const [categoryId, untilMs] of Object.entries(state.events.scheduler.categoryCooldowns)) {
-    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowMs) {
-      delete state.events.scheduler.categoryCooldowns[categoryId];
+  for (const [categoryId, untilMs] of Object.entries(state.events.scheduler.categoryCooldownsSim)) {
+    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowSimMs) {
+      delete state.events.scheduler.categoryCooldownsSim[categoryId];
     }
+  }
+  if (typeof normalizeEventTimingState === 'function') {
+    normalizeEventTimingState(nowMs);
   }
   if (!Array.isArray(state.events.history)) {
     state.events.history = [];
@@ -8638,14 +8270,22 @@ function syncCanonicalStateShape() {
     resolvedStagePath: plantAssetPath(plant.stageKey)
   };
 
+  if (typeof normalizeEventTimingState === 'function') {
+    normalizeEventTimingState(sim.nowMs);
+  }
+
   events.scheduler = {
     ...events.scheduler,
+    nextEventSimTimeMs: Number(events.scheduler.nextEventSimTimeMs || sim.simTimeMs),
     nextEventRealTimeMs: Number(events.scheduler.nextEventRealTimeMs || sim.nowMs + EVENT_ROLL_MIN_REAL_MS),
+    lastEventSimTimeMs: Number(events.scheduler.lastEventSimTimeMs || 0),
     lastEventRealTimeMs: Number(events.scheduler.lastEventRealTimeMs || 0),
     deferredUntilDaytime: !sim.isDaytime,
     windowRealMinutes: { min: 30, max: 90 },
     eventCooldowns: events.scheduler.eventCooldowns || {},
-    categoryCooldowns: events.scheduler.categoryCooldowns || {}
+    categoryCooldowns: events.scheduler.categoryCooldowns || {},
+    eventCooldownsSim: events.scheduler.eventCooldownsSim || {},
+    categoryCooldownsSim: events.scheduler.categoryCooldownsSim || {}
   };
 
   events.active = ['activeEvent', 'resolving', 'resolved'].includes(events.machineState)
@@ -8688,7 +8328,9 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
     tickCount: sim.tickCount,
     mode: sim.mode,
     tickIntervalMs: sim.tickIntervalMs,
-    timeCompression: sim.timeCompression,
+    timeCompression: sim.effectiveSpeed,
+    baseSpeed: sim.baseSpeed,
+    effectiveSpeed: sim.effectiveSpeed,
     globalSeed: sim.globalSeed,
     plantId: sim.plantId,
     isDaytime: sim.isDaytime,
@@ -8799,6 +8441,9 @@ function syncRuntimeClocks(nowMs) {
   if (!Number.isFinite(state.simulation.lastTickRealTimeMs)) {
     state.simulation.lastTickRealTimeMs = nowMs;
   }
+  state.simulation.baseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed || state.simulation.timeCompression);
+  state.simulation.effectiveSpeed = getEffectiveSimulationSpeed(nowMs);
+  state.simulation.timeCompression = state.simulation.effectiveSpeed;
 }
 
 async function loadEventCatalog() {
@@ -9203,196 +8848,19 @@ function normalizeSeverity(rawSeverity) {
 }
 
 function computeEventDynamicWeight(item) {
-  const base = Math.max(0.01, Number(item.weight) || 1);
-  const risk = Number(state.status.risk) || 0;
-  const stress = Number(state.status.stress) || 0;
-  const health = Number(state.status.health) || 0;
-  const simDay = Math.max(0, Math.floor(Number(state.simulation.simDay || simDayFloat() || 0)));
-  const envPressure = computeEnvironmentEventPressure();
-
-  const recent = state.events.history.slice(-6);
-  const recentByCategory = recent.reduce((acc, entry) => {
-    const key = String(entry && entry.category || 'generic').toLowerCase();
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
-
-  let factor = 1;
-  const category = String(item && item.category || 'generic').toLowerCase();
-  const severeCategory = category === 'pest' || category === 'disease';
-
-  if (category === 'positive') {
-    const negativeRecent = recent
-      .filter((entry) => String(entry && entry.category || '').toLowerCase() !== 'positive')
-      .length;
-    const positiveRecent = recent.length - negativeRecent;
-    const stableWindow = stress <= 34 && risk <= 34 && health >= 70; factor += negativeRecent >= 2 ? 0.35 : 0; factor += health < 55 ? 0.2 : 0; factor -= positiveRecent >= 2 ? 0.45 : 0;
-
-    // Frequency smoothing: keep positives present in stable runs, but avoid reward spam.
-    if (stableWindow && positiveRecent === 0) {
-      factor *= 1.18;
-    }
-    if (stableWindow && positiveRecent === 1) {
-      factor *= 1.06;
-    }
-    if (positiveRecent >= 2) {
-      factor *= 0.82;
-    }
-  } else { factor += risk >= 60 ? 0.15 : 0; factor += stress >= 55 ? 0.1 : 0;
-  }
-
-  // Midgame anti-spam: reduce harsh event density unless risk/stress justify it.
-  if (simDay >= 15 && simDay <= 40) {
-    if (severeCategory && risk < 70 && stress < 62) {
-      factor *= 0.72;
-    }
-    if (category === 'environment' && stress < 50 && risk < 50) {
-      factor *= 0.84;
-    }
-  }
-
-  // Soft anti-repeat per category to avoid "everything at once" feeling.
-  const sameCategoryRecent = Number(recentByCategory[category] || 0);
-  if (sameCategoryRecent >= 2) {
-    factor *= 0.78;
-  }
-  if (sameCategoryRecent >= 3) {
-    factor *= 0.7;
-  }
-
-  if (category === 'environment') {
-    factor *= 0.86 + (envPressure * 0.42);
-  }
-
-  if (category === 'pest' || category === 'disease') {
-    factor *= 0.8 + (envPressure * 0.5);
-  }
-
-  if (category === 'nutrition') {
-    factor *= 0.88 + (envPressure * 0.28);
-  }
-
-  if (category === 'positive') {
-    factor *= 1.06 - (envPressure * 0.22);
-  }
-
-  if (category === 'disease' && risk < 40) {
-    factor *= 0.85;
-  }
-
-  return Math.max(0.01, round2(base * factor));
+  return callCanonicalEventsRuntime('computeEventDynamicWeight', item);
 }
 
 function selectEventDeterministically(catalog, nowMs) {
-  if (!Array.isArray(catalog) || !catalog.length) {
-    return null;
-  }
-
-  let candidates = catalog.slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  const lastCategory = state.events.scheduler.lastEventCategory || null;
-  const lastEventId = state.events.scheduler.lastEventId || null;
-
-  if (lastCategory) {
-    const alt = candidates.filter((item) => item.category !== lastCategory);
-    if (alt.length) {
-      candidates = alt;
-    }
-  }
-
-  if (lastEventId) {
-    const noDirectRepeat = candidates.filter((item) => item.id !== lastEventId);
-    if (noDirectRepeat.length) {
-      candidates = noDirectRepeat;
-    }
-  }
-
-  const weighted = candidates.map((item) => ({
-    item,
-    weight: computeEventDynamicWeight(item)
-  }));
-
-  const totalWeight = weighted.reduce((sum, row) => sum + row.weight, 0);
-  if (totalWeight <= 0) {
-    return candidates[0];
-  }
-
-  const simDay = Math.floor(simDayFloat());
-  const signature = candidates.map((item) => item.id).join('|');
-  const purpose = `event_pick:${simDay}:${Math.floor(nowMs / EVENT_ROLL_MIN_REAL_MS)}:${signature}`;
-  const u = deterministicUnitFloat(purpose);
-  let cursor = u * totalWeight;
-
-  for (const row of weighted) {
-    cursor -= row.weight;
-    if (cursor <= 0) {
-      addLog('event_pick', 'Deterministische Eventauswahl', {
-        seed: state.seed,
-        plantId: state.plantId,
-        simDay,
-        purpose,
-        pickedId: row.item.id,
-        pickedCategory: row.item.category,
-        pickedPolarity: row.item.polarity || 'negative',
-        pickedEnvironment: row.item.environment || 'both',
-        eligibleCount: candidates.length
-      });
-      return row.item;
-    }
-  }
-
-  return weighted[weighted.length - 1].item;
+  return callCanonicalEventsRuntime('selectEventDeterministically', catalog, nowMs);
 }
 
 function scheduleNextEventRoll(nowMs, reason) {
-  let nextAt = nowMs + deterministicEventDelayMs(nowMs);
-  if (!state.simulation.isDaytime) {
-    nextAt = nextDaytimeRealMs(nowMs, state.simulation.simTimeMs);
-  }
-  state.events.scheduler.nextEventRealTimeMs = nextAt;
-
-  addLog('event_roll', 'Nächster Ereigniswurf geplant', {
-    reason,
-    nextEventAtMs: nextAt,
-    simDaytime: state.simulation.isDaytime
-  });
+  return callCanonicalEventsRuntime('scheduleNextEventRoll', nowMs, reason);
 }
 
 async function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) {
-    return;
-  }
-
-  try {
-    const registration = await navigator.serviceWorker.register('./sw.js');
-    if (!navigator.serviceWorker.controller) {
-      showServiceWorkerHint();
-    }
-
-    if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-
-    registration.addEventListener('updatefound', () => {
-      const installing = registration.installing;
-      if (!installing) {
-        return;
-      }
-      installing.addEventListener('statechange', () => {
-        if (installing.state === 'installed' && registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-      });
-    });
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!window.__gsSwControllerRefreshed) {
-        window.__gsSwControllerRefreshed = true;
-        window.location.reload();
-      }
-    });
-  } catch (_error) {
-    // SW registration failures should not block app usage.
-  }
+  return callCanonicalEventsRuntime('registerServiceWorker');
 }
 
 function showServiceWorkerHint() {
@@ -9750,10 +9218,11 @@ function updateSettingsUI() {
 
   const simSpeedNode = document.getElementById('settingsSimSpeedValue');
   if (simSpeedNode) {
-    const runtimeSpeed = round2(Number(state.simulation && state.simulation.timeCompression) || 0);
-    simSpeedNode.textContent = `Fix ${runtimeSpeed}x`;
+    const baseSpeed = normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed);
+    const runtimeSpeed = round2(Number(state.simulation && state.simulation.effectiveSpeed) || getEffectiveSimulationSpeed(Date.now()));
+    simSpeedNode.textContent = `Basis ${baseSpeed}x · Aktiv ${runtimeSpeed}x`;
     simSpeedNode.className = 'value_gold';
-    simSpeedNode.setAttribute('title', 'Aktiver Runtime-Wert. Im aktuellen UI nicht umschaltbar.');
+    simSpeedNode.setAttribute('title', 'Basisgeschwindigkeit plus optionaler Zeit-Boost.');
   }
   
   const eventFreqNode = document.getElementById('settingsEventFrequencyValue');

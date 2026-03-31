@@ -485,10 +485,193 @@ function applyFoundationFollowUps(choice, eventId) {
   }
 }
 
+function getEventTimingContext(nowRealMs) {
+  const safeRealNowMs = Number.isFinite(Number(nowRealMs))
+    ? Number(nowRealMs)
+    : Number(state.simulation && state.simulation.nowMs) || Date.now();
+  const safeSimNowMs = Number.isFinite(Number(state.simulation && state.simulation.simTimeMs))
+    ? Number(state.simulation.simTimeMs)
+    : 0;
+
+  return { nowRealMs: safeRealNowMs, nowSimMs: safeSimNowMs };
+}
+
+function projectEventRealDurationToSimMs(realDurationMs, nowRealMs) {
+  const safeDurationMs = Math.max(0, Number(realDurationMs) || 0);
+  if (safeDurationMs <= 0) {
+    return 0;
+  }
+
+  if (typeof computeSimulationDeltaMs === 'function') {
+    return Math.max(0, Number(computeSimulationDeltaMs(nowRealMs, nowRealMs + safeDurationMs)) || 0);
+  }
+
+  const fallbackSpeed = typeof getEffectiveSimulationSpeed === 'function'
+    ? Number(getEffectiveSimulationSpeed(nowRealMs))
+    : Number(
+      state.simulation && (
+        state.simulation.effectiveSpeed
+        || state.simulation.baseSpeed
+        || state.simulation.timeCompression
+      )
+    ) || 12;
+  return safeDurationMs * Math.max(0, fallbackSpeed);
+}
+
+function projectEventSimDeadlineToRealMs(targetSimTimeMs, nowRealMs, nowSimMs) {
+  const remainingSimMs = Math.max(0, Number(targetSimTimeMs || 0) - Number(nowSimMs || 0));
+  if (remainingSimMs <= 0) {
+    return nowRealMs;
+  }
+
+  if (typeof convertSimDeltaToFutureRealDeltaMs === 'function') {
+    return nowRealMs + Math.max(0, Number(convertSimDeltaToFutureRealDeltaMs(remainingSimMs, nowRealMs)) || 0);
+  }
+
+  const fallbackSpeed = typeof getEffectiveSimulationSpeed === 'function'
+    ? Number(getEffectiveSimulationSpeed(nowRealMs))
+    : Number(
+      state.simulation && (
+        state.simulation.effectiveSpeed
+        || state.simulation.baseSpeed
+        || state.simulation.timeCompression
+      )
+    ) || 12;
+  return nowRealMs + Math.round(remainingSimMs / Math.max(0.001, fallbackSpeed));
+}
+
+function getEventDelayWindowSimRange(nowRealMs) {
+  const minSimMs = Math.max(1, projectEventRealDurationToSimMs(EVENT_ROLL_MIN_REAL_MS, nowRealMs));
+  const maxSimMs = Math.max(minSimMs, projectEventRealDurationToSimMs(EVENT_ROLL_MAX_REAL_MS, nowRealMs));
+  return { minSimMs, maxSimMs };
+}
+
+function getEventBucket(anchorSimTimeMs, bucketSizeSimMs) {
+  return Math.floor(Number(anchorSimTimeMs || 0) / Math.max(1, Number(bucketSizeSimMs) || 1));
+}
+
+function getNextDaytimeSimMs(simTimeMs) {
+  if (typeof getNextDayStartSimTime === 'function') {
+    return getNextDayStartSimTime(simTimeMs);
+  }
+
+  const next = new Date(simTimeMs);
+  next.setHours(SIM_DAY_START_HOUR, 0, 0, 0);
+  if (next.getTime() <= simTimeMs) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next.getTime();
+}
+
+function normalizeEventTimingState(nowRealMs) {
+  const context = getEventTimingContext(nowRealMs);
+  const scheduler = state.events && state.events.scheduler && typeof state.events.scheduler === 'object'
+    ? state.events.scheduler
+    : (state.events.scheduler = {});
+  const nowSimMs = context.nowSimMs;
+
+  const toSimDeadline = (legacyRealDeadlineMs, fallbackRealDurationMs) => {
+    const safeLegacyDeadlineMs = Number(legacyRealDeadlineMs || 0);
+    if (safeLegacyDeadlineMs > context.nowRealMs) {
+      return nowSimMs + projectEventRealDurationToSimMs(safeLegacyDeadlineMs - context.nowRealMs, context.nowRealMs);
+    }
+    return nowSimMs + projectEventRealDurationToSimMs(fallbackRealDurationMs, context.nowRealMs);
+  };
+
+  if (!Number.isFinite(Number(scheduler.nextEventSimTimeMs))) {
+    scheduler.nextEventSimTimeMs = toSimDeadline(scheduler.nextEventRealTimeMs, EVENT_ROLL_MIN_REAL_MS);
+  }
+  if (!Number.isFinite(Number(scheduler.lastEventSimTimeMs))) {
+    scheduler.lastEventSimTimeMs = 0;
+  }
+  if (!Number.isFinite(Number(state.events.cooldownUntilSimTimeMs))) {
+    const legacyCooldownUntilMs = Number(state.events.cooldownUntilMs || 0);
+    state.events.cooldownUntilSimTimeMs = legacyCooldownUntilMs > context.nowRealMs
+      ? nowSimMs + projectEventRealDurationToSimMs(legacyCooldownUntilMs - context.nowRealMs, context.nowRealMs)
+      : 0;
+  }
+  if (!Number.isFinite(Number(state.events.resolvingUntilSimTimeMs))) {
+    const legacyResolvingUntilMs = Number(state.events.resolvingUntilMs || 0);
+    state.events.resolvingUntilSimTimeMs = legacyResolvingUntilMs > context.nowRealMs
+      ? nowSimMs + projectEventRealDurationToSimMs(legacyResolvingUntilMs - context.nowRealMs, context.nowRealMs)
+      : 0;
+  }
+  if (!scheduler.eventCooldownsSim || typeof scheduler.eventCooldownsSim !== 'object') {
+    scheduler.eventCooldownsSim = {};
+  }
+  if (!scheduler.categoryCooldownsSim || typeof scheduler.categoryCooldownsSim !== 'object') {
+    scheduler.categoryCooldownsSim = {};
+  }
+
+  const legacyEventCooldowns = scheduler.eventCooldowns && typeof scheduler.eventCooldowns === 'object'
+    ? scheduler.eventCooldowns
+    : {};
+  const legacyCategoryCooldowns = scheduler.categoryCooldowns && typeof scheduler.categoryCooldowns === 'object'
+    ? scheduler.categoryCooldowns
+    : {};
+
+  if (Object.keys(scheduler.eventCooldownsSim).length === 0 && Object.keys(legacyEventCooldowns).length) {
+    for (const [eventId, untilMs] of Object.entries(legacyEventCooldowns)) {
+      const safeUntilMs = Number(untilMs || 0);
+      if (safeUntilMs > context.nowRealMs) {
+        scheduler.eventCooldownsSim[eventId] = nowSimMs + projectEventRealDurationToSimMs(safeUntilMs - context.nowRealMs, context.nowRealMs);
+      }
+    }
+  }
+  if (Object.keys(scheduler.categoryCooldownsSim).length === 0 && Object.keys(legacyCategoryCooldowns).length) {
+    for (const [categoryId, untilMs] of Object.entries(legacyCategoryCooldowns)) {
+      const safeUntilMs = Number(untilMs || 0);
+      if (safeUntilMs > context.nowRealMs) {
+        scheduler.categoryCooldownsSim[categoryId] = nowSimMs + projectEventRealDurationToSimMs(safeUntilMs - context.nowRealMs, context.nowRealMs);
+      }
+    }
+  }
+
+  for (const [eventId, untilSimMs] of Object.entries(scheduler.eventCooldownsSim)) {
+    if (!Number.isFinite(Number(untilSimMs)) || Number(untilSimMs) <= nowSimMs) {
+      delete scheduler.eventCooldownsSim[eventId];
+    }
+  }
+  for (const [categoryId, untilSimMs] of Object.entries(scheduler.categoryCooldownsSim)) {
+    if (!Number.isFinite(Number(untilSimMs)) || Number(untilSimMs) <= nowSimMs) {
+      delete scheduler.categoryCooldownsSim[categoryId];
+    }
+  }
+
+  scheduler.nextEventRealTimeMs = projectEventSimDeadlineToRealMs(scheduler.nextEventSimTimeMs, context.nowRealMs, nowSimMs);
+  scheduler.lastEventRealTimeMs = Number(scheduler.lastEventRealTimeMs || 0);
+  state.events.cooldownUntilMs = Number(state.events.cooldownUntilSimTimeMs || 0) > nowSimMs
+    ? projectEventSimDeadlineToRealMs(state.events.cooldownUntilSimTimeMs, context.nowRealMs, nowSimMs)
+    : 0;
+  state.events.resolvingUntilMs = Number(state.events.resolvingUntilSimTimeMs || 0) > nowSimMs
+    ? projectEventSimDeadlineToRealMs(state.events.resolvingUntilSimTimeMs, context.nowRealMs, nowSimMs)
+    : 0;
+
+  scheduler.eventCooldowns = Object.fromEntries(
+    Object.entries(scheduler.eventCooldownsSim)
+      .filter(([, untilSimMs]) => Number(untilSimMs) > nowSimMs)
+      .map(([eventId, untilSimMs]) => [
+        eventId,
+        projectEventSimDeadlineToRealMs(untilSimMs, context.nowRealMs, nowSimMs)
+      ])
+  );
+  scheduler.categoryCooldowns = Object.fromEntries(
+    Object.entries(scheduler.categoryCooldownsSim)
+      .filter(([, untilSimMs]) => Number(untilSimMs) > nowSimMs)
+      .map(([categoryId, untilSimMs]) => [
+        categoryId,
+        projectEventSimDeadlineToRealMs(untilSimMs, context.nowRealMs, nowSimMs)
+      ])
+  );
+
+  return context;
+}
+
 function runEventStateMachine(nowMs, isCatchUp = false) {
+  const { nowRealMs, nowSimMs } = normalizeEventTimingState(nowMs);
   if (state.events.machineState === 'resolving') {
-    const resolvingUntilMs = Number(state.events.resolvingUntilMs || 0);
-    if (nowMs >= resolvingUntilMs) {
+    const resolvingUntilSimTimeMs = Number(state.events.resolvingUntilSimTimeMs || 0);
+    if (nowSimMs >= resolvingUntilSimTimeMs) {
       state.events.machineState = 'resolved';
       if (!state.events.resolvedOutcome && state.events.pendingOutcome && typeof state.events.pendingOutcome === 'object') {
         state.events.resolvedOutcome = { ...state.events.pendingOutcome };
@@ -497,65 +680,70 @@ function runEventStateMachine(nowMs, isCatchUp = false) {
       addLog('system', 'Ereignisausgang aus Legacy-Status übernommen', {
         eventId: state.events.activeEventId,
         chosenOptionId: state.events.lastChoiceId,
-        resolvedAtMs: nowMs
+        resolvedAtMs: nowRealMs,
+        resolvedAtSimTimeMs: nowSimMs
       });
-    } else if (nowMs >= state.events.scheduler.nextEventRealTimeMs) {
-      scheduleNextEventRoll(nowMs, 'resolving_event_pending');
+    } else if (nowSimMs >= Number(state.events.scheduler.nextEventSimTimeMs || 0)) {
+      scheduleNextEventRoll(nowRealMs, 'resolving_event_pending');
       schedulePushIfAllowed(false);
     }
   }
 
   if (state.events.machineState === 'resolved') {
-    enterEventCooldown(nowMs);
+    enterEventCooldown(nowRealMs);
   }
 
   if (state.events.machineState === 'cooldown') {
-    if (nowMs >= state.events.cooldownUntilMs) {
+    if (nowSimMs >= Number(state.events.cooldownUntilSimTimeMs || 0)) {
       state.events.machineState = 'idle';
       addLog('system', 'Abklingzeit beendet, Status wieder inaktiv', null);
     }
-    if (nowMs >= state.events.scheduler.nextEventRealTimeMs) {
-      scheduleNextEventRoll(nowMs, 'cooldown');
+    if (nowSimMs >= Number(state.events.scheduler.nextEventSimTimeMs || 0)) {
+      scheduleNextEventRoll(nowRealMs, 'cooldown');
       schedulePushIfAllowed(false);
     }
   }
 
-  if (state.events.machineState === 'activeEvent' && nowMs >= state.events.scheduler.nextEventRealTimeMs) {
-    scheduleNextEventRoll(nowMs, 'active_event_pending');
+  if (state.events.machineState === 'activeEvent' && nowSimMs >= Number(state.events.scheduler.nextEventSimTimeMs || 0)) {
+    scheduleNextEventRoll(nowRealMs, 'active_event_pending');
     schedulePushIfAllowed(false);
   }
 
-  if (state.events.machineState === 'idle' && nowMs >= state.events.scheduler.nextEventRealTimeMs) {
+  if (state.events.machineState === 'idle' && nowSimMs >= Number(state.events.scheduler.nextEventSimTimeMs || 0)) {
     if (!state.simulation.isDaytime) {
-      state.events.scheduler.nextEventRealTimeMs = nextDaytimeRealMs(nowMs, state.simulation.simTimeMs);
+      state.events.scheduler.nextEventSimTimeMs = getNextDaytimeSimMs(nowSimMs);
+      normalizeEventTimingState(nowRealMs);
       addLog('event_roll', 'Nachtphase: Ereigniswurf auf Tagesbeginn verschoben', {
-        nextEventAtMs: state.events.scheduler.nextEventRealTimeMs
+        nextEventAtMs: state.events.scheduler.nextEventRealTimeMs,
+        nextEventAtSimTimeMs: state.events.scheduler.nextEventSimTimeMs
       });
       schedulePushIfAllowed(false);
       return;
     }
 
-    const roll = deterministicRoll();
+    const roll = deterministicRoll(nowRealMs);
     const threshold = eventThreshold();
     addLog('event_roll', 'Ereignisgrenze erreicht, Wurf wird geprüft', {
       roll,
       threshold,
       simHour: simHour(state.simulation.simTimeMs),
-      at: nowMs
+      at: nowRealMs,
+      atSimTimeMs: nowSimMs
     });
 
     if (!shouldTriggerEvent(roll)) {
       addLog('event_roll', 'Ereigniswurf verfehlt, kein Event aktiviert', {
         roll,
         threshold,
-        at: nowMs
+        at: nowRealMs,
+        atSimTimeMs: nowSimMs
       });
-      scheduleNextEventRoll(nowMs, 'roll_miss');
+      scheduleNextEventRoll(nowRealMs, 'roll_miss');
       schedulePushIfAllowed(false);
       return;
     }
 
-    const activated = activateEvent(nowMs);
+    const activated = activateEvent(nowRealMs);
     if (activated) {
       state.ui.openSheet = 'event';
       schedulePushIfAllowed(false);
@@ -563,13 +751,15 @@ function runEventStateMachine(nowMs, isCatchUp = false) {
     }
 
     addLog('event_roll', 'Ereignisgrenze bleibt aktiv: Kein Ereignis aktivierbar', {
-      at: nowMs,
+      at: nowRealMs,
+      atSimTimeMs: nowSimMs,
       phase: state.plant.phase
     });
-    const retryDelayMs = 20_000 + Math.floor(
-      deterministicUnitFloat(`event_retry:${Math.floor(nowMs / 1000)}:${state.simulation.tickCount}`) * 70_000
+    const retryDelayRealMs = 20_000 + Math.floor(
+      deterministicUnitFloat(`event_retry:${Math.floor(nowSimMs / 1000)}:${state.simulation.tickCount}`) * 70_000
     );
-    state.events.scheduler.nextEventRealTimeMs = nowMs + retryDelayMs;
+    state.events.scheduler.nextEventSimTimeMs = nowSimMs + projectEventRealDurationToSimMs(retryDelayRealMs, nowRealMs);
+    normalizeEventTimingState(nowRealMs);
     schedulePushIfAllowed(false);
     return;
   }
@@ -580,15 +770,16 @@ function runEventStateMachine(nowMs, isCatchUp = false) {
 }
 
 function activateEvent(nowMs) {
+  const { nowRealMs, nowSimMs } = normalizeEventTimingState(nowMs);
   const catalog = state.events.catalog;
   if (!Array.isArray(catalog) || !catalog.length) {
     return false;
   }
 
-  const eligible = eligibleEventsForNow(nowMs);
+  const eligible = eligibleEventsForNow(nowRealMs);
   let pool = eligible;
   if (!pool.length) {
-    pool = fallbackEventsForCurrentPhase(nowMs);
+    pool = fallbackEventsForCurrentPhase(nowRealMs);
   }
 
   if (!pool.length) {
@@ -599,7 +790,7 @@ function activateEvent(nowMs) {
     return false;
   }
 
-  const foundationOutcome = resolveFoundationDecisionForPool(pool, nowMs);
+  const foundationOutcome = resolveFoundationDecisionForPool(pool, nowRealMs);
   const foundationCandidate = foundationOutcome && foundationOutcome.decision
     ? foundationOutcome.decision
     : resolveFoundationCandidateEvent();
@@ -608,7 +799,7 @@ function activateEvent(nowMs) {
     foundationTrace && (foundationTrace.pendingChainOverride === true || foundationTrace.forcedByFlag)
   );
   const directResolverAllowed = isHardResolverOverride || shouldUseResolverDirectPick(
-    nowMs,
+    nowRealMs,
     foundationCandidate && foundationCandidate.eventId
   );
   const forcedEvent = (foundationCandidate && foundationCandidate.eventId && directResolverAllowed)
@@ -621,7 +812,7 @@ function activateEvent(nowMs) {
   const resolverShapedPool = allowShapedPool ? buildResolverShapedPool(pool, foundationTrace) : [];
   const selectionPool = resolverShapedPool.length ? resolverShapedPool : pool;
 
-  const eventDef = forcedEvent || selectEventDeterministically(selectionPool, nowMs);
+  const eventDef = forcedEvent || selectEventDeterministically(selectionPool, nowRealMs);
   if (!eventDef) {
     return false;
   }
@@ -649,10 +840,12 @@ function activateEvent(nowMs) {
   state.events.activeCategory = eventDef.category || 'generic';
   state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
   state.events.activeImagePath = String(eventDef.imagePath || '');
-  state.events.scheduler.lastEventRealTimeMs = nowMs;
+  state.events.scheduler.lastEventRealTimeMs = nowRealMs;
+  state.events.scheduler.lastEventSimTimeMs = nowSimMs;
 
   state.events.scheduler.lastEventId = eventDef.id;
-  state.events.scheduler.lastEventRealTimeMs = nowMs;
+  state.events.scheduler.lastEventRealTimeMs = nowRealMs;
+  state.events.scheduler.lastEventSimTimeMs = nowSimMs;
   state.events.scheduler.lastEventCategory = eventDef.category || 'generic';
   state.events.active = {
     id: eventDef.id,
@@ -685,15 +878,19 @@ function activateEvent(nowMs) {
 }
 
 function eligibleEventsForNow(nowMs) {
-  const cooldowns = state.events.scheduler.eventCooldowns || {};
+  normalizeEventTimingState(nowMs);
+  const cooldowns = state.events.scheduler.eventCooldownsSim || {};
+  const nowSimMs = Number(state.simulation.simTimeMs || 0);
   return state.events.catalog
-    .filter((eventDef) => isEventEligible(eventDef, cooldowns, nowMs))
+    .filter((eventDef) => isEventEligible(eventDef, cooldowns, nowSimMs))
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
 }
 
 
 function fallbackEventsForCurrentPhase(nowMs) {
+  normalizeEventTimingState(nowMs);
   const phase = String(state.plant.phase || '');
+  const nowSimMs = Number(state.simulation.simTimeMs || 0);
   const fallback = state.events.catalog
     .map((eventDef) => {
       if (!eventDef || !eventDef.id || !isEventPhaseAllowed(eventDef)) {
@@ -702,9 +899,9 @@ function fallbackEventsForCurrentPhase(nowMs) {
       if (!evaluateEventConstraints(eventDef)) {
         return null;
       }
-      const cooldowns = state.events.scheduler.eventCooldowns || {};
+      const cooldowns = state.events.scheduler.eventCooldownsSim || {};
       const blockedUntil = Number(cooldowns[eventDef.id] || 0);
-      if (blockedUntil > nowMs) {
+      if (blockedUntil > nowSimMs) {
         return null;
       }
 
@@ -726,7 +923,8 @@ function fallbackEventsForCurrentPhase(nowMs) {
       phase,
       candidateCount: fallback.length,
       topSignalScore: round2(Number(fallback[0].signalScore) || 0),
-      at: nowMs
+      at: nowMs,
+      atSimTimeMs: nowSimMs
     });
   }
 
@@ -751,8 +949,8 @@ function isEventEligible(eventDef, cooldowns, nowMs) {
     return false;
   }
 
-  const categoryCooldowns = state.events && state.events.scheduler && state.events.scheduler.categoryCooldowns
-    ? state.events.scheduler.categoryCooldowns
+  const categoryCooldowns = state.events && state.events.scheduler && state.events.scheduler.categoryCooldownsSim
+    ? state.events.scheduler.categoryCooldownsSim
     : {};
   const categoryKey = String(eventDef.category || 'generic');
   const categoryBlockedUntil = Number(categoryCooldowns[categoryKey] || 0);
@@ -1242,12 +1440,14 @@ function setGrowthFromPercent(percent) {
 }
 
 function enterEventCooldown(nowMs) {
+  const { nowRealMs, nowSimMs } = normalizeEventTimingState(nowMs);
   const activeEventId = state.events.activeEventId;
   const activeCategory = String(state.events.activeCategory || 'generic');
-  const perEventCooldownMs = Math.round((Number(state.events.activeCooldownRealMinutes) || 120) * 60 * 1000);
+  const perEventCooldownRealMs = Math.round((Number(state.events.activeCooldownRealMinutes) || 120) * 60 * 1000);
+  const perEventCooldownSimMs = projectEventRealDurationToSimMs(perEventCooldownRealMs, nowRealMs);
 
   state.events.machineState = 'cooldown';
-  state.events.cooldownUntilMs = nowMs + cooldownMs();
+  state.events.cooldownUntilSimTimeMs = nowSimMs + cooldownMs(nowRealMs);
   state.events.activeEventId = null;
   state.events.activeEventTitle = '';
   state.events.activeEventText = '';
@@ -1259,29 +1459,36 @@ function enterEventCooldown(nowMs) {
   state.events.activeImagePath = '';
 
   if (activeEventId) {
-    state.events.scheduler.eventCooldowns[activeEventId] = nowMs + perEventCooldownMs;
+    state.events.scheduler.eventCooldownsSim[activeEventId] = nowSimMs + perEventCooldownSimMs;
   }
 
   const categoryKey = activeCategory;
-  const categoryCooldownMs = categoryKey === 'positive'
+  const categoryCooldownRealMs = categoryKey === 'positive'
     ? Math.max(EVENT_COOLDOWN_MS, 45 * 60 * 1000)
     : EVENT_COOLDOWN_MS;
-  state.events.scheduler.categoryCooldowns[categoryKey] = nowMs + categoryCooldownMs;
+  const categoryCooldownSimMs = projectEventRealDurationToSimMs(categoryCooldownRealMs, nowRealMs);
+  state.events.scheduler.categoryCooldownsSim[categoryKey] = nowSimMs + categoryCooldownSimMs;
 
   state.events.active = null;
   if (state.ui.openSheet === 'event') {
     state.ui.openSheet = null;
   }
 
+  normalizeEventTimingState(nowRealMs);
+
   addLog('system', 'Ereignis abgeschlossen, Abklingzeit gestartet', {
     cooldownUntilMs: state.events.cooldownUntilMs,
+    cooldownUntilSimTimeMs: state.events.cooldownUntilSimTimeMs,
     eventId: activeEventId,
-    perEventCooldownMs
+    perEventCooldownMs: perEventCooldownRealMs,
+    perEventCooldownSimMs
   });
 }
 
-function deterministicRoll() {
-  const bucket = Math.floor(state.events.scheduler.nextEventRealTimeMs / EVENT_ROLL_MIN_REAL_MS);
+function deterministicRoll(nowMs = state.simulation.nowMs) {
+  const { nowRealMs } = normalizeEventTimingState(nowMs);
+  const { minSimMs } = getEventDelayWindowSimRange(nowRealMs);
+  const bucket = getEventBucket(state.events.scheduler.nextEventSimTimeMs, minSimMs);
   const riskBucket = Math.round(state.status.risk / 5);
   const pressureBucket = Math.round(computeEnvironmentEventPressure() * 10);
   return deterministicUnitFloat(`roll:${bucket}:${riskBucket}:${pressureBucket}:${state.simulation.tickCount}`);
@@ -1332,16 +1539,17 @@ function shouldTriggerEvent(roll) {
 }
 
 function deterministicEventDelayMs(nowMs) {
-  const min = EVENT_ROLL_MIN_REAL_MS;
-  const max = EVENT_ROLL_MAX_REAL_MS;
-  const span = Math.max(0, max - min);
-  const bucket = Math.floor(nowMs / min);
+  const { nowRealMs, nowSimMs } = normalizeEventTimingState(nowMs);
+  const { minSimMs, maxSimMs } = getEventDelayWindowSimRange(nowRealMs);
+  const span = Math.max(0, maxSimMs - minSimMs);
+  const bucket = getEventBucket(nowSimMs, minSimMs);
   const u = deterministicUnitFloat(`delay:${bucket}`);
-  return min + Math.floor(u * span);
+  return minSimMs + Math.floor(u * span);
 }
 
-function cooldownMs() {
-  return EVENT_COOLDOWN_MS;
+function cooldownMs(nowMs = state.simulation.nowMs) {
+  const { nowRealMs } = normalizeEventTimingState(nowMs);
+  return projectEventRealDurationToSimMs(EVENT_COOLDOWN_MS, nowRealMs);
 }
 
 function onCareApply() {
@@ -1990,9 +2198,15 @@ function selectEventDeterministically(catalog, nowMs) {
     return candidates[0];
   }
 
+  const { nowRealMs } = normalizeEventTimingState(nowMs);
   const simDay = Math.floor(simDayFloat());
   const signature = candidates.map((item) => item.id).join('|');
-  const purpose = `event_pick:${simDay}:${Math.floor(nowMs / EVENT_ROLL_MIN_REAL_MS)}:${signature}`;
+  const { minSimMs } = getEventDelayWindowSimRange(nowRealMs);
+  const bucket = getEventBucket(
+    Number(state.events.scheduler.nextEventSimTimeMs || state.simulation.simTimeMs),
+    minSimMs
+  );
+  const purpose = `event_pick:${simDay}:${bucket}:${signature}`;
   const u = deterministicUnitFloat(purpose);
   let cursor = u * totalWeight;
 
@@ -2018,15 +2232,18 @@ function selectEventDeterministically(catalog, nowMs) {
 }
 
 function scheduleNextEventRoll(nowMs, reason) {
-  let nextAt = nowMs + deterministicEventDelayMs(nowMs);
+  const { nowRealMs, nowSimMs } = normalizeEventTimingState(nowMs);
+  let nextAtSimMs = nowSimMs + deterministicEventDelayMs(nowRealMs);
   if (!state.simulation.isDaytime) {
-    nextAt = nextDaytimeRealMs(nowMs, state.simulation.simTimeMs);
+    nextAtSimMs = getNextDaytimeSimMs(nowSimMs);
   }
-  state.events.scheduler.nextEventRealTimeMs = nextAt;
+  state.events.scheduler.nextEventSimTimeMs = nextAtSimMs;
+  normalizeEventTimingState(nowRealMs);
 
   addLog('event_roll', 'Nächster Ereigniswurf geplant', {
     reason,
-    nextEventAtMs: nextAt,
+    nextEventAtMs: state.events.scheduler.nextEventRealTimeMs,
+    nextEventAtSimTimeMs: nextAtSimMs,
     simDaytime: state.simulation.isDaytime
   });
 }

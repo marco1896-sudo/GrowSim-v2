@@ -313,14 +313,17 @@ function getCanonicalSimulation(snapshot) {
   if (!Number.isFinite(s.simulation.startRealTimeMs)) s.simulation.startRealTimeMs = nowMs;
   if (!Number.isFinite(s.simulation.lastTickRealTimeMs)) s.simulation.lastTickRealTimeMs = nowMs;
   if (!Number.isFinite(s.simulation.simTimeMs)) s.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
-  if (!Number.isFinite(s.simulation.simEpochMs)) s.simulation.simEpochMs = s.simulation.startRealTimeMs;
+  if (!Number.isFinite(s.simulation.simEpochMs)) s.simulation.simEpochMs = alignToSimStartHour(s.simulation.startRealTimeMs, SIM_START_HOUR);
   if (!Number.isFinite(s.simulation.simDay)) s.simulation.simDay = 0;
   if (!Number.isFinite(s.simulation.simHour)) s.simulation.simHour = SIM_START_HOUR;
   if (!Number.isFinite(s.simulation.simMinute)) s.simulation.simMinute = 0;
   if (!Number.isFinite(s.simulation.tickCount)) s.simulation.tickCount = 0;
   if (typeof s.simulation.mode !== 'string') s.simulation.mode = MODE;
   if (!Number.isFinite(s.simulation.tickIntervalMs)) s.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
-  if (!Number.isFinite(s.simulation.timeCompression)) s.simulation.timeCompression = SIM_TIME_COMPRESSION;
+  if (!Number.isFinite(s.simulation.baseSpeed)) s.simulation.baseSpeed = normalizeBaseSimulationSpeed(s.simulation.timeCompression);
+  s.simulation.baseSpeed = normalizeBaseSimulationSpeed(s.simulation.baseSpeed);
+  if (!Number.isFinite(s.simulation.effectiveSpeed)) s.simulation.effectiveSpeed = s.simulation.baseSpeed;
+  if (!Number.isFinite(s.simulation.timeCompression)) s.simulation.timeCompression = s.simulation.effectiveSpeed;
   if (typeof s.simulation.globalSeed !== 'string') s.simulation.globalSeed = SIM_GLOBAL_SEED;
   if (typeof s.simulation.plantId !== 'string') s.simulation.plantId = SIM_PLANT_ID;
   if (!s.simulation.dayWindow || typeof s.simulation.dayWindow !== 'object') s.simulation.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
@@ -328,6 +331,13 @@ function getCanonicalSimulation(snapshot) {
   if (!Number.isFinite(s.simulation.growthImpulse)) s.simulation.growthImpulse = 0;
   if (!Number.isFinite(s.simulation.tempoOffsetDays)) s.simulation.tempoOffsetDays = 0;
   if (!Number.isFinite(s.simulation.lastPushScheduleAtMs)) s.simulation.lastPushScheduleAtMs = 0;
+
+  if (!s.boost || typeof s.boost !== 'object') {
+    s.boost = {};
+  }
+  if (!Number.isFinite(s.boost.boostEndsAtMs)) {
+    s.boost.boostEndsAtMs = 0;
+  }
 
   return s.simulation;
 }
@@ -360,6 +370,7 @@ function getCanonicalPlant(snapshot) {
 
 function getCanonicalEvents(snapshot) {
   const s = snapshot || state;
+  const sim = getCanonicalSimulation(s);
   if (!s.events || typeof s.events !== 'object') {
     s.events = {};
   }
@@ -367,7 +378,9 @@ function getCanonicalEvents(snapshot) {
   if (typeof s.events.machineState !== 'string') s.events.machineState = 'idle';
   if (!s.events.scheduler || typeof s.events.scheduler !== 'object') {
     s.events.scheduler = {
+      nextEventSimTimeMs: Number(sim.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * Number(sim.effectiveSpeed || sim.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12)),
       nextEventRealTimeMs: Date.now() + EVENT_ROLL_MIN_REAL_MS,
+      lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
       lastEventId: null,
       lastChoiceId: null,
@@ -375,9 +388,15 @@ function getCanonicalEvents(snapshot) {
       deferredUntilDaytime: false,
       windowRealMinutes: { min: 30, max: 90 },
       eventCooldowns: {},
-      categoryCooldowns: {}
+      categoryCooldowns: {},
+      eventCooldownsSim: {},
+      categoryCooldownsSim: {}
     };
   }
+  if (!Number.isFinite(s.events.scheduler.nextEventSimTimeMs)) s.events.scheduler.nextEventSimTimeMs = Number(sim.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * Number(sim.effectiveSpeed || sim.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12));
+  if (!Number.isFinite(s.events.scheduler.lastEventSimTimeMs)) s.events.scheduler.lastEventSimTimeMs = 0;
+  if (!s.events.scheduler.eventCooldownsSim || typeof s.events.scheduler.eventCooldownsSim !== 'object') s.events.scheduler.eventCooldownsSim = {};
+  if (!s.events.scheduler.categoryCooldownsSim || typeof s.events.scheduler.categoryCooldownsSim !== 'object') s.events.scheduler.categoryCooldownsSim = {};
   if (!s.events.active || typeof s.events.active !== 'object') {
     s.events.active = null;
   }
@@ -392,7 +411,9 @@ function getCanonicalEvents(snapshot) {
   if (typeof s.events.activeCategory !== 'string') s.events.activeCategory = 'generic';
   if (!Array.isArray(s.events.activeTags)) s.events.activeTags = [];
   if (!Number.isFinite(s.events.lastEventAtMs)) s.events.lastEventAtMs = 0;
+  if (!Number.isFinite(s.events.resolvingUntilSimTimeMs)) s.events.resolvingUntilSimTimeMs = 0;
   if (!Number.isFinite(s.events.cooldownUntilMs)) s.events.cooldownUntilMs = 0;
+  if (!Number.isFinite(s.events.cooldownUntilSimTimeMs)) s.events.cooldownUntilSimTimeMs = 0;
   if (!Array.isArray(s.events.catalog)) s.events.catalog = [];
   if (!s.events.foundation || typeof s.events.foundation !== 'object') s.events.foundation = {};
   if (!s.events.foundation.flags || typeof s.events.foundation.flags !== 'object') s.events.foundation.flags = {};
@@ -721,6 +742,8 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
       lastTickRealTimeMs: Number(saved.sim.lastTickAtMs || sim.lastTickRealTimeMs),
       simEpochMs: Number(saved.sim.simEpochMs || sim.simEpochMs),
       tickIntervalMs: Number(saved.sim.tickIntervalMs || sim.tickIntervalMs),
+      baseSpeed: normalizeBaseSimulationSpeed(saved.sim.baseSpeed || saved.sim.timeCompression || sim.baseSpeed),
+      effectiveSpeed: Number(saved.sim.effectiveSpeed || saved.sim.timeCompression || sim.effectiveSpeed),
       growthImpulse: Number(saved.sim.growthImpulse || sim.growthImpulse),
       lastPushScheduleAtMs: Number(saved.sim.lastPushScheduleAtMs || sim.lastPushScheduleAtMs)
     };
@@ -764,13 +787,19 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
         activeTags: Array.isArray(saved.event.activeTags) ? saved.event.activeTags : [],
         lastEventAtMs: Number(saved.event.lastEventAtMs || 0),
         cooldownUntilMs: Number(saved.event.cooldownUntilMs || 0),
+        cooldownUntilSimTimeMs: Number(saved.event.cooldownUntilSimTimeMs || 0),
+        resolvingUntilSimTimeMs: Number(saved.event.resolvingUntilSimTimeMs || 0),
         catalog: Array.isArray(saved.event.catalog) ? saved.event.catalog : events.catalog,
         scheduler: {
           ...events.scheduler,
+          nextEventSimTimeMs: Number(saved.event.nextEventSimTimeMs || 0),
           nextEventRealTimeMs: Number(saved.event.nextEventAtMs || events.scheduler.nextEventRealTimeMs),
+          lastEventSimTimeMs: Number(saved.event.lastEventSimTimeMs || 0),
           lastEventRealTimeMs: Number(saved.event.lastEventAtMs || events.scheduler.lastEventRealTimeMs),
           lastEventId: typeof saved.event.activeEventId === 'string' ? saved.event.activeEventId : events.scheduler.lastEventId,
-          lastChoiceId: typeof saved.event.lastChoiceId === 'string' ? saved.event.lastChoiceId : events.scheduler.lastChoiceId
+          lastChoiceId: typeof saved.event.lastChoiceId === 'string' ? saved.event.lastChoiceId : events.scheduler.lastChoiceId,
+          eventCooldownsSim: saved.event.eventCooldownsSim && typeof saved.event.eventCooldownsSim === 'object' ? saved.event.eventCooldownsSim : {},
+          categoryCooldownsSim: saved.event.categoryCooldownsSim && typeof saved.event.categoryCooldownsSim === 'object' ? saved.event.categoryCooldownsSim : {}
         }
       };
     }
@@ -919,7 +948,9 @@ function resetStateToDefaults() {
     tickCount: 0,
     mode: MODE,
     tickIntervalMs: UI_TICK_INTERVAL_MS,
-    timeCompression: SIM_TIME_COMPRESSION,
+    timeCompression: DEFAULT_BASE_SIM_SPEED,
+    baseSpeed: DEFAULT_BASE_SIM_SPEED,
+    effectiveSpeed: DEFAULT_BASE_SIM_SPEED,
     globalSeed: SIM_GLOBAL_SEED,
     plantId: SIM_PLANT_ID,
     dayWindow: { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR },
@@ -955,7 +986,9 @@ function resetStateToDefaults() {
   state.events = {
     machineState: 'idle',
     scheduler: {
+      nextEventSimTimeMs: fallbackSimTime + (EVENT_ROLL_MIN_REAL_MS * DEFAULT_BASE_SIM_SPEED),
       nextEventRealTimeMs: fallbackNow + EVENT_ROLL_MIN_REAL_MS,
+      lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
       lastEventId: null,
       lastChoiceId: null,
@@ -963,7 +996,9 @@ function resetStateToDefaults() {
       deferredUntilDaytime: false,
       windowRealMinutes: { min: 30, max: 90 },
       eventCooldowns: {},
-      categoryCooldowns: {}
+      categoryCooldowns: {},
+      eventCooldownsSim: {},
+      categoryCooldownsSim: {}
     },
     active: null,
     history: [],
@@ -976,8 +1011,10 @@ function resetStateToDefaults() {
     activeCooldownRealMinutes: 120,
     activeCategory: 'generic',
     activeTags: [],
+    resolvingUntilSimTimeMs: 0,
     lastEventAtMs: 0,
     cooldownUntilMs: 0,
+    cooldownUntilSimTimeMs: 0,
     catalog: preservedEventCatalog
   };
 
@@ -993,7 +1030,8 @@ function resetStateToDefaults() {
   state.boost = {
     boostUsedToday: 0,
     boostMaxPerDay: 6,
-    dayStamp: dayStamp(fallbackNow)
+    dayStamp: dayStamp(fallbackNow),
+    boostEndsAtMs: 0
   };
 
   state.actions = {
@@ -1037,7 +1075,9 @@ function ensureStateIntegrity(nowMs) {
 
   state.simulation.mode = MODE;
   state.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
-  state.simulation.timeCompression = SIM_TIME_COMPRESSION;
+  state.simulation.baseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed || state.simulation.timeCompression);
+  state.simulation.effectiveSpeed = getEffectiveSimulationSpeed(nowMs);
+  state.simulation.timeCompression = state.simulation.effectiveSpeed;
   state.simulation.globalSeed = SIM_GLOBAL_SEED;
   state.simulation.plantId = SIM_PLANT_ID;
 
@@ -1109,6 +1149,9 @@ function ensureStateIntegrity(nowMs) {
     state.boost.boostUsedToday = 0;
   }
   state.boost.boostUsedToday = clampInt(state.boost.boostUsedToday, 0, state.boost.boostMaxPerDay);
+  if (!Number.isFinite(state.boost.boostEndsAtMs)) {
+    state.boost.boostEndsAtMs = 0;
+  }
   if (typeof state.boost.dayStamp !== 'string' || !state.boost.dayStamp) {
     state.boost.dayStamp = dayStamp(nowMs);
   }
@@ -1117,11 +1160,24 @@ function ensureStateIntegrity(nowMs) {
   if (!machineStates.has(state.events.machineState)) {
     state.events.machineState = 'idle';
   }
+  if (!Number.isFinite(state.events.scheduler.nextEventSimTimeMs)) {
+    const fallbackSpeed = Number(state.simulation.effectiveSpeed || state.simulation.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12);
+    state.events.scheduler.nextEventSimTimeMs = Number(state.simulation.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * fallbackSpeed);
+  }
   if (!Number.isFinite(state.events.scheduler.nextEventRealTimeMs)) {
-    state.events.scheduler.nextEventRealTimeMs = nowMs + deterministicEventDelayMs(nowMs);
+    state.events.scheduler.nextEventRealTimeMs = nowMs + EVENT_ROLL_MIN_REAL_MS;
+  }
+  if (!Number.isFinite(state.events.scheduler.lastEventSimTimeMs)) {
+    state.events.scheduler.lastEventSimTimeMs = 0;
   }
   if (!Number.isFinite(state.events.cooldownUntilMs)) {
     state.events.cooldownUntilMs = 0;
+  }
+  if (!Number.isFinite(state.events.cooldownUntilSimTimeMs)) {
+    state.events.cooldownUntilSimTimeMs = 0;
+  }
+  if (!Number.isFinite(state.events.resolvingUntilSimTimeMs)) {
+    state.events.resolvingUntilSimTimeMs = 0;
   }
   if (!Array.isArray(state.events.activeOptions)) {
     state.events.activeOptions = [];
@@ -1193,15 +1249,25 @@ function ensureStateIntegrity(nowMs) {
   if (!state.events.scheduler.categoryCooldowns || typeof state.events.scheduler.categoryCooldowns !== 'object') {
     state.events.scheduler.categoryCooldowns = {};
   }
-  for (const [eventId, untilMs] of Object.entries(state.events.scheduler.eventCooldowns)) {
-    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowMs) {
-      delete state.events.scheduler.eventCooldowns[eventId];
+  if (!state.events.scheduler.eventCooldownsSim || typeof state.events.scheduler.eventCooldownsSim !== 'object') {
+    state.events.scheduler.eventCooldownsSim = {};
+  }
+  if (!state.events.scheduler.categoryCooldownsSim || typeof state.events.scheduler.categoryCooldownsSim !== 'object') {
+    state.events.scheduler.categoryCooldownsSim = {};
+  }
+  const nowSimMs = Number(state.simulation.simTimeMs || 0);
+  for (const [eventId, untilMs] of Object.entries(state.events.scheduler.eventCooldownsSim)) {
+    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowSimMs) {
+      delete state.events.scheduler.eventCooldownsSim[eventId];
     }
   }
-  for (const [categoryId, untilMs] of Object.entries(state.events.scheduler.categoryCooldowns)) {
-    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowMs) {
-      delete state.events.scheduler.categoryCooldowns[categoryId];
+  for (const [categoryId, untilMs] of Object.entries(state.events.scheduler.categoryCooldownsSim)) {
+    if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowSimMs) {
+      delete state.events.scheduler.categoryCooldownsSim[categoryId];
     }
+  }
+  if (typeof normalizeEventTimingState === 'function') {
+    normalizeEventTimingState(nowMs);
   }
   if (!Array.isArray(state.events.history)) {
     state.events.history = [];
@@ -1346,14 +1412,22 @@ function syncCanonicalStateShape() {
     resolvedStagePath: plantAssetPath(plant.stageKey)
   };
 
+  if (typeof normalizeEventTimingState === 'function') {
+    normalizeEventTimingState(sim.nowMs);
+  }
+
   events.scheduler = {
     ...events.scheduler,
+    nextEventSimTimeMs: Number(events.scheduler.nextEventSimTimeMs || sim.simTimeMs),
     nextEventRealTimeMs: Number(events.scheduler.nextEventRealTimeMs || sim.nowMs + EVENT_ROLL_MIN_REAL_MS),
+    lastEventSimTimeMs: Number(events.scheduler.lastEventSimTimeMs || 0),
     lastEventRealTimeMs: Number(events.scheduler.lastEventRealTimeMs || 0),
     deferredUntilDaytime: !sim.isDaytime,
     windowRealMinutes: { min: 30, max: 90 },
     eventCooldowns: events.scheduler.eventCooldowns || {},
-    categoryCooldowns: events.scheduler.categoryCooldowns || {}
+    categoryCooldowns: events.scheduler.categoryCooldowns || {},
+    eventCooldownsSim: events.scheduler.eventCooldownsSim || {},
+    categoryCooldownsSim: events.scheduler.categoryCooldownsSim || {}
   };
 
   events.active = ['activeEvent', 'resolving', 'resolved'].includes(events.machineState)
@@ -1429,7 +1503,9 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
     tickCount: sim.tickCount,
     mode: sim.mode,
     tickIntervalMs: sim.tickIntervalMs,
-    timeCompression: sim.timeCompression,
+    timeCompression: sim.effectiveSpeed,
+    baseSpeed: sim.baseSpeed,
+    effectiveSpeed: sim.effectiveSpeed,
     globalSeed: sim.globalSeed,
     plantId: sim.plantId,
     isDaytime: sim.isDaytime,
