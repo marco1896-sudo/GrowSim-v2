@@ -89,10 +89,13 @@ body {
 
 .app-loading-video {
   display: block;
-  width: clamp(250px, 72vw, 320px);
-  max-width: calc(100vw - 32px);
-  height: auto;
+  height: min(100dvh, 100svh);
+  max-height: calc(100dvh - 16px);
+  width: auto;
+  max-width: calc(100vw - 16px);
   object-fit: contain;
+  object-position: center center;
+  margin: 0 auto;
 }
 
 .screen-bg {
