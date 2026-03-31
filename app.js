@@ -438,13 +438,75 @@ wireDomainOwnership();
 
 window.__gsBootOk = false;
 window.__gsBootTrace = [];
+const LOADING_SCREEN_MIN_VISIBLE_MS = 1000;
+const LOADING_SCREEN_FADE_MS = 420;
+const loadingScreenState = {
+  startedAtMs: Date.now(),
+  hidden: false,
+  hidePromise: null
+};
+let bootFailed = false;
+let windowLoaded = document.readyState === 'complete';
+
+function hideLoadingScreen() {
+  if (loadingScreenState.hidden) {
+    return Promise.resolve();
+  }
+
+  if (loadingScreenState.hidePromise) {
+    return loadingScreenState.hidePromise;
+  }
+
+  const overlay = document.getElementById('appLoadingScreen');
+  if (!overlay) {
+    loadingScreenState.hidden = true;
+    return Promise.resolve();
+  }
+
+  const elapsedMs = Date.now() - loadingScreenState.startedAtMs;
+  const waitMs = Math.max(0, LOADING_SCREEN_MIN_VISIBLE_MS - elapsedMs);
+
+  loadingScreenState.hidePromise = new Promise((resolve) => {
+    window.setTimeout(() => {
+      if (!overlay.isConnected) {
+        loadingScreenState.hidden = true;
+        resolve();
+        return;
+      }
+
+      overlay.classList.add('is-hiding');
+      window.setTimeout(() => {
+        if (overlay.parentNode) {
+          overlay.parentNode.removeChild(overlay);
+        }
+        loadingScreenState.hidden = true;
+        resolve();
+      }, LOADING_SCREEN_FADE_MS);
+    }, waitMs);
+  });
+
+  return loadingScreenState.hidePromise;
+}
+
+window.hideLoadingScreen = hideLoadingScreen;
 
 document.addEventListener('DOMContentLoaded', () => {
   boot().catch((error) => {
+    bootFailed = true;
     console.error('Boot promise failed', error);
     showBootError(error);
+    if (windowLoaded) {
+      hideLoadingScreen();
+    }
   });
 });
+
+window.addEventListener('load', () => {
+  windowLoaded = true;
+  if (bootFailed && !window.__gsBootOk) {
+    hideLoadingScreen();
+  }
+}, { once: true });
 
 function wireDomainOwnership() {
   const ownership = {
@@ -873,6 +935,7 @@ async function boot() {
     window.__gsBootOk = true;
     state.ui.lastRenderRealMs = Date.now();
     logBootStep('boot:render_complete');
+    hideLoadingScreen();
 
     bootStep = 'persist';
     await schedulePushIfAllowed(true);

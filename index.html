@@ -15,6 +15,18 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <div id="appLoadingScreen" class="app-loading-screen" aria-hidden="true">
+    <video
+      class="app-loading-video"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="auto"
+    >
+      <source src="assets/loadingscreen/App loadingscreen.webm" type="video/webm">
+    </video>
+  </div>
   <svg class="ui-icon-sprite" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden">
     <defs>
       <symbol id="icon-arrow-left" viewBox="0 0 24 24">
