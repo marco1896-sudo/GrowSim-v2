@@ -8423,7 +8423,7 @@ function updateSettingsUI() {
   }
   if (simSpeedHintNode) {
     const boostActive = Number(state.simulation && state.simulation.effectiveSpeed) === BOOST_SIM_SPEED;
-    simSpeedHintNode.textContent = boostActive ? 'Boost aktiviert temporär x24.' : '';
+    simSpeedHintNode.textContent = boostActive ? 'Boost aktiv (x24)' : '';
     simSpeedHintNode.classList.toggle('hidden', !boostActive);
     simSpeedHintNode.setAttribute('aria-hidden', String(!boostActive));
   }
