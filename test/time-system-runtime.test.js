@@ -276,12 +276,31 @@ async function scenarioCareActionsDoNotJumpTime(page) {
 async function scenarioSettingsSimSpeedUi(page) {
   await startFreshRun(page);
   await page.evaluate(() => {
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+    }
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
+    const dialog = document.getElementById('menuDialog');
+    if (dialog) {
+      dialog.classList.add('hidden');
+      dialog.setAttribute('aria-hidden', 'true');
+    }
     state.ui.openSheet = 'diagnosis';
     renderAll();
   });
   await page.waitForFunction(() => {
     const node = document.getElementById('diagnosisSheet');
     return node && !node.classList.contains('hidden');
+  });
+  await page.evaluate(() => {
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+    }
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
   });
 
   const initial = await page.evaluate(() => ({
@@ -290,7 +309,9 @@ async function scenarioSettingsSimSpeedUi(page) {
       speed: node.getAttribute('data-sim-speed-option'),
       text: node.textContent.trim()
     })),
-    hasBoostOnlyOption: Boolean(document.querySelector('[data-sim-speed-option="24"]'))
+    hasBoostOnlyOption: Boolean(document.querySelector('[data-sim-speed-option="24"]')),
+    selectorRowLabel: document.querySelector('#settingsSimSpeedControl')?.closest('.figma-static-row')?.querySelector('span')?.textContent.trim() || null,
+    eventRowContainsSelector: Boolean(document.getElementById('settingsEventFrequencyValue')?.closest('.figma-static-row')?.querySelector('[data-sim-speed-option]'))
   }));
 
   assert.strictEqual(initial.currentText, 'Basis 12x · Aktiv 12x', 'settings should show the default base speed');
@@ -300,10 +321,10 @@ async function scenarioSettingsSimSpeedUi(page) {
     'settings should expose exactly x4/x8/x12/x16 base speed options'
   );
   assert.strictEqual(initial.hasBoostOnlyOption, false, 'x24 must remain boost-only');
+  assert.strictEqual(initial.selectorRowLabel, 'Simulationstempo', 'speed selector is not rendered inside the Simulationstempo block');
+  assert.strictEqual(initial.eventRowContainsSelector, false, 'Event-Häufigkeit row should not contain the speed selector');
 
-  await page.evaluate(() => {
-    document.querySelector('[data-sim-speed-option="16"]')?.click();
-  });
+  await page.click('[data-sim-speed-option="16"]', { force: true });
   const changed = await page.evaluate(() => ({
     currentText: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null,
     activeOption: document.querySelector('[data-sim-speed-option].is-active')?.getAttribute('data-sim-speed-option') || null,
@@ -319,9 +340,51 @@ async function scenarioSettingsSimSpeedUi(page) {
     'settings summary should reflect the selected base speed'
   );
 
+  await page.evaluate(() => {
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+    }
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
+    const dialog = document.getElementById('menuDialog');
+    if (dialog) {
+      dialog.classList.add('hidden');
+      dialog.setAttribute('aria-hidden', 'true');
+    }
+    state.ui.openSheet = 'diagnosis';
+    renderAll();
+  });
+  await page.waitForFunction(() => {
+    const node = document.getElementById('diagnosisSheet');
+    return node && !node.classList.contains('hidden');
+  });
+
+  const reopened = await page.evaluate(() => ({
+    activeOption: document.querySelector('[data-sim-speed-option].is-active')?.getAttribute('data-sim-speed-option') || null,
+    currentText: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null
+  }));
+
+  assert.strictEqual(reopened.activeOption, '16', 'reopening settings lost the selected speed highlight');
+  assert.ok(
+    reopened.currentText && reopened.currentText.startsWith('Basis 16x'),
+    'reopening settings lost the selected speed summary'
+  );
+
   await page.reload({ waitUntil: 'networkidle' });
   await waitForRuntime(page);
   await page.evaluate(() => {
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+    }
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
+    const dialog = document.getElementById('menuDialog');
+    if (dialog) {
+      dialog.classList.add('hidden');
+      dialog.setAttribute('aria-hidden', 'true');
+    }
     state.ui.openSheet = 'diagnosis';
     renderAll();
   });

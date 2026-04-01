@@ -1277,7 +1277,7 @@ async function boot() {
     if (window.GrowSimAuth && typeof window.GrowSimAuth.restoreSession === 'function') {
       await runBootSubstep('restore_auth_session', () => window.GrowSimAuth.restoreSession());
     }
-    authGateActive = !isAuthSessionValid();
+    authGateActive = false;
     logBootStep('boot:auth_restore', {
       authenticated: Boolean(window.GrowSimAuth && typeof window.GrowSimAuth.isAuthenticated === 'function' && window.GrowSimAuth.isAuthenticated())
     });
@@ -1345,10 +1345,6 @@ async function boot() {
     await runBootSubstep('start_main_loop_once', () => startLoopOnce());
     await runBootSubstep('start_heartbeat_watchdog', () => startHeartbeatWatchdog());
     await runBootSubstep('render_all', () => renderAll());
-    if (authGateActive) {
-      console.info('[auth] startup gate active');
-      await runBootSubstep('open_auth_gate_modal', () => openCloudAuthModal({ gate: true }));
-    }
     await runBootSubstep('render_landing', () => renderLanding());
     setBootStep('render_ui', 'Fast bereit...');
     window.__gsBootOk = true;
@@ -9755,11 +9751,30 @@ function initSettingsEvents() {
     saveBtn.setAttribute('title', 'Speichert den aktuellen lokalen Zustand im Browser.');
   }
 
-  document.querySelectorAll('[data-sim-speed-option]').forEach((button) => {
-    button.addEventListener('click', () => {
+  const speedControl = byId('settingsSimSpeedControl');
+  if (speedControl && speedControl.dataset.bound !== 'true') {
+    const handleSpeedSelection = (event) => {
+      const button = event.target instanceof Element ? event.target.closest('[data-sim-speed-option]') : null;
+      if (!button) {
+        return;
+      }
+      applySettingsBaseSimulationSpeed(button.getAttribute('data-sim-speed-option'), Date.now());
+    };
+
+    speedControl.addEventListener('click', handleSpeedSelection);
+    speedControl.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+      const button = event.target instanceof Element ? event.target.closest('[data-sim-speed-option]') : null;
+      if (!button) {
+        return;
+      }
+      event.preventDefault();
       applySettingsBaseSimulationSpeed(button.getAttribute('data-sim-speed-option'), Date.now());
     });
-  });
+    speedControl.dataset.bound = 'true';
+  }
 
   const cloudRow = byId('settingsCloudSyncRow');
   if (cloudRow) {

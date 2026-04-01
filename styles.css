@@ -3635,32 +3635,59 @@ body.panelized-ready :is(
 .figma-static-row--stacked {
   grid-template-columns: 1fr;
   align-items: start;
+  gap: 0;
+  padding-bottom: 14px;
+  position: relative;
+  z-index: 1;
 }
 
 .figma-static-row--stacked > span:first-child {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .settings-speed-control {
   display: grid;
-  justify-items: end;
-  gap: 8px;
+  width: 100%;
+  justify-items: start;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
 }
 
 .settings-speed-segmented {
-  justify-self: end;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  position: relative;
+  z-index: 2;
 }
 
 .settings-speed-btn {
-  border: 0;
-  background: transparent;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(232, 240, 247, 0.82);
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
+.settings-speed-btn.is-active,
 .settings-speed-btn[data-active="true"] {
   background: rgba(212, 175, 55, 0.18);
   color: #fff8de;
-  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.32);
+  border-color: rgba(212, 175, 55, 0.48);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.22);
+}
+
+.settings-speed-btn:hover,
+.settings-speed-btn:active {
+  background: rgba(212, 175, 55, 0.1);
 }
 
 .settings-speed-btn:focus-visible {
@@ -3669,7 +3696,7 @@ body.panelized-ready :is(
 }
 
 .settings-speed-control .sheet-note {
-  text-align: right;
+  text-align: left;
 }
 
 .value_green {
