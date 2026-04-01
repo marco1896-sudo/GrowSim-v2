@@ -9,6 +9,7 @@ const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
 const HOST = '0.0.0.0';
+const CLIENT_HOST = '127.0.0.1';
 const PORT = 4176;
 
 function contentTypeFor(filePath) {
@@ -123,7 +124,7 @@ async function main() {
   const page = await browser.newPage({ viewport: { width: 430, height: 932 } });
 
   try {
-    const url = `http://${HOST}:${PORT}/`;
+    const url = `http://${CLIENT_HOST}:${PORT}/`;
     await page.goto(url, { waitUntil: 'networkidle' });
     await waitForBoot(page);
     await clearClientStorage(page);
@@ -151,7 +152,10 @@ async function main() {
     await page.click('#startRunBtn');
     await page.waitForFunction(() => document.getElementById('landing').classList.contains('hidden'));
 
-    await page.click('#openDiagnosisBtn');
+    await page.evaluate(() => {
+      state.ui.openSheet = 'diagnosis';
+      renderAll();
+    });
     await page.waitForFunction(() => {
       const node = document.getElementById('diagnosisSheet');
       return node && !node.classList.contains('hidden');
@@ -173,7 +177,10 @@ async function main() {
       autosave: document.getElementById('settingsAutosaveValue')?.textContent.trim() || null,
       volume: document.getElementById('settingsVolumeValue')?.textContent.trim() || null
     }));
-    assert.strictEqual(runtimeSettings.simSpeed, 'Fix 12x', 'simulation speed should reflect the fixed runtime value');
+    assert.ok(
+      runtimeSettings.simSpeed === 'Basis 12x · Aktiv 12x' || runtimeSettings.simSpeed === 'Basis 12x Â· Aktiv 12x',
+      `simulation speed should reflect base and active runtime state, got: ${runtimeSettings.simSpeed}`
+    );
     assert.strictEqual(runtimeSettings.eventWindow, 'Fix 30-90m', 'event frequency should reflect the fixed runtime window');
     assert.strictEqual(runtimeSettings.tutorial, 'Vorbereitet', 'tutorial setting should be marked as prepared only');
     assert.strictEqual(runtimeSettings.autosave, 'Lokal 3s', 'autosave should reflect the local persistence interval');

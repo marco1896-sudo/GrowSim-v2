@@ -9318,12 +9318,14 @@ function migrateSettings(state) {
 
 function updateSettingsUI() {
   const g = state.settings.gameplay;
-  const a = state.settings.audio;
 
   const simSpeedNode = document.getElementById('settingsSimSpeedValue');
   const simSpeedHintNode = document.getElementById('settingsSimSpeedHint');
+  const baseSpeed = normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed);
+  if (g) {
+    g.simSpeed = baseSpeed;
+  }
   if (simSpeedNode) {
-    const baseSpeed = normalizeBaseSimulationSpeed(g && g.simSpeed);
     const runtimeSpeed = round2(Number(state.simulation && state.simulation.effectiveSpeed) || getEffectiveSimulationSpeed(Date.now()));
     simSpeedNode.textContent = `Basis ${baseSpeed}x · Aktiv ${runtimeSpeed}x`;
     simSpeedNode.className = 'value_gold';
@@ -9337,7 +9339,7 @@ function updateSettingsUI() {
   }
   document.querySelectorAll('[data-sim-speed-option]').forEach((node) => {
     const option = normalizeBaseSimulationSpeed(node.getAttribute('data-sim-speed-option'));
-    const active = option === normalizeBaseSimulationSpeed(g && g.simSpeed);
+    const active = option === baseSpeed;
     node.dataset.active = active ? 'true' : 'false';
     node.classList.toggle('is-active', active);
     node.setAttribute('aria-pressed', String(active));
