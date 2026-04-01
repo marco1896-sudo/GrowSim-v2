@@ -42,6 +42,83 @@ const remoteSyncRuntime = {
   lastSaveAttemptAtMs: 0
 };
 
+function getStateFreshnessMetrics(snapshot) {
+  const safeSnapshot = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const meta = safeSnapshot.meta && typeof safeSnapshot.meta === 'object' ? safeSnapshot.meta : {};
+  const persistence = meta.persistence && typeof meta.persistence === 'object' ? meta.persistence : {};
+  const simulation = safeSnapshot.simulation && typeof safeSnapshot.simulation === 'object' ? safeSnapshot.simulation : {};
+  const run = safeSnapshot.run && typeof safeSnapshot.run === 'object' ? safeSnapshot.run : {};
+
+  return {
+    savedAtRealMs: Number.isFinite(Number(persistence.lastSavedAtRealMs)) ? Number(persistence.lastSavedAtRealMs) : 0,
+    lastTickRealTimeMs: Number.isFinite(Number(simulation.lastTickRealTimeMs)) ? Number(simulation.lastTickRealTimeMs) : 0,
+    nowMs: Number.isFinite(Number(simulation.nowMs)) ? Number(simulation.nowMs) : 0,
+    finalizedAtRealMs: Number.isFinite(Number(run.finalizedAtRealMs)) ? Number(run.finalizedAtRealMs) : 0,
+    endedAtRealMs: Number.isFinite(Number(run.endedAtRealMs)) ? Number(run.endedAtRealMs) : 0,
+    startedAtRealMs: Number.isFinite(Number(run.startedAtRealMs)) ? Number(run.startedAtRealMs) : 0,
+    simTimeMs: Number.isFinite(Number(simulation.simTimeMs)) ? Number(simulation.simTimeMs) : 0,
+    tickCount: Number.isFinite(Number(simulation.tickCount)) ? Number(simulation.tickCount) : 0
+  };
+}
+
+function compareStateFreshness(leftSnapshot, rightSnapshot) {
+  const left = getStateFreshnessMetrics(leftSnapshot);
+  const right = getStateFreshnessMetrics(rightSnapshot);
+  const orderedKeys = [
+    'savedAtRealMs',
+    'lastTickRealTimeMs',
+    'nowMs',
+    'finalizedAtRealMs',
+    'endedAtRealMs',
+    'startedAtRealMs',
+    'simTimeMs',
+    'tickCount'
+  ];
+
+  for (const key of orderedKeys) {
+    if (left[key] !== right[key]) {
+      return left[key] > right[key] ? 1 : -1;
+    }
+  }
+
+  return 0;
+}
+
+function choosePreferredRestoreSnapshot(localSnapshot, remoteSnapshot) {
+  const hasLocal = Boolean(localSnapshot && typeof localSnapshot === 'object');
+  const hasRemote = Boolean(remoteSnapshot && typeof remoteSnapshot === 'object');
+
+  if (!hasLocal && !hasRemote) {
+    return { source: 'none', snapshot: null, comparison: 0 };
+  }
+  if (!hasRemote) {
+    return { source: 'local', snapshot: localSnapshot, comparison: 1 };
+  }
+  if (!hasLocal) {
+    return { source: 'remote', snapshot: remoteSnapshot, comparison: -1 };
+  }
+
+  const comparison = compareStateFreshness(localSnapshot, remoteSnapshot);
+  return comparison >= 0
+    ? { source: 'local', snapshot: localSnapshot, comparison }
+    : { source: 'remote', snapshot: remoteSnapshot, comparison };
+}
+
+function stampStatePersistence(snapshot, savedAtRealMs = Date.now()) {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return;
+  }
+  if (!snapshot.meta || typeof snapshot.meta !== 'object') {
+    snapshot.meta = {};
+  }
+  if (!snapshot.meta.persistence || typeof snapshot.meta.persistence !== 'object') {
+    snapshot.meta.persistence = {};
+  }
+  snapshot.meta.persistence.lastSavedAtRealMs = Number.isFinite(Number(savedAtRealMs))
+    ? Number(savedAtRealMs)
+    : Date.now();
+}
+
 function getRemoteApiFetch() {
   if (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function') {
     return window.GrowSimApi.apiFetch;
@@ -167,6 +244,7 @@ async function loadRemoteSave(options = {}) {
       return null;
     }
 
+    remoteSyncRuntime.authBlocked = false;
     console.info('[remote-load] success');
     return repairStoredTextEncoding(remoteState);
   } catch (error) {
@@ -463,6 +541,12 @@ function getCanonicalMeta(snapshot) {
   if (typeof s.meta.rescue.used !== 'boolean') s.meta.rescue.used = false;
   if (!Number.isFinite(Number(s.meta.rescue.usedAtRealMs))) s.meta.rescue.usedAtRealMs = null;
   if (s.meta.rescue.lastResult !== null && typeof s.meta.rescue.lastResult !== 'string') s.meta.rescue.lastResult = null;
+  if (!s.meta.persistence || typeof s.meta.persistence !== 'object') {
+    s.meta.persistence = {};
+  }
+  if (!Number.isFinite(Number(s.meta.persistence.lastSavedAtRealMs))) {
+    s.meta.persistence.lastSavedAtRealMs = 0;
+  }
   return s.meta;
 }
 
@@ -615,28 +699,46 @@ function normalizeSetupState(setupLike, simulationLike) {
   };
 }
 
-async function restoreState() {
+async function restoreState(options = {}) {
   if (!storageAdapter) {
     return;
   }
 
-  let saved = await loadRemoteSave();
-
-  if (!saved) {
-    try {
-      saved = await storageAdapter.get();
-      if (saved && typeof saved === 'object') {
-        console.info('[remote-load] fallback (using local save)');
-      } else {
-        console.info('[remote-load] fallback (no local save)');
-      }
-    } catch (error) {
-      console.warn('[storage] state restore read failed', error);
-      return;
-    }
+  let localSaved = null;
+  try {
+    localSaved = await storageAdapter.get();
+  } catch (error) {
+    console.warn('[storage] local state restore read failed', error);
+    return;
   }
+
+  let remoteSaved = null;
+  try {
+    remoteSaved = await loadRemoteSave({ force: Boolean(options && options.forceRemote === true) });
+  } catch (error) {
+    console.warn('[storage] remote state restore read failed', error);
+  }
+
+  const selectedRestore = choosePreferredRestoreSnapshot(localSaved, remoteSaved);
+  const saved = selectedRestore.snapshot;
   if (!saved || typeof saved !== 'object') {
     return;
+  }
+
+  if (selectedRestore.source === 'local' && remoteSaved && localSaved) {
+    console.info('[restore] local save selected over remote', {
+      local: getStateFreshnessMetrics(localSaved),
+      remote: getStateFreshnessMetrics(remoteSaved)
+    });
+  } else if (selectedRestore.source === 'remote') {
+    console.info('[restore] remote save selected', {
+      local: localSaved ? getStateFreshnessMetrics(localSaved) : null,
+      remote: getStateFreshnessMetrics(remoteSaved)
+    });
+  } else if (selectedRestore.source === 'local') {
+    console.info('[restore] local save selected', {
+      local: getStateFreshnessMetrics(localSaved)
+    });
   }
 
   const sim = getCanonicalSimulation(state);
@@ -843,6 +945,8 @@ async function persistState() {
     return;
   }
 
+  stampStatePersistence(state);
+
   try {
     await storageAdapter.set(state);
   } catch (error) {
@@ -949,6 +1053,9 @@ function resetStateToDefaults() {
       used: false,
       usedAtRealMs: null,
       lastResult: null
+    },
+    persistence: {
+      lastSavedAtRealMs: 0
     }
   };
   const climateApi = getClimateApi();
@@ -1009,7 +1116,7 @@ function resetStateToDefaults() {
   state.events = {
     machineState: 'idle',
     scheduler: {
-      nextEventSimTimeMs: fallbackSimTime + (EVENT_ROLL_MIN_REAL_MS * DEFAULT_BASE_SIM_SPEED),
+      nextEventSimTimeMs: fallbackSimStart + (EVENT_ROLL_MIN_REAL_MS * DEFAULT_BASE_SIM_SPEED),
       nextEventRealTimeMs: fallbackNow + EVENT_ROLL_MIN_REAL_MS,
       lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
@@ -1573,6 +1680,8 @@ window.GrowSimStorage = Object.freeze({
   localStorageAdapter,
   loadRemoteSave,
   saveRemoteState,
+  compareStateFreshness,
+  choosePreferredRestoreSnapshot,
   getCanonicalSimulation,
   getCanonicalPlant,
   getCanonicalEvents,

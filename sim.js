@@ -673,6 +673,7 @@ function tick() {
     if (typeof renderRunSummaryOverlay === 'function') {
       renderRunSummaryOverlay();
     }
+    state.ui.lastRenderRealMs = nowMs;
     schedulePersistState();
     return;
   }
@@ -693,6 +694,7 @@ function tick() {
     renderEventSheet();
     renderAnalysisPanel();
     renderDeathOverlay();
+    state.ui.lastRenderRealMs = nowMs;
     schedulePersistState();
     return;
   }
@@ -1024,8 +1026,17 @@ function syncSimulationFromElapsedTime(nowMs) {
   const requestedNowMs = Number(nowMs);
   const safeNowMs = Number.isFinite(requestedNowMs) ? requestedNowMs : Date.now();
   state.simulation.nowMs = safeNowMs;
+  const authGateBlocked = typeof window !== 'undefined'
+    && typeof window.__gsIsAuthGateActive === 'function'
+    && window.__gsIsAuthGateActive();
 
   try {
+    if (authGateBlocked) {
+      state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
+      state.simulation.growthImpulse = 0;
+      syncCanonicalStateShape();
+      return;
+    }
     if (state.run && state.run.status === 'ended') {
       state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
       state.simulation.growthImpulse = 0;

@@ -2092,6 +2092,12 @@ function onVisibilityChange() {
   }
 
   if (document.visibilityState === 'visible') {
+    const authGateBlocked = typeof window.__gsIsAuthGateActive === 'function' && window.__gsIsAuthGateActive();
+    if (authGateBlocked) {
+      renderAll();
+      schedulePersistState();
+      return;
+    }
     syncSimulationFromElapsedTime(Date.now());
     startLoopOnce();
     renderAll();
@@ -2106,6 +2112,11 @@ function onWindowFocus() {
   if (document.visibilityState !== 'visible') {
     return;
   }
+  if (typeof window.__gsIsAuthGateActive === 'function' && window.__gsIsAuthGateActive()) {
+    renderAll();
+    schedulePersistState();
+    return;
+  }
   syncSimulationFromElapsedTime(Date.now());
   renderAll();
   schedulePersistState();
@@ -2113,6 +2124,11 @@ function onWindowFocus() {
 
 function onPageShow() {
   if (document.visibilityState !== 'visible') {
+    return;
+  }
+  if (typeof window.__gsIsAuthGateActive === 'function' && window.__gsIsAuthGateActive()) {
+    renderAll();
+    schedulePersistState();
     return;
   }
   syncSimulationFromElapsedTime(Date.now());

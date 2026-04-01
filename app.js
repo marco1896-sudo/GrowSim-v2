@@ -241,6 +241,9 @@ const state = {
       used: false,
       usedAtRealMs: null,
       lastResult: null
+    },
+    persistence: {
+      lastSavedAtRealMs: Date.now()
     }
   },
   profile: progressionDefaults ? progressionDefaults.getDefaultProfile() : {
@@ -441,6 +444,7 @@ let screenRuntimeManager = null;
 let menuOverlayModule = null;
 let sheetsOverlayModule = null;
 let authGateActive = false;
+let authGatePausedAtMs = 0;
 
 const actionDebounceUntil = Object.create(null);
 
@@ -1466,8 +1470,8 @@ function applyOverlayAssets() {
   }
 }
 
-async function initOrMigrateState() {
-  await restoreState();
+async function initOrMigrateState(options = {}) {
+  await restoreState(options);
   migrateState();
   ensureStateIntegrity(Date.now());
 }
@@ -1496,7 +1500,7 @@ async function loadMissionsCatalog() {
 }
 
 function startLoopOnce() {
-  if (loopRunning || tickHandle !== null) {
+  if (authGateActive || loopRunning || tickHandle !== null) {
     return;
   }
   loopRunning = true;
@@ -1517,7 +1521,7 @@ function startHeartbeatWatchdog() {
     return;
   }
   heartbeatWatchdogHandle = setInterval(() => {
-    if (document.visibilityState !== 'visible') {
+    if (authGateActive || document.visibilityState !== 'visible') {
       return;
     }
     const last = Number(state.ui && state.ui.lastRenderRealMs) || 0;
@@ -2972,6 +2976,9 @@ function renderAll() {
   renderLanding();
   renderDeathOverlay();
   renderRunSummaryOverlay();
+  if (state.ui && typeof state.ui === 'object') {
+    state.ui.lastRenderRealMs = Date.now();
+  }
 }
 
 function renderOverlayModules() {
@@ -7978,7 +7985,7 @@ function resetStateToDefaults() {
   state.events = {
     machineState: 'idle',
     scheduler: {
-      nextEventSimTimeMs: fallbackSimTime + (EVENT_ROLL_MIN_REAL_MS * DEFAULT_BASE_SIM_SPEED),
+      nextEventSimTimeMs: fallbackSimStart + (EVENT_ROLL_MIN_REAL_MS * DEFAULT_BASE_SIM_SPEED),
       nextEventRealTimeMs: fallbackNow + EVENT_ROLL_MIN_REAL_MS,
       lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
@@ -8036,6 +8043,7 @@ function resetStateToDefaults() {
   };
 
   state.ui = {
+    authGateActive: false,
     openSheet: null,
     menuOpen: false,
     menuDialogOpen: false,
@@ -9433,7 +9441,44 @@ function isAuthSessionValid() {
 
 function setAuthGateActive(active) {
   authGateActive = Boolean(active);
-  if (!authGateActive) {
+  if (state.ui && typeof state.ui === 'object') {
+    state.ui.authGateActive = authGateActive;
+  }
+  if (typeof window !== 'undefined') {
+    window.__gsIsAuthGateActive = () => authGateActive;
+  }
+
+  const nowMs = Date.now();
+  if (authGateActive) {
+    authGatePausedAtMs = nowMs;
+    stopLoop();
+    clearRuntimeHaltBanner();
+    state.simulation.nowMs = nowMs;
+    state.simulation.lastTickRealTimeMs = nowMs;
+    if (state.ui && typeof state.ui === 'object') {
+      state.ui.lastRenderRealMs = nowMs;
+    }
+  } else {
+    const pausedDurationMs = authGatePausedAtMs > 0 ? Math.max(0, nowMs - authGatePausedAtMs) : 0;
+    authGatePausedAtMs = 0;
+    if (pausedDurationMs > 0) {
+      const boostEndsAtMs = Number(state.boost && state.boost.boostEndsAtMs);
+      if (Number.isFinite(boostEndsAtMs) && boostEndsAtMs > 0) {
+        state.boost.boostEndsAtMs = boostEndsAtMs + pausedDurationMs;
+      }
+      const fairnessEndsAtMs = Number(state.simulation && state.simulation.fairnessGraceEndsAtRealMs);
+      if (Number.isFinite(fairnessEndsAtMs) && fairnessEndsAtMs > 0) {
+        state.simulation.fairnessGraceEndsAtRealMs = fairnessEndsAtMs + pausedDurationMs;
+      }
+    }
+    state.simulation.nowMs = nowMs;
+    state.simulation.lastTickRealTimeMs = nowMs;
+    if (state.ui && typeof state.ui === 'object') {
+      state.ui.lastRenderRealMs = nowMs;
+    }
+    if (bootCompleted && document.visibilityState === 'visible') {
+      startLoopOnce();
+    }
     return;
   }
   state.ui.openSheet = null;
@@ -9582,7 +9627,9 @@ function syncAuthModalContent() {
 
 async function refreshStateAfterAuth() {
   try {
-    await initOrMigrateState();
+    await initOrMigrateState({ forceRemote: true });
+    syncRuntimeClocks(Date.now());
+    syncCanonicalStateShape();
     console.info('[auth] remote load success/fallback');
   } catch (error) {
     console.info('[auth] remote load failed');
@@ -9656,9 +9703,9 @@ async function submitAuthModal() {
       console.info('[auth] login success');
     }
 
+    await refreshStateAfterAuth();
     setAuthGateActive(false);
     closeCloudAuthModal({ force: true });
-    await refreshStateAfterAuth();
     schedulePersistState(true);
   } catch (error) {
     console.info(isRegister ? '[auth] register failed' : '[auth] login failed');
