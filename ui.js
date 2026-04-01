@@ -2137,6 +2137,14 @@ function onPageShow() {
   schedulePersistState();
 }
 
+window.GrowSimUiRuntime = Object.freeze({
+  onVisibilityChange,
+  onWindowFocus,
+  onPageShow,
+  showRuntimeHaltBanner,
+  clearRuntimeHaltBanner
+});
+
 function showRuntimeHaltBanner() {
   const existing = document.getElementById('runtimeHaltBanner');
   if (existing) {
@@ -2147,6 +2155,13 @@ function showRuntimeHaltBanner() {
   banner.className = 'boot-error-banner';
   banner.innerHTML = '<strong>Simulation angehalten – bitte neu laden.</strong>';
   document.body.appendChild(banner);
+}
+
+function clearRuntimeHaltBanner() {
+  const existing = document.getElementById('runtimeHaltBanner');
+  if (existing) {
+    existing.remove();
+  }
 }
 
 function translateEventState(machineState) {

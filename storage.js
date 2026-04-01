@@ -32,6 +32,46 @@ function localStorageAdapter() {
   };
 }
 
+async function createStorageAdapter() {
+  if (typeof indexedDB === 'undefined') {
+    return localStorageAdapter();
+  }
+
+  try {
+    const db = await openDb();
+    return {
+      async get() {
+        return dbGet(db, DB_KEY);
+      },
+      async set(snapshot) {
+        await dbSet(db, DB_KEY, snapshot);
+      }
+    };
+  } catch (_error) {
+    return localStorageAdapter();
+  }
+}
+
+async function clearStoredState() {
+  try {
+    localStorage.removeItem(LS_STATE_KEY);
+  } catch (_error) {
+    // non-fatal
+  }
+
+  if (typeof indexedDB === 'undefined') {
+    return;
+  }
+
+  try {
+    const db = await openDb();
+    await dbDelete(db, DB_KEY);
+    db.close();
+  } catch (_error) {
+    // non-fatal
+  }
+}
+
 const REMOTE_SAVE_PATH = '/save';
 const REMOTE_SYNC_MIN_INTERVAL_MS = 30 * 1000;
 
@@ -1677,6 +1717,8 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
 }
 
 window.GrowSimStorage = Object.freeze({
+  createStorageAdapter,
+  clearStoredState,
   localStorageAdapter,
   loadRemoteSave,
   saveRemoteState,
@@ -1695,6 +1737,7 @@ window.GrowSimStorage = Object.freeze({
   persistState,
   schedulePersistState,
   migrateState,
+  migrateLegacyStateIntoCanonical,
   resetStateToDefaults,
   ensureStateIntegrity,
   syncCanonicalStateShape,

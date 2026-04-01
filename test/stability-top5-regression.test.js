@@ -439,6 +439,14 @@ async function waitForBoot(page) {
 }
 
 async function waitForGate(page) {
+  await page.evaluate(() => {
+    const isAuthed = Boolean(window.GrowSimAuth && typeof window.GrowSimAuth.isAuthenticated === 'function' && window.GrowSimAuth.isAuthenticated());
+    const modal = document.getElementById('authModal');
+    const isVisible = Boolean(modal && !modal.classList.contains('hidden'));
+    if (!isAuthed && !isVisible && typeof openCloudAuthModal === 'function') {
+      openCloudAuthModal({ gate: true });
+    }
+  });
   await page.waitForFunction(() => {
     const modal = document.getElementById('authModal');
     return Boolean(modal && !modal.classList.contains('hidden'));
@@ -486,6 +494,61 @@ async function scenarioResetPath(page) {
   assert(Number.isFinite(result.nextEventSimTimeMs), 'reset path should produce a finite next event time');
   assert(result.nextEventSimTimeMs > result.simTimeMs, 'reset path should schedule the next event after current sim time');
   assert.strictEqual(result.authGateActive, false, 'reset path should rebuild UI auth gate state deterministically');
+}
+
+async function scenarioCanonicalOwnership(page) {
+  await installApiMocks(page, { allowAuthSession: false });
+  await page.goto(APP_URL, { waitUntil: 'networkidle' });
+  await waitForBoot(page);
+
+  const ownership = await page.evaluate(() => ({
+    domainOwnership: window.__gsDomainOwnership,
+    canonicalSimulationOwned: window.getCanonicalSimulation === window.GrowSimStorage.getCanonicalSimulation,
+    canonicalPlantOwned: window.getCanonicalPlant === window.GrowSimStorage.getCanonicalPlant,
+    canonicalEventsOwned: window.getCanonicalEvents === window.GrowSimStorage.getCanonicalEvents,
+    canonicalHistoryOwned: window.getCanonicalHistory === window.GrowSimStorage.getCanonicalHistory,
+    canonicalMetaOwned: window.getCanonicalMeta === window.GrowSimStorage.getCanonicalMeta,
+    canonicalSettingsOwned: window.getCanonicalSettings === window.GrowSimStorage.getCanonicalSettings,
+    canonicalNotificationsOwned: window.getCanonicalNotificationsSettings === window.GrowSimStorage.getCanonicalNotificationsSettings,
+    canonicalProfileOwned: window.getCanonicalProfile === window.GrowSimStorage.getCanonicalProfile,
+    canonicalRunOwned: window.getCanonicalRun === window.GrowSimStorage.getCanonicalRun,
+    storageRestoreOwned: window.restoreState === window.GrowSimStorage.restoreState,
+    storagePersistOwned: window.persistState === window.GrowSimStorage.persistState,
+    storageScheduleOwned: window.schedulePersistState === window.GrowSimStorage.schedulePersistState,
+    storageMigrateOwned: window.migrateState === window.GrowSimStorage.migrateState,
+    storageLegacyMigrateOwned: window.migrateLegacyStateIntoCanonical === window.GrowSimStorage.migrateLegacyStateIntoCanonical,
+    storageResetOwned: window.resetStateToDefaults === window.GrowSimStorage.resetStateToDefaults,
+    storageIntegrityOwned: window.ensureStateIntegrity === window.GrowSimStorage.ensureStateIntegrity,
+    storageSyncOwned: window.syncCanonicalStateShape === window.GrowSimStorage.syncCanonicalStateShape,
+    storageLegacyMirrorOwned: window.syncLegacyMirrorsFromCanonical === window.GrowSimStorage.syncLegacyMirrorsFromCanonical,
+    storageAdapterOwned: window.createStorageAdapter === window.GrowSimStorage.createStorageAdapter,
+    visibilityOwned: window.onVisibilityChange === window.GrowSimUiRuntime.onVisibilityChange,
+    haltBannerOwned: window.showRuntimeHaltBanner === window.GrowSimUiRuntime.showRuntimeHaltBanner
+  }));
+
+  assert.strictEqual(ownership.domainOwnership.storage, 'storage_module', 'storage ownership should resolve to the canonical storage module');
+  assert.strictEqual(ownership.domainOwnership.uiRuntime, 'ui.js', 'ui runtime ownership should resolve to ui.js');
+  assert.strictEqual(ownership.canonicalSimulationOwned, true, 'getCanonicalSimulation should point at storage.js');
+  assert.strictEqual(ownership.canonicalPlantOwned, true, 'getCanonicalPlant should point at storage.js');
+  assert.strictEqual(ownership.canonicalEventsOwned, true, 'getCanonicalEvents should point at storage.js');
+  assert.strictEqual(ownership.canonicalHistoryOwned, true, 'getCanonicalHistory should point at storage.js');
+  assert.strictEqual(ownership.canonicalMetaOwned, true, 'getCanonicalMeta should point at storage.js');
+  assert.strictEqual(ownership.canonicalSettingsOwned, true, 'getCanonicalSettings should point at storage.js');
+  assert.strictEqual(ownership.canonicalNotificationsOwned, true, 'getCanonicalNotificationsSettings should point at storage.js');
+  assert.strictEqual(ownership.canonicalProfileOwned, true, 'getCanonicalProfile should point at storage.js');
+  assert.strictEqual(ownership.canonicalRunOwned, true, 'getCanonicalRun should point at storage.js');
+  assert.strictEqual(ownership.storageRestoreOwned, true, 'restoreState should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storagePersistOwned, true, 'persistState should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storageScheduleOwned, true, 'schedulePersistState should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storageMigrateOwned, true, 'migrateState should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storageLegacyMigrateOwned, true, 'migrateLegacyStateIntoCanonical should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storageResetOwned, true, 'resetStateToDefaults should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storageIntegrityOwned, true, 'ensureStateIntegrity should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storageSyncOwned, true, 'syncCanonicalStateShape should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storageLegacyMirrorOwned, true, 'syncLegacyMirrorsFromCanonical should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.storageAdapterOwned, true, 'createStorageAdapter should point at the canonical storage module implementation');
+  assert.strictEqual(ownership.visibilityOwned, true, 'visibility resume handling should point at the canonical ui runtime implementation');
+  assert.strictEqual(ownership.haltBannerOwned, true, 'runtime halt banner handling should point at the canonical ui runtime implementation');
 }
 
 async function scenarioCloudRetryAfterLogin(page) {
@@ -637,6 +700,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   try {
     await runScenario(browser, 'reset path rebuild is valid', scenarioResetPath);
+    await runScenario(browser, 'canonical ownership stays wired after boot', scenarioCanonicalOwnership);
     await runScenario(browser, 'cloud save retries after login', scenarioCloudRetryAfterLogin);
     await runScenario(browser, 'restore prefers newer local snapshot', scenarioFreshnessArbitration);
     await runScenario(browser, 'auth gate freezes and resumes simulation', scenarioAuthGateFreeze);
