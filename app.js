@@ -75,6 +75,7 @@ const BOOST_ADVANCE_MS = CONFIG.boostAdvanceMs;
 const DEFAULT_BASE_SIM_SPEED = CONFIG.simulation.timeCompression;
 const SIM_SPEED_OPTIONS = Object.freeze([4, 8, 12, 16]);
 const BOOST_SIM_SPEED = 24;
+const CARE_ACTION_TIME_DIAGNOSTIC_THRESHOLD_MS = 1000;
 const BOOST_DURATION_REAL_MS = 30 * 60 * 1000;
 const BOOST_MAX_REMAINING_REAL_MS = 60 * 60 * 1000;
 const SIM_TIME_COMPRESSION = DEFAULT_BASE_SIM_SPEED;
@@ -2061,10 +2062,14 @@ function setGrowthFromPercent(percent) {
   }
 
   const targetProgress = clamp(Number(percent) / 100, 0, 1);
-  const nowMs = Date.now();
-  const targetSimTimeMs = Number(state.simulation.simEpochMs || alignToSimStartHour(nowMs, SIM_START_HOUR))
-    + (targetProgress * TOTAL_LIFECYCLE_SIM_MS);
-  setSimulationTimeMs(targetSimTimeMs, nowMs, { suppressLogs: true });
+  const simEpochMs = Number(state.simulation.simEpochMs || alignToSimStartHour(Date.now(), SIM_START_HOUR));
+  const baseElapsedPlantMs = Math.max(0, (Number(state.simulation.simTimeMs) || simEpochMs) - simEpochMs);
+  const targetElapsedPlantMs = targetProgress * TOTAL_LIFECYCLE_SIM_MS;
+  state.plant.progressOffsetSimMs = clamp(
+    targetElapsedPlantMs - baseElapsedPlantMs,
+    -baseElapsedPlantMs,
+    TOTAL_LIFECYCLE_SIM_MS - baseElapsedPlantMs
+  );
 
   const stage = getCurrentStage(getPlantTimeFromElapsed().simDay);
   state.plant.stageIndex = stage.stageIndex;
@@ -2072,6 +2077,7 @@ function setGrowthFromPercent(percent) {
   state.plant.stageKey = stageAssetKeyForIndex(stage.stageIndex);
   state.plant.lastValidStageKey = state.plant.stageKey;
   state.plant.stageProgress = stage.progressInPhase;
+  state.status.growth = round2(computeGrowthPercent());
 }
 
 function enterEventCooldown(nowMs) {
@@ -2183,6 +2189,8 @@ function applyAction(actionId) {
   }
 
   const before = snapshotStatus();
+  const beforeSimTimeMs = Number(state.simulation.simTimeMs) || 0;
+  const beforeLastTickRealTimeMs = Number(state.simulation.lastTickRealTimeMs) || 0;
 
   applyActionImmediateEffects(action);
   scheduleActionOverTimeEffect(action, nowMs);
@@ -2225,6 +2233,23 @@ function applyAction(actionId) {
   clampStatus();
   updateVisibleOverlays();
   syncCanonicalStateShape();
+  const afterSimTimeMs = Number(state.simulation.simTimeMs) || 0;
+  const afterLastTickRealTimeMs = Number(state.simulation.lastTickRealTimeMs) || 0;
+  const simDeltaMs = Math.max(0, afterSimTimeMs - beforeSimTimeMs);
+  const realTickDeltaMs = Math.max(0, afterLastTickRealTimeMs - beforeLastTickRealTimeMs);
+  if (
+    simDeltaMs > CARE_ACTION_TIME_DIAGNOSTIC_THRESHOLD_MS
+    || realTickDeltaMs > CARE_ACTION_TIME_DIAGNOSTIC_THRESHOLD_MS
+  ) {
+    reportCareActionClockJumpOnce(action, {
+      beforeSimTimeMs,
+      afterSimTimeMs,
+      simDeltaMs,
+      beforeLastTickRealTimeMs,
+      afterLastTickRealTimeMs,
+      realTickDeltaMs
+    });
+  }
   if (typeof window.checkMissions === 'function') {
     window.checkMissions('action', {
       actionId: action.id,
@@ -2687,6 +2712,30 @@ function summarizeDelta(before, after) {
     out[key] = round2((after[key] || 0) - (before[key] || 0));
   }
   return out;
+}
+
+const loggedCareActionTimeDiagnostics = new Set();
+
+function reportCareActionClockJumpOnce(action, details = {}) {
+  const actionId = action && action.id ? String(action.id) : 'unknown_action';
+  if (loggedCareActionTimeDiagnostics.has(actionId)) {
+    return;
+  }
+  loggedCareActionTimeDiagnostics.add(actionId);
+
+  const payload = {
+    actionId,
+    actionLabel: action && action.label ? String(action.label) : actionId,
+    category: action && action.category ? String(action.category) : 'unknown',
+    path: 'applyAction',
+    ...details
+  };
+
+  if (typeof reportSimulationClockIssue === 'function') {
+    reportSimulationClockIssue('warn', 'Care action mutated simulation clock unexpectedly', payload);
+    return;
+  }
+  console.warn('[sim-time] Care action mutated simulation clock unexpectedly', payload);
 }
 
 function consumeBoostUsage(nowMs, actionLabel) {
@@ -7366,6 +7415,7 @@ function getCanonicalPlant(snapshot) {
   if (!Number.isFinite(s.plant.averageHealth)) s.plant.averageHealth = 85;
   if (!Number.isFinite(s.plant.averageStress)) s.plant.averageStress = 15;
   if (!Number.isFinite(s.plant.observedSimMs)) s.plant.observedSimMs = 0;
+  if (!Number.isFinite(s.plant.progressOffsetSimMs)) s.plant.progressOffsetSimMs = 0;
   if (!s.plant.lifecycle || typeof s.plant.lifecycle !== 'object') {
     s.plant.lifecycle = { totalSimDays: TOTAL_LIFECYCLE_SIM_DAYS, qualityTier: 'normal', qualityScore: 0, qualityLocked: false };
   }
@@ -7528,6 +7578,15 @@ function getCanonicalSettings(snapshot) {
   if (!s.settings || typeof s.settings !== 'object') {
     s.settings = {};
   }
+  if (!s.settings.gameplay || typeof s.settings.gameplay !== 'object') {
+    s.settings.gameplay = {};
+  }
+  s.settings.gameplay.simSpeed = normalizeBaseSimulationSpeed(
+    s.settings.gameplay.simSpeed || (s.simulation && s.simulation.baseSpeed) || DEFAULT_BASE_SIM_SPEED
+  );
+  if (typeof s.settings.gameplay.eventFrequency !== 'string') s.settings.gameplay.eventFrequency = 'Normal';
+  if (typeof s.settings.gameplay.tutorial !== 'boolean') s.settings.gameplay.tutorial = true;
+  if (!Number.isFinite(Number(s.settings.gameplay.autosave))) s.settings.gameplay.autosave = 5;
   const notifications = getCanonicalNotificationsSettings(s);
   s.settings.notifications = notifications;
   return s.settings;
@@ -7829,6 +7888,12 @@ function resetStateToDefaults() {
     createdAtReal: fallbackNow
   };
   state.settings = {
+    gameplay: {
+      simSpeed: DEFAULT_BASE_SIM_SPEED,
+      eventFrequency: 'Normal',
+      tutorial: true,
+      autosave: 5
+    },
     notifications: {
       enabled: false,
       types: {
@@ -7897,6 +7962,7 @@ function resetStateToDefaults() {
     averageHealth: 85,
     averageStress: 15,
     observedSimMs: 0,
+    progressOffsetSimMs: 0,
     lifecycle: {
       totalSimDays: TOTAL_LIFECYCLE_SIM_DAYS,
       qualityTier: 'normal',
@@ -7998,8 +8064,14 @@ function ensureStateIntegrity(nowMs) {
   }
 
   ensureEnvironmentControls(state);
+  const settings = getCanonicalSettings(state);
   state.simulation.mode = MODE;
   state.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
+  const selectedBaseSpeed = normalizeBaseSimulationSpeed(
+    (settings.gameplay && settings.gameplay.simSpeed) || state.simulation.baseSpeed || state.simulation.timeCompression
+  );
+  settings.gameplay.simSpeed = selectedBaseSpeed;
+  state.simulation.baseSpeed = selectedBaseSpeed;
   state.simulation.baseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed || state.simulation.timeCompression);
   state.simulation.effectiveSpeed = getEffectiveSimulationSpeed(nowMs);
   state.simulation.timeCompression = state.simulation.effectiveSpeed;
@@ -8074,6 +8146,9 @@ function ensureStateIntegrity(nowMs) {
   }
   if (!Number.isFinite(state.plant.observedSimMs)) {
     state.plant.observedSimMs = 0;
+  }
+  if (!Number.isFinite(state.plant.progressOffsetSimMs)) {
+    state.plant.progressOffsetSimMs = 0;
   }
   if (typeof state.plant.lifecycle.qualityTier !== 'string') {
     state.plant.lifecycle.qualityTier = 'normal';
@@ -8166,7 +8241,6 @@ function ensureStateIntegrity(nowMs) {
   }
 
   const meta = getCanonicalMeta(state);
-  const settings = getCanonicalSettings(state);
   meta.rescue.used = Boolean(meta.rescue.used); meta.rescue.usedAtRealMs = Number.isFinite(Number(meta.rescue.usedAtRealMs)) ? Number(meta.rescue.usedAtRealMs) : null;
   meta.rescue.lastResult = (typeof meta.rescue.lastResult === 'string' || meta.rescue.lastResult === null) ? meta.rescue.lastResult : null;
   getCanonicalNotificationsSettings(state);
@@ -9228,7 +9302,7 @@ function migrateSettings(state) {
     state.settings = {};
   }
   if (!state.settings.gameplay) {
-    state.settings.gameplay = { simSpeed: 1.0, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
+    state.settings.gameplay = { simSpeed: DEFAULT_BASE_SIM_SPEED, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
   }
   if (!state.settings.audio) {
     state.settings.audio = { volume: 84, effects: 'Hoch', battery: false, haptic: true };
@@ -9236,6 +9310,9 @@ function migrateSettings(state) {
   if (!state.settings.account) {
     state.settings.account = { cloudSync: false };
   }
+  state.settings.gameplay.simSpeed = normalizeBaseSimulationSpeed(
+    state.settings.gameplay.simSpeed || (state.simulation && state.simulation.baseSpeed) || DEFAULT_BASE_SIM_SPEED
+  );
   state.settings.account.cloudSync = false;
 }
 
@@ -9244,13 +9321,27 @@ function updateSettingsUI() {
   const a = state.settings.audio;
 
   const simSpeedNode = document.getElementById('settingsSimSpeedValue');
+  const simSpeedHintNode = document.getElementById('settingsSimSpeedHint');
   if (simSpeedNode) {
-    const baseSpeed = normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed);
+    const baseSpeed = normalizeBaseSimulationSpeed(g && g.simSpeed);
     const runtimeSpeed = round2(Number(state.simulation && state.simulation.effectiveSpeed) || getEffectiveSimulationSpeed(Date.now()));
     simSpeedNode.textContent = `Basis ${baseSpeed}x · Aktiv ${runtimeSpeed}x`;
     simSpeedNode.className = 'value_gold';
     simSpeedNode.setAttribute('title', 'Basisgeschwindigkeit plus optionaler Zeit-Boost.');
   }
+  if (simSpeedHintNode) {
+    const boostActive = Number(state.simulation && state.simulation.effectiveSpeed) === BOOST_SIM_SPEED;
+    simSpeedHintNode.textContent = boostActive ? 'Boost aktiviert temporär x24.' : '';
+    simSpeedHintNode.classList.toggle('hidden', !boostActive);
+    simSpeedHintNode.setAttribute('aria-hidden', String(!boostActive));
+  }
+  document.querySelectorAll('[data-sim-speed-option]').forEach((node) => {
+    const option = normalizeBaseSimulationSpeed(node.getAttribute('data-sim-speed-option'));
+    const active = option === normalizeBaseSimulationSpeed(g && g.simSpeed);
+    node.dataset.active = active ? 'true' : 'false';
+    node.classList.toggle('is-active', active);
+    node.setAttribute('aria-pressed', String(active));
+  });
   
   const eventFreqNode = document.getElementById('settingsEventFrequencyValue');
   if (eventFreqNode) {
@@ -9320,6 +9411,18 @@ function updateSettingsUI() {
 
 let authModalMode = 'login';
 let authModalBusy = false;
+
+function applySettingsBaseSimulationSpeed(value, nowMs = Date.now()) {
+  migrateSettings(state);
+  const selectedSpeed = normalizeBaseSimulationSpeed(value);
+  state.settings.gameplay.simSpeed = selectedSpeed;
+  const appliedSpeed = setBaseSimulationSpeed(selectedSpeed, nowMs);
+  state.settings.gameplay.simSpeed = appliedSpeed;
+  updateSettingsUI();
+  renderAll();
+  schedulePersistState(true);
+  return appliedSpeed;
+}
 
 function isAuthSessionValid() {
   const authApi = window.GrowSimAuth;
@@ -9591,10 +9694,10 @@ function initSettingsEvents() {
   if (defBtn) {
     defBtn.setAttribute('title', 'Setzt lokale Hinweis- und Benachrichtigungseinstellungen auf den Standard zurück.');
     defBtn.addEventListener('click', () => {
-      state.settings.gameplay = { simSpeed: 1.0, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
+      state.settings.gameplay = { simSpeed: DEFAULT_BASE_SIM_SPEED, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
       state.settings.audio = { volume: 84, effects: 'Hoch', battery: false, haptic: true };
       state.settings.account = { cloudSync: false };
-      updateSettingsUI();
+      applySettingsBaseSimulationSpeed(DEFAULT_BASE_SIM_SPEED, Date.now());
     });
   }
 
@@ -9602,6 +9705,12 @@ function initSettingsEvents() {
   if (saveBtn) {
     saveBtn.setAttribute('title', 'Speichert den aktuellen lokalen Zustand im Browser.');
   }
+
+  document.querySelectorAll('[data-sim-speed-option]').forEach((button) => {
+    button.addEventListener('click', () => {
+      applySettingsBaseSimulationSpeed(button.getAttribute('data-sim-speed-option'), Date.now());
+    });
+  });
 
   const cloudRow = byId('settingsCloudSyncRow');
   if (cloudRow) {

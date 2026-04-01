@@ -3632,6 +3632,46 @@ body.panelized-ready :is(
   line-height: 1.2;
 }
 
+.figma-static-row--stacked {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.figma-static-row--stacked > span:first-child {
+  margin-bottom: 8px;
+}
+
+.settings-speed-control {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.settings-speed-segmented {
+  justify-self: end;
+}
+
+.settings-speed-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.settings-speed-btn[data-active="true"] {
+  background: rgba(212, 175, 55, 0.18);
+  color: #fff8de;
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.32);
+}
+
+.settings-speed-btn:focus-visible {
+  outline: 1px solid rgba(212, 175, 55, 0.55);
+  outline-offset: 1px;
+}
+
+.settings-speed-control .sheet-note {
+  text-align: right;
+}
+
 .value_green {
   color: #42ff7e;
   font-weight: 700;

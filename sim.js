@@ -1337,8 +1337,8 @@ function advanceGrowthTick(elapsedSimMs, options = {}) {
   updateLifecycleAverages(elapsedSimMs);
   updateQualityTier();
 
-  const simDay = simDayFloat();
-  const stage = getCurrentStage(simDay);
+  const plantTime = getPlantTimeFromElapsed();
+  const stage = getCurrentStage(plantTime.simDay);
 
   state.plant.stageIndex = stage.stageIndex;
   state.plant.phase = stage.current.phase;
@@ -1473,14 +1473,15 @@ function getElapsedRealMsSinceRunStart(nowMs) {
 }
 
 function getTotalRunProgress() {
-  const elapsedPlantMs = Math.max(0, Number(state.simulation.simTimeMs) - Number(state.simulation.simEpochMs || 0));
-  return clamp(elapsedPlantMs / TOTAL_LIFECYCLE_SIM_MS, 0, 1);
+  return getPlantTimeFromElapsed().totalRunProgress;
 }
 
 function getPlantTimeFromElapsed() {
   const simEpochMs = Number(state.simulation.simEpochMs) || alignToSimStartHour(getRealNowMs(), SIM_START_HOUR);
   const simTimeMs = Math.max(simEpochMs, Number(state.simulation.simTimeMs) || simEpochMs);
-  const elapsedPlantMs = Math.max(0, simTimeMs - simEpochMs);
+  const baseElapsedPlantMs = Math.max(0, simTimeMs - simEpochMs);
+  const progressOffsetSimMs = Number(state.plant && state.plant.progressOffsetSimMs) || 0;
+  const elapsedPlantMs = clamp(baseElapsedPlantMs + progressOffsetSimMs, 0, TOTAL_LIFECYCLE_SIM_MS);
 
   return {
     totalRunProgress: clamp(elapsedPlantMs / TOTAL_LIFECYCLE_SIM_MS, 0, 1),
@@ -1812,6 +1813,9 @@ function setBaseSimulationSpeed(value, nowMs = getRealNowMs()) {
   });
 
   state.simulation.baseSpeed = nextBaseSpeed;
+  if (state.settings && state.settings.gameplay && typeof state.settings.gameplay === 'object') {
+    state.settings.gameplay.simSpeed = nextBaseSpeed;
+  }
   addLog('system', 'Basis-Simulationsgeschwindigkeit geändert', {
     from: previousBaseSpeed,
     to: nextBaseSpeed

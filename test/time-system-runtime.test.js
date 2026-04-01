@@ -198,6 +198,154 @@ async function scenarioBaseSpeedChanges(page) {
   assertApproxRatio('live x16 progression', afterRun16.simTimeMs - afterImmediate16.simTimeMs, afterRun16.realNowMs - afterImmediate16.realNowMs, 16, 3.0);
 }
 
+async function scenarioCareActionsDoNotJumpTime(page) {
+  await startFreshRun(page);
+  const result = await page.evaluate(() => {
+    const runAction = (actionId, setup) => {
+      if (typeof setup === 'function') {
+        setup();
+      }
+      const beforeSimTimeMs = Number(window.__gsState.simulation.simTimeMs);
+      const beforeLastTickRealTimeMs = Number(window.__gsState.simulation.lastTickRealTimeMs);
+      const actionResult = applyAction(actionId);
+      return {
+        actionId,
+        actionResult,
+        beforeSimTimeMs,
+        afterSimTimeMs: Number(window.__gsState.simulation.simTimeMs),
+        beforeLastTickRealTimeMs,
+        afterLastTickRealTimeMs: Number(window.__gsState.simulation.lastTickRealTimeMs)
+      };
+    };
+
+    const resetActionState = () => {
+      window.__gsState.actions.cooldowns = {};
+      window.__gsState.status.health = 80;
+      window.__gsState.status.stress = 18;
+      window.__gsState.status.risk = 20;
+      const daySimTimeMs = Number(window.__gsState.simulation.simEpochMs) + (12 * 60 * 60 * 1000);
+      setSimulationTimeMs(daySimTimeMs, Number(window.__gsState.simulation.lastTickRealTimeMs), {
+        suppressLogs: true,
+        reason: 'test_care_action_daytime'
+      });
+      window.__gsState.plant.stageIndex = 2;
+      window.__gsState.plant.phase = 'vegetative';
+      window.__gsState.plant.stageKey = 'stage_03';
+      window.__gsState.simulation.isDaytime = true;
+    };
+
+    const watering = runAction('watering_medium_deep', () => {
+      resetActionState();
+      window.__gsState.status.water = 42;
+      window.__gsState.status.nutrition = 50;
+    });
+
+    const fertilizing = runAction('fertilizing_low_microfeed', () => {
+      resetActionState();
+      window.__gsState.status.water = 58;
+      window.__gsState.status.nutrition = 34;
+    });
+
+    const repeated = [];
+    for (let i = 0; i < 3; i += 1) {
+      repeated.push(runAction('watering_low_mist', () => {
+        resetActionState();
+        window.__gsState.status.water = 38 + i;
+        window.__gsState.status.nutrition = 45;
+      }));
+    }
+
+    return { watering, fertilizing, repeated };
+  });
+
+  for (const snapshot of [result.watering, result.fertilizing, ...result.repeated]) {
+    assert(snapshot.actionResult && snapshot.actionResult.ok, `${snapshot.actionId} should succeed in runtime test`);
+    assert.strictEqual(
+      snapshot.afterSimTimeMs,
+      snapshot.beforeSimTimeMs,
+      `${snapshot.actionId} changed simTimeMs during care action`
+    );
+    assert.strictEqual(
+      snapshot.afterLastTickRealTimeMs,
+      snapshot.beforeLastTickRealTimeMs,
+      `${snapshot.actionId} changed lastTickRealTimeMs during care action`
+    );
+  }
+}
+
+async function scenarioSettingsSimSpeedUi(page) {
+  await startFreshRun(page);
+  await page.evaluate(() => {
+    state.ui.openSheet = 'diagnosis';
+    renderAll();
+  });
+  await page.waitForFunction(() => {
+    const node = document.getElementById('diagnosisSheet');
+    return node && !node.classList.contains('hidden');
+  });
+
+  const initial = await page.evaluate(() => ({
+    currentText: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null,
+    options: Array.from(document.querySelectorAll('[data-sim-speed-option]')).map((node) => ({
+      speed: node.getAttribute('data-sim-speed-option'),
+      text: node.textContent.trim()
+    })),
+    hasBoostOnlyOption: Boolean(document.querySelector('[data-sim-speed-option="24"]'))
+  }));
+
+  assert.strictEqual(initial.currentText, 'Basis 12x · Aktiv 12x', 'settings should show the default base speed');
+  assert.deepStrictEqual(
+    initial.options.map((option) => option.speed),
+    ['4', '8', '12', '16'],
+    'settings should expose exactly x4/x8/x12/x16 base speed options'
+  );
+  assert.strictEqual(initial.hasBoostOnlyOption, false, 'x24 must remain boost-only');
+
+  await page.evaluate(() => {
+    document.querySelector('[data-sim-speed-option="16"]')?.click();
+  });
+  const changed = await page.evaluate(() => ({
+    currentText: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null,
+    activeOption: document.querySelector('[data-sim-speed-option].is-active')?.getAttribute('data-sim-speed-option') || null,
+    storedSpeed: Number(window.__gsState.settings.gameplay.simSpeed),
+    baseSpeed: Number(window.__gsState.simulation.baseSpeed)
+  }));
+
+  assert.strictEqual(changed.activeOption, '16', 'settings should mark the selected base speed as active');
+  assert.strictEqual(changed.storedSpeed, 16, 'settings should persist the selected base speed in settings state');
+  assert.strictEqual(changed.baseSpeed, 16, 'settings selection should update the runtime base speed');
+  assert.ok(
+    changed.currentText && changed.currentText.startsWith('Basis 16x'),
+    'settings summary should reflect the selected base speed'
+  );
+
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForRuntime(page);
+  await page.evaluate(() => {
+    state.ui.openSheet = 'diagnosis';
+    renderAll();
+  });
+  await page.waitForFunction(() => {
+    const node = document.getElementById('diagnosisSheet');
+    return node && !node.classList.contains('hidden');
+  });
+
+  const reloaded = await page.evaluate(() => ({
+    currentText: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null,
+    activeOption: document.querySelector('[data-sim-speed-option].is-active')?.getAttribute('data-sim-speed-option') || null,
+    storedSpeed: Number(window.__gsState.settings.gameplay.simSpeed),
+    baseSpeed: Number(window.__gsState.simulation.baseSpeed)
+  }));
+
+  assert.strictEqual(reloaded.activeOption, '16', 'settings UI did not restore the selected base speed after reload');
+  assert.strictEqual(reloaded.storedSpeed, 16, 'settings state did not restore the selected base speed after reload');
+  assert.strictEqual(reloaded.baseSpeed, 16, 'runtime base speed did not restore after reload');
+  assert.ok(
+    reloaded.currentText && reloaded.currentText.startsWith('Basis 16x'),
+    'settings summary did not restore the selected base speed after reload'
+  );
+}
+
 async function scenarioNegativeRealDeltaClamp(page) {
   await startFreshRun(page);
   const result = await page.evaluate(() => {
@@ -396,7 +544,9 @@ async function main() {
   try {
     await scenarioLiveX12(page);
     await scenarioSimTimeNeverDecreases(page);
+    await scenarioCareActionsDoNotJumpTime(page);
     await scenarioBaseSpeedChanges(page);
+    await scenarioSettingsSimSpeedUi(page);
     await scenarioNegativeRealDeltaClamp(page);
     await scenarioBoostActivationAndExpiry(page);
     await scenarioReloadDuringActiveBoost(page);

@@ -370,6 +370,7 @@ function getCanonicalPlant(snapshot) {
   if (!Number.isFinite(s.plant.averageHealth)) s.plant.averageHealth = 85;
   if (!Number.isFinite(s.plant.averageStress)) s.plant.averageStress = 15;
   if (!Number.isFinite(s.plant.observedSimMs)) s.plant.observedSimMs = 0;
+  if (!Number.isFinite(s.plant.progressOffsetSimMs)) s.plant.progressOffsetSimMs = 0;
   if (!s.plant.lifecycle || typeof s.plant.lifecycle !== 'object') {
     s.plant.lifecycle = { totalSimDays: TOTAL_LIFECYCLE_SIM_DAYS, qualityTier: 'normal', qualityScore: 0, qualityLocked: false };
   }
@@ -470,6 +471,15 @@ function getCanonicalSettings(snapshot) {
   if (!s.settings || typeof s.settings !== 'object') {
     s.settings = {};
   }
+  if (!s.settings.gameplay || typeof s.settings.gameplay !== 'object') {
+    s.settings.gameplay = {};
+  }
+  s.settings.gameplay.simSpeed = normalizeBaseSimulationSpeed(
+    s.settings.gameplay.simSpeed || (s.simulation && s.simulation.baseSpeed) || DEFAULT_BASE_SIM_SPEED
+  );
+  if (typeof s.settings.gameplay.eventFrequency !== 'string') s.settings.gameplay.eventFrequency = 'Normal';
+  if (typeof s.settings.gameplay.tutorial !== 'boolean') s.settings.gameplay.tutorial = true;
+  if (!Number.isFinite(Number(s.settings.gameplay.autosave))) s.settings.gameplay.autosave = 5;
   const notifications = getCanonicalNotificationsSettings(s);
   s.settings.notifications = notifications;
   return s.settings;
