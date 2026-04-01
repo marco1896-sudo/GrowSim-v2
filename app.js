@@ -445,6 +445,9 @@ let menuOverlayModule = null;
 let sheetsOverlayModule = null;
 let authGateActive = false;
 let authGatePausedAtMs = 0;
+let bootWaitingForAuth = false;
+let startupAuthGateResolver = null;
+let settingsEventsInitialized = false;
 
 const actionDebounceUntil = Object.create(null);
 
@@ -818,7 +821,7 @@ function setBootStep(step, message = '') {
 
 window.setBootStep = setBootStep;
 
-function hideLoadingScreen() {
+function hideLoadingScreen(options = {}) {
   if (loadingScreenState.hidden) {
     console.info('[boot][loader] hide called but loader is already hidden');
     return Promise.resolve();
@@ -837,8 +840,9 @@ function hideLoadingScreen() {
     return Promise.resolve();
   }
 
+  const immediate = Boolean(options && options.immediate === true);
   const elapsedMs = Date.now() - loadingScreenState.startedAtMs;
-  const waitMs = Math.max(0, LOADING_SCREEN_MIN_VISIBLE_MS - elapsedMs);
+  const waitMs = immediate ? 0 : Math.max(0, LOADING_SCREEN_MIN_VISIBLE_MS - elapsedMs);
   bootLoaderLifecycle.hideCalled = true;
   bootLoaderLifecycle.lastHideCallAtMs = Date.now();
   console.info('[boot][loader] hide requested', {
@@ -883,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
   startBootDiagnostics();
   setBootStep('init', getBootUserMessage('init'));
   bootTimeoutHandle = window.setTimeout(() => {
-    if (bootCompleted || window.__gsBootState.step === 'ready') {
+    if (bootCompleted || bootWaitingForAuth || window.__gsBootState.step === 'ready') {
       return;
     }
     bootTimedOut = true;
@@ -1265,6 +1269,7 @@ function initUiArchitecture() {
 
 async function boot() {
   let bootStep = 'start';
+  let stateRestoredDuringStartupAuthGate = false;
   try {
     setBootStep('init', getBootUserMessage('init'));
     logBootStep('boot:start');
@@ -1290,14 +1295,29 @@ async function boot() {
     if (window.GrowSimAuth && typeof window.GrowSimAuth.restoreSession === 'function') {
       await runBootSubstep('restore_auth_session', () => window.GrowSimAuth.restoreSession());
     }
-    authGateActive = false;
+    const hasValidSession = isAuthSessionValid();
+    if (!hasValidSession) {
+      ensureSettingsUiReady();
+      setAuthGateActive(true);
+      syncAuthModalContent();
+      setBootStep('restore_session', 'Anmeldung erforderlich...');
+      await runBootSubstep('show_startup_auth_gate', () => hideLoadingScreen({ immediate: true }));
+      await runBootSubstep('open_startup_auth_gate', () => openCloudAuthModal({ gate: true }));
+      bootWaitingForAuth = true;
+      stateRestoredDuringStartupAuthGate = await runBootSubstep('wait_for_startup_auth', () => waitForStartupAuthGateClear());
+      bootWaitingForAuth = false;
+    } else {
+      setAuthGateActive(false);
+    }
     logBootStep('boot:auth_restore', {
-      authenticated: Boolean(window.GrowSimAuth && typeof window.GrowSimAuth.isAuthenticated === 'function' && window.GrowSimAuth.isAuthenticated())
+      authenticated: hasValidSession
     });
 
     setBootStep('load_data', getBootUserMessage('load_data'));
     bootStep = 'state_restore';
-    await runBootSubstep('restore_or_migrate_state', () => initOrMigrateState());
+    if (!stateRestoredDuringStartupAuthGate) {
+      await runBootSubstep('restore_or_migrate_state', () => initOrMigrateState());
+    }
     logBootStep('boot:state_restore', {
       simTimeMs: state.simulation.simTimeMs,
       nextEventRealTimeMs: state.events.scheduler.nextEventRealTimeMs,
@@ -8501,6 +8521,24 @@ function isAuthSessionValid() {
   return Boolean(authApi && typeof authApi.isAuthenticated === 'function' && authApi.isAuthenticated());
 }
 
+function waitForStartupAuthGateClear() {
+  if (!authGateActive || isAuthSessionValid()) {
+    return Promise.resolve(false);
+  }
+  return new Promise((resolve) => {
+    startupAuthGateResolver = resolve;
+  });
+}
+
+function resolveStartupAuthGateClear(stateRestored = false) {
+  if (typeof startupAuthGateResolver !== 'function') {
+    return;
+  }
+  const resolve = startupAuthGateResolver;
+  startupAuthGateResolver = null;
+  resolve(Boolean(stateRestored));
+}
+
 function setAuthGateActive(active) {
   authGateActive = Boolean(active);
   if (state.ui && typeof state.ui === 'object') {
@@ -8768,6 +8806,7 @@ async function submitAuthModal() {
     await refreshStateAfterAuth();
     setAuthGateActive(false);
     closeCloudAuthModal({ force: true });
+    resolveStartupAuthGateClear(true);
     schedulePersistState(true);
   } catch (error) {
     console.info(isRegister ? '[auth] register failed' : '[auth] login failed');
@@ -8793,7 +8832,17 @@ function performAuthLogout() {
   schedulePersistState(true);
 }
 
+function ensureSettingsUiReady() {
+  migrateSettings(state);
+  initSettingsEvents();
+  updateSettingsUI();
+}
+
 function initSettingsEvents() {
+  if (settingsEventsInitialized) {
+    return;
+  }
+  settingsEventsInitialized = true;
   const byId = (id) => document.getElementById(id);
 
   const resetBtn = byId('analysisResetBtn');
@@ -8942,9 +8991,5 @@ window.renderDiagnosisSheet = function() {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    migrateSettings(state);
-    initSettingsEvents();
-    updateSettingsUI();
-  }, 1000);
+  ensureSettingsUiReady();
 });
