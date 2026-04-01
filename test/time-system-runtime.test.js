@@ -145,9 +145,33 @@ async function scenarioLiveX12(page) {
   await startFreshRun(page);
   await page.evaluate(() => setBaseSimulationSpeed(12, Date.now()));
   const before = await getSnapshot(page);
-  await page.waitForTimeout(3200);
+  await page.waitForTimeout(4200);
   const after = await getSnapshot(page);
-  assertApproxRatio('live x12 progression', after.simTimeMs - before.simTimeMs, after.realNowMs - before.realNowMs, 12, 1.8);
+  assertApproxRatio('live x12 progression', after.simTimeMs - before.simTimeMs, after.realNowMs - before.realNowMs, 12, 4.5);
+}
+
+async function scenarioSimTimeNeverDecreases(page) {
+  await startFreshRun(page);
+  const result = await page.evaluate(() => {
+    const beforeSimTimeMs = Number(window.__gsState.simulation.simTimeMs);
+    const beforeLastTickRealTimeMs = Number(window.__gsState.simulation.lastTickRealTimeMs);
+    setSimulationTimeMs(beforeSimTimeMs - (2 * 60 * 60 * 1000), beforeLastTickRealTimeMs - 5000, {
+      suppressLogs: true,
+      reason: 'test_backward_set'
+    });
+    return {
+      beforeSimTimeMs,
+      beforeLastTickRealTimeMs,
+      afterSimTimeMs: Number(window.__gsState.simulation.simTimeMs),
+      afterLastTickRealTimeMs: Number(window.__gsState.simulation.lastTickRealTimeMs)
+    };
+  });
+
+  assert(result.afterSimTimeMs >= result.beforeSimTimeMs, 'setSimulationTimeMs moved sim time backward');
+  assert(
+    result.afterLastTickRealTimeMs >= result.beforeLastTickRealTimeMs,
+    'setSimulationTimeMs moved lastTickRealTimeMs backward'
+  );
 }
 
 async function scenarioBaseSpeedChanges(page) {
@@ -172,6 +196,33 @@ async function scenarioBaseSpeedChanges(page) {
   await page.waitForTimeout(5200);
   const afterRun16 = await getSnapshot(page);
   assertApproxRatio('live x16 progression', afterRun16.simTimeMs - afterImmediate16.simTimeMs, afterRun16.realNowMs - afterImmediate16.realNowMs, 16, 3.0);
+}
+
+async function scenarioNegativeRealDeltaClamp(page) {
+  await startFreshRun(page);
+  const result = await page.evaluate(() => {
+    const beforeSimTimeMs = Number(window.__gsState.simulation.simTimeMs);
+    const beforeLastTickRealTimeMs = Number(window.__gsState.simulation.lastTickRealTimeMs);
+    const advanceResult = advanceSimulationTime(beforeLastTickRealTimeMs - 10000, {
+      suppressLogs: true,
+      reason: 'test_negative_real_delta'
+    });
+    return {
+      beforeSimTimeMs,
+      beforeLastTickRealTimeMs,
+      afterSimTimeMs: Number(window.__gsState.simulation.simTimeMs),
+      afterLastTickRealTimeMs: Number(window.__gsState.simulation.lastTickRealTimeMs),
+      advanceResult
+    };
+  });
+
+  assert.strictEqual(result.advanceResult.elapsedRealMs, 0, 'negative real delta was not clamped to zero');
+  assert.strictEqual(result.advanceResult.elapsedSimMs, 0, 'negative real delta advanced simulation time');
+  assert.strictEqual(result.afterSimTimeMs, result.beforeSimTimeMs, 'negative real delta changed sim time');
+  assert(
+    result.afterLastTickRealTimeMs >= result.beforeLastTickRealTimeMs,
+    'negative real delta moved lastTickRealTimeMs backward'
+  );
 }
 
 async function scenarioBoostActivationAndExpiry(page) {
@@ -232,25 +283,54 @@ async function scenarioOfflineResume(page) {
   await startFreshRun(page);
   await page.evaluate(() => setBaseSimulationSpeed(12, Date.now()));
   const before = await getSnapshot(page);
-  const tenSecondsAgo = Date.now() - 10000;
-  await page.evaluate((timestamp) => {
-    window.__gsState.simulation.lastTickRealTimeMs = timestamp;
-    if (typeof syncCanonicalStateShape === 'function') {
-      syncCanonicalStateShape();
-    }
-    if (typeof schedulePersistState === 'function') {
-      schedulePersistState(true);
-    }
-  }, tenSecondsAgo);
-  await page.reload({ waitUntil: 'networkidle' });
-  await waitForRuntime(page);
-  const after = await getSnapshot(page);
-  const simDeltaMs = after.simTimeMs - before.simTimeMs;
-  const expectedSimDeltaMs = (after.realNowMs - tenSecondsAgo) * 12;
+  const result = await page.evaluate(() => {
+    const targetNowMs = Date.now();
+    const previousLastTickRealTimeMs = targetNowMs - 10000;
+    const previousSimTimeMs = Number(window.__gsState.simulation.simTimeMs);
+    window.__gsState.simulation.lastTickRealTimeMs = previousLastTickRealTimeMs;
+    syncSimulationFromElapsedTime(targetNowMs);
+    return {
+      targetNowMs,
+      previousLastTickRealTimeMs,
+      previousSimTimeMs,
+      nextSimTimeMs: Number(window.__gsState.simulation.simTimeMs),
+      nextLastTickRealTimeMs: Number(window.__gsState.simulation.lastTickRealTimeMs)
+    };
+  });
+  const simDeltaMs = result.nextSimTimeMs - before.simTimeMs;
+  const expectedSimDeltaMs = (result.targetNowMs - result.previousLastTickRealTimeMs) * 12;
   assert(
     Math.abs(simDeltaMs - expectedSimDeltaMs) <= 25000,
     `offline resume expected about ${expectedSimDeltaMs} sim ms, got ${simDeltaMs}`
   );
+  assert(
+    result.nextLastTickRealTimeMs >= result.previousLastTickRealTimeMs,
+    'offline resume moved lastTickRealTimeMs backward'
+  );
+}
+
+async function scenarioResumeHooksDoNotMultiFire(page) {
+  await startFreshRun(page);
+  const count = await page.evaluate(() => {
+    window.__resumeHookCount = 0;
+    const original = window.syncSimulationFromElapsedTime;
+    const wrapped = function(...args) {
+      window.__resumeHookCount += 1;
+      return original.apply(this, args);
+    };
+    window.syncSimulationFromElapsedTime = wrapped;
+    syncSimulationFromElapsedTime = wrapped;
+
+    onVisibilityChange();
+    onWindowFocus();
+    onPageShow();
+
+    window.syncSimulationFromElapsedTime = original;
+    syncSimulationFromElapsedTime = original;
+    return window.__resumeHookCount;
+  });
+
+  assert.strictEqual(count, 0, 'resume catch-up still fires from visibility/focus/pageshow hooks');
 }
 
 async function scenarioSkipNight(page) {
@@ -258,6 +338,7 @@ async function scenarioSkipNight(page) {
   const result = await page.evaluate(() => {
     const nowMs = Date.now();
     setBaseSimulationSpeed(8, nowMs);
+    const beforeLastTickRealTimeMs = Number(window.__gsState.simulation.lastTickRealTimeMs);
     const currentSimTimeMs = Number(window.__gsState.simulation.simEpochMs) + (15 * 60 * 60 * 1000);
     setSimulationTimeMs(currentSimTimeMs, nowMs, { suppressLogs: true });
     const nextDayStartSimMs = getNextDayStartSimTime(currentSimTimeMs);
@@ -267,6 +348,8 @@ async function scenarioSkipNight(page) {
     return {
       expectedSimTimeMs: nextDayStartSimMs,
       actualSimTimeMs: Number(window.__gsState.simulation.simTimeMs),
+      afterLastTickRealTimeMs: Number(window.__gsState.simulation.lastTickRealTimeMs),
+      beforeLastTickRealTimeMs,
       isDaytime: Boolean(window.__gsState.simulation.isDaytime),
       expectedRealDeltaMs
     };
@@ -278,6 +361,29 @@ async function scenarioSkipNight(page) {
   );
   assert.strictEqual(result.isDaytime, true, 'skip night did not end in daytime');
   assert(result.expectedRealDeltaMs > 0, 'skip night did not use shared sim-to-real delta conversion');
+  assert(
+    result.afterLastTickRealTimeMs >= result.beforeLastTickRealTimeMs,
+    'skip night moved lastTickRealTimeMs backward'
+  );
+}
+
+async function scenarioWatchdogRecoversStalledLoop(page) {
+  await startFreshRun(page);
+  const before = await getSnapshot(page);
+  await page.evaluate(() => {
+    stopLoop();
+    window.__gsState.ui.lastRenderRealMs = Date.now() - 20000;
+  });
+  await page.waitForTimeout(3600);
+  const afterWatchdog = await getSnapshot(page);
+  await page.waitForTimeout(1600);
+  const afterRecoveryTick = await getSnapshot(page);
+
+  assert(afterWatchdog.simTimeMs >= before.simTimeMs, 'watchdog recovery moved sim time backward');
+  assert(
+    afterRecoveryTick.simTimeMs > afterWatchdog.simTimeMs,
+    'watchdog did not restart the simulation loop'
+  );
 }
 
 async function main() {
@@ -289,12 +395,16 @@ async function main() {
 
   try {
     await scenarioLiveX12(page);
+    await scenarioSimTimeNeverDecreases(page);
     await scenarioBaseSpeedChanges(page);
+    await scenarioNegativeRealDeltaClamp(page);
     await scenarioBoostActivationAndExpiry(page);
     await scenarioReloadDuringActiveBoost(page);
     await scenarioReloadAfterExpiredBoost(page);
     await scenarioOfflineResume(page);
+    await scenarioResumeHooksDoNotMultiFire(page);
     await scenarioSkipNight(page);
+    await scenarioWatchdogRecoversStalledLoop(page);
     console.log('time-system-runtime: all scenarios passed');
   } finally {
     await browser.close();

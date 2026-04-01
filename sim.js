@@ -831,21 +831,61 @@ function updateEffectiveSpeedState(nowMs, options = {}) {
   return nextEffectiveSpeed;
 }
 
+function reportSimulationClockIssue(level, message, details) {
+  const method = level === 'error' ? 'error' : 'warn';
+  console[method](`[sim-time] ${message}`, details || {});
+}
+
 function setSimulationTimeMs(targetSimTimeMs, nowMs = getRealNowMs(), options = {}) {
   const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
-  const safeSimTimeMs = Math.max(
-    Number(state.simulation.simEpochMs) || alignToSimStartHour(safeNowMs, SIM_START_HOUR),
-    Number.isFinite(Number(targetSimTimeMs)) ? Number(targetSimTimeMs) : Number(state.simulation.simTimeMs) || 0
+  const simEpochMs = Number(state.simulation.simEpochMs) || alignToSimStartHour(safeNowMs, SIM_START_HOUR);
+  const previousSimTimeMs = Math.max(
+    simEpochMs,
+    Number(state.simulation.simTimeMs) || simEpochMs
   );
-  const previousSimTimeMs = Number(state.simulation.simTimeMs) || Number(state.simulation.simEpochMs) || safeSimTimeMs;
-  const elapsedSimMs = Math.max(0, safeSimTimeMs - previousSimTimeMs);
+  const requestedSimTimeMs = Math.max(
+    simEpochMs,
+    Number.isFinite(Number(targetSimTimeMs)) ? Number(targetSimTimeMs) : previousSimTimeMs
+  );
+  if (!options.suppressLogs && requestedSimTimeMs < previousSimTimeMs) {
+    reportSimulationClockIssue('error', 'Monotonic guard blocked backward sim time', {
+      previousSimTimeMs,
+      requestedSimTimeMs,
+      safeNowMs,
+      reason: options.reason || 'set_sim_time'
+    });
+  }
+  const nextSimTimeMs = Math.max(previousSimTimeMs, requestedSimTimeMs);
+  const previousLastTickRealTimeMs = Number.isFinite(Number(state.simulation.lastTickRealTimeMs))
+    ? Number(state.simulation.lastTickRealTimeMs)
+    : safeNowMs;
+  if (!options.suppressLogs && safeNowMs < previousLastTickRealTimeMs) {
+    reportSimulationClockIssue('error', 'Monotonic guard blocked backward lastTickRealTimeMs', {
+      previousLastTickRealTimeMs,
+      requestedLastTickRealTimeMs: safeNowMs,
+      simTimeMs: nextSimTimeMs,
+      reason: options.reason || 'set_sim_time'
+    });
+  }
+  const nextLastTickRealTimeMs = Math.max(previousLastTickRealTimeMs, safeNowMs);
+  const elapsedSimMs = Math.max(0, nextSimTimeMs - previousSimTimeMs);
   const wasDaytimeBefore = isDaytimeAtSimTime(previousSimTimeMs);
-  const nowDaytime = isDaytimeAtSimTime(safeSimTimeMs);
+  const nowDaytime = isDaytimeAtSimTime(nextSimTimeMs);
 
-  state.simulation.nowMs = safeNowMs;
-  state.simulation.simTimeMs = safeSimTimeMs;
-  state.simulation.lastTickRealTimeMs = safeNowMs;
+  state.simulation.nowMs = Math.max(Number(state.simulation.nowMs) || 0, safeNowMs);
+  state.simulation.simTimeMs = nextSimTimeMs;
+  state.simulation.lastTickRealTimeMs = nextLastTickRealTimeMs;
   state.simulation.isDaytime = nowDaytime;
+
+  if (!options.suppressLogs && elapsedSimMs >= LARGE_TIME_JUMP_LOG_MS) {
+    reportSimulationClockIssue('warn', 'Large simulation time jump detected', {
+      previousSimTimeMs,
+      nextSimTimeMs,
+      elapsedSimMs,
+      safeNowMs,
+      reason: options.reason || 'set_sim_time'
+    });
+  }
 
   if (!wasDaytimeBefore && nowDaytime) {
     state.simulation.fairnessGraceUntilRealMs = Math.max(
@@ -867,13 +907,22 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
   const previousTickMs = Number.isFinite(Number(state.simulation.lastTickRealTimeMs))
     ? Number(state.simulation.lastTickRealTimeMs)
     : safeTargetRealNowMs;
+  const rawRealDeltaMs = safeTargetRealNowMs - previousTickMs;
+  if (!options.suppressLogs && rawRealDeltaMs < 0) {
+    reportSimulationClockIssue('error', 'Negative real delta detected', {
+      targetRealNowMs: safeTargetRealNowMs,
+      previousTickMs,
+      rawRealDeltaMs,
+      reason: options.reason || 'advance'
+    });
+  }
   const safePreviousTickMs = Math.min(previousTickMs, safeTargetRealNowMs);
-  const realDeltaMs = Math.max(0, safeTargetRealNowMs - safePreviousTickMs);
+  const realDeltaMs = Math.max(0, rawRealDeltaMs);
   const previousBoostActive = isSpeedBoostActive(safePreviousTickMs);
 
   if (realDeltaMs <= 0) {
-    state.simulation.nowMs = safeTargetRealNowMs;
-    state.simulation.lastTickRealTimeMs = safeTargetRealNowMs;
+    state.simulation.nowMs = Math.max(Number(state.simulation.nowMs) || 0, safeTargetRealNowMs);
+    state.simulation.lastTickRealTimeMs = Math.max(previousTickMs, safeTargetRealNowMs);
     updateEffectiveSpeedState(safeTargetRealNowMs, {
       suppressLogs: Boolean(options.suppressLogs),
       previousBoostActive,
@@ -896,7 +945,8 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
   }
 
   const timeResult = setSimulationTimeMs(previousSimTimeMs + elapsedSimMs, safeTargetRealNowMs, {
-    suppressLogs: Boolean(options.suppressLogs)
+    suppressLogs: Boolean(options.suppressLogs),
+    reason: options.reason || 'advance'
   });
 
   applyStatusDrift(realDeltaMs);
@@ -977,13 +1027,13 @@ function syncSimulationFromElapsedTime(nowMs) {
 
   try {
     if (state.run && state.run.status === 'ended') {
-      state.simulation.lastTickRealTimeMs = safeNowMs;
+      state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
       state.simulation.growthImpulse = 0;
       syncCanonicalStateShape();
       return;
     }
     if (syncDeathState() && FREEZE_SIM_ON_DEATH) {
-      state.simulation.lastTickRealTimeMs = safeNowMs;
+      state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
       state.simulation.growthImpulse = 0;
       syncCanonicalStateShape();
       return;
@@ -994,7 +1044,7 @@ function syncSimulationFromElapsedTime(nowMs) {
     });
   } catch (error) {
     console.error('[offline] catch-up failed', error);
-    state.simulation.lastTickRealTimeMs = safeNowMs;
+    state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
     state.simulation.growthImpulse = 0;
     addLog('system', 'Offline-Fortschritt konnte nicht vollständig berechnet werden.', {
       error: error && error.message ? error.message : String(error)

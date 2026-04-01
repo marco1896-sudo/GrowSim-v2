@@ -1522,6 +1522,10 @@ function startHeartbeatWatchdog() {
     const last = Number(state.ui && state.ui.lastRenderRealMs) || 0;
     if (!loopRunning || !Number.isFinite(last) || (Date.now() - last) > 15000) {
       showRuntimeHaltBanner();
+      stopLoop();
+      startLoopOnce();
+      renderAll();
+      schedulePersistState();
     }
   }, 3000);
 }
@@ -2744,8 +2748,11 @@ function onSkipNightAction() {
   const remainingNightSimMs = Math.max(0, nextDayStartSimMs - currentSimTimeMs);
 
   if (remainingNightSimMs <= 0) {
-    setSimulationTimeMs(nextDayStartSimMs, nowMs, { suppressLogs: true });
-    runEventStateMachine(nowMs);
+    setSimulationTimeMs(nextDayStartSimMs, nowMs, {
+      suppressLogs: true,
+      reason: 'skip_night_align'
+    });
+    runEventStateMachine(state.simulation.nowMs);
     renderAll();
     schedulePersistState(true);
     return;
@@ -2774,9 +2781,8 @@ function onSkipNightAction() {
     state.ui.deathOverlayOpen = false;
   }
 
-  setSimulationTimeMs(nextDayStartSimMs, nowMs, { suppressLogs: true });
   syncCanonicalStateShape();
-  runEventStateMachine(nowMs);
+  runEventStateMachine(state.simulation.nowMs);
 
   addLog('action', 'Nacht übersprungen: Tagesbeginn erreicht', {
     usedToday: state.boost.boostUsedToday,
@@ -6710,13 +6716,10 @@ function onVisibilityChange() {
   }
 
   if (document.visibilityState === 'visible') {
-    syncSimulationFromElapsedTime(Date.now());
+    clearRuntimeHaltBanner();
     startLoopOnce();
     renderAll();
     schedulePersistState();
-    if (!loopRunning) {
-      showRuntimeHaltBanner();
-    }
   }
 }
 
@@ -6725,7 +6728,7 @@ function onWindowFocus() {
     return;
   }
   clearRuntimeHaltBanner();
-  syncSimulationFromElapsedTime(Date.now());
+  startLoopOnce();
   renderAll();
   schedulePersistState();
 }
@@ -6735,7 +6738,6 @@ function onPageShow() {
     return;
   }
   clearRuntimeHaltBanner();
-  syncSimulationFromElapsedTime(Date.now());
   startLoopOnce();
   renderAll();
   schedulePersistState();
@@ -7325,6 +7327,18 @@ function getCanonicalSimulation(snapshot) {
   if (typeof s.simulation.globalSeed !== 'string') s.simulation.globalSeed = SIM_GLOBAL_SEED;
   if (typeof s.simulation.plantId !== 'string') s.simulation.plantId = SIM_PLANT_ID;
   if (!s.simulation.dayWindow || typeof s.simulation.dayWindow !== 'object') s.simulation.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
+  s.simulation.lastTickRealTimeMs = Math.max(
+    Number(s.simulation.startRealTimeMs) || nowMs,
+    Number(s.simulation.lastTickRealTimeMs) || nowMs
+  );
+  s.simulation.nowMs = Math.max(
+    Number(s.simulation.nowMs) || nowMs,
+    Number(s.simulation.lastTickRealTimeMs) || nowMs
+  );
+  s.simulation.simTimeMs = Math.max(
+    Number(s.simulation.simEpochMs) || alignToSimStartHour(nowMs, SIM_START_HOUR),
+    Number(s.simulation.simTimeMs) || alignToSimStartHour(nowMs, SIM_START_HOUR)
+  );
   if (typeof s.simulation.isDaytime !== 'boolean') s.simulation.isDaytime = isDaytimeAtSimTime(s.simulation.simTimeMs);
   if (!Number.isFinite(s.simulation.growthImpulse)) s.simulation.growthImpulse = 0;
   if (!Number.isFinite(s.simulation.tempoOffsetDays)) s.simulation.tempoOffsetDays = 0;
@@ -7640,6 +7654,7 @@ async function restoreState() {
   }
 
   migrateLegacyStateIntoCanonical(saved, state);
+  getCanonicalSimulation(state);
 }
 
 function migrateLegacyStateIntoCanonical(saved, targetState) {
@@ -8015,6 +8030,18 @@ function ensureStateIntegrity(nowMs) {
   if (!Number.isFinite(state.simulation.growthImpulse)) {
     state.simulation.growthImpulse = 0;
   }
+  state.simulation.lastTickRealTimeMs = Math.max(
+    Number(state.simulation.startRealTimeMs) || nowMs,
+    Number(state.simulation.lastTickRealTimeMs) || nowMs
+  );
+  state.simulation.nowMs = Math.max(
+    Number(state.simulation.nowMs) || nowMs,
+    Number(state.simulation.lastTickRealTimeMs) || nowMs
+  );
+  state.simulation.simTimeMs = Math.max(
+    Number(state.simulation.simEpochMs) || alignToSimStartHour(nowMs, SIM_START_HOUR),
+    Number(state.simulation.simTimeMs) || alignToSimStartHour(nowMs, SIM_START_HOUR)
+  );
   state.simulation.isDaytime = isDaytimeAtSimTime(state.simulation.simTimeMs);
 
   const validPhases = new Set(['seedling', 'vegetative', 'flowering', 'harvest']);

@@ -327,6 +327,18 @@ function getCanonicalSimulation(snapshot) {
   if (typeof s.simulation.globalSeed !== 'string') s.simulation.globalSeed = SIM_GLOBAL_SEED;
   if (typeof s.simulation.plantId !== 'string') s.simulation.plantId = SIM_PLANT_ID;
   if (!s.simulation.dayWindow || typeof s.simulation.dayWindow !== 'object') s.simulation.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
+  s.simulation.lastTickRealTimeMs = Math.max(
+    Number(s.simulation.startRealTimeMs) || nowMs,
+    Number(s.simulation.lastTickRealTimeMs) || nowMs
+  );
+  s.simulation.nowMs = Math.max(
+    Number(s.simulation.nowMs) || nowMs,
+    Number(s.simulation.lastTickRealTimeMs) || nowMs
+  );
+  s.simulation.simTimeMs = Math.max(
+    Number(s.simulation.simEpochMs) || alignToSimStartHour(nowMs, SIM_START_HOUR),
+    Number(s.simulation.simTimeMs) || alignToSimStartHour(nowMs, SIM_START_HOUR)
+  );
   if (typeof s.simulation.isDaytime !== 'boolean') s.simulation.isDaytime = isDaytimeAtSimTime(s.simulation.simTimeMs);
   if (!Number.isFinite(s.simulation.growthImpulse)) s.simulation.growthImpulse = 0;
   if (!Number.isFinite(s.simulation.tempoOffsetDays)) s.simulation.tempoOffsetDays = 0;
@@ -726,6 +738,7 @@ async function restoreState() {
 
   migrateLegacyStateIntoCanonical(saved, state);
   normalizeEnvironmentState(state);
+  getCanonicalSimulation(state);
 }
 
 function migrateLegacyStateIntoCanonical(saved, targetState) {
@@ -1099,6 +1112,18 @@ function ensureStateIntegrity(nowMs) {
   if (!Number.isFinite(state.simulation.lastPushScheduleAtMs)) {
     state.simulation.lastPushScheduleAtMs = 0;
   }
+  state.simulation.lastTickRealTimeMs = Math.max(
+    Number(state.simulation.startRealTimeMs) || nowMs,
+    Number(state.simulation.lastTickRealTimeMs) || nowMs
+  );
+  state.simulation.nowMs = Math.max(
+    Number(state.simulation.nowMs) || nowMs,
+    Number(state.simulation.lastTickRealTimeMs) || nowMs
+  );
+  state.simulation.simTimeMs = Math.max(
+    Number(state.simulation.simEpochMs) || alignToSimStartHour(nowMs, SIM_START_HOUR),
+    Number(state.simulation.simTimeMs) || alignToSimStartHour(nowMs, SIM_START_HOUR)
+  );
   state.simulation.isDaytime = isDaytimeAtSimTime(state.simulation.simTimeMs);
   getCanonicalProfile(state);
   getCanonicalRun(state);
