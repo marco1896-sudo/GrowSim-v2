@@ -6337,6 +6337,7 @@ body.panelized-ready :is(
   background:
     radial-gradient(ellipse at 50% 72%, rgba(15, 21, 19, 0.72) 26%, rgba(15, 21, 19, 0.18) 68%, rgba(15, 21, 19, 0) 100%),
     radial-gradient(ellipse at 50% 50%, rgba(111, 255, 177, 0.22) 0%, rgba(111, 255, 177, 0.08) 40%, rgba(111, 255, 177, 0) 80%);
+  display: none;
 }
 
 .home-plant-stage {
@@ -6368,6 +6369,10 @@ body.panelized-ready :is(
   outline: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.home-plant-stage .overlay-image {
+  display: none !important;
 }
 
 .home-content-scroll {

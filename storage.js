@@ -887,6 +887,16 @@ async function restoreState(options = {}) {
       ...saved.run
     };
   }
+  if (saved.missions && typeof saved.missions === 'object') {
+    const restoredCompleted = Array.isArray(saved.missions.completed)
+      ? Array.from(new Set(saved.missions.completed.map((missionId) => String(missionId || '').trim()).filter(Boolean)))
+      : (Array.isArray(state.missions && state.missions.completed) ? state.missions.completed : []);
+    state.missions = {
+      ...(state.missions && typeof state.missions === 'object' ? state.missions : { catalog: [], byId: {}, completed: [] }),
+      ...saved.missions,
+      completed: restoredCompleted
+    };
+  }
 
   migrateLegacyStateIntoCanonical(saved, state);
   normalizeEnvironmentState(state);
@@ -1211,6 +1221,11 @@ function resetStateToDefaults() {
     activeEffects: [],
     lastResult: { ok: true, reason: 'ok', actionId: null, atRealTimeMs: fallbackNow }
   };
+  state.missions = {
+    catalog: [],
+    byId: {},
+    completed: []
+  };
 
   state.ui = {
     activeScreen: 'home',
@@ -1386,6 +1401,24 @@ function ensureStateIntegrity(nowMs) {
 
   state.actions.catalog = state.actions.catalog.map(normalizeAction).filter(Boolean);
   state.actions.byId = Object.fromEntries(state.actions.catalog.map((action) => [action.id, action]));
+
+  if (!state.missions || typeof state.missions !== 'object') {
+    state.missions = { catalog: [], byId: {}, completed: [] };
+  }
+  if (!Array.isArray(state.missions.catalog)) {
+    state.missions.catalog = [];
+  }
+  if (!state.missions.byId || typeof state.missions.byId !== 'object') {
+    state.missions.byId = {};
+  }
+  if (!Array.isArray(state.missions.completed)) {
+    state.missions.completed = [];
+  }
+  state.missions.completed = Array.from(new Set(
+    state.missions.completed
+      .map((missionId) => String(missionId || '').trim())
+      .filter(Boolean)
+  ));
 
   for (const [actionId, untilMs] of Object.entries(state.actions.cooldowns)) {
     if (!Number.isFinite(Number(untilMs)) || Number(untilMs) <= nowMs) {
