@@ -169,8 +169,8 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
 // Figma reference (Home 132:51) defines a shared anchor zone:
 // center + baseline are fixed, while stage variants scale inside that same zone.
 const HOME_PLANT_REFERENCE_FIT = Object.freeze({
-  maxFootprintScale: 0.9,
-  baselineInsetPx: 18
+  maxFootprintScale: 1.7,
+  baselineInsetPx: -52
 });
 
 const HOME_PLANT_STAGE_SCALE = Object.freeze({
@@ -3920,14 +3920,14 @@ function renderPlantFallback(targetNode) {
     const dstH = h;
 
     const containScale = Math.min(dstW / srcW, dstH / srcH);
-    const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 1);
+    const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 2.4);
     const scale = containScale * fitScale;
 
     const drawW = Math.round(srcW * scale);
     const drawH = Math.round(srcH * scale);
     const dx = Math.round((dstW - drawW) / 2);
-    const baselineInset = clampInt(HOME_PLANT_REFERENCE_FIT.baselineInsetPx, 0, dstH);
-    const dy = clampInt(dstH - drawH - baselineInset, 0, dstH - drawH);
+    const baselineInset = Number(HOME_PLANT_REFERENCE_FIT.baselineInsetPx) || 0;
+    const dy = Math.round(dstH - drawH - baselineInset);
 
     ctx.clearRect(0, 0, targetNode.width, targetNode.height);
     ctx.drawImage(img, dx, dy, drawW, drawH);
@@ -7433,15 +7433,14 @@ function renderPlantFromSprite(targetNode) {
   const fitScale = clamp(
     HOME_PLANT_REFERENCE_FIT.maxFootprintScale,
     0.1,
-    1
+    2.4
   );
   const scale = containScale * fitScale;
   const drawW = Math.max(1, Math.round(srcW * scale));
   const drawH = Math.max(1, Math.round(srcH * scale));
   const dx = Math.round((dstW - drawW) / 2);
-  const baselineInset = clampInt(HOME_PLANT_REFERENCE_FIT.baselineInsetPx, 0, dstH);
-  const maxDy = Math.max(0, dstH - drawH);
-  const dy = clampInt(dstH - drawH - baselineInset, 0, maxDy);
+  const baselineInset = Number(HOME_PLANT_REFERENCE_FIT.baselineInsetPx) || 0;
+  const dy = Math.round(dstH - drawH - baselineInset);
 
   const ctx = targetNode.getContext('2d', { alpha: true });
   if (!ctx) {

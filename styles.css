@@ -6322,7 +6322,7 @@ body.panelized-ready :is(
   left: 50%;
   right: auto;
   top: auto;
-  bottom: 360px;
+  bottom: 307px;
   width: 100%;
   height: 352px;
   transform: translateX(-50%);
@@ -6520,7 +6520,7 @@ body.panelized-ready :is(
 
   .home-scene-fixed {
     top: auto;
-    bottom: 350px;
+    bottom: 295px;
     height: 336px;
   }
 
