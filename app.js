@@ -170,7 +170,7 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
 // center + baseline are fixed, while stage variants scale inside that same zone.
 const HOME_PLANT_REFERENCE_FIT = Object.freeze({
   maxFootprintScale: 0.83,
-  baselineInsetPx: 54
+  baselineInsetPx: 18
 });
 
 const HOME_PLANT_STAGE_SCALE = Object.freeze({
@@ -3891,7 +3891,8 @@ function renderPlantFallback(targetNode) {
   const w = canvasMetrics.widthPx;
   const h = canvasMetrics.heightPx;
 
-  const stageIndex = clampInt(Number(state.plant.stageIndex), 0, PLANT_STAGE_IMAGES.length - 1);
+  const plantRenderState = getPlantRenderSnapshot(state.plant);
+  const stageIndex = clampInt(Number(plantRenderState.stageIndex), 0, PLANT_STAGE_IMAGES.length - 1);
   const assetPath = appPath(PLANT_STAGE_IMAGES[stageIndex] || PLANT_STAGE_IMAGES[0]);
 
   const img = new Image();
@@ -3902,9 +3903,9 @@ function renderPlantFallback(targetNode) {
     const dstH = h;
 
     const containScale = Math.min(dstW / srcW, dstH / srcH);
-    const spriteStage = getPlantSpriteStageFromState(state.plant);
+    const spriteStage = getPlantSpriteStageFromState(plantRenderState);
     const stageScale = HOME_PLANT_STAGE_SCALE[spriteStage] || 1;
-    const fitScale = HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale;
+    const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale, 0.1, 1);
     const scale = containScale * fitScale;
 
     const drawW = Math.round(srcW * scale);
@@ -3926,7 +3927,9 @@ function renderPlantFallback(targetNode) {
   };
   img.src = assetPath;
 
-  targetNode.dataset.stageName = normalizeStageKey(state.plant.stageKey);
+  targetNode.dataset.stageName = normalizeStageKey(plantRenderState.stageKey);
+  state.plant.assets.basePath = 'assets/plant_growth/';
+  state.plant.assets.resolvedStagePath = plantAssetPath(plantRenderState.stageKey);
 }
 
 function renderSheets() {
@@ -7214,6 +7217,43 @@ function getPlantSpriteStageFromState(plantSnapshot) {
   return 'seedling';
 }
 
+function getPlantRenderSnapshot(plantSnapshot = state.plant) {
+  const snapshot = plantSnapshot && typeof plantSnapshot === 'object' ? plantSnapshot : state.plant;
+  if (!snapshot || typeof snapshot !== 'object') {
+    return state.plant;
+  }
+
+  if (snapshot.phase === 'dead' || snapshot.isDead === true) {
+    const deadStageKey = normalizeStageKey(snapshot.lastValidStageKey || snapshot.stageKey || 'stage_01');
+    const deadStageIndex = clampInt(Number(String(deadStageKey).replace('stage_', '')) - 1, 0, STAGE_DEFS.length - 1);
+    return {
+      ...snapshot,
+      phase: 'dead',
+      stageIndex: deadStageIndex,
+      stageKey: deadStageKey,
+      stageProgress: 1
+    };
+  }
+
+  if (typeof getCurrentStage !== 'function' || typeof simDayFloat !== 'function') {
+    return snapshot;
+  }
+
+  const liveStage = getCurrentStage(simDayFloat());
+  if (!liveStage || !liveStage.current) {
+    return snapshot;
+  }
+
+  const liveStageIndex = clampInt(Number(liveStage.stageIndex), 0, STAGE_DEFS.length - 1);
+  return {
+    ...snapshot,
+    phase: liveStage.current.phase || snapshot.phase,
+    stageIndex: liveStageIndex,
+    stageKey: stageAssetKeyForIndex(liveStageIndex),
+    stageProgress: clamp(Number(liveStage.progressInPhase), 0, 1)
+  };
+}
+
 function getPlantFrameIndex(plantSnapshot, metadataOverride) {
   const metadata = metadataOverride || plantSpriteRuntime.metadata || defaultPlantSpriteMetadata();
   const totalFrames = clampInt(Number(metadata.totalFrames), 1, 999);
@@ -7352,8 +7392,9 @@ function renderPlantFromSprite(targetNode) {
   }
 
   const metadata = plantSpriteRuntime.metadata;
-  const nextFrameIndex = getPlantFrameIndex(state.plant, metadata);
-  const stageName = normalizeStageKey(state.plant.stageKey);
+  const plantRenderState = getPlantRenderSnapshot(state.plant);
+  const nextFrameIndex = getPlantFrameIndex(plantRenderState, metadata);
+  const stageName = normalizeStageKey(plantRenderState.stageKey);
   const canvasMetrics = syncPlantCanvasToContainer(targetNode);
   const currentFrame = Number(targetNode.dataset.frameIndex || 0);
   const currentStage = targetNode.dataset.stageName || '';
@@ -7374,7 +7415,7 @@ function renderPlantFromSprite(targetNode) {
   const dstH = Math.max(1, canvasMetrics.heightPx);
 
   const containScale = Math.min(dstW / srcW, dstH / srcH);
-  const spriteStage = getPlantSpriteStageFromState(state.plant);
+  const spriteStage = getPlantSpriteStageFromState(plantRenderState);
   const stageScale = HOME_PLANT_STAGE_SCALE[spriteStage] || 1;
   const fitScale = clamp(
     HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale,
@@ -7416,7 +7457,7 @@ function renderPlantFromSprite(targetNode) {
   targetNode.dataset.canvasHeight = String(canvasMetrics.heightPx);
 
   state.plant.assets.basePath = 'assets/plant_growth/';
-  state.plant.assets.resolvedStagePath = plantAssetPath(state.plant.stageKey);
+  state.plant.assets.resolvedStagePath = plantAssetPath(plantRenderState.stageKey);
 }
 
 function getCanonicalSimulation(snapshot) {
