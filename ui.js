@@ -896,15 +896,9 @@ function renderHud() {
   const dead = isPlantDead();
   const phaseCard = getPhaseCardViewModel();
   const remainingBoostMs = typeof getRemainingBoostMs === 'function' ? getRemainingBoostMs(Date.now()) : 0;
-  const effectiveSpeed = typeof getEffectiveSimulationSpeed === 'function'
-    ? getEffectiveSimulationSpeed(Date.now())
-    : Number(state.simulation && state.simulation.effectiveSpeed) || 0;
-  const baseSpeed = typeof normalizeBaseSimulationSpeed === 'function'
-    ? normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed)
-    : Number(state.simulation && state.simulation.baseSpeed) || 0;
   const boostText = remainingBoostMs > 0
-    ? `Zeit-Boost aktiv · ${Math.ceil(remainingBoostMs / 60000)} Min · ${effectiveSpeed}x`
-    : `Basis ${baseSpeed}x · Boost 24x`;
+    ? `Boost x24 Aktiv`
+    : `Boost x24 Bereit`;
 
   if (ui.phaseCardTitle && ui.phaseCardTitle.textContent !== phaseCard.title) {
     ui.phaseCardTitle.textContent = phaseCard.title;
@@ -955,7 +949,7 @@ function renderHud() {
 
   const eventInMs = Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
   ui.nextEventValue.textContent = formatCountdown(eventInMs);
-  ui.growthImpulseValue.textContent = state.simulation.growthImpulse.toFixed(2);
+  ui.growthImpulseValue.textContent = `+${state.simulation.growthImpulse.toFixed(2)}x`;
   ui.simTimeValue.textContent = formatSimClock(state.simulation.simTimeMs);
 
   ui.careActionBtn.disabled = dead;

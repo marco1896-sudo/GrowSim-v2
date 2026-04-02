@@ -178,11 +178,11 @@
         <div class="home-content-scroll">
 
         <article id="phaseCard" class="home-progress-panel" aria-live="polite">
+          <div class="home-progress-heading">
+            <strong id="phaseCardTitle" class="home-progress-title">Vegetativ</strong>
+            <span id="phaseCardAge" class="home-progress-day">Tag 14</span>
+          </div>
           <div class="home-progress-top">
-            <div class="home-progress-phase">
-              <strong id="phaseCardTitle" class="home-progress-title">Vegetativ</strong>
-              <span id="phaseCardAge" class="home-progress-day">Tag 14</span>
-            </div>
             <div class="home-progress-grow">
               <strong id="phaseCardSubtitle">42%</strong>
               <span>Wachstum</span>
@@ -196,10 +196,16 @@
             <span id="phaseProgressMarker" class="phase-progress-marker" aria-hidden="true"></span>
           </div>
           <div class="home-progress-bottom">
-            <span id="phaseCardCycle" class="home-progress-cycle" aria-label="Tageszyklus">D</span>
-            <span id="simTimeValue" class="home-progress-time">Tag 14 · 09:18</span>
-            <span class="home-progress-event-label">Ereignis</span>
-            <strong id="nextEventValue" class="home-progress-event">11:43</strong>
+            <div class="home-progress-cluster home-progress-cluster--time">
+              <span id="phaseCardCycle" class="home-progress-cycle" aria-label="Tageszyklus">D</span>
+              <span class="home-progress-inline-label">Zeit</span>
+              <strong id="simTimeValue" class="home-progress-time">09:18</strong>
+            </div>
+            <span id="boostUsageText" class="home-progress-boost">Boost x24 Aktiv</span>
+            <div class="home-progress-cluster home-progress-cluster--event">
+              <span class="home-progress-event-label">Ereignis</span>
+              <strong id="nextEventValue" class="home-progress-event">11:43</strong>
+            </div>
           </div>
         </article>
 
@@ -244,27 +250,27 @@
           </div>
         </section>
 
-        <section class="home-action-panel">
-          <button id="careActionBtn" class="home-action-btn" type="button">
-            <img id="careActionIcon" class="home-action-icon" src="assets/buttons/button_pflege.png" alt="" aria-hidden="true">
-            <span class="home-action-title">Pflege</span>
+        </div>
+
+        <section class="home-action-panel" aria-label="Schnellaktionen">
+          <button id="boostActionBtn" class="home-action-btn" type="button" aria-label="Boost aktivieren">
+            <span class="home-boost-tag">x24</span>
+            <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/icon_boostx24.png" alt="" aria-hidden="true">
+            <span class="home-action-title" aria-hidden="true">Boost</span>
           </button>
-          <button id="analyzeActionBtn" class="home-action-btn" type="button">
-            <img id="analyzeActionIcon" class="home-action-icon" src="assets/buttons/button_analyse.png" alt="" aria-hidden="true">
-            <span class="home-action-title">Analyse</span>
+          <button id="eventsActionBtn" class="home-action-btn" type="button" aria-label="Events öffnen">
+            <img id="eventsActionIcon" class="home-action-icon" src="assets/ui/icons/icon_events.png" alt="" aria-hidden="true">
+            <span class="home-action-title" aria-hidden="true">Events</span>
           </button>
-          <button id="eventsActionBtn" class="home-action-btn" type="button">
-            <img id="eventsActionIcon" class="home-action-icon" src="assets/buttons/button_events.png" alt="" aria-hidden="true">
-            <span class="home-action-title">Events</span>
+          <button id="analyzeActionBtn" class="home-action-btn" type="button" aria-label="Analyse öffnen">
+            <img id="analyzeActionIcon" class="home-action-icon" src="assets/ui/icons/icon_analyse.png" alt="" aria-hidden="true">
+            <span class="home-action-title" aria-hidden="true">Analyse</span>
           </button>
-          <button id="boostActionBtn" class="home-action-btn" type="button">
-            <span class="home-boost-tag">-30m</span>
-            <img id="boostActionIcon" class="home-action-icon" src="assets/buttons/button_boost.png" alt="" aria-hidden="true">
-            <span class="home-action-title">Boost</span>
-            <span id="boostUsageText" class="boost-sub">-30m Eventzeit · 0/6</span>
+          <button id="careActionBtn" class="home-action-btn" type="button" aria-label="Pflege öffnen">
+            <img id="careActionIcon" class="home-action-icon" src="assets/ui/icons/icon_pflege.png" alt="" aria-hidden="true">
+            <span class="home-action-title" aria-hidden="true">Pflege</span>
           </button>
         </section>
-        </div>
 
         <article id="healthRing" class="hidden" style="--value:85;"><strong id="healthValue">85</strong></article>
         <button id="skipNightActionBtn" class="hidden" type="button">Nacht überspringen</button>
