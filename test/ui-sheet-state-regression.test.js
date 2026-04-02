@@ -2,9 +2,9 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
-const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+const storageSource = fs.readFileSync(path.join(__dirname, '..', 'storage.js'), 'utf8');
 
-const validSheetsMatch = appSource.match(/const validSheets = new Set\(\[(.*?)\]\);/s);
+const validSheetsMatch = storageSource.match(/const validSheets = new Set\(\[(.*?)\]\);/s);
 assert(validSheetsMatch, 'syncCanonicalStateShape should define validSheets');
 
 const validSheets = [...validSheetsMatch[1].matchAll(/'([^']*)'/g)].map((match) => match[1]);

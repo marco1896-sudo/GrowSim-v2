@@ -1,4 +1,78 @@
-'use strict';
+﻿'use strict';
+
+const growSimStorageConfig = (typeof window !== 'undefined' && window.GrowSimSimulationConfig && typeof window.GrowSimSimulationConfig === 'object')
+  ? window.GrowSimSimulationConfig
+  : ((typeof globalThis !== 'undefined' && globalThis.GrowSimSimulationConfig && typeof globalThis.GrowSimSimulationConfig === 'object')
+    ? globalThis.GrowSimSimulationConfig
+    : {});
+
+const STORAGE_MODE = typeof growSimStorageConfig.MODE === 'string'
+  ? growSimStorageConfig.MODE
+  : (typeof globalThis.MODE === 'string' ? globalThis.MODE : 'prod');
+const STORAGE_UI_TICK_INTERVAL_MS = Number.isFinite(Number(growSimStorageConfig.UI_TICK_INTERVAL_MS))
+  ? Number(growSimStorageConfig.UI_TICK_INTERVAL_MS)
+  : (Number.isFinite(Number(globalThis.UI_TICK_INTERVAL_MS)) ? Number(globalThis.UI_TICK_INTERVAL_MS) : 1000);
+const STORAGE_EVENT_ROLL_MIN_REAL_MS = Number.isFinite(Number(growSimStorageConfig.EVENT_ROLL_MIN_REAL_MS))
+  ? Number(growSimStorageConfig.EVENT_ROLL_MIN_REAL_MS)
+  : (Number.isFinite(Number(globalThis.EVENT_ROLL_MIN_REAL_MS)) ? Number(globalThis.EVENT_ROLL_MIN_REAL_MS) : 30 * 60 * 1000);
+const STORAGE_DEFAULT_BASE_SIM_SPEED = Number.isFinite(Number(growSimStorageConfig.DEFAULT_BASE_SIM_SPEED))
+  ? Number(growSimStorageConfig.DEFAULT_BASE_SIM_SPEED)
+  : (Number.isFinite(Number(globalThis.DEFAULT_BASE_SIM_SPEED)) ? Number(globalThis.DEFAULT_BASE_SIM_SPEED) : 12);
+const STORAGE_SIM_START_HOUR = Number.isFinite(Number(growSimStorageConfig.SIM_START_HOUR))
+  ? Number(growSimStorageConfig.SIM_START_HOUR)
+  : (Number.isFinite(Number(globalThis.SIM_START_HOUR)) ? Number(globalThis.SIM_START_HOUR) : 8);
+const STORAGE_SIM_DAY_START_HOUR = Number.isFinite(Number(growSimStorageConfig.SIM_DAY_START_HOUR))
+  ? Number(growSimStorageConfig.SIM_DAY_START_HOUR)
+  : (Number.isFinite(Number(globalThis.SIM_DAY_START_HOUR)) ? Number(globalThis.SIM_DAY_START_HOUR) : 6);
+const STORAGE_SIM_NIGHT_START_HOUR = Number.isFinite(Number(growSimStorageConfig.SIM_NIGHT_START_HOUR))
+  ? Number(growSimStorageConfig.SIM_NIGHT_START_HOUR)
+  : (Number.isFinite(Number(globalThis.SIM_NIGHT_START_HOUR)) ? Number(globalThis.SIM_NIGHT_START_HOUR) : 22);
+const STORAGE_SIM_GLOBAL_SEED = typeof growSimStorageConfig.SIM_GLOBAL_SEED === 'string'
+  ? growSimStorageConfig.SIM_GLOBAL_SEED
+  : (typeof globalThis.SIM_GLOBAL_SEED === 'string' ? globalThis.SIM_GLOBAL_SEED : 'grow-sim-v1-seed');
+const STORAGE_SIM_PLANT_ID = typeof growSimStorageConfig.SIM_PLANT_ID === 'string'
+  ? growSimStorageConfig.SIM_PLANT_ID
+  : (typeof globalThis.SIM_PLANT_ID === 'string' ? globalThis.SIM_PLANT_ID : 'plant-001');
+const STORAGE_BOOST_SIM_SPEED = Number.isFinite(Number(growSimStorageConfig.BOOST_SIM_SPEED))
+  ? Number(growSimStorageConfig.BOOST_SIM_SPEED)
+  : (Number.isFinite(Number(globalThis.BOOST_SIM_SPEED)) ? Number(globalThis.BOOST_SIM_SPEED) : 24);
+
+const normalizeStorageBaseSimulationSpeed = typeof growSimStorageConfig.normalizeBaseSimulationSpeed === 'function'
+  ? (value) => growSimStorageConfig.normalizeBaseSimulationSpeed(value)
+  : ((typeof globalThis.normalizeBaseSimulationSpeed === 'function')
+    ? (value) => globalThis.normalizeBaseSimulationSpeed(value)
+    : (value) => {
+      const numericValue = Number(value);
+      return [4, 8, 12, 16].includes(numericValue) ? numericValue : STORAGE_DEFAULT_BASE_SIM_SPEED;
+    });
+
+const alignStorageToSimStartHour = typeof growSimStorageConfig.alignToSimStartHour === 'function'
+  ? (realNowMs, startHour = STORAGE_SIM_START_HOUR) => growSimStorageConfig.alignToSimStartHour(realNowMs, startHour)
+  : ((typeof globalThis.alignToSimStartHour === 'function')
+    ? (realNowMs, startHour = STORAGE_SIM_START_HOUR) => globalThis.alignToSimStartHour(realNowMs, startHour)
+    : (realNowMs, startHour = STORAGE_SIM_START_HOUR) => {
+      const baseDate = new Date(Number.isFinite(Number(realNowMs)) ? Number(realNowMs) : Date.now());
+      const alignedDate = new Date(baseDate);
+      alignedDate.setHours(Number.isFinite(Number(startHour)) ? Number(startHour) : STORAGE_SIM_START_HOUR, 0, 0, 0);
+      if (baseDate.getHours() < (Number.isFinite(Number(startHour)) ? Number(startHour) : STORAGE_SIM_START_HOUR)) {
+        alignedDate.setDate(alignedDate.getDate() - 1);
+      }
+      return alignedDate.getTime();
+    });
+
+function getStorageEffectiveSimulationSpeed(nowMs = Date.now()) {
+  if (typeof globalThis.getEffectiveSimulationSpeed === 'function') {
+    return globalThis.getEffectiveSimulationSpeed(nowMs);
+  }
+
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const boostEndsAtMs = Number(state && state.boost && state.boost.boostEndsAtMs);
+  if (Number.isFinite(boostEndsAtMs) && boostEndsAtMs > safeNowMs) {
+    return STORAGE_BOOST_SIM_SPEED;
+  }
+
+  return normalizeStorageBaseSimulationSpeed(state && state.simulation && state.simulation.baseSpeed);
+}
 
 function repairStoredTextEncoding(value) {
   const api = window.GrowSimTextEncoding;
@@ -430,21 +504,21 @@ function getCanonicalSimulation(snapshot) {
   if (!Number.isFinite(s.simulation.nowMs)) s.simulation.nowMs = nowMs;
   if (!Number.isFinite(s.simulation.startRealTimeMs)) s.simulation.startRealTimeMs = nowMs;
   if (!Number.isFinite(s.simulation.lastTickRealTimeMs)) s.simulation.lastTickRealTimeMs = nowMs;
-  if (!Number.isFinite(s.simulation.simTimeMs)) s.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
-  if (!Number.isFinite(s.simulation.simEpochMs)) s.simulation.simEpochMs = alignToSimStartHour(s.simulation.startRealTimeMs, SIM_START_HOUR);
+  if (!Number.isFinite(s.simulation.simTimeMs)) s.simulation.simTimeMs = alignStorageToSimStartHour(nowMs, STORAGE_SIM_START_HOUR);
+  if (!Number.isFinite(s.simulation.simEpochMs)) s.simulation.simEpochMs = alignStorageToSimStartHour(s.simulation.startRealTimeMs, STORAGE_SIM_START_HOUR);
   if (!Number.isFinite(s.simulation.simDay)) s.simulation.simDay = 0;
-  if (!Number.isFinite(s.simulation.simHour)) s.simulation.simHour = SIM_START_HOUR;
+  if (!Number.isFinite(s.simulation.simHour)) s.simulation.simHour = STORAGE_SIM_START_HOUR;
   if (!Number.isFinite(s.simulation.simMinute)) s.simulation.simMinute = 0;
   if (!Number.isFinite(s.simulation.tickCount)) s.simulation.tickCount = 0;
-  if (typeof s.simulation.mode !== 'string') s.simulation.mode = MODE;
-  if (!Number.isFinite(s.simulation.tickIntervalMs)) s.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
-  if (!Number.isFinite(s.simulation.baseSpeed)) s.simulation.baseSpeed = normalizeBaseSimulationSpeed(s.simulation.timeCompression);
-  s.simulation.baseSpeed = normalizeBaseSimulationSpeed(s.simulation.baseSpeed);
+  if (typeof s.simulation.mode !== 'string') s.simulation.mode = STORAGE_MODE;
+  if (!Number.isFinite(s.simulation.tickIntervalMs)) s.simulation.tickIntervalMs = STORAGE_UI_TICK_INTERVAL_MS;
+  if (!Number.isFinite(s.simulation.baseSpeed)) s.simulation.baseSpeed = normalizeStorageBaseSimulationSpeed(s.simulation.timeCompression);
+  s.simulation.baseSpeed = normalizeStorageBaseSimulationSpeed(s.simulation.baseSpeed);
   if (!Number.isFinite(s.simulation.effectiveSpeed)) s.simulation.effectiveSpeed = s.simulation.baseSpeed;
   if (!Number.isFinite(s.simulation.timeCompression)) s.simulation.timeCompression = s.simulation.effectiveSpeed;
-  if (typeof s.simulation.globalSeed !== 'string') s.simulation.globalSeed = SIM_GLOBAL_SEED;
-  if (typeof s.simulation.plantId !== 'string') s.simulation.plantId = SIM_PLANT_ID;
-  if (!s.simulation.dayWindow || typeof s.simulation.dayWindow !== 'object') s.simulation.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
+  if (typeof s.simulation.globalSeed !== 'string') s.simulation.globalSeed = STORAGE_SIM_GLOBAL_SEED;
+  if (typeof s.simulation.plantId !== 'string') s.simulation.plantId = STORAGE_SIM_PLANT_ID;
+  if (!s.simulation.dayWindow || typeof s.simulation.dayWindow !== 'object') s.simulation.dayWindow = { startHour: STORAGE_SIM_DAY_START_HOUR, endHour: STORAGE_SIM_NIGHT_START_HOUR };
   s.simulation.lastTickRealTimeMs = Math.max(
     Number(s.simulation.startRealTimeMs) || nowMs,
     Number(s.simulation.lastTickRealTimeMs) || nowMs
@@ -454,8 +528,8 @@ function getCanonicalSimulation(snapshot) {
     Number(s.simulation.lastTickRealTimeMs) || nowMs
   );
   s.simulation.simTimeMs = Math.max(
-    Number(s.simulation.simEpochMs) || alignToSimStartHour(nowMs, SIM_START_HOUR),
-    Number(s.simulation.simTimeMs) || alignToSimStartHour(nowMs, SIM_START_HOUR)
+    Number(s.simulation.simEpochMs) || alignStorageToSimStartHour(nowMs, STORAGE_SIM_START_HOUR),
+    Number(s.simulation.simTimeMs) || alignStorageToSimStartHour(nowMs, STORAGE_SIM_START_HOUR)
   );
   if (typeof s.simulation.isDaytime !== 'boolean') s.simulation.isDaytime = isDaytimeAtSimTime(s.simulation.simTimeMs);
   if (!Number.isFinite(s.simulation.growthImpulse)) s.simulation.growthImpulse = 0;
@@ -509,8 +583,8 @@ function getCanonicalEvents(snapshot) {
   if (typeof s.events.machineState !== 'string') s.events.machineState = 'idle';
   if (!s.events.scheduler || typeof s.events.scheduler !== 'object') {
     s.events.scheduler = {
-      nextEventSimTimeMs: Number(sim.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * Number(sim.effectiveSpeed || sim.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12)),
-      nextEventRealTimeMs: Date.now() + EVENT_ROLL_MIN_REAL_MS,
+      nextEventSimTimeMs: Number(sim.simTimeMs || 0) + (STORAGE_EVENT_ROLL_MIN_REAL_MS * Number(sim.effectiveSpeed || sim.baseSpeed || STORAGE_DEFAULT_BASE_SIM_SPEED || 12)),
+      nextEventRealTimeMs: Date.now() + STORAGE_EVENT_ROLL_MIN_REAL_MS,
       lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
       lastEventId: null,
@@ -524,7 +598,7 @@ function getCanonicalEvents(snapshot) {
       categoryCooldownsSim: {}
     };
   }
-  if (!Number.isFinite(s.events.scheduler.nextEventSimTimeMs)) s.events.scheduler.nextEventSimTimeMs = Number(sim.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * Number(sim.effectiveSpeed || sim.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12));
+  if (!Number.isFinite(s.events.scheduler.nextEventSimTimeMs)) s.events.scheduler.nextEventSimTimeMs = Number(sim.simTimeMs || 0) + (STORAGE_EVENT_ROLL_MIN_REAL_MS * Number(sim.effectiveSpeed || sim.baseSpeed || STORAGE_DEFAULT_BASE_SIM_SPEED || 12));
   if (!Number.isFinite(s.events.scheduler.lastEventSimTimeMs)) s.events.scheduler.lastEventSimTimeMs = 0;
   if (!s.events.scheduler.eventCooldownsSim || typeof s.events.scheduler.eventCooldownsSim !== 'object') s.events.scheduler.eventCooldownsSim = {};
   if (!s.events.scheduler.categoryCooldownsSim || typeof s.events.scheduler.categoryCooldownsSim !== 'object') s.events.scheduler.categoryCooldownsSim = {};
@@ -598,8 +672,8 @@ function getCanonicalSettings(snapshot) {
   if (!s.settings.gameplay || typeof s.settings.gameplay !== 'object') {
     s.settings.gameplay = {};
   }
-  s.settings.gameplay.simSpeed = normalizeBaseSimulationSpeed(
-    s.settings.gameplay.simSpeed || (s.simulation && s.simulation.baseSpeed) || DEFAULT_BASE_SIM_SPEED
+  s.settings.gameplay.simSpeed = normalizeStorageBaseSimulationSpeed(
+    s.settings.gameplay.simSpeed || (s.simulation && s.simulation.baseSpeed) || STORAGE_DEFAULT_BASE_SIM_SPEED
   );
   if (typeof s.settings.gameplay.eventFrequency !== 'string') s.settings.gameplay.eventFrequency = 'Normal';
   if (typeof s.settings.gameplay.tutorial !== 'boolean') s.settings.gameplay.tutorial = true;
@@ -917,7 +991,7 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
       lastTickRealTimeMs: Number(saved.sim.lastTickAtMs || sim.lastTickRealTimeMs),
       simEpochMs: Number(saved.sim.simEpochMs || sim.simEpochMs),
       tickIntervalMs: Number(saved.sim.tickIntervalMs || sim.tickIntervalMs),
-      baseSpeed: normalizeBaseSimulationSpeed(saved.sim.baseSpeed || saved.sim.timeCompression || sim.baseSpeed),
+      baseSpeed: normalizeStorageBaseSimulationSpeed(saved.sim.baseSpeed || saved.sim.timeCompression || sim.baseSpeed),
       effectiveSpeed: Number(saved.sim.effectiveSpeed || saved.sim.timeCompression || sim.effectiveSpeed),
       growthImpulse: Number(saved.sim.growthImpulse || sim.growthImpulse),
       lastPushScheduleAtMs: Number(saved.sim.lastPushScheduleAtMs || sim.lastPushScheduleAtMs)
@@ -1065,14 +1139,14 @@ function migrateState() {
 
 function resetStateToDefaults() {
   const fallbackNow = Date.now();
-  const fallbackSimStart = alignToSimStartHour(fallbackNow, SIM_START_HOUR);
+  const fallbackSimStart = alignStorageToSimStartHour(fallbackNow, STORAGE_SIM_START_HOUR);
   const preservedEventCatalog = Array.isArray(state.events && state.events.catalog) ? state.events.catalog.slice() : [];
   const preservedActionCatalog = Array.isArray(state.actions && state.actions.catalog) ? state.actions.catalog.slice() : [];
   const normalizedActions = preservedActionCatalog.map(normalizeAction).filter(Boolean);
 
   state.schemaVersion = '1.0.0';
-  state.seed = SIM_GLOBAL_SEED;
-  state.plantId = SIM_PLANT_ID;
+  state.seed = STORAGE_SIM_GLOBAL_SEED;
+  state.plantId = STORAGE_SIM_PLANT_ID;
   state.setup = null;
   const progressionApi = getProgressionApi();
   state.profile = progressionApi && typeof progressionApi.getDefaultProfile === 'function'
@@ -1123,17 +1197,17 @@ function resetStateToDefaults() {
     simTimeMs: fallbackSimStart,
     simEpochMs: fallbackSimStart,
     simDay: 0,
-    simHour: SIM_START_HOUR,
+    simHour: STORAGE_SIM_START_HOUR,
     simMinute: 0,
     tickCount: 0,
-    mode: MODE,
-    tickIntervalMs: UI_TICK_INTERVAL_MS,
-    timeCompression: DEFAULT_BASE_SIM_SPEED,
-    baseSpeed: DEFAULT_BASE_SIM_SPEED,
-    effectiveSpeed: DEFAULT_BASE_SIM_SPEED,
-    globalSeed: SIM_GLOBAL_SEED,
-    plantId: SIM_PLANT_ID,
-    dayWindow: { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR },
+    mode: STORAGE_MODE,
+    tickIntervalMs: STORAGE_UI_TICK_INTERVAL_MS,
+    timeCompression: STORAGE_DEFAULT_BASE_SIM_SPEED,
+    baseSpeed: STORAGE_DEFAULT_BASE_SIM_SPEED,
+    effectiveSpeed: STORAGE_DEFAULT_BASE_SIM_SPEED,
+    globalSeed: STORAGE_SIM_GLOBAL_SEED,
+    plantId: STORAGE_SIM_PLANT_ID,
+    dayWindow: { startHour: STORAGE_SIM_DAY_START_HOUR, endHour: STORAGE_SIM_NIGHT_START_HOUR },
     isDaytime: isDaytimeAtSimTime(fallbackSimStart),
     growthImpulse: 0,
     tempoOffsetDays: 0,
@@ -1166,8 +1240,8 @@ function resetStateToDefaults() {
   state.events = {
     machineState: 'idle',
     scheduler: {
-      nextEventSimTimeMs: fallbackSimStart + (EVENT_ROLL_MIN_REAL_MS * DEFAULT_BASE_SIM_SPEED),
-      nextEventRealTimeMs: fallbackNow + EVENT_ROLL_MIN_REAL_MS,
+      nextEventSimTimeMs: fallbackSimStart + (STORAGE_EVENT_ROLL_MIN_REAL_MS * STORAGE_DEFAULT_BASE_SIM_SPEED),
+      nextEventRealTimeMs: fallbackNow + STORAGE_EVENT_ROLL_MIN_REAL_MS,
       lastEventSimTimeMs: 0,
       lastEventRealTimeMs: 0,
       lastEventId: null,
@@ -1240,7 +1314,7 @@ function resetStateToDefaults() {
     care: {
       selectedCategory: null,
       selectedActionId: null,
-      feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
+      feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' }
     },
     analysis: {
       activeTab: 'overview'
@@ -1258,22 +1332,22 @@ function ensureStateIntegrity(nowMs) {
     state.schemaVersion = '1.0.0';
   }
 
-  state.simulation.mode = MODE;
-  state.simulation.tickIntervalMs = UI_TICK_INTERVAL_MS;
-  state.simulation.baseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed || state.simulation.timeCompression);
-  state.simulation.effectiveSpeed = getEffectiveSimulationSpeed(nowMs);
+  state.simulation.mode = STORAGE_MODE;
+  state.simulation.tickIntervalMs = STORAGE_UI_TICK_INTERVAL_MS;
+  state.simulation.baseSpeed = normalizeStorageBaseSimulationSpeed(state.simulation.baseSpeed || state.simulation.timeCompression);
+  state.simulation.effectiveSpeed = getStorageEffectiveSimulationSpeed(nowMs);
   state.simulation.timeCompression = state.simulation.effectiveSpeed;
-  state.simulation.globalSeed = SIM_GLOBAL_SEED;
-  state.simulation.plantId = SIM_PLANT_ID;
+  state.simulation.globalSeed = STORAGE_SIM_GLOBAL_SEED;
+  state.simulation.plantId = STORAGE_SIM_PLANT_ID;
 
   if (!Number.isFinite(state.simulation.nowMs)) {
     state.simulation.nowMs = nowMs;
   }
   if (!Number.isFinite(state.simulation.simTimeMs)) {
-    state.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
+    state.simulation.simTimeMs = alignStorageToSimStartHour(nowMs, STORAGE_SIM_START_HOUR);
   }
   if (!Number.isFinite(state.simulation.simEpochMs)) {
-    state.simulation.simEpochMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
+    state.simulation.simEpochMs = alignStorageToSimStartHour(nowMs, STORAGE_SIM_START_HOUR);
   }
   if (!Number.isFinite(state.simulation.lastTickRealTimeMs)) {
     state.simulation.lastTickRealTimeMs = nowMs;
@@ -1293,8 +1367,8 @@ function ensureStateIntegrity(nowMs) {
     Number(state.simulation.lastTickRealTimeMs) || nowMs
   );
   state.simulation.simTimeMs = Math.max(
-    Number(state.simulation.simEpochMs) || alignToSimStartHour(nowMs, SIM_START_HOUR),
-    Number(state.simulation.simTimeMs) || alignToSimStartHour(nowMs, SIM_START_HOUR)
+    Number(state.simulation.simEpochMs) || alignStorageToSimStartHour(nowMs, STORAGE_SIM_START_HOUR),
+    Number(state.simulation.simTimeMs) || alignStorageToSimStartHour(nowMs, STORAGE_SIM_START_HOUR)
   );
   state.simulation.isDaytime = isDaytimeAtSimTime(state.simulation.simTimeMs);
   getCanonicalProfile(state);
@@ -1358,11 +1432,11 @@ function ensureStateIntegrity(nowMs) {
     state.events.machineState = 'idle';
   }
   if (!Number.isFinite(state.events.scheduler.nextEventSimTimeMs)) {
-    const fallbackSpeed = Number(state.simulation.effectiveSpeed || state.simulation.baseSpeed || DEFAULT_BASE_SIM_SPEED || 12);
-    state.events.scheduler.nextEventSimTimeMs = Number(state.simulation.simTimeMs || 0) + (EVENT_ROLL_MIN_REAL_MS * fallbackSpeed);
+    const fallbackSpeed = Number(state.simulation.effectiveSpeed || state.simulation.baseSpeed || STORAGE_DEFAULT_BASE_SIM_SPEED || 12);
+    state.events.scheduler.nextEventSimTimeMs = Number(state.simulation.simTimeMs || 0) + (STORAGE_EVENT_ROLL_MIN_REAL_MS * fallbackSpeed);
   }
   if (!Number.isFinite(state.events.scheduler.nextEventRealTimeMs)) {
-    state.events.scheduler.nextEventRealTimeMs = nowMs + EVENT_ROLL_MIN_REAL_MS;
+    state.events.scheduler.nextEventRealTimeMs = nowMs + STORAGE_EVENT_ROLL_MIN_REAL_MS;
   }
   if (!Number.isFinite(state.events.scheduler.lastEventSimTimeMs)) {
     state.events.scheduler.lastEventSimTimeMs = 0;
@@ -1509,7 +1583,7 @@ function ensureStateIntegrity(nowMs) {
     state.ui.visibleOverlayIds = [];
   }
   if (!state.ui.care || typeof state.ui.care !== 'object') {
-    state.ui.care = { selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'Wähle eine Aktion.' } };
+    state.ui.care = { selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' } };
   }
   if (typeof state.ui.care.selectedCategory !== 'string') {
     state.ui.care.selectedCategory = null;
@@ -1518,7 +1592,7 @@ function ensureStateIntegrity(nowMs) {
     state.ui.care.selectedActionId = null;
   }
   if (!state.ui.care.feedback || typeof state.ui.care.feedback !== 'object') {
-    state.ui.care.feedback = { kind: 'info', text: 'Wähle eine Aktion.' };
+    state.ui.care.feedback = { kind: 'info', text: 'WÃ¤hle eine Aktion.' };
   }
   if (!state.ui.analysis || typeof state.ui.analysis !== 'object') {
     state.ui.analysis = { activeTab: 'overview' };
@@ -1612,7 +1686,7 @@ function syncCanonicalStateShape() {
   sim.simDay = Math.floor(simDayFloat());
   sim.simHour = simHour(sim.simTimeMs);
   sim.simMinute = new Date(sim.simTimeMs).getMinutes();
-  sim.dayWindow = { startHour: SIM_DAY_START_HOUR, endHour: SIM_NIGHT_START_HOUR };
+  sim.dayWindow = { startHour: STORAGE_SIM_DAY_START_HOUR, endHour: STORAGE_SIM_NIGHT_START_HOUR };
   sim.isDaytime = isDaytimeAtSimTime(sim.simTimeMs);
 
   plant.stageStartSimDay = getStageTimeline()[Math.max(0, plant.stageIndex)]?.simDayStart || 0;
@@ -1634,7 +1708,7 @@ function syncCanonicalStateShape() {
   events.scheduler = {
     ...events.scheduler,
     nextEventSimTimeMs: Number(events.scheduler.nextEventSimTimeMs || sim.simTimeMs),
-    nextEventRealTimeMs: Number(events.scheduler.nextEventRealTimeMs || sim.nowMs + EVENT_ROLL_MIN_REAL_MS),
+    nextEventRealTimeMs: Number(events.scheduler.nextEventRealTimeMs || sim.nowMs + STORAGE_EVENT_ROLL_MIN_REAL_MS),
     lastEventSimTimeMs: Number(events.scheduler.lastEventSimTimeMs || 0),
     lastEventRealTimeMs: Number(events.scheduler.lastEventRealTimeMs || 0),
     deferredUntilDaytime: !sim.isDaytime,
@@ -1776,3 +1850,4 @@ window.GrowSimStorage = Object.freeze({
   syncCanonicalStateShape,
   syncLegacyMirrorsFromCanonical
 });
+

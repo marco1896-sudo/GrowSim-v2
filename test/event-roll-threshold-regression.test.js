@@ -60,38 +60,48 @@ function loadContext() {
 (function testMissedRollDoesNotActivateEvent() {
   const ctx = loadContext();
   let activated = false;
-  let scheduled = false;
 
-  ctx.deterministicRoll = () => 0.95;
-  ctx.eventThreshold = () => 0.20;
+  ctx.deterministicUnitFloat = () => 0.99;
+  ctx.state.events.scheduler.nextEventRealTimeMs = 1;
+  ctx.state.events.scheduler.nextEventSimTimeMs = 1;
   ctx.activateEvent = () => {
     activated = true;
     return true;
-  };
-  ctx.scheduleNextEventRoll = () => {
-    scheduled = true;
   };
 
   ctx.runEventStateMachine(1_000);
 
   assert.strictEqual(activated, false, 'event must not activate when roll misses threshold');
-  assert.strictEqual(scheduled, true, 'next event roll should be scheduled after roll miss');
+  assert.ok(
+    Number(ctx.state.events.scheduler.nextEventRealTimeMs) > 1_000,
+    'next event roll should be rescheduled after roll miss'
+  );
+  assert.ok(
+    Number(ctx.state.events.scheduler.nextEventSimTimeMs) > 0,
+    'next event sim deadline should be written after roll miss'
+  );
 })();
 
 (function testSuccessfulRollCanActivateEvent() {
   const ctx = loadContext();
-  let activated = false;
-
-  ctx.deterministicRoll = () => 0.05;
-  ctx.eventThreshold = () => 0.20;
-  ctx.activateEvent = () => {
-    activated = true;
-    return true;
-  };
+  ctx.deterministicUnitFloat = () => 0.01;
+  ctx.state.events.scheduler.nextEventRealTimeMs = 1;
+  ctx.state.events.scheduler.nextEventSimTimeMs = 1;
+  ctx.state.events.catalog = [{
+    id: 'test_event',
+    title: 'Test Event',
+    description: 'A deterministic event for regression coverage.',
+    options: [{
+      id: 'ack',
+      label: 'OK',
+      effects: {}
+    }]
+  }];
 
   ctx.runEventStateMachine(1_000);
 
-  assert.strictEqual(activated, true, 'event should activate when roll passes threshold');
+  assert.strictEqual(ctx.state.events.machineState, 'activeEvent', 'event machine should enter the active event state when roll passes threshold');
+  assert.strictEqual(ctx.state.events.activeEventId, 'test_event', 'event machine should activate the eligible event after a successful roll');
 })();
 
 console.log('event roll threshold regression tests passed');

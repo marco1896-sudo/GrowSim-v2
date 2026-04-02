@@ -11,6 +11,7 @@ const ROOT = path.resolve(__dirname, '..');
 const HOST = '0.0.0.0';
 const CLIENT_HOST = '127.0.0.1';
 const PORT = 4176;
+const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
 
 function contentTypeFor(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -52,6 +53,49 @@ function createStaticServer(rootDir) {
 
       res.writeHead(200, { 'Content-Type': contentTypeFor(filePath) });
       res.end(data);
+    });
+  });
+}
+
+async function installAuthHarness(page) {
+  await page.addInitScript((tokenKey) => {
+    localStorage.setItem(tokenKey, 'test-auth-token');
+  }, AUTH_TOKEN_KEY);
+
+  await page.route('https://api.growsimulator.tech/api/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname === '/api/auth/me') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: {
+            id: 'test-user',
+            email: 'onboarding@test.local',
+            displayName: 'Onboarding Test'
+          }
+        })
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/save') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: request.method() === 'GET'
+          ? JSON.stringify({ save: null })
+          : JSON.stringify({ ok: true })
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Unhandled test route' })
     });
   });
 }
@@ -122,6 +166,7 @@ async function main() {
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 430, height: 932 } });
+  await installAuthHarness(page);
 
   try {
     const url = `http://${CLIENT_HOST}:${PORT}/`;
@@ -130,6 +175,21 @@ async function main() {
     await clearClientStorage(page);
     await page.goto(url, { waitUntil: 'networkidle' });
     await waitForBoot(page);
+    await page.waitForFunction(() => {
+      return Boolean(
+        window.GrowSimAuth
+        && typeof window.GrowSimAuth.isAuthenticated === 'function'
+        && window.GrowSimAuth.isAuthenticated()
+      );
+    }, null, { timeout: 10000 });
+    await page.waitForFunction(() => {
+      return Boolean(
+        window.GrowSimAuth
+        && typeof window.GrowSimAuth.getUser === 'function'
+        && window.GrowSimAuth.getUser()
+        && window.GrowSimAuth.getUser().email
+      );
+    }, null, { timeout: 10000 });
 
     const landingState = await page.locator('#landing').evaluate((node) => ({
       hasHiddenClass: node.classList.contains('hidden'),
@@ -166,9 +226,9 @@ async function main() {
       className: node.className,
       title: node.getAttribute('title')
     }));
-    assert.strictEqual(cloudSync.text, 'Lokal', 'settings should describe persistence as local-only');
-    assert.ok(cloudSync.className.includes('value_gold'), 'local-only persistence should not be styled as connected');
-    assert.strictEqual(cloudSync.title, 'Speicherung erfolgt aktuell nur lokal im Browser.', 'storage status should explain the local-only persistence path');
+    assert.strictEqual(cloudSync.text, 'onboarding@test.local', 'settings should reflect the connected cloud identity from the auth session');
+    assert.ok(cloudSync.className.includes('value_green'), 'connected cloud sync should be styled as active');
+    assert.strictEqual(cloudSync.title, 'Cloud Sync aktiv. Klick öffnet Account-Optionen.', 'cloud status should explain the connected account path');
 
     const runtimeSettings = await page.evaluate(() => ({
       simSpeed: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null,
@@ -182,9 +242,9 @@ async function main() {
       `simulation speed should reflect base and active runtime state, got: ${runtimeSettings.simSpeed}`
     );
     assert.strictEqual(runtimeSettings.eventWindow, 'Fix 30-90m', 'event frequency should reflect the fixed runtime window');
-    assert.strictEqual(runtimeSettings.tutorial, 'Vorbereitet', 'tutorial setting should be marked as prepared only');
+    assert.strictEqual(runtimeSettings.tutorial, 'Nicht aktiv', 'tutorial setting should describe its current inactive state honestly');
     assert.strictEqual(runtimeSettings.autosave, 'Lokal 3s', 'autosave should reflect the local persistence interval');
-    assert.strictEqual(runtimeSettings.volume, 'Vorbereitet', 'audio settings should be marked as prepared only');
+    assert.strictEqual(runtimeSettings.volume, 'Nicht aktiv', 'audio setting should describe its current inactive state honestly');
 
     await page.click('#diagnosisSheet [data-close-sheet]');
     await page.click('#menuToggleBtn');
@@ -211,7 +271,7 @@ async function main() {
     assert.strictEqual(menuState.aboutLabel, 'Projektinfo', 'about entry should not pretend to be a full tutorial');
     assert.strictEqual(menuState.quickHomeDisabled, true, 'prepared quick action should be non-interactive');
     assert.strictEqual(menuState.quickOpsDisabled, true, 'prepared quick action should be non-interactive');
-    assert.strictEqual(menuState.quickHomeTitle, 'Vorbereitet, aktuell ohne Funktion.', 'prepared quick action should explain its status');
+    assert.strictEqual(menuState.quickHomeTitle, 'Im aktuellen Build noch nicht freigeschaltet.', 'hidden quick action should explain its availability honestly');
     assert.strictEqual(menuState.resetTitle, 'Setzt den aktuellen Run nach Bestätigung vollständig zurück.', 'reset action should describe its destructive scope');
 
     await page.click('#menuStatsBtn');

@@ -99,8 +99,7 @@ function loadSimContext() {
   ctx.syncSimulationFromElapsedTime(offlineElapsedMs);
 
   const capMs = ctx.MAX_OFFLINE_SIM_MS;
-  const expectedProgress = capMs / ctx.REAL_RUN_DURATION_MS;
-  const expectedSimMs = 1000 + (expectedProgress * ctx.TOTAL_LIFECYCLE_SIM_MS);
+  const expectedSimMs = 1000 + (capMs * 12);
 
   assert.strictEqual(calls.drift.length, 1, 'status drift should be applied once');
   assert.strictEqual(calls.drift[0], capMs, 'status drift should use capped elapsed time');
@@ -127,7 +126,7 @@ function loadSimContext() {
   ctx.syncSimulationFromElapsedTime(offlineElapsedMs);
 
   const capMs = ctx.MAX_OFFLINE_SIM_MS;
-  const expectedSimMs = (capMs / ctx.REAL_RUN_DURATION_MS) * ctx.TOTAL_LIFECYCLE_SIM_MS;
+  const expectedSimMs = capMs * 12;
 
   assert.ok(Math.abs(elapsedToEffects - expectedSimMs) < 0.001, 'action over-time effects should use capped-derived sim delta');
   assert.ok(Math.abs(elapsedToGrowth - expectedSimMs) < 0.001, 'growth tick should use capped-derived sim delta');

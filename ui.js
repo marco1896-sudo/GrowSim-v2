@@ -2093,7 +2093,7 @@ function onVisibilityChange() {
       schedulePersistState();
       return;
     }
-    syncSimulationFromElapsedTime(Date.now());
+    // Avoid duplicate resume catch-up across visibility/focus/pageshow bursts.
     startLoopOnce();
     renderAll();
     schedulePersistState();
@@ -2112,7 +2112,6 @@ function onWindowFocus() {
     schedulePersistState();
     return;
   }
-  syncSimulationFromElapsedTime(Date.now());
   renderAll();
   schedulePersistState();
 }
@@ -2126,7 +2125,6 @@ function onPageShow() {
     schedulePersistState();
     return;
   }
-  syncSimulationFromElapsedTime(Date.now());
   startLoopOnce();
   renderAll();
   schedulePersistState();

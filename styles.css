@@ -69,6 +69,17 @@ body {
   overflow-x: hidden;
 }
 
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: auto;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
 .app-loading-screen {
   position: fixed;
   inset: 0;
@@ -125,6 +136,64 @@ body {
   box-shadow:
     0 18px 44px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(173, 203, 194, 0.08);
+}
+
+@media (min-width: 960px) {
+  body {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(76, 153, 121, 0.18), rgba(0, 0, 0, 0) 28%),
+      radial-gradient(circle at 82% 16%, rgba(86, 162, 214, 0.16), rgba(0, 0, 0, 0) 26%),
+      radial-gradient(circle at 50% 100%, rgba(16, 42, 33, 0.62), rgba(4, 9, 15, 0.98) 54%),
+      linear-gradient(180deg, #071018 0%, #04090f 100%);
+  }
+
+  body::before,
+  body::after {
+    opacity: 1;
+  }
+
+  body::before {
+    top: 50%;
+    left: 50%;
+    width: min(760px, 68vw);
+    height: min(920px, 88vh);
+    transform: translate(-50%, -50%);
+    border-radius: 40px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
+      rgba(6, 12, 18, 0.58);
+    border: 1px solid rgba(170, 214, 198, 0.08);
+    box-shadow:
+      0 42px 120px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  body::after {
+    top: calc(50% - 220px);
+    left: calc(50% + 190px);
+    width: 320px;
+    height: 320px;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(109, 238, 167, 0.14), rgba(109, 238, 167, 0) 68%);
+    filter: blur(12px);
+  }
+
+  .app-hud {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
+    border-radius: 28px;
+    box-shadow:
+      0 28px 80px rgba(0, 0, 0, 0.58),
+      0 0 0 1px rgba(188, 225, 208, 0.14),
+      0 0 0 10px rgba(6, 12, 18, 0.18);
+  }
 }
 
 .top-row {
@@ -3659,6 +3728,8 @@ body.panelized-ready :is(
   flex-direction: column;
   width: 100%;
   gap: 10px;
+  position: relative;
+  z-index: 2;
   min-width: 0;
   padding: 10px;
   border-radius: 12px;
@@ -3685,6 +3756,8 @@ body.panelized-ready :is(
   padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(212, 175, 55, 0.2);
+  position: relative;
+  z-index: 1;
   background: rgba(255, 255, 255, 0.04);
   color: rgba(232, 240, 247, 0.82);
   font-weight: 700;
@@ -6587,22 +6660,23 @@ body.panelized-ready :is(
 }
 
 .home-action-panel #careActionBtn .home-action-icon {
-  width: 84px;
+  width: 99px;
+  height: 80px;
 }
 
 .home-action-panel #analyzeActionBtn .home-action-icon {
-  width: 84px;
-  height: 84px;
+  width: 70px;
+  height: 68px;
 }
 
 .home-action-panel #eventsActionBtn .home-action-icon {
-  width: 84px;
-  height: 84px;
+  width: 70px;
+  height: 78px;
 }
 
 .home-action-panel #boostActionBtn .home-action-icon {
-  width: 60px;
-  height: 60px;
+  width: 52px;
+  height: 52px;
 }
 
 .home-action-panel .home-action-title {
@@ -7564,8 +7638,8 @@ body.panelized-ready :is(
 }
 
 #boostActionBtn .home-action-icon {
-  width: 60px;
-  height: 60px;
+  width: 52px;
+  height: 52px;
 }
 
 #eventsActionBtn .home-action-icon {

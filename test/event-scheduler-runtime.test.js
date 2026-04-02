@@ -10,6 +10,7 @@ const CLIENT_HOST = '127.0.0.1';
 const PORT = 4177;
 const APP_URL = `http://${CLIENT_HOST}:${PORT}/`;
 const LS_STATE_KEY = 'grow-sim-state-v2';
+const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
 
 function contentTypeFor(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -54,6 +55,49 @@ function createStaticServer(rootDir) {
         'Cache-Control': 'no-store'
       });
       res.end(data);
+    });
+  });
+}
+
+async function installAuthHarness(page) {
+  await page.addInitScript((tokenKey) => {
+    localStorage.setItem(tokenKey, 'test-auth-token');
+  }, AUTH_TOKEN_KEY);
+
+  await page.route('https://api.growsimulator.tech/api/**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname === '/api/auth/me') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: {
+            id: 'test-user',
+            email: 'scheduler@test.local',
+            displayName: 'Scheduler Test'
+          }
+        })
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/save') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: request.method() === 'GET'
+          ? JSON.stringify({ save: null })
+          : JSON.stringify({ ok: true })
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Unhandled test route' })
     });
   });
 }
@@ -249,6 +293,7 @@ async function main() {
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
+  await installAuthHarness(page);
 
   try {
     await scenarioSchedulerCountdownUsesSimTime(page);

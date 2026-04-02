@@ -5,9 +5,10 @@ const http = require('http');
 const fs = require('fs');
 
 async function runOfflineRegressionTest() {
-  const ROOT = path.resolve(__dirname, '..');
-  const HOST = '0.0.0.0';
-  const PORT = 4175;
+const ROOT = path.resolve(__dirname, '..');
+const HOST = '0.0.0.0';
+const CLIENT_HOST = '127.0.0.1';
+const PORT = 4175;
 
   function contentTypeFor(filePath) {
     const ext = path.extname(filePath).toLowerCase();
@@ -78,7 +79,7 @@ async function runOfflineRegressionTest() {
       }
     });
 
-    const url = `http://${HOST}:${PORT}/`;
+    const url = `http://${CLIENT_HOST}:${PORT}/`;
     await page.goto(url, { waitUntil: 'networkidle' });
     await evaluateWithRetry(() => {
       const now = Date.now();

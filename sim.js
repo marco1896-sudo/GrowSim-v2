@@ -1,4 +1,41 @@
-'use strict';
+﻿'use strict';
+
+const growSimRuntimeConfig = (typeof window !== 'undefined' && window.GrowSimSimulationConfig && typeof window.GrowSimSimulationConfig === 'object')
+  ? window.GrowSimSimulationConfig
+  : ((typeof globalThis !== 'undefined' && globalThis.GrowSimSimulationConfig && typeof globalThis.GrowSimSimulationConfig === 'object')
+    ? globalThis.GrowSimSimulationConfig
+    : {});
+
+const SIM_RUNTIME_SPEED_OPTIONS = Array.isArray(growSimRuntimeConfig.SIM_SPEED_OPTIONS)
+  ? growSimRuntimeConfig.SIM_SPEED_OPTIONS.slice()
+  : (Array.isArray(globalThis.SIM_SPEED_OPTIONS) ? globalThis.SIM_SPEED_OPTIONS.slice() : [4, 8, 12, 16]);
+const SIM_RUNTIME_DEFAULT_BASE_SPEED = Number.isFinite(Number(growSimRuntimeConfig.DEFAULT_BASE_SIM_SPEED))
+  ? Number(growSimRuntimeConfig.DEFAULT_BASE_SIM_SPEED)
+  : (Number.isFinite(Number(globalThis.DEFAULT_BASE_SIM_SPEED)) ? Number(globalThis.DEFAULT_BASE_SIM_SPEED) : 12);
+const SIM_RUNTIME_BOOST_SPEED = Number.isFinite(Number(growSimRuntimeConfig.BOOST_SIM_SPEED))
+  ? Number(growSimRuntimeConfig.BOOST_SIM_SPEED)
+  : (Number.isFinite(Number(globalThis.BOOST_SIM_SPEED)) ? Number(globalThis.BOOST_SIM_SPEED) : 24);
+const SIM_RUNTIME_START_HOUR = Number.isFinite(Number(growSimRuntimeConfig.SIM_START_HOUR))
+  ? Number(growSimRuntimeConfig.SIM_START_HOUR)
+  : (Number.isFinite(Number(globalThis.SIM_START_HOUR)) ? Number(globalThis.SIM_START_HOUR) : 8);
+const SIM_RUNTIME_DAY_START_HOUR = Number.isFinite(Number(growSimRuntimeConfig.SIM_DAY_START_HOUR))
+  ? Number(growSimRuntimeConfig.SIM_DAY_START_HOUR)
+  : (Number.isFinite(Number(globalThis.SIM_DAY_START_HOUR)) ? Number(globalThis.SIM_DAY_START_HOUR) : 6);
+const SIM_RUNTIME_NIGHT_START_HOUR = Number.isFinite(Number(growSimRuntimeConfig.SIM_NIGHT_START_HOUR))
+  ? Number(growSimRuntimeConfig.SIM_NIGHT_START_HOUR)
+  : (Number.isFinite(Number(globalThis.SIM_NIGHT_START_HOUR)) ? Number(globalThis.SIM_NIGHT_START_HOUR) : 22);
+const SIM_RUNTIME_MAX_ELAPSED_PER_TICK_MS = Number.isFinite(Number(growSimRuntimeConfig.MAX_ELAPSED_PER_TICK_MS))
+  ? Number(growSimRuntimeConfig.MAX_ELAPSED_PER_TICK_MS)
+  : (Number.isFinite(Number(globalThis.MAX_ELAPSED_PER_TICK_MS)) ? Number(globalThis.MAX_ELAPSED_PER_TICK_MS) : 5000);
+const SIM_RUNTIME_MAX_OFFLINE_SIM_MS = Number.isFinite(Number(growSimRuntimeConfig.MAX_OFFLINE_SIM_MS))
+  ? Number(growSimRuntimeConfig.MAX_OFFLINE_SIM_MS)
+  : (Number.isFinite(Number(globalThis.MAX_OFFLINE_SIM_MS)) ? Number(globalThis.MAX_OFFLINE_SIM_MS) : 8 * 60 * 60 * 1000);
+const SIM_RUNTIME_LARGE_TIME_JUMP_LOG_MS = Number.isFinite(Number(growSimRuntimeConfig.LARGE_TIME_JUMP_LOG_MS))
+  ? Number(growSimRuntimeConfig.LARGE_TIME_JUMP_LOG_MS)
+  : (Number.isFinite(Number(globalThis.LARGE_TIME_JUMP_LOG_MS)) ? Number(globalThis.LARGE_TIME_JUMP_LOG_MS) : 60 * 1000);
+const SIM_RUNTIME_FREEZE_ON_DEATH = typeof growSimRuntimeConfig.FREEZE_SIM_ON_DEATH === 'boolean'
+  ? growSimRuntimeConfig.FREEZE_SIM_ON_DEATH
+  : (typeof globalThis.FREEZE_SIM_ON_DEATH === 'boolean' ? globalThis.FREEZE_SIM_ON_DEATH : true);
 
 const FAIRNESS_REACTION_GRACE_MS = 2 * 60 * 1000;
 const OFFLINE_STATUS_DECAY_MULTIPLIER = 0.72;
@@ -678,7 +715,7 @@ function tick() {
     return;
   }
 
-  if (syncDeathState() && FREEZE_SIM_ON_DEATH) {
+  if (syncDeathState() && SIM_RUNTIME_FREEZE_ON_DEATH) {
     state.simulation.lastTickRealTimeMs = nowMs;
     state.simulation.growthImpulse = 0;
     syncCanonicalStateShape();
@@ -722,7 +759,7 @@ function getRealNowMs() {
 
 function normalizeBaseSimulationSpeed(value) {
   const numericValue = Number(value);
-  return SIM_SPEED_OPTIONS.includes(numericValue) ? numericValue : DEFAULT_BASE_SIM_SPEED;
+  return SIM_RUNTIME_SPEED_OPTIONS.includes(numericValue) ? numericValue : SIM_RUNTIME_DEFAULT_BASE_SPEED;
 }
 
 function isSpeedBoostActive(nowMs = getRealNowMs()) {
@@ -741,7 +778,7 @@ function getRemainingBoostMs(nowMs = getRealNowMs()) {
 }
 
 function getEffectiveSimulationSpeed(nowMs = getRealNowMs()) {
-  return isSpeedBoostActive(nowMs) ? BOOST_SIM_SPEED : normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed);
+  return isSpeedBoostActive(nowMs) ? SIM_RUNTIME_BOOST_SPEED : normalizeBaseSimulationSpeed(state.simulation && state.simulation.baseSpeed);
 }
 
 function computeSimulationDeltaMs(startRealMs, endRealMs) {
@@ -758,7 +795,7 @@ function computeSimulationDeltaMs(startRealMs, endRealMs) {
 
   if (Number.isFinite(boostEndsAtMs) && boostEndsAtMs > cursorMs) {
     const boostSegmentEndMs = Math.min(safeEndMs, boostEndsAtMs);
-    simDeltaMs += Math.max(0, boostSegmentEndMs - cursorMs) * BOOST_SIM_SPEED;
+    simDeltaMs += Math.max(0, boostSegmentEndMs - cursorMs) * SIM_RUNTIME_BOOST_SPEED;
     cursorMs = boostSegmentEndMs;
   }
 
@@ -780,9 +817,9 @@ function convertSimDeltaToFutureRealDeltaMs(simDeltaMs, fromRealNowMs = getRealN
   let totalRealDeltaMs = 0;
 
   if (boostRemainingMs > 0) {
-    const boostSimCapacityMs = boostRemainingMs * BOOST_SIM_SPEED;
+    const boostSimCapacityMs = boostRemainingMs * SIM_RUNTIME_BOOST_SPEED;
     if (remainingSimMs <= boostSimCapacityMs) {
-      return Math.ceil(remainingSimMs / BOOST_SIM_SPEED);
+      return Math.ceil(remainingSimMs / SIM_RUNTIME_BOOST_SPEED);
     }
 
     totalRealDeltaMs += boostRemainingMs;
@@ -801,7 +838,7 @@ function updateEffectiveSpeedState(nowMs, options = {}) {
     : normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
   const previousBoostActive = Boolean(options.previousBoostActive);
   const currentBoostActive = isSpeedBoostActive(safeNowMs);
-  const nextEffectiveSpeed = currentBoostActive ? BOOST_SIM_SPEED : normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
+  const nextEffectiveSpeed = currentBoostActive ? SIM_RUNTIME_BOOST_SPEED : normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
 
   state.simulation.baseSpeed = normalizeBaseSimulationSpeed(state.simulation.baseSpeed);
   state.simulation.effectiveSpeed = nextEffectiveSpeed;
@@ -823,7 +860,7 @@ function updateEffectiveSpeedState(nowMs, options = {}) {
   }
 
   if (previousEffectiveSpeed !== nextEffectiveSpeed) {
-    addLog('system', 'Effektive Simulationsgeschwindigkeit geändert', {
+    addLog('system', 'Effektive Simulationsgeschwindigkeit geÃ¤ndert', {
       from: previousEffectiveSpeed,
       to: nextEffectiveSpeed,
       reason: options.reason || (currentBoostActive ? 'boost_active' : 'base_speed')
@@ -840,7 +877,7 @@ function reportSimulationClockIssue(level, message, details) {
 
 function setSimulationTimeMs(targetSimTimeMs, nowMs = getRealNowMs(), options = {}) {
   const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
-  const simEpochMs = Number(state.simulation.simEpochMs) || alignToSimStartHour(safeNowMs, SIM_START_HOUR);
+  const simEpochMs = Number(state.simulation.simEpochMs) || alignToSimStartHour(safeNowMs, SIM_RUNTIME_START_HOUR);
   const previousSimTimeMs = Math.max(
     simEpochMs,
     Number(state.simulation.simTimeMs) || simEpochMs
@@ -879,7 +916,7 @@ function setSimulationTimeMs(targetSimTimeMs, nowMs = getRealNowMs(), options = 
   state.simulation.lastTickRealTimeMs = nextLastTickRealTimeMs;
   state.simulation.isDaytime = nowDaytime;
 
-  if (!options.suppressLogs && elapsedSimMs >= LARGE_TIME_JUMP_LOG_MS) {
+  if (!options.suppressLogs && elapsedSimMs >= SIM_RUNTIME_LARGE_TIME_JUMP_LOG_MS) {
     reportSimulationClockIssue('warn', 'Large simulation time jump detected', {
       previousSimTimeMs,
       nextSimTimeMs,
@@ -936,11 +973,11 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
 
   const previousSimTimeMs = Number(state.simulation.simTimeMs)
     || Number(state.simulation.simEpochMs)
-    || alignToSimStartHour(safeTargetRealNowMs, SIM_START_HOUR);
+    || alignToSimStartHour(safeTargetRealNowMs, SIM_RUNTIME_START_HOUR);
   const elapsedSimMs = computeSimulationDeltaMs(safePreviousTickMs, safeTargetRealNowMs);
 
-  if (!options.suppressLogs && realDeltaMs >= LARGE_TIME_JUMP_LOG_MS) {
-    addLog('system', 'Großer Realzeit-Sprung erkannt', {
+  if (!options.suppressLogs && realDeltaMs >= SIM_RUNTIME_LARGE_TIME_JUMP_LOG_MS) {
+    addLog('system', 'GroÃŸer Realzeit-Sprung erkannt', {
       realDeltaMs,
       effectiveSpeedBefore: getEffectiveSimulationSpeed(safePreviousTickMs)
     });
@@ -1025,6 +1062,14 @@ function applyFairnessSurvivalGuard(nowMs) {
 function syncSimulationFromElapsedTime(nowMs) {
   const requestedNowMs = Number(nowMs);
   const safeNowMs = Number.isFinite(requestedNowMs) ? requestedNowMs : Date.now();
+  const previousTickMs = Number.isFinite(Number(state.simulation.lastTickRealTimeMs))
+    ? Number(state.simulation.lastTickRealTimeMs)
+    : safeNowMs;
+  const elapsedSinceLastTickMs = Math.max(0, safeNowMs - previousTickMs);
+  const cappedElapsedMs = Math.min(elapsedSinceLastTickMs, SIM_RUNTIME_MAX_OFFLINE_SIM_MS);
+  const cappedResumeNowMs = previousTickMs + cappedElapsedMs;
+  const suppressResumeEvents = elapsedSinceLastTickMs > SIM_RUNTIME_MAX_ELAPSED_PER_TICK_MS;
+  const discardedElapsedMs = Math.max(0, elapsedSinceLastTickMs - cappedElapsedMs);
   state.simulation.nowMs = safeNowMs;
   const authGateBlocked = typeof window !== 'undefined'
     && typeof window.__gsIsAuthGateActive === 'function'
@@ -1043,21 +1088,30 @@ function syncSimulationFromElapsedTime(nowMs) {
       syncCanonicalStateShape();
       return;
     }
-    if (syncDeathState() && FREEZE_SIM_ON_DEATH) {
+    if (syncDeathState() && SIM_RUNTIME_FREEZE_ON_DEATH) {
       state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
       state.simulation.growthImpulse = 0;
       syncCanonicalStateShape();
       return;
     }
 
-    advanceSimulationTime(safeNowMs, {
-      reason: 'resume'
+    advanceSimulationTime(cappedResumeNowMs, {
+      reason: 'resume',
+      suppressEvents: suppressResumeEvents
     });
+    if (discardedElapsedMs > 0 && Number.isFinite(Number(state.simulation.startRealTimeMs))) {
+      state.simulation.startRealTimeMs = Math.max(
+        Number(state.simulation.startRealTimeMs) || 0,
+        (Number(state.simulation.startRealTimeMs) || 0) + discardedElapsedMs
+      );
+    }
+    state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
+    state.simulation.nowMs = safeNowMs;
   } catch (error) {
     console.error('[offline] catch-up failed', error);
     state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
     state.simulation.growthImpulse = 0;
-    addLog('system', 'Offline-Fortschritt konnte nicht vollständig berechnet werden.', {
+    addLog('system', 'Offline-Fortschritt konnte nicht vollstÃ¤ndig berechnet werden.', {
       error: error && error.message ? error.message : String(error)
     });
     syncCanonicalStateShape();
@@ -1139,7 +1193,7 @@ function applyOfflineNightSurvivalClamp() {
   state.ui.deathOverlayAcknowledged = false;
 
   const meta = getCanonicalMeta(state);
-  meta.rescue.lastResult = 'Offline-Nacht: Pflanze knapp überlebt und ist kritisch.';
+  meta.rescue.lastResult = 'Offline-Nacht: Pflanze knapp Ã¼berlebt und ist kritisch.';
   addLog('system', 'Offline-Nachtschutz aktiv: Todeszustand verhindert', {
     health: round2(state.status.health),
     stress: round2(state.status.stress),
@@ -1163,7 +1217,7 @@ function evolveEnvironmentChemistry(minutes) {
 
 function applyStatusDrift(elapsedMs) {
   const minutesRaw = elapsedMs / 60_000;
-  const offlineCatchUp = elapsedMs > MAX_ELAPSED_PER_TICK_MS;
+  const offlineCatchUp = elapsedMs > SIM_RUNTIME_MAX_ELAPSED_PER_TICK_MS;
   const minutes = minutesRaw * (offlineCatchUp ? OFFLINE_STATUS_DECAY_MULTIPLIER : 1);
   if (minutes <= 0) {
     state.simulation.growthImpulse = 0;
@@ -1488,7 +1542,7 @@ function getTotalRunProgress() {
 }
 
 function getPlantTimeFromElapsed() {
-  const simEpochMs = Number(state.simulation.simEpochMs) || alignToSimStartHour(getRealNowMs(), SIM_START_HOUR);
+  const simEpochMs = Number(state.simulation.simEpochMs) || alignToSimStartHour(getRealNowMs(), SIM_RUNTIME_START_HOUR);
   const simTimeMs = Math.max(simEpochMs, Number(state.simulation.simTimeMs) || simEpochMs);
   const baseElapsedPlantMs = Math.max(0, simTimeMs - simEpochMs);
   const progressOffsetSimMs = Number(state.plant && state.plant.progressOffsetSimMs) || 0;
@@ -1579,7 +1633,7 @@ function computeStageProgress(simDay, stageIndex) {
 }
 
 function getDayNightIcon() {
-  return state.simulation.isDaytime ? '☀️' : '🌙';
+  return state.simulation.isDaytime ? 'â˜€ï¸' : 'ðŸŒ™';
 }
 
 function formatPlantAgeLabel(stage, simDay) {
@@ -1593,12 +1647,12 @@ function formatPlantAgeLabel(stage, simDay) {
   }
 
   const bloomDay = Math.max(1, Math.floor(safeSimDay - floweringStart.simDayStart) + 1);
-  return `Blütetag ${bloomDay}`;
+  return `BlÃ¼tetag ${bloomDay}`;
 }
 
 function formatPhaseProgressLabel(progressPercent, nextLabel) {
   const targetLabel = nextLabel || 'Ernte';
-  return `${progressPercent}% → ${targetLabel}`;
+  return `${progressPercent}% â†’ ${targetLabel}`;
 }
 
 function getPhaseCardViewModel() {
@@ -1707,7 +1761,7 @@ function normalizeStageKey(rawStageKey) {
 
 function onBoostAction() {
   // Absichtlich limitierter Boost: Event-Timer um 30 Min vorziehen,
-  // Pflanzenwerte nur leicht anstoßen (kein vollständiger 30-Minuten-Simulationssprung).
+  // Pflanzenwerte nur leicht anstoÃŸen (kein vollstÃ¤ndiger 30-Minuten-Simulationssprung).
   const BOOST_PLANT_EFFECT_MS = 3 * 60 * 1000;
   const BOOST_GROWTH_PERCENT_DELTA = 0.02;
 
@@ -1736,7 +1790,7 @@ function onBoostAction() {
   runEventStateMachine(nowMs);
   updateVisibleOverlays();
 
-  addLog('action', 'Ereignis-Boost angewendet (Event-Timer -30 Min, Pflanze leicht angestoßen)', {
+  addLog('action', 'Ereignis-Boost angewendet (Event-Timer -30 Min, Pflanze leicht angestoÃŸen)', {
     usedToday: state.boost.boostUsedToday,
     nextEventAtMs: state.events.scheduler.nextEventRealTimeMs
   });
@@ -1758,7 +1812,7 @@ function resetBoostDaily(nowMs) {
   if (state.boost.dayStamp !== currentStamp) {
     state.boost.dayStamp = currentStamp;
     state.boost.boostUsedToday = 0;
-    addLog('system', 'Täglicher Boost-Zähler zurückgesetzt', { dayStamp: currentStamp });
+    addLog('system', 'TÃ¤glicher Boost-ZÃ¤hler zurÃ¼ckgesetzt', { dayStamp: currentStamp });
   }
 }
 
@@ -1799,7 +1853,7 @@ function activateSpeedBoost(nowMs = getRealNowMs()) {
     reason: previousBoostActive ? 'boost_extend' : 'boost_start'
   });
 
-  addLog('action', previousBoostActive ? 'Zeit-Boost verlängert' : 'Zeit-Boost aktiviert', {
+  addLog('action', previousBoostActive ? 'Zeit-Boost verlÃ¤ngert' : 'Zeit-Boost aktiviert', {
     boostEndsAtMs: state.boost.boostEndsAtMs,
     remainingBoostMs: nextRemainingBoostMs,
     effectiveSpeed: getEffectiveSimulationSpeed(safeNowMs)
@@ -1827,7 +1881,7 @@ function setBaseSimulationSpeed(value, nowMs = getRealNowMs()) {
   if (state.settings && state.settings.gameplay && typeof state.settings.gameplay === 'object') {
     state.settings.gameplay.simSpeed = nextBaseSpeed;
   }
-  addLog('system', 'Basis-Simulationsgeschwindigkeit geändert', {
+  addLog('system', 'Basis-Simulationsgeschwindigkeit geÃ¤ndert', {
     from: previousBaseSpeed,
     to: nextBaseSpeed
   });
@@ -1864,18 +1918,18 @@ function simHour(simTimeMs) {
 
 function isDaytimeAtSimTime(simTimeMs) {
   const hour = simHour(simTimeMs);
-  return hour >= SIM_DAY_START_HOUR && hour < SIM_NIGHT_START_HOUR;
+  return hour >= SIM_RUNTIME_DAY_START_HOUR && hour < SIM_RUNTIME_NIGHT_START_HOUR;
 }
 
 function nextDaytimeRealMs(realNowMs, simTimeMs) {
   const simDate = new Date(simTimeMs);
   const shifted = new Date(simDate.getTime());
 
-  if (simHour(simTimeMs) >= SIM_NIGHT_START_HOUR) {
+  if (simHour(simTimeMs) >= SIM_RUNTIME_NIGHT_START_HOUR) {
     shifted.setDate(shifted.getDate() + 1);
   }
 
-  shifted.setHours(SIM_DAY_START_HOUR, 0, 0, 0);
+  shifted.setHours(SIM_RUNTIME_DAY_START_HOUR, 0, 0, 0);
   const simDeltaMs = Math.max(0, shifted.getTime() - simTimeMs);
   const realDeltaMs = convertSimDeltaToFutureRealDeltaMs(simDeltaMs, realNowMs);
   return realNowMs + realDeltaMs;
@@ -1947,7 +2001,7 @@ function clampInt(value, min, max) {
 function syncRuntimeClocks(nowMs) {
   state.simulation.nowMs = nowMs;
   if (!Number.isFinite(state.simulation.simTimeMs)) {
-    state.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_START_HOUR);
+    state.simulation.simTimeMs = alignToSimStartHour(nowMs, SIM_RUNTIME_START_HOUR);
   }
   state.simulation.isDaytime = isDaytimeAtSimTime(state.simulation.simTimeMs);
   if (!Number.isFinite(state.simulation.lastTickRealTimeMs)) {
@@ -1995,8 +2049,8 @@ async function loadEventCatalog() {
     catalogs.push(normalizeEvent({
       id: 'fallback_soil_check',
       category: 'water',
-      title: 'Bodenfeuchte prüfen',
-      description: 'Bei der manuellen Kontrolle wurde ungleichmäßige Feuchte festgestellt.',
+      title: 'Bodenfeuchte prÃ¼fen',
+      description: 'Bei der manuellen Kontrolle wurde ungleichmÃ¤ÃŸige Feuchte festgestellt.',
       choices: [
         { id: 'fallback_care', label: 'Ausgewogene Pflege anwenden', effects: { water: 6, stress: -2, health: 2 } },
         { id: 'fallback_wait', label: 'Einen Zyklus warten', effects: { stress: 2, risk: 2 } },
@@ -2040,3 +2094,4 @@ async function loadActionsCatalog() {
     });
   }
 }
+

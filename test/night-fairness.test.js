@@ -100,21 +100,22 @@ function loadSimContext() {
   const ctx = loadSimContext();
 
   const nightMs = new Date('2026-03-01T05:59:00').getTime();
-  const dayMs = new Date('2026-03-01T06:01:00').getTime();
+  const elapsedRealMsToDay = 10_000;
 
   ctx.state.simulation.startRealTimeMs = 0;
   ctx.state.simulation.simEpochMs = 0;
   ctx.state.simulation.simTimeMs = nightMs;
   ctx.state.simulation.lastTickRealTimeMs = 0;
+  ctx.state.simulation.isDaytime = false;
 
-  ctx.getPlantTimeFromElapsed = () => ({ simTimeMs: dayMs, simDay: 0, totalRunProgress: 0, elapsedPlantMs: 0 });
   ctx.applyStatusDrift = () => {};
   ctx.applyActiveActionEffects = () => {};
   ctx.advanceGrowthTick = () => {};
 
-  ctx.applySimulationDelta(1_000, 1_000, 1_000);
+  ctx.applySimulationDelta(elapsedRealMsToDay, elapsedRealMsToDay);
 
-  assert.ok(ctx.state.simulation.fairnessGraceUntilRealMs > 1_000, 'crossing into day should set grace window');
+  assert.ok(ctx.state.simulation.isDaytime, 'simulation should now be in daytime');
+  assert.ok(ctx.state.simulation.fairnessGraceUntilRealMs > elapsedRealMsToDay, 'crossing into day should set grace window');
 })();
 
 console.log('night fairness tests passed');

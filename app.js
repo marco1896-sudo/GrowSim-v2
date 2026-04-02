@@ -7,6 +7,10 @@ ASSUMPTIONS:
 
 'use strict';
 
+const growSimSharedConfig = (typeof window !== 'undefined' && window.GrowSimSimulationConfig && typeof window.GrowSimSimulationConfig === 'object')
+  ? window.GrowSimSimulationConfig
+  : {};
+
 function appApiFetch(path, options = {}) {
   if (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function') {
     return window.GrowSimApi.apiFetch(path, options);
@@ -44,20 +48,20 @@ function appApiFetch(path, options = {}) {
 }
 
 const CONFIG = Object.freeze({
-  MODE: 'prod',
+  MODE: typeof growSimSharedConfig.MODE === 'string' ? growSimSharedConfig.MODE : 'prod',
   timing: Object.freeze({
-    uiTickMs: 1000,
-    eventRollMinRealMs: 30 * 60 * 1000,
-    eventRollMaxRealMs: 90 * 60 * 1000,
-    eventCooldownMs: 20 * 60 * 1000
+    uiTickMs: Number.isFinite(Number(growSimSharedConfig.UI_TICK_INTERVAL_MS)) ? Number(growSimSharedConfig.UI_TICK_INTERVAL_MS) : 1000,
+    eventRollMinRealMs: Number.isFinite(Number(growSimSharedConfig.EVENT_ROLL_MIN_REAL_MS)) ? Number(growSimSharedConfig.EVENT_ROLL_MIN_REAL_MS) : 30 * 60 * 1000,
+    eventRollMaxRealMs: Number.isFinite(Number(growSimSharedConfig.EVENT_ROLL_MAX_REAL_MS)) ? Number(growSimSharedConfig.EVENT_ROLL_MAX_REAL_MS) : 90 * 60 * 1000,
+    eventCooldownMs: Number.isFinite(Number(growSimSharedConfig.EVENT_COOLDOWN_MS)) ? Number(growSimSharedConfig.EVENT_COOLDOWN_MS) : 20 * 60 * 1000
   }),
   simulation: Object.freeze({
-    timeCompression: 12,
-    dayStartHour: 6,
-    nightStartHour: 22,
-    startHour: 8,
-    globalSeed: 'grow-sim-v1-seed',
-    plantId: 'plant-001'
+    timeCompression: Number.isFinite(Number(growSimSharedConfig.DEFAULT_BASE_SIM_SPEED)) ? Number(growSimSharedConfig.DEFAULT_BASE_SIM_SPEED) : 12,
+    dayStartHour: Number.isFinite(Number(growSimSharedConfig.SIM_DAY_START_HOUR)) ? Number(growSimSharedConfig.SIM_DAY_START_HOUR) : 6,
+    nightStartHour: Number.isFinite(Number(growSimSharedConfig.SIM_NIGHT_START_HOUR)) ? Number(growSimSharedConfig.SIM_NIGHT_START_HOUR) : 22,
+    startHour: Number.isFinite(Number(growSimSharedConfig.SIM_START_HOUR)) ? Number(growSimSharedConfig.SIM_START_HOUR) : 8,
+    globalSeed: typeof growSimSharedConfig.SIM_GLOBAL_SEED === 'string' ? growSimSharedConfig.SIM_GLOBAL_SEED : 'grow-sim-v1-seed',
+    plantId: typeof growSimSharedConfig.SIM_PLANT_ID === 'string' ? growSimSharedConfig.SIM_PLANT_ID : 'plant-001'
   }),
   boostAdvanceMs: 30 * 60 * 1000,
   maxHistoryLog: 200,
@@ -73,8 +77,8 @@ const EVENT_COOLDOWN_MS = CONFIG.timing.eventCooldownMs;
 const EVENT_RESOLUTION_MS = 10 * 60 * 1000;
 const BOOST_ADVANCE_MS = CONFIG.boostAdvanceMs;
 const DEFAULT_BASE_SIM_SPEED = CONFIG.simulation.timeCompression;
-const SIM_SPEED_OPTIONS = Object.freeze([4, 8, 12, 16]);
-const BOOST_SIM_SPEED = 24;
+const SIM_SPEED_OPTIONS = Array.isArray(growSimSharedConfig.SIM_SPEED_OPTIONS) ? Object.freeze(growSimSharedConfig.SIM_SPEED_OPTIONS.slice()) : Object.freeze([4, 8, 12, 16]);
+const BOOST_SIM_SPEED = Number.isFinite(Number(growSimSharedConfig.BOOST_SIM_SPEED)) ? Number(growSimSharedConfig.BOOST_SIM_SPEED) : 24;
 const CARE_ACTION_TIME_DIAGNOSTIC_THRESHOLD_MS = 1000;
 const BOOST_DURATION_REAL_MS = 30 * 60 * 1000;
 const BOOST_MAX_REMAINING_REAL_MS = 60 * 60 * 1000;
@@ -86,11 +90,11 @@ const SIM_GLOBAL_SEED = CONFIG.simulation.globalSeed;
 const SIM_PLANT_ID = CONFIG.simulation.plantId;
 const MAX_HISTORY_LOG = CONFIG.maxHistoryLog;
 const PERSIST_THROTTLE_MS = CONFIG.persistThrottleMs;
-const MAX_ELAPSED_PER_TICK_MS = 5000;
-const MAX_OFFLINE_SIM_MS = 8 * 60 * 60 * 1000;
-const LARGE_TIME_JUMP_LOG_MS = 60 * 1000;
+const MAX_ELAPSED_PER_TICK_MS = Number.isFinite(Number(growSimSharedConfig.MAX_ELAPSED_PER_TICK_MS)) ? Number(growSimSharedConfig.MAX_ELAPSED_PER_TICK_MS) : 5000;
+const MAX_OFFLINE_SIM_MS = Number.isFinite(Number(growSimSharedConfig.MAX_OFFLINE_SIM_MS)) ? Number(growSimSharedConfig.MAX_OFFLINE_SIM_MS) : 8 * 60 * 60 * 1000;
+const LARGE_TIME_JUMP_LOG_MS = Number.isFinite(Number(growSimSharedConfig.LARGE_TIME_JUMP_LOG_MS)) ? Number(growSimSharedConfig.LARGE_TIME_JUMP_LOG_MS) : 60 * 1000;
 const APP_BASE_PATH = resolveAppBasePath();
-const FREEZE_SIM_ON_DEATH = true; // Für Klarheit: Simulation pausiert nach Tod der Pflanze.
+const FREEZE_SIM_ON_DEATH = typeof growSimSharedConfig.FREEZE_SIM_ON_DEATH === 'boolean' ? growSimSharedConfig.FREEZE_SIM_ON_DEATH : true; // Fuer Klarheit: Simulation pausiert nach Tod der Pflanze.
 
 const DB_NAME = 'grow-sim-db';
 const DB_STORE = 'kv';
@@ -3019,6 +3023,8 @@ function renderAll() {
   syncDeathState();
   renderActiveScreen();
   renderOverlayModules();
+  migrateSettings(state);
+  updateSettingsUI();
   renderLanding();
   renderDeathOverlay();
   renderRunSummaryOverlay();
@@ -3993,6 +3999,16 @@ function renderGameMenu() {
 }
 
 function renderMenuDynamicRows() {
+  const menuProfileNameNode = uiNode('menuProfileNameValue', 'menuProfileNameValue');
+  const menuProfileRoleNode = uiNode('menuProfileRoleValue', 'menuProfileRoleValue');
+  const menuProfilePanel = buildHomeViewModel(state).panel || {};
+  if (menuProfileNameNode) {
+    menuProfileNameNode.textContent = String(menuProfilePanel.playerName || 'Grower');
+  }
+  if (menuProfileRoleNode) {
+    menuProfileRoleNode.textContent = String(menuProfilePanel.playerRole || 'Starter');
+  }
+
   if (!ui.menuRescueBtn || !ui.menuRescueSubtext || !ui.menuPushBtn || !ui.menuPushStatus) {
     return;
   }
@@ -4016,12 +4032,16 @@ function renderMenuDynamicRows() {
   if (ui.menuAchievementsBtn) {
     ui.menuAchievementsBtn.disabled = true;
     ui.menuAchievementsBtn.setAttribute('aria-disabled', 'true');
-    ui.menuAchievementsBtn.setAttribute('title', 'Vorbereitet, aktuell ohne Funktion.');
+    ui.menuAchievementsBtn.classList.add('hidden');
+    ui.menuAchievementsBtn.setAttribute('aria-hidden', 'true');
+    ui.menuAchievementsBtn.setAttribute('title', 'Im aktuellen Build noch nicht freigeschaltet.');
   }
   if (ui.menuLeaderboardBtn) {
     ui.menuLeaderboardBtn.disabled = true;
     ui.menuLeaderboardBtn.setAttribute('aria-disabled', 'true');
-    ui.menuLeaderboardBtn.setAttribute('title', 'Vorbereitet, aktuell ohne Funktion.');
+    ui.menuLeaderboardBtn.classList.add('hidden');
+    ui.menuLeaderboardBtn.setAttribute('aria-hidden', 'true');
+    ui.menuLeaderboardBtn.setAttribute('title', 'Im aktuellen Build noch nicht freigeschaltet.');
   }
 
   const meta = getCanonicalMeta(state);
@@ -8499,9 +8519,9 @@ function updateSettingsUI() {
 
   const tutNode = document.getElementById('settingsTutorialValue');
   if (tutNode) {
-    tutNode.textContent = 'Vorbereitet';
+    tutNode.textContent = 'Nicht aktiv';
     tutNode.className = 'subtitle';
-    tutNode.setAttribute('title', 'Aktuell ohne Wirkung im Runtime-Kern.');
+    tutNode.setAttribute('title', 'Der Tutorial-Schalter ist im aktuellen Build noch ohne Runtime-Wirkung.');
   }
 
   const autoNode = document.getElementById('settingsAutosaveValue');
@@ -8513,28 +8533,28 @@ function updateSettingsUI() {
 
   const volNode = document.getElementById('settingsVolumeValue');
   if (volNode) {
-    volNode.textContent = 'Vorbereitet';
+    volNode.textContent = 'Nicht aktiv';
     volNode.className = 'subtitle';
     volNode.setAttribute('title', 'Aktuell nur lokaler Anzeigezustand ohne Audio-Backend.');
   }
 
   const effNode = document.getElementById('settingsEffectsValue');
   if (effNode) {
-    effNode.textContent = 'Vorbereitet';
+    effNode.textContent = 'Nicht aktiv';
     effNode.className = 'subtitle';
     effNode.setAttribute('title', 'Aktuell nur lokaler Anzeigezustand ohne Grafik-/FX-Anbindung.');
   }
 
   const batNode = document.getElementById('settingsBatteryValue');
   if (batNode) {
-    batNode.textContent = 'Vorbereitet';
+    batNode.textContent = 'Nicht aktiv';
     batNode.className = 'subtitle';
     batNode.setAttribute('title', 'Aktuell ohne direkte Runtime-Wirkung.');
   }
 
   const hapNode = document.getElementById('settingsHapticValue');
   if (hapNode) {
-    hapNode.textContent = 'Vorbereitet';
+    hapNode.textContent = 'Nicht aktiv';
     hapNode.className = 'subtitle';
     hapNode.setAttribute('title', 'Aktuell ohne direkte Runtime-Wirkung.');
   }
@@ -8950,8 +8970,38 @@ function initSettingsEvents() {
 
   const speedControl = byId('settingsSimSpeedControl');
   if (speedControl && speedControl.dataset.bound !== 'true') {
+    const resolveSpeedButtonFromEvent = (event) => {
+      if (!event) {
+        return null;
+      }
+
+      const directTarget = event.target instanceof Element
+        ? event.target.closest('[data-sim-speed-option]')
+        : null;
+      if (directTarget && speedControl.contains(directTarget)) {
+        return directTarget;
+      }
+
+      const pointerLikeEvent = Number.isFinite(Number(event.clientX)) && Number.isFinite(Number(event.clientY));
+      if (!pointerLikeEvent || typeof document.elementsFromPoint !== 'function') {
+        return null;
+      }
+
+      const hitStack = document.elementsFromPoint(Number(event.clientX), Number(event.clientY));
+      for (const node of hitStack) {
+        if (!(node instanceof Element)) {
+          continue;
+        }
+        if (speedControl.contains(node) && node.matches('[data-sim-speed-option]')) {
+          return node;
+        }
+      }
+
+      return null;
+    };
+
     const handleSpeedSelection = (event) => {
-      const button = event.target instanceof Element ? event.target.closest('[data-sim-speed-option]') : null;
+      const button = resolveSpeedButtonFromEvent(event);
       if (!button) {
         return;
       }

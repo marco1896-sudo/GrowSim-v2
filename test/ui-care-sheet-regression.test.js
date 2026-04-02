@@ -9,6 +9,7 @@ const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..');
 const HOST = '0.0.0.0';
+const CLIENT_HOST = '127.0.0.1';
 const PORT = 4177;
 
 function contentTypeFor(filePath) {
@@ -84,7 +85,7 @@ async function main() {
   const page = await browser.newPage({ viewport: { width: 430, height: 932 } });
 
   try {
-    const url = `http://${HOST}:${PORT}/`;
+    const url = `http://${CLIENT_HOST}:${PORT}/`;
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#careSheet', { state: 'attached' });
 

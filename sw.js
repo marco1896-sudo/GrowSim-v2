@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'growsim-v1-20260327-care-cta-fix-v5-care-detail-fix-v3';
+const CACHE_VERSION = 'growsim-v1-20260402-phase1-shell-sync-v1';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');
@@ -18,12 +18,16 @@ const APP_SHELL_FILES = [
   appPath('ui.js'),
   appPath('storage.js'),
   appPath('notifications.js'),
+  appPath('src/config/api.js'),
+  appPath('src/config/simulation.js'),
   appPath('src/utils/textEncoding.js'),
   appPath('src/simulation/plantState.js'),
   appPath('src/events/eventFlags.js'),
   appPath('src/events/eventMemory.js'),
   appPath('src/events/eventAnalysis.js'),
   appPath('src/events/eventResolver.js'),
+  appPath('src/progression/progression.js'),
+  appPath('src/auth/auth.js'),
   appPath('src/ui/components/primitives.js'),
   appPath('src/ui/controller/uiController.js'),
   appPath('src/ui/runtime/screenRuntimeManager.js'),

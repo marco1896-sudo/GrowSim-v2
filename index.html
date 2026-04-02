@@ -260,19 +260,19 @@
         <section class="home-action-panel" aria-label="Schnellaktionen">
           <button id="boostActionBtn" class="home-action-btn" type="button" aria-label="Boost aktivieren">
             <span class="home-boost-tag">x24</span>
-            <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/icon_boostx24.png" alt="" aria-hidden="true">
+            <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/icon_boostx24.png" srcset="assets/ui/icons/icon_boostx24.png 1x, assets/ui/icons/icon_boostx24@2x.png 2x, assets/ui/icons/icon_boostx24@3x.png 3x" width="52" height="52" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true">Boost</span>
           </button>
           <button id="eventsActionBtn" class="home-action-btn" type="button" aria-label="Events öffnen">
-            <img id="eventsActionIcon" class="home-action-icon" src="assets/ui/icons/icon_events.png" alt="" aria-hidden="true">
+            <img id="eventsActionIcon" class="home-action-icon" src="assets/ui/icons/icon_events.png" srcset="assets/ui/icons/icon_events.png 1x, assets/ui/icons/icon_events@2x.png 2x, assets/ui/icons/icon_events@3x.png 3x" width="70" height="78" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true">Events</span>
           </button>
           <button id="analyzeActionBtn" class="home-action-btn" type="button" aria-label="Analyse öffnen">
-            <img id="analyzeActionIcon" class="home-action-icon" src="assets/ui/icons/icon_analyse.png" alt="" aria-hidden="true">
+            <img id="analyzeActionIcon" class="home-action-icon" src="assets/ui/icons/icon_analyse.png" srcset="assets/ui/icons/icon_analyse.png 1x, assets/ui/icons/icon_analyse@2x.png 2x, assets/ui/icons/icon_analyse@3x.png 3x" width="70" height="68" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true">Analyse</span>
           </button>
           <button id="careActionBtn" class="home-action-btn" type="button" aria-label="Pflege öffnen">
-            <img id="careActionIcon" class="home-action-icon" src="assets/ui/icons/icon_pflege.png" alt="" aria-hidden="true">
+            <img id="careActionIcon" class="home-action-icon" src="assets/ui/icons/icon_pflege.png" srcset="assets/ui/icons/icon_pflege.png 1x, assets/ui/icons/icon_pflege@2x.png 2x, assets/ui/icons/icon_pflege@3x.png 3x" width="99" height="80" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true">Pflege</span>
           </button>
         </section>
@@ -896,9 +896,9 @@
       <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="Menü schließen">X</button>
     </header>
     <div class="game-menu-content figma-sheet-content">
-      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-        <div class="figma-top-player-title">Max Mustergrower</div>
-        <div class="figma-top-player-subtitle">Gärtner</div>
+      <section class="figma-top-player figma-top-player--compact">
+        <div id="menuProfileNameValue" class="figma-top-player-title">Profil wird geladen</div>
+        <div id="menuProfileRoleValue" class="figma-top-player-subtitle">Status wird geladen</div>
       </section>
 
       <section class="figma-section-card figma-menu-list">
@@ -917,8 +917,8 @@
       </section>
 
       <div class="menu-quick-actions">
-        <button id="menuAchievementsBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Vorbereitet, aktuell ohne Funktion.">Home (bald)</button>
-        <button id="menuLeaderboardBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Vorbereitet, aktuell ohne Funktion.">Ops (bald)</button>
+        <button id="menuAchievementsBtn" class="ghost-btn hidden" type="button" disabled aria-disabled="true" aria-hidden="true" title="Im aktuellen Build noch nicht freigeschaltet.">Home</button>
+        <button id="menuLeaderboardBtn" class="ghost-btn hidden" type="button" disabled aria-disabled="true" aria-hidden="true" title="Im aktuellen Build noch nicht freigeschaltet.">Ops</button>
         <button id="menuCloseBtn" class="action-btn action-primary" type="button">Schließen</button>
       </div>
     </div>
@@ -984,6 +984,7 @@
   </section>
 
 <script type="module" src="src/config/api.js?v=20260330a"></script>
+<script src="src/config/simulation.js?v=20260402a" defer></script>
 <script src="src/utils/textEncoding.js?v=20260327a" defer></script>
 <script src="sim.js?v=20260327b" defer></script>
   <script src="src/simulation/plantState.js?v=20260319c" defer></script>
