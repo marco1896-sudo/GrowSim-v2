@@ -1295,7 +1295,24 @@ async function boot() {
     if (window.GrowSimAuth && typeof window.GrowSimAuth.restoreSession === 'function') {
       await runBootSubstep('restore_auth_session', () => window.GrowSimAuth.restoreSession());
     }
-    const hasValidSession = isAuthSessionValid();
+    let hasValidSession = isAuthSessionValid();
+    const useLocalDevBypass = !hasValidSession && shouldBypassAuthForLocalDev();
+    if (typeof window !== 'undefined') {
+      window.__GROWSIM_DEV_BYPASS__ = false;
+    }
+    if (useLocalDevBypass) {
+      const devSessionActive = activateLocalDevAuthSession();
+      if (devSessionActive) {
+        hasValidSession = true;
+        if (typeof window !== 'undefined') {
+          window.__GROWSIM_DEV_BYPASS__ = true;
+        }
+        setAuthGateActive(false);
+        closeCloudAuthModal({ force: true });
+        syncAuthModalContent();
+        console.info('[auth] local dev bypass active');
+      }
+    }
     if (!hasValidSession) {
       ensureSettingsUiReady();
       setAuthGateActive(true);
@@ -3903,9 +3920,7 @@ function renderPlantFallback(targetNode) {
     const dstH = h;
 
     const containScale = Math.min(dstW / srcW, dstH / srcH);
-    const spriteStage = getPlantSpriteStageFromState(plantRenderState);
-    const stageScale = HOME_PLANT_STAGE_SCALE[spriteStage] || 1;
-    const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale, 0.1, 1);
+    const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 1);
     const scale = containScale * fitScale;
 
     const drawW = Math.round(srcW * scale);
@@ -7408,17 +7423,15 @@ function renderPlantFromSprite(targetNode) {
   }
 
   const frameRect = getSpriteFrameRect(nextFrameIndex, metadata);
-  const bounds = getOpaqueBoundsForFrame(frameRect, nextFrameIndex);
-  const srcW = Math.max(1, bounds.w);
-  const srcH = Math.max(1, bounds.h);
+  const srcW = Math.max(1, frameRect.sw);
+  const srcH = Math.max(1, frameRect.sh);
   const dstW = Math.max(1, canvasMetrics.widthPx);
   const dstH = Math.max(1, canvasMetrics.heightPx);
 
   const containScale = Math.min(dstW / srcW, dstH / srcH);
   const spriteStage = getPlantSpriteStageFromState(plantRenderState);
-  const stageScale = HOME_PLANT_STAGE_SCALE[spriteStage] || 1;
   const fitScale = clamp(
-    HOME_PLANT_REFERENCE_FIT.maxFootprintScale * stageScale,
+    HOME_PLANT_REFERENCE_FIT.maxFootprintScale,
     0.1,
     1
   );
@@ -7439,8 +7452,8 @@ function renderPlantFromSprite(targetNode) {
   ctx.clearRect(0, 0, targetNode.width, targetNode.height);
   ctx.drawImage(
     plantSpriteRuntime.image,
-    frameRect.sx + bounds.x,
-    frameRect.sy + bounds.y,
+    frameRect.sx,
+    frameRect.sy,
     srcW,
     srcH,
     dx,
@@ -8560,6 +8573,35 @@ function applySettingsBaseSimulationSpeed(value, nowMs = Date.now()) {
 function isAuthSessionValid() {
   const authApi = window.GrowSimAuth;
   return Boolean(authApi && typeof authApi.isAuthenticated === 'function' && authApi.isAuthenticated());
+}
+
+function isLocalhostHost() {
+  if (typeof window === 'undefined' || !window.location) {
+    return false;
+  }
+  const host = String(window.location.hostname || '').toLowerCase();
+  return host === 'localhost' || host === '127.0.0.1';
+}
+
+function hasDevBypassFlag() {
+  if (typeof window === 'undefined' || !window.location) {
+    return false;
+  }
+  const params = new URLSearchParams(window.location.search || '');
+  return params.get('dev') === '1';
+}
+
+function shouldBypassAuthForLocalDev() {
+  return isLocalhostHost() && hasDevBypassFlag();
+}
+
+function activateLocalDevAuthSession() {
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.startLocalDevSession !== 'function') {
+    return false;
+  }
+  authApi.startLocalDevSession();
+  return isAuthSessionValid();
 }
 
 function waitForStartupAuthGateClear() {

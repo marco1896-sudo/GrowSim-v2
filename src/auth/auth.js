@@ -1,6 +1,14 @@
 'use strict';
 
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
+const LOCAL_DEV_SESSION = Object.freeze({
+  token: 'local-dev-token',
+  user: Object.freeze({
+    id: 'local-dev-user',
+    email: 'dev@growsim.local',
+    displayName: 'Local Dev'
+  })
+});
 const authState = {
   token: null,
   user: null
@@ -222,11 +230,20 @@ function logout() {
   console.info('[auth] logout');
 }
 
+function startLocalDevSession() {
+  setToken(LOCAL_DEV_SESSION.token);
+  setUser(LOCAL_DEV_SESSION.user);
+  persistToken(LOCAL_DEV_SESSION.token);
+  console.info('[auth] local dev session active');
+  return getUser();
+}
+
 window.GrowSimAuth = Object.freeze({
   login,
   register,
   logout,
   restoreSession,
+  startLocalDevSession,
   fetchCurrentUser,
   getToken,
   getUser,

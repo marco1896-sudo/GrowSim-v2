@@ -6519,7 +6519,7 @@ body.panelized-ready :is(
   }
 
   .home-content-scroll {
-    padding-top: 450px;
+    padding: 450px 12px calc(40px + env(safe-area-inset-bottom));
   }
 }
 
@@ -7042,7 +7042,7 @@ body.panelized-ready :is(
 
 /* Home screen Figma import: limit changes to progress, status, roots, and action icons */
 .home-content-scroll {
-  padding: 466px 12px calc(16px + env(safe-area-inset-bottom));
+  padding: 466px 12px calc(32px + env(safe-area-inset-bottom));
   gap: 16px;
 }
 
