@@ -895,8 +895,10 @@ function switchHudScreen(screenId) {
 function renderHud() {
   const dead = isPlantDead();
   const phaseCard = getPhaseCardViewModel();
-  const remainingBoostMs = typeof getRemainingBoostMs === 'function' ? getRemainingBoostMs(Date.now()) : 0;
-  const boostText = remainingBoostMs > 0
+  const boostActive = typeof isSpeedBoostActive === 'function'
+    ? isSpeedBoostActive(Date.now())
+    : (typeof getRemainingBoostMs === 'function' ? getRemainingBoostMs(Date.now()) > 0 : false);
+  const boostText = boostActive
     ? `Boost x24 Aktiv`
     : `Boost x24 Bereit`;
 

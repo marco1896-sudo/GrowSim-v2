@@ -6585,8 +6585,8 @@ body.panelized-ready :is(
 }
 
 .home-action-panel #boostActionBtn .home-action-icon {
-  width: 84px;
-  height: 84px;
+  width: 60px;
+  height: 60px;
 }
 
 .home-action-panel .home-action-title {
@@ -7033,13 +7033,13 @@ body.panelized-ready :is(
 
 /* Home screen Figma import: limit changes to progress, status, roots, and action icons */
 .home-content-scroll {
-  padding: 560px 14px calc(18px + env(safe-area-inset-bottom));
-  gap: 10px;
+  padding: 466px 12px calc(16px + env(safe-area-inset-bottom));
+  gap: 16px;
 }
 
 .home-progress-panel {
   position: relative;
-  min-height: 96px;
+  min-height: 104px;
   padding: 12px 14px 10px;
   overflow: hidden;
   border: 0.8px solid rgba(255, 215, 0, 0.36);
@@ -7048,6 +7048,10 @@ body.panelized-ready :is(
   box-shadow:
     0 0 18px rgba(255, 215, 0, 0.08),
     inset 0 1px 0 rgba(255, 230, 160, 0.08);
+}
+
+.home-content-scroll .home-progress-panel {
+  margin-top: 94px;
 }
 
 .home-progress-panel::before {
@@ -7189,7 +7193,7 @@ body.panelized-ready :is(
 .home-progress-bottom {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding-top: 8px;
@@ -7214,6 +7218,10 @@ body.panelized-ready :is(
   justify-self: end;
 }
 
+.home-progress-cluster--boost {
+  justify-self: center;
+}
+
 .home-progress-inline-label,
 .home-progress-event-label {
   position: relative;
@@ -7227,15 +7235,77 @@ body.panelized-ready :is(
 }
 
 .home-progress-cycle {
-  display: inline-grid;
-  place-items: center;
-  width: 14px;
-  height: 14px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+.home-progress-footer-icon {
+  display: inline-block;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.home-progress-footer-icon--time {
+  width: 11px;
+  height: 11px;
+  border: 1px solid rgba(74, 222, 128, 0.65);
   border-radius: 999px;
-  background: rgba(19, 35, 24, 0.92);
-  border: 1px solid rgba(74, 222, 128, 0.2);
-  color: #86c590;
-  font-size: 8px;
+  background: radial-gradient(circle at center, rgba(74, 222, 128, 0.88) 0 1px, transparent 1.15px);
+  box-shadow: 0 0 4px rgba(74, 222, 128, 0.26);
+}
+
+.home-progress-footer-icon--time::before,
+.home-progress-footer-icon--time::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  background: #4ade80;
+  border-radius: 999px;
+  transform-origin: 50% 100%;
+}
+
+.home-progress-footer-icon--time::before {
+  height: 4px;
+  transform: translate(-50%, -100%) rotate(0deg);
+}
+
+.home-progress-footer-icon--time::after {
+  height: 3px;
+  transform: translate(-50%, -100%) rotate(36deg);
+}
+
+.home-progress-footer-icon--boost {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background:
+    radial-gradient(circle at center, rgba(255, 215, 0, 0.9) 0 1px, transparent 1px),
+    linear-gradient(180deg, rgba(52, 43, 15, 0.95), rgba(24, 19, 6, 0.98));
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 4px rgba(255, 215, 0, 0.18);
+}
+
+.home-progress-footer-icon--event {
+  width: 9px;
+  height: 11px;
+}
+
+.home-progress-footer-icon--event::before {
+  content: "⚡";
+  position: absolute;
+  inset: -2px 0 0;
+  color: #f0a63a;
+  font-size: 10px;
   line-height: 1;
 }
 
@@ -7248,7 +7318,6 @@ body.panelized-ready :is(
 }
 
 .home-progress-boost {
-  justify-self: center;
   min-width: 0;
   color: rgba(255, 255, 255, 0.72);
   font-size: 12px;
@@ -7426,31 +7495,38 @@ body.panelized-ready :is(
 }
 
 #boostActionBtn {
+  position: absolute;
   left: 12px;
-  top: 398px;
+  top: 480px;
   width: 74px;
   height: 74px;
 }
 
 #eventsActionBtn {
-  right: 12px;
+  position: absolute;
+  left: 309px;
   top: 216px;
-  width: 76px;
-  height: 84px;
+  right: auto;
+  width: 70px;
+  height: 78px;
 }
 
 #analyzeActionBtn {
-  right: 10px;
+  position: absolute;
+  left: 311px;
   top: 308px;
-  width: 76px;
-  height: 76px;
+  right: auto;
+  width: 70px;
+  height: 68px;
 }
 
 #careActionBtn {
-  right: 0;
-  top: 388px;
-  width: 106px;
-  height: 92px;
+  position: absolute;
+  left: 282px;
+  top: 468px;
+  right: auto;
+  width: 99px;
+  height: 80px;
 }
 
 .home-action-panel .home-action-icon {
@@ -7465,8 +7541,8 @@ body.panelized-ready :is(
 }
 
 #boostActionBtn .home-action-icon {
-  width: 72px;
-  height: 72px;
+  width: 60px;
+  height: 60px;
 }
 
 #eventsActionBtn .home-action-icon {
@@ -7513,23 +7589,25 @@ body.panelized-ready :is(
 
 @media (max-width: 393px) {
   .home-content-scroll {
-    padding-top: 548px;
+    padding-top: 466px;
   }
 
   #boostActionBtn {
-    top: 404px;
+    left: 10px;
+    top: 478px;
   }
 
   #eventsActionBtn {
-    right: 10px;
+    left: 307px;
   }
 
   #analyzeActionBtn {
-    right: 8px;
+    left: 309px;
   }
 
   #careActionBtn {
-    right: -2px;
+    left: 280px;
+    top: 466px;
   }
 
   .home-progress-title {
@@ -7541,20 +7619,12 @@ body.panelized-ready :is(
   }
 
   .home-progress-bottom {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     row-gap: 6px;
   }
 
   .home-progress-boost {
-    grid-column: 1 / 2;
-    justify-self: start;
     font-size: 11px;
-  }
-
-  .home-progress-cluster--event {
-    grid-column: 2 / 3;
-    grid-row: 1 / span 2;
-    align-self: center;
   }
 }
 
