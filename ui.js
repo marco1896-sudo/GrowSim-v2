@@ -944,9 +944,8 @@ function renderHud() {
   setRing(ui.growthRing, ui.growthValue, state.status.growth);
   setRing(ui.riskRing, ui.riskValue, state.status.risk);
 
-  if (ui.plantImage && ui.plantImage.dataset.stageName !== state.plant.stageKey) {
-    ui.plantImage.src = plantAssetPath(state.plant.stageKey);
-    ui.plantImage.dataset.stageName = state.plant.stageKey;
+  if (ui.plantImage && typeof renderPlantFromSprite === 'function') {
+    renderPlantFromSprite(ui.plantImage);
   }
 
   const eventInMs = Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);

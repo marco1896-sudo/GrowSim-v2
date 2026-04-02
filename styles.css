@@ -6385,6 +6385,11 @@ body.panelized-ready :is(
   display: flex;
   flex-direction: column;
   gap: 16px;
+  pointer-events: none;
+}
+
+.home-content-scroll > * {
+  pointer-events: auto;
 }
 
 .home-content-scroll::-webkit-scrollbar {
@@ -7039,8 +7044,8 @@ body.panelized-ready :is(
 
 .home-progress-panel {
   position: relative;
-  min-height: 104px;
-  padding: 12px 14px 10px;
+  min-height: 118px;
+  padding: 12px 14px 12px;
   overflow: hidden;
   border: 0.8px solid rgba(255, 215, 0, 0.36);
   border-radius: 10px;
@@ -7472,7 +7477,7 @@ body.panelized-ready :is(
 .home-action-panel {
   position: absolute;
   inset: 0;
-  z-index: 6;
+  z-index: 4;
   pointer-events: none;
   min-height: 0;
   margin: 0;
@@ -7497,7 +7502,7 @@ body.panelized-ready :is(
 #boostActionBtn {
   position: absolute;
   left: 12px;
-  top: 480px;
+  top: 444px;
   width: 74px;
   height: 74px;
 }
@@ -7523,7 +7528,7 @@ body.panelized-ready :is(
 #careActionBtn {
   position: absolute;
   left: 282px;
-  top: 468px;
+  top: 442px;
   right: auto;
   width: 99px;
   height: 80px;
@@ -7594,7 +7599,7 @@ body.panelized-ready :is(
 
   #boostActionBtn {
     left: 10px;
-    top: 478px;
+    top: 442px;
   }
 
   #eventsActionBtn {
@@ -7607,7 +7612,7 @@ body.panelized-ready :is(
 
   #careActionBtn {
     left: 280px;
-    top: 466px;
+    top: 440px;
   }
 
   .home-progress-title {
