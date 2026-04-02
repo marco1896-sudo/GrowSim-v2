@@ -6322,7 +6322,7 @@ body.panelized-ready :is(
   left: 50%;
   right: auto;
   top: auto;
-  bottom: 382px;
+  bottom: 372px;
   width: 100%;
   height: 352px;
   transform: translateX(-50%);
@@ -6380,15 +6380,21 @@ body.panelized-ready :is(
 
 .home-content-scroll {
   position: absolute;
-  inset: 0;
+  top: 466px;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 5;
-  padding: 466px 12px calc(16px + env(safe-area-inset-bottom));
+  padding: 0 12px calc(40px + env(safe-area-inset-bottom));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   scrollbar-width: none;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .home-content-scroll > * {
@@ -6514,12 +6520,13 @@ body.panelized-ready :is(
 
   .home-scene-fixed {
     top: auto;
-    bottom: 372px;
+    bottom: 362px;
     height: 336px;
   }
 
   .home-content-scroll {
-    padding: 450px 12px calc(40px + env(safe-area-inset-bottom));
+    top: 466px;
+    padding: 0 12px calc(44px + env(safe-area-inset-bottom));
   }
 }
 
@@ -7042,7 +7049,8 @@ body.panelized-ready :is(
 
 /* Home screen Figma import: limit changes to progress, status, roots, and action icons */
 .home-content-scroll {
-  padding: 466px 12px calc(32px + env(safe-area-inset-bottom));
+  top: 466px;
+  padding: 0 12px calc(40px + env(safe-area-inset-bottom));
   gap: 16px;
 }
 
@@ -7604,7 +7612,8 @@ body.panelized-ready :is(
 
 @media (max-width: 393px) {
   .home-content-scroll {
-    padding-top: 466px;
+    top: 466px;
+    padding: 0 12px calc(44px + env(safe-area-inset-bottom));
   }
 
   #boostActionBtn {

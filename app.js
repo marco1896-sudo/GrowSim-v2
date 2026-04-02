@@ -169,7 +169,7 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
 // Figma reference (Home 132:51) defines a shared anchor zone:
 // center + baseline are fixed, while stage variants scale inside that same zone.
 const HOME_PLANT_REFERENCE_FIT = Object.freeze({
-  maxFootprintScale: 0.83,
+  maxFootprintScale: 0.9,
   baselineInsetPx: 18
 });
 
