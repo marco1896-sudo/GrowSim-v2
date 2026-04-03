@@ -2343,7 +2343,12 @@ async function registerServiceWorker() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.register('./sw.js', {
+    const buildId = (window.GrowSimBuild && window.GrowSimBuild.id)
+      ? String(window.GrowSimBuild.id)
+      : 'dev';
+    const swUrl = `./sw.js?v=${encodeURIComponent(buildId)}`;
+
+    const registration = await navigator.serviceWorker.register(swUrl, {
       updateViaCache: 'none'
     });
     if (!navigator.serviceWorker.controller) {

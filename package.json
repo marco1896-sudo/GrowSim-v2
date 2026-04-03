@@ -2,6 +2,7 @@
   "scripts": {
     "dev": "node scripts/dev-server.js",
     "start": "node scripts/dev-server.js",
+    "build:stamp": "node scripts/bump-build-id.js",
     "check:ui-architecture": "node dev/scripts/ui-architecture-guard.js",
     "check:syntax": "node --check app.js && node --check ui.js"
   },

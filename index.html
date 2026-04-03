@@ -5,14 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0d111a">
   <title>Grow-Simulator</title>
+  <script>
+    (function configureBuildVersionedLinks() {
+      const buildId = '20260403-081037';
+      const appVersion = `growsim-${buildId}`;
+      window.GrowSimBuild = Object.freeze({
+        id: buildId,
+        appVersion
+      });
+      window.GROWSIM_BUILD_ID = buildId;
+      window.__GS_BUILD_ID__ = buildId;
+      document.documentElement.setAttribute('data-build-id', buildId);
+
+      const appendVersion = (path) => {
+        const value = String(path || '');
+        const separator = value.includes('?') ? '&' : '?';
+        return `${value}${separator}v=${encodeURIComponent(buildId)}`;
+      };
+
+      const manifestLink = document.getElementById('appManifestLink');
+      if (manifestLink) {
+        manifestLink.href = appendVersion('manifest.webmanifest');
+      }
+
+      const iconLink = document.getElementById('appIconLink');
+      if (iconLink) {
+        iconLink.href = appendVersion('icons/icon-192.png');
+      }
+
+      const appleIconLink = document.getElementById('appAppleTouchIcon');
+      if (appleIconLink) {
+        appleIconLink.href = appendVersion('icons/icon-192.png');
+      }
+
+      const stylesheetLink = document.getElementById('appStylesheetLink');
+      if (stylesheetLink) {
+        stylesheetLink.href = appendVersion('styles.css');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260329c">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link id="appManifestLink" rel="manifest" href="manifest.webmanifest">
+  <link id="appIconLink" rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link id="appAppleTouchIcon" rel="apple-touch-icon" href="icons/icon-192.png">
+  <link id="appStylesheetLink" rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div id="appLoadingScreen" class="app-loading-screen" aria-hidden="true">
@@ -983,29 +1021,70 @@
     </div>
   </section>
 
-<script type="module" src="src/config/api.js?v=20260330a"></script>
-<script src="src/config/simulation.js?v=20260402a" defer></script>
-<script src="src/utils/textEncoding.js?v=20260327a" defer></script>
-<script src="sim.js?v=20260327b" defer></script>
-  <script src="src/simulation/plantState.js?v=20260319c" defer></script>
-  <script src="src/events/eventFlags.js?v=20260319c" defer></script>
-  <script src="src/events/eventMemory.js?v=20260319c" defer></script>
-  <script src="src/events/eventAnalysis.js?v=20260319c" defer></script>
-  <script src="src/events/eventResolver.js?v=20260319c" defer></script>
-  <script src="events.js?v=20260319c" defer></script>
-<script src="ui.js?v=20260329a" defer></script>
-<script src="src/progression/progression.js?v=20260327a" defer></script>
-<script src="src/auth/auth.js?v=20260330a" defer></script>
-<script src="storage.js?v=20260327a" defer></script>
-<script src="notifications.js?v=20260319c" defer></script>
-  <script src="src/ui/components/primitives.js?v=20260319d" defer></script>
-  <script src="src/ui/controller/uiController.js?v=20260319d" defer></script>
-  <script src="src/ui/runtime/screenRuntimeManager.js?v=20260319d" defer></script>
-  <script src="src/ui/mappings/homeMapping.js?v=20260319d" defer></script>
-  <script src="src/ui/care/careActionHints.js?v=20260327a" defer></script>
-  <script src="src/ui/mappings/careMapping.js?v=20260327a" defer></script>
-  <script src="src/ui/screens/screenModules.js?v=20260319d" defer></script>
-<script src="app.js?v=20260328b" defer></script>
+<script>
+  (function loadVersionedScripts() {
+    const buildId = (window.GrowSimBuild && window.GrowSimBuild.id) ? String(window.GrowSimBuild.id) : 'dev';
+    const appendVersion = (path) => {
+      const value = String(path || '');
+      const separator = value.includes('?') ? '&' : '?';
+      return `${value}${separator}v=${encodeURIComponent(buildId)}`;
+    };
+
+    const scriptList = [
+      { src: 'https://cdn.jsdelivr.net/npm/chart.js', external: true, optional: true },
+      { src: 'src/config/api.js', type: 'module' },
+      { src: 'src/config/simulation.js' },
+      { src: 'src/utils/textEncoding.js' },
+      { src: 'sim.js' },
+      { src: 'src/simulation/plantState.js' },
+      { src: 'src/events/eventFlags.js' },
+      { src: 'src/events/eventMemory.js' },
+      { src: 'src/events/eventAnalysis.js' },
+      { src: 'src/events/eventResolver.js' },
+      { src: 'events.js' },
+      { src: 'ui.js' },
+      { src: 'src/progression/progression.js' },
+      { src: 'src/auth/auth.js' },
+      { src: 'storage.js' },
+      { src: 'notifications.js' },
+      { src: 'src/ui/components/primitives.js' },
+      { src: 'src/ui/controller/uiController.js' },
+      { src: 'src/ui/runtime/screenRuntimeManager.js' },
+      { src: 'src/ui/mappings/homeMapping.js' },
+      { src: 'src/ui/care/careActionHints.js' },
+      { src: 'src/ui/mappings/careMapping.js' },
+      { src: 'src/ui/screens/screenModules.js' },
+      { src: 'app.js' }
+    ];
+
+    const loadScript = (definition) => new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      if (definition.type) {
+        script.type = definition.type;
+      }
+      script.src = definition.external ? definition.src : appendVersion(definition.src);
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Script load failed: ${script.src}`));
+      document.body.appendChild(script);
+    });
+
+    (async () => {
+      for (const definition of scriptList) {
+        try {
+          await loadScript(definition);
+        } catch (error) {
+          if (definition.optional) {
+            console.warn('[growsim] optional script failed', error);
+            continue;
+          }
+          throw error;
+        }
+      }
+    })().catch((error) => {
+      console.error('[growsim] script boot failed', error);
+    });
+  })();
+</script>
 </body>
 </html>
 

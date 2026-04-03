@@ -1,4 +1,16 @@
-const SW_VERSION = '2026-04-03-pwa-update-flow-v1';
+const SW_BUILD_ID = (() => {
+  try {
+    const scriptUrl = new URL(self.location.href);
+    const byQuery = scriptUrl.searchParams.get('v');
+    if (byQuery) {
+      return String(byQuery);
+    }
+  } catch (_error) {
+    // non-fatal
+  }
+  return 'dev';
+})();
+const SW_VERSION = `build-${SW_BUILD_ID}`;
 const CACHE_PREFIX = 'growsim';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${SW_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${SW_VERSION}`;
