@@ -6684,6 +6684,12 @@ body.panelized-ready :is(
   --home-content-pad-x: 12px;
   --home-content-gap: 16px;
   --home-progress-overlap: clamp(64px, calc(var(--home-layout-height) * 0.0845), 72px);
+  --home-scene-top: calc(var(--home-layout-height) - var(--home-scene-bottom-offset) - var(--home-scene-height));
+  --home-side-icon-right: 12px;
+  --home-side-icon-scale: clamp(0.92, calc(var(--home-scene-height) / 352), 1);
+  --home-events-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(20px, calc(var(--home-scene-height) * 0.065), 28px));
+  --home-analyze-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(104px, calc(var(--home-scene-height) * 0.327), 120px));
+  --home-care-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(188px, calc(var(--home-scene-height) * 0.594), 214px));
 }
 
 .home-stage {
@@ -7933,29 +7939,29 @@ body.panelized-ready :is(
 
 #eventsActionBtn {
   position: absolute;
-  left: 309px;
-  top: 216px;
-  right: auto;
-  width: 70px;
-  height: 78px;
+  right: var(--home-side-icon-right);
+  top: var(--home-events-top);
+  left: auto;
+  width: calc(70px * var(--home-side-icon-scale));
+  height: calc(78px * var(--home-side-icon-scale));
 }
 
 #analyzeActionBtn {
   position: absolute;
-  left: 311px;
-  top: 308px;
-  right: auto;
-  width: 70px;
-  height: 68px;
+  right: var(--home-side-icon-right);
+  top: var(--home-analyze-top);
+  left: auto;
+  width: calc(70px * var(--home-side-icon-scale));
+  height: calc(68px * var(--home-side-icon-scale));
 }
 
 #careActionBtn {
   position: absolute;
-  left: 282px;
-  top: 402px;
-  right: auto;
-  width: 99px;
-  height: 80px;
+  right: var(--home-side-icon-right);
+  top: var(--home-care-top);
+  left: auto;
+  width: calc(99px * var(--home-side-icon-scale));
+  height: calc(80px * var(--home-side-icon-scale));
 }
 
 .home-action-panel .home-action-icon {
@@ -7975,18 +7981,18 @@ body.panelized-ready :is(
 }
 
 #eventsActionBtn .home-action-icon {
-  width: 70px;
-  height: 78px;
+  width: calc(70px * var(--home-side-icon-scale));
+  height: calc(78px * var(--home-side-icon-scale));
 }
 
 #analyzeActionBtn .home-action-icon {
-  width: 70px;
-  height: 68px;
+  width: calc(70px * var(--home-side-icon-scale));
+  height: calc(68px * var(--home-side-icon-scale));
 }
 
 #careActionBtn .home-action-icon {
-  width: 99px;
-  height: 80px;
+  width: calc(99px * var(--home-side-icon-scale));
+  height: calc(80px * var(--home-side-icon-scale));
 }
 
 .home-action-panel .home-action-title,
@@ -8025,19 +8031,6 @@ body.panelized-ready :is(
     left: 10px;
     top: auto;
     bottom: 320px;
-  }
-
-  #eventsActionBtn {
-    left: 307px;
-  }
-
-  #analyzeActionBtn {
-    left: 309px;
-  }
-
-  #careActionBtn {
-    left: 280px;
-    top: 400px;
   }
 
   .home-progress-title {
