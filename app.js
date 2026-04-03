@@ -887,7 +887,16 @@ window.addEventListener('boot:step', () => {
 });
 updateLoadingScreenFromBootState();
 
-document.addEventListener('DOMContentLoaded', () => {
+let appBootStartScheduled = false;
+let appBootStartExecuted = false;
+
+function runGrowSimAppInit() {
+  if (appBootStartExecuted) {
+    return;
+  }
+  appBootStartExecuted = true;
+  console.info('[boot] app init start');
+
   startBootDiagnostics();
   setBootStep('init', getBootUserMessage('init'));
   bootTimeoutHandle = window.setTimeout(() => {
@@ -923,7 +932,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     showBootError(error);
   });
-});
+}
+
+function scheduleGrowSimAppInit() {
+  if (appBootStartScheduled) {
+    return;
+  }
+  appBootStartScheduled = true;
+  console.info('[boot] app init scheduled');
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      runGrowSimAppInit();
+    }, { once: true });
+    return;
+  }
+
+  queueMicrotask(() => {
+    runGrowSimAppInit();
+  });
+}
+
+scheduleGrowSimAppInit();
 
 function wireDomainOwnership() {
   const ownership = {
@@ -9122,6 +9152,10 @@ window.renderDiagnosisSheet = function() {
   updateSettingsUI();
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    ensureSettingsUiReady();
+  }, { once: true });
+} else {
   ensureSettingsUiReady();
-});
+}
