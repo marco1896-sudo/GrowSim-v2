@@ -195,17 +195,30 @@ async function navigationNetworkFirst(request) {
   try {
     const networkRequest = new Request(request, { cache: 'no-store' });
     const fresh = await fetch(networkRequest);
-    if (fresh && fresh.ok) {
-      await shellCache.put(OFFLINE_FALLBACK_URL, fresh.clone());
+    if (!fresh || !fresh.ok) {
+      throw new Error('Bad network response');
     }
+
+    await shellCache.put(OFFLINE_FALLBACK_URL, fresh.clone());
     return fresh;
   } catch (_error) {
     const cachedRoute = await shellCache.match(request);
     if (cachedRoute) {
       return cachedRoute;
     }
+
     const offlineFallback = await shellCache.match(OFFLINE_FALLBACK_URL);
-    return offlineFallback || Response.error();
+    if (offlineFallback) {
+      return offlineFallback;
+    }
+
+    return new Response('Offline', {
+      status: 503,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store'
+      }
+    });
   }
 }
 
