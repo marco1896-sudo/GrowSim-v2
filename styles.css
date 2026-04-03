@@ -6677,7 +6677,6 @@ body.panelized-ready :is(
   --home-safe-top: max(env(safe-area-inset-top), 0px);
   --home-layout-height: calc(100% - var(--home-safe-top));
   --home-panel-offset: clamp(12px, calc(var(--home-layout-height) * 0.0164), 18px);
-  --home-right-offset: clamp(110px, calc(var(--home-layout-height) * 0.1432), 126px);
   --home-scene-bottom-offset: clamp(278px, calc(var(--home-layout-height) * 0.3603), 304px);
   --home-scene-height: clamp(324px, calc(var(--home-layout-height) * 0.4131), 352px);
   --home-content-offset: clamp(428px, calc(var(--home-layout-height) * 0.5469), 456px);
@@ -6685,11 +6684,13 @@ body.panelized-ready :is(
   --home-content-gap: 16px;
   --home-progress-overlap: clamp(64px, calc(var(--home-layout-height) * 0.0845), 72px);
   --home-scene-top: calc(var(--home-layout-height) - var(--home-scene-bottom-offset) - var(--home-scene-height));
-  --home-side-icon-right: 12px;
+  --home-scene-center-y: calc(var(--home-safe-top) + var(--home-scene-top) + (var(--home-scene-height) * 0.5));
+  --home-right-side-inset: 12px;
+  --home-right-climate-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(10px, calc(var(--home-scene-height) * 0.04), 16px));
+  --home-right-actions-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(84px, calc(var(--home-scene-height) * 0.26), 104px));
+  --home-right-actions-gap: clamp(72px, calc(var(--home-scene-height) * 0.23), 84px);
+  --home-right-watering-top: calc(var(--home-right-actions-top) + (var(--home-right-actions-gap) * 2));
   --home-side-icon-scale: clamp(0.92, calc(var(--home-scene-height) / 352), 1);
-  --home-events-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(20px, calc(var(--home-scene-height) * 0.065), 28px));
-  --home-analyze-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(104px, calc(var(--home-scene-height) * 0.327), 120px));
-  --home-care-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(188px, calc(var(--home-scene-height) * 0.594), 214px));
 }
 
 .home-stage {
@@ -6717,8 +6718,8 @@ body.panelized-ready :is(
 
 .home-right-column {
   position: absolute;
-  top: calc(var(--home-safe-top) + var(--home-right-offset));
-  right: 12px;
+  top: var(--home-right-climate-top);
+  right: var(--home-right-side-inset);
   width: 115px;
   display: flex;
   flex-direction: column;
@@ -7961,8 +7962,8 @@ body.panelized-ready :is(
 
 #eventsActionBtn {
   position: absolute;
-  right: var(--home-side-icon-right);
-  top: var(--home-events-top);
+  right: var(--home-right-side-inset);
+  top: var(--home-right-actions-top);
   left: auto;
   width: calc(70px * var(--home-side-icon-scale));
   height: calc(78px * var(--home-side-icon-scale));
@@ -7970,8 +7971,8 @@ body.panelized-ready :is(
 
 #analyzeActionBtn {
   position: absolute;
-  right: var(--home-side-icon-right);
-  top: var(--home-analyze-top);
+  right: var(--home-right-side-inset);
+  top: calc(var(--home-right-actions-top) + var(--home-right-actions-gap));
   left: auto;
   width: calc(70px * var(--home-side-icon-scale));
   height: calc(68px * var(--home-side-icon-scale));
@@ -7979,8 +7980,8 @@ body.panelized-ready :is(
 
 #careActionBtn {
   position: absolute;
-  right: var(--home-side-icon-right);
-  top: var(--home-care-top);
+  right: var(--home-right-side-inset);
+  top: var(--home-right-watering-top);
   left: auto;
   width: calc(99px * var(--home-side-icon-scale));
   height: calc(80px * var(--home-side-icon-scale));
