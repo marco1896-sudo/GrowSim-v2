@@ -8737,3 +8737,47 @@ body.panelized-ready :is(
     text-overflow: ellipsis;
   }
 }
+
+/* Home scroll stability override for iOS/mobile clipping */
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
+@media (max-width: 959px) {
+  .home-screen {
+    display: flex !important;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .home-stage {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  .home-content-scroll {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: visible;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(160px + env(safe-area-inset-bottom));
+  }
+}
