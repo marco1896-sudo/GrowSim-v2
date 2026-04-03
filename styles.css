@@ -6672,6 +6672,20 @@ body.panelized-ready :is(
   display: none !important;
 }
 
+.home-screen {
+  /* Normalize the Home composition against the actually usable iPhone viewport. */
+  --home-safe-top: max(env(safe-area-inset-top), 0px);
+  --home-layout-height: calc(100% - var(--home-safe-top));
+  --home-panel-offset: clamp(12px, calc(var(--home-layout-height) * 0.0164), 18px);
+  --home-right-offset: clamp(110px, calc(var(--home-layout-height) * 0.1432), 126px);
+  --home-scene-bottom-offset: clamp(278px, calc(var(--home-layout-height) * 0.3603), 304px);
+  --home-scene-height: clamp(324px, calc(var(--home-layout-height) * 0.4131), 352px);
+  --home-content-offset: clamp(428px, calc(var(--home-layout-height) * 0.5469), 456px);
+  --home-content-pad-x: 12px;
+  --home-content-gap: 16px;
+  --home-progress-overlap: clamp(64px, calc(var(--home-layout-height) * 0.0845), 72px);
+}
+
 .home-stage {
   position: relative;
   height: 100%;
@@ -6681,7 +6695,7 @@ body.panelized-ready :is(
 
 .home-player-panel {
   position: absolute;
-  top: 14px;
+  top: calc(var(--home-safe-top) + var(--home-panel-offset));
   left: 12px;
   right: 12px;
   width: auto;
@@ -6697,7 +6711,7 @@ body.panelized-ready :is(
 
 .home-right-column {
   position: absolute;
-  top: 122px;
+  top: calc(var(--home-safe-top) + var(--home-right-offset));
   right: 12px;
   width: 115px;
   display: flex;
@@ -6712,9 +6726,9 @@ body.panelized-ready :is(
   left: 50%;
   right: auto;
   top: auto;
-  bottom: 307px;
+  bottom: var(--home-scene-bottom-offset);
   width: 100%;
-  height: 352px;
+  height: var(--home-scene-height);
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 2;
@@ -6740,8 +6754,12 @@ body.panelized-ready :is(
   right: auto;
   left: 50%;
   bottom: -2px;
-  width: min(60vw, 236px);
-  height: min(60vw, 236px);
+  width: min(60vw, calc(var(--home-scene-height) * 0.72));
+  height: min(60vw, calc(var(--home-scene-height) * 0.72));
+  min-width: 228px;
+  min-height: 228px;
+  max-width: 236px;
+  max-height: 236px;
   transform: translateX(-50%);
   overflow: hidden;
   pointer-events: none;
@@ -6770,12 +6788,12 @@ body.panelized-ready :is(
 
 .home-content-scroll {
   position: absolute;
-  top: 466px;
+  top: calc(var(--home-safe-top) + var(--home-content-offset));
   right: 0;
   bottom: 0;
   left: 0;
   z-index: 5;
-  padding: 0 12px calc(40px + env(safe-area-inset-bottom));
+  padding: 0 var(--home-content-pad-x) calc(40px + env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -6783,7 +6801,7 @@ body.panelized-ready :is(
   scrollbar-width: none;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--home-content-gap);
   pointer-events: auto;
 }
 
@@ -6903,19 +6921,16 @@ body.panelized-ready :is(
 
 @media (max-width: 393px) {
   .home-right-column {
-    top: 124px;
     right: 10px;
     width: 115px;
   }
 
   .home-scene-fixed {
-    top: auto;
-    bottom: 295px;
-    height: 336px;
+    bottom: var(--home-scene-bottom-offset);
+    height: var(--home-scene-height);
   }
 
   .home-content-scroll {
-    top: 466px;
     padding: 0 12px calc(44px + env(safe-area-inset-bottom));
   }
 }
@@ -7440,9 +7455,9 @@ body.panelized-ready :is(
 
 /* Home screen Figma import: limit changes to progress, status, roots, and action icons */
 .home-content-scroll {
-  top: 466px;
-  padding: 0 12px calc(40px + env(safe-area-inset-bottom));
-  gap: 16px;
+  top: calc(var(--home-safe-top) + var(--home-content-offset));
+  padding: 0 var(--home-content-pad-x) calc(40px + env(safe-area-inset-bottom));
+  gap: var(--home-content-gap);
 }
 
 .home-progress-panel {
@@ -7459,7 +7474,7 @@ body.panelized-ready :is(
 }
 
 .home-content-scroll .home-progress-panel {
-  margin-top: 72px;
+  margin-top: var(--home-progress-overlap);
 }
 
 .home-progress-panel::before {
@@ -8003,7 +8018,6 @@ body.panelized-ready :is(
 
 @media (max-width: 393px) {
   .home-content-scroll {
-    top: 466px;
     padding: 0 12px calc(44px + env(safe-area-inset-bottom));
   }
 
