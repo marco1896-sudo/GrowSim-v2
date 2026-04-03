@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#0d111a">
   <title>Grow-Simulator</title>
   <script>
-    (function configureBuildVersionedLinks() {
-      const buildId = '20260403-081037';
+    (function initBuildMeta() {
+      const buildId = '20260403-091610';
       const appVersion = `growsim-${buildId}`;
       window.GrowSimBuild = Object.freeze({
         id: buildId,
@@ -16,7 +16,18 @@
       window.GROWSIM_BUILD_ID = buildId;
       window.__GS_BUILD_ID__ = buildId;
       document.documentElement.setAttribute('data-build-id', buildId);
-
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap" rel="stylesheet">
+  <link id="appManifestLink" rel="manifest" href="manifest.webmanifest">
+  <link id="appIconLink" rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link id="appAppleTouchIcon" rel="apple-touch-icon" href="icons/icon-192.png">
+  <link id="appStylesheetLink" rel="stylesheet" href="styles.css">
+  <script>
+    (function configureBuildVersionedHeadLinks() {
+      const buildId = (window.GrowSimBuild && window.GrowSimBuild.id) ? String(window.GrowSimBuild.id) : 'dev';
       const appendVersion = (path) => {
         const value = String(path || '');
         const separator = value.includes('?') ? '&' : '?';
@@ -44,13 +55,6 @@
       }
     })();
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap" rel="stylesheet">
-  <link id="appManifestLink" rel="manifest" href="manifest.webmanifest">
-  <link id="appIconLink" rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
-  <link id="appAppleTouchIcon" rel="apple-touch-icon" href="icons/icon-192.png">
-  <link id="appStylesheetLink" rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div id="appLoadingScreen" class="app-loading-screen" aria-hidden="true">
@@ -1030,8 +1034,7 @@
       return `${value}${separator}v=${encodeURIComponent(buildId)}`;
     };
 
-    const scriptList = [
-      { src: 'https://cdn.jsdelivr.net/npm/chart.js', external: true, optional: true },
+    const coreScriptList = [
       { src: 'src/config/api.js', type: 'module' },
       { src: 'src/config/simulation.js' },
       { src: 'src/utils/textEncoding.js' },
@@ -1057,31 +1060,53 @@
       { src: 'app.js' }
     ];
 
+    const optionalScriptList = [
+      { src: 'https://cdn.jsdelivr.net/npm/chart.js', external: true }
+    ];
+
+    const SCRIPT_LOAD_TIMEOUT_MS = 15000;
+
     const loadScript = (definition) => new Promise((resolve, reject) => {
       const script = document.createElement('script');
       if (definition.type) {
         script.type = definition.type;
       }
+      script.async = false;
       script.src = definition.external ? definition.src : appendVersion(definition.src);
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Script load failed: ${script.src}`));
+      const timeoutId = window.setTimeout(() => {
+        reject(new Error(`Script load timeout: ${script.src}`));
+      }, SCRIPT_LOAD_TIMEOUT_MS);
+      script.onload = () => {
+        window.clearTimeout(timeoutId);
+        resolve();
+      };
+      script.onerror = () => {
+        window.clearTimeout(timeoutId);
+        reject(new Error(`Script load failed: ${script.src}`));
+      };
       document.body.appendChild(script);
     });
 
-    (async () => {
-      for (const definition of scriptList) {
+    const loadOptionalScripts = async () => {
+      for (const definition of optionalScriptList) {
         try {
           await loadScript(definition);
+          console.info('[boot] optional script loaded', definition.src);
         } catch (error) {
-          if (definition.optional) {
-            console.warn('[growsim] optional script failed', error);
-            continue;
-          }
-          throw error;
+          console.warn('[boot] optional script skipped', definition.src, error);
         }
       }
+    };
+
+    (async () => {
+      console.info('[boot] script loader start', { buildId });
+      for (const definition of coreScriptList) {
+        await loadScript(definition);
+        console.info('[boot] core script loaded', definition.src);
+      }
+      loadOptionalScripts();
     })().catch((error) => {
-      console.error('[growsim] script boot failed', error);
+      console.error('[boot] script boot failed', error);
     });
   })();
 </script>
