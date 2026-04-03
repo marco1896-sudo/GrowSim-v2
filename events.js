@@ -2250,13 +2250,21 @@ function scheduleNextEventRoll(nowMs, reason) {
 
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) {
+    console.info('[sw-update] service worker unsupported');
     return;
   }
+
+  console.info('[sw-update] register start');
 
   let updateBanner = document.getElementById('swUpdateBanner');
   let shouldReloadOnControllerChange = false;
   let controllerChangeBound = false;
   let updateIntervalId = null;
+  const hadControllerAtRegister = Boolean(navigator.serviceWorker.controller);
+
+  function canShowPrompt() {
+    return hadControllerAtRegister || Boolean(navigator.serviceWorker.controller);
+  }
 
   function removeUpdateBanner() {
     if (updateBanner && updateBanner.parentNode) {
@@ -2267,18 +2275,30 @@ async function registerServiceWorker() {
 
   function requestActivation(registration) {
     if (!registration || !registration.waiting) {
+      console.info('[sw-update] skip waiting requested but no waiting worker');
       return;
     }
+    console.info('[sw-update] skip waiting requested');
     shouldReloadOnControllerChange = true;
     registration.waiting.postMessage({ type: 'SKIP_WAITING' });
   }
 
-  function ensureUpdateBanner(registration) {
-    if (!registration || !registration.waiting || !navigator.serviceWorker.controller) {
+  function ensureUpdateBanner(registration, reason) {
+    if (!registration || !registration.waiting) {
+      return;
+    }
+
+    if (!canShowPrompt()) {
+      console.info('[sw-update] waiting detected but no controlling client yet', {
+        reason: reason || 'unknown'
+      });
       return;
     }
 
     if (updateBanner && updateBanner.parentNode) {
+      console.info('[sw-update] banner already shown', {
+        reason: reason || 'unknown'
+      });
       return;
     }
 
@@ -2306,6 +2326,28 @@ async function registerServiceWorker() {
 
     document.body.appendChild(banner);
     updateBanner = banner;
+    console.info('[sw-update] banner shown', {
+      reason: reason || 'unknown'
+    });
+  }
+
+  function checkWaiting(registration, reason) {
+    if (!registration) {
+      return false;
+    }
+
+    if (registration.waiting) {
+      console.info('[sw-update] waiting detected', {
+        reason: reason || 'unknown'
+      });
+      ensureUpdateBanner(registration, reason);
+      return true;
+    }
+
+    console.info('[sw-update] no waiting worker', {
+      reason: reason || 'unknown'
+    });
+    return false;
   }
 
   function bindControllerChangeHandler() {
@@ -2314,6 +2356,7 @@ async function registerServiceWorker() {
     }
     controllerChangeBound = true;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.info('[sw-update] controllerchange');
       if (!shouldReloadOnControllerChange) {
         return;
       }
@@ -2328,15 +2371,21 @@ async function registerServiceWorker() {
     }
 
     updateIntervalId = window.setInterval(() => {
+      console.info('[sw-update] interval update()');
       registration.update().catch(() => {
-        // non-fatal
+        console.warn('[sw-update] interval update() failed');
+      }).finally(() => {
+        checkWaiting(registration, 'interval');
       });
     }, 5 * 60 * 1000);
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
+        console.info('[sw-update] visibility update()');
         registration.update().catch(() => {
-          // non-fatal
+          console.warn('[sw-update] visibility update() failed');
+        }).finally(() => {
+          checkWaiting(registration, 'visibility');
         });
       }
     });
@@ -2347,36 +2396,59 @@ async function registerServiceWorker() {
       ? String(window.GrowSimBuild.id)
       : 'dev';
     const swUrl = `./sw.js?v=${encodeURIComponent(buildId)}`;
+    console.info('[sw-update] register url', swUrl);
 
     const registration = await navigator.serviceWorker.register(swUrl, {
       updateViaCache: 'none'
     });
+    console.info('[sw-update] register done', {
+      hasController: Boolean(navigator.serviceWorker.controller),
+      hadControllerAtRegister
+    });
+
+    navigator.serviceWorker.ready
+      .then((readyRegistration) => {
+        console.info('[sw-update] ready');
+        checkWaiting(readyRegistration || registration, 'ready');
+      })
+      .catch((error) => {
+        console.warn('[sw-update] ready failed', error);
+      });
+
     if (!navigator.serviceWorker.controller) {
       showServiceWorkerHint();
     }
 
     bindControllerChangeHandler();
     scheduleUpdateChecks(registration);
+    checkWaiting(registration, 'register');
+
     registration.update().catch(() => {
-      // non-fatal
+      console.warn('[sw-update] initial update() failed');
+    }).finally(() => {
+      checkWaiting(registration, 'initial-update');
     });
 
-    if (registration.waiting) {
-      ensureUpdateBanner(registration);
-    }
-
     registration.addEventListener('updatefound', () => {
+      console.info('[sw-update] updatefound');
       const installing = registration.installing;
       if (!installing) {
+        console.info('[sw-update] updatefound without installing worker');
         return;
       }
+      checkWaiting(registration, 'updatefound');
       installing.addEventListener('statechange', () => {
-        if (installing.state === 'installed' && registration.waiting && navigator.serviceWorker.controller) {
-          ensureUpdateBanner(registration);
+        console.info('[sw-update] installing state', installing.state);
+        if (installing.state === 'installed') {
+          checkWaiting(registration, 'installed-state');
+          window.setTimeout(() => {
+            checkWaiting(registration, 'installed-state-delayed');
+          }, 150);
         }
       });
     });
-  } catch (_error) {
+  } catch (error) {
+    console.error('[sw-update] register failed', error);
     // SW registration failures should not block app usage.
   }
 }
