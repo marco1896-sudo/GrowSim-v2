@@ -23,6 +23,23 @@ const contentTypes = {
   '.webp': 'image/webp'
 };
 
+const VERSIONED_ASSET_EXTENSIONS = new Set([
+  '.js',
+  '.mjs',
+  '.css',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.svg',
+  '.webp',
+  '.gif',
+  '.ico',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.json'
+]);
+
 function resolveRequestPath(urlPathname) {
   const relativePath = decodeURIComponent(urlPathname === '/' ? '/index.html' : urlPathname);
   const normalized = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
@@ -35,7 +52,43 @@ function resolveRequestPath(urlPathname) {
   return filePath;
 }
 
-function sendFile(res, filePath) {
+function shouldUseImmutableAssetCaching(urlPathname, extension, searchParams) {
+  if (!searchParams || !searchParams.has('v')) {
+    return false;
+  }
+
+  if (!VERSIONED_ASSET_EXTENSIONS.has(extension)) {
+    return false;
+  }
+
+  if (urlPathname === '/sw.js' || urlPathname === '/manifest.webmanifest' || urlPathname === '/' || urlPathname === '/index.html') {
+    return false;
+  }
+
+  return true;
+}
+
+function computeCacheControl(urlPathname, extension, searchParams) {
+  if (urlPathname === '/sw.js') {
+    return 'no-cache, no-store, must-revalidate';
+  }
+
+  if (urlPathname === '/' || urlPathname === '/index.html') {
+    return 'no-cache, must-revalidate';
+  }
+
+  if (urlPathname === '/manifest.webmanifest') {
+    return 'no-cache, must-revalidate';
+  }
+
+  if (shouldUseImmutableAssetCaching(urlPathname, extension, searchParams)) {
+    return 'public, max-age=31536000, immutable';
+  }
+
+  return 'no-cache, must-revalidate';
+}
+
+function sendFile(req, res, filePath) {
   fs.readFile(filePath, (error, data) => {
     if (error) {
       res.writeHead(error.code === 'ENOENT' ? 404 : 500, {
@@ -46,9 +99,11 @@ function sendFile(res, filePath) {
     }
 
     const extension = path.extname(filePath).toLowerCase();
+    const requestUrl = new URL(req.url, `http://${req.headers.host || `${host}:${port}`}`);
+    const cacheControl = computeCacheControl(requestUrl.pathname, extension, requestUrl.searchParams);
     res.writeHead(200, {
       'Content-Type': contentTypes[extension] || 'application/octet-stream',
-      'Cache-Control': 'no-store'
+      'Cache-Control': cacheControl
     });
     res.end(data);
   });
@@ -64,7 +119,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  sendFile(res, filePath);
+  sendFile(req, res, filePath);
 });
 
 server.listen(port, host, () => {
