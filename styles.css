@@ -2707,6 +2707,56 @@ body::after {
   border: 0 !important;
 }
 
+.sw-update-banner {
+  position: fixed;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  z-index: 10020;
+  min-width: min(360px, calc(100vw - 1.8rem));
+  max-width: min(420px, calc(100vw - 1.8rem));
+  border-radius: 14px;
+  border: 1px solid rgba(118, 193, 255, 0.35);
+  background: rgba(9, 18, 34, 0.94);
+  color: #f0f7ff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.65rem;
+  backdrop-filter: blur(8px);
+}
+
+.sw-update-banner__text {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.sw-update-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.sw-update-banner__btn {
+  border-radius: 10px;
+  border: 1px solid rgba(182, 209, 246, 0.35);
+  background: rgba(16, 29, 49, 0.75);
+  color: #edf6ff;
+  padding: 0.44rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sw-update-banner__btn--primary {
+  border-color: rgba(87, 203, 150, 0.52);
+  background: linear-gradient(135deg, rgba(44, 151, 102, 0.94), rgba(24, 93, 76, 0.95));
+}
+
+.sw-update-banner__btn--secondary {
+  border-color: rgba(163, 188, 226, 0.34);
+  background: rgba(18, 33, 58, 0.8);
+}
+
 /* Final guard: panelized HUD must not inherit legacy hero-stage visuals */
 .hero-card.hero-card--panelized {
   min-height: 0;

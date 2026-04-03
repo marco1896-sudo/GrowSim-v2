@@ -2253,14 +2253,111 @@ async function registerServiceWorker() {
     return;
   }
 
+  let updateBanner = document.getElementById('swUpdateBanner');
+  let shouldReloadOnControllerChange = false;
+  let controllerChangeBound = false;
+  let updateIntervalId = null;
+
+  function removeUpdateBanner() {
+    if (updateBanner && updateBanner.parentNode) {
+      updateBanner.parentNode.removeChild(updateBanner);
+    }
+    updateBanner = null;
+  }
+
+  function requestActivation(registration) {
+    if (!registration || !registration.waiting) {
+      return;
+    }
+    shouldReloadOnControllerChange = true;
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+
+  function ensureUpdateBanner(registration) {
+    if (!registration || !registration.waiting || !navigator.serviceWorker.controller) {
+      return;
+    }
+
+    if (updateBanner && updateBanner.parentNode) {
+      return;
+    }
+
+    const banner = document.createElement('aside');
+    banner.id = 'swUpdateBanner';
+    banner.className = 'sw-update-banner';
+    banner.innerHTML = [
+      '<p class="sw-update-banner__text">Neue Version verfuegbar.</p>',
+      '<div class="sw-update-banner__actions">',
+      '<button type="button" class="sw-update-banner__btn sw-update-banner__btn--primary" data-sw-action="reload">Jetzt aktualisieren</button>',
+      '<button type="button" class="sw-update-banner__btn sw-update-banner__btn--secondary" data-sw-action="dismiss">Spaeter</button>',
+      '</div>'
+    ].join('');
+
+    banner.addEventListener('click', (event) => {
+      const action = event.target && event.target.getAttribute ? event.target.getAttribute('data-sw-action') : null;
+      if (action === 'reload') {
+        requestActivation(registration);
+        return;
+      }
+      if (action === 'dismiss') {
+        removeUpdateBanner();
+      }
+    });
+
+    document.body.appendChild(banner);
+    updateBanner = banner;
+  }
+
+  function bindControllerChangeHandler() {
+    if (controllerChangeBound) {
+      return;
+    }
+    controllerChangeBound = true;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!shouldReloadOnControllerChange) {
+        return;
+      }
+      shouldReloadOnControllerChange = false;
+      window.location.reload();
+    });
+  }
+
+  function scheduleUpdateChecks(registration) {
+    if (!registration || updateIntervalId) {
+      return;
+    }
+
+    updateIntervalId = window.setInterval(() => {
+      registration.update().catch(() => {
+        // non-fatal
+      });
+    }, 5 * 60 * 1000);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        registration.update().catch(() => {
+          // non-fatal
+        });
+      }
+    });
+  }
+
   try {
-    const registration = await navigator.serviceWorker.register('./sw.js');
+    const registration = await navigator.serviceWorker.register('./sw.js', {
+      updateViaCache: 'none'
+    });
     if (!navigator.serviceWorker.controller) {
       showServiceWorkerHint();
     }
 
+    bindControllerChangeHandler();
+    scheduleUpdateChecks(registration);
+    registration.update().catch(() => {
+      // non-fatal
+    });
+
     if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      ensureUpdateBanner(registration);
     }
 
     registration.addEventListener('updatefound', () => {
@@ -2269,17 +2366,10 @@ async function registerServiceWorker() {
         return;
       }
       installing.addEventListener('statechange', () => {
-        if (installing.state === 'installed' && registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        if (installing.state === 'installed' && registration.waiting && navigator.serviceWorker.controller) {
+          ensureUpdateBanner(registration);
         }
       });
-    });
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!window.__gsSwControllerRefreshed) {
-        window.__gsSwControllerRefreshed = true;
-        window.location.reload();
-      }
     });
   } catch (_error) {
     // SW registration failures should not block app usage.

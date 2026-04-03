@@ -1,6 +1,7 @@
-const CACHE_VERSION = 'growsim-v1-20260402-phase1-shell-sync-v1';
-const SHELL_CACHE = `${CACHE_VERSION}-shell`;
-const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+const SW_VERSION = '2026-04-03-pwa-update-flow-v1';
+const CACHE_PREFIX = 'growsim';
+const SHELL_CACHE = `${CACHE_PREFIX}-shell-${SW_VERSION}`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${SW_VERSION}`;
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');
 
 function appPath(relativePath) {
@@ -8,51 +9,62 @@ function appPath(relativePath) {
   return `${BASE_PATH}/${normalized}`.replace(/\/\/+/g, '/');
 }
 
-const APP_SHELL_FILES = [
-  appPath(''),
-  appPath('index.html'),
-  appPath('styles.css'),
-  appPath('app.js'),
-  appPath('sim.js'),
-  appPath('events.js'),
-  appPath('ui.js'),
-  appPath('storage.js'),
-  appPath('notifications.js'),
-  appPath('src/config/api.js'),
-  appPath('src/config/simulation.js'),
-  appPath('src/utils/textEncoding.js'),
-  appPath('src/simulation/plantState.js'),
-  appPath('src/events/eventFlags.js'),
-  appPath('src/events/eventMemory.js'),
-  appPath('src/events/eventAnalysis.js'),
-  appPath('src/events/eventResolver.js'),
-  appPath('src/progression/progression.js'),
-  appPath('src/auth/auth.js'),
-  appPath('src/ui/components/primitives.js'),
-  appPath('src/ui/controller/uiController.js'),
-  appPath('src/ui/runtime/screenRuntimeManager.js'),
-  appPath('src/ui/mappings/homeMapping.js'),
-  appPath('src/ui/care/careActionHints.js'),
-  appPath('src/ui/mappings/careMapping.js'),
-  appPath('src/ui/screens/screenModules.js'),
+const OFFLINE_FALLBACK_URL = appPath('index.html');
+const PRECACHE_URLS = [
+  OFFLINE_FALLBACK_URL,
   appPath('manifest.webmanifest'),
-  appPath('data/events.json'),
-  appPath('data/events.foundation.json'),
-  appPath('data/events.v2.json'),
-  appPath('data/actions.json'),
-  appPath('data/missions.json'),
-  appPath('assets/plant_growth/plant_growth_sprite.png'),
-  appPath('assets/plant_growth/plant_growth_metadata.json'),
   appPath('icons/icon-192.png'),
-  appPath('icons/icon-512.png'),
-  appPath('assets/backgrounds/bg_dark_01.jpg'),
-  appPath('assets/backgrounds/bg_dark_02.jpg'),
-  appPath('assets/backgrounds/Basic screen.jpg'),
-  appPath('assets/backgrounds/stage_forest_main.webp'),
-  appPath('assets/ui/backgrounds/Basic screen.jpg')
+  appPath('icons/icon-512.png')
 ];
 
-async function cacheAppShellFiles(cache, files) {
+const CORE_DATA_PATHS = new Set([
+  appPath('data/events.json'),
+  appPath('data/events.v2.json'),
+  appPath('data/actions.json')
+]);
+
+function isApiOrAuthPath(pathname) {
+  return pathname.startsWith(appPath('api/'))
+    || pathname.startsWith(appPath('auth/'))
+    || pathname.startsWith(appPath('session/'));
+}
+
+function isLongLivedAssetRequest(request, pathname) {
+  const destination = String(request.destination || '').toLowerCase();
+  if (destination === 'image' || destination === 'font' || destination === 'audio' || destination === 'video') {
+    return true;
+  }
+
+  if (pathname.startsWith(appPath('assets/')) || pathname.startsWith(appPath('icons/'))) {
+    return !/\.(?:js|mjs|css|html?)$/i.test(pathname);
+  }
+
+  return false;
+}
+
+function canCacheResponse(request, response, url) {
+  if (!response || !response.ok) {
+    return false;
+  }
+
+  if (isApiOrAuthPath(url.pathname)) {
+    return false;
+  }
+
+  const cacheControl = String(response.headers.get('cache-control') || '').toLowerCase();
+  if (cacheControl.includes('no-store') || cacheControl.includes('private')) {
+    return false;
+  }
+
+  const acceptHeader = String(request.headers.get('accept') || '').toLowerCase();
+  if (acceptHeader.includes('application/json') && !CORE_DATA_PATHS.has(url.pathname)) {
+    return false;
+  }
+
+  return true;
+}
+
+async function cachePreloadFiles(cache, files) {
   const uniqueFiles = Array.from(new Set((Array.isArray(files) ? files : []).filter(Boolean)));
   const failed = [];
 
@@ -68,27 +80,28 @@ async function cacheAppShellFiles(cache, files) {
   }));
 
   if (failed.length) {
-    console.warn('[sw] app shell cached with partial misses', failed);
+    console.warn('[sw] precache completed with misses', failed);
   }
 }
 
 self.addEventListener('install', (event) => {
-  console.info('[sw] install', CACHE_VERSION);
+  console.info('[sw] install', SW_VERSION);
   event.waitUntil(
     caches.open(SHELL_CACHE)
-      .then((cache) => cacheAppShellFiles(cache, APP_SHELL_FILES))
-      .then(() => self.skipWaiting())
+      .then((cache) => cachePreloadFiles(cache, PRECACHE_URLS))
   );
 });
 
 self.addEventListener('activate', (event) => {
-  console.info('[sw] activate', CACHE_VERSION);
+  console.info('[sw] activate', SW_VERSION);
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys
-        .filter((key) => key !== SHELL_CACHE && key !== RUNTIME_CACHE)
-        .map((key) => caches.delete(key))
-    )).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith(`${CACHE_PREFIX}-`) && key !== SHELL_CACHE && key !== RUNTIME_CACHE)
+          .map((key) => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
   );
 });
 
@@ -97,73 +110,66 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (event.request.cache === 'only-if-cached' && event.request.mode !== 'same-origin') {
+    return;
+  }
+
   const url = new URL(event.request.url);
-  const sameOrigin = url.origin === self.location.origin;
-
-  if (!sameOrigin) {
+  if (url.origin !== self.location.origin) {
     return;
   }
 
-  if (url.pathname.startsWith(appPath('assets/'))) {
-    event.respondWith(cacheFirst(event.request));
-    return;
-  }
-
-  if (url.pathname === appPath('data/events.json') || url.pathname === appPath('data/events.v2.json') || url.pathname === appPath('data/actions.json')) {
-    event.respondWith(networkFirst(event.request, SHELL_CACHE));
+  if (isApiOrAuthPath(url.pathname)) {
     return;
   }
 
   if (event.request.mode === 'navigate') {
-    event.respondWith(navigationFallback(event.request));
+    event.respondWith(navigationNetworkFirst(event.request));
     return;
   }
 
-  event.respondWith(shellThenNetwork(event.request));
+  if (CORE_DATA_PATHS.has(url.pathname)) {
+    event.respondWith(networkFirst(event.request, RUNTIME_CACHE));
+    return;
+  }
+
+  if (isLongLivedAssetRequest(event.request, url.pathname)) {
+    event.respondWith(staleWhileRevalidate(event.request, RUNTIME_CACHE));
+    return;
+  }
+
+  event.respondWith(networkFirst(event.request, RUNTIME_CACHE));
 });
 
-async function cacheFirst(request) {
-  const cache = await caches.open(RUNTIME_CACHE);
-  const hit = await cache.match(request);
-  if (hit) {
-    return hit;
-  }
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
 
-  try {
-    const fresh = await fetch(request);
-    if (fresh && fresh.ok) {
-      cache.put(request, fresh.clone());
-    }
-    return fresh;
-  } catch (_error) {
-    return hit || Response.error();
-  }
-}
+  const updatePromise = fetch(request)
+    .then((fresh) => {
+      const requestUrl = new URL(request.url);
+      if (canCacheResponse(request, fresh, requestUrl)) {
+        cache.put(request, fresh.clone());
+      }
+      return fresh;
+    })
+    .catch(() => null);
 
-async function shellThenNetwork(request) {
-  const shellCache = await caches.open(SHELL_CACHE);
-  const cached = await shellCache.match(request);
   if (cached) {
     return cached;
   }
 
-  try {
-    const fresh = await fetch(request);
-    if (fresh && fresh.ok) {
-      shellCache.put(request, fresh.clone());
-    }
-    return fresh;
-  } catch (_error) {
-    return cached || Response.error();
-  }
+  const fresh = await updatePromise;
+  return fresh || Response.error();
 }
 
 async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   try {
     const fresh = await fetch(request);
-    if (fresh && fresh.ok) {
-      cache.put(request, fresh.clone());
+    const requestUrl = new URL(request.url);
+    if (canCacheResponse(request, fresh, requestUrl)) {
+      await cache.put(request, fresh.clone());
     }
     return fresh;
   } catch (_error) {
@@ -172,15 +178,22 @@ async function networkFirst(request, cacheName) {
   }
 }
 
-async function navigationFallback(request) {
+async function navigationNetworkFirst(request) {
+  const shellCache = await caches.open(SHELL_CACHE);
   try {
-    const fresh = await fetch(request);
-    const shellCache = await caches.open(SHELL_CACHE);
-    shellCache.put(appPath('index.html'), fresh.clone());
+    const networkRequest = new Request(request, { cache: 'no-store' });
+    const fresh = await fetch(networkRequest);
+    if (fresh && fresh.ok) {
+      await shellCache.put(OFFLINE_FALLBACK_URL, fresh.clone());
+    }
     return fresh;
   } catch (_error) {
-    const shellCache = await caches.open(SHELL_CACHE);
-    return shellCache.match(appPath('index.html'));
+    const cachedRoute = await shellCache.match(request);
+    if (cachedRoute) {
+      return cachedRoute;
+    }
+    const offlineFallback = await shellCache.match(OFFLINE_FALLBACK_URL);
+    return offlineFallback || Response.error();
   }
 }
 
