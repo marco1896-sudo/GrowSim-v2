@@ -2267,7 +2267,7 @@ function formatPlantAgeLabel(stage, simDay) {
 
 function formatPhaseProgressLabel(progressPercent, nextLabel) {
   const targetLabel = nextLabel || 'Ernte';
-  return `${progressPercent}% â†’ ${targetLabel}`;
+  return `${progressPercent}% \u2192 ${targetLabel}`;
 }
 
 function getPhaseCardViewModel() {

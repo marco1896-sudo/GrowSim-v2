@@ -7769,8 +7769,9 @@ body.panelized-ready :is(
 
 .home-status-panel {
   position: relative;
-  min-height: 164px;
-  padding: 12px 14px;
+  min-height: 336px;
+  height: auto;
+  padding: 12px 14px 16px;
   border-radius: 11px;
   border: 1px solid rgba(96, 214, 145, 0.24);
   background: linear-gradient(180deg, rgba(43, 43, 43, 0.96), rgba(31, 31, 31, 0.96));
@@ -7779,8 +7780,13 @@ body.panelized-ready :is(
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   grid-template-columns: minmax(0, 1.15fr) 1px minmax(128px, 0.85fr);
+  grid-template-areas:
+    "status divider root"
+    "guidance guidance guidance";
   gap: 14px;
-  overflow: hidden;
+  overflow: visible;
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 .home-status-panel::before {
@@ -7827,6 +7833,22 @@ body.panelized-ready :is(
 .home-root-column {
   position: relative;
   z-index: 1;
+}
+
+.home-status-column {
+  grid-area: status;
+}
+
+.home-status-divider {
+  grid-area: divider;
+}
+
+.home-root-column {
+  grid-area: root;
+}
+
+.home-guidance-panel {
+  grid-area: guidance;
 }
 
 .home-status-row {
