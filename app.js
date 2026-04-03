@@ -312,6 +312,8 @@ const state = {
     isDaytime: isDaytimeAtSimTime(initialSimTimeMs),
     growthImpulse: 0,
     tempoOffsetDays: 0,
+    stressExposure: 0,
+    riskExposure: 0,
     lastPushScheduleAtMs: 0,
     fairnessGraceUntilRealMs: 0,
     isCatchUp: false
@@ -327,6 +329,7 @@ const state = {
     averageHealth: 85,
     averageStress: 15,
     observedSimMs: 0,
+    progressOffsetSimMs: 0,
     lifecycle: {
       totalSimDays: TOTAL_LIFECYCLE_SIM_DAYS,
       qualityTier: 'normal',
@@ -2266,18 +2269,19 @@ function applyAction(actionId) {
     return triggerCheck;
   }
 
-  const preCheck = validateActionPrerequisites(action);
+  const preCheck = analyzeActionPrerequisites(action);
   if (!preCheck.ok) {
     state.actions.lastResult = { ok: false, reason: preCheck.reason, actionId: action.id, atRealTimeMs: nowMs };
     return preCheck;
   }
+  const executionProfile = buildActionExecutionProfile(action, preCheck);
 
   const before = snapshotStatus();
   const beforeSimTimeMs = Number(state.simulation.simTimeMs) || 0;
   const beforeLastTickRealTimeMs = Number(state.simulation.lastTickRealTimeMs) || 0;
 
-  applyActionImmediateEffects(action);
-  scheduleActionOverTimeEffect(action, nowMs);
+  applyActionImmediateEffects(action, executionProfile);
+  scheduleActionOverTimeEffect(action, nowMs, executionProfile);
 
   const triggeredSideEffects = [];
   for (const side of action.sideEffects) {
@@ -2288,10 +2292,10 @@ function applyAction(actionId) {
     if (!conditionMet) {
       continue;
     }
-    const chance = clamp(Number(side.chance), 0, 1);
+    const chance = clamp(Number(side.chance) * (Number(executionProfile.sideEffectChanceMultiplier) || 1), 0, 0.92);
     const roll = deterministicUnitFloat(`action_side:${action.id}:${side.id || 'side'}:${state.simulation.tickCount}:${Math.floor(state.simulation.simTimeMs / 60000)}`);
     if (roll <= chance) {
-      applyEffectsObject(side.deltas || {});
+      applyEffectsObject(scaleActionEffectsObject(side.deltas || {}, executionProfile, { phase: 'sideEffect' }));
       triggeredSideEffects.push(side.id || 'side_effect');
     }
   }
@@ -2310,6 +2314,12 @@ function applyAction(actionId) {
     label: action.label,
     simTime: state.simulation.simTimeMs,
     realTime: nowMs,
+    softEligibility: Boolean(preCheck.soft),
+    effectProfile: {
+      benefitMultiplier: round2(executionProfile.benefitMultiplier),
+      costMultiplier: round2(executionProfile.costMultiplier),
+      sideEffectChanceMultiplier: round2(executionProfile.sideEffectChanceMultiplier)
+    },
     sideEffects: triggeredSideEffects,
     deltaSummary
   });
@@ -2342,10 +2352,34 @@ function applyAction(actionId) {
       sideEffects: triggeredSideEffects
     });
   }
-  state.actions.lastResult = { ok: true, reason: 'ok', actionId: action.id, atRealTimeMs: nowMs };
+  state.actions.lastResult = { ok: true, reason: preCheck.soft ? 'ok_soft' : 'ok', actionId: action.id, atRealTimeMs: nowMs };
   schedulePersistState(true);
 
-  return { ok: true, id: action.id, deltaSummary, sideEffects: triggeredSideEffects };
+  return {
+    ok: true,
+    id: action.id,
+    deltaSummary,
+    sideEffects: triggeredSideEffects,
+    soft: Boolean(preCheck.soft),
+    guidanceHint: buildActionGuidanceFeedback(action, executionProfile)
+  };
+}
+
+function buildActionGuidanceFeedback(action, executionProfile) {
+  const category = String(action && action.category || '').toLowerCase();
+  const benefitMultiplier = Number(executionProfile && executionProfile.benefitMultiplier) || 1;
+  const costMultiplier = Number(executionProfile && executionProfile.costMultiplier) || 1;
+
+  if (category === 'fertilizing' && benefitMultiplier < 0.84) {
+    return 'Die Aufnahme bleibt im aktuellen Zustand noch etwas begrenzt.';
+  }
+  if (category === 'watering' && costMultiplier > 1.16) {
+    return 'Die Wurzelzone reagiert im aktuellen Zustand empfindlicher auf zusätzliche Feuchte.';
+  }
+  if (category === 'environment' && benefitMultiplier < 0.84) {
+    return 'Der Effekt greift erst sauber, wenn die übrigen Druckfaktoren etwas ruhiger werden.';
+  }
+  return '';
 }
 
 function validateActionTrigger(action) {
@@ -2385,6 +2419,291 @@ function validateActionPrerequisites(action) {
   return { ok: true };
 }
 
+function getActionSoftPolicy(action) {
+  const category = String(action && action.category || '').toLowerCase();
+  const intensity = String(action && action.intensity || '').toLowerCase();
+  const id = String(action && action.id || '').toLowerCase();
+
+  if (category === 'fertilizing' && (intensity === 'low' || intensity === 'medium')) {
+    return {
+      enabled: true,
+      minMetrics: new Set(['water', 'health']),
+      maxMetrics: new Set(['nutrition', 'stress', 'risk']),
+      note: 'Geht noch, aber die Aufnahme ist heute ineffizienter und riskanter.'
+    };
+  }
+
+  if (category === 'environment' && (id === 'environment_low_airflow' || id === 'environment_medium_climate')) {
+    return {
+      enabled: true,
+      minMetrics: new Set(['risk', 'health']),
+      maxMetrics: new Set(['risk']),
+      note: 'Geht noch, aber der Nutzen ist im aktuellen Zustand begrenzt.'
+    };
+  }
+
+  if (id === 'watering_medium_vitamin') {
+    return {
+      enabled: true,
+      minMetrics: new Set(['water']),
+      maxMetrics: new Set(['risk', 'stress']),
+      note: 'Geht noch, aber die Nährlösung greift heute nur gedämpft.'
+    };
+  }
+
+  return {
+    enabled: false,
+    minMetrics: new Set(),
+    maxMetrics: new Set(),
+    note: ''
+  };
+}
+
+function analyzeActionPrerequisites(action) {
+  const pre = action && action.prerequisites && typeof action.prerequisites === 'object' ? action.prerequisites : {};
+  const min = pre.min && typeof pre.min === 'object' ? pre.min : {};
+  const max = pre.max && typeof pre.max === 'object' ? pre.max : {};
+  const policy = getActionSoftPolicy(action);
+  const failures = [];
+
+  for (const [key, value] of Object.entries(min)) {
+    if (!Number.isFinite(Number(value))) {
+      continue;
+    }
+    const current = key in state.status ? state.status[key] : null;
+    if (current !== null && current < Number(value)) {
+      failures.push({ type: 'min', key, threshold: Number(value), current: Number(current) });
+    }
+  }
+
+  for (const [key, value] of Object.entries(max)) {
+    if (!Number.isFinite(Number(value))) {
+      continue;
+    }
+    const current = key in state.status ? state.status[key] : null;
+    if (current !== null && current > Number(value)) {
+      failures.push({ type: 'max', key, threshold: Number(value), current: Number(current) });
+    }
+  }
+
+  if (!failures.length) {
+    return { ok: true, soft: false, failures: [], note: '' };
+  }
+
+  const hardFailure = failures.find((failure) => {
+    if (!policy.enabled) {
+      return true;
+    }
+    if (failure.type === 'min') {
+      return !policy.minMetrics.has(failure.key);
+    }
+    return !policy.maxMetrics.has(failure.key);
+  });
+
+  if (hardFailure) {
+    return {
+      ok: false,
+      reason: `prereq_${hardFailure.type}_failed:${hardFailure.key}`,
+      soft: false,
+      failures
+    };
+  }
+
+  return {
+    ok: true,
+    soft: true,
+    reason: 'soft_prereq_override',
+    failures,
+    note: policy.note
+  };
+}
+
+function buildActionExecutionProfile(action, availability = { ok: true, soft: false, failures: [] }) {
+  const category = String(action && action.category || '').toLowerCase();
+  const intensity = String(action && action.intensity || '').toLowerCase();
+  const id = String(action && action.id || '').toLowerCase();
+  const water = Number(state.status.water || 0);
+  const nutrition = Number(state.status.nutrition || 0);
+  const health = Number(state.status.health || 0);
+  const stress = Number(state.status.stress || 0);
+  const risk = Number(state.status.risk || 0);
+
+  let benefitMultiplier = 1;
+  let costMultiplier = 1;
+  let sideEffectChanceMultiplier = 1;
+
+  if (category === 'fertilizing') {
+    const waterSupport = clamp((water - 18) / 34, 0.35, 1.02);
+    const nutritionHeadroom = clamp((88 - nutrition) / 30, 0.3, 1.04);
+    const calmness = clamp(1 - clamp((stress - 40) / 36, 0, 0.7), 0.45, 1.02);
+    const safety = clamp(1 - clamp((risk - 42) / 34, 0, 0.72), 0.42, 1.02);
+    const vitality = clamp((health - 10) / 55, 0.48, 1.04);
+    benefitMultiplier = clamp(
+      (waterSupport * 0.3)
+      + (nutritionHeadroom * 0.28)
+      + (calmness * 0.18)
+      + (safety * 0.12)
+      + (vitality * 0.12),
+      0.5,
+      intensity === 'high' ? 1.06 : 1.12
+    );
+    costMultiplier = clamp(
+      0.9
+      + ((1 - benefitMultiplier) * 0.95)
+      + clamp((risk - 72) / 24, 0, 0.35)
+      + clamp((stress - 58) / 26, 0, 0.3),
+      0.92,
+      intensity === 'high' ? 1.85 : 1.55
+    );
+    sideEffectChanceMultiplier = clamp(
+      0.92
+      + ((costMultiplier - 1) * 0.95)
+      + (availability.soft ? 0.12 : 0),
+      0.85,
+      intensity === 'high' ? 1.9 : 1.55
+    );
+
+    if (intensity === 'low') {
+      benefitMultiplier *= 0.88;
+      costMultiplier *= 0.9;
+      sideEffectChanceMultiplier *= 0.82;
+    } else if (intensity === 'high') {
+      const pushReadiness = clamp(
+        ((water - 52) / 22) * 0.35
+        + ((health - 58) / 24) * 0.35
+        + ((64 - stress) / 28) * 0.18
+        + ((62 - risk) / 30) * 0.12,
+        0.55,
+        1.14
+      );
+      benefitMultiplier *= pushReadiness;
+      costMultiplier += clamp((1.02 - pushReadiness) * 0.9, 0, 0.45);
+      sideEffectChanceMultiplier += clamp((1 - pushReadiness) * 0.75, 0, 0.4);
+    }
+
+    if (id === 'fertilizing_medium_calmag') {
+      const recoveryNeed = clamp(
+        (clamp((stress - 34) / 36, 0, 1) * 0.55)
+        + (clamp((risk - 32) / 40, 0, 1) * 0.45),
+        0,
+        1
+      );
+      benefitMultiplier = clamp(benefitMultiplier + (recoveryNeed * 0.12), 0.5, 1.12);
+      costMultiplier = clamp(costMultiplier - (recoveryNeed * 0.08), 0.9, 1.65);
+    }
+  } else if (category === 'environment') {
+    const problemNeed = clamp(((risk - 18) / 52) * 0.7 + ((stress - 20) / 60) * 0.3, 0.15, 1.05);
+    benefitMultiplier = clamp(0.55 + (problemNeed * 0.55), 0.45, intensity === 'high' ? 1.12 : 1.08);
+    costMultiplier = clamp(1.02 + clamp((stress - 62) / 28, 0, 0.35), 0.95, 1.4);
+    sideEffectChanceMultiplier = clamp(0.9 + ((costMultiplier - 1) * 0.65), 0.85, 1.35);
+
+    if (intensity === 'low') {
+      benefitMultiplier *= 0.88;
+      costMultiplier *= 0.9;
+      sideEffectChanceMultiplier *= 0.8;
+    }
+
+    if (id === 'environment_high_co2') {
+      const optimizationReadiness = clamp(
+        ((water - 62) / 18) * 0.28
+        + ((nutrition - 60) / 18) * 0.28
+        + ((health - 72) / 16) * 0.22
+        + ((28 - stress) / 18) * 0.12
+        + ((24 - risk) / 18) * 0.1,
+        0.48,
+        1.12
+      );
+      benefitMultiplier *= optimizationReadiness;
+      costMultiplier += clamp((1.04 - optimizationReadiness) * 0.95, 0, 0.5);
+      sideEffectChanceMultiplier += clamp((1 - optimizationReadiness) * 0.7, 0, 0.38);
+    } else if (id === 'environment_high_reset') {
+      const serviceNeed = clamp(
+        (clamp((risk - 50) / 28, 0, 1) * 0.65)
+        + (clamp((stress - 44) / 30, 0, 1) * 0.35),
+        0,
+        1.05
+      );
+      benefitMultiplier = clamp(benefitMultiplier + (serviceNeed * 0.14), 0.45, 1.14);
+      costMultiplier = clamp(costMultiplier + 0.08 + (serviceNeed * 0.1), 0.95, 1.55);
+      sideEffectChanceMultiplier = clamp(sideEffectChanceMultiplier + 0.08, 0.85, 1.55);
+    }
+  } else if (category === 'watering') {
+    const thirstNeed = clamp((68 - water) / 42, 0.25, 1.08);
+    const calmness = clamp(1 - clamp((stress - 54) / 32, 0, 0.6), 0.52, 1.02);
+    const safety = clamp(1 - clamp((risk - 62) / 26, 0, 0.58), 0.55, 1.02);
+    benefitMultiplier = clamp((thirstNeed * 0.6) + (calmness * 0.2) + (safety * 0.2), 0.58, 1.08);
+    costMultiplier = clamp(
+      0.94
+      + clamp((water - 76) / 18, 0, 0.45)
+      + clamp((risk - 70) / 20, 0, 0.25),
+      0.92,
+      intensity === 'high' ? 1.7 : 1.35
+    );
+    sideEffectChanceMultiplier = clamp(0.92 + ((costMultiplier - 1) * 0.8), 0.85, intensity === 'high' ? 1.85 : 1.45);
+
+    if (intensity === 'low') {
+      benefitMultiplier *= 0.9;
+      costMultiplier *= 0.88;
+      sideEffectChanceMultiplier *= 0.78;
+    }
+
+    if (id === 'watering_medium_vitamin') {
+      const uptakeReadiness = clamp(
+        ((water - 28) / 26) * 0.4
+        + ((78 - nutrition) / 28) * 0.25
+        + ((64 - stress) / 28) * 0.2
+        + ((68 - risk) / 26) * 0.15,
+        0.42,
+        1.08
+      );
+      benefitMultiplier *= uptakeReadiness;
+      costMultiplier += clamp((1 - uptakeReadiness) * 0.55, 0, 0.28);
+      sideEffectChanceMultiplier += clamp((1 - uptakeReadiness) * 0.45, 0, 0.24);
+    }
+
+    if (id === 'watering_high_flush') {
+      const flushNeed = clamp((nutrition - 56) / 26, 0.3, 1.06);
+      benefitMultiplier = clamp((benefitMultiplier * 0.45) + (flushNeed * 0.55), 0.45, 1.05);
+      costMultiplier = clamp(costMultiplier + clamp((58 - nutrition) / 18, 0, 0.4), 1, 1.85);
+      sideEffectChanceMultiplier = clamp(sideEffectChanceMultiplier + clamp((58 - nutrition) / 18, 0, 0.3), 0.9, 1.9);
+    }
+  }
+
+  if (availability.soft) {
+    benefitMultiplier *= 0.9;
+    costMultiplier = clamp(costMultiplier + 0.08, 0.92, 1.95);
+    sideEffectChanceMultiplier = clamp(sideEffectChanceMultiplier + 0.08, 0.85, 1.95);
+  }
+
+  return {
+    benefitMultiplier: clamp(benefitMultiplier, 0.45, 1.15),
+    overTimeBenefitMultiplier: clamp(benefitMultiplier * 0.98, 0.42, 1.1),
+    costMultiplier: clamp(costMultiplier, 0.9, 1.95),
+    overTimeCostMultiplier: clamp((costMultiplier * 0.92), 0.88, 1.8),
+    sideEffectChanceMultiplier: clamp(sideEffectChanceMultiplier, 0.85, 1.95)
+  };
+}
+
+function scaleActionEffectsObject(effects, profile, options = {}) {
+  const scaled = {};
+  const benefitMultiplier = Number(profile && (options.phase === 'overTime' ? profile.overTimeBenefitMultiplier : profile.benefitMultiplier)) || 1;
+  const costMultiplier = Number(profile && (options.phase === 'overTime' ? profile.overTimeCostMultiplier : profile.costMultiplier)) || 1;
+
+  for (const [metric, rawDelta] of Object.entries(effects || {})) {
+    const delta = Number(rawDelta);
+    if (!Number.isFinite(delta)) {
+      continue;
+    }
+    const positiveMetrics = new Set(['water', 'nutrition', 'health', 'growth']);
+    const benefit = (positiveMetrics.has(metric) && delta > 0) || ((metric === 'stress' || metric === 'risk') && delta < 0);
+    const cost = (positiveMetrics.has(metric) && delta < 0) || ((metric === 'stress' || metric === 'risk') && delta > 0);
+    const multiplier = benefit ? benefitMultiplier : (cost ? costMultiplier : 1);
+    scaled[metric] = round2(delta * multiplier);
+  }
+
+  return scaled;
+}
+
 function getActionAvailability(action) {
   if (!action || typeof action !== 'object') {
     return { ok: false, reason: 'unknown_action' };
@@ -2393,7 +2712,7 @@ function getActionAvailability(action) {
   if (!triggerCheck.ok) {
     return triggerCheck;
   }
-  return validateActionPrerequisites(action);
+  return analyzeActionPrerequisites(action);
 }
 
 function evaluateActionPriorityHints(action, careViewModel = null) {
@@ -2442,7 +2761,7 @@ function getActionPriorityTier(action, availability, cooldownLeftMs, careViewMod
     tier = 'cooldown';
   } else if (!availability.ok) {
     tier = 'blocked';
-  } else if (hintSummary.hasWarning) {
+  } else if (hintSummary.hasWarning && !(availability && availability.soft)) {
     tier = 'blocked';
   } else if (hintSummary.hasPositive) {
     tier = 'primary';
@@ -2463,6 +2782,9 @@ function getCompactActionSummaryText(actionEntry) {
   if (action.availability && !action.availability.ok) {
     return explainActionFailure(action.availability.reason);
   }
+  if (action.availability && action.availability.soft) {
+    return action.availability.note || 'Geht noch, aber heute mit weniger sauberer Wirkung.';
+  }
 
   if (action.hintSummary && action.hintSummary.topHint) {
     const hintCopy = getCareHintCopy(action.hintSummary.topHint);
@@ -2472,9 +2794,9 @@ function getCompactActionSummaryText(actionEntry) {
   return 'Gerade keine gute Idee.';
 }
 
-function scheduleActionOverTimeEffect(action, nowMs) {
+function scheduleActionOverTimeEffect(action, nowMs, profile = null) {
   const durationMs = Math.round((Number(action.effects.durationSimMinutes) || 0) * 60 * 1000);
-  const overTime = action.effects.overTime || {};
+  const overTime = scaleActionEffectsObject(action.effects.overTime || {}, profile, { phase: 'overTime' });
   if (durationMs <= 0 || !Object.keys(overTime).length) {
     return;
   }
@@ -2528,49 +2850,50 @@ function applyOverTimeRates(rates, elapsedSimMs) {
   }
 }
 
-function applyActionImmediateEffects(action) { const immediate = action && action.effects ? action.effects.immediate : null;
+function applyActionImmediateEffects(action, profile = null) { const immediate = action && action.effects ? action.effects.immediate : null;
   if (Array.isArray(immediate)) {
-    applyStructuredEffects(immediate);
-    applyEnvironmentActionInfluence(action);
+    applyStructuredEffects(immediate, profile);
+    applyEnvironmentActionInfluence(action, profile);
     return;
   }
-  applyEffectsObject(immediate || {});
-  applyEnvironmentActionInfluence(action);
+  applyEffectsObject(scaleActionEffectsObject(immediate || {}, profile));
+  applyEnvironmentActionInfluence(action, profile);
 }
 
-function applyEnvironmentActionInfluence(action) {
+function applyEnvironmentActionInfluence(action, profile = null) {
   const controls = ensureEnvironmentControls(state);
   if (!action || typeof action !== 'object') {
     return;
   }
 
-  const appliedCustomRootZone = applyActionRootZoneInfluence(action);
-  const appliedCustomClimate = applyActionClimateInfluence(action);
-  const appliedCustomEnvironment = applyActionEnvironmentInfluence(action);
+  const appliedCustomRootZone = applyActionRootZoneInfluence(action, profile);
+  const appliedCustomClimate = applyActionClimateInfluence(action, profile);
+  const appliedCustomEnvironment = applyActionEnvironmentInfluence(action, profile);
   if (appliedCustomRootZone || appliedCustomClimate || appliedCustomEnvironment) {
     return;
   }
 
   const category = String(action.category || '').toLowerCase();
   const intensity = String(action.intensity || 'low').toLowerCase(); const intensityFactor = intensity === 'high' ? 1 : intensity === 'medium' ? 0.65 : 0.4;
+  const influenceMultiplier = Number(profile && profile.benefitMultiplier) || 1;
 
   if (category === 'fertilizing') {
-    controls.ec = clamp(controls.ec + (0.28 * intensityFactor), 0.6, 2.8);
-    controls.ph = clamp(controls.ph - (0.04 * intensityFactor), 5.0, 7.0);
+    controls.ec = clamp(controls.ec + (0.28 * intensityFactor * influenceMultiplier), 0.6, 2.8);
+    controls.ph = clamp(controls.ph - (0.04 * intensityFactor * influenceMultiplier), 5.0, 7.0);
   }
 
   if (category === 'watering') {
-    controls.ec = clamp(controls.ec - (0.10 + (0.08 * intensityFactor)), 0.6, 2.8);
-    const phPull = (6.0 - controls.ph) * (0.20 + (0.15 * intensityFactor));
+    controls.ec = clamp(controls.ec - ((0.10 + (0.08 * intensityFactor)) * influenceMultiplier), 0.6, 2.8);
+    const phPull = (6.0 - controls.ph) * (0.20 + (0.15 * intensityFactor * influenceMultiplier));
     controls.ph = clamp(controls.ph + phPull, 5.0, 7.0);
   }
 
   if (category === 'environment') {
-    controls.airflowPercent = clampInt(controls.airflowPercent + Math.round(8 * intensityFactor), 0, 100);
+    controls.airflowPercent = clampInt(controls.airflowPercent + Math.round(8 * intensityFactor * influenceMultiplier), 0, 100);
   }
 }
 
-function applyActionEnvironmentInfluence(action) {
+function applyActionEnvironmentInfluence(action, profile = null) {
   const influence = action && action.environmentInfluence && typeof action.environmentInfluence === 'object' ? action.environmentInfluence : null;
   if (!influence) {
     return false;
@@ -2578,9 +2901,10 @@ function applyActionEnvironmentInfluence(action) {
 
   const controls = ensureEnvironmentControls(state);
   let applied = false;
+  const influenceMultiplier = Number(profile && profile.benefitMultiplier) || 1;
 
   if (Number.isFinite(Number(influence.airflowDeltaPercent))) {
-    const airflowDeltaPercent = Number(influence.airflowDeltaPercent);
+    const airflowDeltaPercent = Number(influence.airflowDeltaPercent) * influenceMultiplier;
     controls.airflowPercent = clampInt(controls.airflowPercent + airflowDeltaPercent, 0, 100);
     if (controls.fan && typeof controls.fan === 'object') {
       controls.fan.minPercent = clampInt(Number(controls.fan.minPercent) || 0, 0, 100);
@@ -2597,7 +2921,7 @@ function applyActionEnvironmentInfluence(action) {
   return applied;
 }
 
-function applyActionRootZoneInfluence(action) {
+function applyActionRootZoneInfluence(action, profile = null) {
   const influence = action && action.rootZoneInfluence && typeof action.rootZoneInfluence === 'object' ? action.rootZoneInfluence : null;
   if (!influence) {
     return false;
@@ -2605,18 +2929,19 @@ function applyActionRootZoneInfluence(action) {
 
   const controls = ensureEnvironmentControls(state);
   let applied = false;
+  const influenceMultiplier = Number(profile && profile.benefitMultiplier) || 1;
 
   if (Number.isFinite(Number(influence.ecDelta))) {
-    controls.ec = clamp(controls.ec + Number(influence.ecDelta), 0.6, 2.8);
+    controls.ec = clamp(controls.ec + (Number(influence.ecDelta) * influenceMultiplier), 0.6, 2.8);
     applied = true;
   }
 
   if (Number.isFinite(Number(influence.phDelta))) {
-    controls.ph = clamp(controls.ph + Number(influence.phDelta), 5.0, 7.0);
+    controls.ph = clamp(controls.ph + (Number(influence.phDelta) * influenceMultiplier), 5.0, 7.0);
     applied = true;
   }
 
-  if (Number.isFinite(Number(influence.phToward))) { const weight = clamp(Number.isFinite(Number(influence.phTowardWeight)) ? Number(influence.phTowardWeight) : 0.35, 0, 1);
+  if (Number.isFinite(Number(influence.phToward))) { const weight = clamp((Number.isFinite(Number(influence.phTowardWeight)) ? Number(influence.phTowardWeight) : 0.35) * influenceMultiplier, 0, 1);
     controls.ph = clamp(controls.ph + ((Number(influence.phToward) - controls.ph) * weight), 5.0, 7.0);
     applied = true;
   }
@@ -2624,7 +2949,7 @@ function applyActionRootZoneInfluence(action) {
   return applied;
 }
 
-function applyActionClimateInfluence(action) {
+function applyActionClimateInfluence(action, profile = null) {
   const influence = action && action.climateInfluence && typeof action.climateInfluence === 'object' ? action.climateInfluence : null;
   if (!influence) {
     return false;
@@ -2643,7 +2968,7 @@ function applyActionClimateInfluence(action) {
     return false;
   }
 
-  const humidityPulsePercent = clamp(Number(influence.humidityPulsePercent) || 0, 0, 12);
+  const humidityPulsePercent = clamp((Number(influence.humidityPulsePercent) || 0) * (Number(profile && profile.benefitMultiplier) || 1), 0, 12);
   if (humidityPulsePercent <= 0) {
     return false;
   }
@@ -2670,7 +2995,7 @@ function applyActionClimateInfluence(action) {
   return true;
 }
 
-function applyStructuredEffects(effectsList) {
+function applyStructuredEffects(effectsList, profile = null) {
   for (const effect of effectsList || []) {
     if (!effect || typeof effect !== 'object') {
       continue;
@@ -2690,9 +3015,9 @@ function applyStructuredEffects(effectsList) {
 
     if (metric === 'growth') {
       if (mode === 'add') {
-        applyGrowthPercentDelta(value);
+        applyGrowthPercentDelta(scaleActionEffectsObject({ growth: value }, profile).growth || value);
       } else if (mode === 'subtract') {
-        applyGrowthPercentDelta(-Math.abs(value));
+        applyGrowthPercentDelta(scaleActionEffectsObject({ growth: -Math.abs(value) }, profile).growth || -Math.abs(value));
       } else if (mode === 'set') {
         state.plant.progress = clamp(Number(value), 0, 100);
       }
@@ -2704,9 +3029,9 @@ function applyStructuredEffects(effectsList) {
     }
 
     if (mode === 'add') {
-      state.status[metric] += value;
+      state.status[metric] += scaleActionEffectsObject({ [metric]: value }, profile)[metric] || value;
     } else if (mode === 'subtract') {
-      state.status[metric] -= Math.abs(value);
+      state.status[metric] += scaleActionEffectsObject({ [metric]: -Math.abs(value) }, profile)[metric] || -Math.abs(value);
     } else if (mode === 'set') {
       state.status[metric] = value;
     } else if (mode === 'clamp_min') {
@@ -3180,6 +3505,8 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const activeSetup = sourceState.setup && typeof sourceState.setup === 'object' ? sourceState.setup : (run && run.setupSnapshot ? run.setupSnapshot : null);
   const runBuild = progressionApi && typeof progressionApi.getRunBuildPresentation === 'function' && activeSetup ? progressionApi.getRunBuildPresentation(activeSetup) : null;
   const showRunGoal = Boolean(runGoal && (run.status === 'active' || run.status === 'downed'));
+  const diagnostics = diagnosePlantState();
+  const guidanceHints = getGuidanceHints(diagnostics);
 
   return {
     id: 'home',
@@ -3242,6 +3569,11 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       diagnosisDisabled: dead,
       skipNightDisabled: dead || Boolean(simulation.isDaytime),
       showSkipNight
+    },
+    diagnostics: {
+      summary: String(diagnostics && diagnostics.summary || ''),
+      primaryTitle: String(diagnostics && diagnostics.primaryIssue && diagnostics.primaryIssue.title || ''),
+      hints: guidanceHints.slice(0, 3)
     },
     runGoal: showRunGoal
       ? {
@@ -3457,6 +3789,26 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   const simTimeNode = uiNode('simTimeValue', 'simTimeValue');
   if (simTimeNode && simTimeNode.textContent !== vm.simTimeText) {
     simTimeNode.textContent = String(vm.simTimeText || '');
+  }
+
+  const homeGuidancePanelNode = uiNode('homeGuidancePanel', 'homeGuidancePanel');
+  const homeGuidanceListNode = uiNode('homeGuidanceList', 'homeGuidanceList');
+  const homeGuidanceHints = Array.isArray(vm.diagnostics && vm.diagnostics.hints) ? vm.diagnostics.hints : [];
+  if (homeGuidancePanelNode) {
+    homeGuidancePanelNode.classList.toggle('hidden', !homeGuidanceHints.length);
+    homeGuidancePanelNode.setAttribute('aria-hidden', String(!homeGuidanceHints.length));
+  }
+  if (homeGuidanceListNode) {
+    homeGuidanceListNode.replaceChildren();
+    for (const hint of homeGuidanceHints.slice(0, 3)) {
+      const item = document.createElement('div');
+      item.className = `home-guidance-item home-guidance-item--${escapeHtml(String(hint.tone || 'stabilize'))}`;
+      item.innerHTML = `
+        <strong class="home-guidance-item__title">${escapeHtml(String(hint.title || 'Hinweis'))}</strong>
+        <p class="home-guidance-item__body">${escapeHtml(String(hint.body || ''))}</p>
+      `;
+      homeGuidanceListNode.appendChild(item);
+    }
   }
 
   renderPanelReadouts(vm);
@@ -4583,7 +4935,9 @@ function onCareExecuteAction() {
   }
 
   const result = executeCareAction(action.id);
-  if (result.ok) { setCareFeedback('success', action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgeführt.`);
+  if (result.ok) { const baseMessage = action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgeführt.`;
+    const detail = String(result.guidanceHint || '').trim();
+    setCareFeedback('success', detail ? `${baseMessage} ${detail}` : baseMessage);
     state.ui.care.selectedActionId = null;
   } else {
     setCareFeedback('error', explainActionFailure(result.reason));
@@ -4599,8 +4953,11 @@ function renderCareFeedback() {
   const availability = selected ? getActionAvailability(selected) : null;
   const cooldownUntil = selected ? Number(state.actions.cooldowns[selected.id] || 0) : 0;
   const cooldownReason = cooldownUntil > Date.now() ? `cooldown_active:${Math.ceil((cooldownUntil - Date.now()) / 1000)}s` : '';
+  const softReason = selected && availability && availability.ok && availability.soft
+    ? (availability.note || 'Verfügbar, aber heute weniger effizient und etwas riskanter.')
+    : '';
   const feedback = (state.ui.care && state.ui.care.feedback)
-    || { kind: 'info', text: selected ? (cooldownReason ? explainActionFailure(cooldownReason) : (availability && !availability.ok ? explainActionFailure(availability.reason) : 'Bereit zur Ausführung')) : 'Wähle eine Aktion.' };
+    || { kind: 'info', text: selected ? (cooldownReason ? explainActionFailure(cooldownReason) : (availability && !availability.ok ? explainActionFailure(availability.reason) : (softReason || 'Bereit zur Ausführung'))) : 'Wähle eine Aktion.' };
   ui.careFeedback.textContent = feedback.text;
   ui.careFeedback.classList.toggle('is-info', feedback.kind === 'info');
   ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');
@@ -5146,6 +5503,13 @@ function renderAnalysisDiagnosis() {
   const diagnosis = diagnosePlantState();
   const primary = diagnosis.primaryIssue || null;
   const secondary = Array.isArray(diagnosis.secondaryIssues) ? diagnosis.secondaryIssues : [];
+  const guidanceHints = getGuidanceHints(diagnosis);
+  const severityLabel = (severity) => {
+    if (severity === 'critical') return 'Akut';
+    if (severity === 'high') return 'Wichtig';
+    if (severity === 'medium') return 'Relevant';
+    return 'Beobachten';
+  };
 
   ui.analysisPanelDiagnosis.replaceChildren();
 
@@ -5155,11 +5519,11 @@ function renderAnalysisDiagnosis() {
     node.innerHTML = `
       <div class="gs-analysis-driver-head">
         <strong>Hauptproblem: ${escapeHtml(primary.title)}</strong>
-        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(primary.severity)}">${escapeHtml(primary.severityLabel)}</span>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(primary.severity)}">${escapeHtml(severityLabel(primary.severity))}</span>
       </div>
       <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(primary.cause)}</p>
       <p class="gs-analysis-driver-line"><span>Auswirkung:</span> ${escapeHtml(primary.effect)}</p>
-      <p class="gs-analysis-driver-line"><span>Empfehlung:</span> ${escapeHtml(describeDiagnosisRecommendation(primary))}</p>
+      <p class="gs-analysis-driver-line"><span>Richtung:</span> ${escapeHtml(describeDiagnosisRecommendation(primary))}</p>
       <p class="gs-analysis-driver-line gs-analysis-driver-line--limit"><span>Grenze:</span> ${escapeHtml(primary.limit)}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(node);
@@ -5171,10 +5535,23 @@ function renderAnalysisDiagnosis() {
     node.innerHTML = `
       <div class="gs-analysis-driver-head">
         <strong>${escapeHtml(item.title)}</strong>
-        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(item.severity)}">${escapeHtml(item.severityLabel)}</span>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(item.severity)}">${escapeHtml(severityLabel(item.severity))}</span>
       </div>
       <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(item.cause)}</p>
-      <p class="gs-analysis-driver-line"><span>Nächster Schritt:</span> ${escapeHtml(describeDiagnosisRecommendation(item))}</p>
+      <p class="gs-analysis-driver-line"><span>Richtung:</span> ${escapeHtml(describeDiagnosisRecommendation(item))}</p>
+    `;
+    ui.analysisPanelDiagnosis.appendChild(node);
+  }
+
+  for (const hint of guidanceHints.slice(0, 3)) {
+    const node = document.createElement('div');
+    node.className = 'gs-analysis-driver';
+    node.innerHTML = `
+      <div class="gs-analysis-driver-head">
+        <strong>${escapeHtml(String(hint.title || 'Hinweis'))}</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(String(hint.severity || 'low'))}">${escapeHtml(severityLabel(hint.severity))}</span>
+      </div>
+      <p class="gs-analysis-driver-line">${escapeHtml(String(hint.body || ''))}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(node);
   }
@@ -5261,161 +5638,76 @@ function getCarePlanForCategory(category) {
 
 function describeDiagnosisRecommendation(issue) {
   const problem = issue && typeof issue === 'object' ? issue : {};
-  const carePlan = problem.carePlan || null;
-  if (!carePlan || !carePlan.best) {
-    return String(problem.recommendation || 'Beobachten und gezielt nachsteuern.');
-  }
+  return String(problem.recommendation || 'Beobachten und gezielt nachsteuern.');
+}
 
-  const best = carePlan.best;
-  if (best.tier === 'primary' || best.tier === 'secondary') {
-    return `${String(best.label)} über ${String(carePlan.categoryLabel)}. ${String(problem.recommendation || '')}`.trim();
-  }
-  if (best.tier === 'cooldown') {
-    return `${String(carePlan.categoryLabel)} wäre passend, aber die beste Maßnahme lädt noch nach. ${String(problem.recommendation || '')}`.trim();
-  }
-  return String(problem.recommendation || `Aktuell keine saubere ${String(carePlan.categoryLabel)}-Maßnahme verfügbar.`);
+function getDiagnosticsApi() {
+  const api = typeof window !== 'undefined' ? window.GrowSimDiagnostics : null;
+  return api && typeof api === 'object' ? api : null;
+}
+
+function buildFallbackPlantDiagnostics() {
+  const stress = Number(state.status && state.status.stress) || 0;
+  const risk = Number(state.status && state.status.risk) || 0;
+  const growthImpulse = Number(state.simulation && state.simulation.growthImpulse) || 0;
+  const stable = stress < 30 && risk < 30 && growthImpulse >= 0;
+  const issue = stable
+    ? {
+      id: 'stable_state',
+      family: 'optimize',
+      title: 'Das Setup läuft ruhig',
+      cause: 'Aktuell ist kein dominanter Problemdruck erkennbar.',
+      effect: 'Die Pflanze kann ihren Rhythmus halten.',
+      recommendation: 'Kleine Optimierungen sind möglich, aber nicht zwingend.',
+      limit: 'Mehr Eingriffe sind gerade nicht automatisch besser.',
+      score: 18,
+      severity: 'low'
+    }
+    : {
+      id: 'stress_load',
+      family: 'stress',
+      title: 'Belastung baut sich auf',
+      cause: 'Mehrere Werte liegen nicht mehr sauber in der Komfortzone.',
+      effect: 'Erholung und Tempo bleiben unter Druck.',
+      recommendation: 'Erst stabilisieren, dann wieder optimieren.',
+      limit: 'Zu viele gleichzeitige Eingriffe verschieben das Problem eher.',
+      score: Math.max(stress, risk),
+      severity: stress >= 70 || risk >= 70 ? 'high' : 'medium'
+    };
+  return {
+    primaryIssue: issue.id === 'stable_state' ? null : issue,
+    secondaryIssues: [],
+    allIssues: [issue],
+    contributingFactors: [issue.cause],
+    growthSpeedMultiplier: round2(1 + (growthImpulse * 0.1)),
+    summary: issue.title
+  };
 }
 
 function diagnosePlantState() {
-  const status = state.status || {};
-  const environment = deriveEnvironmentReadout(state);
-  const roots = deriveRootZoneReadout(environment, state);
-  const stageIndex = Number(state.plant && state.plant.stageIndex) || 0;
-  const water = clamp(Number(status.water) || 0, 0, 100);
-  const nutrition = clamp(Number(status.nutrition) || 0, 0, 100);
-  const stress = clamp(Number(status.stress) || 0, 0, 100);
-  const risk = clamp(Number(status.risk) || 0, 0, 100);
-  const health = clamp(Number(status.health) || 0, 0, 100);
-  const humidity = clamp(Number(environment.humidityPercent) || 0, 0, 100);
-  const airflow = clamp(Number(environment.airflowScore) || 0, 0, 100);
-  const vpd = Number(environment.vpdKpa) || 0;
-  const ph = Number.parseFloat(String(roots.ph || '').replace(',', '.'));
-  const ec = Number.parseFloat(String(roots.ec || '').replace(',', '.'));
-  const oxygen = Number.parseFloat(String(roots.oxygen || '').replace('%', '').replace(',', '.'));
-
-  const wateringPlan = getCarePlanForCategory('watering');
-  const fertilizingPlan = getCarePlanForCategory('fertilizing');
-  const environmentPlan = getCarePlanForCategory('environment');
-  const trainingPlan = getCarePlanForCategory('training');
-  const issues = [];
-  const lateFlower = stageIndex >= 8;
-
-  if (water <= 34 || (water <= 42 && vpd >= 1.45)) {
-    issues.push(buildDiagnosisIssue({
-      id: 'dry_root_zone',
-      score: (100 - water) + (vpd >= 1.45 ? 18 : 0) + (stress >= 55 ? 10 : 0),
-      title: 'Trockenstress baut sich auf',
-      cause: vpd >= 1.45
-        ? 'Die Pflanze verliert gerade viel Wasser, weil das Medium trocken wird und das Klima zusätzlichen Zug aufbaut.'
-        : 'Das Medium ist deutlich trocken und deckt den Wasserbedarf nicht mehr sauber ab.',
-      effect: 'Stress steigt, Nährstoffaufnahme wird unruhiger und Wachstum bremst schneller weg.',
-      recommendation: 'Eine passende Wassergabe beruhigt die Lage am schnellsten.',
-      limit: vpd >= 1.45
-        ? 'Gießen hilft kurzfristig, aber ein ziehendes Klima treibt den Bedarf weiter hoch.'
-        : 'Mehr Wasser löst nur dieses Problem, nicht automatisch andere Stressquellen.',
-      carePlan: wateringPlan
-    }));
+  const api = getDiagnosticsApi();
+  if (api && typeof api.computePlantDiagnostics === 'function') {
+    return api.computePlantDiagnostics(state);
   }
+  return buildFallbackPlantDiagnostics();
+}
 
-  if (water >= 82 || (Number.isFinite(oxygen) && oxygen <= 58)) {
-    issues.push(buildDiagnosisIssue({
-      id: 'wet_root_zone',
-      score: water + (Number.isFinite(oxygen) ? Math.max(0, 70 - oxygen) : 0) + (risk >= 55 ? 12 : 0),
-      title: 'Die Wurzelzone ist zu nass',
-      cause: Number.isFinite(oxygen) && oxygen <= 58
-        ? 'Zu viel Feuchte drückt Sauerstoff aus dem Wurzelbereich und hält das Medium unnötig schwer.'
-        : 'Das Medium ist bereits sehr feucht und trocknet noch nicht sauber zurück.',
-      effect: 'Wurzelstress und Krankheitsdruck steigen leichter, obwohl die Pflanze oberirdisch noch nicht sofort kollabiert.',
-      recommendation: 'Jetzt vor allem nicht weiter gießen; Umgebung nur unterstützend sauber halten.',
-      limit: 'Eine Umgebungsmaßnahme kann Begleitdruck senken, behebt die eigentliche Ursache aber nicht sofort.',
-      carePlan: environmentPlan
-    }));
+function getGuidanceHints(diagnostics = diagnosePlantState()) {
+  const api = getDiagnosticsApi();
+  if (api && typeof api.buildGuidanceHints === 'function') {
+    return api.buildGuidanceHints(diagnostics);
   }
-
-  if ((nutrition <= 38 && water >= 36 && water <= 76) || (nutrition <= 45 && health <= 48)) {
-    issues.push(buildDiagnosisIssue({
-      id: 'nutrient_deficit',
-      score: (95 - nutrition) + (health <= 48 ? 12 : 0) + (stress >= 50 ? 6 : 0),
-      title: 'Die Versorgung wird zu knapp',
-      cause: water >= 36 && water <= 76
-        ? 'Wasser ist grundsätzlich verfügbar, aber das Nährstoffniveau trägt das Wachstum nicht mehr sauber.'
-        : 'Die Pflanze wirkt geschwächt und die Versorgung reicht nicht mehr als stabile Grundlage.',
-      effect: 'Wachstum verliert Tempo und die Pflanze baut unter Druck schneller Reserve ab.',
-      recommendation: 'Eine passende Fütterung hilft, wenn der Wasserhaushalt halbwegs ruhig bleibt.',
-      limit: water < 36
-        ? 'Mehr Futter löst das Problem nicht sauber, solange das Medium zu trocken bleibt.'
-        : 'Zu harte Fütterung bringt hier eher Druck als Erholung.',
-      carePlan: fertilizingPlan
-    }));
+  const issue = diagnostics && diagnostics.allIssues && diagnostics.allIssues[0];
+  if (!issue) {
+    return [];
   }
-
-  if (nutrition >= 80 || (Number.isFinite(ec) && ec >= 2.05) || (nutrition >= 72 && risk >= 60)) {
-    issues.push(buildDiagnosisIssue({
-      id: 'nutrient_pressure',
-      score: nutrition + (Number.isFinite(ec) ? Math.max(0, (ec - 1.8) * 28) : 0) + (risk >= 60 ? 12 : 0),
-      title: 'Zu viel Druck in der Wurzelzone',
-      cause: Number.isFinite(ec) && ec >= 2.05
-        ? 'Die Salz- und Nährstoffdichte wirkt bereits hoch und drückt auf die Wurzelaufnahme.'
-        : 'Die Nährstofflage ist schon sehr voll und lässt wenig Puffer für weitere Fütterung.',
-      effect: 'Burn-Risiko, zusätzlicher Stress und unruhige Entwicklung werden wahrscheinlicher.',
-      recommendation: 'Keine weitere Fütterung; falls nötig, eher Druck aus dem Medium nehmen als noch mehr nachlegen.',
-      limit: 'Eine Umgebungsmaßnahme senkt nur Begleitsymptome. Der eigentliche Druck sitzt in der Wurzelzone.',
-      carePlan: wateringPlan
-    }));
-  }
-
-  if ((humidity >= 68 && airflow <= 45) || (lateFlower && humidity >= 64) || (risk >= 62 && airflow <= 50)) {
-    issues.push(buildDiagnosisIssue({
-      id: 'humid_stagnant_air',
-      score: risk + (humidity >= 68 ? 16 : 8) + (lateFlower ? 12 : 0) + (airflow <= 45 ? 14 : 0),
-      title: 'Feuchte Luft bleibt zu lange stehen',
-      cause: lateFlower
-        ? 'In der späten Blüte trifft hohe Luftfeuchte auf zu wenig Bewegung im Bestand.'
-        : 'Feuchte Luft und schwacher Luftstrom bleiben zu lange in Blatt- und Bud-Zonen stehen.',
-      effect: 'Das Risiko zieht an, selbst wenn Wasser und Fütterung nicht völlig entgleist sind.',
-      recommendation: 'Eine Umgebungsmaßnahme senkt den Druck jetzt direkter als weitere Fütterung oder Training.',
-      limit: 'Sie hilft beim Risikodruck, behebt aber keinen Wasser- oder Salzfehler in der Wurzelzone.',
-      carePlan: environmentPlan
-    }));
-  }
-
-  if ((stress >= 62 || health <= 40) && issues.length < 3) {
-    issues.push(buildDiagnosisIssue({
-      id: 'general_recovery',
-      score: Math.max(stress + 8, 100 - health),
-      title: 'Die Pflanze läuft unter Gesamtbelastung',
-      cause: stress >= 62
-        ? 'Mehrere Druckfaktoren wirken gleichzeitig, sodass sich die Pflanze nicht sauber erholt.'
-        : 'Die Gesundheitsreserve ist niedrig und kleine Fehler schlagen jetzt härter durch.',
-      effect: 'Erholung, Uptake und Wachstum bleiben flach, bis der Hauptdruck klarer gesenkt wird.',
-      recommendation: 'Erst den größten Treiber beruhigen, statt mehrere Eingriffe gleichzeitig zu stapeln.',
-      limit: 'Eine einzelne Pflegeaktion kann die Pflanze stabilisieren, aber selten die komplette Ursache allein lösen.',
-      carePlan: environmentPlan.best ? environmentPlan : trainingPlan
-    }));
-  }
-
-  if (!issues.length) {
-    issues.push(buildDiagnosisIssue({
-      id: 'stable_state',
-      score: 18,
-      title: 'Aktuell kein klarer Problemdruck',
-      cause: 'Wasser, Versorgung und Risiko wirken im Moment vergleichsweise ruhig.',
-      effect: 'Die Pflanze kann ihren Rhythmus halten, solange du keine unnötigen Eingriffe stapelst.',
-      recommendation: 'Beobachten und nur bei einer klaren Abweichung eingreifen.',
-      limit: 'Mehr Aktion bringt hier nicht automatisch mehr Fortschritt.',
-      carePlan: trainingPlan
-    }));
-  }
-
-  const sorted = issues
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 4);
-
-  return {
-    primaryIssue: sorted[0] && sorted[0].id !== 'stable_state' ? sorted[0] : null,
-    secondaryIssues: sorted[0] && sorted[0].id !== 'stable_state' ? sorted.slice(1, 3) : [],
-    allIssues: sorted
-  };
+  return [{
+    id: issue.id,
+    tone: issue.family === 'optimize' ? 'optimize' : 'stabilize',
+    title: issue.family === 'optimize' ? 'Optimieren' : 'Stabilisieren',
+    body: issue.recommendation || issue.cause || '',
+    severity: issue.severity || 'low'
+  }];
 }
 
 function diagnosisDrivers() {
@@ -5433,20 +5725,6 @@ function diagnosisDrivers() {
     limit: issue.limit,
     severity: issue.severity
   }));
-}
-
-function recommendedCareCategory(primaryDriver) {
-  if (!primaryDriver) return 'environment';
-  const map = {
-    Wassermangel: 'watering',
-    Überwässerung: 'environment',
-    Nährstoffmangel: 'fertilizing',
-    Nährstoffüberschuss: 'environment',
-    'Hoher Stress': 'environment',
-    'Hohes Risiko': 'environment',
-    'Stabiler Zustand': 'training'
-  };
-  return map[primaryDriver.label] || 'environment';
 }
 
 function qualityTierLabel(tier) {
@@ -5591,9 +5869,9 @@ const STAT_DETAIL_CONFIG = Object.freeze({
       return 'Wasser ist niedrig, Trockenstress kann schnell ansteigen.';
     },
     getRecommendation: (value) => {
-      const dryIssue = diagnosePlantState().allIssues.find((entry) => entry.id === 'dry_root_zone');
-      if (dryIssue) {
-        return `Empfehlung: ${describeDiagnosisRecommendation(dryIssue)}`;
+      const waterIssue = diagnosePlantState().allIssues.find((entry) => entry.id === 'water_deficit' || entry.id === 'waterlogging');
+      if (waterIssue) {
+        return `Empfehlung: ${describeDiagnosisRecommendation(waterIssue)}`;
       }
       return value < 60
         ? 'Empfehlung: Pflege öffnen und zeitnah gießen.'

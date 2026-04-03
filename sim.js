@@ -39,6 +39,19 @@ const SIM_RUNTIME_FREEZE_ON_DEATH = typeof growSimRuntimeConfig.FREEZE_SIM_ON_DE
 
 const FAIRNESS_REACTION_GRACE_MS = 2 * 60 * 1000;
 const OFFLINE_STATUS_DECAY_MULTIPLIER = 0.72;
+const OFFLINE_CATCHUP_CHUNK_REAL_MS = 20 * 60 * 1000;
+const PASSIVE_METABOLISM_DAY_FACTOR = 1;
+const PASSIVE_METABOLISM_NIGHT_FACTOR = 0.42;
+const PASSIVE_NUTRITION_DAY_FACTOR = 0.52;
+const PASSIVE_NUTRITION_NIGHT_FACTOR = 0.2;
+const OFFLINE_PASSIVE_WATER_LOSS_CAP_PER_BLOCK = 3.2;
+const OFFLINE_PASSIVE_NUTRITION_LOSS_CAP_PER_BLOCK = 1.3;
+const STRESS_EXPOSURE_RISE_PER_HOUR = 0.9;
+const STRESS_EXPOSURE_FALL_PER_HOUR = 0.36;
+const RISK_EXPOSURE_RISE_PER_HOUR = 0.28;
+const RISK_EXPOSURE_FALL_PER_HOUR = 0.06;
+const STRESS_RISE_CAP_PER_HOUR = 8;
+const RISK_RISE_CAP_PER_HOUR = 3.2;
 const WATER_STRESS_THRESHOLD = 30;
 const WATER_CRITICAL_THRESHOLD = 12;
 const NUTRITION_STRESS_THRESHOLD = 30;
@@ -688,6 +701,11 @@ __gsGlobal.GrowSimEnvModel = __gsGlobal.GrowSimEnvModel || Object.freeze({
   buildRootZoneModelFromState
 });
 
+__gsGlobal.GrowSimDiagnostics = __gsGlobal.GrowSimDiagnostics || Object.freeze({
+  computePlantDiagnostics,
+  buildGuidanceHints
+});
+
 function tick() {
   const nowMs = Date.now();
   const prevOpenSheet = state.ui.openSheet;
@@ -942,6 +960,7 @@ function setSimulationTimeMs(targetSimTimeMs, nowMs = getRealNowMs(), options = 
 }
 
 function advanceSimulationTime(targetRealNowMs, options = {}) {
+  const shouldChunk = Boolean(options.forceChunking);
   const safeTargetRealNowMs = Number.isFinite(Number(targetRealNowMs)) ? Number(targetRealNowMs) : getRealNowMs();
   const previousTickMs = Number.isFinite(Number(state.simulation.lastTickRealTimeMs))
     ? Number(state.simulation.lastTickRealTimeMs)
@@ -958,6 +977,37 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
   const safePreviousTickMs = Math.min(previousTickMs, safeTargetRealNowMs);
   const realDeltaMs = Math.max(0, rawRealDeltaMs);
   const previousBoostActive = isSpeedBoostActive(safePreviousTickMs);
+
+  if (!shouldChunk && realDeltaMs > OFFLINE_CATCHUP_CHUNK_REAL_MS) {
+    let chunkCursorMs = previousTickMs;
+    let totalElapsedRealMs = 0;
+    let totalElapsedSimMs = 0;
+
+    while (chunkCursorMs < safeTargetRealNowMs) {
+      const chunkEndMs = Math.min(chunkCursorMs + OFFLINE_CATCHUP_CHUNK_REAL_MS, safeTargetRealNowMs);
+      const chunkResult = advanceSimulationTime(chunkEndMs, {
+        ...options,
+        forceChunking: true,
+        offlineCatchUp: true,
+        suppressEvents: true,
+        suppressLogs: true
+      });
+      totalElapsedRealMs += chunkResult.elapsedRealMs;
+      totalElapsedSimMs += chunkResult.elapsedSimMs;
+      chunkCursorMs = chunkEndMs;
+    }
+
+    if (!options.suppressEvents) {
+      runEventStateMachine(safeTargetRealNowMs);
+    }
+    if (!options.suppressEvents) {
+      evaluateNotificationTriggers(safeTargetRealNowMs);
+    }
+    return {
+      elapsedRealMs: totalElapsedRealMs,
+      elapsedSimMs: totalElapsedSimMs
+    };
+  }
 
   if (realDeltaMs <= 0) {
     state.simulation.nowMs = Math.max(Number(state.simulation.nowMs) || 0, safeTargetRealNowMs);
@@ -988,13 +1038,16 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
     reason: options.reason || 'advance'
   });
 
-  applyStatusDrift(realDeltaMs);
+  applyStatusDrift(realDeltaMs, { offlineCatchUp: Boolean(options.offlineCatchUp) });
   const criticalNow = Number(state.status.health) < 20;
   if (criticalNow && !wasCriticalHealth) {
     notifyPlantNeedsCare('Deine Pflanze ist kritisch und braucht Pflege.');
   }
   wasCriticalHealth = criticalNow;
-  applyActiveActionEffects(timeResult.elapsedSimMs);
+  const effectiveActionSimMs = Boolean(options.offlineCatchUp)
+    ? (timeResult.elapsedSimMs * OFFLINE_STATUS_DECAY_MULTIPLIER)
+    : timeResult.elapsedSimMs;
+  applyActiveActionEffects(effectiveActionSimMs);
   const suppressDeathForLockedWindow = Boolean(options.suppressDeath) || isDeathSuppressedForFairness(safeTargetRealNowMs);
   advanceGrowthTick(timeResult.elapsedSimMs, { suppressDeath: suppressDeathForLockedWindow });
   applyFairnessSurvivalGuard(safeTargetRealNowMs);
@@ -1009,7 +1062,9 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
     reason: options.reason || 'advance'
   });
   syncCanonicalStateShape();
-  evaluateNotificationTriggers(safeTargetRealNowMs);
+  if (!options.suppressEvents) {
+    evaluateNotificationTriggers(safeTargetRealNowMs);
+  }
 
   return {
     elapsedRealMs: realDeltaMs,
@@ -1099,6 +1154,13 @@ function syncSimulationFromElapsedTime(nowMs) {
       reason: 'resume',
       suppressEvents: suppressResumeEvents
     });
+    if (elapsedSinceLastTickMs > SIM_RUNTIME_MAX_ELAPSED_PER_TICK_MS) {
+      applyOfflineFairnessFloor();
+      if (shouldProtectOfflineNightDeath(previousTickMs, safeNowMs)
+        && (Number(state.status.health) <= 0 || Number(state.status.risk) >= 100 || isPlantDead())) {
+        applyOfflineNightSurvivalClamp();
+      }
+    }
     if (discardedElapsedMs > 0 && Number.isFinite(Number(state.simulation.startRealTimeMs))) {
       state.simulation.startRealTimeMs = Math.max(
         Number(state.simulation.startRealTimeMs) || 0,
@@ -1215,10 +1277,506 @@ function evolveEnvironmentChemistry(minutes) {
   controls.ph = clamp(controls.ph + (phDrift * minutes), 5.0, 7.0);
 }
 
-function applyStatusDrift(elapsedMs) {
+function getPassiveMetabolismContext(minutes, envModel, rootModel, options = {}) {
+  const offlineCatchUp = Boolean(options.offlineCatchUp);
+  const isDay = Boolean(state.simulation && state.simulation.isDaytime);
+  const climate = ensureClimateState(state, state.status, state.simulation, state.plant);
+  const transpirationGph = computePlantTranspirationGph(state.status, state.simulation, state.plant, climate, state);
+  const transpirationPerMin = clamp(transpirationGph / 60, 0.001, 0.34);
+  const metabolismFactor = isDay ? PASSIVE_METABOLISM_DAY_FACTOR : PASSIVE_METABOLISM_NIGHT_FACTOR;
+  const nutritionMetabolismFactor = isDay ? PASSIVE_NUTRITION_DAY_FACTOR : PASSIVE_NUTRITION_NIGHT_FACTOR;
+
+  const stageIndexOneBased = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, 12);
+  const stagePressure = clamp((stageIndexOneBased - 1) / 11, 0, 1);
+  const envInfluence = 0.78 + (stagePressure * 0.34);
+  const rootInfluence = 0.76 + (stagePressure * 0.38);
+  const earlyPhaseRelief = 0.8 + (stagePressure * 0.2);
+  const envStress = clamp(
+    (Number(envModel && envModel.stressFactor && envModel.stressFactor.temp) || 0) * 0.36
+    + ((Number(envModel && envModel.stressFactor && envModel.stressFactor.humidity) || 0) * 0.24)
+    + ((Number(envModel && envModel.stressFactor && envModel.stressFactor.vpd) || 0) * 0.28)
+    + ((Number(envModel && envModel.stressFactor && envModel.stressFactor.airflow) || 0) * 0.12),
+    0,
+    2
+  );
+  const rootStress = clamp(
+    (Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.ph) || 0) * 0.42
+    + ((Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.ec) || 0) * 0.34)
+    + ((Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.oxygen) || 0) * 0.24),
+    0,
+    2
+  );
+  const uptakePenalty = clamp(((rootStress * 0.58) + (envStress * 0.34)) * rootInfluence, 0, 0.92);
+  const waterAvailability = clamp(Number(state.status.water || 0) / 100, 0.18, 1);
+  const uptakeActivity = clamp((transpirationPerMin * 2.8 * waterAvailability) + ((1 - uptakePenalty) * 0.45), 0.18, 1.2);
+
+  let waterDrainPerMin = (
+    0.022
+    + (transpirationPerMin * 0.95)
+    + (envStress * 0.022 * envInfluence)
+    + (rootStress * 0.008 * rootInfluence)
+  ) * metabolismFactor * earlyPhaseRelief;
+
+  let nutritionDrainPerMin = (
+    0.009
+    + (uptakeActivity * 0.032)
+    + (rootStress * 0.010 * rootInfluence)
+    + (envStress * 0.006 * envInfluence)
+  ) * nutritionMetabolismFactor * earlyPhaseRelief;
+
+  if (offlineCatchUp) {
+    waterDrainPerMin *= OFFLINE_STATUS_DECAY_MULTIPLIER;
+    nutritionDrainPerMin *= OFFLINE_STATUS_DECAY_MULTIPLIER;
+  }
+
+  return {
+    uptakePenalty,
+    waterDrain: Math.min(
+      offlineCatchUp ? OFFLINE_PASSIVE_WATER_LOSS_CAP_PER_BLOCK : Number.POSITIVE_INFINITY,
+      waterDrainPerMin * minutes
+    ),
+    nutritionDrain: Math.min(
+      offlineCatchUp ? OFFLINE_PASSIVE_NUTRITION_LOSS_CAP_PER_BLOCK : Number.POSITIVE_INFINITY,
+      nutritionDrainPerMin * minutes
+    )
+  };
+}
+
+function computeLowerBandSeverity(value, deadzone, warning, critical) {
+  const numericValue = Number(value) || 0;
+  if (numericValue >= deadzone) return 0;
+  if (numericValue >= warning) {
+    return clamp(((deadzone - numericValue) / Math.max(1, deadzone - warning)) * 0.35, 0, 0.35);
+  }
+  if (numericValue >= critical) {
+    return clamp(0.35 + (((warning - numericValue) / Math.max(1, warning - critical)) * 0.45), 0.35, 0.8);
+  }
+  return clamp(0.8 + ((critical - numericValue) / Math.max(1, critical)) * 0.2, 0.8, 1);
+}
+
+function computeUpperBandSeverity(value, deadzone, warning, critical, extreme = critical + 0.4) {
+  const numericValue = Number(value) || 0;
+  if (numericValue <= deadzone) return 0;
+  if (numericValue <= warning) {
+    return clamp(((numericValue - deadzone) / Math.max(0.001, warning - deadzone)) * 0.35, 0, 0.35);
+  }
+  if (numericValue <= critical) {
+    return clamp(0.35 + (((numericValue - warning) / Math.max(0.001, critical - warning)) * 0.45), 0.35, 0.8);
+  }
+  return clamp(0.8 + ((numericValue - critical) / Math.max(0.001, extreme - critical)) * 0.2, 0.8, 1);
+}
+
+function moveExposureToward(current, target, hours, risePerHour, fallPerHour) {
+  const safeCurrent = clamp(Number(current) || 0, 0, 1.5);
+  const safeTarget = clamp(Number(target) || 0, 0, 1.5);
+  const delta = safeTarget - safeCurrent;
+  if (Math.abs(delta) < 0.0001 || hours <= 0) {
+    return safeCurrent;
+  }
+
+  const rate = delta > 0 ? risePerHour : fallPerHour;
+  const step = Math.min(Math.abs(delta), Math.max(0, rate) * hours);
+  return clamp(safeCurrent + (Math.sign(delta) * step), 0, 1.5);
+}
+
+function computeStressRecoveryReadiness(status, envStress, rootStress) {
+  const waterReadiness = clamp((Number(status.water || 0) - 36) / 34, 0, 1);
+  const nutritionReadiness = clamp((Number(status.nutrition || 0) - 34) / 34, 0, 1);
+  const envReadiness = 1 - computeUpperBandSeverity(envStress, 0.2, 0.45, 0.95, 1.35);
+  const rootReadiness = 1 - computeUpperBandSeverity(rootStress, 0.18, 0.42, 0.92, 1.3);
+  const elevatedRiskPenalty = clamp((Number(status.risk || 0) - 72) / 28, 0, 1) * 0.18;
+  return clamp(
+    (waterReadiness * 0.3)
+    + (nutritionReadiness * 0.24)
+    + (envReadiness * 0.24)
+    + (rootReadiness * 0.22)
+    - elevatedRiskPenalty,
+    0,
+    1
+  );
+}
+
+function computeGrowthSpeedMultiplier(snapshot = state, options = {}) {
+  const simState = snapshot && snapshot.simulation ? snapshot.simulation : state.simulation;
+  const status = snapshot && snapshot.status ? snapshot.status : state.status;
+  const plant = snapshot && snapshot.plant ? snapshot.plant : state.plant;
+
+  const envModel = options.envModel || buildEnvironmentModelFromState(status, simState, plant);
+  const rootModel = options.rootModel || buildRootZoneModelFromState(status, envModel, plant);
+  const envStress = Number.isFinite(Number(options.envStress))
+    ? Number(options.envStress)
+    : clamp(
+      (Number(envModel && envModel.stressFactor && envModel.stressFactor.temp) || 0) * 0.36
+      + ((Number(envModel && envModel.stressFactor && envModel.stressFactor.humidity) || 0) * 0.24)
+      + ((Number(envModel && envModel.stressFactor && envModel.stressFactor.vpd) || 0) * 0.28)
+      + ((Number(envModel && envModel.stressFactor && envModel.stressFactor.airflow) || 0) * 0.12),
+      0,
+      2
+    );
+  const rootStress = Number.isFinite(Number(options.rootStress))
+    ? Number(options.rootStress)
+    : clamp(
+      (Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.ph) || 0) * 0.42
+      + ((Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.ec) || 0) * 0.34)
+      + ((Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.oxygen) || 0) * 0.24),
+      0,
+      2
+    );
+
+  const centeredReadiness = (value, center, span) => clamp(1 - (Math.abs((Number(value) || 0) - center) / Math.max(1, span)), 0, 1);
+  const waterFactor = clamp(
+    ((1
+      - (computeLowerBandSeverity(status.water, 38, 28, 14) * 0.95)
+      - (computeUpperBandSeverity(status.water, 94, 97, 99.3, 100) * 0.28)) * 0.68)
+    + (centeredReadiness(status.water, 68, 28) * 0.32),
+    0.04,
+    1
+  );
+  const nutritionFactor = clamp(
+    ((1 - (computeLowerBandSeverity(status.nutrition, 38, 28, 14) * 0.9)) * 0.68)
+    + (centeredReadiness(status.nutrition, 62, 24) * 0.32),
+    0.08,
+    1
+  );
+  const stressFactor = clamp(
+    ((1 - (computeUpperBandSeverity(status.stress, 22, 42, 72, 96) * 0.96)) * 0.58)
+    + (centeredReadiness(status.stress, 8, 26) * 0.42),
+    0.04,
+    1
+  );
+  const riskFactor = clamp(
+    ((1 - (computeUpperBandSeverity(status.risk, 18, 38, 72, 96) * 0.72)) * 0.62)
+    + (centeredReadiness(status.risk, 6, 24) * 0.38),
+    0.14,
+    1
+  );
+  const healthFactor = clamp(
+    (((Number(status.health || 0) - 22) / 58) * 0.58)
+    + (centeredReadiness(status.health, 92, 24) * 0.42),
+    0.12,
+    1
+  );
+  const envFactor = clamp(1 - (computeUpperBandSeverity(envStress, 0.16, 0.4, 0.9, 1.35) * 0.9), 0.08, 1);
+  const rootFactor = clamp(1 - (computeUpperBandSeverity(rootStress, 0.14, 0.38, 0.88, 1.3) * 0.92), 0.08, 1);
+
+  const readiness = clamp(
+    (waterFactor * 0.24)
+    + (nutritionFactor * 0.16)
+    + (stressFactor * 0.18)
+    + (healthFactor * 0.16)
+    + (riskFactor * 0.08)
+    + (envFactor * 0.1)
+    + (rootFactor * 0.08),
+    0,
+    1
+  );
+
+  return clamp(0.1 + (readiness * 0.68) + (readiness * readiness * 0.6), 0.1, 1.38);
+}
+
+function diagnosticsSeverityBand(score) {
+  const safeScore = clamp(Number(score) || 0, 0, 100);
+  if (safeScore >= 78) return 'critical';
+  if (safeScore >= 58) return 'high';
+  if (safeScore >= 34) return 'medium';
+  return 'low';
+}
+
+function buildDiagnosticIssue(definition = {}) {
+  const score = round2(clamp(Number(definition.score) || 0, 0, 100));
+  return {
+    id: String(definition.id || 'issue'),
+    family: String(definition.family || 'generic'),
+    title: String(definition.title || 'Hinweis'),
+    cause: String(definition.cause || ''),
+    effect: String(definition.effect || ''),
+    recommendation: String(definition.recommendation || ''),
+    limit: String(definition.limit || ''),
+    score,
+    severity: diagnosticsSeverityBand(score)
+  };
+}
+
+function computePlantDiagnostics(snapshot = state) {
+  const simState = snapshot && snapshot.simulation ? snapshot.simulation : state.simulation;
+  const status = snapshot && snapshot.status ? snapshot.status : state.status;
+  const plant = snapshot && snapshot.plant ? snapshot.plant : state.plant;
+  const envModel = buildEnvironmentModelFromState(status, simState, plant, snapshot || state);
+  const rootModel = buildRootZoneModelFromState(status, envModel, plant);
+  const growthSpeedMultiplier = computeGrowthSpeedMultiplier(snapshot, { envModel, rootModel });
+
+  const water = clamp(Number(status && status.water || 0), 0, 100);
+  const nutrition = clamp(Number(status && status.nutrition || 0), 0, 100);
+  const stress = clamp(Number(status && status.stress || 0), 0, 100);
+  const risk = clamp(Number(status && status.risk || 0), 0, 100);
+  const health = clamp(Number(status && status.health || 0), 0, 100);
+
+  const waterLow = computeLowerBandSeverity(water, 44, 34, 18);
+  const waterHigh = computeUpperBandSeverity(water, 88, 94, 98, 100);
+  const nutritionLow = computeLowerBandSeverity(nutrition, 46, 34, 18);
+  const nutritionHigh = computeUpperBandSeverity(nutrition, 78, 84, 92, 100);
+  const stressHigh = computeUpperBandSeverity(stress, 32, 50, 72, 96);
+  const riskHigh = computeUpperBandSeverity(risk, 30, 48, 70, 92);
+  const healthLow = computeLowerBandSeverity(health, 58, 44, 24);
+
+  const envVpdSeverity = clamp(Number(envModel && envModel.stressFactor && envModel.stressFactor.vpd) || 0, 0, 1);
+  const envTempSeverity = clamp(Number(envModel && envModel.stressFactor && envModel.stressFactor.temp) || 0, 0, 1);
+  const envHumiditySeverity = clamp(Number(envModel && envModel.stressFactor && envModel.stressFactor.humidity) || 0, 0, 1);
+  const envAirflowSeverity = clamp(Number(envModel && envModel.stressFactor && envModel.stressFactor.airflow) || 0, 0, 1);
+  const envSeverity = clamp(
+    (envTempSeverity * 0.28)
+    + (envHumiditySeverity * 0.2)
+    + (envVpdSeverity * 0.34)
+    + (envAirflowSeverity * 0.18),
+    0,
+    1.25
+  );
+
+  const rootPhSeverity = clamp(Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.ph) || 0, 0, 1);
+  const rootEcSeverity = clamp(Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.ec) || 0, 0, 1);
+  const rootOxygenSeverity = clamp(Number(rootModel && rootModel.stressFactor && rootModel.stressFactor.oxygen) || 0, 0, 1);
+  const rootSeverity = clamp(
+    (rootPhSeverity * 0.34)
+    + (rootEcSeverity * 0.34)
+    + (rootOxygenSeverity * 0.32),
+    0,
+    1.25
+  );
+
+  const uptakeConstraint = clamp(
+    (rootSeverity * 0.54)
+    + (envSeverity * 0.18)
+    + (waterLow * 0.28)
+    + (waterHigh * 0.18),
+    0,
+    1.3
+  );
+  const growthBrake = clamp((1 - growthSpeedMultiplier) / 0.9, 0, 1.3);
+  const dominantSource = [
+    { score: waterLow + (waterHigh * 0.9), text: waterLow >= waterHigh ? 'der Wasserlage' : 'der Wurzelzone' },
+    { score: nutritionLow + (nutritionHigh * 0.85), text: 'der Versorgung' },
+    { score: envSeverity, text: 'dem Klima' },
+    { score: rootSeverity, text: 'der Wurzelzone' }
+  ].sort((left, right) => right.score - left.score)[0];
+
+  const issues = [];
+
+  if (waterLow >= 0.12) {
+    issues.push(buildDiagnosticIssue({
+      id: 'water_deficit',
+      family: 'watering',
+      score: (waterLow * 62) + (uptakeConstraint * 18) + (stressHigh * 10),
+      title: 'Wasser limitiert die Aufnahme',
+      cause: envSeverity >= 0.28
+        ? 'Das Medium läuft trocken und das Klima zieht zusätzlich an der Pflanze.'
+        : 'Die kurzfristige Versorgung reicht nicht mehr sauber für Uptake und Stabilität.',
+      effect: 'Nährstoffaufnahme wird unruhiger und Stress baut schneller auf.',
+      recommendation: 'Erst die Wasserversorgung beruhigen, bevor du weiter optimierst.',
+      limit: 'Mehr Schub bringt hier wenig, solange die Pflanze zu trocken läuft.'
+    }));
+  }
+
+  if (waterHigh >= 0.16) {
+    issues.push(buildDiagnosticIssue({
+      id: 'waterlogging',
+      family: 'watering',
+      score: (waterHigh * 58) + (rootOxygenSeverity * 24) + (riskHigh * 10),
+      title: 'Zu viel Feuchte drückt die Wurzelzone',
+      cause: rootOxygenSeverity >= 0.25
+        ? 'Die Wurzelzone verliert Sauerstoff und bleibt zu schwer.'
+        : 'Das Medium ist noch zu feucht und trocknet nicht sauber zurück.',
+      effect: 'Aufnahme läuft träge und Risiko steigt leichter an.',
+      recommendation: 'Jetzt eher Stabilität und Rücktrocknung zulassen als weiter nachzulegen.',
+      limit: 'Begleitdruck lässt sich mindern, aber die nasse Ursache löst sich nicht sofort.'
+    }));
+  }
+
+  if (nutritionLow >= 0.12) {
+    issues.push(buildDiagnosticIssue({
+      id: uptakeConstraint >= 0.32 ? 'nutrient_uptake_limited' : 'nutrient_deficit',
+      family: 'fertilizing',
+      score: (nutritionLow * 58) + (uptakeConstraint * 22) + (growthBrake * 12),
+      title: uptakeConstraint >= 0.32 ? 'Versorgung kommt nicht sauber an' : 'Versorgung wird zu knapp',
+      cause: uptakeConstraint >= 0.32
+        ? 'Die Pflanze bräuchte mehr Versorgung, nimmt sie unter dem aktuellen Wurzel- oder Wasserdruck aber nur begrenzt auf.'
+        : 'Das Nährstoffniveau trägt Stoffwechsel und Wachstum nicht mehr stabil genug.',
+      effect: 'Tempo fällt weg und Stress reagiert empfindlicher auf weitere Abweichungen.',
+      recommendation: 'Versorgung nur zusammen mit sauberer Aufnahme stabilisieren.',
+      limit: 'Härter nachzulegen lohnt wenig, wenn die Wurzelzone noch bremst.'
+    }));
+  }
+
+  if (nutritionHigh >= 0.18 || rootEcSeverity >= 0.24) {
+    issues.push(buildDiagnosticIssue({
+      id: 'nutrient_pressure',
+      family: 'fertilizing',
+      score: (nutritionHigh * 56) + (rootEcSeverity * 26) + (riskHigh * 10),
+      title: 'Zu viel Druck in der Wurzelzone',
+      cause: rootEcSeverity >= 0.24
+        ? 'EC- und Salzlast drücken die Aufnahme bereits sichtbar.'
+        : 'Die Versorgung ist schon sehr voll und lässt wenig Puffer für weitere Eingriffe.',
+      effect: 'Uptake wird rauer, Stress steigt leichter und aggressive Pushes kippen schneller um.',
+      recommendation: 'Druck erst herausnehmen oder beruhigen, nicht weiter aufbauen.',
+      limit: 'Mehr Feed löst hier selten das Kernproblem.'
+    }));
+  }
+
+  if (envSeverity >= 0.18) {
+    const climateCause = envVpdSeverity >= Math.max(envTempSeverity, envHumiditySeverity, envAirflowSeverity)
+      ? 'Das Klima liegt spürbar neben der VPD-Komfortzone.'
+      : (envAirflowSeverity >= Math.max(envTempSeverity, envHumiditySeverity)
+        ? 'Luftstrom und Feuchte arbeiten nicht sauber zusammen.'
+        : 'Das Klima liegt nicht stabil genug in der Komfortzone.');
+    issues.push(buildDiagnosticIssue({
+      id: 'climate_pressure',
+      family: 'environment',
+      score: (envSeverity * 60) + (waterLow * 16) + (riskHigh * 8),
+      title: 'Das Klima erzeugt Zusatzdruck',
+      cause: climateCause,
+      effect: 'Wasserverbrauch, Stress und Erholung laufen dadurch spürbar schlechter zusammen.',
+      recommendation: 'Erst Klima und Rhythmus ruhiger bekommen, dann wieder optimieren.',
+      limit: 'Reine Feed- oder Push-Maßnahmen greifen hier oft stumpfer als gedacht.'
+    }));
+  }
+
+  if (rootSeverity >= 0.18) {
+    const rootCause = rootOxygenSeverity >= Math.max(rootPhSeverity, rootEcSeverity)
+      ? 'Die Wurzelzone reagiert empfindlich auf Sauerstoff- und Feuchteverteilung.'
+      : (rootEcSeverity >= rootPhSeverity
+        ? 'EC-Druck stört die Aufnahme in der Wurzelzone.'
+        : 'Die pH-Lage bringt die Aufnahme aus dem Tritt.');
+    issues.push(buildDiagnosticIssue({
+      id: 'root_zone_pressure',
+      family: 'environment',
+      score: (rootSeverity * 62) + (uptakeConstraint * 18) + (nutritionLow * 10),
+      title: 'Die Wurzelzone bremst die Effizienz',
+      cause: rootCause,
+      effect: 'Versorgung kommt ungleichmäßig an und Maßnahmen greifen weniger sauber.',
+      recommendation: 'Stabilisierung wirkt hier besser als aggressive Korrektur.',
+      limit: 'Mehr Input ist nicht automatisch mehr Wirkung, solange die Wurzelzone blockiert.'
+    }));
+  }
+
+  if (stressHigh >= 0.16) {
+    issues.push(buildDiagnosticIssue({
+      id: 'stress_load',
+      family: 'stress',
+      score: (stressHigh * 58) + (growthBrake * 16) + (healthLow * 10),
+      title: 'Belastung hält die Pflanze klein',
+      cause: `Die Pflanze reagiert aktuell vor allem auf ${dominantSource && dominantSource.text ? dominantSource.text : 'mehrere gleichzeitige Druckfaktoren'}.`,
+      effect: 'Erholung, Uptake und Wachstum bleiben unter Druck, selbst wenn Einzelwerte nicht komplett abstürzen.',
+      recommendation: 'Jetzt zuerst stabilisieren; aggressive Pushes werden gerade schlechter verwertet.',
+      limit: 'Kurze Entlastung hilft, aber echte Recovery braucht etwas ruhige Zeit.'
+    }));
+  }
+
+  if (riskHigh >= 0.16) {
+    issues.push(buildDiagnosticIssue({
+      id: 'risk_exposure',
+      family: 'risk',
+      score: (riskHigh * 60) + (stressHigh * 12) + (envSeverity * 10),
+      title: 'Exposition baut sich auf',
+      cause: 'Anhaltende oder kombinierte Belastung hat den Gefahrenpuffer bereits sichtbar gefüllt.',
+      effect: 'Das System verzeiht weniger und der Ereignisdruck zieht mit der Zeit leichter an.',
+      recommendation: 'Druck schrittweise abbauen statt noch mehr Tempo zu erzwingen.',
+      limit: 'Risiko fällt langsamer als Stress und braucht deshalb eher ruhige Stabilisierung.'
+    }));
+  }
+
+  if (growthBrake >= 0.18 && (waterLow >= 0.08 || nutritionLow >= 0.08 || envSeverity >= 0.12 || rootSeverity >= 0.12 || stressHigh >= 0.1)) {
+    issues.push(buildDiagnosticIssue({
+      id: 'growth_brake',
+      family: 'growth',
+      score: (growthBrake * 56) + (stressHigh * 10) + (nutritionLow * 10),
+      title: 'Wachstum läuft unter Basis',
+      cause: `Der aktuelle Bremsfaktor sitzt vor allem bei ${dominantSource && dominantSource.text ? dominantSource.text : 'mehreren kleinen Limitierungen'}.`,
+      effect: `Das Wachstumstempo liegt gerade nur bei etwa ${round2(growthSpeedMultiplier)}x der Basis.`,
+      recommendation: 'Den größten Bremsfaktor beruhigen, statt Wachstum direkt erzwingen zu wollen.',
+      limit: 'Mehr Schub fühlt sich erst wieder gut an, wenn die Hauptlimitierung sauberer läuft.'
+    }));
+  }
+
+  if (!issues.length) {
+    issues.push(buildDiagnosticIssue({
+      id: 'stable_state',
+      family: 'optimize',
+      score: 18,
+      title: 'Das Setup läuft ruhig',
+      cause: 'Versorgung, Klima und Wurzelzone greifen aktuell sauber genug zusammen.',
+      effect: `Das Wachstum läuft bei etwa ${round2(growthSpeedMultiplier)}x der Basis.`,
+      recommendation: growthSpeedMultiplier >= 1.1
+        ? 'Kleine Optimierungsschritte können lohnend sein, aggressive Pushes sind aber nicht nötig.'
+        : 'Den Rhythmus halten und nur auf klare Abweichungen reagieren.',
+      limit: 'Mehr Eingriffe erzeugen hier nicht automatisch mehr Fortschritt.'
+    }));
+  }
+
+  const sortedIssues = issues
+    .sort((left, right) => right.score - left.score)
+    .filter((issue, index, list) => list.findIndex((entry) => entry.id === issue.id) === index)
+    .slice(0, 5);
+
+  return {
+    primaryIssue: sortedIssues[0] && sortedIssues[0].id !== 'stable_state' ? sortedIssues[0] : null,
+    secondaryIssues: sortedIssues[0] && sortedIssues[0].id !== 'stable_state' ? sortedIssues.slice(1, 3) : [],
+    allIssues: sortedIssues,
+    contributingFactors: sortedIssues.slice(0, 3).map((issue) => issue.cause),
+    envModel,
+    rootModel,
+    growthSpeedMultiplier: round2(growthSpeedMultiplier),
+    summary: sortedIssues[0] ? sortedIssues[0].title : 'Stabil'
+  };
+}
+
+function buildGuidanceHints(diagnostics = computePlantDiagnostics()) {
+  const issues = Array.isArray(diagnostics && diagnostics.allIssues) ? diagnostics.allIssues : [];
+  const hints = [];
+  const usedFamilies = new Set();
+
+  for (const issue of issues) {
+    if (!issue || usedFamilies.has(issue.family)) {
+      continue;
+    }
+
+    let tone = 'stabilize';
+    let title = 'Stabilisieren';
+    if (issue.family === 'risk') {
+      tone = 'caution';
+      title = 'Risiko steigt';
+    } else if (issue.family === 'optimize') {
+      tone = 'optimize';
+      title = 'Optimieren';
+    } else if (issue.family === 'growth') {
+      tone = 'optimize';
+      title = 'Tempo zurückholen';
+    } else if (issue.family === 'environment') {
+      tone = 'stabilize';
+      title = 'Umfeld beruhigen';
+    } else if (issue.family === 'stress') {
+      tone = 'caution';
+      title = 'Druck senken';
+    }
+
+    hints.push({
+      id: issue.id,
+      tone,
+      title,
+      body: String(issue.recommendation || issue.cause || '').trim(),
+      severity: String(issue.severity || diagnosticsSeverityBand(issue.score))
+    });
+    usedFamilies.add(issue.family);
+    if (hints.length >= 3) {
+      break;
+    }
+  }
+
+  return hints;
+}
+
+function applyStatusDrift(elapsedMs, options = {}) {
   const minutesRaw = elapsedMs / 60_000;
-  const offlineCatchUp = elapsedMs > SIM_RUNTIME_MAX_ELAPSED_PER_TICK_MS;
-  const minutes = minutesRaw * (offlineCatchUp ? OFFLINE_STATUS_DECAY_MULTIPLIER : 1);
+  const offlineCatchUp = Boolean(options.offlineCatchUp) || elapsedMs > SIM_RUNTIME_MAX_ELAPSED_PER_TICK_MS;
+  const minutes = minutesRaw;
   if (minutes <= 0) {
     state.simulation.growthImpulse = 0;
     return;
@@ -1258,17 +1816,14 @@ function applyStatusDrift(elapsedMs) {
   const geneticsWaterModifier = genetics === 'indica' ? 0.94 : (genetics === 'sativa' ? 1.12 : 1);
   const geneticsNutritionModifier = genetics === 'indica' ? 0.96 : (genetics === 'sativa' ? 1.1 : 1);
   const geneticsPressureModifier = genetics === 'indica' ? 0.86 : (genetics === 'sativa' ? 1.1 : 1);
-  const geneticsTempoModifier = genetics === 'indica' ? -0.07 : (genetics === 'sativa' ? 0.2 : 0);
   const mediumWaterModifier = medium === 'coco' ? 1.22 : 1;
   const mediumNutritionModifier = medium === 'coco' ? 1.14 : 1;
   const mediumGrowthModifier = medium === 'coco' ? 1.08 : 1;
   const mediumPressureModifier = medium === 'coco' ? 1.08 : 1;
-  const mediumTempoModifier = medium === 'coco' ? 0.04 : 0;
   const lightWaterModifier = light === 'high' ? 1.22 : 1;
   const lightNutritionModifier = light === 'high' ? 1.18 : 1;
   const lightGrowthModifier = light === 'high' ? 1.16 : 1;
   const lightPressureModifier = light === 'high' ? 1.12 : 1;
-  const lightTempoModifier = light === 'high' ? 0.15 : 0;
 
   const stageIndexOneBased = clampInt(Number(state.plant.stageIndex || 0) + 1, 1, 12);
   const stagePressure = clamp((stageIndexOneBased - 1) / 11, 0, 1);
@@ -1276,52 +1831,108 @@ function applyStatusDrift(elapsedMs) {
   const envInfluence = 0.78 + (stagePressure * 0.34);
   const rootInfluence = 0.76 + (stagePressure * 0.38);
 
-  const uptakePenalty = clamp(((rootStress * 0.58) + (envStress * 0.34)) * rootInfluence, 0, 0.92);
-  const transpiration = clamp(0.74 + ((envModel.vpdKpa - 0.95) * 0.60), 0.35, 1.95);
+  const passiveMetabolism = getPassiveMetabolismContext(minutes, envModel, rootModel, { offlineCatchUp });
+  const uptakePenalty = passiveMetabolism.uptakePenalty;
+  const hours = minutes / 60;
 
-  const waterDrainPerMin = 0.10 + (transpiration * 0.054) + (envStress * 0.038 * envInfluence);
-  const nutritionDrainPerMin = 0.078 + (0.048 * (1 - uptakePenalty)) + (0.024 * rootStress * rootInfluence);
+  state.status.water -= passiveMetabolism.waterDrain * mediumWaterModifier * geneticsWaterModifier * lightWaterModifier;
+  state.status.nutrition -= passiveMetabolism.nutritionDrain * mediumNutritionModifier * geneticsNutritionModifier * lightNutritionModifier;
 
-  state.status.water -= (waterDrainPerMin * mediumWaterModifier * geneticsWaterModifier * lightWaterModifier) * minutes * earlyPhaseRelief;
-  state.status.nutrition -= (nutritionDrainPerMin * mediumNutritionModifier * geneticsNutritionModifier * lightNutritionModifier) * minutes * earlyPhaseRelief;
+  const waterSeverity = computeLowerBandSeverity(state.status.water, 34, 24, WATER_CRITICAL_THRESHOLD);
+  const waterCritical = clamp((WATER_CRITICAL_THRESHOLD - state.status.water) / Math.max(1, WATER_CRITICAL_THRESHOLD), 0, 1);
+  const nutritionSeverity = computeLowerBandSeverity(state.status.nutrition, 32, 22, NUTRITION_CRITICAL_THRESHOLD);
+  const nutritionCritical = clamp((NUTRITION_CRITICAL_THRESHOLD - state.status.nutrition) / Math.max(1, NUTRITION_CRITICAL_THRESHOLD), 0, 1);
+  const envSeverity = computeUpperBandSeverity(envStress, 0.18, 0.42, 0.9, 1.35);
+  const rootSeverity = computeUpperBandSeverity(rootStress, 0.16, 0.4, 0.88, 1.3);
+  const waterSaturationSeverity = computeUpperBandSeverity(state.status.water, 96, 98, 99.2, 100);
 
-  const inRecoveryBand = (
-    state.status.water >= 45 && state.status.water <= 72 &&
-    state.status.nutrition >= 45 && state.status.nutrition <= 72 &&
-    state.status.stress < 42 &&
-    envStress < 0.35 &&
-    rootStress < 0.35
+  const moderateSignalCount = [waterSeverity, nutritionSeverity, envSeverity, rootSeverity].filter((value) => value >= 0.28).length;
+  const combinedStressBonus = moderateSignalCount >= 2
+    ? 0.12 + ((moderateSignalCount - 2) * 0.08)
+    : 0;
+  const stressSignal = clamp(
+    (waterSeverity * 0.32)
+    + (nutritionSeverity * 0.2)
+    + (envSeverity * 0.27 * envInfluence)
+    + (rootSeverity * 0.21 * rootInfluence)
+    + combinedStressBonus,
+    0,
+    1.4
   );
+  const baseStressRecoveryReadiness = computeStressRecoveryReadiness(state.status, envStress, rootStress);
+  const stressRecoveryReadiness = clamp(
+    baseStressRecoveryReadiness - (combinedStressBonus * 0.9) - (Math.max(envSeverity, rootSeverity) * 0.12),
+    0,
+    1
+  );
+  const usableRecovery = clamp((stressRecoveryReadiness - 0.32) / 0.68, 0, 1);
+  const strongRecovery = clamp((stressRecoveryReadiness - 0.58) / 0.42, 0, 1);
 
-  const waterDeficiency = clamp((WATER_STRESS_THRESHOLD - state.status.water) / (WATER_STRESS_THRESHOLD - WATER_CRITICAL_THRESHOLD), 0, 1);
-  const waterCritical = clamp((WATER_CRITICAL_THRESHOLD - state.status.water) / WATER_CRITICAL_THRESHOLD, 0, 1);
-  const nutritionDeficiency = clamp((NUTRITION_STRESS_THRESHOLD - state.status.nutrition) / (NUTRITION_STRESS_THRESHOLD - NUTRITION_CRITICAL_THRESHOLD), 0, 1);
-  const nutritionCritical = clamp((NUTRITION_CRITICAL_THRESHOLD - state.status.nutrition) / NUTRITION_CRITICAL_THRESHOLD, 0, 1);
+  const currentStressExposure = Number(state.simulation.stressExposure) || 0;
+  const nextStressExposure = moveExposureToward(
+    currentStressExposure,
+    stressSignal,
+    hours,
+    STRESS_EXPOSURE_RISE_PER_HOUR,
+    STRESS_EXPOSURE_FALL_PER_HOUR
+  );
+  state.simulation.stressExposure = nextStressExposure;
 
-  let stressDelta = (-0.02 * minutes)
-    + (waterDeficiency * 0.10 * minutes * earlyPhaseRelief)
-    + (waterCritical * 0.30 * minutes * earlyPhaseRelief)
-    + (nutritionDeficiency * 0.08 * minutes * earlyPhaseRelief)
-    + (nutritionCritical * 0.10 * minutes * earlyPhaseRelief)
-    + (envStress * 0.14 * envInfluence * minutes * earlyPhaseRelief)
-    + (rootStress * 0.12 * rootInfluence * minutes * earlyPhaseRelief);
-  if (inRecoveryBand) {
-    stressDelta -= 0.10 * minutes;
+  const stressRise = clamp((nextStressExposure - 0.04) / 0.96, 0, 1) * 7.2 * hours * earlyPhaseRelief;
+  const stressRecoverySuppression = clamp(1 - (stressSignal * 0.9), 0.15, 1);
+  const stressRecovery = (0.12 + (usableRecovery * 0.84) + (strongRecovery * 1.2)) * stressRecoverySuppression * hours;
+  let stressDelta = stressRise - stressRecovery;
+  if (stressDelta > 0) {
+    stressDelta = Math.min(stressDelta, STRESS_RISE_CAP_PER_HOUR * hours);
   }
   state.status.stress += stressDelta * geneticsStressModifier * geneticsPressureModifier * mediumPressureModifier * lightPressureModifier;
 
-  const stressPressure = clamp((state.status.stress - 52) / 48, 0, 1);
-  const deficiencyPressure = ((waterDeficiency * 0.25) + (waterCritical * 1.0) + (nutritionDeficiency * 0.1)) * earlyPhaseRelief;
-  let riskDelta = (-0.004 * minutes)
-    + (stressPressure * 0.08 * minutes * earlyPhaseRelief)
-    + (deficiencyPressure * 0.06 * minutes)
-    + (envStress * 0.08 * envInfluence * minutes * earlyPhaseRelief)
-    + (rootStress * 0.10 * rootInfluence * minutes * earlyPhaseRelief);
-  if (inRecoveryBand) {
-    riskDelta -= 0.05 * minutes;
+  const elevatedStressPressure = clamp((state.status.stress - 58) / 32, 0, 1);
+  const severeSignalCount = [waterSeverity, nutritionSeverity, envSeverity, rootSeverity].filter((value) => value >= 0.42).length;
+  const moderateHazardBonus = moderateSignalCount >= 2
+    ? 0.08 + ((moderateSignalCount - 2) * 0.05)
+    : 0;
+  const extremePressure = clamp(
+    Math.max(waterCritical, nutritionCritical, envSeverity >= 0.8 ? envSeverity : 0, rootSeverity >= 0.8 ? rootSeverity : 0, waterSaturationSeverity * 0.9),
+    0,
+    1
+  );
+  const combinedHazard = clamp(
+    ((severeSignalCount >= 2 ? 0.18 + ((severeSignalCount - 2) * 0.14) : 0))
+    + moderateHazardBonus
+    + (extremePressure * 0.48)
+    + (clamp((nextStressExposure - 0.35) / 0.65, 0, 1) * 0.22)
+    + (elevatedStressPressure * 0.16),
+    0,
+    1.35
+  );
+  const currentRiskExposure = Number(state.simulation.riskExposure) || 0;
+  const nextRiskExposure = moveExposureToward(
+    currentRiskExposure,
+    combinedHazard,
+    hours,
+    RISK_EXPOSURE_RISE_PER_HOUR,
+    RISK_EXPOSURE_FALL_PER_HOUR
+  );
+  state.simulation.riskExposure = nextRiskExposure;
+
+  const riskRecoveryReadiness = clamp((stressRecoveryReadiness * 0.85) - (extremePressure * 0.15), 0, 1);
+  const riskRise = clamp((nextRiskExposure - 0.02) / 0.98, 0, 1) * 2.5 * hours * earlyPhaseRelief;
+  const combinedRiskRise = clamp((combinedHazard - 0.18) / 0.82, 0, 1) * 0.58 * hours * earlyPhaseRelief;
+  const riskRecoverySuppression = clamp(1 - (combinedHazard * 0.8), 0.2, 1);
+  const riskRecovery = (0.015 + (clamp((riskRecoveryReadiness - 0.66) / 0.34, 0, 1) * 0.2)) * riskRecoverySuppression * hours;
+  let riskDelta = riskRise + combinedRiskRise - riskRecovery;
+  if (moderateHazardBonus > 0 && nextRiskExposure > 0.1) {
+    riskDelta += moderateHazardBonus * 0.42 * hours;
   }
-  if (state.status.water > 97 || state.status.water < 12) {
-    riskDelta += 0.08 * minutes;
+  if (extremePressure >= 0.75) {
+    riskDelta += 0.42 * hours;
+  }
+  if (riskRecoveryReadiness > 0.72 && combinedHazard < 0.2) {
+    riskDelta -= clamp((riskRecoveryReadiness - 0.72) / 0.28, 0, 1) * 0.85 * hours;
+  }
+  if (riskDelta > 0) {
+    riskDelta = Math.min(riskDelta, RISK_RISE_CAP_PER_HOUR * hours);
   }
   state.status.risk += riskDelta * geneticsStressModifier * geneticsPressureModifier * lightPressureModifier;
 
@@ -1333,8 +1944,8 @@ function applyStatusDrift(elapsedMs) {
     - (waterCritical * 0.08 * minutes * earlyPhaseRelief)
     - (envStress * 0.045 * envInfluence * minutes * earlyPhaseRelief)
     - (rootStress * 0.05 * rootInfluence * minutes * earlyPhaseRelief);
-  if (inRecoveryBand && state.status.risk <= 45) {
-    healthDelta += 0.20 * minutes;
+  if (stressRecoveryReadiness >= 0.68 && state.status.risk <= 50) {
+    healthDelta += 0.16 * minutes * (0.75 + (strongRecovery * 0.35));
   }
   if (state.status.water < 12) {
     healthDelta -= 0.06 * minutes;
@@ -1356,20 +1967,9 @@ function applyStatusDrift(elapsedMs) {
     if (state.history.telemetry.length > 50) state.history.telemetry.shift();
   }
 
-  const ecoEfficiency = clamp(1 - (envStress * 0.5) - (rootStress * 0.5), 0, 1);
-  const impulseRaw = ((state.status.health - state.status.stress - (state.status.risk * 0.45)) / 35)
-    * (0.7 + (ecoEfficiency * 0.6))
-    * geneticsGrowthModifier
-    * mediumGrowthModifier
-    * lightGrowthModifier;
-  state.simulation.growthImpulse = clamp(impulseRaw, -3, 3);
-
-  const tempoBuildModifier = geneticsTempoModifier + mediumTempoModifier + lightTempoModifier;
-  const positiveTempoMomentum = clamp((state.simulation.growthImpulse - 0.2) / 2.2, 0, 1);
-  const negativeTempoMomentum = clamp((-state.simulation.growthImpulse - 0.4) / 2.6, 0, 1);
-  const tempoDeltaDays = ((tempoBuildModifier * positiveTempoMomentum) - (0.05 * negativeTempoMomentum)) * (minutes / (24 * 60));
-  const currentTempoOffsetDays = Number(state.simulation.tempoOffsetDays) || 0;
-  state.simulation.tempoOffsetDays = clamp(currentTempoOffsetDays + tempoDeltaDays, -4, 8);
+  const growthSpeedMultiplier = computeGrowthSpeedMultiplier(state, { envModel, rootModel, envStress, rootStress });
+  state.simulation.growthImpulse = clamp((growthSpeedMultiplier - 1) * 4, -3, 3);
+  state.simulation.tempoOffsetDays = 0;
 
   clampStatus();
 }
@@ -1402,6 +2002,20 @@ function advanceGrowthTick(elapsedSimMs, options = {}) {
   updateLifecycleAverages(elapsedSimMs);
   updateQualityTier();
 
+  const growthSpeedMultiplier = computeGrowthSpeedMultiplier(state);
+  const simEpochMs = Number(state.simulation.simEpochMs) || 0;
+  const simTimeMs = Math.max(simEpochMs, Number(state.simulation.simTimeMs) || simEpochMs);
+  const baseElapsedPlantMs = Math.max(0, simTimeMs - simEpochMs);
+  const currentProgressOffsetSimMs = Number(state.plant.progressOffsetSimMs) || 0;
+  const scaledProgressDeltaSimMs = (Number(elapsedSimMs) || 0) * (growthSpeedMultiplier - 1);
+  state.plant.progressOffsetSimMs = clamp(
+    currentProgressOffsetSimMs + scaledProgressDeltaSimMs,
+    -baseElapsedPlantMs,
+    TOTAL_LIFECYCLE_SIM_MS - baseElapsedPlantMs
+  );
+  state.simulation.growthImpulse = clamp((growthSpeedMultiplier - 1) * 4, -3, 3);
+  state.simulation.tempoOffsetDays = 0;
+
   const plantTime = getPlantTimeFromElapsed();
   const stage = getCurrentStage(plantTime.simDay);
 
@@ -1424,6 +2038,7 @@ function advanceGrowthTick(elapsedSimMs, options = {}) {
       simTimeMs: state.simulation.simTimeMs,
       oldGrowth: round2(prevGrowth),
       newGrowth: state.status.growth,
+      growthSpeedMultiplier: round2(growthSpeedMultiplier),
       water: round2(state.status.water),
       nutrients: round2(state.status.nutrition),
       stress: round2(state.status.stress),

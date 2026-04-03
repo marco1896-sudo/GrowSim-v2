@@ -534,6 +534,8 @@ function getCanonicalSimulation(snapshot) {
   if (typeof s.simulation.isDaytime !== 'boolean') s.simulation.isDaytime = isDaytimeAtSimTime(s.simulation.simTimeMs);
   if (!Number.isFinite(s.simulation.growthImpulse)) s.simulation.growthImpulse = 0;
   if (!Number.isFinite(s.simulation.tempoOffsetDays)) s.simulation.tempoOffsetDays = 0;
+  if (!Number.isFinite(s.simulation.stressExposure)) s.simulation.stressExposure = 0;
+  if (!Number.isFinite(s.simulation.riskExposure)) s.simulation.riskExposure = 0;
   if (!Number.isFinite(s.simulation.lastPushScheduleAtMs)) s.simulation.lastPushScheduleAtMs = 0;
 
   if (!s.boost || typeof s.boost !== 'object') {
@@ -994,6 +996,8 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
       baseSpeed: normalizeStorageBaseSimulationSpeed(saved.sim.baseSpeed || saved.sim.timeCompression || sim.baseSpeed),
       effectiveSpeed: Number(saved.sim.effectiveSpeed || saved.sim.timeCompression || sim.effectiveSpeed),
       growthImpulse: Number(saved.sim.growthImpulse || sim.growthImpulse),
+      stressExposure: Number(saved.sim.stressExposure || sim.stressExposure),
+      riskExposure: Number(saved.sim.riskExposure || sim.riskExposure),
       lastPushScheduleAtMs: Number(saved.sim.lastPushScheduleAtMs || sim.lastPushScheduleAtMs)
     };
   }
@@ -1211,6 +1215,8 @@ function resetStateToDefaults() {
     isDaytime: isDaytimeAtSimTime(fallbackSimStart),
     growthImpulse: 0,
     tempoOffsetDays: 0,
+    stressExposure: 0,
+    riskExposure: 0,
     lastPushScheduleAtMs: 0
   };
 
@@ -1357,6 +1363,12 @@ function ensureStateIntegrity(nowMs) {
   }
   if (!Number.isFinite(state.simulation.lastPushScheduleAtMs)) {
     state.simulation.lastPushScheduleAtMs = 0;
+  }
+  if (!Number.isFinite(state.simulation.stressExposure)) {
+    state.simulation.stressExposure = 0;
+  }
+  if (!Number.isFinite(state.simulation.riskExposure)) {
+    state.simulation.riskExposure = 0;
   }
   state.simulation.lastTickRealTimeMs = Math.max(
     Number(state.simulation.startRealTimeMs) || nowMs,
@@ -1801,6 +1813,8 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
     lastTickAtMs: sim.lastTickRealTimeMs,
     growthImpulse: sim.growthImpulse,
     tempoOffsetDays: sim.tempoOffsetDays,
+    stressExposure: sim.stressExposure,
+    riskExposure: sim.riskExposure,
     lastPushScheduleAtMs: sim.lastPushScheduleAtMs
   };
 

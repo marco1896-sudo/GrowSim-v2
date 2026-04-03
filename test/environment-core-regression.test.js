@@ -116,7 +116,17 @@ function loadSimContext() {
   ctx.state.plant.stageIndex = 7; // flowering-ish
 
   const base = { water: 60, nutrition: 60, stress: 30, risk: 28, health: 82, growth: 55 };
-  const worse = { water: 60, nutrition: 90, stress: 72, risk: 78, health: 82, growth: 55 };
+  const worse = { water: 36, nutrition: 34, stress: 54, risk: 44, health: 74, growth: 55 };
+
+  ctx.state.environmentControls = ctx.getEnvironmentControlDefaults();
+  ctx.state.environmentControls.temperatureC = 25;
+  ctx.state.environmentControls.humidityPercent = 60;
+  ctx.state.environmentControls.airflowPercent = 65;
+  ctx.state.environmentControls.ph = 6.0;
+  ctx.state.environmentControls.ec = 1.4;
+  ctx.state.environmentControls.targets.day.temperatureC = 25;
+  ctx.state.environmentControls.targets.day.humidityPercent = 60;
+  ctx.state.environmentControls.targets.day.vpdKpa = 1.27;
 
   ctx.state.status = { ...ctx.state.status, ...base };
   const waterBeforeBase = ctx.state.status.water;
@@ -124,6 +134,15 @@ function loadSimContext() {
   ctx.applyStatusDrift(60 * 1000);
   const baseWaterDrop = waterBeforeBase - ctx.state.status.water;
   const baseStressGain = ctx.state.status.stress - stressBeforeBase;
+
+  ctx.state.environmentControls.temperatureC = 31;
+  ctx.state.environmentControls.humidityPercent = 38;
+  ctx.state.environmentControls.airflowPercent = 32;
+  ctx.state.environmentControls.ph = 5.2;
+  ctx.state.environmentControls.ec = 2.3;
+  ctx.state.environmentControls.targets.day.temperatureC = 31;
+  ctx.state.environmentControls.targets.day.humidityPercent = 38;
+  ctx.state.environmentControls.targets.day.vpdKpa = 2.0;
 
   ctx.state.status = { ...ctx.state.status, ...worse };
   const waterBeforeWorse = ctx.state.status.water;

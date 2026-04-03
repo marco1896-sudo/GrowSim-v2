@@ -6005,6 +6005,52 @@ body.panelized-ready :is(
   gap: 10px;
 }
 
+.home-guidance-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+.home-guidance-list {
+  display: grid;
+  gap: 6px;
+}
+
+.home-guidance-item {
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.home-guidance-item__title {
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d4af37;
+}
+
+.home-guidance-item__body {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.32;
+  color: rgba(224, 224, 224, 0.86);
+}
+
+.home-guidance-item--stabilize .home-guidance-item__title,
+.home-guidance-item--optimize .home-guidance-item__title {
+  color: #d4af37;
+}
+
+.home-guidance-item--caution .home-guidance-item__title {
+  color: #ffb861;
+}
+
 .home-status-divider {
   background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(66, 255, 126, 0.3) 30%, rgba(212, 175, 55, 0.25) 70%, rgba(0, 0, 0, 0));
 }

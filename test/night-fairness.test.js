@@ -71,6 +71,24 @@ function loadSimContext() {
       ui: { openSheet: null, lastRenderRealMs: 0, deathOverlayOpen: false, deathOverlayAcknowledged: false },
       plant: { phase: 'seedling', isDead: false, stageIndex: 0, stageProgress: 0, stageKey: 'stage_01', lastValidStageKey: 'stage_01' },
       status: { health: 85, stress: 15, risk: 20, water: 70, nutrition: 65, growth: 0 },
+      history: { telemetry: [] },
+      setup: { mode: 'indoor', light: 'medium', medium: 'soil', potSize: 'medium', genetics: 'hybrid' },
+      environmentControls: {
+        temperatureC: 25,
+        humidityPercent: 60,
+        airflowPercent: 65,
+        ph: 6.0,
+        ec: 1.4,
+        targets: {
+          day: { temperatureC: 25, humidityPercent: 60, vpdKpa: 1.27 },
+          night: { temperatureC: 21, humidityPercent: 55, vpdKpa: 1.12 }
+        },
+        fan: { minPercent: 65, maxPercent: 100 },
+        buffers: { temperatureC: 0.7, humidityPercent: 4, vpdKpa: 0.12 },
+        ramp: { percentPerMinute: 18 },
+        transitionMinutes: 45
+      },
+      actions: { activeEffects: [], cooldowns: {}, lastResult: { ok: true } },
       events: { machineState: 'idle', scheduler: { nextEventRealTimeMs: 0 } },
       boost: { dayStamp: '2026-01-01', boostUsedToday: 0 },
       debug: { enabled: false, showInternalTicks: false }
@@ -116,6 +134,33 @@ function loadSimContext() {
 
   assert.ok(ctx.state.simulation.isDaytime, 'simulation should now be in daytime');
   assert.ok(ctx.state.simulation.fairnessGraceUntilRealMs > elapsedRealMsToDay, 'crossing into day should set grace window');
+})();
+
+(function testStableNightDrainsWaterMoreThanNutritionWithoutCriticalSpiral() {
+  const ctx = loadSimContext();
+  const nightStartMs = new Date('2026-03-01T22:00:00').getTime();
+  const eightHoursMs = 8 * 60 * 60 * 1000;
+
+  ctx.state.simulation.startRealTimeMs = nightStartMs;
+  ctx.state.simulation.lastTickRealTimeMs = nightStartMs;
+  ctx.state.simulation.simEpochMs = nightStartMs;
+  ctx.state.simulation.simTimeMs = nightStartMs;
+  ctx.state.simulation.isDaytime = false;
+  ctx.state.status.health = 88;
+  ctx.state.status.water = 72;
+  ctx.state.status.nutrition = 66;
+  ctx.state.status.stress = 14;
+  ctx.state.status.risk = 18;
+  ctx.applyActiveActionEffects = () => {};
+  ctx.advanceGrowthTick = () => {};
+
+  ctx.syncSimulationFromElapsedTime(nightStartMs + eightHoursMs);
+
+  assert.ok(ctx.state.status.water < 72, 'stable night should reduce water');
+  assert.ok(ctx.state.status.nutrition < 66, 'stable night should reduce nutrition');
+  assert.ok((72 - ctx.state.status.water) > (66 - ctx.state.status.nutrition), 'water should drain more than nutrition overnight');
+  assert.ok(ctx.state.status.health > 20, 'stable night should not collapse health into a critical spiral');
+  assert.ok(ctx.state.status.risk < 55, 'stable night should keep risk manageable');
 })();
 
 console.log('night fairness tests passed');

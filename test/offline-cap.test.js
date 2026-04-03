@@ -100,9 +100,10 @@ function loadSimContext() {
 
   const capMs = ctx.MAX_OFFLINE_SIM_MS;
   const expectedSimMs = 1000 + (capMs * 12);
+  const totalDriftElapsed = calls.drift.reduce((sum, value) => sum + value, 0);
 
-  assert.strictEqual(calls.drift.length, 1, 'status drift should be applied once');
-  assert.strictEqual(calls.drift[0], capMs, 'status drift should use capped elapsed time');
+  assert.ok(calls.drift.length > 1, 'offline catch-up should now be chunked into multiple drift steps');
+  assert.strictEqual(totalDriftElapsed, capMs, 'status drift chunks should add up to capped elapsed time');
   assert.ok(Math.abs(ctx.state.simulation.simTimeMs - expectedSimMs) < 0.001, 'sim time should advance using capped effective time');
   assert.strictEqual(calls.eventNow.length, 0, 'offline catch-up should suppress event state machine');
   assert.strictEqual(ctx.state.simulation.lastTickRealTimeMs, offlineElapsedMs, 'last tick should persist wall-clock now to prevent duplicate replay');
@@ -110,12 +111,12 @@ function loadSimContext() {
 
 (function testElapsedSimMsAlignedWithCappedProgression() {
   const ctx = loadSimContext();
-  let elapsedToEffects = null;
-  let elapsedToGrowth = null;
+  let elapsedToEffects = 0;
+  let elapsedToGrowth = 0;
 
   ctx.applyStatusDrift = () => {};
-  ctx.applyActiveActionEffects = (elapsedSimMs) => { elapsedToEffects = elapsedSimMs; };
-  ctx.advanceGrowthTick = (elapsedSimMs) => { elapsedToGrowth = elapsedSimMs; };
+  ctx.applyActiveActionEffects = (elapsedSimMs) => { elapsedToEffects += elapsedSimMs; };
+  ctx.advanceGrowthTick = (elapsedSimMs) => { elapsedToGrowth += elapsedSimMs; };
 
   const offlineElapsedMs = 12 * 60 * 60 * 1000; // > cap
   ctx.state.simulation.lastTickRealTimeMs = 0;
@@ -126,10 +127,10 @@ function loadSimContext() {
   ctx.syncSimulationFromElapsedTime(offlineElapsedMs);
 
   const capMs = ctx.MAX_OFFLINE_SIM_MS;
-  const expectedSimMs = capMs * 12;
+  const expectedSimMs = capMs * 12 * 0.72;
 
   assert.ok(Math.abs(elapsedToEffects - expectedSimMs) < 0.001, 'action over-time effects should use capped-derived sim delta');
-  assert.ok(Math.abs(elapsedToGrowth - expectedSimMs) < 0.001, 'growth tick should use capped-derived sim delta');
+  assert.ok(Math.abs(elapsedToGrowth - (capMs * 12)) < 0.001, 'growth tick should still use full capped-derived sim delta');
 })();
 
 (function testOfflineCapPreventsDoubleProcessingOnQuickReopen() {
