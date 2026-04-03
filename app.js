@@ -3507,6 +3507,10 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const showRunGoal = Boolean(runGoal && (run.status === 'active' || run.status === 'downed'));
   const diagnostics = diagnosePlantState();
   const guidanceHints = getGuidanceHints(diagnostics);
+  const growthImpulse = Number(simulation.growthImpulse || 0);
+  const stressVisual = classifyStressVisualLevel(Number(status.stress || 0));
+  const riskVisual = classifyRiskVisualLevel(Number(status.risk || 0));
+  const growthVisual = classifyGrowthVisualLevel(Number(status.growth || 0), growthImpulse);
 
   return {
     id: 'home',
@@ -3522,9 +3526,14 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       }
       return `Basis ${baseSpeed}x · Boost ${BOOST_SIM_SPEED}x für 30 Min`;
     })(),
-    growthImpulseText: Number(simulation.growthImpulse || 0).toFixed(2),
+    growthImpulseText: growthImpulse.toFixed(2),
     simTimeText: formatSimClock(Number(simulation.simTimeMs || 0)),
     isDaytime: Boolean(simulation.isDaytime),
+    motion: {
+      stressVisual,
+      riskVisual,
+      growthVisual
+    },
     rings: {
       health: Number(status.health || 0),
       stress: Number(status.stress || 0),
@@ -3748,6 +3757,10 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   setRing(uiNode('nutritionRing', 'nutritionRing'), uiNode('nutritionValue', 'nutritionValue'), Number(vm.rings && vm.rings.nutrition || 0));
   setRing(uiNode('growthRing', 'growthRing'), uiNode('growthValue', 'growthValue'), Number(vm.rings && vm.rings.growth || 0));
   setRing(uiNode('riskRing', 'riskRing'), uiNode('riskValue', 'riskValue'), Number(vm.rings && vm.rings.risk || 0));
+  applyRingVisualState(uiNode('stressRing', 'stressRing'), 'stressVisual', vm.motion && vm.motion.stressVisual);
+  applyRingVisualState(uiNode('riskRing', 'riskRing'), 'riskVisual', vm.motion && vm.motion.riskVisual);
+  applyRingVisualState(uiNode('growthRing', 'growthRing'), 'growthVisual', vm.motion && vm.motion.growthVisual);
+  applyPlantMotionState(vm);
 
   const plantCanvas = uiNode('plantImage', 'plantImage');
   if (plantCanvas && typeof renderPlantFromSprite === 'function') {
@@ -3799,15 +3812,27 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
     homeGuidancePanelNode.setAttribute('aria-hidden', String(!homeGuidanceHints.length));
   }
   if (homeGuidanceListNode) {
+    const previousGuidanceSignature = String(homeGuidanceListNode.dataset.signature || '');
+    const nextGuidanceSignature = homeGuidanceHints.map((hint) => String(hint && hint.id || '')).join('|');
     homeGuidanceListNode.replaceChildren();
     for (const hint of homeGuidanceHints.slice(0, 3)) {
       const item = document.createElement('div');
       item.className = `home-guidance-item home-guidance-item--${escapeHtml(String(hint.tone || 'stabilize'))}`;
+      if (nextGuidanceSignature && nextGuidanceSignature !== previousGuidanceSignature) {
+        item.classList.add('home-guidance-item--fresh');
+      }
       item.innerHTML = `
         <strong class="home-guidance-item__title">${escapeHtml(String(hint.title || 'Hinweis'))}</strong>
         <p class="home-guidance-item__body">${escapeHtml(String(hint.body || ''))}</p>
       `;
       homeGuidanceListNode.appendChild(item);
+    }
+    homeGuidanceListNode.dataset.signature = nextGuidanceSignature;
+    if (nextGuidanceSignature && nextGuidanceSignature !== previousGuidanceSignature) {
+      clearTimeout(homeGuidanceListNode._guidanceFreshTimerId);
+      homeGuidanceListNode._guidanceFreshTimerId = setTimeout(() => {
+        homeGuidanceListNode.querySelectorAll('.home-guidance-item--fresh').forEach((node) => node.classList.remove('home-guidance-item--fresh'));
+      }, GUIDANCE_FRESH_ANIMATION_MS);
     }
   }
 
@@ -4219,6 +4244,143 @@ function formatCompactNumber(value) {
 
 const STAT_RING_UPDATE_IDS = new Set(['waterRing', 'nutritionRing', 'growthRing', 'riskRing']);
 const STAT_UPDATE_ANIMATION_MS = 340;
+const STAT_VALUE_TWEEN_MIN_MS = 220;
+const STAT_VALUE_TWEEN_MAX_MS = 560;
+const GUIDANCE_FRESH_ANIMATION_MS = 900;
+const CARE_ACTION_FEEDBACK_ANIMATION_MS = 520;
+
+function easeOutCubic(t) {
+  const safeT = clamp(Number(t) || 0, 0, 1);
+  return 1 - Math.pow(1 - safeT, 3);
+}
+
+function classifyStressVisualLevel(value) {
+  const safe = clamp(Number(value) || 0, 0, 100);
+  if (safe >= 78) return 'critical';
+  if (safe >= 58) return 'high';
+  if (safe >= 34) return 'elevated';
+  return 'calm';
+}
+
+function classifyRiskVisualLevel(value) {
+  const safe = clamp(Number(value) || 0, 0, 100);
+  if (safe >= 82) return 'critical';
+  if (safe >= 62) return 'high';
+  if (safe >= 38) return 'elevated';
+  return 'calm';
+}
+
+function classifyGrowthVisualLevel(growthValue, growthImpulse) {
+  const growth = clamp(Number(growthValue) || 0, 0, 100);
+  const impulse = Number(growthImpulse) || 0;
+  if (impulse >= 1.18 || growth >= 72) return 'boosted';
+  if (impulse >= 0.92 || growth >= 34) return 'steady';
+  if (impulse <= 0.38 || growth <= 8) return 'stalled';
+  return 'slow';
+}
+
+function applyPlantMotionState(vm) {
+  const plantCanvas = uiNode('plantImage', 'plantImage');
+  if (!plantCanvas || !vm || typeof vm !== 'object') {
+    return;
+  }
+  const motion = vm.motion && typeof vm.motion === 'object' ? vm.motion : {};
+  plantCanvas.dataset.growthVisual = String(motion.growthVisual || 'steady');
+  plantCanvas.dataset.stressVisual = String(motion.stressVisual || 'calm');
+  plantCanvas.dataset.riskVisual = String(motion.riskVisual || 'calm');
+}
+
+function triggerTransientClass(node, className, durationMs) {
+  if (!node || !className) {
+    return;
+  }
+  node.classList.remove(className);
+  void node.offsetWidth;
+  node.classList.add(className);
+  clearTimeout(node._transientClassTimerId && node._transientClassTimerId[className]);
+  node._transientClassTimerId = node._transientClassTimerId || {};
+  node._transientClassTimerId[className] = setTimeout(() => {
+    node.classList.remove(className);
+  }, durationMs);
+}
+
+function animateRingValue(ringNode, textNode, targetValue) {
+  if (!ringNode || !textNode) {
+    return;
+  }
+
+  const target = clamp(Number(targetValue) || 0, 0, 100);
+  const previousAnimatedValue = Number.isFinite(Number(ringNode.dataset.animatedValue))
+    ? Number(ringNode.dataset.animatedValue)
+    : (Number.isFinite(Number(ringNode.dataset.value)) ? Number(ringNode.dataset.value) : target);
+
+  if (Math.abs(previousAnimatedValue - target) < 0.01) {
+    const roundedText = String(Math.round(target));
+    ringNode.style.setProperty('--value', roundedText);
+    ringNode.dataset.value = roundedText;
+    ringNode.dataset.animatedValue = String(target);
+    if (textNode.textContent !== roundedText) {
+      textNode.textContent = roundedText;
+    }
+    return;
+  }
+
+  if (ringNode._valueTweenRafId) {
+    cancelAnimationFrame(ringNode._valueTweenRafId);
+    ringNode._valueTweenRafId = 0;
+  }
+
+  const delta = Math.abs(target - previousAnimatedValue);
+  const durationMs = clamp(Math.round(STAT_VALUE_TWEEN_MIN_MS + (delta * 8)), STAT_VALUE_TWEEN_MIN_MS, STAT_VALUE_TWEEN_MAX_MS);
+  const startedAt = (typeof performance !== 'undefined' && typeof performance.now === 'function') ? performance.now() : Date.now();
+
+  const tick = (timestamp) => {
+    const now = Number(timestamp) || ((typeof performance !== 'undefined' && typeof performance.now === 'function') ? performance.now() : Date.now());
+    const progress = clamp((now - startedAt) / durationMs, 0, 1);
+    const eased = easeOutCubic(progress);
+    const currentValue = previousAnimatedValue + ((target - previousAnimatedValue) * eased);
+    const roundedText = String(Math.round(currentValue));
+    ringNode.style.setProperty('--value', String(round2(currentValue)));
+    ringNode.dataset.value = roundedText;
+    ringNode.dataset.animatedValue = String(round2(currentValue));
+    ringNode.dataset.animating = progress < 1 ? 'true' : 'false';
+    if (textNode.textContent !== roundedText) {
+      textNode.textContent = roundedText;
+    }
+
+    if (progress < 1) {
+      ringNode._valueTweenRafId = requestAnimationFrame(tick);
+      return;
+    }
+
+    ringNode._valueTweenRafId = 0;
+    ringNode.style.setProperty('--value', String(target));
+    ringNode.dataset.value = String(Math.round(target));
+    ringNode.dataset.animatedValue = String(target);
+    ringNode.dataset.animating = 'false';
+    textNode.textContent = String(Math.round(target));
+  };
+
+  ringNode._valueTweenRafId = requestAnimationFrame(tick);
+}
+
+function applyRingVisualState(ringNode, visualKey, visualState) {
+  if (!ringNode) {
+    return;
+  }
+  ringNode.dataset[visualKey] = String(visualState || 'calm');
+}
+
+function triggerCareActionVisualFeedback(action) {
+  if (!action || !ui.careExecuteButton) {
+    return;
+  }
+  const intensity = String(action.intensity || 'medium');
+  triggerTransientClass(ui.careExecuteButton, `care-execute-btn--impact-${intensity}`, CARE_ACTION_FEEDBACK_ANIMATION_MS);
+  if (ui.careFeedback) {
+    triggerTransientClass(ui.careFeedback, 'care-feedback--fresh', CARE_ACTION_FEEDBACK_ANIMATION_MS);
+  }
+}
 
 function triggerStatUpdateFeedback(ringNode, textNode) {
   if (!ringNode || !textNode) {
@@ -4250,14 +4412,12 @@ function setRing(ringNode, textNode, value) {
   const valueChanged = previousValueText !== roundedText;
 
   if (valueChanged) {
-    ringNode.style.setProperty('--value', roundedText);
-    ringNode.dataset.value = roundedText;
+    animateRingValue(ringNode, textNode, rounded);
 
     if (STAT_RING_UPDATE_IDS.has(ringNode.id) && previousValueText !== undefined) {
       triggerStatUpdateFeedback(ringNode, textNode);
     }
-  }
-  if (textNode.textContent !== roundedText) {
+  } else if (textNode.textContent !== roundedText) {
     textNode.textContent = roundedText;
   }
 }
@@ -4938,6 +5098,7 @@ function onCareExecuteAction() {
   if (result.ok) { const baseMessage = action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgeführt.`;
     const detail = String(result.guidanceHint || '').trim();
     setCareFeedback('success', detail ? `${baseMessage} ${detail}` : baseMessage);
+    triggerCareActionVisualFeedback(action);
     state.ui.care.selectedActionId = null;
   } else {
     setCareFeedback('error', explainActionFailure(result.reason));
