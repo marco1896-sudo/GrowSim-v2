@@ -174,9 +174,9 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
 // center + baseline are fixed, while stage variants scale inside that same zone.
 const HOME_PLANT_REFERENCE_FIT = Object.freeze({
   maxFootprintScale: 3.0,
-  baselineInsetPx: -4,
+  baselineInsetPx: -12,
   podestCenterXRatio: 0.5,
-  podestFootYRatio: 0.642,
+  podestFootYRatio: 0.550,
   backgroundWidthPx: 393,
   backgroundHeightPx: 852
 });

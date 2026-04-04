@@ -6687,10 +6687,10 @@ body.panelized-ready :is(
   --home-scene-center-y: calc(var(--home-safe-top) + var(--home-scene-top) + (var(--home-scene-height) * 0.5));
   --home-right-side-inset: 12px;
   --home-right-climate-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(10px, calc(var(--home-scene-height) * 0.04), 16px));
-  --home-right-actions-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(84px, calc(var(--home-scene-height) * 0.26), 104px));
-  --home-right-actions-gap: clamp(72px, calc(var(--home-scene-height) * 0.23), 84px);
+  --home-right-actions-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(82px, calc(var(--home-scene-height) * 0.255), 102px));
+  --home-right-actions-gap: clamp(70px, calc(var(--home-scene-height) * 0.22), 80px);
   --home-right-watering-top: calc(var(--home-right-actions-top) + (var(--home-right-actions-gap) * 2));
-  --home-side-icon-scale: clamp(0.92, calc(var(--home-scene-height) / 352), 1);
+  --home-side-icon-scale: clamp(0.96, calc(var(--home-scene-height) / 344), 1.04);
 }
 
 .home-stage {
@@ -7957,44 +7957,44 @@ body.panelized-ready :is(
   position: absolute;
   left: 12px;
   top: auto;
-  bottom: 320px;
-  width: 74px;
-  height: 74px;
+  bottom: 316px;
+  width: 80px;
+  height: 80px;
 }
 
-#eventsActionBtn {
+.home-action-panel #eventsActionBtn {
   position: absolute;
   right: var(--home-right-side-inset);
   top: var(--home-right-actions-top);
   left: auto;
-  width: calc(70px * var(--home-side-icon-scale));
-  height: calc(78px * var(--home-side-icon-scale));
+  width: 56px;
+  height: 98px;
 }
 
-#analyzeActionBtn {
+.home-action-panel #analyzeActionBtn {
   position: absolute;
   right: var(--home-right-side-inset);
   top: calc(var(--home-right-actions-top) + var(--home-right-actions-gap));
   left: auto;
-  width: calc(70px * var(--home-side-icon-scale));
-  height: calc(68px * var(--home-side-icon-scale));
+  width: 56px;
+  height: 98px;
 }
 
-#careActionBtn {
+.home-action-panel #careActionBtn {
   position: absolute;
   right: var(--home-right-side-inset);
   top: var(--home-right-watering-top);
   left: auto;
-  width: calc(99px * var(--home-side-icon-scale));
-  height: calc(80px * var(--home-side-icon-scale));
+  width: 56px;
+  height: 98px;
 }
 
 .home-action-panel .home-action-icon {
   position: relative;
   left: auto;
   top: auto;
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
@@ -8002,31 +8002,38 @@ body.panelized-ready :is(
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.26));
 }
 
-#boostActionBtn .home-action-icon {
-  width: 50px;
-  height: 50px;
+.home-action-panel #boostActionBtn .home-action-icon {
+  width: 56px;
+  height: 56px;
 }
 
-#eventsActionBtn .home-action-icon {
-  width: 50px;
-  height: 50px;
+.home-action-panel #eventsActionBtn .home-action-icon {
+  width: 56px;
+  height: 56px;
 }
 
-#analyzeActionBtn .home-action-icon {
-  width: 50px;
-  height: 50px;
+.home-action-panel #analyzeActionBtn .home-action-icon {
+  width: 56px;
+  height: 56px;
 }
 
-#careActionBtn .home-action-icon {
-  width: 50px;
-  height: 50px;
+.home-action-panel #careActionBtn .home-action-icon {
+  width: 56px;
+  height: 56px;
+}
+
+.home-action-panel #eventsActionIcon,
+.home-action-panel #analyzeActionIcon,
+.home-action-panel #careActionIcon {
+  width: 56px;
+  height: 56px;
 }
 
 #eventsActionBtn .home-side-icon,
 #analyzeActionBtn .home-side-icon,
 #careActionBtn .home-side-icon {
-  width: 62px;
-  height: 62px;
+  width: 66px;
+  height: 66px;
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
@@ -8067,7 +8074,7 @@ body.panelized-ready :is(
   #boostActionBtn {
     left: 10px;
     top: auto;
-    bottom: 320px;
+    bottom: 316px;
   }
 
   .home-progress-title {
