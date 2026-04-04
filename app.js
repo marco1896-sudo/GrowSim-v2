@@ -174,9 +174,11 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
 // center + baseline are fixed, while stage variants scale inside that same zone.
 const HOME_PLANT_REFERENCE_FIT = Object.freeze({
   maxFootprintScale: 3.0,
-  baselineInsetPx: -64,
+  baselineInsetPx: -4,
   podestCenterXRatio: 0.5,
-  podestFootYRatio: 0.985
+  podestFootYRatio: 0.642,
+  backgroundWidthPx: 393,
+  backgroundHeightPx: 852
 });
 
 const HOME_PLANT_STAGE_SCALE = Object.freeze({
@@ -197,6 +199,7 @@ const plantSpriteRuntime = {
   metadata: null,
   stageRanges: DEFAULT_PLANT_STAGE_RANGES,
   frameBoundsCache: new Map(),
+  fallbackBoundsCache: new Map(),
   boundsCanvas: null,
   boundsCtx: null
 };
@@ -4466,10 +4469,15 @@ function renderPlantFallback(targetNode) {
   img.onload = () => {
     const srcW = img.naturalWidth || 512;
     const srcH = img.naturalHeight || 512;
-    const placement = getHomePlantPlacement(srcW, srcH, canvasMetrics, targetNode);
+    const visibleBounds = getOpaqueBoundsForFallbackImage(img, assetPath);
+    const placement = getHomePlantPlacement(srcW, srcH, visibleBounds, canvasMetrics, targetNode);
 
     ctx.clearRect(0, 0, targetNode.width, targetNode.height);
     ctx.drawImage(img, placement.dx, placement.dy, placement.drawW, placement.drawH);
+    targetNode.dataset.fitScale = String(placement.fitScale);
+    targetNode.dataset.anchorY = String(placement.anchorY);
+    targetNode.dataset.canvasWidth = String(canvasMetrics.widthPx);
+    targetNode.dataset.canvasHeight = String(canvasMetrics.heightPx);
   };
   img.onerror = () => {
     ctx.fillStyle = 'rgba(134, 167, 94, 0.85)';
@@ -7803,13 +7811,13 @@ function syncPlantCanvasToContainer(targetNode) {
   return { widthCss, heightCss, widthPx, heightPx, dpr };
 }
 
-function resolveHomePodestAnchorPx(targetNode, canvasMetrics) {
+function resolveHomeBackgroundAnchorPx(targetNode, canvasMetrics) {
   const dpr = Math.max(1, Number(canvasMetrics && canvasMetrics.dpr) || 1);
   const widthPx = Math.max(1, Number(canvasMetrics && canvasMetrics.widthPx) || 1);
   const heightPx = Math.max(1, Number(canvasMetrics && canvasMetrics.heightPx) || 1);
   const fallback = {
     x: Math.round(widthPx * 0.5),
-    y: Math.round(heightPx * clamp(Number(HOME_PLANT_REFERENCE_FIT.podestFootYRatio), 0.75, 1.1))
+    y: Math.round(heightPx * clamp(Number(HOME_PLANT_REFERENCE_FIT.podestFootYRatio), 0.0, 1.0))
   };
 
   if (!targetNode || typeof targetNode.getBoundingClientRect !== 'function') {
@@ -7817,23 +7825,30 @@ function resolveHomePodestAnchorPx(targetNode, canvasMetrics) {
   }
 
   const stageNode = targetNode.closest('.home-plant-stage');
-  const sceneNode = targetNode.closest('.home-scene-fixed');
-  if (!stageNode || !sceneNode) {
+  const appHud = document.getElementById('app-hud');
+  if (!stageNode || !appHud || typeof appHud.getBoundingClientRect !== 'function') {
     return fallback;
   }
 
   const stageRect = stageNode.getBoundingClientRect();
-  const sceneRect = sceneNode.getBoundingClientRect();
-  if (!(stageRect.width > 0 && stageRect.height > 0 && sceneRect.width > 0 && sceneRect.height > 0)) {
+  const appHudRect = appHud.getBoundingClientRect();
+  if (!(stageRect.width > 0 && stageRect.height > 0 && appHudRect.width > 0 && appHudRect.height > 0)) {
     return fallback;
   }
 
+  const backgroundWidthPx = Math.max(1, Number(HOME_PLANT_REFERENCE_FIT.backgroundWidthPx) || 393);
+  const backgroundHeightPx = Math.max(1, Number(HOME_PLANT_REFERENCE_FIT.backgroundHeightPx) || 852);
+  const coverScale = Math.max(appHudRect.width / backgroundWidthPx, appHudRect.height / backgroundHeightPx);
+  const renderedBgWidthCss = backgroundWidthPx * coverScale;
+  const renderedBgHeightCss = backgroundHeightPx * coverScale;
+  const backgroundLeftCss = appHudRect.left + ((appHudRect.width - renderedBgWidthCss) / 2);
+  const backgroundTopCss = appHudRect.top + ((appHudRect.height - renderedBgHeightCss) / 2);
   const podestCenterXRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestCenterXRatio), 0.0, 1.0);
-  const podestFootYRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestFootYRatio), 0.0, 1.2);
-  const anchorSceneXCss = sceneRect.left + (sceneRect.width * podestCenterXRatio);
-  const anchorSceneYCss = sceneRect.top + (sceneRect.height * podestFootYRatio);
-  const localAnchorXCss = anchorSceneXCss - stageRect.left;
-  const localAnchorYCss = anchorSceneYCss - stageRect.top;
+  const podestFootYRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestFootYRatio), 0.0, 1.0);
+  const anchorBackgroundXCss = backgroundLeftCss + (renderedBgWidthCss * podestCenterXRatio);
+  const anchorBackgroundYCss = backgroundTopCss + (renderedBgHeightCss * podestFootYRatio);
+  const localAnchorXCss = anchorBackgroundXCss - stageRect.left;
+  const localAnchorYCss = anchorBackgroundYCss - stageRect.top;
 
   return {
     x: Math.round(localAnchorXCss * dpr),
@@ -7841,24 +7856,83 @@ function resolveHomePodestAnchorPx(targetNode, canvasMetrics) {
   };
 }
 
-function getHomePlantPlacement(srcW, srcH, canvasMetrics, targetNode) {
+function getOpaqueBoundsForFallbackImage(image, cacheKey) {
+  const safeKey = String(cacheKey || '');
+  if (safeKey && plantSpriteRuntime.fallbackBoundsCache.has(safeKey)) {
+    return plantSpriteRuntime.fallbackBoundsCache.get(safeKey);
+  }
+
+  const width = Math.max(1, Number(image && image.naturalWidth) || Number(image && image.width) || 1);
+  const height = Math.max(1, Number(image && image.naturalHeight) || Number(image && image.height) || 1);
+  const ctx = ensureFrameBoundsContext(width, height);
+  if (!ctx) {
+    const fallback = { x: 0, y: 0, w: width, h: height };
+    if (safeKey) {
+      plantSpriteRuntime.fallbackBoundsCache.set(safeKey, fallback);
+    }
+    return fallback;
+  }
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(image, 0, 0, width, height);
+
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  const alphaThreshold = 8;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    const rowOffset = y * width * 4;
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[rowOffset + (x * 4) + 3];
+      if (alpha <= alphaThreshold) {
+        continue;
+      }
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  const hasOpaquePixels = maxX >= minX && maxY >= minY;
+  const bounds = hasOpaquePixels
+    ? { x: minX, y: minY, w: (maxX - minX + 1), h: (maxY - minY + 1) }
+    : { x: 0, y: 0, w: width, h: height };
+
+  if (safeKey) {
+    plantSpriteRuntime.fallbackBoundsCache.set(safeKey, bounds);
+  }
+
+  return bounds;
+}
+
+function getHomePlantPlacement(srcW, srcH, visibleBounds, canvasMetrics, targetNode) {
   const safeSrcW = Math.max(1, Number(srcW) || 1);
   const safeSrcH = Math.max(1, Number(srcH) || 1);
   const dstW = Math.max(1, Number(canvasMetrics && canvasMetrics.widthPx) || 1);
   const dstH = Math.max(1, Number(canvasMetrics && canvasMetrics.heightPx) || 1);
   const dpr = Math.max(1, Number(canvasMetrics && canvasMetrics.dpr) || 1);
+  const bounds = visibleBounds && Number(visibleBounds.w) > 0 && Number(visibleBounds.h) > 0
+    ? visibleBounds
+    : { x: 0, y: 0, w: safeSrcW, h: safeSrcH };
 
-  const containScale = Math.min(dstW / safeSrcW, dstH / safeSrcH);
+  const containScale = Math.min(dstW / Math.max(1, bounds.w), dstH / Math.max(1, bounds.h));
   const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 4.5);
   const scale = containScale * fitScale;
   const drawW = Math.max(1, Math.round(safeSrcW * scale));
   const drawH = Math.max(1, Math.round(safeSrcH * scale));
-  const anchorPx = resolveHomePodestAnchorPx(targetNode, canvasMetrics);
-  const dx = Math.round(anchorPx.x - (drawW / 2));
+  const anchorPx = resolveHomeBackgroundAnchorPx(targetNode, canvasMetrics);
+  const visibleCenterX = (Number(bounds.x) + (Number(bounds.w) / 2)) * scale;
+  const visibleBottomY = (Number(bounds.y) + Number(bounds.h)) * scale;
+  const dx = Math.round(anchorPx.x - visibleCenterX);
   const anchorY = anchorPx.y;
   const baselineInsetCss = Number(HOME_PLANT_REFERENCE_FIT.baselineInsetPx) || 0;
   const baselineInsetPx = Math.round(baselineInsetCss * dpr);
-  const dy = Math.round(anchorY - drawH - baselineInsetPx);
+  const dy = Math.round(anchorY - visibleBottomY - baselineInsetPx);
 
   return {
     fitScale,
@@ -7972,7 +8046,8 @@ function renderPlantFromSprite(targetNode) {
   const frameRect = getSpriteFrameRect(nextFrameIndex, metadata);
   const srcW = Math.max(1, frameRect.sw);
   const srcH = Math.max(1, frameRect.sh);
-  const placement = getHomePlantPlacement(srcW, srcH, canvasMetrics, targetNode);
+  const visibleBounds = getOpaqueBoundsForFrame(frameRect, nextFrameIndex);
+  const placement = getHomePlantPlacement(srcW, srcH, visibleBounds, canvasMetrics, targetNode);
   const spriteStage = getPlantSpriteStageFromState(plantRenderState);
 
   const ctx = targetNode.getContext('2d', { alpha: true });
