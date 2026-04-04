@@ -175,7 +175,8 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
 const HOME_PLANT_REFERENCE_FIT = Object.freeze({
   maxFootprintScale: 3.0,
   baselineInsetPx: -64,
-  podestAnchorYRatio: 1.0
+  podestCenterXRatio: 0.5,
+  podestFootYRatio: 0.985
 });
 
 const HOME_PLANT_STAGE_SCALE = Object.freeze({
@@ -4465,7 +4466,7 @@ function renderPlantFallback(targetNode) {
   img.onload = () => {
     const srcW = img.naturalWidth || 512;
     const srcH = img.naturalHeight || 512;
-    const placement = getHomePlantPlacement(srcW, srcH, canvasMetrics);
+    const placement = getHomePlantPlacement(srcW, srcH, canvasMetrics, targetNode);
 
     ctx.clearRect(0, 0, targetNode.width, targetNode.height);
     ctx.drawImage(img, placement.dx, placement.dy, placement.drawW, placement.drawH);
@@ -7802,7 +7803,45 @@ function syncPlantCanvasToContainer(targetNode) {
   return { widthCss, heightCss, widthPx, heightPx, dpr };
 }
 
-function getHomePlantPlacement(srcW, srcH, canvasMetrics) {
+function resolveHomePodestAnchorPx(targetNode, canvasMetrics) {
+  const dpr = Math.max(1, Number(canvasMetrics && canvasMetrics.dpr) || 1);
+  const widthPx = Math.max(1, Number(canvasMetrics && canvasMetrics.widthPx) || 1);
+  const heightPx = Math.max(1, Number(canvasMetrics && canvasMetrics.heightPx) || 1);
+  const fallback = {
+    x: Math.round(widthPx * 0.5),
+    y: Math.round(heightPx * clamp(Number(HOME_PLANT_REFERENCE_FIT.podestFootYRatio), 0.75, 1.1))
+  };
+
+  if (!targetNode || typeof targetNode.getBoundingClientRect !== 'function') {
+    return fallback;
+  }
+
+  const stageNode = targetNode.closest('.home-plant-stage');
+  const sceneNode = targetNode.closest('.home-scene-fixed');
+  if (!stageNode || !sceneNode) {
+    return fallback;
+  }
+
+  const stageRect = stageNode.getBoundingClientRect();
+  const sceneRect = sceneNode.getBoundingClientRect();
+  if (!(stageRect.width > 0 && stageRect.height > 0 && sceneRect.width > 0 && sceneRect.height > 0)) {
+    return fallback;
+  }
+
+  const podestCenterXRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestCenterXRatio), 0.0, 1.0);
+  const podestFootYRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestFootYRatio), 0.0, 1.2);
+  const anchorSceneXCss = sceneRect.left + (sceneRect.width * podestCenterXRatio);
+  const anchorSceneYCss = sceneRect.top + (sceneRect.height * podestFootYRatio);
+  const localAnchorXCss = anchorSceneXCss - stageRect.left;
+  const localAnchorYCss = anchorSceneYCss - stageRect.top;
+
+  return {
+    x: Math.round(localAnchorXCss * dpr),
+    y: Math.round(localAnchorYCss * dpr)
+  };
+}
+
+function getHomePlantPlacement(srcW, srcH, canvasMetrics, targetNode) {
   const safeSrcW = Math.max(1, Number(srcW) || 1);
   const safeSrcH = Math.max(1, Number(srcH) || 1);
   const dstW = Math.max(1, Number(canvasMetrics && canvasMetrics.widthPx) || 1);
@@ -7814,10 +7853,9 @@ function getHomePlantPlacement(srcW, srcH, canvasMetrics) {
   const scale = containScale * fitScale;
   const drawW = Math.max(1, Math.round(safeSrcW * scale));
   const drawH = Math.max(1, Math.round(safeSrcH * scale));
-  const dx = Math.round((dstW - drawW) / 2);
-
-  const anchorRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestAnchorYRatio), 0.7, 1.2);
-  const anchorY = Math.round(dstH * anchorRatio);
+  const anchorPx = resolveHomePodestAnchorPx(targetNode, canvasMetrics);
+  const dx = Math.round(anchorPx.x - (drawW / 2));
+  const anchorY = anchorPx.y;
   const baselineInsetCss = Number(HOME_PLANT_REFERENCE_FIT.baselineInsetPx) || 0;
   const baselineInsetPx = Math.round(baselineInsetCss * dpr);
   const dy = Math.round(anchorY - drawH - baselineInsetPx);
@@ -7934,7 +7972,7 @@ function renderPlantFromSprite(targetNode) {
   const frameRect = getSpriteFrameRect(nextFrameIndex, metadata);
   const srcW = Math.max(1, frameRect.sw);
   const srcH = Math.max(1, frameRect.sh);
-  const placement = getHomePlantPlacement(srcW, srcH, canvasMetrics);
+  const placement = getHomePlantPlacement(srcW, srcH, canvasMetrics, targetNode);
   const spriteStage = getPlantSpriteStageFromState(plantRenderState);
 
   const ctx = targetNode.getContext('2d', { alpha: true });
