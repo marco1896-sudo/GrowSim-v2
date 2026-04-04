@@ -176,7 +176,7 @@ const HOME_PLANT_REFERENCE_FIT = Object.freeze({
   maxFootprintScale: 3.0,
   baselineInsetPx: -12,
   podestCenterXRatio: 0.5,
-  podestFootYRatio: 0.570,
+  podestFootYRatio: 0.565,
   backgroundWidthPx: 393,
   backgroundHeightPx: 852
 });
