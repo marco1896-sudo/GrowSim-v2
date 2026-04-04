@@ -173,8 +173,8 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
 // Figma reference (Home 132:51) defines a shared anchor zone:
 // center + baseline are fixed, while stage variants scale inside that same zone.
 const HOME_PLANT_REFERENCE_FIT = Object.freeze({
-  maxFootprintScale: 1.7,
-  baselineInsetPx: -52
+  maxFootprintScale: 3.0,
+  baselineInsetPx: -196
 });
 
 const HOME_PLANT_STAGE_SCALE = Object.freeze({
@@ -4468,7 +4468,7 @@ function renderPlantFallback(targetNode) {
     const dstH = h;
 
     const containScale = Math.min(dstW / srcW, dstH / srcH);
-    const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 2.4);
+    const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 4.5);
     const scale = containScale * fitScale;
 
     const drawW = Math.round(srcW * scale);
@@ -7922,7 +7922,7 @@ function renderPlantFromSprite(targetNode) {
   const fitScale = clamp(
     HOME_PLANT_REFERENCE_FIT.maxFootprintScale,
     0.1,
-    2.4
+    4.5
   );
   const scale = containScale * fitScale;
   const drawW = Math.max(1, Math.round(srcW * scale));

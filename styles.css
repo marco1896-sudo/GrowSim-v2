@@ -6761,12 +6761,12 @@ body.panelized-ready :is(
   right: auto;
   left: 50%;
   bottom: -2px;
-  width: min(60vw, calc(var(--home-scene-height) * 0.72));
-  height: min(60vw, calc(var(--home-scene-height) * 0.72));
-  min-width: 228px;
-  min-height: 228px;
-  max-width: 236px;
-  max-height: 236px;
+  width: min(78vw, calc(var(--home-scene-height) * 0.95));
+  height: min(78vw, calc(var(--home-scene-height) * 0.95));
+  min-width: 276px;
+  min-height: 276px;
+  max-width: 336px;
+  max-height: 336px;
   transform: translateX(-50%);
   overflow: hidden;
   pointer-events: none;
