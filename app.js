@@ -174,7 +174,8 @@ const STAGE_INDEX_TO_SPRITE_STAGE = Object.freeze([
 // center + baseline are fixed, while stage variants scale inside that same zone.
 const HOME_PLANT_REFERENCE_FIT = Object.freeze({
   maxFootprintScale: 3.0,
-  baselineInsetPx: -64
+  baselineInsetPx: -64,
+  podestAnchorYRatio: 1.0
 });
 
 const HOME_PLANT_STAGE_SCALE = Object.freeze({
@@ -4464,21 +4465,10 @@ function renderPlantFallback(targetNode) {
   img.onload = () => {
     const srcW = img.naturalWidth || 512;
     const srcH = img.naturalHeight || 512;
-    const dstW = w;
-    const dstH = h;
-
-    const containScale = Math.min(dstW / srcW, dstH / srcH);
-    const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 4.5);
-    const scale = containScale * fitScale;
-
-    const drawW = Math.round(srcW * scale);
-    const drawH = Math.round(srcH * scale);
-    const dx = Math.round((dstW - drawW) / 2);
-    const baselineInset = Number(HOME_PLANT_REFERENCE_FIT.baselineInsetPx) || 0;
-    const dy = Math.round(dstH - drawH - baselineInset);
+    const placement = getHomePlantPlacement(srcW, srcH, canvasMetrics);
 
     ctx.clearRect(0, 0, targetNode.width, targetNode.height);
-    ctx.drawImage(img, dx, dy, drawW, drawH);
+    ctx.drawImage(img, placement.dx, placement.dy, placement.drawW, placement.drawH);
   };
   img.onerror = () => {
     ctx.fillStyle = 'rgba(134, 167, 94, 0.85)';
@@ -7812,6 +7802,36 @@ function syncPlantCanvasToContainer(targetNode) {
   return { widthCss, heightCss, widthPx, heightPx, dpr };
 }
 
+function getHomePlantPlacement(srcW, srcH, canvasMetrics) {
+  const safeSrcW = Math.max(1, Number(srcW) || 1);
+  const safeSrcH = Math.max(1, Number(srcH) || 1);
+  const dstW = Math.max(1, Number(canvasMetrics && canvasMetrics.widthPx) || 1);
+  const dstH = Math.max(1, Number(canvasMetrics && canvasMetrics.heightPx) || 1);
+  const dpr = Math.max(1, Number(canvasMetrics && canvasMetrics.dpr) || 1);
+
+  const containScale = Math.min(dstW / safeSrcW, dstH / safeSrcH);
+  const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 4.5);
+  const scale = containScale * fitScale;
+  const drawW = Math.max(1, Math.round(safeSrcW * scale));
+  const drawH = Math.max(1, Math.round(safeSrcH * scale));
+  const dx = Math.round((dstW - drawW) / 2);
+
+  const anchorRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestAnchorYRatio), 0.7, 1.2);
+  const anchorY = Math.round(dstH * anchorRatio);
+  const baselineInsetCss = Number(HOME_PLANT_REFERENCE_FIT.baselineInsetPx) || 0;
+  const baselineInsetPx = Math.round(baselineInsetCss * dpr);
+  const dy = Math.round(anchorY - drawH - baselineInsetPx);
+
+  return {
+    fitScale,
+    drawW,
+    drawH,
+    dx,
+    dy,
+    anchorY
+  };
+}
+
 function ensureFrameBoundsContext(frameWidth, frameHeight) {
   const safeW = Math.max(1, clampInt(frameWidth, 1, 8192));
   const safeH = Math.max(1, clampInt(frameHeight, 1, 8192));
@@ -7914,22 +7934,8 @@ function renderPlantFromSprite(targetNode) {
   const frameRect = getSpriteFrameRect(nextFrameIndex, metadata);
   const srcW = Math.max(1, frameRect.sw);
   const srcH = Math.max(1, frameRect.sh);
-  const dstW = Math.max(1, canvasMetrics.widthPx);
-  const dstH = Math.max(1, canvasMetrics.heightPx);
-
-  const containScale = Math.min(dstW / srcW, dstH / srcH);
+  const placement = getHomePlantPlacement(srcW, srcH, canvasMetrics);
   const spriteStage = getPlantSpriteStageFromState(plantRenderState);
-  const fitScale = clamp(
-    HOME_PLANT_REFERENCE_FIT.maxFootprintScale,
-    0.1,
-    4.5
-  );
-  const scale = containScale * fitScale;
-  const drawW = Math.max(1, Math.round(srcW * scale));
-  const drawH = Math.max(1, Math.round(srcH * scale));
-  const dx = Math.round((dstW - drawW) / 2);
-  const baselineInset = Number(HOME_PLANT_REFERENCE_FIT.baselineInsetPx) || 0;
-  const dy = Math.round(dstH - drawH - baselineInset);
 
   const ctx = targetNode.getContext('2d', { alpha: true });
   if (!ctx) {
@@ -7944,16 +7950,17 @@ function renderPlantFromSprite(targetNode) {
     frameRect.sy,
     srcW,
     srcH,
-    dx,
-    dy,
-    drawW,
-    drawH
+    placement.dx,
+    placement.dy,
+    placement.drawW,
+    placement.drawH
   );
 
   targetNode.dataset.frameIndex = String(nextFrameIndex);
   targetNode.dataset.stageName = stageName;
   targetNode.dataset.spriteStage = spriteStage;
-  targetNode.dataset.fitScale = String(fitScale);
+  targetNode.dataset.fitScale = String(placement.fitScale);
+  targetNode.dataset.anchorY = String(placement.anchorY);
   targetNode.dataset.canvasWidth = String(canvasMetrics.widthPx);
   targetNode.dataset.canvasHeight = String(canvasMetrics.heightPx);
 
