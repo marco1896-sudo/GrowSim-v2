@@ -178,14 +178,14 @@ const HOME_PLANT_REFERENCE_FIT = Object.freeze({
 });
 
 const HOME_PLANT_STAGE_SCALE = Object.freeze({
-  seed: 0.84,
-  sprout: 0.9,
-  seedling: 0.96,
-  vegetative: 0.96,
-  preflower: 0.99,
-  flowering: 1.0,
-  late_flowering: 1.0,
-  harvest: 0.96
+  seed: 3.0,
+  sprout: 3.0,
+  seedling: 3.0,
+  vegetative: 3.0,
+  preflower: 3.0,
+  flowering: 3.0,
+  late_flowering: 3.0,
+  harvest: 3.0
 });
 
 const plantSpriteRuntime = {
