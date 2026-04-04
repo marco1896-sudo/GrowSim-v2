@@ -7820,40 +7820,101 @@ function resolveHomeBackgroundAnchorPx(targetNode, canvasMetrics) {
     y: Math.round(heightPx * clamp(Number(HOME_PLANT_REFERENCE_FIT.podestFootYRatio), 0.0, 1.0))
   };
 
-  if (!targetNode || typeof targetNode.getBoundingClientRect !== 'function') {
+  if (!(targetNode instanceof HTMLElement)) {
     return fallback;
   }
 
-  const stageNode = targetNode.closest('.home-plant-stage');
   const appHud = document.getElementById('app-hud');
-  if (!stageNode || !appHud || typeof appHud.getBoundingClientRect !== 'function') {
+  if (!(appHud instanceof HTMLElement)) {
     return fallback;
   }
 
-  const stageRect = stageNode.getBoundingClientRect();
-  const appHudRect = appHud.getBoundingClientRect();
-  if (!(stageRect.width > 0 && stageRect.height > 0 && appHudRect.width > 0 && appHudRect.height > 0)) {
+  const appHudWidthCss = Math.max(1, Number(appHud.clientWidth) || Number(appHud.offsetWidth) || 0);
+  const appHudHeightCss = Math.max(1, Number(appHud.clientHeight) || Number(appHud.offsetHeight) || 0);
+  if (!(appHudWidthCss > 0 && appHudHeightCss > 0)) {
     return fallback;
   }
 
   const backgroundWidthPx = Math.max(1, Number(HOME_PLANT_REFERENCE_FIT.backgroundWidthPx) || 393);
   const backgroundHeightPx = Math.max(1, Number(HOME_PLANT_REFERENCE_FIT.backgroundHeightPx) || 852);
-  const coverScale = Math.max(appHudRect.width / backgroundWidthPx, appHudRect.height / backgroundHeightPx);
+  const coverScale = Math.max(appHudWidthCss / backgroundWidthPx, appHudHeightCss / backgroundHeightPx);
   const renderedBgWidthCss = backgroundWidthPx * coverScale;
   const renderedBgHeightCss = backgroundHeightPx * coverScale;
-  const backgroundLeftCss = appHudRect.left + ((appHudRect.width - renderedBgWidthCss) / 2);
-  const backgroundTopCss = appHudRect.top + ((appHudRect.height - renderedBgHeightCss) / 2);
+  const backgroundLeftCss = (appHudWidthCss - renderedBgWidthCss) / 2;
+  const backgroundTopCss = (appHudHeightCss - renderedBgHeightCss) / 2;
   const podestCenterXRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestCenterXRatio), 0.0, 1.0);
   const podestFootYRatio = clamp(Number(HOME_PLANT_REFERENCE_FIT.podestFootYRatio), 0.0, 1.0);
   const anchorBackgroundXCss = backgroundLeftCss + (renderedBgWidthCss * podestCenterXRatio);
   const anchorBackgroundYCss = backgroundTopCss + (renderedBgHeightCss * podestFootYRatio);
-  const localAnchorXCss = anchorBackgroundXCss - stageRect.left;
-  const localAnchorYCss = anchorBackgroundYCss - stageRect.top;
+  const localCanvasOriginCss = resolveElementOffsetWithinAncestor(targetNode, appHud);
+  if (!localCanvasOriginCss) {
+    return fallback;
+  }
+
+  const localAnchorXCss = anchorBackgroundXCss - localCanvasOriginCss.x;
+  const localAnchorYCss = anchorBackgroundYCss - localCanvasOriginCss.y;
 
   return {
     x: Math.round(localAnchorXCss * dpr),
     y: Math.round(localAnchorYCss * dpr)
   };
+}
+
+function resolveElementOffsetWithinAncestor(node, ancestor) {
+  if (!(node instanceof HTMLElement) || !(ancestor instanceof HTMLElement)) {
+    return null;
+  }
+
+  let x = 0;
+  let y = 0;
+  let current = node;
+
+  while (current && current !== ancestor) {
+    x += Number(current.offsetLeft) || 0;
+    y += Number(current.offsetTop) || 0;
+
+    const transform = window.getComputedStyle(current).transform;
+    const translation = extractTransformTranslation(transform);
+    x += translation.x;
+    y += translation.y;
+
+    current = current.offsetParent;
+  }
+
+  if (current !== ancestor) {
+    return null;
+  }
+
+  return { x, y };
+}
+
+function extractTransformTranslation(transformValue) {
+  const raw = String(transformValue || '').trim();
+  if (!raw || raw === 'none') {
+    return { x: 0, y: 0 };
+  }
+
+  if (raw.startsWith('matrix3d(') && raw.endsWith(')')) {
+    const values = raw.slice(9, -1).split(',').map((value) => Number(value.trim()));
+    if (values.length === 16 && values.every(Number.isFinite)) {
+      return {
+        x: values[12] || 0,
+        y: values[13] || 0
+      };
+    }
+  }
+
+  if (raw.startsWith('matrix(') && raw.endsWith(')')) {
+    const values = raw.slice(7, -1).split(',').map((value) => Number(value.trim()));
+    if (values.length === 6 && values.every(Number.isFinite)) {
+      return {
+        x: values[4] || 0,
+        y: values[5] || 0
+      };
+    }
+  }
+
+  return { x: 0, y: 0 };
 }
 
 function getOpaqueBoundsForFallbackImage(image, cacheKey) {
