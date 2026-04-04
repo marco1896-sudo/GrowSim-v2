@@ -6989,33 +6989,35 @@ body.panelized-ready :is(
   position: relative;
   left: auto;
   top: auto;
-  width: 84px;
-  height: 84px;
+  width: 50px;
+  height: 50px;
   transform: none;
   z-index: 2;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.22));
   transition: transform 120ms ease, filter 140ms ease, opacity 140ms ease;
   object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .home-action-panel #careActionBtn .home-action-icon {
-  width: 99px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
 }
 
 .home-action-panel #analyzeActionBtn .home-action-icon {
-  width: 70px;
-  height: 68px;
+  width: 50px;
+  height: 50px;
 }
 
 .home-action-panel #eventsActionBtn .home-action-icon {
-  width: 70px;
-  height: 78px;
+  width: 50px;
+  height: 50px;
 }
 
 .home-action-panel #boostActionBtn .home-action-icon {
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
 }
 
 .home-action-panel .home-action-title {
@@ -7991,31 +7993,43 @@ body.panelized-ready :is(
   position: relative;
   left: auto;
   top: auto;
-  width: 100%;
-  height: 100%;
+  width: 50px;
+  height: 50px;
   object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
   transform: none;
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.26));
 }
 
 #boostActionBtn .home-action-icon {
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
 }
 
 #eventsActionBtn .home-action-icon {
-  width: calc(70px * var(--home-side-icon-scale));
-  height: calc(78px * var(--home-side-icon-scale));
+  width: 50px;
+  height: 50px;
 }
 
 #analyzeActionBtn .home-action-icon {
-  width: calc(70px * var(--home-side-icon-scale));
-  height: calc(68px * var(--home-side-icon-scale));
+  width: 50px;
+  height: 50px;
 }
 
 #careActionBtn .home-action-icon {
-  width: calc(99px * var(--home-side-icon-scale));
-  height: calc(80px * var(--home-side-icon-scale));
+  width: 50px;
+  height: 50px;
+}
+
+#eventsActionBtn .home-side-icon,
+#analyzeActionBtn .home-side-icon,
+#careActionBtn .home-side-icon {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .home-action-panel .home-action-title,
