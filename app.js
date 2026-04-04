@@ -7910,29 +7910,51 @@ function getOpaqueBoundsForFallbackImage(image, cacheKey) {
   return bounds;
 }
 
+function normalizeVisibleBounds(visibleBounds, srcW, srcH) {
+  const safeSrcW = Math.max(1, Number(srcW) || 1);
+  const safeSrcH = Math.max(1, Number(srcH) || 1);
+  const bounds = visibleBounds && typeof visibleBounds === 'object' ? visibleBounds : null;
+  const rawX = Number(bounds && bounds.x);
+  const rawY = Number(bounds && bounds.y);
+  const rawW = Number(bounds && bounds.w);
+  const rawH = Number(bounds && bounds.h);
+
+  if (!Number.isFinite(rawX) || !Number.isFinite(rawY) || !Number.isFinite(rawW) || !Number.isFinite(rawH)) {
+    return { x: 0, y: 0, w: safeSrcW, h: safeSrcH };
+  }
+
+  const x = clamp(rawX, 0, safeSrcW - 1);
+  const y = clamp(rawY, 0, safeSrcH - 1);
+  const maxW = Math.max(1, safeSrcW - x);
+  const maxH = Math.max(1, safeSrcH - y);
+  const w = clamp(rawW, 1, maxW);
+  const h = clamp(rawH, 1, maxH);
+
+  return { x, y, w, h };
+}
+
 function getHomePlantPlacement(srcW, srcH, visibleBounds, canvasMetrics, targetNode) {
   const safeSrcW = Math.max(1, Number(srcW) || 1);
   const safeSrcH = Math.max(1, Number(srcH) || 1);
   const dstW = Math.max(1, Number(canvasMetrics && canvasMetrics.widthPx) || 1);
   const dstH = Math.max(1, Number(canvasMetrics && canvasMetrics.heightPx) || 1);
   const dpr = Math.max(1, Number(canvasMetrics && canvasMetrics.dpr) || 1);
-  const bounds = visibleBounds && Number(visibleBounds.w) > 0 && Number(visibleBounds.h) > 0
-    ? visibleBounds
-    : { x: 0, y: 0, w: safeSrcW, h: safeSrcH };
+  const bounds = normalizeVisibleBounds(visibleBounds, safeSrcW, safeSrcH);
 
-  const containScale = Math.min(dstW / Math.max(1, bounds.w), dstH / Math.max(1, bounds.h));
+  // Size must be derived from the original source frame, not from opaque bounds.
+  const containScale = Math.min(dstW / safeSrcW, dstH / safeSrcH);
   const fitScale = clamp(HOME_PLANT_REFERENCE_FIT.maxFootprintScale, 0.1, 4.5);
   const scale = containScale * fitScale;
   const drawW = Math.max(1, Math.round(safeSrcW * scale));
   const drawH = Math.max(1, Math.round(safeSrcH * scale));
   const anchorPx = resolveHomeBackgroundAnchorPx(targetNode, canvasMetrics);
   const visibleCenterX = (Number(bounds.x) + (Number(bounds.w) / 2)) * scale;
-  const visibleBottomY = (Number(bounds.y) + Number(bounds.h)) * scale;
+  const visibleBottomOffset = Math.max(0, safeSrcH - (Number(bounds.y) + Number(bounds.h))) * scale;
   const dx = Math.round(anchorPx.x - visibleCenterX);
   const anchorY = anchorPx.y;
   const baselineInsetCss = Number(HOME_PLANT_REFERENCE_FIT.baselineInsetPx) || 0;
   const baselineInsetPx = Math.round(baselineInsetCss * dpr);
-  const dy = Math.round(anchorY - visibleBottomY - baselineInsetPx);
+  const dy = Math.round(anchorY - drawH + visibleBottomOffset - baselineInsetPx);
 
   return {
     fitScale,
@@ -7940,7 +7962,8 @@ function getHomePlantPlacement(srcW, srcH, visibleBounds, canvasMetrics, targetN
     drawH,
     dx,
     dy,
-    anchorY
+    anchorY,
+    containScale
   };
 }
 
