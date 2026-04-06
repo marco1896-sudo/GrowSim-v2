@@ -6679,6 +6679,7 @@ body.panelized-ready :is(
   --home-panel-offset: clamp(12px, calc(var(--home-layout-height) * 0.0164), 18px);
   --home-scene-bottom-offset: clamp(278px, calc(var(--home-layout-height) * 0.3603), 304px);
   --home-scene-height: clamp(324px, calc(var(--home-layout-height) * 0.4131), 352px);
+  --home-plant-viewport-overscan-top: clamp(56px, calc(var(--home-layout-height) * 0.0718), 72px);
   --home-content-offset: clamp(428px, calc(var(--home-layout-height) * 0.5469), 456px);
   --home-content-pad-x: 12px;
   --home-content-gap: 16px;
@@ -6735,7 +6736,7 @@ body.panelized-ready :is(
   top: auto;
   bottom: var(--home-scene-bottom-offset);
   width: 100%;
-  height: var(--home-scene-height);
+  height: calc(var(--home-scene-height) + var(--home-plant-viewport-overscan-top));
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 2;
@@ -6762,11 +6763,11 @@ body.panelized-ready :is(
   left: 50%;
   bottom: -2px;
   width: min(78vw, calc(var(--home-scene-height) * 0.95));
-  height: min(78vw, calc(var(--home-scene-height) * 0.95));
+  height: calc(min(78vw, calc(var(--home-scene-height) * 0.95)) + var(--home-plant-viewport-overscan-top));
   min-width: 276px;
-  min-height: 276px;
+  min-height: calc(276px + var(--home-plant-viewport-overscan-top));
   max-width: 336px;
-  max-height: 336px;
+  max-height: calc(336px + var(--home-plant-viewport-overscan-top));
   transform: translateX(-50%);
   overflow: hidden;
   pointer-events: none;
