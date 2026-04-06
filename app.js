@@ -6768,6 +6768,7 @@ async function finishRun(reason) {
   const progressionApi = getProgressionApi();
   const run = getCanonicalRun(state);
   const profile = getCanonicalProfile(state);
+  logRunFlowDebug('finish_run:start', { reason });
   if (!progressionApi || typeof progressionApi.markRunAsFinished !== 'function') {
     return { finished: false, alreadyFinished: true, summary: profile.lastRunSummary || null };
   }
@@ -6788,6 +6789,11 @@ async function finishRun(reason) {
     syncCanonicalStateShape();
     renderAll();
     schedulePersistState(true);
+    logRunFlowDebug('finish_run:done', {
+      reason,
+      finished: Boolean(result && result.finished),
+      alreadyFinished: Boolean(result && result.alreadyFinished)
+    });
   }
 
   return result;
@@ -6797,6 +6803,7 @@ async function finalizeRun(reason) {
   const progressionApi = getProgressionApi();
   const run = getCanonicalRun(state);
   const profile = getCanonicalProfile(state);
+  logRunFlowDebug('finalize_run:start', { reason });
   if (!progressionApi || typeof progressionApi.finalizeRunState !== 'function') {
     return { finalized: false, alreadyFinalized: true, summary: profile.lastRunSummary || null };
   }
@@ -6816,6 +6823,11 @@ async function finalizeRun(reason) {
     syncCanonicalStateShape();
     renderAll();
     schedulePersistState(true);
+    logRunFlowDebug('finalize_run:done', {
+      reason,
+      finalized: Boolean(result && result.finalized),
+      alreadyFinalized: Boolean(result && result.alreadyFinalized)
+    });
   }
 
   return result;
@@ -6823,7 +6835,30 @@ async function finalizeRun(reason) {
 
 window.__gsFinalizeRun = finishRun;
 
+function logRunFlowDebug(label, extra = {}) {
+  try {
+    const run = getCanonicalRun(state);
+    const profile = getCanonicalProfile(state);
+    console.info('[run-flow]', label, {
+      buildId: (window.GrowSimBuild && window.GrowSimBuild.id) ? String(window.GrowSimBuild.id) : 'dev',
+      runId: Number(run.id || 0),
+      runStatus: String(run.status || 'unknown'),
+      endReason: run.endReason || null,
+      isFinalized: isRunFinalized(run),
+      summaryOpen: Boolean(state.ui && state.ui.runSummaryOpen),
+      analysisOpen: Boolean(state.ui && state.ui.openSheet === 'dashboard'),
+      deathOverlayOpen: Boolean(state.ui && state.ui.deathOverlayOpen),
+      hasSummary: Boolean(profile.lastRunSummary),
+      hasSetup: Boolean(state.setup),
+      ...extra
+    });
+  } catch (_error) {
+    // non-fatal debug helper
+  }
+}
+
 async function resetRunPreservingProfile() {
+  logRunFlowDebug('reset_preserving_profile:start');
   const preservedProfile = JSON.parse(JSON.stringify(getCanonicalProfile(state)));
   const preservedSettings = JSON.parse(JSON.stringify(getCanonicalSettings(state))); const preservedEventCatalog = Array.isArray(state.events && state.events.catalog) ? state.events.catalog.slice() : []; const preservedActionCatalog = Array.isArray(state.actions && state.actions.catalog) ? state.actions.catalog.slice() : [];
   const previousRunId = Math.max(0, Number(getCanonicalRun(state).id || 0));
@@ -6858,33 +6893,42 @@ async function resetRunPreservingProfile() {
 
   renderAll();
   schedulePersistState(true);
+  logRunFlowDebug('reset_preserving_profile:done', { previousRunId });
 }
 
 async function beginNextRunFlow() {
   const run = getCanonicalRun(state);
+  logRunFlowDebug('begin_next_run:start');
   closeMenu();
   if (run.status === 'downed' && !isRunFinalized(run)) {
+    logRunFlowDebug('begin_next_run:finish_downed');
     return finishRun('death');
   }
   if (run.status === 'finished' && !isRunFinalized(run)) {
+    logRunFlowDebug('begin_next_run:finalize_finished');
     await finalizeRun(run.endReason || 'death');
   }
-  return resetRunPreservingProfile();
+  const result = await resetRunPreservingProfile();
+  logRunFlowDebug('begin_next_run:done');
+  return result;
 }
 
 async function onRunSummaryFinalizeClick() {
   const run = getCanonicalRun(state);
+  logRunFlowDebug('cta_summary_finalize:click');
   if (run.status === 'finished' && !isRunFinalized(run)) {
     await finalizeRun(run.endReason || 'death');
   }
 }
 
 async function onRunSummaryNewRunClick() {
+  logRunFlowDebug('cta_summary_new_run:click');
   await beginNextRunFlow();
 }
 
 async function onRunSummaryAnalyzeClick() {
   const run = getCanonicalRun(state);
+  logRunFlowDebug('cta_summary_analyze:click');
   if (run.status === 'finished' && !isRunFinalized(run)) {
     await finalizeRun(run.endReason || 'death');
   }
@@ -7250,8 +7294,10 @@ function onNotificationTypeToggle() {
 
 async function onAnalysisResetClick() {
   const run = getCanonicalRun(state);
+  logRunFlowDebug('cta_analysis_new_run:click');
   const confirmed = window.confirm((run.status === 'finished' || run.status === 'ended') ? 'Neuen Run mit bestehendem Profil starten' : 'Aktuellen Run wirklich beenden und einen neuen starten Dein Profilfortschritt bleibt erhalten.');
   if (!confirmed) {
+    logRunFlowDebug('cta_analysis_new_run:cancelled');
     return;
   }
   await beginNextRunFlow();

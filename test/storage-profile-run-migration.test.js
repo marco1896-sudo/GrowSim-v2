@@ -219,4 +219,84 @@ function buildContext(savedSnapshot) {
   assert.ok(ctx.state.run.goal && ctx.state.run.goal.id !== 'survive_day_20', 'restore should reactivate the next goal instead of keeping the completed one active');
 })();
 
+(async function testRestoreKeepsFinalizedRunClosableForNextRunFlow() {
+  const finalizedSave = {
+    profile: {
+      ...progression.getDefaultProfile(),
+      totalXp: 220,
+      level: progression.getLevelForXp(220),
+      lastRunSummary: {
+        endReason: 'harvest',
+        simDay: 84,
+        qualityScore: 88,
+        qualityTier: 'strong',
+        goal: {
+          id: 'reach_harvest',
+          status: 'completed',
+          rewardXp: 90,
+          awardedXp: 90
+        }
+      }
+    },
+    setup: null,
+    simulation: {
+      startRealTimeMs: 555,
+      lastTickRealTimeMs: 999,
+      nowMs: 999,
+      simTimeMs: 1200,
+      simEpochMs: 555
+    },
+    plant: {
+      phase: 'harvest',
+      isDead: false,
+      stageIndex: 11,
+      stageKey: 'stage_12'
+    },
+    status: {
+      health: 90,
+      stress: 8,
+      water: 70,
+      nutrition: 68,
+      risk: 6
+    },
+    run: {
+      id: 5,
+      status: 'ended',
+      endReason: 'harvest',
+      startedAtRealMs: 555,
+      endedAtRealMs: 900,
+      finalizedAtRealMs: 950,
+      setupSnapshot: {
+        mode: 'indoor',
+        light: 'medium',
+        medium: 'soil',
+        potSize: 'small',
+        genetics: 'hybrid'
+      },
+      goal: {
+        id: 'reach_harvest',
+        status: 'completed',
+        rewardXp: 90,
+        awardedXp: 90,
+        xpGranted: true
+      },
+      goalHistory: ['survive_day_20', 'reach_flowering', 'stable_grow', 'clean_finish', 'reach_harvest']
+    },
+    ui: {
+      runSummaryOpen: true
+    }
+  };
+
+  const ctx = buildContext(finalizedSave);
+  ctx.resetStateToDefaults();
+  await ctx.restoreState();
+  ctx.ensureStateIntegrity(Date.now());
+  ctx.syncCanonicalStateShape();
+
+  assert.strictEqual(ctx.state.run.status, 'ended', 'finalized old saves should stay ended on restore');
+  assert.ok(ctx.state.run.finalizedAtRealMs, 'finalized old saves should preserve finalized timestamp');
+  assert.strictEqual(ctx.state.ui.runSummaryOpen, true, 'finalized old saves should reopen the summary for user actions');
+  assert.strictEqual(Boolean(ctx.state.profile.lastRunSummary), true, 'finalized old saves should keep the persisted summary');
+})();
+
 console.log('storage-profile-run-migration tests passed');

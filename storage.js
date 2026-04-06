@@ -857,6 +857,14 @@ async function restoreState(options = {}) {
       local: getStateFreshnessMetrics(localSaved)
     });
   }
+  console.info('[restore] applying snapshot', {
+    source: selectedRestore.source,
+    metrics: getStateFreshnessMetrics(saved),
+    runStatus: saved && saved.run && saved.run.status ? String(saved.run.status) : null,
+    finalized: Boolean(saved && saved.run && Number.isFinite(Number(saved.run.finalizedAtRealMs))),
+    summaryOpen: Boolean(saved && saved.ui && saved.ui.runSummaryOpen),
+    hasSummary: Boolean(saved && saved.profile && saved.profile.lastRunSummary)
+  });
 
   const sim = getCanonicalSimulation(state);
   const plant = getCanonicalPlant(state);
@@ -1075,6 +1083,11 @@ async function persistState() {
   }
 
   stampStatePersistence(state);
+  console.info('[storage] persist_state', {
+    run: getStateFreshnessMetrics(state),
+    summaryOpen: Boolean(state.ui && state.ui.runSummaryOpen),
+    openSheet: state.ui && state.ui.openSheet ? String(state.ui.openSheet) : null
+  });
 
   try {
     await storageAdapter.set(state);
