@@ -224,6 +224,7 @@ const OVERLAY_ASSETS = Object.freeze({
 const now = Date.now();
 const initialSimTimeMs = alignToSimStartHour(now, SIM_START_HOUR);
 const progressionDefaults = window.GrowSimProgression && typeof window.GrowSimProgression.getDefaultProfile === 'function' ? window.GrowSimProgression : null;
+const harvestDefaults = window.GrowSimHarvest && typeof window.GrowSimHarvest.getDefaultRunHarvest === 'function' ? window.GrowSimHarvest : null;
 const state = {
   schemaVersion: '1.0.0',
   seed: SIM_GLOBAL_SEED,
@@ -272,7 +273,8 @@ const state = {
       bestSimDay: 0,
       bestQualityScore: 0
     },
-    lastRunSummary: null
+    lastRunSummary: null,
+    harvest: harvestDefaults ? harvestDefaults.getDefaultProfileHarvest() : undefined
   },
   run: progressionDefaults ? progressionDefaults.getDefaultRunState() : {
     id: 0,
@@ -281,7 +283,8 @@ const state = {
     startedAtRealMs: null,
     endedAtRealMs: null,
     finalizedAtRealMs: null,
-    setupSnapshot: null
+    setupSnapshot: null,
+    harvest: harvestDefaults ? harvestDefaults.getDefaultRunHarvest() : undefined
   },
   missions: {
     catalog: [],
@@ -1138,6 +1141,62 @@ function uiNode(key, fallbackId) {
     }
   }
   return null;
+}
+
+function getHarvestApi() {
+  return window.GrowSimHarvest && typeof window.GrowSimHarvest === 'object' ? window.GrowSimHarvest : null;
+}
+
+function getCanonicalHarvestForecast(snapshot = state) {
+  const harvestApi = getHarvestApi();
+  const run = snapshot && typeof snapshot === 'object' ? snapshot.run : null;
+  if (!harvestApi || !run || typeof run !== 'object') {
+    return null;
+  }
+  run.harvest = harvestApi.normalizeRunHarvest(run.harvest);
+  return run.harvest.currentForecast;
+}
+
+function refreshHarvestForecast(options = {}) {
+  const harvestApi = getHarvestApi();
+  if (!harvestApi || typeof harvestApi.updateHarvestForecast !== 'function') {
+    return null;
+  }
+  const run = getCanonicalRun(state);
+  if (!run || run.status === 'idle') {
+    return getCanonicalHarvestForecast(state);
+  }
+  return harvestApi.updateHarvestForecast(state, options);
+}
+
+function formatHarvestTrendLabel(trend) {
+  switch (String(trend || 'stable')) {
+    case 'rising':
+      return 'Steigt';
+    case 'falling':
+      return 'Fällt';
+    default:
+      return 'Stabil';
+  }
+}
+
+function formatHarvestTrendSymbol(trend) {
+  switch (String(trend || 'stable')) {
+    case 'rising':
+      return '↑';
+    case 'falling':
+      return '↓';
+    default:
+      return '→';
+  }
+}
+
+function formatHarvestQualityBand(forecast) {
+  const harvestApi = getHarvestApi();
+  const qualityBand = harvestApi && typeof harvestApi.qualityTierLabel === 'function'
+    ? harvestApi.qualityTierLabel(forecast && forecast.projectedQualityTier)
+    : 'B';
+  return `${qualityBand} / ${Math.round(Number(forecast && forecast.qualityScore) || 0)}`;
 }
 
 function resolveScreenContainer(screenId) {
@@ -3382,6 +3441,7 @@ function updateVisibleOverlays() {
 
 function renderAll() {
   syncDeathState();
+  refreshHarvestForecast();
   renderActiveScreen();
   renderOverlayModules();
   migrateSettings(state);
@@ -3517,6 +3577,7 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const stressVisual = classifyStressVisualLevel(Number(status.stress || 0));
   const riskVisual = classifyRiskVisualLevel(Number(status.risk || 0));
   const growthVisual = classifyGrowthVisualLevel(Number(status.growth || 0), growthImpulse);
+  const harvestForecast = getCanonicalHarvestForecast(sourceState);
 
   return {
     id: 'home',
@@ -3629,6 +3690,25 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
         buildTradeoff: '',
         buildLoadout: ''
       },
+    harvestForecast: harvestForecast
+      ? {
+        visible: Boolean(run.status === 'active' || run.status === 'downed'),
+        score: Math.round(Number(harvestForecast.harvestScore || 0)),
+        qualityText: formatHarvestQualityBand(harvestForecast),
+        trendLabel: formatHarvestTrendLabel(harvestForecast.forecastTrend),
+        trendSymbol: formatHarvestTrendSymbol(harvestForecast.forecastTrend),
+        trend: String(harvestForecast.forecastTrend || 'stable'),
+        reason: String(harvestForecast.lastForecastReason || 'Die lokale Prognose wird aufgebaut.')
+      }
+      : {
+        visible: false,
+        score: 0,
+        qualityText: '--',
+        trendLabel: 'Stabil',
+        trendSymbol: '→',
+        trend: 'stable',
+        reason: 'Die lokale Prognose wird aufgebaut.'
+      },
     overlays: Array.isArray(sourceState.ui && sourceState.ui.visibleOverlayIds) ? sourceState.ui.visibleOverlayIds.slice() : []
   };
 }
@@ -3691,6 +3771,10 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   const homeMetaDetailBuildTitleNode = uiNode('homeMetaDetailBuildTitle', 'homeMetaDetailBuildTitle');
   const homeMetaDetailBuildEffectNode = uiNode('homeMetaDetailBuildEffect', 'homeMetaDetailBuildEffect');
   const homeMetaDetailBuildLoadoutNode = uiNode('homeMetaDetailBuildLoadout', 'homeMetaDetailBuildLoadout');
+  const harvestForecastWidgetNode = uiNode('harvestForecastWidget', 'harvestForecastWidget');
+  const harvestForecastTrendNode = uiNode('harvestForecastTrend', 'harvestForecastTrend');
+  const harvestForecastScoreNode = uiNode('harvestForecastScore', 'harvestForecastScore');
+  const harvestForecastQualityNode = uiNode('harvestForecastQuality', 'harvestForecastQuality');
   const runGoalVm = vm.runGoal || {};
   if (homeMetaToggleNode) {
     homeMetaToggleNode.classList.toggle('hidden', !Boolean(runGoalVm.visible));
@@ -3751,6 +3835,12 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   if (homeMetaDetailBuildLoadoutNode) {
     homeMetaDetailBuildLoadoutNode.textContent = String(runGoalVm.buildLoadout || '');
   }
+  renderHarvestMiniCard(vm.harvestForecast, {
+    widgetNode: harvestForecastWidgetNode,
+    trendNode: harvestForecastTrendNode,
+    scoreNode: harvestForecastScoreNode,
+    qualityNode: harvestForecastQualityNode
+  });
 
   const boostUsageTextNode = uiNode('boostUsageText', 'boostUsageText');
   if (boostUsageTextNode && boostUsageTextNode.textContent !== vm.boostText) {
@@ -5476,6 +5566,7 @@ function renderAnalysisOverview() {
   const roots = deriveRootZoneReadout(environment, state);
   const diagnosis = diagnosePlantState();
   const primaryIssue = diagnosis.primaryIssue || null;
+  const forecast = getCanonicalHarvestForecast(state) || refreshHarvestForecast({ force: true });
   const trendText = primaryIssue
     ? `${primaryIssue.title}. ${primaryIssue.cause}`
     : 'Aktuell kein klarer Hauptdruck. Werte wirken insgesamt stabil.';
@@ -5497,6 +5588,13 @@ function renderAnalysisOverview() {
     { label: 'Wurzelgesundheit', value: String(roots.rootHealth || '-') },
     { label: 'Sauerstoff', value: String(roots.oxygen || '-') }
   ];
+  const metricRows = forecast ? [
+    { label: 'Yield', value: `${Math.round(Number(forecast.yieldScore) || 0)}`, tone: 'value_green' },
+    { label: 'Quality', value: `${Math.round(Number(forecast.qualityScore) || 0)}`, tone: 'value_green' },
+    { label: 'Stabilität', value: `${Math.round(Number(forecast.stabilityScore) || 0)}`, tone: 'value_green' },
+    { label: 'Effizienz', value: `${Math.round(Number(forecast.efficiencyScore) || 0)}`, tone: 'value_green' },
+    { label: 'Schwierigkeit', value: `${Math.round(Number(forecast.challengeScore) || 0)}`, tone: 'value_gold' }
+  ] : [];
 
   const rowsToHtml = (rows) => rows.map((row) => `
       <div class="gs-analysis-status-row">
@@ -5504,8 +5602,72 @@ function renderAnalysisOverview() {
         <strong class="${escapeHtml(String(row.tone || 'value_green'))}">${escapeHtml(String(row.value || '-'))}</strong>
       </div>
     `).join('');
+  const cardsToHtml = (rows, emptyText, badgeText = null) => {
+    const safeRows = Array.isArray(rows) ? rows : [];
+    if (!safeRows.length) {
+      return `<p class="sheet-note">${escapeHtml(emptyText)}</p>`;
+    }
+    return safeRows.map((row) => `
+      <article class="gs-analysis-driver">
+        <div class="gs-analysis-driver-head">
+          <strong>${escapeHtml(String(row.label || 'Treiber'))}</strong>
+          <span class="gs-analysis-driver-badge gs-analysis-driver-badge--low">${escapeHtml(String(badgeText || Math.round(Number(row.impact) || 0)))}</span>
+        </div>
+        <p class="gs-analysis-driver-line">${escapeHtml(String(row.reason || ''))}</p>
+      </article>
+    `).join('');
+  };
+  const opportunityHtml = forecast && Array.isArray(forecast.recoveryOpportunities)
+    ? forecast.recoveryOpportunities.map((item) => `
+      <article class="gs-analysis-driver">
+        <div class="gs-analysis-driver-head">
+          <strong>${escapeHtml(String(item.label || 'Chance'))}</strong>
+          <span class="gs-analysis-driver-badge gs-analysis-driver-badge--medium">+${escapeHtml(String(Math.round(Number(item.estimatedGainMin) || 0)))} bis +${escapeHtml(String(Math.round(Number(item.estimatedGainMax) || 0)))}</span>
+        </div>
+        <p class="gs-analysis-driver-line">${escapeHtml(String(item.reason || ''))}</p>
+      </article>
+    `).join('')
+    : '<p class="sheet-note">Gerade wirkt kein einzelner lokaler Hebel deutlich größer als der Rest.</p>';
 
   ui.analysisPanelOverview.innerHTML = `
+    ${forecast ? `
+      <section class="gs-analysis-overview-section gs-analysis-overview-section--harvest">
+        <div class="harvest-analysis-hero">
+          <div>
+            <span class="harvest-analysis-hero__eyebrow">Lokaler Forecast</span>
+            <strong class="harvest-analysis-hero__score">${escapeHtml(String(Math.round(Number(forecast.harvestScore) || 0)))}</strong>
+            <p class="gs-analysis-trend-text">${escapeHtml(String(forecast.lastForecastReason || 'Die lokale Prognose bleibt aktuell vergleichsweise stabil.'))}</p>
+          </div>
+          <div class="harvest-analysis-hero__meta">
+            <span>Qualität ${escapeHtml(formatHarvestQualityBand(forecast))}</span>
+            <strong>${escapeHtml(formatHarvestTrendLabel(forecast.forecastTrend))}</strong>
+            <span>Readiness ${escapeHtml(String(forecast.confidenceBand || 'medium'))}</span>
+          </div>
+        </div>
+      </section>
+    ` : ''}
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Harvest Split</h3>
+      <div class="harvest-analysis-metric-grid">
+        ${rowsToHtml(metricRows)}
+      </div>
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Was gerade hilft</h3>
+      ${cardsToHtml(forecast && forecast.positiveDrivers, 'Noch kein klarer positiver Harvest-Treiber im Vordergrund.')}
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Was gerade bremst</h3>
+      ${cardsToHtml(forecast && forecast.negativeDrivers, 'Aktuell keine dominante Harvest-Bremse erkennbar.')}
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Locked Losses</h3>
+      ${cardsToHtml(forecast && forecast.lockedLosses, 'Noch kein klarer irreversibler Verlust erkannt.', 'Fix')}
+    </section>
+    <section class="gs-analysis-overview-section">
+      <h3 class="figma-section-head">Beste nächste Hebel</h3>
+      ${opportunityHtml}
+    </section>
     <section class="gs-analysis-overview-section">
       <h3 class="figma-section-head">Historischer Verlauf</h3>
       <div style="height: 180px; width: 100%; margin-bottom: 15px;">
@@ -5582,8 +5744,14 @@ function initAnalysisChart() {
     return;
   }
 
+  const forecastHistory = Array.isArray(state.run && state.run.harvest && state.run.harvest.forecastHistory)
+    ? state.run.harvest.forecastHistory
+    : [];
   const telemetry = state.history.telemetry || [];
-  const labels = telemetry.map(t => `Tag ${t.day}`);
+  const useHarvestHistory = forecastHistory.length >= 3;
+  const labels = useHarvestHistory
+    ? forecastHistory.map((t) => `Tag ${Math.max(0, Math.trunc(Number(t.simDay) || 0))}`)
+    : telemetry.map((t) => `Tag ${t.day}`);
   
   if (analysisChart) {
     analysisChart.destroy();
@@ -5601,27 +5769,27 @@ function initAnalysisChart() {
       labels: labels,
       datasets: [
         {
-          label: 'Gesundheit',
-          data: telemetry.map(t => t.health),
-          borderColor: '#4ade80',
+          label: useHarvestHistory ? 'Harvest Forecast' : 'Gesundheit',
+          data: useHarvestHistory ? forecastHistory.map((t) => Number(t.harvestScore || 0)) : telemetry.map((t) => t.health),
+          borderColor: useHarvestHistory ? '#D4AF37' : '#4ade80',
           backgroundColor: 'transparent',
           borderWidth: 2,
           tension: 0.3,
           pointRadius: 0
         },
         {
-          label: 'Wasser',
-          data: telemetry.map(t => t.water),
-          borderColor: '#3b82f6',
+          label: useHarvestHistory ? 'Quality Forecast' : 'Wasser',
+          data: useHarvestHistory ? forecastHistory.map((t) => Number(t.qualityScore || 0)) : telemetry.map((t) => t.water),
+          borderColor: useHarvestHistory ? '#7dd3fc' : '#3b82f6',
           backgroundColor: 'transparent',
           borderWidth: 2,
           tension: 0.3,
           pointRadius: 0
         },
         {
-          label: 'Nährstoffe',
-          data: telemetry.map(t => t.nutrition),
-          borderColor: '#facc15',
+          label: useHarvestHistory ? 'Gesundheit' : 'Nährstoffe',
+          data: useHarvestHistory ? telemetry.map((t) => t.health).slice(-forecastHistory.length) : telemetry.map((t) => t.nutrition),
+          borderColor: useHarvestHistory ? '#4ade80' : '#facc15',
           backgroundColor: 'transparent',
           borderWidth: 2,
           tension: 0.3,
@@ -5662,6 +5830,7 @@ function renderAnalysisDiagnosis() {
   }
 
   const diagnosis = diagnosePlantState();
+  const forecast = getCanonicalHarvestForecast(state) || refreshHarvestForecast({ force: true });
   const primary = diagnosis.primaryIssue || null;
   const secondary = Array.isArray(diagnosis.secondaryIssues) ? diagnosis.secondaryIssues : [];
   const guidanceHints = getGuidanceHints(diagnosis);
@@ -5673,6 +5842,21 @@ function renderAnalysisDiagnosis() {
   };
 
   ui.analysisPanelDiagnosis.replaceChildren();
+
+  if (forecast) {
+    const heroNode = document.createElement('div');
+    heroNode.className = 'gs-analysis-driver gs-analysis-driver--primary';
+    heroNode.innerHTML = `
+      <div class="gs-analysis-driver-head">
+        <strong>Harvest Readiness</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(String(forecast.confidenceBand || 'medium'))}">${escapeHtml(formatHarvestTrendLabel(forecast.forecastTrend))}</span>
+      </div>
+      <p class="gs-analysis-driver-line"><span>Forecast:</span> ${escapeHtml(String(Math.round(Number(forecast.harvestScore) || 0)))}</p>
+      <p class="gs-analysis-driver-line"><span>Qualität:</span> ${escapeHtml(formatHarvestQualityBand(forecast))}</p>
+      <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(String(forecast.lastForecastReason || 'Keine starke Verschiebung.'))}</p>
+    `;
+    ui.analysisPanelDiagnosis.appendChild(heroNode);
+  }
 
   if (primary) {
     const node = document.createElement('div');
@@ -5713,6 +5897,19 @@ function renderAnalysisDiagnosis() {
         <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(String(hint.severity || 'low'))}">${escapeHtml(severityLabel(hint.severity))}</span>
       </div>
       <p class="gs-analysis-driver-line">${escapeHtml(String(hint.body || ''))}</p>
+    `;
+    ui.analysisPanelDiagnosis.appendChild(node);
+  }
+
+  if (forecast && Array.isArray(forecast.recoveryOpportunities) && forecast.recoveryOpportunities.length) {
+    const node = document.createElement('div');
+    node.className = 'gs-analysis-driver';
+    node.innerHTML = `
+      <div class="gs-analysis-driver-head">
+        <strong>Größter lokaler Hebel</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--medium">Chance</span>
+      </div>
+      <p class="gs-analysis-driver-line">${escapeHtml(String(forecast.recoveryOpportunities[0].label || 'Chance'))}: ${escapeHtml(String(forecast.recoveryOpportunities[0].reason || ''))}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(node);
   }
@@ -5913,10 +6110,18 @@ function renderAnalysisTimeline() {
   if (!ui.analysisPanelTimeline) {
     warnMissingUiOnce('analysisPanelTimeline');
     return;
-  } const actions = Array.isArray(state.history && state.history.actions) ? state.history.actions : []; const events = Array.isArray(state.history && state.history.events) ? state.history.events : []; const system = Array.isArray(state.history && state.history.system) ? state.history.system : [];
+  } const actions = Array.isArray(state.history && state.history.actions) ? state.history.actions : []; const events = Array.isArray(state.history && state.history.events) ? state.history.events : []; const system = Array.isArray(state.history && state.history.system) ? state.history.system : []; const forecastHistory = Array.isArray(state.run && state.run.harvest && state.run.harvest.forecastHistory) ? state.run.harvest.forecastHistory : [];
   const simNow = Number(state.simulation && state.simulation.simTimeMs) || 0;
 
   const merged = [];
+  for (const item of forecastHistory.slice(-8)) {
+    merged.push({
+      kind: 'forecast',
+      atRealTimeMs: Number(item.updatedAtRealMs || 0),
+      atSimTimeMs: Number(item.simTimeMs || simNow),
+      data: item
+    });
+  }
   for (const item of actions) {
     merged.push({
       kind: 'action',
@@ -5967,6 +6172,9 @@ function renderAnalysisTimeline() {
     } else if (row.kind === 'event') {
       const d = row.data || {}; const note = d.learningNote ? `<details><summary>Lernhinweis</summary>${escapeHtml(String(d.learningNote))}</details>` : '';
       node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Ereignis (${escapeHtml(categoryLabel(String(d.category || 'generic')))})</div><strong>${escapeHtml(String(d.optionLabel || d.optionId || d.eventId || 'Ereignis'))}</strong><br>${formatDeltaSummary(d.effectsApplied || d.deltaSummary || {})}${note}`;
+    } else if (row.kind === 'forecast') {
+      const d = row.data || {};
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Forecast</div><strong>Harvest ${escapeHtml(String(Math.round(Number(d.harvestScore) || 0)))}</strong><br>Qualität ${escapeHtml(String(Math.round(Number(d.qualityScore) || 0)))} · ${escapeHtml(String(d.reason || 'Lokale Prognose aktualisiert.'))}`;
     } else {
       const d = row.data || {};
       const typeLabel = String(d.type || 'system');
@@ -6182,6 +6390,7 @@ function openSheet(name) {
   renderSheets();
 
   if (name === 'dashboard') {
+    refreshHarvestForecast({ force: true });
     renderAnalysisPanel(true);
   } else if (name === 'event') {
     renderEventSheet();
@@ -6731,6 +6940,67 @@ function renderRunSummaryOverlay() {
       }
     }
   }
+  const harvestSummary = summary.harvestSummary && typeof summary.harvestSummary === 'object'
+    ? summary.harvestSummary
+    : null;
+  if (ui.runSummaryHarvestBadge) {
+    ui.runSummaryHarvestBadge.textContent = harvestSummary ? 'Forecast' : 'Lokal';
+    ui.runSummaryHarvestBadge.dataset.status = 'local';
+  }
+  if (ui.runSummaryHarvestHint) {
+    ui.runSummaryHarvestHint.textContent = harvestSummary && harvestSummary.verificationHint
+      ? String(harvestSummary.verificationHint)
+      : 'Für Ranglisten zählt später die verifizierte Server-Wertung.';
+  }
+  if (ui.runSummaryHarvestScore) {
+    ui.runSummaryHarvestScore.textContent = harvestSummary ? String(Math.round(Number(harvestSummary.harvestScore) || 0)) : '0';
+  }
+  if (ui.runSummaryHarvestQualityBand) {
+    ui.runSummaryHarvestQualityBand.textContent = harvestSummary ? String(harvestSummary.qualityBandLabel || 'B') : 'B';
+  }
+  if (ui.runSummaryHarvestInterpretation) {
+    ui.runSummaryHarvestInterpretation.textContent = harvestSummary
+      ? String(harvestSummary.interpretation || 'Lokale Harvest-Auswertung bereit.')
+      : 'Lokale Harvest-Auswertung bereit.';
+  }
+  if (ui.runSummaryHarvestRows) {
+    ui.runSummaryHarvestRows.replaceChildren();
+    const harvestRows = harvestSummary ? [
+      { label: 'Yield', value: Math.round(Number(harvestSummary.yieldScore) || 0) },
+      { label: 'Quality', value: Math.round(Number(harvestSummary.qualityScore) || 0) },
+      { label: 'Stabilität', value: Math.round(Number(harvestSummary.stabilityScore) || 0) },
+      { label: 'Effizienz', value: Math.round(Number(harvestSummary.efficiencyScore) || 0) },
+      { label: 'Schwierigkeit', value: Math.round(Number(harvestSummary.challengeScore) || 0) }
+    ] : [];
+    for (const rowData of harvestRows) {
+      const row = document.createElement('div');
+      row.className = 'figma-static-row run-summary-row';
+      row.innerHTML = `<span>${escapeHtml(String(rowData.label || '-'))}</span><strong>${escapeHtml(String(rowData.value || 0))}</strong>`;
+      ui.runSummaryHarvestRows.appendChild(row);
+    }
+  }
+  if (ui.runSummaryHarvestBests) {
+    ui.runSummaryHarvestBests.replaceChildren();
+    const bestFlags = harvestSummary && harvestSummary.bestFlags ? harvestSummary.bestFlags : {};
+    const bestEntries = [
+      { key: 'bestHarvestScore', label: 'Neuer persönlicher Harvest Score' },
+      { key: 'bestQualityScoreHarvest', label: 'Beste lokale Qualitätslinie' },
+      { key: 'bestStabilityScore', label: 'Beste Stabilität' }
+    ].filter((entry) => Boolean(bestFlags[entry.key]));
+    if (!bestEntries.length) {
+      const empty = document.createElement('p');
+      empty.className = 'sheet-note';
+      empty.textContent = 'Noch kein neuer persönlicher Harvest-Bestwert in diesem Run.';
+      ui.runSummaryHarvestBests.appendChild(empty);
+    } else {
+      for (const entry of bestEntries) {
+        const row = document.createElement('article');
+        row.className = 'run-summary-unlock';
+        row.innerHTML = `<strong>${escapeHtml(entry.label)}</strong><p class="sheet-note">Diese lokale Auswertung setzt einen neuen persönlichen Referenzwert.</p>`;
+        ui.runSummaryHarvestBests.appendChild(row);
+      }
+    }
+  }
   if (ui.runSummaryFinalizeBtn) {
     ui.runSummaryFinalizeBtn.classList.toggle('hidden', !awaitingFinalize);
     ui.runSummaryFinalizeBtn.disabled = !awaitingFinalize;
@@ -6742,6 +7012,37 @@ function renderRunSummaryOverlay() {
   }
   if (ui.runSummaryAnalyzeBtn) {
     ui.runSummaryAnalyzeBtn.textContent = isFinalizedSummary ? 'Analyse öffnen' : 'Analyse öffnen';
+  }
+}
+
+function renderHarvestMiniCard(harvestVmInput, nodes = {}) {
+  const harvestVm = harvestVmInput && typeof harvestVmInput === 'object' ? harvestVmInput : {};
+  const widgetNode = nodes.widgetNode || uiNode('harvestForecastWidget', 'harvestForecastWidget');
+  const trendNode = nodes.trendNode || uiNode('harvestForecastTrend', 'harvestForecastTrend');
+  const scoreNode = nodes.scoreNode || uiNode('harvestForecastScore', 'harvestForecastScore');
+  const qualityNode = nodes.qualityNode || uiNode('harvestForecastQuality', 'harvestForecastQuality');
+  const visible = Boolean(harvestVm.visible);
+  const trend = String(harvestVm.trend || 'stable');
+
+  if (widgetNode) {
+    widgetNode.classList.toggle('hidden', !visible);
+    widgetNode.setAttribute('aria-hidden', String(!visible));
+    widgetNode.dataset.trend = trend;
+    const score = visible ? String(harvestVm.score || 0) : '--';
+    const quality = String(harvestVm.qualityText || '--');
+    widgetNode.setAttribute('aria-label', `Harvest-Analyse öffnen. Forecast ${score}. Qualität ${quality}.`);
+  }
+  if (trendNode) {
+    trendNode.textContent = String(harvestVm.trendSymbol || formatHarvestTrendSymbol(trend));
+    trendNode.dataset.trend = trend;
+    trendNode.setAttribute('title', String(harvestVm.trendLabel || formatHarvestTrendLabel(trend)));
+    trendNode.setAttribute('aria-label', `Trend ${String(harvestVm.trendLabel || formatHarvestTrendLabel(trend))}`);
+  }
+  if (scoreNode) {
+    scoreNode.textContent = visible ? String(harvestVm.score || 0) : '--';
+  }
+  if (qualityNode) {
+    qualityNode.textContent = String(harvestVm.qualityText || '--');
   }
 }
 
@@ -6926,16 +7227,29 @@ async function onRunSummaryNewRunClick() {
   await beginNextRunFlow();
 }
 
+function openHarvestAnalysis() {
+  if (!state.ui || typeof state.ui !== 'object') {
+    return;
+  }
+  if (!state.ui.analysis || typeof state.ui.analysis !== 'object') {
+    state.ui.analysis = { activeTab: 'overview' };
+  } else {
+    state.ui.analysis.activeTab = 'overview';
+  }
+  state.ui.runSummaryOpen = false;
+  openSheet('dashboard');
+  renderAnalysisPanel(true);
+  renderRunSummaryOverlay();
+  schedulePersistState(true);
+}
+
 async function onRunSummaryAnalyzeClick() {
   const run = getCanonicalRun(state);
   logRunFlowDebug('cta_summary_analyze:click');
   if (run.status === 'finished' && !isRunFinalized(run)) {
     await finalizeRun(run.endReason || 'death');
   }
-  state.ui.runSummaryOpen = false;
-  openSheet('dashboard');
-  renderRunSummaryOverlay();
-  schedulePersistState(true);
+  openHarvestAnalysis();
 }
 
 function renderDeathOverlay() {

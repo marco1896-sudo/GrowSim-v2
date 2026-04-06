@@ -167,6 +167,16 @@
             </section>
           </div>
         </article>
+        <button id="harvestForecastWidget" class="harvest-mini-card" type="button" aria-label="Harvest-Analyse öffnen">
+          <span class="harvest-mini-card__line harvest-mini-card__line--primary">
+            <span class="harvest-mini-card__label">Harvest</span>
+            <strong id="harvestForecastScore">--</strong>
+          </span>
+          <span class="harvest-mini-card__line harvest-mini-card__line--secondary">
+            <strong id="harvestForecastQuality">--</strong>
+            <span id="harvestForecastTrend" class="harvest-mini-card__trend" data-trend="stable">→</span>
+          </span>
+        </button>
 
         <div class="home-scene-fixed" aria-hidden="true">
           <div class="home-plant-shadow"></div>
@@ -903,6 +913,27 @@
         <div id="runSummaryPositives" class="run-summary-list" aria-live="polite"></div>
       </section>
 
+      <section class="figma-section-card figma-section-card--onboarding run-summary-harvest-card">
+        <div class="run-summary-goal-head">
+          <h3 class="figma-section-head">Lokale Harvest-Auswertung</h3>
+          <strong id="runSummaryHarvestBadge" class="run-summary-goal-status" data-status="local">Forecast</strong>
+        </div>
+        <p id="runSummaryHarvestHint" class="sheet-note">Für Ranglisten zählt später die verifizierte Server-Wertung.</p>
+        <div class="run-summary-harvest-hero">
+          <div class="run-summary-harvest-score">
+            <span>Harvest Score</span>
+            <strong id="runSummaryHarvestScore">0</strong>
+          </div>
+          <div class="run-summary-harvest-quality">
+            <span>Quality Band</span>
+            <strong id="runSummaryHarvestQualityBand">B</strong>
+          </div>
+        </div>
+        <p id="runSummaryHarvestInterpretation" class="sheet-note">Die lokale Harvest-Auswertung wird nach dem Run aufgelöst.</p>
+        <div id="runSummaryHarvestRows" class="run-summary-list" aria-live="polite"></div>
+        <div id="runSummaryHarvestBests" class="run-summary-list run-summary-list--unlock" aria-live="polite"></div>
+      </section>
+
       <section class="figma-section-card figma-section-card--onboarding">
         <div class="run-summary-goal-head">
           <h3 class="figma-section-head">Run-Ziel</h3>
@@ -1050,6 +1081,7 @@
       { src: 'src/events/eventResolver.js' },
       { src: 'events.js' },
       { src: 'ui.js' },
+      { src: 'src/harvest/harvestModel.js' },
       { src: 'src/progression/progression.js' },
       { src: 'src/auth/auth.js' },
       { src: 'storage.js' },

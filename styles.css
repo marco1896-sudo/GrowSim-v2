@@ -5191,6 +5191,144 @@ body.panelized-ready :is(
   gap: 0.45rem;
 }
 
+.harvest-mini-card {
+  position: absolute;
+  top: var(--home-left-harvest-top, calc(var(--home-safe-top, 0px) + 102px));
+  left: 12px;
+  width: 118px;
+  min-height: 56px;
+  max-width: 126px;
+  border: 1px solid rgba(214, 184, 98, 0.2);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(11, 18, 14, 0.92), rgba(8, 13, 11, 0.96)),
+    radial-gradient(circle at top right, rgba(230, 198, 122, 0.12), rgba(230, 198, 122, 0) 42%);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 247, 220, 0.05);
+  color: #f6ecd0;
+  padding: 6px 7px;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+  z-index: 7;
+  transition: transform 140ms ease, border-color 140ms ease, box-shadow 160ms ease;
+}
+
+.harvest-mini-card:hover,
+.harvest-mini-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(233, 205, 136, 0.28);
+  box-shadow:
+    0 14px 26px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 247, 220, 0.07);
+}
+
+.harvest-mini-card__line,
+.harvest-analysis-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.harvest-mini-card__label,
+.harvest-analysis-hero__eyebrow {
+  font-size: 0.4rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(244, 236, 210, 0.62);
+}
+
+.harvest-mini-card__trend,
+.harvest-analysis-hero__meta strong {
+  font-size: 0.62rem;
+  line-height: 1;
+  color: #f9e7a8;
+}
+
+.harvest-mini-card__line--primary strong,
+.harvest-analysis-hero__score {
+  font-size: 1rem;
+  line-height: 1;
+  color: #fff4cf;
+}
+
+.harvest-mini-card__line--secondary strong {
+  font-size: 0.64rem;
+  line-height: 1;
+  color: #d7f9cf;
+}
+
+.harvest-mini-card__trend[data-trend="rising"] {
+  color: #8ef0b3;
+}
+
+.harvest-mini-card__trend[data-trend="falling"] {
+  color: #ffb49a;
+}
+
+.harvest-mini-card__trend[data-trend="stable"] {
+  color: rgba(240, 234, 205, 0.82);
+}
+
+.harvest-analysis-hero {
+  align-items: flex-start;
+}
+
+.harvest-analysis-hero__score {
+  font-size: 1.65rem;
+}
+
+.harvest-analysis-hero__meta strong {
+  font-size: 0.8rem;
+}
+
+.harvest-analysis-hero__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  text-align: right;
+  color: rgba(244, 236, 210, 0.72);
+  font-size: 0.82rem;
+}
+
+.harvest-analysis-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.run-summary-harvest-card {
+  border-color: rgba(212, 175, 55, 0.18);
+}
+
+.run-summary-harvest-hero {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.run-summary-harvest-score,
+.run-summary-harvest-quality {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.run-summary-harvest-score strong,
+.run-summary-harvest-quality strong {
+  font-size: 1.4rem;
+  color: #fff4cf;
+}
+
 .setup-option-effect {
   margin: 0.22rem 0 0;
   font-size: 10px;
@@ -6691,6 +6829,7 @@ body.panelized-ready :is(
   --home-right-actions-top: calc(var(--home-safe-top) + var(--home-scene-top) + clamp(82px, calc(var(--home-scene-height) * 0.255), 102px));
   --home-right-actions-gap: clamp(70px, calc(var(--home-scene-height) * 0.22), 80px);
   --home-right-watering-top: calc(var(--home-right-actions-top) + (var(--home-right-actions-gap) * 2));
+  --home-left-harvest-top: calc(var(--home-safe-top) + var(--home-panel-offset) + 92px);
   --home-side-icon-scale: clamp(0.96, calc(var(--home-scene-height) / 344), 1.04);
 }
 
@@ -6740,6 +6879,13 @@ body.panelized-ready :is(
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 2;
+}
+
+@media (max-width: 520px) {
+  .harvest-analysis-metric-grid,
+  .run-summary-harvest-hero {
+    grid-template-columns: 1fr;
+  }
 }
 
 .home-plant-shadow {

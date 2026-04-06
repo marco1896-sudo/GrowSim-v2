@@ -86,6 +86,10 @@ function cacheUi() {
   ui.homeMetaDetailBuildTitle = document.getElementById('homeMetaDetailBuildTitle');
   ui.homeMetaDetailBuildEffect = document.getElementById('homeMetaDetailBuildEffect');
   ui.homeMetaDetailBuildLoadout = document.getElementById('homeMetaDetailBuildLoadout');
+  ui.harvestForecastWidget = document.getElementById('harvestForecastWidget');
+  ui.harvestForecastTrend = document.getElementById('harvestForecastTrend');
+  ui.harvestForecastScore = document.getElementById('harvestForecastScore');
+  ui.harvestForecastQuality = document.getElementById('harvestForecastQuality');
   ui.healthRing = document.getElementById('healthRing');
   ui.stressRing = document.getElementById('stressRing');
   ui.waterRing = document.getElementById('waterRing');
@@ -248,6 +252,13 @@ function cacheUi() {
   ui.runSummaryGoalStatus = document.getElementById('runSummaryGoalStatus');
   ui.runSummaryGoalDescription = document.getElementById('runSummaryGoalDescription');
   ui.runSummaryGoalReward = document.getElementById('runSummaryGoalReward');
+  ui.runSummaryHarvestBadge = document.getElementById('runSummaryHarvestBadge');
+  ui.runSummaryHarvestHint = document.getElementById('runSummaryHarvestHint');
+  ui.runSummaryHarvestScore = document.getElementById('runSummaryHarvestScore');
+  ui.runSummaryHarvestQualityBand = document.getElementById('runSummaryHarvestQualityBand');
+  ui.runSummaryHarvestInterpretation = document.getElementById('runSummaryHarvestInterpretation');
+  ui.runSummaryHarvestRows = document.getElementById('runSummaryHarvestRows');
+  ui.runSummaryHarvestBests = document.getElementById('runSummaryHarvestBests');
   ui.runSummaryUnlocks = document.getElementById('runSummaryUnlocks');
   ui.runSummaryFinalizeBtn = document.getElementById('runSummaryFinalizeBtn');
   ui.runSummaryNewRunBtn = document.getElementById('runSummaryNewRunBtn');
@@ -307,6 +318,15 @@ function bindUi() {
   }
   if (ui.runSummaryAnalyzeBtn) {
     ui.runSummaryAnalyzeBtn.addEventListener('click', onRunSummaryAnalyzeClick);
+  }
+  if (ui.harvestForecastWidget) {
+    ui.harvestForecastWidget.addEventListener('click', () => {
+      if (typeof openHarvestAnalysis === 'function') {
+        openHarvestAnalysis();
+        return;
+      }
+      onRunSummaryAnalyzeClick();
+    });
   }
 
   for (const navButton of ui.screenNavButtons || []) {
@@ -808,7 +828,18 @@ function ensureRequiredUi() {
     'homeMetaDetailBuildTag',
     'homeMetaDetailBuildTitle',
     'homeMetaDetailBuildEffect',
-    'homeMetaDetailBuildLoadout'
+    'homeMetaDetailBuildLoadout',
+    'harvestForecastWidget',
+    'harvestForecastTrend',
+    'harvestForecastScore',
+    'harvestForecastQuality',
+    'runSummaryHarvestBadge',
+    'runSummaryHarvestHint',
+    'runSummaryHarvestScore',
+    'runSummaryHarvestQualityBand',
+    'runSummaryHarvestInterpretation',
+    'runSummaryHarvestRows',
+    'runSummaryHarvestBests'
   ]);
   const requiredKeys = [
     'phaseCard', 'phaseCardTitle', 'phaseCardCycle', 'phaseCardSubtitle', 'phaseProgressFill', 'phaseProgressMarker', 'phaseProgress',

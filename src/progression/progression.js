@@ -1,6 +1,9 @@
 'use strict';
 
 (function initGrowSimProgression(globalScope) {
+  const harvestApi = globalScope.GrowSimHarvest && typeof globalScope.GrowSimHarvest === 'object'
+    ? globalScope.GrowSimHarvest
+    : null;
   const LEVEL_THRESHOLDS = Object.freeze([
     Object.freeze({ level: 1, xp: 0 }),
     Object.freeze({ level: 2, xp: 150 }),
@@ -318,17 +321,24 @@
   }
 
   function getDefaultProfile() {
+    const defaultHarvest = harvestApi && typeof harvestApi.getDefaultProfileHarvest === 'function'
+      ? harvestApi.getDefaultProfileHarvest()
+      : null;
     return {
       displayName: 'Marco',
       totalXp: 0,
       level: 1,
       unlocks: cloneDefaultUnlocks(),
       stats: buildDefaultStats(),
-      lastRunSummary: null
+      lastRunSummary: null,
+      harvest: defaultHarvest ? { ...defaultHarvest } : undefined
     };
   }
 
   function getDefaultRunState() {
+    const defaultHarvest = harvestApi && typeof harvestApi.getDefaultRunHarvest === 'function'
+      ? harvestApi.getDefaultRunHarvest()
+      : null;
     return {
       id: 0,
       status: 'idle',
@@ -338,7 +348,8 @@
       finalizedAtRealMs: null,
       setupSnapshot: null,
       goal: null,
-      goalHistory: []
+      goalHistory: [],
+      harvest: defaultHarvest ? { ...defaultHarvest } : undefined
     };
   }
 
@@ -500,7 +511,10 @@
       },
       lastRunSummary: profile.lastRunSummary && typeof profile.lastRunSummary === 'object'
         ? { ...profile.lastRunSummary }
-        : null
+        : null,
+      harvest: harvestApi && typeof harvestApi.normalizeProfileHarvest === 'function'
+        ? harvestApi.normalizeProfileHarvest(profile.harvest)
+        : (defaults.harvest ? { ...defaults.harvest } : undefined)
     };
 
     normalized.level = getLevelForXp(normalized.totalXp);
@@ -527,7 +541,10 @@
       goal: normalizeRunGoal(run.goal),
       goalHistory: Array.isArray(run.goalHistory)
         ? Array.from(new Set(run.goalHistory.map((goalId) => String(goalId || '').trim()).filter(Boolean)))
-        : []
+        : [],
+      harvest: harvestApi && typeof harvestApi.normalizeRunHarvest === 'function'
+        ? harvestApi.normalizeRunHarvest(run.harvest)
+        : (defaults.harvest ? { ...defaults.harvest } : undefined)
     };
   }
 
@@ -1575,7 +1592,7 @@
       xpBreakdown
     });
 
-    return {
+    const resolvedSummary = {
       ...summary,
       xpBreakdown,
       awardedXp: xpBreakdown.total,
@@ -1589,6 +1606,13 @@
       positives: insights.positives,
       xpNotices: insights.xpNotices
     };
+
+    if (harvestApi && typeof harvestApi.buildRunHarvestSummary === 'function') {
+      resolvedSummary.harvestSummary = summary.harvestSummary && typeof summary.harvestSummary === 'object'
+        ? { ...summary.harvestSummary }
+        : null;
+    }
+    return resolvedSummary;
   }
 
   function markRunAsFinished(snapshot, reason, nowMs) {
@@ -1634,6 +1658,14 @@
       goal: stateLike.run.goal,
       goalAwardedXp: Math.max(0, Math.trunc(Number(stateLike.run.goal && stateLike.run.goal.awardedXp) || 0))
     }, stateLike.profile);
+
+    if (harvestApi && typeof harvestApi.buildRunHarvestSummary === 'function') {
+      stateLike.run.harvest = harvestApi.normalizeRunHarvest(stateLike.run.harvest);
+      summary.harvestSummary = harvestApi.buildRunHarvestSummary(stateLike, safeReason, safeNowMs, summary);
+      stateLike.run.harvest.runOutcomeDraft = { ...summary.harvestSummary };
+      stateLike.run.harvest.submissionReadiness.localSummaryReady = true;
+      stateLike.run.harvest.submissionReadiness.lastLocalFinalizeAtRealMs = safeNowMs;
+    }
 
     stateLike.profile.lastRunSummary = summary;
     stateLike.run.status = 'finished';
@@ -1750,6 +1782,17 @@
     summary.mistakes = insights.mistakes;
     summary.positives = insights.positives;
     summary.xpNotices = insights.xpNotices;
+
+    if (harvestApi && typeof harvestApi.buildRunHarvestSummary === 'function') {
+      stateLike.run.harvest = harvestApi.normalizeRunHarvest(stateLike.run.harvest);
+      summary.harvestSummary = harvestApi.buildRunHarvestSummary(stateLike, safeReason, Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now(), summary);
+      stateLike.run.harvest.runOutcomeDraft = { ...summary.harvestSummary };
+      stateLike.run.harvest.submissionReadiness.localSummaryReady = true;
+      stateLike.run.harvest.submissionReadiness.lastLocalFinalizeAtRealMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+      if (typeof harvestApi.updateProfileHarvestBests === 'function') {
+        stateLike.profile.harvest = harvestApi.updateProfileHarvestBests(stateLike.profile, summary.harvestSummary);
+      }
+    }
 
     stateLike.profile.lastRunSummary = summary;
     stateLike.run.status = 'ended';

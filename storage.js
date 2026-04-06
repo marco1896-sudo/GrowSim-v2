@@ -721,8 +721,14 @@ function getCanonicalNotificationsSettings(snapshot) {
 function getCanonicalProfile(snapshot) {
   const s = snapshot || state;
   const progressionApi = getProgressionApi();
+  const harvestApi = window.GrowSimHarvest && typeof window.GrowSimHarvest === 'object'
+    ? window.GrowSimHarvest
+    : null;
   if (!progressionApi || typeof progressionApi.normalizeProfile !== 'function') {
     if (!s.profile || typeof s.profile !== 'object') {
+      const defaultHarvest = harvestApi && typeof harvestApi.getDefaultProfileHarvest === 'function'
+        ? harvestApi.getDefaultProfileHarvest()
+        : null;
       s.profile = {
         displayName: 'Marco',
         totalXp: 0,
@@ -740,21 +746,34 @@ function getCanonicalProfile(snapshot) {
           bestSimDay: 0,
           bestQualityScore: 0
         },
-        lastRunSummary: null
+        lastRunSummary: null,
+        harvest: defaultHarvest ? { ...defaultHarvest } : undefined
       };
+    }
+    if (harvestApi && typeof harvestApi.normalizeProfileHarvest === 'function') {
+      s.profile.harvest = harvestApi.normalizeProfileHarvest(s.profile.harvest);
     }
     return s.profile;
   }
 
   s.profile = progressionApi.normalizeProfile(s.profile);
+  if (harvestApi && typeof harvestApi.normalizeProfileHarvest === 'function') {
+    s.profile.harvest = harvestApi.normalizeProfileHarvest(s.profile.harvest);
+  }
   return s.profile;
 }
 
 function getCanonicalRun(snapshot) {
   const s = snapshot || state;
   const progressionApi = getProgressionApi();
+  const harvestApi = window.GrowSimHarvest && typeof window.GrowSimHarvest === 'object'
+    ? window.GrowSimHarvest
+    : null;
   if (!progressionApi || typeof progressionApi.normalizeRunState !== 'function') {
     if (!s.run || typeof s.run !== 'object') {
+      const defaultHarvest = harvestApi && typeof harvestApi.getDefaultRunHarvest === 'function'
+        ? harvestApi.getDefaultRunHarvest()
+        : null;
       s.run = {
         id: 0,
         status: 'idle',
@@ -764,13 +783,20 @@ function getCanonicalRun(snapshot) {
       finalizedAtRealMs: null,
       setupSnapshot: null,
       goal: null,
-      goalHistory: []
+      goalHistory: [],
+      harvest: defaultHarvest ? { ...defaultHarvest } : undefined
     };
+    }
+    if (harvestApi && typeof harvestApi.normalizeRunHarvest === 'function') {
+      s.run.harvest = harvestApi.normalizeRunHarvest(s.run.harvest);
     }
     return s.run;
   }
 
   s.run = progressionApi.normalizeRunState(s.run);
+  if (harvestApi && typeof harvestApi.normalizeRunHarvest === 'function') {
+    s.run.harvest = harvestApi.normalizeRunHarvest(s.run.harvest);
+  }
   return s.run;
 }
 
