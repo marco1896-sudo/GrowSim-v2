@@ -439,14 +439,21 @@
     if (!sequence.length) {
       return null;
     }
-    if (!currentGoal || sequence.length === 1) {
+    if (!currentGoal) {
       return chooseRunGoal(profileLike, runLike);
+    }
+    if (sequence.length === 1) {
+      return null;
     }
 
     const currentIndex = sequence.indexOf(currentGoal.id);
     const nextIndex = currentIndex >= 0
-      ? (currentIndex + 1) % sequence.length
-      : ((Math.max(0, currentGoal.sequenceIndex) + 1) % sequence.length);
+      ? (currentIndex + 1)
+      : (Math.max(0, currentGoal.sequenceIndex) + 1);
+
+    if (nextIndex >= sequence.length) {
+      return null;
+    }
 
     return normalizeRunGoal({
       ...getGoalDefinition(sequence[nextIndex]),
@@ -844,7 +851,7 @@
       prevention: preventionXp,
       events: eventXp,
       outcome: isHarvest ? 51 : 0,
-      goal: goal && goal.status === 'completed' && !goal.xpGranted
+      goal: goal && goal.status === 'completed'
         ? Math.max(0, Math.trunc(Number(goal.rewardXp) || 0))
         : 0
     };
@@ -1364,6 +1371,18 @@
     }
   }
 
+  function computePendingRunXp(summaryLike) {
+    const summary = summaryLike && typeof summaryLike === 'object' ? summaryLike : {};
+    const breakdown = computeXpBreakdown(summary);
+    const alreadyGrantedGoalXp = Math.max(0, Math.trunc(Number(summary.goalAwardedXp || (summary.goal && summary.goal.awardedXp) || 0) || 0));
+    const pendingGoalXp = Math.max(0, Math.trunc(Number(breakdown.goal || 0)) - alreadyGrantedGoalXp);
+    return {
+      ...breakdown,
+      goalPending: pendingGoalXp,
+      totalPending: Math.max(0, Math.trunc(Number(breakdown.total || 0) - alreadyGrantedGoalXp))
+    };
+  }
+
   function commitProfileXp(profileLike, amount, context = {}) {
     const profile = normalizeProfile(profileLike);
     const targetProfile = profileLike && typeof profileLike === 'object' ? profileLike : profile;
@@ -1696,7 +1715,8 @@
     }
 
     summary = buildResolvedRunSummary(summary, stateLike.profile);
-    const xpResult = commitProfileXp(stateLike.profile, summary.xpBreakdown.total, {
+    const pendingBreakdown = computePendingRunXp(summary);
+    const xpResult = commitProfileXp(stateLike.profile, pendingBreakdown.totalPending, {
       label: `run:${stateLike.run.id}:${safeReason}`
     });
 
@@ -1734,7 +1754,7 @@
     logProgressionEvent('run_finalized', {
       runId: stateLike.run.id,
       reason: safeReason,
-      finalizedXp: summary.xpBreakdown.total
+      finalizedXp: pendingBreakdown.totalPending
     });
 
     return {

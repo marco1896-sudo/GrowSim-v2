@@ -187,6 +187,30 @@ async function main() {
 
     await page.evaluate(() => {
       const s = window.__gsState;
+      s.run.goal = { id: 'reach_flowering', sequenceIndex: 0, sequenceLength: 3 };
+      s.simulation.simDay = 40;
+      s.plant.phase = 'flowering';
+      s.plant.stageIndex = 8;
+      s.plant.averageStress = 18;
+      s.status.stress = 18;
+      if (typeof syncRunGoalProgress === 'function') {
+        syncRunGoalProgress('tick');
+      }
+    });
+    await page.waitForFunction(() => window.getCanonicalProfile().totalXp > 0);
+    const resolvedGoalHud = await page.evaluate(() => ({
+      goalId: window.getCanonicalRun().goal && window.getCanonicalRun().goal.id,
+      xp: document.getElementById('playerXpValue').textContent.trim(),
+      status: document.getElementById('homeMetaGoalStatus').textContent.trim(),
+      totalXp: window.getCanonicalProfile().totalXp
+    }));
+    assert.ok(resolvedGoalHud.goalId, 'after goal resolution a next goal should still be active');
+    assert.ok(resolvedGoalHud.totalXp > 0, 'goal resolution should commit xp to the profile');
+    assert.ok(/\d+/.test(resolvedGoalHud.xp), 'player panel should reflect committed goal xp immediately');
+    const xpBeforeRescue = resolvedGoalHud.totalXp;
+
+    await page.evaluate(() => {
+      const s = window.__gsState;
       s.status.health = 0;
       s.plant.isDead = true;
       s.plant.phase = 'dead';
@@ -203,7 +227,7 @@ async function main() {
       summary: window.getCanonicalProfile().lastRunSummary,
       deathOverlayHidden: document.getElementById('deathOverlay').classList.contains('hidden')
     }));
-    assert.strictEqual(postRescue.xp, 0, 'rescue must not grant xp');
+    assert.strictEqual(postRescue.xp, xpBeforeRescue, 'rescue must not grant additional xp');
     assert.strictEqual(postRescue.summary, null, 'rescue must not create a summary');
     assert.strictEqual(postRescue.deathOverlayHidden, true, 'death overlay should close after rescue');
 
@@ -225,7 +249,7 @@ async function main() {
       return !isHiddenByClass && isVisible;
     }, null, { timeout: 10000 });
     await page.click('#menuDialogConfirmBtn', { force: true });
-    await page.waitForFunction(() => window.getCanonicalRun().status === 'ended');
+    await page.waitForFunction(() => window.getCanonicalRun().status === 'finished');
     await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
 
     const deathSummary = await page.evaluate(() => {
@@ -242,7 +266,7 @@ async function main() {
     });
     assert.ok(deathSummary.totalXp > 0, 'death finalization should grant some xp');
     assert.strictEqual(deathSummary.summaryReason, 'death', 'death summary should be persisted');
-    assert.strictEqual(deathSummary.runStatus, 'ended', 'death run should finalize into ended state');
+    assert.strictEqual(deathSummary.runStatus, 'finished', 'death run should enter finished state before finalization');
     assert.ok(deathSummary.goalTitle.length > 0, 'summary should include the mission-light title');
     assert.ok(deathSummary.goalStatus.length > 0, 'summary should include the mission-light result');
 
@@ -284,7 +308,7 @@ async function main() {
     await page.click('#startRunBtn');
     await page.waitForFunction(() => window.getCanonicalRun().status === 'active');
 
-    const harvestResult = await page.evaluate(async () => {
+    const harvestFinishState = await page.evaluate(async () => {
       const s = window.__gsState;
       s.profile.totalXp = 620;
       s.profile.level = window.GrowSimProgression.getLevelForXp(s.profile.totalXp);
@@ -298,11 +322,21 @@ async function main() {
       s.status.stress = 12;
       s.status.risk = 8;
       await window.__gsFinalizeRun('harvest');
-      const xpAfterFirst = s.profile.totalXp;
-      await window.__gsFinalizeRun('harvest');
       return {
-        xpAfterFirst,
-        xpAfterSecond: s.profile.totalXp,
+        statusAfterFinish: s.run.status,
+        xpAfterFinish: s.profile.totalXp
+      };
+    });
+
+    assert.strictEqual(harvestFinishState.statusAfterFinish, 'finished', 'auto-harvest should finish before finalization');
+    await page.locator('#runSummaryFinalizeBtn').evaluate((node) => node.click());
+    await page.waitForFunction(() => window.getCanonicalRun().status === 'ended');
+    await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
+
+    const harvestResult = await page.evaluate(() => {
+      const s = window.__gsState;
+      return {
+        xpAfterFinalize: s.profile.totalXp,
         level: s.profile.level,
         unlockedMedia: s.profile.unlocks.media.slice(),
         reason: s.profile.lastRunSummary && s.profile.lastRunSummary.endReason,
@@ -313,11 +347,8 @@ async function main() {
       };
     });
 
-    await page.waitForFunction(() => window.getCanonicalRun().status === 'ended');
-    await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
-
     assert.strictEqual(harvestResult.reason, 'harvest', 'harvest should create a harvest summary');
-    assert.strictEqual(harvestResult.xpAfterSecond, harvestResult.xpAfterFirst, 'harvest must only finalize once per run');
+    assert.ok(harvestResult.xpAfterFinalize > harvestFinishState.xpAfterFinish, 'finalize should commit pending run xp after finish');
     assert.ok(harvestResult.level >= 4, 'harvest run should push the profile to at least level 4');
     assert.ok(harvestResult.unlockedMedia.includes('coco'), 'level 4 reward should unlock coco medium');
     assert.strictEqual(harvestResult.goalStatus, 'completed', 'completed goal should appear in the summary data');

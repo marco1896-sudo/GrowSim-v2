@@ -36,6 +36,45 @@ const progression = require('../src/progression/progression.js');
   assert.ok(floweringGoal.progressText.length > 0, 'goal should expose readable progress');
 })();
 
+(function testGoalResolutionCommitsXpAndAdvancesNextGoal() {
+  const initialGoal = progression.chooseRunGoal(progression.getDefaultProfile(), {
+    id: 9,
+    status: 'active',
+    setupSnapshot: { mode: 'indoor', light: 'medium', medium: 'soil', potSize: 'small', genetics: 'hybrid' }
+  });
+  const state = {
+    profile: progression.getDefaultProfile(),
+    run: {
+      id: 9,
+      status: 'active',
+      endReason: null,
+      startedAtRealMs: 100,
+      endedAtRealMs: null,
+      finalizedAtRealMs: null,
+      setupSnapshot: { mode: 'indoor', light: 'medium', medium: 'soil', potSize: 'small', genetics: 'hybrid' },
+      goal: initialGoal,
+      goalHistory: []
+    },
+    simulation: { simDay: 40 },
+    plant: { stageIndex: 8, phase: 'flowering', averageStress: 18 },
+    status: { stress: 18, risk: 12, health: 84, water: 61, nutrition: 58 }
+  };
+
+  const initialXp = state.profile.totalXp;
+  const resolved = progression.syncRunGoalState(state, { reason: 'tick', nowMs: 1200 });
+  assert.strictEqual(resolved.updated, true, 'goal completion should update the canonical run state');
+  assert.strictEqual(resolved.xpGranted, initialGoal.rewardXp, 'goal reward xp should be granted immediately');
+  assert.ok(state.profile.totalXp > initialXp, 'goal completion should commit xp to the profile');
+  assert.ok(state.run.goal, 'run should keep a canonical active goal');
+  assert.notStrictEqual(state.run.goal.id, initialGoal.id, 'resolved goal should advance to the next goal');
+  assert.deepStrictEqual(state.run.goalHistory, [initialGoal.id], 'completed goal should be tracked once');
+
+  const afterFirst = state.profile.totalXp;
+  const repeated = progression.syncRunGoalState(state, { reason: 'tick', nowMs: 1300 });
+  assert.strictEqual(repeated.xpGranted, 0, 'repeated evaluation must not grant goal xp twice');
+  assert.strictEqual(state.profile.totalXp, afterFirst, 'profile xp must remain stable after repeated renders');
+})();
+
 (function testFragileBuildGoalsStayConservativeEarly() {
   const profile = progression.getDefaultProfile();
   profile.totalXp = 150;
@@ -145,6 +184,69 @@ const progression = require('../src/progression/progression.js');
   const finalizedAgain = progression.finalizeRunState(state, 'death', 9999);
   assert.strictEqual(finalizedAgain.alreadyFinalized, true, 'second finalization should be ignored');
   assert.strictEqual(state.profile.totalXp, xpAfterFirst, 'xp must not be granted twice');
+})();
+
+(function testRunFinishThenFinalizeCommitsPendingRewardsExactlyOnce() {
+  const state = {
+    profile: progression.getDefaultProfile(),
+    run: {
+      id: 7,
+      status: 'downed',
+      endReason: null,
+      startedAtRealMs: 30,
+      endedAtRealMs: null,
+      finalizedAtRealMs: null,
+      setupSnapshot: { mode: 'indoor', light: 'medium', medium: 'soil', potSize: 'small', genetics: 'hybrid' },
+      goal: { id: 'reach_flowering', sequenceIndex: 1, sequenceLength: 4, xpGranted: false, awardedXp: 0 },
+      goalHistory: ['survive_day_20']
+    },
+    simulation: { simDay: 26 },
+    plant: {
+      stageIndex: 7,
+      stageKey: 'stage_08',
+      phase: 'flowering',
+      averageStress: 18,
+      lifecycle: { qualityScore: 74 }
+    },
+    status: { health: 66, stress: 16, risk: 14, water: 58, nutrition: 62 },
+    history: { actions: [{ id: 'water' }], events: [{ id: 'airflow_fix' }] },
+    meta: { rescue: { used: false } },
+    setup: { mode: 'indoor', light: 'medium', medium: 'soil', potSize: 'small', genetics: 'hybrid' }
+  };
+
+  const finished = progression.markRunAsFinished(state, 'death', 2100);
+  assert.strictEqual(finished.finished, true, 'run should enter finished state first');
+  assert.strictEqual(state.run.status, 'finished', 'finished runs must stay pending before finalization');
+  assert.strictEqual(state.run.finalizedAtRealMs, null, 'finished state must not stamp finalized time');
+  assert.strictEqual(state.profile.lastRunSummary.goal.status, 'completed', 'goal should resolve before finalization');
+  assert.strictEqual(state.profile.lastRunSummary.goalAwardedXp, 55, 'summary should preserve already granted goal xp');
+
+  const xpAfterFinish = state.profile.totalXp;
+  const finalized = progression.finalizeRunState(state, 'death', 2200);
+  assert.strictEqual(finalized.finalized, true, 'finished run should finalize cleanly');
+  assert.strictEqual(state.run.status, 'ended', 'finalization should transition run to ended');
+  assert.ok(state.run.finalizedAtRealMs != null, 'finalization should stamp finalized time');
+  assert.ok(state.profile.totalXp > xpAfterFinish, 'pending run xp should be committed on finalize');
+
+  const xpAfterFinalize = state.profile.totalXp;
+  const finalizedAgain = progression.finalizeRunState(state, 'death', 2300);
+  assert.strictEqual(finalizedAgain.alreadyFinalized, true, 'repeated finalize must be ignored');
+  assert.strictEqual(state.profile.totalXp, xpAfterFinalize, 'finalize must not double-commit rewards');
+})();
+
+(function testGoalSequenceTerminatesAtLastGoal() {
+  const profile = progression.getDefaultProfile();
+  profile.totalXp = 350;
+  profile.level = progression.getLevelForXp(profile.totalXp);
+  const run = {
+    id: 10,
+    status: 'active',
+    setupSnapshot: { mode: 'indoor', light: 'medium', medium: 'soil', potSize: 'small', genetics: 'hybrid' }
+  };
+  const sequence = progression.buildRunGoalSequence(profile, run);
+  const lastGoal = { id: sequence[sequence.length - 1], sequenceIndex: sequence.length - 1, sequenceLength: sequence.length };
+  const nextGoal = progression.chooseNextRunGoal(lastGoal, profile, run);
+  assert.strictEqual(nextGoal, null, 'the last goal in the sequence must not wrap endlessly');
 })();
 
 (function testUnlockProgressionAcrossThresholds() {
