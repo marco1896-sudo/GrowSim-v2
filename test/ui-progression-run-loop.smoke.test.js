@@ -270,7 +270,17 @@ async function main() {
     assert.ok(deathSummary.goalTitle.length > 0, 'summary should include the mission-light title');
     assert.ok(deathSummary.goalStatus.length > 0, 'summary should include the mission-light result');
 
-    await page.locator('#runSummaryNewRunBtn').evaluate((node) => node.click());
+    await page.reload({ waitUntil: 'networkidle' });
+    await waitForBoot(page);
+    await page.waitForFunction(() => window.getCanonicalRun().status === 'finished');
+    await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
+
+    await page.locator('#runSummaryAnalyzeBtn').evaluate((node) => node.click());
+    await page.waitForFunction(() => document.getElementById('dashboardSheet') && !document.getElementById('dashboardSheet').classList.contains('hidden'));
+    await page.evaluate(() => {
+      window.confirm = () => true;
+    });
+    await page.locator('#analysisResetBtn').evaluate((node) => node.click());
     await page.waitForFunction(() => document.getElementById('landing') && !document.getElementById('landing').classList.contains('hidden'));
     const preservedProfile = await page.evaluate(() => ({
       totalXp: window.getCanonicalProfile().totalXp,
@@ -356,6 +366,10 @@ async function main() {
     assert.ok(harvestResult.buildTitle.length > 0 && harvestResult.buildTitle !== '-', 'summary should show the selected build');
     assert.ok(/High Output|Fast Genetics|Hardy Genetics/.test(harvestResult.feedbackText), 'summary feedback should reference the selected setup');
 
+    await page.reload({ waitUntil: 'networkidle' });
+    await waitForBoot(page);
+    await page.waitForFunction(() => window.getCanonicalRun().status === 'ended');
+    await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
     await page.locator('#runSummaryNewRunBtn').evaluate((node) => node.click());
     await page.waitForFunction(() => document.getElementById('landing') && !document.getElementById('landing').classList.contains('hidden'));
     const unlockedStartOptions = await page.evaluate(() => ({

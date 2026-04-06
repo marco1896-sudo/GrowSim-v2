@@ -6880,12 +6880,7 @@ async function onRunSummaryFinalizeClick() {
 }
 
 async function onRunSummaryNewRunClick() {
-  const run = getCanonicalRun(state);
-  if (run.status === 'finished' && !isRunFinalized(run)) {
-    await finalizeRun(run.endReason || 'death');
-  }
-  state.ui.runSummaryOpen = false;
-  await resetRunPreservingProfile();
+  await beginNextRunFlow();
 }
 
 async function onRunSummaryAnalyzeClick() {
@@ -7259,15 +7254,7 @@ async function onAnalysisResetClick() {
   if (!confirmed) {
     return;
   }
-  if (run.status === 'downed' && !isRunFinalized(run)) {
-    await finishRun('death');
-    return;
-  }
-  if (run.status === 'finished' && !isRunFinalized(run)) {
-    await finalizeRun(run.endReason || 'death');
-    return;
-  }
-  await resetRunPreservingProfile();
+  await beginNextRunFlow();
 }
 
 async function resetRun() {
