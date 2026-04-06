@@ -17,6 +17,7 @@ server*.log
 
 # Dependencies
 /node_modules/
+/.claude/worktrees/
 
 # Generated test/runtime artifacts
 /test-results/
