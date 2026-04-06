@@ -249,6 +249,7 @@ function cacheUi() {
   ui.runSummaryGoalDescription = document.getElementById('runSummaryGoalDescription');
   ui.runSummaryGoalReward = document.getElementById('runSummaryGoalReward');
   ui.runSummaryUnlocks = document.getElementById('runSummaryUnlocks');
+  ui.runSummaryFinalizeBtn = document.getElementById('runSummaryFinalizeBtn');
   ui.runSummaryNewRunBtn = document.getElementById('runSummaryNewRunBtn');
   ui.runSummaryAnalyzeBtn = document.getElementById('runSummaryAnalyzeBtn');
   ui.screenViews = Array.from(document.querySelectorAll('.hud-screen[data-screen]'));
@@ -297,6 +298,9 @@ function bindUi() {
   }
   if (ui.deathRescueBtn) {
     ui.deathRescueBtn.addEventListener('click', onDeathRescueClick);
+  }
+  if (ui.runSummaryFinalizeBtn) {
+    ui.runSummaryFinalizeBtn.addEventListener('click', onRunSummaryFinalizeClick);
   }
   if (ui.runSummaryNewRunBtn) {
     ui.runSummaryNewRunBtn.addEventListener('click', onRunSummaryNewRunClick);
@@ -828,7 +832,7 @@ function ensureRequiredUi() {
     'runSummaryDay', 'runSummaryStage', 'runSummaryBuild', 'runSummaryQuality', 'runSummaryActions', 'runSummaryEvents',
     'runSummaryHighlights', 'runSummaryMistakes', 'runSummaryPositives', 'runSummaryXpNotices',
     'runSummaryXpRows', 'runSummaryLevel', 'runSummaryGoalTitle', 'runSummaryGoalStatus', 'runSummaryGoalDescription', 'runSummaryGoalReward',
-    'runSummaryUnlocks', 'runSummaryNewRunBtn', 'runSummaryAnalyzeBtn'
+    'runSummaryUnlocks', 'runSummaryFinalizeBtn', 'runSummaryNewRunBtn', 'runSummaryAnalyzeBtn'
   ];
 
   const missing = requiredKeys.filter((key) => !ui[key] && !optionalKeys.has(key));

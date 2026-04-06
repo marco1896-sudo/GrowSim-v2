@@ -714,7 +714,7 @@ function tick() {
   state.simulation.nowMs = nowMs;
   state.simulation.tickCount += 1;
 
-  if (run && run.status === 'ended') {
+  if (run && (run.status === 'finished' || run.status === 'ended')) {
     state.simulation.lastTickRealTimeMs = nowMs;
     state.simulation.growthImpulse = 0;
     syncCanonicalStateShape();
@@ -755,6 +755,9 @@ function tick() {
   }
 
   advanceSimulationTime(nowMs, { reason: 'live_tick' });
+  if (typeof syncRunGoalProgress === 'function') {
+    syncRunGoalProgress('tick');
+  }
   if (typeof window !== 'undefined' && typeof window.checkMissions === 'function') {
     window.checkMissions('tick');
   }
@@ -1137,7 +1140,7 @@ function syncSimulationFromElapsedTime(nowMs) {
       syncCanonicalStateShape();
       return;
     }
-    if (state.run && state.run.status === 'ended') {
+    if (state.run && (state.run.status === 'finished' || state.run.status === 'ended')) {
       state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
       state.simulation.growthImpulse = 0;
       syncCanonicalStateShape();
@@ -2108,7 +2111,7 @@ function isPlantDead() {
 }
 
 function syncDeathState() {
-  if (state.run && state.run.status === 'ended' && state.run.finalizedAtRealMs != null && Number.isFinite(Number(state.run.finalizedAtRealMs))) {
+  if (state.run && (state.run.status === 'finished' || (state.run.status === 'ended' && state.run.finalizedAtRealMs != null && Number.isFinite(Number(state.run.finalizedAtRealMs))))) {
     state.ui.deathOverlayOpen = false;
     state.ui.deathOverlayAcknowledged = true;
     return false;

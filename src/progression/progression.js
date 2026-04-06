@@ -337,7 +337,8 @@
       endedAtRealMs: null,
       finalizedAtRealMs: null,
       setupSnapshot: null,
-      goal: null
+      goal: null,
+      goalHistory: []
     };
   }
 
@@ -369,6 +370,16 @@
       progress,
       target,
       rewardXp: Math.max(0, Math.trunc(Number(goalLike.rewardXp) || definition.rewardXp || 0)),
+      xpGranted: Boolean(goalLike.xpGranted),
+      awardedXp: Math.max(0, Math.trunc(Number(goalLike.awardedXp) || 0)),
+      sequenceIndex: Math.max(0, Math.trunc(Number(goalLike.sequenceIndex) || 0)),
+      sequenceLength: Math.max(1, Math.trunc(Number(goalLike.sequenceLength) || 1)),
+      completedAtRealMs: goalLike.completedAtRealMs == null || goalLike.completedAtRealMs === ''
+        ? null
+        : (Number.isFinite(Number(goalLike.completedAtRealMs)) ? Number(goalLike.completedAtRealMs) : null),
+      failedAtRealMs: goalLike.failedAtRealMs == null || goalLike.failedAtRealMs === ''
+        ? null
+        : (Number.isFinite(Number(goalLike.failedAtRealMs)) ? Number(goalLike.failedAtRealMs) : null),
       progressText: typeof goalLike.progressText === 'string' ? goalLike.progressText : '',
       statusText: typeof goalLike.statusText === 'string' ? goalLike.statusText : '',
       resultText: typeof goalLike.resultText === 'string' ? goalLike.resultText : '',
@@ -376,7 +387,7 @@
     };
   }
 
-  function chooseRunGoal(profileLike, runLike) {
+  function buildRunGoalSequence(profileLike, runLike) {
     const profile = normalizeProfile(profileLike);
     const run = normalizeRunState(runLike);
     const setup = run.setupSnapshot && typeof run.setupSnapshot === 'object' ? run.setupSnapshot : {};
@@ -402,8 +413,46 @@
       + Math.trunc(Number(run.id || 0))
       + Math.trunc(Number(profile.level || 1))
     );
-    const selectedId = pool[seed % pool.length];
-    return normalizeRunGoal(getGoalDefinition(selectedId));
+    const uniquePool = Array.from(new Set(pool));
+    if (!uniquePool.length) {
+      return [];
+    }
+    const startIndex = seed % uniquePool.length;
+    return uniquePool.map((_, index) => uniquePool[(startIndex + index) % uniquePool.length]);
+  }
+
+  function chooseRunGoal(profileLike, runLike) {
+    const sequence = buildRunGoalSequence(profileLike, runLike);
+    if (!sequence.length) {
+      return null;
+    }
+    return normalizeRunGoal({
+      ...getGoalDefinition(sequence[0]),
+      sequenceIndex: 0,
+      sequenceLength: sequence.length
+    });
+  }
+
+  function chooseNextRunGoal(currentGoalLike, profileLike, runLike) {
+    const currentGoal = normalizeRunGoal(currentGoalLike);
+    const sequence = buildRunGoalSequence(profileLike, runLike);
+    if (!sequence.length) {
+      return null;
+    }
+    if (!currentGoal || sequence.length === 1) {
+      return chooseRunGoal(profileLike, runLike);
+    }
+
+    const currentIndex = sequence.indexOf(currentGoal.id);
+    const nextIndex = currentIndex >= 0
+      ? (currentIndex + 1) % sequence.length
+      : ((Math.max(0, currentGoal.sequenceIndex) + 1) % sequence.length);
+
+    return normalizeRunGoal({
+      ...getGoalDefinition(sequence[nextIndex]),
+      sequenceIndex: nextIndex,
+      sequenceLength: sequence.length
+    });
   }
 
   function ensureArrayValues(list, fallbackValues) {
@@ -455,7 +504,7 @@
     const defaults = getDefaultRunState();
     const run = runLike && typeof runLike === 'object' ? runLike : {};
     const status = String(run.status || defaults.status);
-    const allowedStatuses = new Set(['idle', 'active', 'downed', 'ended']);
+    const allowedStatuses = new Set(['idle', 'active', 'downed', 'finished', 'ended']);
     return {
       id: Math.max(0, Math.trunc(Number(run.id) || 0)),
       status: allowedStatuses.has(status) ? status : defaults.status,
@@ -468,7 +517,10 @@
       setupSnapshot: run.setupSnapshot && typeof run.setupSnapshot === 'object'
         ? { ...run.setupSnapshot }
         : null,
-      goal: normalizeRunGoal(run.goal)
+      goal: normalizeRunGoal(run.goal),
+      goalHistory: Array.isArray(run.goalHistory)
+        ? Array.from(new Set(run.goalHistory.map((goalId) => String(goalId || '').trim()).filter(Boolean)))
+        : []
     };
   }
 
@@ -792,7 +844,7 @@
       prevention: preventionXp,
       events: eventXp,
       outcome: isHarvest ? 51 : 0,
-      goal: goal && goal.status === 'completed'
+      goal: goal && goal.status === 'completed' && !goal.xpGranted
         ? Math.max(0, Math.trunc(Number(goal.rewardXp) || 0))
         : 0
     };
@@ -1076,6 +1128,7 @@
       }, actions, events),
       xpBreakdown: null,
       awardedXp: 0,
+      goalAwardedXp: Math.max(0, Math.trunc(Number(run.goal && run.goal.awardedXp) || 0)),
       levelBefore: 1,
       levelAfter: 1,
       unlockedThisRun: [],
@@ -1303,6 +1356,279 @@
     };
   }
 
+  function logProgressionEvent(type, payload) {
+    try {
+      console.info(`[progression] ${type}`, payload);
+    } catch (_error) {
+      // no-op
+    }
+  }
+
+  function commitProfileXp(profileLike, amount, context = {}) {
+    const profile = normalizeProfile(profileLike);
+    const targetProfile = profileLike && typeof profileLike === 'object' ? profileLike : profile;
+    const grant = Math.max(0, Math.trunc(Number(amount) || 0));
+    const previousLevel = getLevelForXp(profile.totalXp);
+    if (grant <= 0) {
+      Object.assign(targetProfile, profile);
+      return {
+        profile: targetProfile,
+        grantedXp: 0,
+        previousLevel,
+        nextLevel: previousLevel,
+        unlocked: []
+      };
+    }
+
+    profile.totalXp += grant;
+    profile.level = getLevelForXp(profile.totalXp);
+
+    const unlocked = [];
+    for (const reward of resolveUnlocksForLevelRange(previousLevel, profile.level)) {
+      if (mergeUnlockReward(profile, reward)) {
+        unlocked.push(reward);
+      }
+    }
+
+    logProgressionEvent('xp_commit', {
+      context: context && context.label ? context.label : 'xp',
+      grantedXp: grant,
+      previousLevel,
+      nextLevel: profile.level
+    });
+
+    Object.assign(targetProfile, profile);
+
+    return {
+      profile: targetProfile,
+      grantedXp: grant,
+      previousLevel,
+      nextLevel: profile.level,
+      unlocked
+    };
+  }
+
+  function grantGoalXpOnce(stateLike, goalLike, nowMs) {
+    const goal = normalizeRunGoal(goalLike);
+    if (!goal || goal.status !== 'completed' || goal.xpGranted) {
+      return {
+        goal,
+        grantedXp: 0,
+        unlocked: []
+      };
+    }
+
+    const xpResult = commitProfileXp(stateLike.profile, goal.rewardXp, {
+      label: `goal:${goal.id}`
+    });
+    const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+    const updatedGoal = {
+      ...goal,
+      xpGranted: true,
+      awardedXp: Math.max(0, Math.trunc(Number(goal.rewardXp) || 0)),
+      completedAtRealMs: goal.completedAtRealMs || safeNowMs
+    };
+
+    logProgressionEvent('goal_xp_granted', {
+      goalId: updatedGoal.id,
+      awardedXp: updatedGoal.awardedXp
+    });
+
+    return {
+      goal: updatedGoal,
+      grantedXp: xpResult.grantedXp,
+      unlocked: xpResult.unlocked
+    };
+  }
+
+  function syncRunGoalState(snapshot, options = {}) {
+    const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
+    const nowMs = Number.isFinite(Number(options.nowMs)) ? Number(options.nowMs) : Date.now();
+    stateLike.profile = normalizeProfile(stateLike.profile);
+    stateLike.run = normalizeRunState(stateLike.run);
+
+    if (!['active', 'downed'].includes(stateLike.run.status)) {
+      return {
+        updated: false,
+        goalChanged: false,
+        xpGranted: 0,
+        goal: stateLike.run.goal,
+        unlocked: []
+      };
+    }
+
+    if (!stateLike.run.goal) {
+      stateLike.run.goal = chooseRunGoal(stateLike.profile, stateLike.run);
+      logProgressionEvent('goal_assigned', {
+        reason: options.reason || 'runtime',
+        goalId: stateLike.run.goal && stateLike.run.goal.id
+      });
+      return {
+        updated: Boolean(stateLike.run.goal),
+        goalChanged: Boolean(stateLike.run.goal),
+        xpGranted: 0,
+        goal: stateLike.run.goal,
+        unlocked: []
+      };
+    }
+
+    const previousGoal = normalizeRunGoal(stateLike.run.goal);
+    const evaluatedGoal = evaluateRunGoal(previousGoal, stateLike, {
+      finalize: false,
+      endReason: stateLike.run.endReason === 'harvest' ? 'harvest' : 'death'
+    });
+
+    let activeGoal = evaluatedGoal;
+    let goalChanged = JSON.stringify(previousGoal) !== JSON.stringify(evaluatedGoal);
+    let grantedXp = 0;
+    const unlocked = [];
+
+    if (previousGoal && previousGoal.status !== 'completed' && evaluatedGoal && evaluatedGoal.status === 'completed') {
+      const grantResult = grantGoalXpOnce(stateLike, evaluatedGoal, nowMs);
+      activeGoal = grantResult.goal;
+      grantedXp = grantResult.grantedXp;
+      unlocked.push(...grantResult.unlocked);
+      if (!stateLike.run.goalHistory.includes(activeGoal.id)) {
+        stateLike.run.goalHistory.push(activeGoal.id);
+      }
+
+      const nextGoal = chooseNextRunGoal(activeGoal, stateLike.profile, stateLike.run);
+      if (nextGoal && nextGoal.id !== activeGoal.id) {
+        stateLike.run.goal = nextGoal;
+        logProgressionEvent('goal_advanced', {
+          reason: options.reason || 'runtime',
+          completedGoalId: activeGoal.id,
+          nextGoalId: nextGoal.id
+        });
+        return {
+          updated: true,
+          goalChanged: true,
+          xpGranted: grantedXp,
+          goal: stateLike.run.goal,
+          completedGoal: activeGoal,
+          unlocked
+        };
+      }
+    }
+
+    if (activeGoal && activeGoal.status === 'failed' && activeGoal.failedAtRealMs == null) {
+      activeGoal = {
+        ...activeGoal,
+        failedAtRealMs: nowMs
+      };
+      goalChanged = true;
+    }
+
+    stateLike.run.goal = activeGoal;
+    if (goalChanged) {
+      logProgressionEvent('goal_synced', {
+        reason: options.reason || 'runtime',
+        goalId: activeGoal && activeGoal.id,
+        status: activeGoal && activeGoal.status
+      });
+    }
+
+    return {
+      updated: goalChanged || grantedXp > 0,
+      goalChanged,
+      xpGranted: grantedXp,
+      goal: stateLike.run.goal,
+      unlocked
+    };
+  }
+
+  function buildResolvedRunSummary(summaryLike, profileLike) {
+    const profile = normalizeProfile(profileLike);
+    const summary = summaryLike && typeof summaryLike === 'object' ? summaryLike : {};
+    const xpBreakdown = computeXpBreakdown(summary);
+    const projectedLevel = getLevelForXp(profile.totalXp + xpBreakdown.total);
+    const insights = buildSummaryInsights({
+      ...summary,
+      xpBreakdown
+    });
+
+    return {
+      ...summary,
+      xpBreakdown,
+      awardedXp: xpBreakdown.total,
+      totalAwardedXp: xpBreakdown.total + Math.max(0, Math.trunc(Number(summary.goalAwardedXp) || 0)),
+      levelBefore: profile.level,
+      levelAfter: projectedLevel,
+      unlockedThisRun: resolveUnlocksForLevelRange(profile.level, projectedLevel),
+      rating: insights.rating,
+      highlights: insights.highlights,
+      mistakes: insights.mistakes,
+      positives: insights.positives,
+      xpNotices: insights.xpNotices
+    };
+  }
+
+  function markRunAsFinished(snapshot, reason, nowMs) {
+    const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
+    stateLike.profile = normalizeProfile(stateLike.profile);
+    stateLike.run = normalizeRunState(stateLike.run);
+
+    if (stateLike.run.status === 'finished') {
+      return {
+        finished: false,
+        alreadyFinished: true,
+        profile: stateLike.profile,
+        run: stateLike.run,
+        summary: stateLike.profile.lastRunSummary || null
+      };
+    }
+
+    if (isRunFinalized(stateLike.run)) {
+      return {
+        finished: false,
+        alreadyFinished: true,
+        alreadyFinalized: true,
+        profile: stateLike.profile,
+        run: stateLike.run,
+        summary: stateLike.profile.lastRunSummary || null
+      };
+    }
+
+    const safeReason = reason === 'harvest' ? 'harvest' : 'death';
+    const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+    const finalizedGoal = evaluateRunGoal(stateLike.run.goal, stateLike, {
+      finalize: true,
+      endReason: safeReason
+    });
+    const goalGrantResult = grantGoalXpOnce(stateLike, finalizedGoal, safeNowMs);
+    stateLike.run.goal = goalGrantResult.goal || finalizedGoal;
+    if (stateLike.run.goal && stateLike.run.goal.status === 'completed' && !stateLike.run.goalHistory.includes(stateLike.run.goal.id)) {
+      stateLike.run.goalHistory.push(stateLike.run.goal.id);
+    }
+
+    const summary = buildResolvedRunSummary({
+      ...buildRunSummaryFromState(stateLike, safeReason, safeNowMs),
+      goal: stateLike.run.goal,
+      goalAwardedXp: Math.max(0, Math.trunc(Number(stateLike.run.goal && stateLike.run.goal.awardedXp) || 0))
+    }, stateLike.profile);
+
+    stateLike.profile.lastRunSummary = summary;
+    stateLike.run.status = 'finished';
+    stateLike.run.endReason = safeReason;
+    stateLike.run.endedAtRealMs = safeNowMs;
+    stateLike.run.goal = summary.goal;
+
+    logProgressionEvent('run_finished', {
+      runId: stateLike.run.id,
+      reason: safeReason,
+      pendingXp: summary.xpBreakdown && summary.xpBreakdown.total
+    });
+
+    return {
+      finished: true,
+      alreadyFinished: false,
+      profile: stateLike.profile,
+      run: stateLike.run,
+      summary,
+      goalXpGranted: goalGrantResult.grantedXp
+    };
+  }
+
   function resolveUnlocksForLevelRange(fromLevel, toLevel) {
     const unlocked = [];
     const startLevel = Math.max(1, Math.trunc(Number(fromLevel) || 1)) + 1;
@@ -1358,23 +1684,21 @@
     }
 
     const safeReason = reason === 'harvest' ? 'harvest' : 'death';
-    const endedAtRealMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
-    const summary = buildRunSummaryFromState(stateLike, safeReason, endedAtRealMs);
-    summary.goal = evaluateRunGoal(stateLike.run.goal, stateLike, {
-      finalize: true,
-      endReason: safeReason
-    });
-    const xpBreakdown = computeXpBreakdown(summary);
-    const previousLevel = getLevelForXp(stateLike.profile.totalXp);
-    stateLike.profile.totalXp += xpBreakdown.total;
-    stateLike.profile.level = getLevelForXp(stateLike.profile.totalXp);
+    let summary = stateLike.profile.lastRunSummary && typeof stateLike.profile.lastRunSummary === 'object'
+      ? { ...stateLike.profile.lastRunSummary }
+      : null;
 
-    const unlockedThisRun = [];
-    for (const reward of resolveUnlocksForLevelRange(previousLevel, stateLike.profile.level)) {
-      if (mergeUnlockReward(stateLike.profile, reward)) {
-        unlockedThisRun.push(reward);
-      }
+    if (stateLike.run.status !== 'finished' || !summary) {
+      const finishResult = markRunAsFinished(stateLike, safeReason, nowMs);
+      summary = finishResult.summary;
+      stateLike.profile = finishResult.profile;
+      stateLike.run = finishResult.run;
     }
+
+    summary = buildResolvedRunSummary(summary, stateLike.profile);
+    const xpResult = commitProfileXp(stateLike.profile, summary.xpBreakdown.total, {
+      label: `run:${stateLike.run.id}:${safeReason}`
+    });
 
     stateLike.profile.stats.totalRuns += 1;
     if (safeReason === 'death') {
@@ -1385,11 +1709,12 @@
     stateLike.profile.stats.bestSimDay = Math.max(stateLike.profile.stats.bestSimDay, summary.simDay);
     stateLike.profile.stats.bestQualityScore = round2(Math.max(stateLike.profile.stats.bestQualityScore, summary.qualityScore));
 
-    summary.xpBreakdown = xpBreakdown;
-    summary.awardedXp = xpBreakdown.total;
-    summary.levelBefore = previousLevel;
+    summary.xpBreakdown = summary.xpBreakdown || computeXpBreakdown(summary);
+    summary.awardedXp = summary.xpBreakdown.total;
+    summary.totalAwardedXp = summary.awardedXp + Math.max(0, Math.trunc(Number(summary.goalAwardedXp) || 0));
+    summary.levelBefore = xpResult.previousLevel;
     summary.levelAfter = stateLike.profile.level;
-    summary.unlockedThisRun = unlockedThisRun;
+    summary.unlockedThisRun = xpResult.unlocked;
     const insights = buildSummaryInsights(summary);
     summary.rating = insights.rating;
     summary.highlights = insights.highlights;
@@ -1400,9 +1725,17 @@
     stateLike.profile.lastRunSummary = summary;
     stateLike.run.status = 'ended';
     stateLike.run.endReason = safeReason;
-    stateLike.run.endedAtRealMs = endedAtRealMs;
-    stateLike.run.finalizedAtRealMs = endedAtRealMs;
+    stateLike.run.endedAtRealMs = Number.isFinite(Number(stateLike.run.endedAtRealMs))
+      ? Number(stateLike.run.endedAtRealMs)
+      : (Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now());
+    stateLike.run.finalizedAtRealMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
     stateLike.run.goal = summary.goal;
+
+    logProgressionEvent('run_finalized', {
+      runId: stateLike.run.id,
+      reason: safeReason,
+      finalizedXp: summary.xpBreakdown.total
+    });
 
     return {
       finalized: true,
@@ -1430,12 +1763,15 @@
     LEVEL_THRESHOLDS,
     SETUP_OPTION_META,
     UNLOCKS_BY_LEVEL,
+    buildRunGoalSequence,
     getDefaultProfile,
     getDefaultRunState,
     getGoalDefinition,
     normalizeRunGoal,
     chooseRunGoal,
+    chooseNextRunGoal,
     evaluateRunGoal,
+    syncRunGoalState,
     normalizeProfile,
     normalizeRunState,
     getLevelForXp,
@@ -1453,6 +1789,7 @@
     buildSummaryInsights,
     resolveRunRating,
     buildRunSummaryFromState,
+    markRunAsFinished,
     finalizeRunState,
     shouldAutoFinalizeHarvest,
     isRunFinalized,

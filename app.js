@@ -2357,6 +2357,7 @@ function applyAction(actionId) {
       sideEffects: triggeredSideEffects
     });
   }
+  syncRunGoalProgress('action');
   state.actions.lastResult = { ok: true, reason: preCheck.soft ? 'ok_soft' : 'ok', actionId: action.id, atRealTimeMs: nowMs };
   schedulePersistState(true);
 
@@ -6316,7 +6317,11 @@ function onMenuNewRunClick() {
   const run = getCanonicalRun(state);
   openMenuDialog({
     title: 'Neuen Run starten',
-    message: run.status === 'downed' ? 'Der aktuelle Run wird als Fehlschlag abgeschlossen. Danach kannst du mit erhaltenem Profil neu starten.' : (run.status === 'ended' ? 'Du startest direkt in einen neuen Run. Dein Profilfortschritt bleibt erhalten.' : 'Deine aktuelle Pflanze wird beendet. Profilfortschritt bleibt erhalten.'),
+    message: run.status === 'downed'
+      ? 'Der aktuelle Run wird als Fehlschlag abgeschlossen. Danach kannst du mit erhaltenem Profil neu starten.'
+      : ((run.status === 'finished' || run.status === 'ended')
+        ? 'Du startest direkt in einen neuen Run. Dein Profilfortschritt bleibt erhalten.'
+        : 'Deine aktuelle Pflanze wird beendet. Profilfortschritt bleibt erhalten.'),
     cancelLabel: 'Abbrechen',
     confirmLabel: 'Neuer Run',
     onConfirm: async () => {
@@ -6600,8 +6605,11 @@ function renderRunSummaryOverlay() {
   }
 
   const profile = getCanonicalProfile(state);
+  const run = getCanonicalRun(state);
   const summary = profile.lastRunSummary && typeof profile.lastRunSummary === 'object' ? profile.lastRunSummary : null;
   const visible = Boolean(state.ui.runSummaryOpen && summary);
+  const awaitingFinalize = run.status === 'finished' && !isRunFinalized(run);
+  const isFinalizedSummary = isRunFinalized(run);
   ui.runSummaryOverlay.classList.toggle('hidden', !visible);
   ui.runSummaryOverlay.setAttribute('aria-hidden', String(!visible));
   if (!visible || !summary) {
@@ -6614,7 +6622,13 @@ function renderRunSummaryOverlay() {
     ui.runSummaryTitle.textContent = summary.endReason === 'harvest' ? 'Ernte erfolgreich abgeschlossen' : 'Run beendet';
   }
   if (ui.runSummarySubtitle) {
-    ui.runSummarySubtitle.textContent = summary.endReason === 'harvest' ? 'Die Runde wurde sauber abgeschlossen und in dein Profil übernommen.' : 'Der aktuelle Run wurde beendet und in dein Profil übertragen.';
+    ui.runSummarySubtitle.textContent = awaitingFinalize
+      ? (summary.endReason === 'harvest'
+        ? 'Die Rewards sind vorbereitet. Abschließen archiviert den Run und sichert den Neustart.'
+        : 'Der Run ist eingefroren. Abschließen übernimmt die Rewards endgültig und gibt den Neustart frei.')
+      : (summary.endReason === 'harvest'
+        ? 'Die Runde wurde sauber abgeschlossen und in dein Profil übernommen.'
+        : 'Der aktuelle Run wurde beendet und in dein Profil übertragen.');
   }
   if (ui.runSummaryRating) { const ratingTitle = summary.rating && summary.rating.title ? summary.rating.title : 'Solider Run';
     ui.runSummaryRating.textContent = ratingTitle; ui.runSummaryRating.setAttribute('title', String(summary.rating && summary.rating.hint ? summary.rating.hint : 'Kurze Einordnung dieses Runs.'));
@@ -6642,7 +6656,7 @@ function renderRunSummaryOverlay() {
       summary.goal && summary.goal.resultText ? summary.goal.resultText : (summary.goal && summary.goal.description ? summary.goal.description : 'Kein aktives Ziel für diesen Run.')
     );
   }
-  if (ui.runSummaryGoalReward) { const goalXp = Math.max(0, Math.trunc(Number(summary.goal && summary.goal.status === 'completed' ? summary.goal.rewardXp : 0) || 0)); ui.runSummaryGoalReward.textContent = goalXp > 0 ? `+${goalXp} XP Bonus` : 'Kein Missionsbonus';
+  if (ui.runSummaryGoalReward) { const goalXp = Math.max(0, Math.trunc(Number(summary.goal && summary.goal.status === 'completed' ? summary.goal.rewardXp : 0) || 0)); const goalGrantedXp = Math.max(0, Math.trunc(Number(summary.goalAwardedXp || (summary.goal && summary.goal.awardedXp) || 0) || 0)); ui.runSummaryGoalReward.textContent = goalGrantedXp > 0 ? `+${goalGrantedXp} XP bereits gesichert` : (goalXp > 0 ? `+${goalXp} XP Bonus` : 'Kein Missionsbonus');
   }
 
   const renderFeedbackList = (container, items, fallbackText) => {
@@ -6717,6 +6731,66 @@ function renderRunSummaryOverlay() {
       }
     }
   }
+  if (ui.runSummaryFinalizeBtn) {
+    ui.runSummaryFinalizeBtn.classList.toggle('hidden', !awaitingFinalize);
+    ui.runSummaryFinalizeBtn.disabled = !awaitingFinalize;
+    ui.runSummaryFinalizeBtn.setAttribute('aria-hidden', String(!awaitingFinalize));
+  }
+  if (ui.runSummaryNewRunBtn) {
+    ui.runSummaryNewRunBtn.disabled = false;
+    ui.runSummaryNewRunBtn.textContent = awaitingFinalize ? 'Abschließen & neuen Run starten' : 'Neuen Run starten';
+  }
+  if (ui.runSummaryAnalyzeBtn) {
+    ui.runSummaryAnalyzeBtn.textContent = isFinalizedSummary ? 'Analyse öffnen' : 'Analyse öffnen';
+  }
+}
+
+function syncRunGoalProgress(reason, options = {}) {
+  const progressionApi = getProgressionApi();
+  if (!progressionApi || typeof progressionApi.syncRunGoalState !== 'function') {
+    return { updated: false, goalChanged: false, xpGranted: 0 };
+  }
+
+  const result = progressionApi.syncRunGoalState(state, {
+    reason,
+    nowMs: Date.now(),
+    ...options
+  });
+  if (result && result.updated) {
+    syncCanonicalStateShape();
+    renderAll();
+    schedulePersistState(true);
+  }
+  return result;
+}
+
+async function finishRun(reason) {
+  const progressionApi = getProgressionApi();
+  const run = getCanonicalRun(state);
+  const profile = getCanonicalProfile(state);
+  if (!progressionApi || typeof progressionApi.markRunAsFinished !== 'function') {
+    return { finished: false, alreadyFinished: true, summary: profile.lastRunSummary || null };
+  }
+
+  const result = progressionApi.markRunAsFinished(state, reason, Date.now());
+  if (result && result.summary) {
+    state.profile.lastRunSummary = result.summary;
+  }
+
+  if ((result && result.finished) || (result && result.alreadyFinished)) {
+    state.ui.deathOverlayOpen = false;
+    state.ui.deathOverlayAcknowledged = true;
+    state.ui.runSummaryOpen = Boolean(state.profile.lastRunSummary);
+    state.ui.menuOpen = false;
+    state.ui.menuDialogOpen = false;
+    state.run.status = result && result.run && result.run.status ? result.run.status : 'finished';
+    state.run.endReason = reason === 'harvest' ? 'harvest' : (result.summary && result.summary.endReason) || run.endReason || 'death';
+    syncCanonicalStateShape();
+    renderAll();
+    schedulePersistState(true);
+  }
+
+  return result;
 }
 
 async function finalizeRun(reason) {
@@ -6747,7 +6821,7 @@ async function finalizeRun(reason) {
   return result;
 }
 
-window.__gsFinalizeRun = finalizeRun;
+window.__gsFinalizeRun = finishRun;
 
 async function resetRunPreservingProfile() {
   const preservedProfile = JSON.parse(JSON.stringify(getCanonicalProfile(state)));
@@ -6790,17 +6864,35 @@ async function beginNextRunFlow() {
   const run = getCanonicalRun(state);
   closeMenu();
   if (run.status === 'downed' && !isRunFinalized(run)) {
-    return finalizeRun('death');
+    return finishRun('death');
+  }
+  if (run.status === 'finished' && !isRunFinalized(run)) {
+    await finalizeRun(run.endReason || 'death');
   }
   return resetRunPreservingProfile();
 }
 
+async function onRunSummaryFinalizeClick() {
+  const run = getCanonicalRun(state);
+  if (run.status === 'finished' && !isRunFinalized(run)) {
+    await finalizeRun(run.endReason || 'death');
+  }
+}
+
 async function onRunSummaryNewRunClick() {
+  const run = getCanonicalRun(state);
+  if (run.status === 'finished' && !isRunFinalized(run)) {
+    await finalizeRun(run.endReason || 'death');
+  }
   state.ui.runSummaryOpen = false;
   await resetRunPreservingProfile();
 }
 
-function onRunSummaryAnalyzeClick() {
+async function onRunSummaryAnalyzeClick() {
+  const run = getCanonicalRun(state);
+  if (run.status === 'finished' && !isRunFinalized(run)) {
+    await finalizeRun(run.endReason || 'death');
+  }
   state.ui.runSummaryOpen = false;
   openSheet('dashboard');
   renderRunSummaryOverlay();
@@ -6976,7 +7068,7 @@ async function onDeathResetClick() {
     cancelLabel: 'Abbrechen',
     confirmLabel: 'Run beenden',
     onConfirm: async () => {
-      await finalizeRun('death');
+      await finishRun('death');
     }
   });
 }
@@ -7163,12 +7255,16 @@ function onNotificationTypeToggle() {
 
 async function onAnalysisResetClick() {
   const run = getCanonicalRun(state);
-  const confirmed = window.confirm(run.status === 'ended' ? 'Neuen Run mit bestehendem Profil starten' : 'Aktuellen Run wirklich beenden und einen neuen starten Dein Profilfortschritt bleibt erhalten.');
+  const confirmed = window.confirm((run.status === 'finished' || run.status === 'ended') ? 'Neuen Run mit bestehendem Profil starten' : 'Aktuellen Run wirklich beenden und einen neuen starten Dein Profilfortschritt bleibt erhalten.');
   if (!confirmed) {
     return;
   }
   if (run.status === 'downed' && !isRunFinalized(run)) {
-    await finalizeRun('death');
+    await finishRun('death');
+    return;
+  }
+  if (run.status === 'finished' && !isRunFinalized(run)) {
+    await finalizeRun(run.endReason || 'death');
     return;
   }
   await resetRunPreservingProfile();

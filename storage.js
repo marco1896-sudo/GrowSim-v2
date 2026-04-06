@@ -758,13 +758,14 @@ function getCanonicalRun(snapshot) {
       s.run = {
         id: 0,
         status: 'idle',
-        endReason: null,
-        startedAtRealMs: null,
-        endedAtRealMs: null,
-        finalizedAtRealMs: null,
-        setupSnapshot: null,
-        goal: null
-      };
+      endReason: null,
+      startedAtRealMs: null,
+      endedAtRealMs: null,
+      finalizedAtRealMs: null,
+      setupSnapshot: null,
+      goal: null,
+      goalHistory: []
+    };
     }
     return s.run;
   }
@@ -1650,9 +1651,12 @@ function ensureStateIntegrity(nowMs) {
   if (run.status === 'downed' && isRunFinalized(run)) {
     run.status = 'ended';
   }
+  if (run.status === 'ended' && !isRunFinalized(run)) {
+    run.status = 'finished';
+  }
   const progressionApi = getProgressionApi();
   if (progressionApi && typeof progressionApi.chooseRunGoal === 'function') {
-    if ((run.status === 'active' || run.status === 'downed' || run.status === 'ended') && !run.goal && (run.setupSnapshot || state.setup)) {
+    if ((run.status === 'active' || run.status === 'downed' || run.status === 'finished' || run.status === 'ended') && !run.goal && (run.setupSnapshot || state.setup)) {
       run.goal = progressionApi.chooseRunGoal(profile, run);
     }
     if (run.goal && typeof progressionApi.evaluateRunGoal === 'function') {
@@ -1662,7 +1666,7 @@ function ensureStateIntegrity(nowMs) {
       });
     }
   }
-  if (run.status === 'ended') {
+  if (run.status === 'finished' || run.status === 'ended') {
     state.ui.deathOverlayOpen = false;
     state.ui.runSummaryOpen = Boolean(profile.lastRunSummary);
   } else if (run.status === 'downed' && !isRunFinalized(run)) {
@@ -1763,9 +1767,12 @@ function syncCanonicalStateShape() {
   if (run.status === 'downed' && isRunFinalized(run)) {
     run.status = 'ended';
   }
+  if (run.status === 'ended' && !isRunFinalized(run)) {
+    run.status = 'finished';
+  }
   const progressionApi = getProgressionApi();
   if (progressionApi && typeof progressionApi.chooseRunGoal === 'function') {
-    if ((run.status === 'active' || run.status === 'downed' || run.status === 'ended') && !run.goal && (run.setupSnapshot || state.setup)) {
+    if ((run.status === 'active' || run.status === 'downed' || run.status === 'finished' || run.status === 'ended') && !run.goal && (run.setupSnapshot || state.setup)) {
       run.goal = progressionApi.chooseRunGoal(profile, run);
     }
     if (run.goal && typeof progressionApi.evaluateRunGoal === 'function') {
@@ -1775,7 +1782,7 @@ function syncCanonicalStateShape() {
       });
     }
   }
-  if (run.status === 'ended') {
+  if (run.status === 'finished' || run.status === 'ended') {
     state.ui.runSummaryOpen = Boolean(profile.lastRunSummary);
     state.ui.deathOverlayOpen = false;
   } else if (run.status === 'downed' && !isRunFinalized(run)) {
