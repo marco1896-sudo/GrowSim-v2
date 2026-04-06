@@ -143,4 +143,80 @@ function buildContext(savedSnapshot) {
   assert.ok(ctx.state.run.goal && ctx.state.run.goal.id, 'migrated active run should receive a mission-light goal');
 })();
 
+(async function testRestoreRecoversCompletedButUnresolvedGoalState() {
+  const brokenSave = {
+    profile: progression.getDefaultProfile(),
+    setup: {
+      mode: 'indoor',
+      light: 'medium',
+      medium: 'soil',
+      potSize: 'small',
+      genetics: 'hybrid',
+      createdAtReal: 555
+    },
+    simulation: {
+      startRealTimeMs: 555,
+      lastTickRealTimeMs: 777,
+      nowMs: 777,
+      simTimeMs: 888,
+      simEpochMs: 555,
+      simDay: 25
+    },
+    plant: {
+      phase: 'vegetative',
+      isDead: false,
+      stageIndex: 5,
+      stageKey: 'stage_06',
+      averageHealth: 88,
+      averageStress: 12,
+      lifecycle: {
+        qualityTier: 'normal',
+        qualityScore: 82
+      }
+    },
+    status: {
+      health: 94,
+      stress: 10,
+      water: 80,
+      nutrition: 72,
+      risk: 8
+    },
+    run: {
+      id: 2,
+      status: 'active',
+      startedAtRealMs: 555,
+      endedAtRealMs: null,
+      finalizedAtRealMs: null,
+      setupSnapshot: {
+        mode: 'indoor',
+        light: 'medium',
+        medium: 'soil',
+        potSize: 'small',
+        genetics: 'hybrid'
+      },
+      goal: {
+        id: 'survive_day_20',
+        status: 'completed',
+        progress: 20,
+        target: 20,
+        rewardXp: 45,
+        xpGranted: false,
+        awardedXp: 0,
+        sequenceIndex: 0,
+        sequenceLength: 3
+      },
+      goalHistory: []
+    }
+  };
+
+  const ctx = buildContext(brokenSave);
+  ctx.resetStateToDefaults();
+  await ctx.restoreState();
+  ctx.ensureStateIntegrity(Date.now());
+
+  assert.strictEqual(ctx.state.profile.totalXp, 45, 'restore should immediately recover and commit pending goal xp');
+  assert.deepStrictEqual(ctx.state.run.goalHistory, ['survive_day_20'], 'restore should mark the completed goal as resolved');
+  assert.ok(ctx.state.run.goal && ctx.state.run.goal.id !== 'survive_day_20', 'restore should reactivate the next goal instead of keeping the completed one active');
+})();
+
 console.log('storage-profile-run-migration tests passed');

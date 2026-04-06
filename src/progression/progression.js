@@ -1501,14 +1501,21 @@
     let goalChanged = JSON.stringify(previousGoal) !== JSON.stringify(evaluatedGoal);
     let grantedXp = 0;
     const unlocked = [];
+    const goalAlreadyTracked = Boolean(activeGoal && activeGoal.id && stateLike.run.goalHistory.includes(activeGoal.id));
+    const needsCompletedGoalResolution = Boolean(
+      activeGoal
+      && activeGoal.status === 'completed'
+      && (!activeGoal.xpGranted || !goalAlreadyTracked)
+    );
 
-    if (previousGoal && previousGoal.status !== 'completed' && evaluatedGoal && evaluatedGoal.status === 'completed') {
-      const grantResult = grantGoalXpOnce(stateLike, evaluatedGoal, nowMs);
+    if (needsCompletedGoalResolution) {
+      const grantResult = grantGoalXpOnce(stateLike, activeGoal, nowMs);
       activeGoal = grantResult.goal;
       grantedXp = grantResult.grantedXp;
       unlocked.push(...grantResult.unlocked);
       if (!stateLike.run.goalHistory.includes(activeGoal.id)) {
         stateLike.run.goalHistory.push(activeGoal.id);
+        goalChanged = true;
       }
 
       const nextGoal = chooseNextRunGoal(activeGoal, stateLike.profile, stateLike.run);
@@ -1528,6 +1535,8 @@
           unlocked
         };
       }
+
+      goalChanged = goalChanged || grantedXp > 0;
     }
 
     if (activeGoal && activeGoal.status === 'failed' && activeGoal.failedAtRealMs == null) {

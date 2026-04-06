@@ -75,6 +75,47 @@ const progression = require('../src/progression/progression.js');
   assert.strictEqual(state.profile.totalXp, afterFirst, 'profile xp must remain stable after repeated renders');
 })();
 
+(function testCompletedButUnresolvedGoalStillResolvesOnNextSync() {
+  const state = {
+    profile: progression.getDefaultProfile(),
+    run: {
+      id: 11,
+      status: 'active',
+      endReason: null,
+      startedAtRealMs: 100,
+      endedAtRealMs: null,
+      finalizedAtRealMs: null,
+      setupSnapshot: { mode: 'indoor', light: 'medium', medium: 'soil', potSize: 'small', genetics: 'hybrid' },
+      goal: {
+        id: 'survive_day_20',
+        status: 'completed',
+        progress: 20,
+        target: 20,
+        rewardXp: 45,
+        xpGranted: false,
+        awardedXp: 0,
+        sequenceIndex: 0,
+        sequenceLength: 3
+      },
+      goalHistory: []
+    },
+    simulation: { simDay: 25 },
+    plant: { stageIndex: 5, phase: 'vegetative', averageStress: 18 },
+    status: { stress: 18, risk: 10, health: 82, water: 60, nutrition: 61 }
+  };
+
+  const result = progression.syncRunGoalState(state, { reason: 'tick', nowMs: 1600 });
+  assert.strictEqual(result.updated, true, 'completed-but-unresolved goals should still be resolved on the next runtime sync');
+  assert.strictEqual(result.xpGranted, 45, 'unresolved completed goals should still grant their pending goal xp');
+  assert.strictEqual(state.profile.totalXp, 45, 'profile should receive the pending goal xp exactly once');
+  assert.deepStrictEqual(state.run.goalHistory, ['survive_day_20'], 'recovered goal should be tracked in history');
+  assert.ok(state.run.goal && state.run.goal.id !== 'survive_day_20', 'runtime recovery should advance to the next goal immediately');
+
+  const secondPass = progression.syncRunGoalState(state, { reason: 'tick', nowMs: 1700 });
+  assert.strictEqual(secondPass.xpGranted, 0, 'recovered goals must not double-grant xp on later ticks');
+  assert.strictEqual(state.profile.totalXp, 45, 'profile xp must remain stable after recovery');
+})();
+
 (function testFragileBuildGoalsStayConservativeEarly() {
   const profile = progression.getDefaultProfile();
   profile.totalXp = 150;

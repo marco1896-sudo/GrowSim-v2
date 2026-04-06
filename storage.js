@@ -1659,7 +1659,13 @@ function ensureStateIntegrity(nowMs) {
     if ((run.status === 'active' || run.status === 'downed' || run.status === 'finished' || run.status === 'ended') && !run.goal && (run.setupSnapshot || state.setup)) {
       run.goal = progressionApi.chooseRunGoal(profile, run);
     }
-    if (run.goal && typeof progressionApi.evaluateRunGoal === 'function') {
+    const shouldResolveRuntimeGoal = (run.status === 'active' || run.status === 'downed') && typeof progressionApi.syncRunGoalState === 'function';
+    if (shouldResolveRuntimeGoal) {
+      progressionApi.syncRunGoalState(state, {
+        reason: 'restore',
+        nowMs
+      });
+    } else if (run.goal && typeof progressionApi.evaluateRunGoal === 'function') {
       run.goal = progressionApi.evaluateRunGoal(run.goal, state, {
         finalize: isRunFinalized(run),
         endReason: run.endReason === 'harvest' ? 'harvest' : 'death'
@@ -1775,7 +1781,8 @@ function syncCanonicalStateShape() {
     if ((run.status === 'active' || run.status === 'downed' || run.status === 'finished' || run.status === 'ended') && !run.goal && (run.setupSnapshot || state.setup)) {
       run.goal = progressionApi.chooseRunGoal(profile, run);
     }
-    if (run.goal && typeof progressionApi.evaluateRunGoal === 'function') {
+    const shouldEvaluateTerminalGoal = run.goal && run.status !== 'active' && run.status !== 'downed' && typeof progressionApi.evaluateRunGoal === 'function';
+    if (shouldEvaluateTerminalGoal) {
       run.goal = progressionApi.evaluateRunGoal(run.goal, state, {
         finalize: isRunFinalized(run),
         endReason: run.endReason === 'harvest' ? 'harvest' : 'death'
