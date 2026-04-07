@@ -272,6 +272,7 @@ async function main() {
     const summaryScrollProbe = await page.evaluate(() => {
       const overlay = document.getElementById('runSummaryOverlay');
       const card = overlay ? overlay.querySelector('.run-summary-card') : null;
+      const newRunBtn = document.getElementById('runSummaryNewRunBtn');
       if (!overlay || !card) {
         return null;
       }
@@ -286,12 +287,24 @@ async function main() {
       if (cardScrollable) {
         card.scrollTop = cardTopBefore + 120;
       }
+      if (overlayScrollable) {
+        overlay.scrollTop = overlay.scrollHeight;
+      } else if (cardScrollable) {
+        card.scrollTop = card.scrollHeight;
+      }
+      const ctaRect = newRunBtn ? newRunBtn.getBoundingClientRect() : null;
+      const ctaReachable = Boolean(
+        ctaRect
+        && ctaRect.top >= 0
+        && ctaRect.bottom <= window.innerHeight
+      );
 
       return {
         overlayScrollable,
         cardScrollable,
         overlayMoved: overlay.scrollTop > overlayTopBefore,
-        cardMoved: card.scrollTop > cardTopBefore
+        cardMoved: card.scrollTop > cardTopBefore,
+        ctaReachable
       };
     });
     assert.ok(summaryScrollProbe, 'summary scroll probe should return data');
@@ -300,6 +313,7 @@ async function main() {
       || (summaryScrollProbe.cardScrollable && summaryScrollProbe.cardMoved),
       'summary overlay must provide a working vertical scroll path on mobile viewports'
     );
+    assert.strictEqual(summaryScrollProbe.ctaReachable, true, 'scrolling the summary must bring the bottom CTA into the visible viewport');
 
     await page.reload({ waitUntil: 'networkidle' });
     await waitForBoot(page);

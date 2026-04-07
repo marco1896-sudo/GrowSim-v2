@@ -5114,7 +5114,7 @@ body.panelized-ready :is(
 }
 
 #runSummaryOverlay {
-  align-items: flex-start;
+  display: block;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
@@ -5124,12 +5124,10 @@ body.panelized-ready :is(
 
 #runSummaryOverlay .run-summary-card {
   width: min(420px, 100%);
-  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem);
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  margin: 0 auto;
+  min-height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .run-summary-rating {
