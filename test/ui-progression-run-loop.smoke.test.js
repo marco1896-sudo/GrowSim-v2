@@ -269,6 +269,37 @@ async function main() {
     assert.strictEqual(deathSummary.runStatus, 'finished', 'death run should enter finished state before finalization');
     assert.ok(deathSummary.goalTitle.length > 0, 'summary should include the mission-light title');
     assert.ok(deathSummary.goalStatus.length > 0, 'summary should include the mission-light result');
+    const summaryScrollProbe = await page.evaluate(() => {
+      const overlay = document.getElementById('runSummaryOverlay');
+      const card = overlay ? overlay.querySelector('.run-summary-card') : null;
+      if (!overlay || !card) {
+        return null;
+      }
+
+      const overlayScrollable = overlay.scrollHeight > overlay.clientHeight + 1;
+      const cardScrollable = card.scrollHeight > card.clientHeight + 1;
+      const overlayTopBefore = overlay.scrollTop;
+      const cardTopBefore = card.scrollTop;
+      if (overlayScrollable) {
+        overlay.scrollTop = overlayTopBefore + 120;
+      }
+      if (cardScrollable) {
+        card.scrollTop = cardTopBefore + 120;
+      }
+
+      return {
+        overlayScrollable,
+        cardScrollable,
+        overlayMoved: overlay.scrollTop > overlayTopBefore,
+        cardMoved: card.scrollTop > cardTopBefore
+      };
+    });
+    assert.ok(summaryScrollProbe, 'summary scroll probe should return data');
+    assert.ok(
+      (summaryScrollProbe.overlayScrollable && summaryScrollProbe.overlayMoved)
+      || (summaryScrollProbe.cardScrollable && summaryScrollProbe.cardMoved),
+      'summary overlay must provide a working vertical scroll path on mobile viewports'
+    );
 
     await page.reload({ waitUntil: 'networkidle' });
     await waitForBoot(page);
