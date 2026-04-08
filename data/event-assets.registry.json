@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "phase1-draft",
+  "notes": [
+    "Phase 1 draft registry. Data-only, not wired into the live renderer.",
+    "Asset kind is explicit and future-facing: image, icon, placeholder.",
+    "Filename inference was used only to draft mappings and identify gaps."
+  ],
+  "inventorySummary": {
+    "totalAssets": 66,
+    "byDimension": {
+      "2048x2048": 39,
+      "1024x1024": 9,
+      "512x512": 18
+    },
+    "allSquare": true,
+    "variantBases": [
+      "event-CO2-enrichment",
+      "event-equipment-failure",
+      "event-heat-wave",
+      "event-light-burn",
+      "event-nutrient-lockout",
+      "event-perfect-watering",
+      "event-pest-attack",
+      "event-rapid-growth-surge",
+      "event-ventilation-breakdown"
+    ]
+  },
+  "assets": {
+    "event-heat-wave": {
+      "path": "assets/events/event-heat-wave.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": ["event", "heat", "wave"],
+      "tags": ["environment", "heat", "stress"]
+    },
+    "event-overwatering": {
+      "path": "assets/events/event-overwatering.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": ["event", "overwatering"],
+      "tags": ["water", "root-zone", "stress"]
+    },
+    "event-nutrient-deficiency": {
+      "path": "assets/events/event-nutrient-deficiency.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": ["event", "nutrient", "deficiency"],
+      "tags": ["nutrition", "deficiency"]
+    },
+    "event-pest-attack": {
+      "path": "assets/events/event-pest-attack.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": ["event", "pest", "attack"],
+      "tags": ["pest", "active"]
+    },
+    "event-unexpected-mold": {
+      "path": "assets/events/event-unexpected-mold.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": ["event", "unexpected", "mold"],
+      "tags": ["disease", "mold"]
+    },
+    "event-perfect-environment-day": {
+      "path": "assets/events/event-perfect-environment-day.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": ["event", "perfect", "environment", "day"],
+      "tags": ["positive", "stable", "environment"]
+    },
+    "event-slow-growth-period": {
+      "path": "assets/events/event-slow-growth-period.png",
+      "assetKind": "placeholder",
+      "width": 2048,
+      "height": 2048,
+      "tokens": ["event", "slow", "growth", "period"],
+      "tags": ["generic", "placeholder"]
+    },
+    "heat_wave": {
+      "path": "assets/events/heat_wave.png",
+      "assetKind": "icon",
+      "width": 512,
+      "height": 512,
+      "tokens": ["heat", "wave"],
+      "tags": ["environment", "icon", "heat"]
+    },
+    "too_wet_soil": {
+      "path": "assets/events/too_wet_soil.png",
+      "assetKind": "icon",
+      "width": 512,
+      "height": 512,
+      "tokens": ["too", "wet", "soil"],
+      "tags": ["water", "icon", "wet"]
+    },
+    "nutrient_lockout": {
+      "path": "assets/events/nutrient_lockout.png",
+      "assetKind": "icon",
+      "width": 512,
+      "height": 512,
+      "tokens": ["nutrient", "lockout"],
+      "tags": ["nutrition", "icon", "lockout"]
+    },
+    "mite_hotspot": {
+      "path": "assets/events/mite_hotspot.png",
+      "assetKind": "icon",
+      "width": 512,
+      "height": 512,
+      "tokens": ["mite", "hotspot"],
+      "tags": ["pest", "icon", "mites"]
+    },
+    "disease": {
+      "path": "assets/events/disease.png",
+      "assetKind": "icon",
+      "width": 512,
+      "height": 512,
+      "tokens": ["disease"],
+      "tags": ["disease", "icon", "generic"]
+    },
+    "beneficial_fungi_colonized": {
+      "path": "assets/events/beneficial_fungi_colonized.png",
+      "assetKind": "icon",
+      "width": 512,
+      "height": 512,
+      "tokens": ["beneficial", "fungi", "colonized"],
+      "tags": ["positive", "icon", "soil-life"]
+    }
+  },
+  "eventMappings": {
+    "v2_environment_heat_spike": {
+      "primaryImage": "event-heat-wave",
+      "primaryIcon": "heat_wave",
+      "fallbackCategory": "environment"
+    },
+    "v2_climate_heat_stress": {
+      "primaryImage": "event-heat-wave",
+      "primaryIcon": "heat_wave",
+      "fallbackCategory": "environment"
+    },
+    "v2_water_overwater_warning": {
+      "primaryImage": "event-overwatering",
+      "primaryIcon": "too_wet_soil",
+      "fallbackCategory": "water"
+    },
+    "v2_nutrition_lockout": {
+      "primaryImage": "event-nutrient-deficiency",
+      "primaryIcon": "nutrient_lockout",
+      "fallbackCategory": "nutrition"
+    },
+    "v2_pest_mites_spotted": {
+      "primaryImage": "event-pest-attack",
+      "primaryIcon": "mite_hotspot",
+      "fallbackCategory": "pest"
+    },
+    "v2_disease_mold_pocket": {
+      "primaryImage": "event-unexpected-mold",
+      "primaryIcon": "disease",
+      "fallbackCategory": "disease"
+    },
+    "v2_climate_ideal_vpd_boost": {
+      "primaryImage": "event-perfect-environment-day",
+      "primaryIcon": "beneficial_fungi_colonized",
+      "fallbackCategory": "positive"
+    },
+    "drooping_leaves_warning": {
+      "primaryImage": null,
+      "primaryIcon": null,
+      "fallbackCategory": "water"
+    },
+    "root_stress_followup": {
+      "primaryImage": null,
+      "primaryIcon": null,
+      "fallbackCategory": "disease"
+    },
+    "stable_growth_reward": {
+      "primaryImage": null,
+      "primaryIcon": null,
+      "fallbackCategory": "positive"
+    }
+  },
+  "categoryFallbacks": {
+    "water": {
+      "image": "event-overwatering",
+      "icon": "too_wet_soil"
+    },
+    "nutrition": {
+      "image": "event-nutrient-deficiency",
+      "icon": "nutrient_lockout"
+    },
+    "pest": {
+      "image": "event-pest-attack",
+      "icon": "mite_hotspot"
+    },
+    "disease": {
+      "image": "event-unexpected-mold",
+      "icon": "disease"
+    },
+    "environment": {
+      "image": "event-slow-growth-period",
+      "icon": "heat_wave"
+    },
+    "positive": {
+      "image": "event-perfect-environment-day",
+      "icon": "beneficial_fungi_colonized"
+    },
+    "generic": {
+      "image": "event-slow-growth-period",
+      "icon": "disease"
+    }
+  },
+  "placeholder": {
+    "image": "event-slow-growth-period",
+    "icon": "disease"
+  }
+}

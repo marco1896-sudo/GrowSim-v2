@@ -630,6 +630,7 @@ function getCanonicalEvents(snapshot) {
   if (!s.events.foundation.memory.pendingChains || typeof s.events.foundation.memory.pendingChains !== 'object') s.events.foundation.memory.pendingChains = {};
   s.events.foundation.memory.pendingChains = normalizePendingChainsForStorage(s.events.foundation.memory.pendingChains);
   if (!Array.isArray(s.events.foundation.analysis)) s.events.foundation.analysis = [];
+  if (s.events.shadowRuntime != null && typeof s.events.shadowRuntime !== 'object') s.events.shadowRuntime = null;
 
   return s.events;
 }
@@ -1101,6 +1102,21 @@ async function restoreState(options = {}) {
   migrateLegacyStateIntoCanonical(saved, state);
   normalizeEnvironmentState(state);
   getCanonicalSimulation(state);
+  getCanonicalEvents(state);
+
+  try {
+    const eventEngine = window && window.GrowSimEventEngine;
+    if (eventEngine && typeof eventEngine.restoreShadowRuntimeState === 'function') {
+      const restoreDiagnostics = eventEngine.restoreShadowRuntimeState(state, state.events && state.events.shadowRuntime ? state.events.shadowRuntime : null);
+      if (restoreDiagnostics && state.events) {
+        state.events.shadowRuntime = typeof eventEngine.exportShadowRuntimeState === 'function'
+          ? eventEngine.exportShadowRuntimeState(state)
+          : state.events.shadowRuntime;
+      }
+    }
+  } catch (error) {
+    console.warn('[storage] shadow runtime restore ignored', error);
+  }
 }
 
 function migrateLegacyStateIntoCanonical(saved, targetState) {
@@ -1198,6 +1214,15 @@ async function persistState() {
   }
 
   stampStatePersistence(state);
+  try {
+    const events = getCanonicalEvents(state);
+    const eventEngine = window && window.GrowSimEventEngine;
+    if (eventEngine && typeof eventEngine.exportShadowRuntimeState === 'function') {
+      events.shadowRuntime = eventEngine.exportShadowRuntimeState(state);
+    }
+  } catch (error) {
+    console.warn('[storage] shadow runtime persist export ignored', error);
+  }
   console.info('[storage] persist_state', {
     run: getStateFreshnessMetrics(state),
     summaryOpen: Boolean(state.ui && state.ui.runSummaryOpen),

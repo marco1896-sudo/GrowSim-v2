@@ -3720,6 +3720,24 @@ function initUiArchitecture() {
   }
 }
 
+async function hydrateEventMediaDrafts() {
+  const assetsModule = window.GrowSimEventAssetsModule;
+  if (!assetsModule || typeof assetsModule.ensureRegistryLoaded !== 'function') {
+    return;
+  }
+
+  try {
+    await assetsModule.ensureRegistryLoaded();
+    if (typeof assetsModule.ensureGapListLoaded === 'function') {
+      await assetsModule.ensureGapListLoaded();
+    }
+    renderEventSheet();
+    renderAnalysisPanel(false);
+  } catch (error) {
+    console.warn('[events-ui] asset registry hydration skipped', error);
+  }
+}
+
 async function boot() {
   let bootStep = 'start';
   let stateRestoredDuringStartupAuthGate = false;
@@ -3812,6 +3830,7 @@ async function boot() {
       controller: Boolean(uiController),
       runtime: Boolean(screenRuntimeManager)
     });
+    await runBootSubstep('hydrate_event_media_drafts', () => hydrateEventMediaDrafts());
     await runBootSubstep('apply_background_asset', () => applyBackgroundAsset());
     bootStep = 'service_worker';
     await runBootSubstep('register_service_worker', () => registerServiceWorker());
@@ -4252,6 +4271,10 @@ function normalizeStageKey(rawStageKey) {
 }
 
 function runEventStateMachine(nowMs) {
+  const eventEngine = window.GrowSimEventEngine;
+  if (eventEngine && typeof eventEngine.routeTick === 'function') {
+    return eventEngine.routeTick(nowMs, state).result;
+  }
   return callCanonicalEventsRuntime('runEventStateMachine', nowMs);
 }
 
@@ -4527,6 +4550,10 @@ function applyFoundationFollowUps(choice, eventId) {
 }
 
 function onEventOptionClick(optionId) {
+  const eventEngine = window.GrowSimEventEngine;
+  if (eventEngine && typeof eventEngine.routeChoice === 'function') {
+    return eventEngine.routeChoice(optionId, state).result;
+  }
   return callCanonicalEventsRuntime('onEventOptionClick', optionId);
 }
 
@@ -7753,91 +7780,740 @@ function describeActiveEventContext(eventDef) {
   };
 }
 
-function renderEventSheet() {
-  if (state.ui.openSheet !== 'event' && !['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState)) {
-    return;
+function getEventUiViewModel() {
+  const eventEngine = window.GrowSimEventEngine;
+  if (eventEngine && typeof eventEngine.getUiModel === 'function') {
+    return eventEngine.getUiModel(state);
   }
 
-  if (ui.eventImageWrap && ui.eventImage) { const imagePath = state.events.machineState === 'activeEvent' ? String(state.events.activeImagePath || '') : '';
-    if (imagePath) {
-      ui.eventImage.src = imagePath; ui.eventImage.alt = state.events.activeEventTitle ? `${state.events.activeEventTitle} – Ereignisbild` : 'Ereignisbild';
-      ui.eventImageWrap.classList.remove('hidden');
-      ui.eventImageWrap.setAttribute('aria-hidden', 'false');
+  return {
+    popup: {
+      machineState: String(state.events.machineState || 'idle'),
+      title: String(state.events.activeEventTitle || ''),
+      description: String(state.events.activeEventText || ''),
+      category: String(state.events.activeCategory || 'generic'),
+      severity: Number(state.events.activeSeverity || 0),
+      shadowSummary: { available: false }
+    },
+    detail: {
+      learningNote: String(state.events.activeLearningNote || ''),
+      options: Array.isArray(state.events.activeOptions) ? state.events.activeOptions.slice() : [],
+      shadowSummary: { available: false }
+    },
+    media: {
+      kind: state.events.activeImagePath ? 'image' : 'placeholder',
+      assetId: null,
+      src: state.events.activeImagePath ? String(state.events.activeImagePath) : null,
+      alt: state.events.activeEventTitle ? `${state.events.activeEventTitle} – Ereignisvisual` : 'Ereignisvisual',
+      label: null,
+      badge: null,
+      fallbackOrigin: state.events.activeImagePath ? 'legacy_active_image' : 'generic_placeholder',
+      title: String(state.events.activeEventTitle || 'Event'),
+      subtitle: ''
+    }
+  };
+}
+
+function hasModernEventPresentationNodes() {
+  if (typeof document === 'undefined') {
+    return false;
+  }
+  return Boolean(
+    document.getElementById('eventSheetModernRoot')
+    && document.getElementById('eventSheetLegacyRoot')
+  );
+}
+
+function setEventPresentationExclusiveState(active) {
+  const enabled = Boolean(active && hasModernEventPresentationNodes());
+  const eventSheet = uiNode('eventSheet', 'eventSheet') || (typeof document !== 'undefined' ? document.getElementById('eventSheet') : null);
+  const modernRoot = typeof document !== 'undefined' ? document.getElementById('eventSheetModernRoot') : null;
+  const legacyRoot = typeof document !== 'undefined' ? document.getElementById('eventSheetLegacyRoot') : null;
+
+  if (eventSheet) {
+    eventSheet.dataset.eventUiMode = enabled ? 'modern-exclusive' : 'legacy';
+    eventSheet.classList.toggle('event-sheet--modern-exclusive', enabled);
+    eventSheet.classList.toggle('event-sheet--legacy-suppressed', enabled);
+    if (enabled) {
+      eventSheet.setAttribute('data-legacy-render-suppressed', 'true');
     } else {
-      ui.eventImage.removeAttribute('src');
-      ui.eventImage.alt = '';
-      ui.eventImageWrap.classList.add('hidden');
-      ui.eventImageWrap.setAttribute('aria-hidden', 'true');
+      eventSheet.removeAttribute('data-legacy-render-suppressed');
     }
   }
 
-  ui.eventStateBadge.textContent = `Status: ${translateEventState(state.events.machineState)}`;
+  if (modernRoot) {
+    modernRoot.classList.toggle('hidden', !enabled);
+    modernRoot.setAttribute('aria-hidden', String(!enabled));
+    if ('inert' in modernRoot) {
+      modernRoot.inert = !enabled;
+    }
+  }
 
-  if (state.events.machineState === 'activeEvent') {
-    const eventDef = Array.isArray(state.events.catalog)
-      ? state.events.catalog.find((entry) => entry && entry.id === state.events.activeEventId)
-      : null;
-    const eventContext = describeActiveEventContext(eventDef);
-    ui.eventTitle.textContent = state.events.activeEventTitle;
-    ui.eventText.textContent = state.events.activeEventText;
-    ui.eventMeta.textContent = [
-      `Schweregrad: ${state.events.activeSeverity}`,
-      eventContext.cause ? `Warum jetzt: ${eventContext.cause}` : '',
-      eventContext.focus ? `Fokus: ${eventContext.focus}` : ''
-    ].filter(Boolean).join(' | ');
+  if (legacyRoot) {
+    legacyRoot.classList.toggle('hidden', enabled);
+    legacyRoot.setAttribute('aria-hidden', String(enabled));
+    if ('inert' in legacyRoot) {
+      legacyRoot.inert = enabled;
+    }
+  }
 
-    const optionSignature = `${state.events.activeEventId}|${state.events.activeOptions.map((option) => `${option.id}:${option.label}`).join('|')}`;
-    if (ui.eventOptionList.dataset.signature !== optionSignature) {
-      ui.eventOptionList.dataset.signature = optionSignature;
-      ui.eventOptionList.replaceChildren();
-      const primitives = getUiPrimitives();
-      for (const option of state.events.activeOptions) {
-        const button = primitives && typeof primitives.button === 'function'
-          ? primitives.button({ className: 'event-option-btn' })
-          : document.createElement('button');
-        button.type = 'button';
-        if (!button.classList.contains('event-option-btn')) {
-          button.className = 'event-option-btn';
-        }
-        button.textContent = option.label;
-        button.addEventListener('click', () => {
-          const controller = getUiController();
-          if (controller && typeof controller.handleEventOption === 'function') {
-            controller.handleEventOption(option.id);
-            return;
-          }
-          onEventOptionClick(option.id);
-        });
-        ui.eventOptionList.appendChild(button);
+  if (typeof document !== 'undefined' && document.body) {
+    document.body.classList.toggle('event-ui-modern-active', enabled);
+  }
+
+  window.__GS_EVENT_UI_MODE = enabled ? 'modern-exclusive' : 'legacy';
+  window.__GS_EVENT_UI_EXCLUSIVE_ACTIVE = enabled;
+}
+
+function getEventAssetsModule() {
+  return window.GrowSimEventAssetsModule && typeof window.GrowSimEventAssetsModule.buildMediaModel === 'function'
+    ? window.GrowSimEventAssetsModule
+    : null;
+}
+
+function isEventAssetInspectionEnabled() {
+  if (window.__GS_DEV_EVENT_ASSET_INSPECT === true) {
+    return true;
+  }
+  try {
+    return window.localStorage && window.localStorage.getItem('gs_event_asset_inspect') === '1';
+  } catch (_error) {
+    return false;
+  }
+}
+
+function humanizeEventIdentifier(value) {
+  const safe = String(value || '').trim();
+  if (!safe) return 'Event';
+  return safe
+    .replace(/^v2_/, '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function resolveSharedEventMediaModel(input) {
+  const assetsModule = getEventAssetsModule();
+  if (assetsModule) {
+    return assetsModule.buildMediaModel(input || {});
+  }
+  return {
+    kind: input && input.activeImagePath ? 'image' : 'placeholder',
+    assetId: null,
+    src: input && input.activeImagePath ? String(input.activeImagePath) : null,
+    alt: input && input.title ? `${input.title} – Ereignisvisual` : 'Ereignisvisual',
+    label: null,
+    badge: null,
+    fallbackOrigin: input && input.activeImagePath ? 'legacy_active_image' : 'generic_placeholder',
+    title: String(input && input.title || 'Event'),
+    subtitle: '',
+    devNotes: []
+  };
+}
+
+function deriveEventPresentationTone(viewModel, machineState, options = {}) {
+  const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
+  const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
+  const mode = String(options.mode || '').trim();
+
+  if (mode === 'history') return 'history';
+  if (mode === 'resolved') return 'resolved';
+  if (shadow.primaryState) return String(shadow.primaryState);
+  if (shadow.rewardClass || shadow.rewardSummary) return 'reward';
+  if (shadow.topFollowUpId || shadow.chainSummary) return 'followup';
+  if (machineState === 'activeEvent') return 'active';
+  if (machineState === 'resolved') return 'resolved';
+  return 'idle';
+}
+
+function eventToneLabel(tone) {
+  const map = {
+    warning: 'Warnung',
+    active: 'Aktiv',
+    escalating: 'Eskalierend',
+    escalated: 'Kritisch',
+    reward: 'Belohnung',
+    followup: 'Folgepfad',
+    history: 'Analyse',
+    resolved: 'Verlauf',
+    idle: 'Bereit'
+  };
+  return map[String(tone || 'idle')] || 'Event';
+}
+
+function buildEventPresentationSections(viewModel, machineState) {
+  const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
+  const detail = viewModel && viewModel.detail && typeof viewModel.detail === 'object' ? viewModel.detail : {};
+  const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
+  const sections = [];
+  const tone = deriveEventPresentationTone(viewModel, machineState);
+
+  const situationBody = shadow.causeSummary || popup.description || categoryLabel(String(popup.category || 'generic'));
+  if (situationBody) {
+    sections.push({
+      key: 'situation',
+      title: 'Situation / Ursache',
+      body: String(situationBody),
+      tone
+    });
+  }
+
+  const tendencyBody = shadow.outcomeSummary || (popup.severity ? `Schweregrad ${popup.severity} prägt die aktuelle Tendenz.` : '');
+  if (tendencyBody) {
+    sections.push({
+      key: 'tendency',
+      title: 'Aktueller Zustand / Tendenz',
+      body: String(tendencyBody),
+      tone
+    });
+  }
+
+  if (shadow.rewardSummary) {
+    sections.push({
+      key: 'reward',
+      title: 'Reward / Recovery Insight',
+      body: String(shadow.rewardSummary),
+      tone: 'reward'
+    });
+  }
+
+  if (shadow.chainSummary || shadow.topFollowUpId) {
+    const followUp = shadow.topFollowUpId ? `${shadow.chainSummary ? `${shadow.chainSummary} ` : ''}Möglicher Folgepfad: ${humanizeEventIdentifier(shadow.topFollowUpId)}.` : shadow.chainSummary;
+    sections.push({
+      key: 'followup',
+      title: 'Folgepfad / Plausibilität',
+      body: String(followUp),
+      tone: 'followup'
+    });
+  }
+
+  if (detail.learningNote || shadow.disclaimer || (Array.isArray(shadow.comparisonSummary) && shadow.comparisonSummary.length)) {
+    const analysisParts = [];
+    if (detail.learningNote) analysisParts.push(String(detail.learningNote));
+    if (Array.isArray(shadow.comparisonSummary) && shadow.comparisonSummary.length) analysisParts.push(`Offene Abweichungen: ${shadow.comparisonSummary.join(' · ')}`);
+    if (shadow.disclaimer) analysisParts.push(String(shadow.disclaimer));
+    sections.push({
+      key: 'analysis',
+      title: 'Analyse / Bedeutung',
+      body: analysisParts.join(' '),
+      tone: 'history'
+    });
+  }
+
+  return sections;
+}
+
+function buildEventPresentationSectionsHtml(sections) {
+  const safeSections = Array.isArray(sections) ? sections : [];
+  if (!safeSections.length) {
+    return '';
+  }
+  return safeSections.map((section) => `
+    <article class="event-detail-section event-detail-section--${escapeHtml(String(section.tone || 'idle'))}">
+      <span class="event-detail-section__eyebrow">${escapeHtml(String(section.title || 'Event Insight'))}</span>
+      <p class="event-detail-section__body">${escapeHtml(String(section.body || ''))}</p>
+    </article>
+  `).join('');
+}
+
+function buildEventHistorySnapshotViewModel() {
+  const history = Array.isArray(state.events && state.events.history) ? state.events.history : [];
+  const latest = history.length ? history[history.length - 1] : null;
+  if (!latest || typeof latest !== 'object') {
+    return null;
+  }
+
+  const analysis = latest.analysis && typeof latest.analysis === 'object' ? latest.analysis : {};
+  const tone = analysis.tone === 'good'
+    ? 'reward'
+    : (analysis.tone === 'bad' ? 'followup' : 'history');
+  const media = resolveSharedEventMediaModel({
+    eventId: latest.eventId,
+    category: latest.category || 'generic',
+    title: humanizeEventIdentifier(latest.eventId),
+    stateTone: tone
+  });
+
+  return {
+    title: humanizeEventIdentifier(latest.eventId),
+    media,
+    tone,
+    optionLabel: latest.optionLabel ? String(latest.optionLabel) : '',
+    learningNote: latest.learningNote ? String(latest.learningNote) : '',
+    resultText: analysis.resultText ? String(analysis.resultText) : '',
+    guidanceText: analysis.guidanceText ? String(analysis.guidanceText) : '',
+    causeText: analysis.causeText ? String(analysis.causeText) : '',
+    atSimTimeMs: Number(latest.atSimTimeMs || 0)
+  };
+}
+
+function buildEventHistorySnapshotMarkup() {
+  const snapshot = buildEventHistorySnapshotViewModel();
+  if (!snapshot) {
+    return `
+      <section class="event-history-card event-history-card--empty" data-tone="history">
+        <div class="event-history-card__body">
+          <span class="event-history-card__eyebrow">Letzte Analyse</span>
+          <strong class="event-history-card__title">Noch kein Event-Verlauf gespeichert</strong>
+          <p class="event-history-card__summary">Sobald Entscheidungen protokolliert werden, erscheint hier die letzte Analyse als kompakter Rückblick.</p>
+        </div>
+      </section>
+    `;
+  }
+
+  const media = snapshot.media || {};
+  const inspect = isEventAssetInspectionEnabled();
+  const mediaInner = media.kind === 'placeholder'
+    ? `<div class="event-history-card__placeholder"><span>${escapeHtml(String((media.badge || 'A')).slice(0, 1).toUpperCase())}</span></div>`
+    : `<img class="event-history-card__image${media.kind === 'icon' ? ' event-history-card__image--icon' : ''}" src="${escapeHtml(String(media.src || ''))}" alt="${escapeHtml(String(media.alt || ''))}">`;
+  const summary = snapshot.resultText || snapshot.guidanceText || snapshot.learningNote || 'Letzte Entscheidung ohne zusätzliche Analyse.';
+  const metaParts = [];
+  if (snapshot.optionLabel) metaParts.push(`Aktion: ${snapshot.optionLabel}`);
+  if (snapshot.causeText) metaParts.push(snapshot.causeText);
+
+  return `
+    <section class="event-history-card" data-tone="${escapeHtml(String(snapshot.tone || 'history'))}">
+      <div class="event-history-card__media" data-kind="${escapeHtml(String(media.kind || 'placeholder'))}">
+        ${mediaInner}
+      </div>
+      <div class="event-history-card__body">
+        <div class="event-history-card__head">
+          <span class="event-history-card__eyebrow">Letzte Analyse</span>
+          <span class="event-history-card__pill">${escapeHtml(eventToneLabel(snapshot.tone))}</span>
+        </div>
+        <strong class="event-history-card__title">${escapeHtml(String(snapshot.title || 'Verlaufs-Snapshot'))}</strong>
+        <p class="event-history-card__summary">${escapeHtml(String(summary))}</p>
+        ${metaParts.length ? `<p class="event-history-card__meta">${escapeHtml(metaParts.join(' · '))}</p>` : ''}
+        ${inspect ? `<span class="event-history-card__origin">Asset: ${escapeHtml(String(media.fallbackOrigin || 'generic_placeholder'))}</span>` : ''}
+      </div>
+    </section>
+  `;
+}
+
+function deriveHistoryEntryTone(entry) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const analysis = safeEntry.analysis && typeof safeEntry.analysis === 'object' ? safeEntry.analysis : {};
+  const eventId = String(safeEntry.eventId || '').toLowerCase();
+  const category = String(safeEntry.category || '').toLowerCase();
+  const tone = String(analysis.tone || '').toLowerCase();
+
+  if (category === 'positive' || eventId.includes('reward')) return 'reward';
+  if (eventId.includes('followup') || eventId.includes('chain')) return 'followup';
+  if (tone === 'bad') return 'escalating';
+  if (tone === 'good') return category === 'positive' ? 'reward' : 'resolved';
+  if (tone === 'mixed') return 'history';
+  return 'resolved';
+}
+
+function buildHistoryEntryMarkers(entry, tone) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const analysis = safeEntry.analysis && typeof safeEntry.analysis === 'object' ? safeEntry.analysis : {};
+  const markers = [
+    eventToneLabel(tone),
+    safeEntry.optionLabel ? `Aktion: ${safeEntry.optionLabel}` : '',
+    analysis.tone === 'good' ? 'Gute Ausführung' : '',
+    analysis.tone === 'bad' ? 'Instabil geblieben' : '',
+    (String(safeEntry.eventId || '').includes('followup') || String(safeEntry.eventId || '').includes('chain')) ? 'Folgepfad' : ''
+  ].filter(Boolean);
+
+  return markers.slice(0, 3);
+}
+
+function formatHistoryOrderLabel(entry, index) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const simTimeMs = Number(safeEntry.atSimTimeMs || 0);
+  if (Number.isFinite(simTimeMs) && simTimeMs > 0) {
+    const day = Math.max(1, Math.floor(simTimeMs / (24 * 60 * 60 * 1000)) + 1);
+    return `Tag ${day}`;
+  }
+  return index === 0 ? 'Zuletzt' : `Vor ${index + 1} Events`;
+}
+
+function buildRecentEventHistoryItems(limit = 5) {
+  const history = Array.isArray(state.events && state.events.history) ? state.events.history.slice(-limit).reverse() : [];
+  return history.map((entry, index) => {
+    const tone = deriveHistoryEntryTone(entry);
+    const analysis = entry && entry.analysis && typeof entry.analysis === 'object' ? entry.analysis : {};
+    const media = resolveSharedEventMediaModel({
+      eventId: entry && entry.eventId,
+      category: entry && entry.category,
+      title: humanizeEventIdentifier(entry && entry.eventId),
+      stateTone: tone
+    });
+
+    return {
+      id: String(entry && entry.eventId || `history-${index}`),
+      title: humanizeEventIdentifier(entry && entry.eventId),
+      tone,
+      media,
+      orderLabel: formatHistoryOrderLabel(entry, index),
+      summary: String(analysis.resultText || analysis.guidanceText || entry && entry.learningNote || 'Letzte Event-Entscheidung ohne zusätzlichen Hinweis.'),
+      meaning: String(analysis.causeText || entry && entry.learningNote || categoryLabel(String(entry && entry.category || 'generic'))),
+      quality: analysis.tone ? String(analysis.tone) : '',
+      markers: buildHistoryEntryMarkers(entry, tone)
+    };
+  });
+}
+
+function buildRecentEventHistoryMarkup() {
+  const items = buildRecentEventHistoryItems();
+  const inspect = isEventAssetInspectionEnabled();
+
+  if (!items.length) {
+    return `
+      <section class="gs-analysis-overview-section event-history-list-shell">
+        <div class="harvest-section-headline">
+          <h3 class="figma-section-head">Recent Event History</h3>
+          <p class="harvest-section-intro">Sobald mehrere Entscheidungen protokolliert sind, erscheint hier ein kompakter Verlauf mit denselben Visual- und Tone-Regeln wie im Event Center.</p>
+        </div>
+        <div class="event-history-list event-history-list--empty">
+          <p class="event-history-list__empty">Noch keine verwertbare Event-Historie vorhanden.</p>
+        </div>
+      </section>
+    `;
+  }
+
+  const itemsHtml = items.map((item) => {
+    const media = item.media || {};
+    const mediaInner = media.kind === 'placeholder'
+      ? `<div class="event-history-item__placeholder"><span>${escapeHtml(String((media.badge || 'E')).slice(0, 1).toUpperCase())}</span></div>`
+      : `<img class="event-history-item__image${media.kind === 'icon' ? ' event-history-item__image--icon' : ''}" src="${escapeHtml(String(media.src || ''))}" alt="${escapeHtml(String(media.alt || ''))}">`;
+    return `
+      <article class="event-history-item" data-tone="${escapeHtml(String(item.tone || 'history'))}">
+        <div class="event-history-item__media" data-kind="${escapeHtml(String(media.kind || 'placeholder'))}">
+          ${mediaInner}
+        </div>
+        <div class="event-history-item__body">
+          <div class="event-history-item__head">
+            <span class="event-history-item__eyebrow">${escapeHtml(String(item.orderLabel || 'Verlauf'))}</span>
+            <span class="event-history-item__pill">${escapeHtml(eventToneLabel(item.tone))}</span>
+          </div>
+          <strong class="event-history-item__title">${escapeHtml(String(item.title || 'Event'))}</strong>
+          <p class="event-history-item__summary">${escapeHtml(String(item.summary || ''))}</p>
+          <p class="event-history-item__meta">${escapeHtml(String(item.meaning || ''))}</p>
+          ${item.markers && item.markers.length ? `<div class="event-history-item__markers">${item.markers.map((marker) => `<span class="event-history-item__marker">${escapeHtml(String(marker))}</span>`).join('')}</div>` : ''}
+          ${inspect ? `<span class="event-history-item__origin">Asset: ${escapeHtml(String(media.fallbackOrigin || 'generic_placeholder'))}</span>` : ''}
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  return `
+    <section class="gs-analysis-overview-section event-history-list-shell">
+      <div class="harvest-section-headline">
+        <h3 class="figma-section-head">Recent Event History</h3>
+        <p class="harvest-section-intro">Kompakter Rückblick auf die letzten wichtigen Warnungen, Auflösungen, Folgepfade und positiven Momente. Die Texte bleiben als Analyse- und Tendenzhinweise formuliert.</p>
+      </div>
+      <div class="event-history-list">
+        ${itemsHtml}
+      </div>
+    </section>
+  `;
+}
+
+function renderEventMediaModel(mediaModel, tone = 'idle') {
+  const wrap = uiNode('eventImageWrap', 'eventImageWrap');
+  const image = uiNode('eventImage', 'eventImage');
+  const placeholder = uiNode('eventVisualPlaceholder', 'eventVisualPlaceholder');
+  const placeholderGlyph = uiNode('eventVisualPlaceholderGlyph', 'eventVisualPlaceholderGlyph');
+  const placeholderLabel = uiNode('eventVisualPlaceholderLabel', 'eventVisualPlaceholderLabel');
+  const stateBadge = uiNode('eventVisualStateBadge', 'eventVisualStateBadge');
+  const originBadge = uiNode('eventVisualOriginBadge', 'eventVisualOriginBadge');
+  const captionTitle = uiNode('eventVisualCaptionTitle', 'eventVisualCaptionTitle');
+  const captionMeta = uiNode('eventVisualCaptionMeta', 'eventVisualCaptionMeta');
+
+  if (!wrap || !image || !placeholder || !placeholderGlyph || !placeholderLabel || !stateBadge || !originBadge || !captionTitle || !captionMeta) {
+    return;
+  }
+
+  const media = mediaModel && typeof mediaModel === 'object' ? mediaModel : {};
+  const kind = String(media.kind || 'placeholder');
+  const badgeText = media.badge ? String(media.badge) : '';
+  const originLabel = media.label ? String(media.label) : '';
+  const inspectOrigin = isEventAssetInspectionEnabled();
+
+  wrap.dataset.kind = kind;
+  wrap.dataset.origin = String(media.fallbackOrigin || '');
+  wrap.dataset.tone = String(tone || 'idle');
+  wrap.classList.remove('hidden');
+  wrap.setAttribute('aria-hidden', 'false');
+
+  if (kind === 'image' || kind === 'icon') {
+    if (media.src) {
+      image.src = String(media.src);
+    } else {
+      image.removeAttribute('src');
+    }
+    image.alt = media.alt ? String(media.alt) : '';
+    image.classList.toggle('event-visual-image--icon', kind === 'icon');
+    image.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+    placeholder.setAttribute('aria-hidden', 'true');
+  } else {
+    image.removeAttribute('src');
+    image.alt = '';
+    image.classList.remove('event-visual-image--icon');
+    image.classList.add('hidden');
+    placeholder.classList.remove('hidden');
+    placeholder.setAttribute('aria-hidden', 'false');
+    placeholderGlyph.textContent = media.badge ? String(media.badge).slice(0, 1).toUpperCase() : 'E';
+    placeholderLabel.textContent = media.title ? String(media.title) : 'Event';
+  }
+
+  stateBadge.textContent = badgeText || 'Live';
+  stateBadge.classList.toggle('hidden', !badgeText);
+  stateBadge.setAttribute('aria-hidden', badgeText ? 'false' : 'true');
+
+  originBadge.textContent = originLabel;
+  originBadge.classList.toggle('hidden', !originLabel || !inspectOrigin);
+  originBadge.setAttribute('aria-hidden', originLabel && inspectOrigin ? 'false' : 'true');
+
+  captionTitle.textContent = media.title ? String(media.title) : (state.events.activeEventTitle || 'Event');
+  captionMeta.textContent = inspectOrigin && media.fallbackOrigin
+    ? `${String(media.subtitle || 'Diagnose-Visual')} · ${String(media.fallbackOrigin)}`
+    : (media.subtitle ? String(media.subtitle) : 'Diagnose-Visual');
+}
+
+function buildEventMediaMarkup(mediaModel, tone = 'idle') {
+  const media = mediaModel && typeof mediaModel === 'object' ? mediaModel : {};
+  const kind = String(media.kind || 'placeholder');
+  const badgeText = media.badge ? String(media.badge) : '';
+  const originLabel = media.label ? String(media.label) : '';
+  const inspectOrigin = isEventAssetInspectionEnabled();
+  const imageMarkup = (kind === 'image' || kind === 'icon')
+    ? `<img class="event-visual-image${kind === 'icon' ? ' event-visual-image--icon' : ''}" src="${escapeHtml(String(media.src || ''))}" alt="${escapeHtml(String(media.alt || ''))}">`
+    : '<img class="event-visual-image hidden" alt="">';
+  const placeholderMarkup = kind === 'placeholder'
+    ? `
+      <div class="event-visual-placeholder" aria-hidden="false">
+        <span class="event-visual-placeholder-glyph">${escapeHtml(String(media.badge ? String(media.badge).slice(0, 1).toUpperCase() : 'E'))}</span>
+        <span class="event-visual-placeholder-label">${escapeHtml(String(media.title || 'Event'))}</span>
+      </div>
+    `
+    : '<div class="event-visual-placeholder hidden" aria-hidden="true"></div>';
+
+  return `
+    <div class="event-visual" aria-hidden="false" data-kind="${escapeHtml(kind)}" data-origin="${escapeHtml(String(media.fallbackOrigin || ''))}" data-tone="${escapeHtml(String(tone || 'idle'))}">
+      <div class="event-visual-frame">
+        ${imageMarkup}
+        ${placeholderMarkup}
+        <span class="event-visual-state-badge${badgeText ? '' : ' hidden'}" aria-hidden="${badgeText ? 'false' : 'true'}">${escapeHtml(badgeText || 'Live')}</span>
+        <span class="event-visual-origin-badge${originLabel && inspectOrigin ? '' : ' hidden'}" aria-hidden="${originLabel && inspectOrigin ? 'false' : 'true'}">${escapeHtml(originLabel)}</span>
+      </div>
+      <div class="event-visual-caption">
+        <strong class="event-visual-caption-title">${escapeHtml(String(media.title || state.events.activeEventTitle || 'Event'))}</strong>
+        <span class="event-visual-caption-meta">${escapeHtml(inspectOrigin && media.fallbackOrigin ? `${String(media.subtitle || 'Diagnose-Visual')} · ${String(media.fallbackOrigin)}` : String(media.subtitle || 'Diagnose-Visual'))}</span>
+      </div>
+    </div>
+  `;
+}
+
+function buildEventInsightHtml(viewModel, machineState) {
+  const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
+  const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
+  const tone = deriveEventPresentationTone(viewModel, machineState);
+  const sections = buildEventPresentationSections(viewModel, machineState);
+
+  return `
+    <div class="event-shadow-insight event-shadow-insight--${escapeHtml(String(tone || 'idle'))}${machineState === 'activeEvent' ? ' event-shadow-insight--live' : ''}" data-tone="${escapeHtml(String(tone || 'idle'))}">
+      <div class="event-shadow-insight__head">
+        <span class="event-shadow-insight__eyebrow">Event Insight</span>
+        <span class="event-shadow-insight__pill">${escapeHtml(String(shadow.qualitySummary || eventToneLabel(tone)))}</span>
+      </div>
+      <div class="event-detail-sections">
+        ${buildEventPresentationSectionsHtml(sections)}
+      </div>
+    </div>
+  `;
+}
+
+function buildEventCenterMarkup(viewModel) {
+  const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
+  const media = viewModel && viewModel.media && typeof viewModel.media === 'object' ? viewModel.media : {};
+  const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
+  const tone = deriveEventPresentationTone(viewModel, popup.machineState || 'idle');
+  const stateLabel = media.badge ? String(media.badge) : eventToneLabel(tone);
+  const inspect = isEventAssetInspectionEnabled();
+  const mediaInner = media.kind === 'placeholder'
+    ? `<div class="event-center-card__placeholder"><span>${escapeHtml(String((media.badge || 'E')).slice(0, 1).toUpperCase())}</span></div>`
+    : `<img class="event-center-card__image${media.kind === 'icon' ? ' event-center-card__image--icon' : ''}" src="${escapeHtml(String(media.src || ''))}" alt="${escapeHtml(String(media.alt || ''))}">`;
+
+  const summary = shadow.causeSummary || shadow.outcomeSummary || 'Kein aktiver Schattenhinweis verfügbar.';
+  const support = shadow.chainSummary || shadow.rewardSummary || 'Legacy bleibt autoritativ, die Vorschau dient nur der Einordnung.';
+  const markers = [
+    tone !== 'idle' ? eventToneLabel(tone) : '',
+    shadow.rewardSummary ? 'Recovery / Reward' : '',
+    shadow.chainSummary ? 'Folgerisiko' : '',
+    popup.machineState === 'resolved' ? 'Zuletzt ausgewertet' : ''
+  ].filter(Boolean).slice(0, 3);
+
+  return `
+    <section class="gs-analysis-overview-section event-center-card" data-tone="${escapeHtml(String(tone || 'idle'))}">
+      <div class="event-center-card__media" data-kind="${escapeHtml(String(media.kind || 'placeholder'))}">
+        ${mediaInner}
+      </div>
+      <div class="event-center-card__body">
+        <div class="event-center-card__head">
+          <span class="event-center-card__eyebrow">Event Center</span>
+          <span class="event-center-card__pill">${escapeHtml(stateLabel)}</span>
+        </div>
+        <strong class="event-center-card__title">${escapeHtml(String(popup.title || 'Event Snapshot'))}</strong>
+        <p class="event-center-card__summary">${escapeHtml(String(summary))}</p>
+        <p class="event-center-card__meta">${escapeHtml(String(support))}</p>
+        ${markers.length ? `<div class="event-center-card__markers">${markers.map((marker) => `<span class="event-center-card__marker">${escapeHtml(String(marker))}</span>`).join('')}</div>` : ''}
+        ${inspect ? `<span class="event-center-card__origin">Asset: ${escapeHtml(String(media.fallbackOrigin || 'generic_placeholder'))}</span>` : ''}
+      </div>
+    </section>
+  `;
+}
+
+function getModernEventSheetContentState(viewModel, machineState) {
+  const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
+  const eventDef = Array.isArray(state.events.catalog)
+    ? state.events.catalog.find((entry) => entry && entry.id === state.events.activeEventId)
+    : null;
+  const eventContext = describeActiveEventContext(eventDef);
+
+  if (machineState === 'activeEvent') {
+    return {
+      title: String(state.events.activeEventTitle || popup.title || 'Aktives Ereignis'),
+      description: String(state.events.activeEventText || popup.description || ''),
+      meta: [
+        `Schweregrad: ${state.events.activeSeverity}`,
+        eventContext.cause ? `Warum jetzt: ${eventContext.cause}` : '',
+        eventContext.focus ? `Fokus: ${eventContext.focus}` : ''
+      ].filter(Boolean).join(' | '),
+      options: Array.isArray(state.events.activeOptions) ? state.events.activeOptions.slice() : []
+    };
+  }
+
+  if (machineState === 'resolving') {
+    const leftMs = Number(state.events.resolvingUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
+    return {
+      title: String(state.events.activeEventTitle || popup.title || 'Ereignis wird ausgewertet'),
+      description: 'Deine Entscheidung wird jetzt ausgewertet. Das Ergebnis erscheint nach Ablauf des Timers.',
+      meta: `Ergebnis in: ${formatCountdown(leftMs)}`,
+      options: []
+    };
+  }
+
+  if (machineState === 'resolved') {
+    const outcome = state.events.resolvedOutcome;
+    return {
+      title: String(outcome && outcome.eventTitle ? outcome.eventTitle : 'Ergebnis bereit'),
+      description: String(formatResolvedOutcome(outcome)),
+      meta: 'Ergebnis bereit – schließe das Ereignis, um fortzufahren.',
+      options: []
+    };
+  }
+
+  if (machineState === 'cooldown') {
+    const cooldownLeft = Number(state.events.cooldownUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
+    return {
+      title: 'Abklingzeit aktiv',
+      description: 'Das Ereignissystem befindet sich in der Abklingzeit.',
+      meta: `Abklingzeit: ${formatCountdown(cooldownLeft)}`,
+      options: []
+    };
+  }
+
+  return {
+    title: 'Kein aktives Ereignis',
+    description: 'Ein Ereignis erscheint, sobald der nächste Wurf erfolgreich ist.',
+    meta: `Nächster Wurf: ${formatCountdown(Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0))}`,
+    options: []
+  };
+}
+
+function buildModernEventOptionListMarkup(options) {
+  const safeOptions = Array.isArray(options) ? options : [];
+  if (!safeOptions.length) {
+    return '';
+  }
+
+  return safeOptions.map((option) => `
+    <button class="event-option-btn" type="button" data-event-option-id="${escapeHtml(String(option.id || ''))}">
+      ${escapeHtml(String(option.label || option.id || 'Option'))}
+    </button>
+  `).join('');
+}
+
+function bindModernEventSheetInteractions(root, options) {
+  if (!root) {
+    return;
+  }
+
+  const safeOptions = Array.isArray(options) ? options : [];
+  if (!safeOptions.length) {
+    return;
+  }
+
+  root.querySelectorAll('[data-event-option-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const optionId = String(button.getAttribute('data-event-option-id') || '');
+      if (!optionId) {
+        return;
       }
+      const controller = getUiController();
+      if (controller && typeof controller.handleEventOption === 'function') {
+        controller.handleEventOption(optionId);
+        return;
+      }
+      onEventOptionClick(optionId);
+    });
+  });
+}
+
+function renderModernEventSheetContent(viewModel, machineState) {
+  const modernRoot = typeof document !== 'undefined' ? document.getElementById('eventSheetModernRoot') : null;
+  if (!modernRoot) {
+    return;
+  }
+
+  const tone = deriveEventPresentationTone(viewModel, machineState);
+  const shadowSummary = viewModel && viewModel.popup && viewModel.popup.shadowSummary && typeof viewModel.popup.shadowSummary === 'object'
+    ? viewModel.popup.shadowSummary
+    : {};
+  const contentState = getModernEventSheetContentState(viewModel, machineState);
+  const inspect = isEventAssetInspectionEnabled();
+  const template = document.createElement('template');
+  template.innerHTML = `
+    <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+      <div class="figma-top-player-title">Event-System</div>
+      <div class="figma-top-player-subtitle">Autoritativ bleibt Legacy, die Darstellung ist exklusiv modern.</div>
+    </section>
+    <section class="figma-section-card figma-section-card--event event-sheet-modern-card" data-tone="${escapeHtml(String(tone || 'idle'))}">
+      <h3 class="figma-section-head">Event Focus</h3>
+      <p class="sheet-badge" data-shadow="${escapeHtml(String(shadowSummary.primaryState || ''))}">Status: ${escapeHtml(translateEventState(machineState))}</p>
+      ${buildEventMediaMarkup(viewModel && viewModel.media ? viewModel.media : null, tone)}
+      <h3 class="event-sheet-modern__title">${escapeHtml(String(contentState.title || 'Event'))}</h3>
+      <p class="event-sheet-modern__text">${escapeHtml(String(contentState.description || ''))}</p>
+      <p class="sheet-note event-sheet-modern__meta">${escapeHtml(String(contentState.meta || ''))}</p>
+      ${buildEventInsightHtml(viewModel, machineState)}
+      <div class="event-option-list event-sheet-modern__options">${buildModernEventOptionListMarkup(contentState.options)}</div>
+      <div class="event-history-slot" aria-hidden="false">${buildEventHistorySnapshotMarkup()}</div>
+      ${inspect ? `<p class="event-sheet-modern__inspector">Root ownership: modern-exclusive</p>` : ''}
+    </section>
+  `;
+
+  modernRoot.replaceChildren(template.content.cloneNode(true));
+  bindModernEventSheetInteractions(modernRoot, contentState.options);
+}
+
+function renderEventSheet() {
+  const modernEventUiActive = state.ui.openSheet === 'event' || ['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState);
+  setEventPresentationExclusiveState(modernEventUiActive);
+
+  const modernRoot = typeof document !== 'undefined' ? document.getElementById('eventSheetModernRoot') : null;
+  if (!modernEventUiActive) {
+    if (modernRoot) {
+      modernRoot.replaceChildren();
     }
     return;
   }
 
-  if (state.events.machineState === 'resolving') {
-const leftMs = Number(state.events.resolvingUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
-    ui.eventTitle.textContent = state.events.activeEventTitle || 'Ereignis wird ausgewertet';
-    ui.eventText.textContent = 'Deine Entscheidung wird jetzt ausgewertet. Das Ergebnis erscheint nach Ablauf des Timers.';
-    ui.eventMeta.textContent = `Ergebnis in: ${formatCountdown(leftMs)}`;
-  } else if (state.events.machineState === 'resolved') {
-    const outcome = state.events.resolvedOutcome; ui.eventTitle.textContent = outcome && outcome.eventTitle ? outcome.eventTitle : 'Ergebnis bereit';
-    ui.eventText.textContent = formatResolvedOutcome(outcome);
-    ui.eventMeta.textContent = 'Ergebnis bereit – schließe das Ereignis, um fortzufahren.';
-  } else if (state.events.machineState === 'cooldown') {
-const cooldownLeft = Number(state.events.cooldownUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
-    ui.eventTitle.textContent = 'Abklingzeit aktiv';
-    ui.eventText.textContent = 'Das Ereignissystem befindet sich in der Abklingzeit.';
-    ui.eventMeta.textContent = `Abklingzeit: ${formatCountdown(cooldownLeft)}`;
-  } else {
-    ui.eventTitle.textContent = 'Kein aktives Ereignis';
-    ui.eventText.textContent = 'Ein Ereignis erscheint, sobald der nächste Wurf erfolgreich ist.';
-ui.eventMeta.textContent = `Nächster Wurf: ${formatCountdown(Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0))}`;
-  }
-
-  if (ui.eventOptionList.childElementCount > 0) {
-    ui.eventOptionList.dataset.signature = '';
-    ui.eventOptionList.replaceChildren();
-  }
+  const viewModel = getEventUiViewModel();
+  const machineState = String(state.events.machineState || 'idle');
+  renderModernEventSheetContent(viewModel, machineState);
 }
 
 function warnMissingUiOnce(key) {
@@ -7916,6 +8592,7 @@ function renderAnalysisOverview() {
     return;
   }
 
+  const eventUiViewModel = getEventUiViewModel();
   const status = state.status || {};
   const environment = deriveEnvironmentReadout(state);
   const roots = deriveRootZoneReadout(environment, state);
@@ -8032,6 +8709,8 @@ function renderAnalysisOverview() {
         <p class="harvest-analysis-hero__reason">${escapeHtml(normalizeHarvestUiText(forecast.lastForecastReason || 'Die lokale Richtung bleibt derzeit vergleichsweise ruhig.', 'hero'))}</p>
       </section>
     ` : ''}
+    ${buildEventCenterMarkup(eventUiViewModel)}
+    ${buildRecentEventHistoryMarkup()}
     <section class="gs-analysis-overview-section">
       <div class="harvest-section-headline">
         <h3 class="figma-section-head">Was die Prognose gerade bewegt</h3>

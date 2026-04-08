@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "phase1-draft",
+  "notes": [
+    "Draft asset gap list generated from current catalog review and filename inference.",
+    "Priority favors likely player-facing popup/detail events first."
+  ],
+  "gaps": [
+    {
+      "eventId": "v2_outdoor_rain_series",
+      "priority": "P0",
+      "category": "disease",
+      "neededKinds": ["image", "icon"],
+      "reason": "No clear direct rain-series visual in current asset set.",
+      "suggestedFilenameBase": "event-outdoor-rain-series"
+    },
+    {
+      "eventId": "v2_outdoor_storm_front",
+      "priority": "P0",
+      "category": "environment",
+      "neededKinds": ["image", "icon"],
+      "reason": "No clear direct storm-front visual in current asset set.",
+      "suggestedFilenameBase": "event-outdoor-storm-front"
+    },
+    {
+      "eventId": "v2_special_weather_shift",
+      "priority": "P0",
+      "category": "environment",
+      "neededKinds": ["image", "icon"],
+      "reason": "Current assets do not provide a distinct weather-shift visual.",
+      "suggestedFilenameBase": "event-special-weather-shift"
+    },
+    {
+      "eventId": "drooping_leaves_warning",
+      "priority": "P0",
+      "category": "water",
+      "neededKinds": ["image", "icon"],
+      "reason": "Foundation warning is player-facing and currently falls back generically.",
+      "suggestedFilenameBase": "event-drooping-leaves-warning"
+    },
+    {
+      "eventId": "root_stress_followup",
+      "priority": "P0",
+      "category": "disease",
+      "neededKinds": ["image", "icon"],
+      "reason": "Foundation follow-up chain should have explicit root-zone stress coverage.",
+      "suggestedFilenameBase": "event-root-stress-followup"
+    },
+    {
+      "eventId": "v2_positive_ideal_mild_days",
+      "priority": "P1",
+      "category": "positive",
+      "neededKinds": ["image", "icon"],
+      "reason": "Positive event currently depends on broad positive fallback only.",
+      "suggestedFilenameBase": "event-positive-ideal-mild-days"
+    },
+    {
+      "eventId": "v2_positive_outdoor_sun_window",
+      "priority": "P1",
+      "category": "positive",
+      "neededKinds": ["image", "icon"],
+      "reason": "No direct outdoor sun-window reward asset exists yet.",
+      "suggestedFilenameBase": "event-positive-outdoor-sun-window"
+    },
+    {
+      "eventId": "v2_climate_veg_leaf_expansion",
+      "priority": "P1",
+      "category": "positive",
+      "neededKinds": ["image", "icon"],
+      "reason": "Growth-reward event has only weak indirect matches.",
+      "suggestedFilenameBase": "event-veg-leaf-expansion"
+    },
+    {
+      "eventId": "stable_growth_reward",
+      "priority": "P1",
+      "category": "positive",
+      "neededKinds": ["image", "icon"],
+      "reason": "Foundation reward would benefit from explicit earned-success coverage.",
+      "suggestedFilenameBase": "event-stable-growth-reward"
+    },
+    {
+      "eventId": "legacy-uncategorized-events",
+      "priority": "P1",
+      "category": "generic",
+      "neededKinds": ["metadata"],
+      "reason": "Several legacy events in data/events.json still need category cleanup before final asset coverage can be made consistent.",
+      "suggestedFilenameBase": null
+    }
+  ]
+}

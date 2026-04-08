@@ -2476,6 +2476,10 @@ window.GrowSimEvents = Object.freeze({
   resolveFoundationCandidateEvent
 });
 
+if (window.GrowSimEventEngine && typeof window.GrowSimEventEngine.registerLegacyRuntime === 'function') {
+  window.GrowSimEventEngine.registerLegacyRuntime(window.GrowSimEvents);
+}
+
 window.GrowSimEventAssets = Object.freeze({
   resolveEventImagePath,
   manifest: EVENT_ASSET_MANIFEST.slice()

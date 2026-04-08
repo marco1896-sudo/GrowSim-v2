@@ -660,29 +660,46 @@
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
-      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-        <div class="figma-top-player-title">Event-System</div>
-        <div class="figma-top-player-subtitle">Positive &amp; negative Varianten</div>
-      </section>
+      <div id="eventSheetModernRoot" class="event-sheet-modern-root hidden" aria-hidden="true"></div>
+      <div id="eventSheetLegacyRoot" class="event-sheet-legacy-root" aria-hidden="false">
+        <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+          <div class="figma-top-player-title">Event-System</div>
+          <div class="figma-top-player-subtitle">Positive &amp; negative Varianten</div>
+        </section>
 
-      <section class="figma-section-card figma-section-card--event">
-        <h3 class="figma-section-head">Negatives Event</h3>
-        <p id="eventStateBadge" class="sheet-badge">Status: inaktiv</p>
-        <div id="eventImageWrap" class="event-visual hidden" aria-hidden="true">
-          <img id="eventImage" class="event-visual-image" alt="">
-        </div>
-        <h3 id="eventTitle">Kein aktives Ereignis</h3>
-        <p id="eventText">Ereignisdetails erscheinen hier, sobald ein Ereignis aktiv ist.</p>
-        <p id="eventMeta" class="sheet-note">Abklingzeit: bereit</p>
-        <div id="eventOptionList" class="event-option-list"></div>
-      </section>
+        <section class="figma-section-card figma-section-card--event">
+          <h3 class="figma-section-head">Negatives Event</h3>
+          <p id="eventStateBadge" class="sheet-badge">Status: inaktiv</p>
+          <div id="eventImageWrap" class="event-visual hidden" aria-hidden="true" data-kind="placeholder" data-origin="">
+            <div class="event-visual-frame">
+              <img id="eventImage" class="event-visual-image" alt="">
+              <div id="eventVisualPlaceholder" class="event-visual-placeholder hidden" aria-hidden="true">
+                <span id="eventVisualPlaceholderGlyph" class="event-visual-placeholder-glyph">E</span>
+                <span id="eventVisualPlaceholderLabel" class="event-visual-placeholder-label">Event</span>
+              </div>
+              <span id="eventVisualStateBadge" class="event-visual-state-badge hidden" aria-hidden="true">Warnung</span>
+              <span id="eventVisualOriginBadge" class="event-visual-origin-badge hidden" aria-hidden="true">Event Visual</span>
+            </div>
+            <div class="event-visual-caption">
+              <strong id="eventVisualCaptionTitle" class="event-visual-caption-title">Event Visual</strong>
+              <span id="eventVisualCaptionMeta" class="event-visual-caption-meta">Diagnose-Visual</span>
+            </div>
+          </div>
+          <h3 id="eventTitle">Kein aktives Ereignis</h3>
+          <p id="eventText">Ereignisdetails erscheinen hier, sobald ein Ereignis aktiv ist.</p>
+          <p id="eventMeta" class="sheet-note">Abklingzeit: bereit</p>
+          <div id="eventInsightBlock" class="event-shadow-insight hidden" aria-hidden="true"></div>
+          <div id="eventOptionList" class="event-option-list"></div>
+          <div id="eventHistorySnapshotBlock" class="event-history-slot hidden" aria-hidden="true"></div>
+        </section>
 
-      <section class="figma-section-card figma-section-card--event-positive" aria-hidden="true">
-        <h3 class="figma-section-head">Positives Event</h3>
-        <p class="sheet-note">Vitalitätsschub: optimale Bedingungen erkannt.</p>
-        <div class="figma-static-row"><span>Bonus übernehmen</span><strong class="value_green">+12%</strong></div>
-        <div class="figma-static-row"><span>Stabil weiterfahren</span><span class="subtitle">Sicher</span></div>
-      </section>
+        <section class="figma-section-card figma-section-card--event-positive" aria-hidden="true">
+          <h3 class="figma-section-head">Positives Event</h3>
+          <p class="sheet-note">Vitalitätsschub: optimale Bedingungen erkannt.</p>
+          <div class="figma-static-row"><span>Bonus übernehmen</span><strong class="value_green">+12%</strong></div>
+          <div class="figma-static-row"><span>Stabil weiterfahren</span><span class="subtitle">Sicher</span></div>
+        </section>
+      </div>
     </div>
   </section>
 
@@ -1158,6 +1175,21 @@
       { src: 'src/events/eventMemory.js' },
       { src: 'src/events/eventAnalysis.js' },
       { src: 'src/events/eventResolver.js' },
+      { src: 'src/events/eventShared.js' },
+      { src: 'src/events/eventFeatureFlag.js' },
+      { src: 'src/events/eventCooldowns.js' },
+      { src: 'src/events/eventContradictions.js' },
+      { src: 'src/events/eventEligibility.js' },
+      { src: 'src/events/eventPressure.js' },
+      { src: 'src/events/eventActivation.js' },
+      { src: 'src/events/eventEscalation.js' },
+      { src: 'src/events/eventResolution.js' },
+      { src: 'src/events/eventRewards.js' },
+      { src: 'src/events/eventChains.js' },
+      { src: 'src/events/eventAssets.js' },
+      { src: 'src/events/eventAnalysisRuntime.js' },
+      { src: 'src/events/eventPersistenceAdapter.js' },
+      { src: 'src/events/eventEngine.js' },
       { src: 'events.js' },
       { src: 'ui.js' },
       { src: 'src/harvest/harvestModel.js' },

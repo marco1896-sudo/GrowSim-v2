@@ -1335,6 +1335,19 @@ function explainActionFailure(reason) {
 }
 
 function renderEventSheet() {
+  if (isModernEventPresentationExclusiveActive()) {
+    if (ui.eventSheet) {
+      ui.eventSheet.classList.add('event-sheet--legacy-suppressed');
+      ui.eventSheet.setAttribute('data-legacy-render-suppressed', 'true');
+    }
+    return;
+  }
+
+  if (ui.eventSheet) {
+    ui.eventSheet.classList.remove('event-sheet--legacy-suppressed');
+    ui.eventSheet.removeAttribute('data-legacy-render-suppressed');
+  }
+
   if (state.ui.openSheet !== 'event' && state.events.machineState !== 'activeEvent') {
     return;
   }
@@ -1392,6 +1405,15 @@ function renderEventSheet() {
     ui.eventOptionList.dataset.signature = '';
     ui.eventOptionList.replaceChildren();
   }
+}
+
+function isModernEventPresentationExclusiveActive() {
+  if (window.__GS_EVENT_UI_EXCLUSIVE_ACTIVE === true) {
+    return true;
+  }
+
+  const eventSheet = ui.eventSheet || document.getElementById('eventSheet');
+  return Boolean(eventSheet && eventSheet.dataset && eventSheet.dataset.eventUiMode === 'modern-exclusive');
 }
 
 function warnMissingUiOnce(key) {
