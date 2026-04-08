@@ -124,6 +124,7 @@ function cacheUi() {
   ui.openDiagnosisBtn = document.getElementById('openDiagnosisBtn');
   ui.eventsActionBtn = document.getElementById('eventsActionBtn');
   ui.menuToggleBtn = document.getElementById('menuToggleBtn');
+  ui.menuToggleRewardHint = document.getElementById('menuToggleRewardHint');
   ui.homeClimateCard = document.getElementById('homeClimateCard');
   ui.envCtrlTemp = document.getElementById('envCtrlTemp');
   ui.envCtrlHumidity = document.getElementById('envCtrlHumidity');
@@ -171,6 +172,7 @@ function cacheUi() {
   ui.menuAboutBtn = document.getElementById('menuAboutBtn');
   ui.menuAchievementsBtn = document.getElementById('menuAchievementsBtn');
   ui.menuLeaderboardBtn = document.getElementById('menuLeaderboardBtn');
+  ui.menuLeaderboardRewardHint = document.getElementById('menuLeaderboardRewardHint');
   ui.leaderboardSheetTitle = document.getElementById('leaderboardSheetTitle');
   ui.leaderboardSheetSubtitle = document.getElementById('leaderboardSheetSubtitle');
   ui.leaderboardSheetStatus = document.getElementById('leaderboardSheetStatus');
@@ -179,6 +181,9 @@ function cacheUi() {
   ui.leaderboardMeCard = document.getElementById('leaderboardMeCard');
   ui.leaderboardTopList = document.getElementById('leaderboardTopList');
   ui.leaderboardAroundMeList = document.getElementById('leaderboardAroundMeList');
+  ui.leaderboardRewardsStatus = document.getElementById('leaderboardRewardsStatus');
+  ui.leaderboardRewardsSummary = document.getElementById('leaderboardRewardsSummary');
+  ui.leaderboardRewardsList = document.getElementById('leaderboardRewardsList');
   ui.menuDialog = document.getElementById('menuDialog');
   ui.menuDialogTitle = document.getElementById('menuDialogTitle');
   ui.menuDialogText = document.getElementById('menuDialogText');
@@ -274,6 +279,9 @@ function cacheUi() {
   ui.runSummaryHarvestRows = document.getElementById('runSummaryHarvestRows');
   ui.runSummaryHarvestBests = document.getElementById('runSummaryHarvestBests');
   ui.runSummaryHarvestMotivation = document.getElementById('runSummaryHarvestMotivation');
+  ui.runSummaryRewardsBlock = document.getElementById('runSummaryRewardsBlock');
+  ui.runSummaryRewardsHint = document.getElementById('runSummaryRewardsHint');
+  ui.runSummaryRewardsList = document.getElementById('runSummaryRewardsList');
   ui.runSummaryUnlocks = document.getElementById('runSummaryUnlocks');
   ui.runSummaryFinalizeBtn = document.getElementById('runSummaryFinalizeBtn');
   ui.runSummaryNewRunBtn = document.getElementById('runSummaryNewRunBtn');
@@ -333,6 +341,12 @@ function bindUi() {
   }
   if (ui.runSummaryAnalyzeBtn) {
     ui.runSummaryAnalyzeBtn.addEventListener('click', onRunSummaryAnalyzeClick);
+  }
+  if (ui.leaderboardRewardsList) {
+    ui.leaderboardRewardsList.addEventListener('click', handleRewardClaimButtonClick);
+  }
+  if (ui.runSummaryRewardsList) {
+    ui.runSummaryRewardsList.addEventListener('click', handleRewardClaimButtonClick);
   }
   if (ui.harvestForecastWidget) {
     ui.harvestForecastWidget.addEventListener('click', () => {
@@ -876,7 +890,15 @@ function ensureRequiredUi() {
     'leaderboardCategoryQualityBtn',
     'leaderboardMeCard',
     'leaderboardTopList',
-    'leaderboardAroundMeList'
+    'leaderboardAroundMeList',
+    'leaderboardRewardsStatus',
+    'leaderboardRewardsSummary',
+    'leaderboardRewardsList',
+    'runSummaryRewardsBlock',
+    'runSummaryRewardsHint',
+    'runSummaryRewardsList',
+    'menuToggleRewardHint',
+    'menuLeaderboardRewardHint'
   ]);
   const requiredKeys = [
     'phaseCard', 'phaseCardTitle', 'phaseCardCycle', 'phaseCardSubtitle', 'phaseProgressFill', 'phaseProgressMarker', 'phaseProgress',

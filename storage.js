@@ -1464,6 +1464,16 @@ function resetStateToDefaults() {
       aroundMeEntries: [],
       meEntry: null,
       lastFetchedAt: null
+    },
+    rewards: {
+      rewardsList: [],
+      rewardsSummary: null,
+      rewardFetchState: 'idle',
+      rewardClaimState: 'idle',
+      lastClaimedReward: null,
+      rewardError: '',
+      claimInFlightGrantId: '',
+      lastFetchedAt: null
     }
   };
 
@@ -1769,6 +1779,27 @@ function ensureStateIntegrity(nowMs) {
     : null;
   state.ui.leaderboard.lastFetchedAt = Number.isFinite(Number(state.ui.leaderboard.lastFetchedAt))
     ? Number(state.ui.leaderboard.lastFetchedAt)
+    : null;
+  if (!state.ui.rewards || typeof state.ui.rewards !== 'object') {
+    state.ui.rewards = {};
+  }
+  state.ui.rewards.rewardsList = Array.isArray(state.ui.rewards.rewardsList) ? state.ui.rewards.rewardsList.slice(0, 12) : [];
+  state.ui.rewards.rewardsSummary = state.ui.rewards.rewardsSummary && typeof state.ui.rewards.rewardsSummary === 'object'
+    ? state.ui.rewards.rewardsSummary
+    : null;
+  state.ui.rewards.rewardFetchState = ['idle', 'loading', 'ready', 'error'].includes(String(state.ui.rewards.rewardFetchState || '').trim())
+    ? String(state.ui.rewards.rewardFetchState).trim()
+    : 'idle';
+  state.ui.rewards.rewardClaimState = ['idle', 'claiming', 'success', 'error'].includes(String(state.ui.rewards.rewardClaimState || '').trim())
+    ? String(state.ui.rewards.rewardClaimState).trim()
+    : 'idle';
+  state.ui.rewards.lastClaimedReward = state.ui.rewards.lastClaimedReward && typeof state.ui.rewards.lastClaimedReward === 'object'
+    ? state.ui.rewards.lastClaimedReward
+    : null;
+  state.ui.rewards.rewardError = typeof state.ui.rewards.rewardError === 'string' ? state.ui.rewards.rewardError.trim() : '';
+  state.ui.rewards.claimInFlightGrantId = typeof state.ui.rewards.claimInFlightGrantId === 'string' ? state.ui.rewards.claimInFlightGrantId.trim() : '';
+  state.ui.rewards.lastFetchedAt = Number.isFinite(Number(state.ui.rewards.lastFetchedAt))
+    ? Number(state.ui.rewards.lastFetchedAt)
     : null;
   if (typeof state.ui.deathOverlayOpen !== 'boolean') {
     state.ui.deathOverlayOpen = false;

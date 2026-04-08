@@ -121,6 +121,7 @@
               </div>
               <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
                 <img src="assets/ui/icons/menu.svg" alt="" aria-hidden="true">
+                <span id="menuToggleRewardHint" class="reward-hint-dot reward-hint-dot--menu hidden" aria-hidden="true"></span>
                 <span class="visually-hidden">Menü öffnen</span>
               </button>
             </div>
@@ -824,6 +825,15 @@
         </div>
         <div id="leaderboardAroundMeList" class="leaderboard-entry-list" aria-live="polite"></div>
       </section>
+
+      <section class="figma-section-card leaderboard-section leaderboard-reward-panel">
+        <div class="leaderboard-section-head">
+          <h3 class="figma-section-head">Weekly-Belohnungen</h3>
+          <span id="leaderboardRewardsStatus">Nur verifiziert</span>
+        </div>
+        <div id="leaderboardRewardsSummary" class="leaderboard-reward-summary" aria-live="polite"></div>
+        <div id="leaderboardRewardsList" class="leaderboard-reward-list" aria-live="polite"></div>
+      </section>
     </div>
   </section>
 
@@ -966,6 +976,11 @@
           <h4>Run-Moment</h4>
           <div id="runSummaryHarvestMoments" class="run-summary-list" aria-live="polite"></div>
         </section>
+        <section id="runSummaryRewardsBlock" class="run-summary-harvest-rewards hidden" aria-hidden="true">
+          <h4>Weekly-Belohnung</h4>
+          <p id="runSummaryRewardsHint" class="sheet-note">Nur verifizierte Ergebnisse können Weekly-Belohnungen freischalten.</p>
+          <div id="runSummaryRewardsList" class="run-summary-list" aria-live="polite"></div>
+        </section>
         <div id="runSummaryHarvestBests" class="run-summary-list run-summary-list--unlock run-summary-harvest-bests" aria-live="polite"></div>
         <p id="runSummaryHarvestMotivation" class="run-summary-harvest-motivation">Mit einem sauberen nächsten Hebel ist noch mehr drin.</p>
       </section>
@@ -1056,7 +1071,7 @@
 
       <div class="menu-quick-actions">
         <button id="menuAchievementsBtn" class="ghost-btn hidden" type="button" disabled aria-disabled="true" aria-hidden="true" title="Im aktuellen Build noch nicht freigeschaltet.">Home</button>
-        <button id="menuLeaderboardBtn" class="ghost-btn" type="button" aria-disabled="false" aria-hidden="false" title="Öffnet das Weekly-Leaderboard.">Leaderboard</button>
+        <button id="menuLeaderboardBtn" class="ghost-btn reward-entry-hint-anchor" type="button" aria-disabled="false" aria-hidden="false" title="Öffnet das Weekly-Leaderboard.">Leaderboard<span id="menuLeaderboardRewardHint" class="reward-hint-dot reward-hint-dot--entry hidden" aria-hidden="true"></span></button>
         <button id="menuCloseBtn" class="action-btn action-primary" type="button">Schließen</button>
       </div>
     </div>

@@ -447,6 +447,16 @@ const state = {
       meEntry: null,
       lastFetchedAt: null
     },
+    rewards: {
+      rewardsList: [],
+      rewardsSummary: null,
+      rewardFetchState: 'idle',
+      rewardClaimState: 'idle',
+      lastClaimedReward: null,
+      rewardError: '',
+      claimInFlightGrantId: '',
+      lastFetchedAt: null
+    },
     statDetailKey: null
   },
   lastEventId: null,
@@ -480,6 +490,7 @@ const HARVEST_VERIFICATION_POLL_INTERVAL_MS = 7000;
 const HARVEST_VERIFICATION_MAX_ATTEMPTS = 8;
 const LEADERBOARD_FETCH_COOLDOWN_MS = 45 * 1000;
 const LEADERBOARD_TOP_LIMIT = 10;
+const REWARDS_FETCH_COOLDOWN_MS = 45 * 1000;
 const harvestBackendRuntime = {
   sessionPromise: null,
   submissionPromise: null,
@@ -491,6 +502,10 @@ const harvestBackendRuntime = {
 const leaderboardRuntime = {
   fetchPromise: null,
   requestKey: ''
+};
+const rewardsRuntime = {
+  fetchPromise: null,
+  claimPromise: null
 };
 
 window.__gsState = state;
@@ -1331,6 +1346,153 @@ function ensureLeaderboardUiState(stateLike = state) {
   return targetState.ui.leaderboard;
 }
 
+function getRewardsUiDefaults() {
+  return {
+    rewardsList: [],
+    rewardsSummary: null,
+    rewardFetchState: 'idle',
+    rewardClaimState: 'idle',
+    lastClaimedReward: null,
+    rewardError: '',
+    claimInFlightGrantId: '',
+    lastFetchedAt: null
+  };
+}
+
+function normalizeRewardSummary(summaryLike) {
+  if (!summaryLike || typeof summaryLike !== 'object') {
+    return null;
+  }
+  return {
+    claimableCount: Number.isFinite(Number(summaryLike.claimableCount))
+      ? Math.max(0, Math.trunc(Number(summaryLike.claimableCount)))
+      : 0,
+    claimedCount: Number.isFinite(Number(summaryLike.claimedCount))
+      ? Math.max(0, Math.trunc(Number(summaryLike.claimedCount)))
+      : 0,
+    totalCount: Number.isFinite(Number(summaryLike.totalCount))
+      ? Math.max(0, Math.trunc(Number(summaryLike.totalCount)))
+      : 0,
+    periodKey: String(summaryLike.periodKey || '').trim(),
+    scope: String(summaryLike.scope || 'weekly').trim() || 'weekly',
+    message: String(summaryLike.message || '').trim()
+  };
+}
+
+function normalizeRewardEntry(entryLike) {
+  if (!entryLike || typeof entryLike !== 'object') {
+    return null;
+  }
+  const entry = entryLike;
+  const status = String(entry.status || '').trim().toLowerCase();
+  const claimState = String(entry.claimState || '').trim().toLowerCase();
+  const claimable = entry.claimable === true
+    || status === 'claimable'
+    || claimState === 'claimable'
+    || status === 'available';
+  const claimed = entry.claimed === true
+    || status === 'claimed'
+    || claimState === 'claimed'
+    || Boolean(entry.claimedAt);
+  const rewardType = String(entry.rewardType || entry.type || '').trim();
+  return {
+    grantId: String(entry.grantId || entry.id || '').trim(),
+    title: String(entry.title || entry.label || 'Weekly-Belohnung').trim(),
+    subtitle: String(entry.subtitle || entry.description || '').trim(),
+    valueText: String(entry.valueText || entry.value || '').trim(),
+    rewardType,
+    scope: String(entry.scope || 'weekly').trim() || 'weekly',
+    periodKey: String(entry.periodKey || '').trim(),
+    claimable: Boolean(claimable && !claimed),
+    claimed: Boolean(claimed),
+    claimedAt: String(entry.claimedAt || '').trim(),
+    verificationStatus: String(entry.verificationStatus || 'verified').trim()
+  };
+}
+
+function normalizeRewardsList(payloadLike) {
+  const payload = payloadLike && typeof payloadLike === 'object' ? payloadLike : {};
+  const entries = extractLeaderboardPayloadEntries(payload);
+  return entries
+    .map((entry) => normalizeRewardEntry(entry))
+    .filter((entry) => entry && entry.grantId)
+    .slice(0, 12);
+}
+
+function ensureRewardsUiState(stateLike = state) {
+  const targetState = stateLike && typeof stateLike === 'object' ? stateLike : state;
+  if (!targetState.ui || typeof targetState.ui !== 'object') {
+    targetState.ui = {};
+  }
+  const defaults = getRewardsUiDefaults();
+  const current = targetState.ui.rewards && typeof targetState.ui.rewards === 'object'
+    ? targetState.ui.rewards
+    : {};
+  const fetchState = ['idle', 'loading', 'ready', 'error'].includes(String(current.rewardFetchState || '').trim())
+    ? String(current.rewardFetchState).trim()
+    : defaults.rewardFetchState;
+  const claimState = ['idle', 'claiming', 'success', 'error'].includes(String(current.rewardClaimState || '').trim())
+    ? String(current.rewardClaimState).trim()
+    : defaults.rewardClaimState;
+  targetState.ui.rewards = {
+    ...defaults,
+    ...current,
+    rewardsList: Array.isArray(current.rewardsList)
+      ? current.rewardsList.map((entry) => normalizeRewardEntry(entry)).filter(Boolean).slice(0, 12)
+      : [],
+    rewardsSummary: normalizeRewardSummary(current.rewardsSummary),
+    rewardFetchState: fetchState,
+    rewardClaimState: claimState,
+    lastClaimedReward: normalizeRewardEntry(current.lastClaimedReward),
+    rewardError: typeof current.rewardError === 'string' ? current.rewardError.trim() : '',
+    claimInFlightGrantId: typeof current.claimInFlightGrantId === 'string' ? current.claimInFlightGrantId.trim() : '',
+    lastFetchedAt: Number.isFinite(Number(current.lastFetchedAt)) ? Number(current.lastFetchedAt) : null
+  };
+  return targetState.ui.rewards;
+}
+
+function getClaimableWeeklyRewardsCount() {
+  if (!isAuthSessionValid() || !readAuthToken()) {
+    return 0;
+  }
+  const rewardsState = ensureRewardsUiState(state);
+  if (rewardsState.rewardFetchState !== 'ready') {
+    return 0;
+  }
+  return rewardsState.rewardsList.reduce((count, reward) => {
+    const isWeekly = String(reward && reward.scope || 'weekly').trim().toLowerCase() === 'weekly';
+    const isClaimable = Boolean(reward && reward.claimable);
+    return isWeekly && isClaimable ? count + 1 : count;
+  }, 0);
+}
+
+function renderRewardHintIndicators() {
+  const claimableCount = getClaimableWeeklyRewardsCount();
+  const hasClaimableRewards = claimableCount > 0;
+  const menuToggleHintNode = uiNode('menuToggleRewardHint', 'menuToggleRewardHint');
+  const menuLeaderboardHintNode = uiNode('menuLeaderboardRewardHint', 'menuLeaderboardRewardHint');
+
+  if (ui.menuToggleBtn) {
+    ui.menuToggleBtn.classList.toggle('has-reward-hint', hasClaimableRewards);
+    ui.menuToggleBtn.setAttribute('aria-label', hasClaimableRewards
+      ? `Menü öffnen. ${claimableCount} claimbare Weekly-Belohnung${claimableCount === 1 ? '' : 'en'}`
+      : 'Menü öffnen');
+  }
+
+  if (menuToggleHintNode) {
+    menuToggleHintNode.classList.toggle('hidden', !hasClaimableRewards);
+    menuToggleHintNode.setAttribute('aria-hidden', String(!hasClaimableRewards));
+  }
+
+  if (ui.menuLeaderboardBtn) {
+    ui.menuLeaderboardBtn.classList.toggle('has-reward-hint', hasClaimableRewards);
+  }
+  if (menuLeaderboardHintNode) {
+    menuLeaderboardHintNode.classList.toggle('hidden', !hasClaimableRewards);
+    menuLeaderboardHintNode.setAttribute('aria-hidden', String(!hasClaimableRewards));
+  }
+}
+
 function normalizeLeaderboardSnapshot(snapshotLike) {
   if (!snapshotLike || typeof snapshotLike !== 'object') {
     return null;
@@ -1578,6 +1740,246 @@ function mapLeaderboardError(errorLike, fallbackMessage = '') {
   return mapped;
 }
 
+function mapRewardError(errorLike, fallbackMessage = '') {
+  const mapped = mapHarvestBackendError(errorLike, fallbackMessage || 'Belohnungen konnten nicht geladen werden.');
+  if (mapped.code === 'unauthorized') {
+    return {
+      code: mapped.code,
+      message: 'Für verifizierte Weekly-Belohnungen musst du angemeldet sein.'
+    };
+  }
+  if (mapped.code === 'validation_failed') {
+    return {
+      code: mapped.code,
+      message: 'Diese Belohnung konnte nicht eingelöst werden.'
+    };
+  }
+  if (mapped.code === 'already_claimed') {
+    return {
+      code: mapped.code,
+      message: 'Diese Belohnung wurde bereits eingelöst.'
+    };
+  }
+  return mapped;
+}
+
+async function fetchRewardsEndpoint(path, options = {}) {
+  try {
+    const response = await appApiFetch(path, {
+      method: options.method || 'GET',
+      headers: buildHarvestApiHeaders(options.headers || {}),
+      ...options
+    });
+    const payload = await safeReadJson(response);
+    if (!response.ok) {
+      const mappedError = mapRewardError({
+        status: response.status,
+        code: payload && payload.code,
+        message: payload && payload.message
+      }, options.fallbackMessage || 'Belohnungen sind aktuell nicht erreichbar.');
+      return { ok: false, error: mappedError, payload };
+    }
+    return { ok: true, payload };
+  } catch (error) {
+    return {
+      ok: false,
+      error: mapRewardError({ network: true, message: error && error.message ? error.message : '' }, options.fallbackMessage || 'Belohnungen sind aktuell nicht erreichbar.'),
+      payload: null
+    };
+  }
+}
+
+function getRewardDisplayTitle(reward) {
+  const safe = reward && typeof reward === 'object' ? reward : {};
+  if (safe.title) {
+    return String(safe.title);
+  }
+  return 'Weekly-Belohnung';
+}
+
+async function fetchRewardsBundle(options = {}) {
+  const rewardsState = ensureRewardsUiState(state);
+  const force = Boolean(options.force);
+  if (rewardsRuntime.fetchPromise && !force) {
+    return rewardsRuntime.fetchPromise;
+  }
+  if (!isAuthSessionValid() || !readAuthToken()) {
+    rewardsState.rewardsList = [];
+    rewardsState.rewardsSummary = null;
+    rewardsState.rewardFetchState = 'idle';
+    rewardsState.rewardError = '';
+    rewardsState.claimInFlightGrantId = '';
+    renderLeaderboardSheet(true);
+    renderRunSummaryOverlay();
+    schedulePersistState(true);
+    return null;
+  }
+  if (!force && rewardsState.lastFetchedAt && (Date.now() - rewardsState.lastFetchedAt) < REWARDS_FETCH_COOLDOWN_MS && rewardsState.rewardFetchState === 'ready') {
+    return {
+      rewardsList: rewardsState.rewardsList,
+      rewardsSummary: rewardsState.rewardsSummary
+    };
+  }
+
+  rewardsState.rewardFetchState = 'loading';
+  rewardsState.rewardError = '';
+  renderLeaderboardSheet(true);
+  renderRunSummaryOverlay();
+  schedulePersistState(true);
+
+  rewardsRuntime.fetchPromise = (async () => {
+    const [listResponse, summaryResponse] = await Promise.all([
+      fetchRewardsEndpoint('/v1/rewards'),
+      fetchRewardsEndpoint('/v1/rewards/summary')
+    ]);
+
+    if (!listResponse.ok && !summaryResponse.ok) {
+      const message = (listResponse.error && listResponse.error.message)
+        || (summaryResponse.error && summaryResponse.error.message)
+        || 'Belohnungen sind aktuell nicht erreichbar.';
+      rewardsState.rewardFetchState = 'error';
+      rewardsState.rewardError = message;
+      rewardsState.rewardsList = [];
+      rewardsState.rewardsSummary = null;
+      renderLeaderboardSheet(true);
+      renderRunSummaryOverlay();
+      schedulePersistState(true);
+      return null;
+    }
+
+    rewardsState.rewardsList = listResponse.ok ? normalizeRewardsList(listResponse.payload) : [];
+    rewardsState.rewardsSummary = summaryResponse.ok
+      ? normalizeRewardSummary(summaryResponse.payload && typeof summaryResponse.payload === 'object'
+        ? (summaryResponse.payload.summary || summaryResponse.payload)
+        : null)
+      : null;
+    rewardsState.rewardFetchState = 'ready';
+    rewardsState.rewardError = listResponse.ok ? '' : String((listResponse.error && listResponse.error.message) || '');
+    rewardsState.lastFetchedAt = Date.now();
+    renderLeaderboardSheet(true);
+    renderRunSummaryOverlay();
+    schedulePersistState(true);
+    return {
+      rewardsList: rewardsState.rewardsList,
+      rewardsSummary: rewardsState.rewardsSummary
+    };
+  })().finally(() => {
+    rewardsRuntime.fetchPromise = null;
+  });
+
+  return rewardsRuntime.fetchPromise;
+}
+
+function isRewardClaimedResponse(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return false;
+  }
+  const status = String(payload.status || payload.claimState || '').trim().toLowerCase();
+  return status === 'claimed' || status === 'already_claimed' || Boolean(payload.claimedAt) || Boolean(payload.alreadyClaimed);
+}
+
+async function claimRewardGrant(grantId, options = {}) {
+  const safeGrantId = String(grantId || '').trim();
+  if (!safeGrantId) {
+    return null;
+  }
+  const rewardsState = ensureRewardsUiState(state);
+  if (!isAuthSessionValid() || !readAuthToken()) {
+    rewardsState.rewardClaimState = 'error';
+    rewardsState.rewardError = 'Für das Einlösen musst du angemeldet sein.';
+    renderLeaderboardSheet(true);
+    renderRunSummaryOverlay();
+    schedulePersistState(true);
+    return null;
+  }
+  if (rewardsRuntime.claimPromise) {
+    return rewardsRuntime.claimPromise;
+  }
+
+  rewardsState.rewardClaimState = 'claiming';
+  rewardsState.claimInFlightGrantId = safeGrantId;
+  rewardsState.rewardError = '';
+  renderLeaderboardSheet(true);
+  renderRunSummaryOverlay();
+  schedulePersistState(true);
+
+  rewardsRuntime.claimPromise = (async () => {
+    const response = await fetchRewardsEndpoint(`/v1/rewards/${encodeURIComponent(safeGrantId)}/claim`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+      fallbackMessage: 'Belohnung konnte nicht eingelöst werden.'
+    });
+    if (!response.ok) {
+      const isAlreadyClaimed = response.error && response.error.code === 'already_claimed';
+      rewardsState.rewardClaimState = isAlreadyClaimed ? 'success' : 'error';
+      rewardsState.rewardError = isAlreadyClaimed
+        ? 'Diese Belohnung wurde bereits eingelöst.'
+        : String((response.error && response.error.message) || 'Belohnung konnte nicht eingelöst werden.');
+      rewardsState.claimInFlightGrantId = '';
+      await fetchRewardsBundle({ force: true });
+      return null;
+    }
+
+    const rewardPayload = response.payload && typeof response.payload === 'object'
+      ? (response.payload.reward || response.payload.grant || response.payload)
+      : null;
+    const normalizedReward = normalizeRewardEntry(rewardPayload) || normalizeRewardEntry({ grantId: safeGrantId, claimed: true, claimable: false });
+    rewardsState.rewardClaimState = 'success';
+    rewardsState.rewardError = '';
+    rewardsState.claimInFlightGrantId = '';
+    rewardsState.lastClaimedReward = normalizedReward;
+    await fetchRewardsBundle({ force: true });
+    if (options && options.showDialog) {
+      openMenuDialog({
+        title: 'Belohnung eingelöst',
+        message: `${getRewardDisplayTitle(normalizedReward)} wurde gutgeschrieben.`,
+        cancelLabel: 'Schließen',
+        confirmLabel: '',
+        variant: 'mission-reward',
+        kicker: 'Weekly Reward',
+        rewards: [
+          {
+            tone: 'gold',
+            icon: '✓',
+            value: normalizedReward.valueText || 'Verifiziert',
+            label: normalizedReward.title || 'Weekly-Belohnung'
+          }
+        ]
+      });
+    }
+    return normalizedReward;
+  })().catch((error) => {
+    rewardsState.rewardClaimState = 'error';
+    rewardsState.rewardError = String(error && error.message ? error.message : 'Belohnung konnte nicht eingelöst werden.');
+    rewardsState.claimInFlightGrantId = '';
+    renderLeaderboardSheet(true);
+    renderRunSummaryOverlay();
+    schedulePersistState(true);
+    return null;
+  }).finally(() => {
+    rewardsRuntime.claimPromise = null;
+  });
+
+  return rewardsRuntime.claimPromise;
+}
+
+function handleRewardClaimButtonClick(event) {
+  const target = event && event.target ? event.target : null;
+  if (!target || typeof target.closest !== 'function') {
+    return;
+  }
+  const claimButton = target.closest('[data-reward-claim-grant]');
+  if (!claimButton) {
+    return;
+  }
+  const grantId = String(claimButton.getAttribute('data-reward-claim-grant') || '').trim();
+  if (!grantId) {
+    return;
+  }
+  const showDialog = claimButton.hasAttribute('data-reward-dialog');
+  void claimRewardGrant(grantId, { showDialog });
+}
+
 function extractLeaderboardPayloadEntries(payload) {
   if (Array.isArray(payload)) {
     return payload;
@@ -1591,7 +1993,9 @@ function extractLeaderboardPayloadEntries(payload) {
     payload.results,
     payload.data,
     payload.leaderboard,
-    payload.rows
+    payload.rows,
+    payload.rewards,
+    payload.grants
   ];
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) {
@@ -1889,6 +2293,145 @@ function renderLeaderboardEntryList(container, entries, options = {}) {
   }
 }
 
+function renderRewardCards(container, rewards, options = {}) {
+  if (!container) {
+    return;
+  }
+  container.replaceChildren();
+  const safeRewards = Array.isArray(rewards) ? rewards : [];
+  const claimInFlightGrantId = String(options.claimInFlightGrantId || '').trim();
+  if (!safeRewards.length) {
+    const empty = document.createElement('p');
+    empty.className = 'sheet-note leaderboard-empty-note';
+    empty.textContent = String(options.emptyText || 'Aktuell keine claimbaren Weekly-Belohnungen.');
+    container.appendChild(empty);
+    return;
+  }
+
+  for (const reward of safeRewards) {
+    const card = document.createElement('article');
+    card.className = `reward-entry-card${reward.claimed ? ' reward-entry-card--claimed' : ''}`;
+    const isClaiming = Boolean(claimInFlightGrantId && reward.grantId === claimInFlightGrantId);
+    const statusLabel = reward.claimed ? 'Bereits eingelöst' : (reward.claimable ? 'Claimbar' : 'Nicht claimbar');
+    const buttonHtml = reward.claimable
+      ? `<button class="action-btn action-primary reward-claim-btn" type="button" data-reward-claim-grant="${escapeHtml(reward.grantId)}"${options.dialog ? ' data-reward-dialog="1"' : ''}${isClaiming ? ' disabled aria-disabled="true"' : ''}>${isClaiming ? 'Wird eingelöst …' : 'Jetzt freischalten'}</button>`
+      : `<button class="ghost-btn reward-claim-btn" type="button" disabled aria-disabled="true">${escapeHtml(statusLabel)}</button>`;
+    card.innerHTML = `
+      <div class="reward-entry-card__head">
+        <strong>${escapeHtml(getRewardDisplayTitle(reward))}</strong>
+        <span>${escapeHtml(statusLabel)}</span>
+      </div>
+      <p class="sheet-note">${escapeHtml(reward.subtitle || 'Verifizierte Weekly-Belohnung.')}</p>
+      <div class="reward-entry-card__foot">
+        <span class="reward-entry-card__value">${escapeHtml(reward.valueText || 'Weekly')}</span>
+        ${buttonHtml}
+      </div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+function renderRewardsSummaryBlock() {
+  const rewardsState = ensureRewardsUiState(state);
+  const summaryNode = uiNode('leaderboardRewardsSummary', 'leaderboardRewardsSummary');
+  const listNode = uiNode('leaderboardRewardsList', 'leaderboardRewardsList');
+  const statusNode = uiNode('leaderboardRewardsStatus', 'leaderboardRewardsStatus');
+  const authIdentity = getAuthDisplayIdentity();
+
+  if (statusNode) {
+    if (!authIdentity) {
+      statusNode.textContent = 'Login erforderlich';
+    } else if (rewardsState.rewardFetchState === 'loading') {
+      statusNode.textContent = 'Wird geladen';
+    } else if (rewardsState.rewardError) {
+      statusNode.textContent = 'Aktuell nicht verfügbar';
+    } else {
+      const summary = rewardsState.rewardsSummary;
+      const claimable = summary && Number.isFinite(Number(summary.claimableCount)) ? Number(summary.claimableCount) : 0;
+      statusNode.textContent = claimable > 0 ? `${claimable} claimbar` : 'Kein Claim offen';
+    }
+  }
+
+  if (summaryNode) {
+    summaryNode.replaceChildren();
+    if (!authIdentity) {
+      const hint = document.createElement('p');
+      hint.className = 'sheet-note leaderboard-empty-note';
+      hint.textContent = 'Mit Login werden verifizierte Weekly-Belohnungen hier sichtbar.';
+      summaryNode.appendChild(hint);
+    } else if (rewardsState.rewardFetchState === 'loading') {
+      const hint = document.createElement('p');
+      hint.className = 'sheet-note leaderboard-empty-note';
+      hint.textContent = 'Belohnungen werden geladen …';
+      summaryNode.appendChild(hint);
+    } else if (rewardsState.rewardError) {
+      const hint = document.createElement('p');
+      hint.className = 'sheet-note leaderboard-empty-note';
+      hint.textContent = rewardsState.rewardError;
+      summaryNode.appendChild(hint);
+    } else {
+      const summary = rewardsState.rewardsSummary;
+      const line = document.createElement('p');
+      line.className = 'sheet-note leaderboard-empty-note';
+      if (!summary) {
+        line.textContent = 'Noch keine Weekly-Belohnungen für diesen Zeitraum.';
+      } else {
+        const claimable = Number(summary.claimableCount) || 0;
+        const claimed = Number(summary.claimedCount) || 0;
+        line.textContent = claimable > 0
+          ? `${claimable} verifizierte Weekly-Belohnung${claimable === 1 ? '' : 'en'} warten auf dich.`
+          : `${claimed} Weekly-Belohnung${claimed === 1 ? '' : 'en'} bereits eingelöst.`;
+      }
+      summaryNode.appendChild(line);
+    }
+  }
+
+  renderRewardCards(listNode, rewardsState.rewardsList, {
+    emptyText: authIdentity
+      ? 'Aktuell keine claimbaren Weekly-Belohnungen.'
+      : 'Ohne Login sind keine Weekly-Belohnungen sichtbar.',
+    dialog: true,
+    claimInFlightGrantId: rewardsState.claimInFlightGrantId
+  });
+}
+
+function renderRunSummaryRewardsBlock(harvestReadiness) {
+  const rewardsBlockNode = uiNode('runSummaryRewardsBlock', 'runSummaryRewardsBlock');
+  const rewardsHintNode = uiNode('runSummaryRewardsHint', 'runSummaryRewardsHint');
+  const rewardsListNode = uiNode('runSummaryRewardsList', 'runSummaryRewardsList');
+  if (!rewardsBlockNode || !rewardsListNode || !rewardsHintNode) {
+    return;
+  }
+
+  const rewardsState = ensureRewardsUiState(state);
+  const isVerified = harvestReadiness && harvestReadiness.verificationStatus === 'verified';
+  const authIdentity = getAuthDisplayIdentity();
+  const shouldShow = Boolean(isVerified && authIdentity);
+  rewardsBlockNode.classList.toggle('hidden', !shouldShow);
+  rewardsBlockNode.setAttribute('aria-hidden', String(!shouldShow));
+  if (!shouldShow) {
+    return;
+  }
+
+  if (rewardsState.rewardFetchState === 'loading') {
+    rewardsHintNode.textContent = 'Weekly-Belohnungen werden geladen …';
+  } else if (rewardsState.rewardError) {
+    rewardsHintNode.textContent = rewardsState.rewardError;
+  } else {
+    const summary = rewardsState.rewardsSummary;
+    const claimable = summary && Number.isFinite(Number(summary.claimableCount)) ? Number(summary.claimableCount) : 0;
+    rewardsHintNode.textContent = claimable > 0
+      ? 'Verifizierte Weekly-Belohnung bereit zum Einlösen.'
+      : 'Aktuell keine offene Weekly-Belohnung.';
+  }
+
+  renderRewardCards(rewardsListNode, rewardsState.rewardsList, {
+    emptyText: 'Aktuell keine claimbare Weekly-Belohnung.',
+    dialog: false,
+    claimInFlightGrantId: rewardsState.claimInFlightGrantId
+  });
+}
+
 function renderLeaderboardSheet(force = false) {
   const sheetNode = uiNode('leaderboardSheet', 'leaderboardSheet');
   if (!sheetNode || (!force && state.ui.openSheet !== 'leaderboard')) {
@@ -1963,6 +2506,7 @@ function renderLeaderboardSheet(force = false) {
       ? 'Sobald ein verifizierter Weekly-Eintrag vorliegt, erscheint hier dein Umfeld.'
       : 'Mit Login siehst du hier deine Position im direkten Umfeld.'
   });
+  renderRewardsSummaryBlock();
 }
 
 function getCanonicalHarvestForecast(snapshot = state) {
@@ -2818,6 +3362,7 @@ async function pollHarvestVerificationStatus(options = {}) {
     applyHarvestVerificationPayload(payload, { fromPoll: true });
     if (readiness.verificationStatus === 'verified') {
       void refreshRunLeaderboardSnapshot();
+      void fetchRewardsBundle({ force: true });
     }
     schedulePersistState(true);
     renderAll();
@@ -2951,6 +3496,7 @@ async function submitHarvestRunOutcomeIfPossible(options = {}) {
       applyHarvestVerificationPayload(payload, { fromPoll: false });
       if (readiness.verificationStatus === 'verified') {
         void refreshRunLeaderboardSnapshot({ force: true });
+        void fetchRewardsBundle({ force: true });
       }
       readiness.pendingSubmission = readiness.verificationStatus === 'submitted' || readiness.verificationStatus === 'provisional';
       schedulePersistState(true);
@@ -6419,6 +6965,7 @@ function renderGameMenu() {
     ui.menuDialog.setAttribute('aria-hidden', String(!dialogOpen));
   }
 
+  renderRewardHintIndicators();
   renderMenuDynamicRows();
 }
 
@@ -8255,6 +8802,7 @@ function openSheet(name) {
   } else if (name === 'leaderboard') {
     renderLeaderboardSheet(true);
     void fetchLeaderboardBundle({ category: ensureLeaderboardUiState(state).category, force: false });
+    void fetchRewardsBundle({ force: false });
   } else if (name === 'statDetail') {
     renderStatDetailSheet();
   }
@@ -8846,6 +9394,7 @@ function renderRunSummaryOverlay() {
   renderRunSummaryHarvestMetricRows(ui.runSummaryHarvestRows, primaryHarvestSummary);
   renderRunSummaryHarvestImpact(uiNode('runSummaryHarvestImpact', 'runSummaryHarvestImpact'), harvestSummary);
   renderRunSummaryHarvestMoments(uiNode('runSummaryHarvestMoments', 'runSummaryHarvestMoments'), harvestSummary);
+  renderRunSummaryRewardsBlock(harvestReadiness);
   const runSummaryHarvestMotivationNode = uiNode('runSummaryHarvestMotivation', 'runSummaryHarvestMotivation');
   if (runSummaryHarvestMotivationNode) {
     if (harvestReadiness.verificationStatus === 'verified' && verifiedHarvestResult) {
@@ -8891,6 +9440,9 @@ function renderRunSummaryOverlay() {
   }
   if (ui.runSummaryAnalyzeBtn) {
     ui.runSummaryAnalyzeBtn.textContent = isFinalizedSummary ? 'Analyse öffnen' : 'Analyse öffnen';
+  }
+  if (harvestReadiness && harvestReadiness.verificationStatus === 'verified' && isAuthSessionValid() && readAuthToken()) {
+    void fetchRewardsBundle({ force: false });
   }
 }
 

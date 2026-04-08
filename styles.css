@@ -5398,6 +5398,114 @@ body.panelized-ready :is(
   padding: 4px 0;
 }
 
+.leaderboard-reward-panel {
+  border-color: rgba(212, 175, 55, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0) 42%),
+    rgba(17, 20, 19, 0.9);
+}
+
+.leaderboard-reward-summary,
+.leaderboard-reward-list {
+  display: grid;
+  gap: 8px;
+}
+
+.reward-entry-card {
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(24, 27, 25, 0.96), rgba(15, 18, 17, 0.96));
+  padding: 10px 11px;
+  display: grid;
+  gap: 8px;
+}
+
+.reward-entry-card--claimed {
+  border-color: rgba(131, 233, 176, 0.24);
+  background:
+    radial-gradient(circle at top right, rgba(131, 233, 176, 0.11), rgba(131, 233, 176, 0) 38%),
+    linear-gradient(180deg, rgba(18, 34, 26, 0.96), rgba(12, 23, 18, 0.96));
+}
+
+.reward-entry-card__head,
+.reward-entry-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reward-entry-card__head strong {
+  color: rgba(246, 248, 242, 0.96);
+  font-size: 0.9rem;
+}
+
+.reward-entry-card__head span {
+  font-size: 0.7rem;
+  color: rgba(212, 223, 214, 0.64);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.reward-entry-card__value {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(58, 47, 20, 0.58);
+  color: #f3dfab;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reward-claim-btn {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 0.78rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.run-summary-harvest-rewards {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.reward-entry-hint-anchor,
+.home-menu-btn {
+  position: relative;
+}
+
+.reward-hint-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 240, 197, 0.96), rgba(212, 175, 55, 0.92) 58%, rgba(188, 148, 51, 0.94));
+  box-shadow:
+    0 0 0 2px rgba(18, 18, 16, 0.76),
+    0 0 10px rgba(212, 175, 55, 0.34);
+  pointer-events: none;
+}
+
+.reward-hint-dot--menu {
+  top: 5px;
+  right: 5px;
+}
+
+.reward-hint-dot--entry {
+  top: 5px;
+  right: 6px;
+}
+
 .harvest-mini-card {
   position: absolute;
   top: var(--home-left-harvest-top, calc(var(--home-safe-top, 0px) + 102px));
