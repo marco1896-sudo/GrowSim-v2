@@ -5482,6 +5482,12 @@ body.panelized-ready :is(
   position: relative;
 }
 
+.menu-entry-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 .reward-hint-dot {
   position: absolute;
   width: 8px;
@@ -5502,8 +5508,19 @@ body.panelized-ready :is(
 }
 
 .reward-hint-dot--entry {
-  top: 5px;
-  right: 6px;
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 7px;
+  height: 7px;
+  margin-left: 1px;
+}
+
+.menu-entry--reward-priority {
+  border-color: rgba(212, 175, 55, 0.24);
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0) 48%),
+    rgba(255, 255, 255, 0.03);
 }
 
 .harvest-mini-card {

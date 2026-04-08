@@ -1471,6 +1471,8 @@ function renderRewardHintIndicators() {
   const hasClaimableRewards = claimableCount > 0;
   const menuToggleHintNode = uiNode('menuToggleRewardHint', 'menuToggleRewardHint');
   const menuLeaderboardHintNode = uiNode('menuLeaderboardRewardHint', 'menuLeaderboardRewardHint');
+  const menuLeaderboardLabelNode = uiNode('menuLeaderboardLabel', 'menuLeaderboardLabel');
+  const menuLeaderboardSubtextNode = uiNode('menuLeaderboardSubtext', 'menuLeaderboardSubtext');
 
   if (ui.menuToggleBtn) {
     ui.menuToggleBtn.classList.toggle('has-reward-hint', hasClaimableRewards);
@@ -1486,10 +1488,25 @@ function renderRewardHintIndicators() {
 
   if (ui.menuLeaderboardBtn) {
     ui.menuLeaderboardBtn.classList.toggle('has-reward-hint', hasClaimableRewards);
+    ui.menuLeaderboardBtn.classList.toggle('menu-entry--reward-priority', hasClaimableRewards);
+    ui.menuLeaderboardBtn.setAttribute('title', hasClaimableRewards
+      ? `Öffnet Weekly-Leaderboard und claimbare Belohnungen (${claimableCount}).`
+      : 'Öffnet das Weekly-Leaderboard für verifizierte Ergebnisse.');
   }
   if (menuLeaderboardHintNode) {
     menuLeaderboardHintNode.classList.toggle('hidden', !hasClaimableRewards);
     menuLeaderboardHintNode.setAttribute('aria-hidden', String(!hasClaimableRewards));
+  }
+  if (menuLeaderboardLabelNode) {
+    menuLeaderboardLabelNode.textContent = hasClaimableRewards ? 'Leaderboard · Neu' : 'Leaderboard';
+    if (menuLeaderboardHintNode) {
+      menuLeaderboardLabelNode.appendChild(menuLeaderboardHintNode);
+    }
+  }
+  if (menuLeaderboardSubtextNode) {
+    menuLeaderboardSubtextNode.textContent = hasClaimableRewards
+      ? 'Claimbare Weekly-Belohnung verfügbar'
+      : 'Nur verifizierte Ergebnisse';
   }
 }
 
@@ -7012,7 +7029,6 @@ function renderMenuDynamicRows() {
     ui.menuLeaderboardBtn.setAttribute('aria-disabled', 'false');
     ui.menuLeaderboardBtn.classList.remove('hidden');
     ui.menuLeaderboardBtn.setAttribute('aria-hidden', 'false');
-    ui.menuLeaderboardBtn.setAttribute('title', 'Öffnet das Weekly-Leaderboard für verifizierte Ergebnisse.');
   }
 
   const meta = getCanonicalMeta(state);

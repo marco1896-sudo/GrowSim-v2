@@ -172,6 +172,8 @@ function cacheUi() {
   ui.menuAboutBtn = document.getElementById('menuAboutBtn');
   ui.menuAchievementsBtn = document.getElementById('menuAchievementsBtn');
   ui.menuLeaderboardBtn = document.getElementById('menuLeaderboardBtn');
+  ui.menuLeaderboardLabel = document.getElementById('menuLeaderboardLabel');
+  ui.menuLeaderboardSubtext = document.getElementById('menuLeaderboardSubtext');
   ui.menuLeaderboardRewardHint = document.getElementById('menuLeaderboardRewardHint');
   ui.leaderboardSheetTitle = document.getElementById('leaderboardSheetTitle');
   ui.leaderboardSheetSubtitle = document.getElementById('leaderboardSheetSubtitle');
@@ -898,6 +900,8 @@ function ensureRequiredUi() {
     'runSummaryRewardsHint',
     'runSummaryRewardsList',
     'menuToggleRewardHint',
+    'menuLeaderboardLabel',
+    'menuLeaderboardSubtext',
     'menuLeaderboardRewardHint'
   ]);
   const requiredKeys = [
