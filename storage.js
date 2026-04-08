@@ -718,6 +718,87 @@ function getCanonicalNotificationsSettings(snapshot) {
   return n;
 }
 
+const STORED_HARVEST_VERIFICATION_STATUSES = new Set([
+  'local_only',
+  'submitted',
+  'provisional',
+  'verified',
+  'rejected',
+  'under_review'
+]);
+
+function normalizeStoredHarvestVerificationResult(resultLike) {
+  if (!resultLike || typeof resultLike !== 'object') {
+    return null;
+  }
+
+  const result = resultLike;
+  const normalizeScore = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? Math.max(0, Math.min(100, Math.round(numeric * 100) / 100)) : null;
+  };
+  const normalizeText = (value, fallback = '') => {
+    return typeof value === 'string' ? value.trim() : fallback;
+  };
+
+  return {
+    harvestScore: normalizeScore(result.harvestScore),
+    yieldScore: normalizeScore(result.yieldScore),
+    qualityScore: normalizeScore(result.qualityScore),
+    stabilityScore: normalizeScore(result.stabilityScore),
+    efficiencyScore: normalizeScore(result.efficiencyScore),
+    challengeScore: normalizeScore(result.challengeScore),
+    qualityBandLabel: normalizeText(result.qualityBandLabel || result.qualityBand, ''),
+    qualityTier: normalizeText(result.qualityTier, ''),
+    verificationStatus: normalizeText(result.verificationStatus || result.status, ''),
+    explanation: normalizeText(result.explanation || result.reason || result.message, ''),
+    verifiedAt: normalizeText(result.verifiedAt || result.updatedAt || result.checkedAt, ''),
+    leaderboardEligible: Boolean(result.leaderboardEligible),
+    anomalyFlags: Array.isArray(result.anomalyFlags) ? result.anomalyFlags.map((entry) => String(entry || '').trim()).filter(Boolean) : []
+  };
+}
+
+function normalizeStoredHarvestSubmissionReadiness(readinessLike) {
+  const readiness = readinessLike && typeof readinessLike === 'object' ? readinessLike : {};
+  const verificationStatus = STORED_HARVEST_VERIFICATION_STATUSES.has(String(readiness.verificationStatus || '').trim())
+    ? String(readiness.verificationStatus).trim()
+    : 'local_only';
+  const leaderboardSnapshot = readiness.leaderboardSnapshot && typeof readiness.leaderboardSnapshot === 'object'
+    ? readiness.leaderboardSnapshot
+    : null;
+
+  return {
+    localSummaryReady: Boolean(readiness.localSummaryReady),
+    verificationStatus,
+    lastLocalFinalizeAtRealMs: Number.isFinite(Number(readiness.lastLocalFinalizeAtRealMs)) ? Number(readiness.lastLocalFinalizeAtRealMs) : null,
+    pendingSubmission: Boolean(readiness.pendingSubmission),
+    lastVerifiedSyncAtRealMs: Number.isFinite(Number(readiness.lastVerifiedSyncAtRealMs)) ? Number(readiness.lastVerifiedSyncAtRealMs) : null,
+    backendSessionId: typeof readiness.backendSessionId === 'string' ? readiness.backendSessionId.trim() : '',
+    sessionState: typeof readiness.sessionState === 'string' ? readiness.sessionState.trim() : 'idle',
+    sessionError: typeof readiness.sessionError === 'string' ? readiness.sessionError.trim() : '',
+    submissionId: typeof readiness.submissionId === 'string' ? readiness.submissionId.trim() : '',
+    submissionState: typeof readiness.submissionState === 'string' ? readiness.submissionState.trim() : 'idle',
+    submissionError: typeof readiness.submissionError === 'string' ? readiness.submissionError.trim() : '',
+    statusMessage: typeof readiness.statusMessage === 'string' ? readiness.statusMessage.trim() : '',
+    serverCode: typeof readiness.serverCode === 'string' ? readiness.serverCode.trim() : '',
+    verifiedHarvestResult: normalizeStoredHarvestVerificationResult(readiness.verifiedHarvestResult),
+    provisionalHarvestResult: normalizeStoredHarvestVerificationResult(readiness.provisionalHarvestResult),
+    leaderboardEligible: Boolean(readiness.leaderboardEligible),
+    reviewNeeded: Boolean(readiness.reviewNeeded),
+    anomalyFlags: Array.isArray(readiness.anomalyFlags) ? readiness.anomalyFlags.map((entry) => String(entry || '').trim()).filter(Boolean) : [],
+    lastVerificationAt: Number.isFinite(Number(readiness.lastVerificationAt)) ? Number(readiness.lastVerificationAt) : null,
+    leaderboardSnapshot: leaderboardSnapshot ? {
+      scope: typeof leaderboardSnapshot.scope === 'string' ? leaderboardSnapshot.scope.trim() : 'weekly',
+      category: typeof leaderboardSnapshot.category === 'string' ? leaderboardSnapshot.category.trim() : 'overall',
+      periodKey: typeof leaderboardSnapshot.periodKey === 'string' ? leaderboardSnapshot.periodKey.trim() : '',
+      rank: Number.isFinite(Number(leaderboardSnapshot.rank)) ? Number(leaderboardSnapshot.rank) : null,
+      bestRank: Number.isFinite(Number(leaderboardSnapshot.bestRank)) ? Number(leaderboardSnapshot.bestRank) : null,
+      score: Number.isFinite(Number(leaderboardSnapshot.score)) ? Number(leaderboardSnapshot.score) : null,
+      fetchedAt: Number.isFinite(Number(leaderboardSnapshot.fetchedAt)) ? Number(leaderboardSnapshot.fetchedAt) : null
+    } : null
+  };
+}
+
 function getCanonicalProfile(snapshot) {
   const s = snapshot || state;
   const progressionApi = getProgressionApi();
@@ -790,6 +871,10 @@ function getCanonicalRun(snapshot) {
     if (harvestApi && typeof harvestApi.normalizeRunHarvest === 'function') {
       s.run.harvest = harvestApi.normalizeRunHarvest(s.run.harvest);
     }
+    if (!s.run.harvest || typeof s.run.harvest !== 'object') {
+      s.run.harvest = {};
+    }
+    s.run.harvest.submissionReadiness = normalizeStoredHarvestSubmissionReadiness(s.run.harvest.submissionReadiness);
     return s.run;
   }
 
@@ -797,6 +882,10 @@ function getCanonicalRun(snapshot) {
   if (harvestApi && typeof harvestApi.normalizeRunHarvest === 'function') {
     s.run.harvest = harvestApi.normalizeRunHarvest(s.run.harvest);
   }
+  if (!s.run.harvest || typeof s.run.harvest !== 'object') {
+    s.run.harvest = {};
+  }
+  s.run.harvest.submissionReadiness = normalizeStoredHarvestSubmissionReadiness(s.run.harvest.submissionReadiness);
   return s.run;
 }
 
@@ -1364,6 +1453,17 @@ function resetStateToDefaults() {
     },
     analysis: {
       activeTab: 'overview'
+    },
+    leaderboard: {
+      scope: 'weekly',
+      category: 'overall',
+      loading: false,
+      error: '',
+      periodKey: '',
+      topEntries: [],
+      aroundMeEntries: [],
+      meEntry: null,
+      lastFetchedAt: null
     }
   };
 
@@ -1621,7 +1721,7 @@ function ensureStateIntegrity(nowMs) {
     state.history.events = [];
   }
 
-  const validSheets = new Set([null, 'care', 'climate', 'event', 'dashboard', 'diagnosis', 'statDetail', 'missions']);
+  const validSheets = new Set([null, 'care', 'climate', 'event', 'dashboard', 'diagnosis', 'statDetail', 'missions', 'leaderboard']);
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }
@@ -1652,6 +1752,24 @@ function ensureStateIntegrity(nowMs) {
   if (!['overview', 'diagnosis', 'timeline'].includes(state.ui.analysis.activeTab)) {
     state.ui.analysis.activeTab = 'overview';
   }
+  if (!state.ui.leaderboard || typeof state.ui.leaderboard !== 'object') {
+    state.ui.leaderboard = {};
+  }
+  state.ui.leaderboard.scope = 'weekly';
+  state.ui.leaderboard.category = ['overall', 'quality'].includes(String(state.ui.leaderboard.category || '').trim())
+    ? String(state.ui.leaderboard.category).trim()
+    : 'overall';
+  state.ui.leaderboard.loading = Boolean(state.ui.leaderboard.loading);
+  state.ui.leaderboard.error = typeof state.ui.leaderboard.error === 'string' ? state.ui.leaderboard.error.trim() : '';
+  state.ui.leaderboard.periodKey = typeof state.ui.leaderboard.periodKey === 'string' ? state.ui.leaderboard.periodKey.trim() : '';
+  state.ui.leaderboard.topEntries = Array.isArray(state.ui.leaderboard.topEntries) ? state.ui.leaderboard.topEntries.slice(0, 20) : [];
+  state.ui.leaderboard.aroundMeEntries = Array.isArray(state.ui.leaderboard.aroundMeEntries) ? state.ui.leaderboard.aroundMeEntries.slice(0, 12) : [];
+  state.ui.leaderboard.meEntry = state.ui.leaderboard.meEntry && typeof state.ui.leaderboard.meEntry === 'object'
+    ? state.ui.leaderboard.meEntry
+    : null;
+  state.ui.leaderboard.lastFetchedAt = Number.isFinite(Number(state.ui.leaderboard.lastFetchedAt))
+    ? Number(state.ui.leaderboard.lastFetchedAt)
+    : null;
   if (typeof state.ui.deathOverlayOpen !== 'boolean') {
     state.ui.deathOverlayOpen = false;
   }

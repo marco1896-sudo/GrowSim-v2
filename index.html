@@ -782,6 +782,51 @@
     </div>
   </section>
 
+  <section id="leaderboardSheet" class="bottom-sheet figma-sheet figma-sheet-leaderboard hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Leaderboard</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+    </header>
+    <div class="sheet-content figma-sheet-content leaderboard-sheet-content">
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div id="leaderboardSheetTitle" class="figma-top-player-title">Weekly Overall</div>
+        <div id="leaderboardSheetSubtitle" class="figma-top-player-subtitle">Nur verifizierte Ergebnisse</div>
+      </section>
+
+      <section class="figma-section-card leaderboard-status-card">
+        <div class="leaderboard-status-card__row">
+          <span>Scope</span>
+          <strong id="leaderboardSheetStatus" class="value_gold">Weekly Snapshot</strong>
+        </div>
+        <div class="leaderboard-category-toggle" role="group" aria-label="Leaderboard-Kategorie">
+          <button id="leaderboardCategoryOverallBtn" class="leaderboard-category-btn is-active" type="button" aria-pressed="true">Overall</button>
+          <button id="leaderboardCategoryQualityBtn" class="leaderboard-category-btn" type="button" aria-pressed="false">Quality</button>
+        </div>
+      </section>
+
+      <section class="figma-section-card leaderboard-section">
+        <h3 class="figma-section-head">Mein Weekly-Stand</h3>
+        <div id="leaderboardMeCard" class="leaderboard-me-wrap" aria-live="polite"></div>
+      </section>
+
+      <section class="figma-section-card leaderboard-section">
+        <div class="leaderboard-section-head">
+          <h3 class="figma-section-head">Top verifiziert</h3>
+          <span>Weekly</span>
+        </div>
+        <div id="leaderboardTopList" class="leaderboard-entry-list" aria-live="polite"></div>
+      </section>
+
+      <section class="figma-section-card leaderboard-section">
+        <div class="leaderboard-section-head">
+          <h3 class="figma-section-head">Around Me</h3>
+          <span>Nur verifiziert</span>
+        </div>
+        <div id="leaderboardAroundMeList" class="leaderboard-entry-list" aria-live="polite"></div>
+      </section>
+    </div>
+  </section>
+
   <section id="statDetailSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2 id="statDetailTitle">Statistik</h2>
@@ -888,6 +933,43 @@
       <p id="runSummarySubtitle" class="sheet-note">Zusammenfassung</p>
       <div id="runSummaryRating" class="run-summary-rating">Solider Run</div>
 
+      <section class="figma-section-card figma-section-card--onboarding run-summary-harvest-card">
+        <div class="run-summary-goal-head">
+          <h3 id="runSummaryHarvestTitle" class="figma-section-head">Lokale Harvest-Auswertung</h3>
+          <strong id="runSummaryHarvestBadge" class="run-summary-goal-status" data-status="local">Forecast</strong>
+        </div>
+        <p id="runSummaryHarvestHint" class="sheet-note">Für Ranglisten zählt später die verifizierte Server-Wertung.</p>
+        <div id="runSummaryHarvestVerification" class="run-summary-harvest-verification hidden" aria-hidden="true" aria-live="polite"></div>
+        <div class="run-summary-harvest-hero run-summary-harvest-hero--finale">
+          <div class="run-summary-harvest-score run-summary-harvest-score--main">
+            <span>Harvest Score</span>
+            <strong id="runSummaryHarvestScore">0</strong>
+          </div>
+          <div class="run-summary-harvest-quality">
+            <span>Qualitätslinie</span>
+            <strong id="runSummaryHarvestQualityBand">B</strong>
+          </div>
+        </div>
+        <div class="run-summary-harvest-finale">
+          <strong id="runSummaryHarvestHeroTone" class="run-summary-harvest-finale__title">Solider Abschluss</strong>
+          <p id="runSummaryHarvestInterpretation" class="run-summary-harvest-finale__copy">Die lokale Harvest-Auswertung wird nach dem Run aufgelöst.</p>
+        </div>
+        <section class="run-summary-harvest-impact">
+          <h4>Entscheidend für deine Ernte</h4>
+          <div id="runSummaryHarvestImpact" class="run-summary-list" aria-live="polite"></div>
+        </section>
+        <section class="run-summary-harvest-metrics">
+          <h4>Score-Profil</h4>
+          <div id="runSummaryHarvestRows" class="run-summary-list run-summary-harvest-metric-list" aria-live="polite"></div>
+        </section>
+        <section class="run-summary-harvest-moments">
+          <h4>Run-Moment</h4>
+          <div id="runSummaryHarvestMoments" class="run-summary-list" aria-live="polite"></div>
+        </section>
+        <div id="runSummaryHarvestBests" class="run-summary-list run-summary-list--unlock run-summary-harvest-bests" aria-live="polite"></div>
+        <p id="runSummaryHarvestMotivation" class="run-summary-harvest-motivation">Mit einem sauberen nächsten Hebel ist noch mehr drin.</p>
+      </section>
+
       <section class="figma-section-card figma-section-card--onboarding">
         <h3 class="figma-section-head">Run-Report</h3>
         <div class="figma-static-row"><span>Tag</span><strong id="runSummaryDay">0</strong></div>
@@ -911,27 +993,6 @@
       <section class="figma-section-card figma-section-card--onboarding">
         <h3 class="figma-section-head">Was gut lief</h3>
         <div id="runSummaryPositives" class="run-summary-list" aria-live="polite"></div>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding run-summary-harvest-card">
-        <div class="run-summary-goal-head">
-          <h3 class="figma-section-head">Lokale Harvest-Auswertung</h3>
-          <strong id="runSummaryHarvestBadge" class="run-summary-goal-status" data-status="local">Forecast</strong>
-        </div>
-        <p id="runSummaryHarvestHint" class="sheet-note">Für Ranglisten zählt später die verifizierte Server-Wertung.</p>
-        <div class="run-summary-harvest-hero">
-          <div class="run-summary-harvest-score">
-            <span>Harvest Score</span>
-            <strong id="runSummaryHarvestScore">0</strong>
-          </div>
-          <div class="run-summary-harvest-quality">
-            <span>Quality Band</span>
-            <strong id="runSummaryHarvestQualityBand">B</strong>
-          </div>
-        </div>
-        <p id="runSummaryHarvestInterpretation" class="sheet-note">Die lokale Harvest-Auswertung wird nach dem Run aufgelöst.</p>
-        <div id="runSummaryHarvestRows" class="run-summary-list" aria-live="polite"></div>
-        <div id="runSummaryHarvestBests" class="run-summary-list run-summary-list--unlock" aria-live="polite"></div>
       </section>
 
       <section class="figma-section-card figma-section-card--onboarding">
@@ -995,7 +1056,7 @@
 
       <div class="menu-quick-actions">
         <button id="menuAchievementsBtn" class="ghost-btn hidden" type="button" disabled aria-disabled="true" aria-hidden="true" title="Im aktuellen Build noch nicht freigeschaltet.">Home</button>
-        <button id="menuLeaderboardBtn" class="ghost-btn hidden" type="button" disabled aria-disabled="true" aria-hidden="true" title="Im aktuellen Build noch nicht freigeschaltet.">Ops</button>
+        <button id="menuLeaderboardBtn" class="ghost-btn" type="button" aria-disabled="false" aria-hidden="false" title="Öffnet das Weekly-Leaderboard.">Leaderboard</button>
         <button id="menuCloseBtn" class="action-btn action-primary" type="button">Schließen</button>
       </div>
     </div>

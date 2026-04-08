@@ -436,6 +436,17 @@ const state = {
     analysis: {
       activeTab: 'overview'
     },
+    leaderboard: {
+      scope: 'weekly',
+      category: 'overall',
+      loading: false,
+      error: '',
+      periodKey: '',
+      topEntries: [],
+      aroundMeEntries: [],
+      meEntry: null,
+      lastFetchedAt: null
+    },
     statDetailKey: null
   },
   lastEventId: null,
@@ -465,6 +476,22 @@ let startupAuthGateResolver = null;
 let settingsEventsInitialized = false;
 
 const actionDebounceUntil = Object.create(null);
+const HARVEST_VERIFICATION_POLL_INTERVAL_MS = 7000;
+const HARVEST_VERIFICATION_MAX_ATTEMPTS = 8;
+const LEADERBOARD_FETCH_COOLDOWN_MS = 45 * 1000;
+const LEADERBOARD_TOP_LIMIT = 10;
+const harvestBackendRuntime = {
+  sessionPromise: null,
+  submissionPromise: null,
+  pollTimer: null,
+  pollAttempts: 0,
+  pollSubmissionId: '',
+  activeRunId: 0
+};
+const leaderboardRuntime = {
+  fetchPromise: null,
+  requestKey: ''
+};
 
 window.__gsState = state;
 
@@ -1147,6 +1174,797 @@ function getHarvestApi() {
   return window.GrowSimHarvest && typeof window.GrowSimHarvest === 'object' ? window.GrowSimHarvest : null;
 }
 
+function getGrowSimClientVersion() {
+  return window.GrowSimBuild && typeof window.GrowSimBuild.appVersion === 'string'
+    ? window.GrowSimBuild.appVersion
+    : 'growsim-dev';
+}
+
+function getHarvestSubmissionReadinessDefaults() {
+  return {
+    localSummaryReady: false,
+    verificationStatus: 'local_only',
+    lastLocalFinalizeAtRealMs: null,
+    pendingSubmission: false,
+    lastVerifiedSyncAtRealMs: null,
+    backendSessionId: '',
+    sessionState: 'idle',
+    sessionError: '',
+    submissionId: '',
+    submissionState: 'idle',
+    submissionError: '',
+    statusMessage: '',
+    serverCode: '',
+    verifiedHarvestResult: null,
+    provisionalHarvestResult: null,
+    leaderboardEligible: false,
+    reviewNeeded: false,
+    anomalyFlags: [],
+    lastVerificationAt: null,
+    leaderboardSnapshot: null
+  };
+}
+
+function normalizeHarvestVerificationResult(resultLike, fallbackStatus = '') {
+  if (!resultLike || typeof resultLike !== 'object') {
+    return null;
+  }
+
+  const safe = resultLike;
+  const normalizeScore = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? round2(clamp(numeric, 0, 100)) : null;
+  };
+  const qualityBandLabel = (() => {
+    const direct = String(safe.qualityBandLabel || safe.qualityBand || '').trim();
+    if (direct) {
+      return direct;
+    }
+    const tier = String(safe.qualityTier || '').trim().toLowerCase();
+    if (tier === 'perfect') return 'A';
+    if (tier === 'degraded') return 'C';
+    const qualityScore = normalizeScore(safe.qualityScore);
+    if (Number.isFinite(qualityScore)) {
+      if (qualityScore >= 88) return 'A';
+      if (qualityScore < 64) return 'C';
+    }
+    return 'B';
+  })();
+
+  return {
+    harvestScore: normalizeScore(safe.harvestScore),
+    yieldScore: normalizeScore(safe.yieldScore),
+    qualityScore: normalizeScore(safe.qualityScore),
+    stabilityScore: normalizeScore(safe.stabilityScore),
+    efficiencyScore: normalizeScore(safe.efficiencyScore),
+    challengeScore: normalizeScore(safe.challengeScore),
+    qualityBandLabel,
+    qualityTier: String(safe.qualityTier || '').trim(),
+    verificationStatus: String(safe.verificationStatus || safe.status || fallbackStatus || '').trim(),
+    explanation: String(safe.explanation || safe.reason || safe.message || '').trim(),
+    verifiedAt: String(safe.verifiedAt || safe.updatedAt || safe.checkedAt || '').trim(),
+    leaderboardEligible: Boolean(safe.leaderboardEligible),
+    anomalyFlags: Array.isArray(safe.anomalyFlags) ? safe.anomalyFlags.map((entry) => String(entry || '').trim()).filter(Boolean) : []
+  };
+}
+
+function ensureHarvestBackendState(runLike = state.run) {
+  const run = runLike && typeof runLike === 'object' ? runLike : getCanonicalRun(state);
+  if (!run.harvest || typeof run.harvest !== 'object') {
+    run.harvest = {};
+  }
+
+  const defaults = getHarvestSubmissionReadinessDefaults();
+  const current = run.harvest.submissionReadiness && typeof run.harvest.submissionReadiness === 'object'
+    ? run.harvest.submissionReadiness
+    : {};
+  const verificationStatus = ['local_only', 'submitted', 'provisional', 'verified', 'rejected', 'under_review'].includes(String(current.verificationStatus || '').trim())
+    ? String(current.verificationStatus).trim()
+    : defaults.verificationStatus;
+
+  run.harvest.submissionReadiness = {
+    ...defaults,
+    ...current,
+    verificationStatus,
+    backendSessionId: typeof current.backendSessionId === 'string' ? current.backendSessionId.trim() : defaults.backendSessionId,
+    sessionState: typeof current.sessionState === 'string' ? current.sessionState.trim() || defaults.sessionState : defaults.sessionState,
+    sessionError: typeof current.sessionError === 'string' ? current.sessionError.trim() : defaults.sessionError,
+    submissionId: typeof current.submissionId === 'string' ? current.submissionId.trim() : defaults.submissionId,
+    submissionState: typeof current.submissionState === 'string' ? current.submissionState.trim() || defaults.submissionState : defaults.submissionState,
+    submissionError: typeof current.submissionError === 'string' ? current.submissionError.trim() : defaults.submissionError,
+    statusMessage: typeof current.statusMessage === 'string' ? current.statusMessage.trim() : defaults.statusMessage,
+    serverCode: typeof current.serverCode === 'string' ? current.serverCode.trim() : defaults.serverCode,
+    verifiedHarvestResult: normalizeHarvestVerificationResult(current.verifiedHarvestResult, 'verified'),
+    provisionalHarvestResult: normalizeHarvestVerificationResult(current.provisionalHarvestResult, 'provisional'),
+    leaderboardEligible: Boolean(current.leaderboardEligible),
+    reviewNeeded: Boolean(current.reviewNeeded),
+    anomalyFlags: Array.isArray(current.anomalyFlags) ? current.anomalyFlags.map((entry) => String(entry || '').trim()).filter(Boolean) : [],
+    lastVerificationAt: Number.isFinite(Number(current.lastVerificationAt)) ? Number(current.lastVerificationAt) : defaults.lastVerificationAt,
+    leaderboardSnapshot: normalizeLeaderboardSnapshot(current.leaderboardSnapshot),
+    lastLocalFinalizeAtRealMs: Number.isFinite(Number(current.lastLocalFinalizeAtRealMs)) ? Number(current.lastLocalFinalizeAtRealMs) : defaults.lastLocalFinalizeAtRealMs,
+    lastVerifiedSyncAtRealMs: Number.isFinite(Number(current.lastVerifiedSyncAtRealMs)) ? Number(current.lastVerifiedSyncAtRealMs) : defaults.lastVerifiedSyncAtRealMs,
+    pendingSubmission: Boolean(current.pendingSubmission),
+    localSummaryReady: Boolean(current.localSummaryReady)
+  };
+
+  return run.harvest.submissionReadiness;
+}
+
+function getLeaderboardUiDefaults() {
+  return {
+    scope: 'weekly',
+    category: 'overall',
+    loading: false,
+    error: '',
+    periodKey: '',
+    topEntries: [],
+    aroundMeEntries: [],
+    meEntry: null,
+    lastFetchedAt: null
+  };
+}
+
+function ensureLeaderboardUiState(stateLike = state) {
+  const targetState = stateLike && typeof stateLike === 'object' ? stateLike : state;
+  if (!targetState.ui || typeof targetState.ui !== 'object') {
+    targetState.ui = {};
+  }
+  const defaults = getLeaderboardUiDefaults();
+  const current = targetState.ui.leaderboard && typeof targetState.ui.leaderboard === 'object'
+    ? targetState.ui.leaderboard
+    : {};
+  targetState.ui.leaderboard = {
+    ...defaults,
+    ...current,
+    scope: 'weekly',
+    category: ['overall', 'quality'].includes(String(current.category || '').trim())
+      ? String(current.category).trim()
+      : 'overall',
+    loading: Boolean(current.loading),
+    error: typeof current.error === 'string' ? current.error.trim() : '',
+    periodKey: typeof current.periodKey === 'string' ? current.periodKey.trim() : '',
+    topEntries: Array.isArray(current.topEntries) ? current.topEntries.slice(0, LEADERBOARD_TOP_LIMIT) : [],
+    aroundMeEntries: Array.isArray(current.aroundMeEntries) ? current.aroundMeEntries.slice(0, 7) : [],
+    meEntry: current.meEntry && typeof current.meEntry === 'object' ? current.meEntry : null,
+    lastFetchedAt: Number.isFinite(Number(current.lastFetchedAt)) ? Number(current.lastFetchedAt) : null
+  };
+  return targetState.ui.leaderboard;
+}
+
+function normalizeLeaderboardSnapshot(snapshotLike) {
+  if (!snapshotLike || typeof snapshotLike !== 'object') {
+    return null;
+  }
+  return {
+    scope: String(snapshotLike.scope || 'weekly').trim() || 'weekly',
+    category: String(snapshotLike.category || 'overall').trim() || 'overall',
+    periodKey: String(snapshotLike.periodKey || '').trim(),
+    rank: Number.isFinite(Number(snapshotLike.rank)) ? Number(snapshotLike.rank) : null,
+    bestRank: Number.isFinite(Number(snapshotLike.bestRank)) ? Number(snapshotLike.bestRank) : null,
+    score: Number.isFinite(Number(snapshotLike.score)) ? round2(Number(snapshotLike.score)) : null,
+    fetchedAt: Number.isFinite(Number(snapshotLike.fetchedAt)) ? Number(snapshotLike.fetchedAt) : null
+  };
+}
+
+function isoFromRealMs(realMs) {
+  const safeRealMs = Number(realMs);
+  return Number.isFinite(safeRealMs) && safeRealMs > 0
+    ? new Date(safeRealMs).toISOString()
+    : new Date().toISOString();
+}
+
+function readAuthToken() {
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.getToken !== 'function') {
+    return '';
+  }
+  const token = authApi.getToken();
+  return typeof token === 'string' ? token.trim() : '';
+}
+
+function buildHarvestApiHeaders(extraHeaders = {}) {
+  const token = readAuthToken();
+  return token
+    ? { Authorization: `Bearer ${token}`, ...extraHeaders }
+    : { ...extraHeaders };
+}
+
+async function safeReadJson(response) {
+  if (!response || typeof response.json !== 'function') {
+    return null;
+  }
+  try {
+    return await response.json();
+  } catch (_error) {
+    return null;
+  }
+}
+
+function shortHashFromString(value) {
+  const text = String(value || '');
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+function stableSerialize(value) {
+  const seen = new WeakSet();
+  const serialize = (input) => {
+    if (input === null || typeof input !== 'object') {
+      return input;
+    }
+    if (seen.has(input)) {
+      return null;
+    }
+    seen.add(input);
+    if (Array.isArray(input)) {
+      return input.map((entry) => serialize(entry));
+    }
+    const ordered = {};
+    for (const key of Object.keys(input).sort()) {
+      const normalized = serialize(input[key]);
+      if (normalized !== undefined) {
+        ordered[key] = normalized;
+      }
+    }
+    return ordered;
+  };
+  return JSON.stringify(serialize(value));
+}
+
+function buildDeclaredSetup(runLike = state.run) {
+  const run = runLike && typeof runLike === 'object' ? runLike : getCanonicalRun(state);
+  const setup = run.setupSnapshot && typeof run.setupSnapshot === 'object'
+    ? run.setupSnapshot
+    : (state.setup && typeof state.setup === 'object' ? state.setup : null);
+  if (!setup) {
+    return null;
+  }
+  return {
+    mode: String(setup.mode || '').trim() || null,
+    light: String(setup.light || '').trim() || null,
+    medium: String(setup.medium || '').trim() || null,
+    potSize: String(setup.potSize || '').trim() || null,
+    genetics: String(setup.genetics || '').trim() || null
+  };
+}
+
+function buildDeclaredChallenges(runLike = state.run) {
+  const run = runLike && typeof runLike === 'object' ? runLike : getCanonicalRun(state);
+  if (Array.isArray(run.declaredChallenges)) {
+    return run.declaredChallenges.map((entry) => String(entry || '').trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function extractSessionIdFromPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return '';
+  }
+  const direct = String(payload.sessionId || payload.id || '').trim();
+  if (direct) {
+    return direct;
+  }
+  const nested = payload.session && typeof payload.session === 'object'
+    ? String(payload.session.sessionId || payload.session.id || '').trim()
+    : '';
+  return nested;
+}
+
+function extractSubmissionIdFromPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return '';
+  }
+  const direct = String(payload.submissionId || payload.id || '').trim();
+  if (direct) {
+    return direct;
+  }
+  const nested = payload.run && typeof payload.run === 'object'
+    ? String(payload.run.submissionId || payload.run.id || '').trim()
+    : '';
+  return nested;
+}
+
+function extractVerificationStatusFromPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return 'submitted';
+  }
+  const status = String(
+    payload.verificationStatus
+    || payload.status
+    || (payload.run && payload.run.status)
+    || ''
+  ).trim().toLowerCase();
+  return ['submitted', 'provisional', 'verified', 'rejected', 'under_review'].includes(status)
+    ? status
+    : 'submitted';
+}
+
+function extractVerificationResultFromPayload(payload, preferredStatus = '') {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidates = [
+    payload.verifiedHarvestResult,
+    payload.provisionalHarvestResult,
+    payload.harvestResult,
+    payload.result,
+    payload.authoritativeResult,
+    payload.verificationResult,
+    payload.run && payload.run.result
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeHarvestVerificationResult(candidate, preferredStatus);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  const topLevelResult = normalizeHarvestVerificationResult(payload, preferredStatus);
+  if (topLevelResult && Object.values(topLevelResult).some((value) => value !== null && value !== '' && value !== false && !(Array.isArray(value) && !value.length))) {
+    return topLevelResult;
+  }
+  return null;
+}
+
+function mapHarvestBackendError(errorLike, fallbackMessage = '') {
+  const source = errorLike && typeof errorLike === 'object' ? errorLike : {};
+  const statusCode = Number(source.status) || 0;
+  const serverCode = String(source.code || source.serverCode || '').trim().toLowerCase();
+  const networkError = source.network === true;
+
+  if (networkError) {
+    return {
+      code: 'network_error',
+      message: 'Backend aktuell nicht erreichbar. Die lokale Auswertung bleibt erhalten.'
+    };
+  }
+  if (statusCode === 401 || serverCode === 'unauthorized') {
+    return {
+      code: 'unauthorized',
+      message: 'Für ein verifiziertes Ergebnis musst du angemeldet sein.'
+    };
+  }
+  if (serverCode === 'session_not_found' || serverCode === 'session_not_owned') {
+    return {
+      code: serverCode,
+      message: 'Die Run-Sitzung konnte serverseitig nicht sauber zugeordnet werden.'
+    };
+  }
+  if (serverCode === 'duplicate_submission') {
+    return {
+      code: serverCode,
+      message: 'Dieser Run wurde bereits an den Backend-Check übergeben.'
+    };
+  }
+  if (serverCode === 'validation_failed') {
+    return {
+      code: serverCode,
+      message: 'Der Server konnte dieses Ergebnis nicht verifizieren.'
+    };
+  }
+  return {
+    code: serverCode || (statusCode ? `http_${statusCode}` : 'unknown_error'),
+    message: String(fallbackMessage || source.message || 'Die lokale Auswertung bleibt sichtbar.')
+  };
+}
+
+function normalizeAnomalyFlags(flagsLike) {
+  const entries = Array.isArray(flagsLike) ? flagsLike : [];
+  return entries.map((entry) => String(entry || '').trim()).filter(Boolean);
+}
+
+function formatLeaderboardCategoryLabel(category) {
+  return String(category || 'overall') === 'quality' ? 'Quality' : 'Overall';
+}
+
+function formatLeaderboardScopeLabel(scope) {
+  return String(scope || 'weekly') === 'weekly' ? 'Weekly' : String(scope || 'weekly');
+}
+
+function mapLeaderboardError(errorLike, fallbackMessage = '') {
+  const mapped = mapHarvestBackendError(errorLike, fallbackMessage || 'Leaderboard aktuell nicht verfügbar.');
+  if (mapped.code === 'unauthorized') {
+    return {
+      code: mapped.code,
+      message: 'Für dein Ranking musst du angemeldet sein.'
+    };
+  }
+  return mapped;
+}
+
+function extractLeaderboardPayloadEntries(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+  const candidates = [
+    payload.entries,
+    payload.items,
+    payload.results,
+    payload.data,
+    payload.leaderboard,
+    payload.rows
+  ];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+  return [];
+}
+
+function normalizeLeaderboardEntry(entryLike, fallbackCategory = 'overall') {
+  if (!entryLike || typeof entryLike !== 'object') {
+    return null;
+  }
+  const entry = entryLike;
+  const user = entry.user && typeof entry.user === 'object' ? entry.user : {};
+  const profile = entry.profile && typeof entry.profile === 'object' ? entry.profile : {};
+  const rank = Number.isFinite(Number(entry.rank)) ? Math.max(1, Math.trunc(Number(entry.rank))) : null;
+  const score = Number(entry.score ?? entry.value ?? entry.harvestScore ?? entry.qualityScore);
+  const category = ['overall', 'quality'].includes(String(entry.category || fallbackCategory || '').trim())
+    ? String(entry.category || fallbackCategory).trim()
+    : 'overall';
+  const displayName = String(
+    entry.displayName
+    || user.displayName
+    || profile.displayName
+    || user.name
+    || profile.name
+    || entry.name
+    || 'Grower'
+  ).trim() || 'Grower';
+  const qualityBandLabel = String(entry.qualityBandLabel || entry.qualityBand || '').trim();
+  const bestScore = Number(entry.bestScore ?? entry.bestVerifiedScore);
+  return {
+    rank,
+    score: Number.isFinite(score) ? round2(score) : null,
+    displayName,
+    isMe: Boolean(entry.isMe),
+    userId: String(entry.userId || user.id || profile.id || '').trim(),
+    periodKey: String(entry.periodKey || '').trim(),
+    category,
+    verifiedAt: String(entry.verifiedAt || entry.updatedAt || '').trim(),
+    qualityBandLabel: qualityBandLabel || '',
+    bestRank: Number.isFinite(Number(entry.bestRank)) ? Math.max(1, Math.trunc(Number(entry.bestRank))) : null,
+    bestScore: Number.isFinite(bestScore) ? round2(bestScore) : null,
+    leaderboardEligible: Boolean(entry.leaderboardEligible),
+    submissionId: String(entry.submissionId || entry.runId || '').trim()
+  };
+}
+
+function normalizeLeaderboardMePayload(payload, fallbackCategory = 'overall') {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+  const directEntry = normalizeLeaderboardEntry(
+    payload.entry || payload.currentEntry || payload.current || payload.me || payload.result,
+    fallbackCategory
+  );
+  const bestEntry = normalizeLeaderboardEntry(payload.bestEntry || payload.best || null, fallbackCategory);
+  const rank = Number.isFinite(Number(payload.rank))
+    ? Math.max(1, Math.trunc(Number(payload.rank)))
+    : (directEntry ? directEntry.rank : null);
+  return {
+    scope: String(payload.scope || 'weekly').trim() || 'weekly',
+    category: ['overall', 'quality'].includes(String(payload.category || fallbackCategory || '').trim())
+      ? String(payload.category || fallbackCategory).trim()
+      : 'overall',
+    periodKey: String(payload.periodKey || '').trim(),
+    rank,
+    score: directEntry && Number.isFinite(Number(directEntry.score)) ? Number(directEntry.score) : null,
+    bestRank: Number.isFinite(Number(payload.bestRank))
+      ? Math.max(1, Math.trunc(Number(payload.bestRank)))
+      : (bestEntry ? bestEntry.rank : null),
+    bestScore: Number.isFinite(Number(payload.bestScore))
+      ? round2(Number(payload.bestScore))
+      : (bestEntry && Number.isFinite(Number(bestEntry.score)) ? Number(bestEntry.score) : null),
+    displayName: directEntry ? directEntry.displayName : '',
+    entry: directEntry,
+    bestEntry
+  };
+}
+
+async function fetchLeaderboardEndpoint(path, options = {}) {
+  try {
+    const response = await appApiFetch(path, {
+      method: 'GET',
+      headers: buildHarvestApiHeaders(),
+      ...options
+    });
+    const payload = await safeReadJson(response);
+    if (!response.ok) {
+      const mappedError = mapLeaderboardError({
+        status: response.status,
+        code: payload && payload.code,
+        message: payload && payload.message
+      }, 'Leaderboard aktuell nicht erreichbar.');
+      return { ok: false, error: mappedError, payload };
+    }
+    return { ok: true, payload };
+  } catch (error) {
+    return {
+      ok: false,
+      error: mapLeaderboardError({ network: true, message: error && error.message ? error.message : '' }, 'Leaderboard aktuell nicht erreichbar.'),
+      payload: null
+    };
+  }
+}
+
+function updateRunLeaderboardSnapshotFromMe(mePayload) {
+  const run = getCanonicalRun(state);
+  const readiness = ensureHarvestBackendState(run);
+  const normalized = normalizeLeaderboardMePayload(mePayload, 'overall');
+  if (!normalized || !readiness || readiness.verificationStatus !== 'verified') {
+    return;
+  }
+  readiness.leaderboardSnapshot = normalizeLeaderboardSnapshot({
+    scope: normalized.scope,
+    category: normalized.category,
+    periodKey: normalized.periodKey,
+    rank: normalized.rank,
+    bestRank: normalized.bestRank,
+    score: normalized.score,
+    fetchedAt: Date.now()
+  });
+}
+
+async function fetchLeaderboardBundle(options = {}) {
+  const uiState = ensureLeaderboardUiState(state);
+  const scope = 'weekly';
+  const category = ['overall', 'quality'].includes(String(options.category || uiState.category || '').trim())
+    ? String(options.category || uiState.category).trim()
+    : 'overall';
+  const force = Boolean(options.force);
+  const requestKey = `${scope}:${category}`;
+  if (leaderboardRuntime.fetchPromise && leaderboardRuntime.requestKey === requestKey && !force) {
+    return leaderboardRuntime.fetchPromise;
+  }
+  if (!force && uiState.lastFetchedAt && (Date.now() - uiState.lastFetchedAt) < LEADERBOARD_FETCH_COOLDOWN_MS && uiState.topEntries.length) {
+    return {
+      topEntries: uiState.topEntries,
+      aroundMeEntries: uiState.aroundMeEntries,
+      meEntry: uiState.meEntry,
+      periodKey: uiState.periodKey
+    };
+  }
+
+  uiState.loading = true;
+  uiState.error = '';
+  uiState.category = category;
+  uiState.scope = scope;
+  renderLeaderboardSheet(true);
+  schedulePersistState(true);
+
+  leaderboardRuntime.requestKey = requestKey;
+  leaderboardRuntime.fetchPromise = (async () => {
+    const query = `scope=${encodeURIComponent(scope)}&category=${encodeURIComponent(category)}&limit=${encodeURIComponent(String(LEADERBOARD_TOP_LIMIT))}`;
+    const [topResponse, aroundResponse, meResponse] = await Promise.all([
+      fetchLeaderboardEndpoint(`/v1/leaderboards?${query}`),
+      fetchLeaderboardEndpoint(`/v1/leaderboards/around-me?scope=${encodeURIComponent(scope)}&category=${encodeURIComponent(category)}`),
+      fetchLeaderboardEndpoint(`/v1/leaderboards/me?scope=${encodeURIComponent(scope)}&category=${encodeURIComponent(category)}`)
+    ]);
+
+    const topPayload = topResponse.ok ? topResponse.payload : null;
+    const topEntries = topResponse.ok
+      ? extractLeaderboardPayloadEntries(topPayload).map((entry) => normalizeLeaderboardEntry(entry, category)).filter(Boolean).slice(0, LEADERBOARD_TOP_LIMIT)
+      : [];
+    const aroundPayload = aroundResponse.ok ? aroundResponse.payload : null;
+    const aroundMeEntries = aroundResponse.ok
+      ? extractLeaderboardPayloadEntries(aroundPayload).map((entry) => normalizeLeaderboardEntry(entry, category)).filter(Boolean).slice(0, 7)
+      : [];
+    const mePayload = meResponse.ok ? meResponse.payload : null;
+    const meEntry = meResponse.ok ? normalizeLeaderboardMePayload(mePayload, category) : null;
+
+    uiState.loading = false;
+    uiState.error = topResponse.ok
+      ? ''
+      : String((topResponse.error && topResponse.error.message) || 'Leaderboard aktuell nicht verfügbar.');
+    uiState.periodKey = String(
+      (topPayload && topPayload.periodKey)
+      || (aroundPayload && aroundPayload.periodKey)
+      || (mePayload && mePayload.periodKey)
+      || ''
+    ).trim();
+    uiState.topEntries = topEntries;
+    uiState.aroundMeEntries = aroundMeEntries;
+    uiState.meEntry = meEntry;
+    uiState.lastFetchedAt = Date.now();
+
+    if (meEntry) {
+      updateRunLeaderboardSnapshotFromMe(mePayload);
+    }
+
+    renderLeaderboardSheet(true);
+    renderRunSummaryOverlay();
+    schedulePersistState(true);
+
+    return {
+      topEntries,
+      aroundMeEntries,
+      meEntry,
+      periodKey: uiState.periodKey
+    };
+  })().catch((error) => {
+    uiState.loading = false;
+    uiState.error = String(error && error.message ? error.message : 'Leaderboard aktuell nicht verfügbar.');
+    renderLeaderboardSheet(true);
+    schedulePersistState(true);
+    return null;
+  }).finally(() => {
+    leaderboardRuntime.fetchPromise = null;
+    leaderboardRuntime.requestKey = '';
+  });
+
+  return leaderboardRuntime.fetchPromise;
+}
+
+function onLeaderboardCategoryChange(category) {
+  const uiState = ensureLeaderboardUiState(state);
+  const nextCategory = ['overall', 'quality'].includes(String(category || '').trim())
+    ? String(category).trim()
+    : 'overall';
+  if (uiState.category === nextCategory && uiState.topEntries.length) {
+    renderLeaderboardSheet(true);
+    return;
+  }
+  uiState.category = nextCategory;
+  uiState.lastFetchedAt = null;
+  void fetchLeaderboardBundle({ category: nextCategory, force: true });
+}
+
+async function refreshRunLeaderboardSnapshot(options = {}) {
+  const run = getCanonicalRun(state);
+  const readiness = ensureHarvestBackendState(run);
+  if (!readiness || readiness.verificationStatus !== 'verified' || !isAuthSessionValid() || !readAuthToken()) {
+    return null;
+  }
+  const existing = normalizeLeaderboardSnapshot(readiness.leaderboardSnapshot);
+  if (!options.force && existing && existing.fetchedAt && (Date.now() - existing.fetchedAt) < LEADERBOARD_FETCH_COOLDOWN_MS) {
+    return existing;
+  }
+
+  const response = await fetchLeaderboardEndpoint('/v1/leaderboards/me?scope=weekly&category=overall');
+  if (!response.ok || !response.payload) {
+    return null;
+  }
+  const mePayload = normalizeLeaderboardMePayload(response.payload, 'overall');
+  if (!mePayload) {
+    return null;
+  }
+  updateRunLeaderboardSnapshotFromMe(response.payload);
+  schedulePersistState(true);
+  return readiness.leaderboardSnapshot;
+}
+
+function formatLeaderboardEntryScore(entry, category = 'overall') {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const score = Number(safeEntry.score);
+  if (!Number.isFinite(score)) {
+    return '--';
+  }
+  return String(Math.round(score));
+}
+
+function renderLeaderboardEntryList(container, entries, options = {}) {
+  if (!container) {
+    return;
+  }
+  container.replaceChildren();
+  const safeEntries = Array.isArray(entries) ? entries : [];
+  if (!safeEntries.length) {
+    const empty = document.createElement('p');
+    empty.className = 'sheet-note leaderboard-empty-note';
+    empty.textContent = String(options.emptyText || 'Noch keine verifizierten Runs in dieser Woche.');
+    container.appendChild(empty);
+    return;
+  }
+
+  for (const item of safeEntries) {
+    const card = document.createElement('article');
+    card.className = `leaderboard-entry-card${item && item.isMe ? ' leaderboard-entry-card--me' : ''}`;
+    const rankLabel = Number.isFinite(Number(item && item.rank)) ? `#${Math.trunc(Number(item.rank))}` : '—';
+    const scoreLabel = formatLeaderboardEntryScore(item, options.category);
+    const qualityBand = item && item.qualityBandLabel ? `<span class="leaderboard-entry-chip">${escapeHtml(String(item.qualityBandLabel))}</span>` : '';
+    card.innerHTML = `
+      <div class="leaderboard-entry-rank">${escapeHtml(rankLabel)}</div>
+      <div class="leaderboard-entry-main">
+        <strong>${escapeHtml(String((item && item.displayName) || 'Grower'))}</strong>
+        <span>${escapeHtml(options.category === 'quality' ? 'Verifizierte Qualität' : 'Verifizierter Harvest Score')}</span>
+      </div>
+      <div class="leaderboard-entry-score">
+        <strong>${escapeHtml(scoreLabel)}</strong>
+        ${qualityBand}
+      </div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+function renderLeaderboardSheet(force = false) {
+  const sheetNode = uiNode('leaderboardSheet', 'leaderboardSheet');
+  if (!sheetNode || (!force && state.ui.openSheet !== 'leaderboard')) {
+    return;
+  }
+  const uiState = ensureLeaderboardUiState(state);
+  const authIdentity = getAuthDisplayIdentity();
+  const titleNode = uiNode('leaderboardSheetTitle', 'leaderboardSheetTitle');
+  const subtitleNode = uiNode('leaderboardSheetSubtitle', 'leaderboardSheetSubtitle');
+  const statusNode = uiNode('leaderboardSheetStatus', 'leaderboardSheetStatus');
+  const overallBtn = uiNode('leaderboardCategoryOverallBtn', 'leaderboardCategoryOverallBtn');
+  const qualityBtn = uiNode('leaderboardCategoryQualityBtn', 'leaderboardCategoryQualityBtn');
+  const meNode = uiNode('leaderboardMeCard', 'leaderboardMeCard');
+  const topNode = uiNode('leaderboardTopList', 'leaderboardTopList');
+  const aroundNode = uiNode('leaderboardAroundMeList', 'leaderboardAroundMeList');
+
+  if (titleNode) {
+    titleNode.textContent = `${formatLeaderboardScopeLabel(uiState.scope)} ${formatLeaderboardCategoryLabel(uiState.category)}`;
+  }
+  if (subtitleNode) {
+    subtitleNode.textContent = 'Nur verifizierte Ergebnisse erscheinen hier.';
+  }
+  if (statusNode) {
+    statusNode.textContent = uiState.loading
+      ? 'Leaderboard wird geladen …'
+      : (uiState.error || (uiState.periodKey ? `Periode ${uiState.periodKey}` : 'Weekly Snapshot'));
+  }
+  if (overallBtn) {
+    overallBtn.classList.toggle('is-active', uiState.category === 'overall');
+    overallBtn.setAttribute('aria-pressed', String(uiState.category === 'overall'));
+    overallBtn.onclick = () => onLeaderboardCategoryChange('overall');
+  }
+  if (qualityBtn) {
+    qualityBtn.classList.toggle('is-active', uiState.category === 'quality');
+    qualityBtn.setAttribute('aria-pressed', String(uiState.category === 'quality'));
+    qualityBtn.onclick = () => onLeaderboardCategoryChange('quality');
+  }
+
+  if (meNode) {
+    meNode.replaceChildren();
+    if (uiState.meEntry && typeof uiState.meEntry === 'object' && uiState.meEntry.rank) {
+      const me = uiState.meEntry;
+      const card = document.createElement('article');
+      card.className = 'leaderboard-me-card';
+      const bestRankText = Number.isFinite(Number(me.bestRank)) ? ` · Bestes Weekly #${Math.trunc(Number(me.bestRank))}` : '';
+      card.innerHTML = `
+        <strong>Dein Weekly-Rang</strong>
+        <div class="leaderboard-me-card__score">#${escapeHtml(String(me.rank))}</div>
+        <p class="sheet-note">${escapeHtml(`Aktuell ${formatLeaderboardEntryScore(me.entry || me, uiState.category)} ${uiState.category === 'quality' ? 'Quality' : 'Score'}${bestRankText}`)}</p>
+      `;
+      meNode.appendChild(card);
+    } else if (!authIdentity) {
+      const hint = document.createElement('p');
+      hint.className = 'sheet-note leaderboard-empty-note';
+      hint.textContent = 'Mit Login siehst du hier deinen Weekly-Rang und deine Position im Feld.';
+      meNode.appendChild(hint);
+    } else {
+      const hint = document.createElement('p');
+      hint.className = 'sheet-note leaderboard-empty-note';
+      hint.textContent = 'Noch kein verifizierter Weekly-Eintrag für dieses Profil.';
+      meNode.appendChild(hint);
+    }
+  }
+
+  renderLeaderboardEntryList(topNode, uiState.topEntries, {
+    category: uiState.category,
+    emptyText: uiState.error || 'Diese Woche gibt es hier noch keine verifizierten Einträge.'
+  });
+  renderLeaderboardEntryList(aroundNode, uiState.aroundMeEntries, {
+    category: uiState.category,
+    emptyText: authIdentity
+      ? 'Sobald ein verifizierter Weekly-Eintrag vorliegt, erscheint hier dein Umfeld.'
+      : 'Mit Login siehst du hier deine Position im direkten Umfeld.'
+  });
+}
+
 function getCanonicalHarvestForecast(snapshot = state) {
   const harvestApi = getHarvestApi();
   const run = snapshot && typeof snapshot === 'object' ? snapshot.run : null;
@@ -1197,6 +2015,977 @@ function formatHarvestQualityBand(forecast) {
     ? harvestApi.qualityTierLabel(forecast && forecast.projectedQualityTier)
     : 'B';
   return `${qualityBand} / ${Math.round(Number(forecast && forecast.qualityScore) || 0)}`;
+}
+
+function formatHarvestReadinessLabel(confidenceBand) {
+  switch (String(confidenceBand || 'medium')) {
+    case 'high':
+      return 'Klar lesbar';
+    case 'low':
+      return 'Noch volatil';
+    default:
+      return 'Solide Richtung';
+  }
+}
+
+function buildHarvestHeroCopy(forecast) {
+  const harvestScore = Math.round(Number(forecast && forecast.harvestScore) || 0);
+  const qualityScore = Math.round(Number(forecast && forecast.qualityScore) || 0);
+  const trend = String(forecast && forecast.forecastTrend || 'stable');
+
+  if (harvestScore >= 84 && qualityScore >= 82) {
+    return {
+      title: trend === 'falling' ? 'Starke Prognose, leicht unter Druck' : 'Starke Prognose',
+      subtitle: trend === 'falling'
+        ? 'Der Lauf steht gut, verliert aber gerade etwas Ruhe im Finish.'
+        : 'Sauberer Lauf mit starker Basis und guter Qualität.'
+    };
+  }
+  if (harvestScore >= 70) {
+    return {
+      title: trend === 'rising' ? 'Solider Lauf mit Aufwind' : 'Solide Prognose',
+      subtitle: trend === 'falling'
+        ? 'Vieles ist noch intakt, aber einzelne Bremsen kosten gerade Qualität oder Finish.'
+        : 'Der Lauf ist gut spielbar und noch klar nach oben offen.'
+    };
+  }
+  if (harvestScore >= 54) {
+    return {
+      title: trend === 'rising' ? 'Noch viel rettbar' : 'Finish aktuell gebremst',
+      subtitle: 'Die Ernte ist noch offen. Ein sauberer nächster Schritt ist jetzt wichtiger als weiteres Pushen.'
+    };
+  }
+  return {
+    title: 'Schwieriger Lauf, aber offen',
+    subtitle: 'Ein Teil ist bereits weg, trotzdem kann ein ruhiger letzter Hebel den Abschluss noch deutlich aufwerten.'
+  };
+}
+
+function formatHarvestImpactLabel(impact, mode = 'neutral') {
+  const magnitude = Math.abs(Math.round(Number(impact) || 0));
+  if (mode === 'loss') {
+    return 'Fix';
+  }
+  if (magnitude >= 8) {
+    return mode === 'positive' ? 'Trägt stark' : 'Bremst stark';
+  }
+  if (magnitude >= 4) {
+    return mode === 'positive' ? 'Hilft spürbar' : 'Kostet spürbar';
+  }
+  return mode === 'positive' ? 'Hilft leicht' : 'Bremst leicht';
+}
+
+function describeHarvestGainRange(item) {
+  const min = Math.round(Number(item && item.estimatedGainMin) || 0);
+  const max = Math.round(Number(item && item.estimatedGainMax) || 0);
+  if (max <= 0) {
+    return 'kleiner Hebel';
+  }
+  if (min === max) {
+    return `ca. +${max}`;
+  }
+  return `ca. +${min} bis +${max}`;
+}
+
+function clipHarvestUiText(text, maxLength = 96) {
+  const source = String(text || '').trim();
+  if (!source) {
+    return '';
+  }
+  if (source.length <= maxLength) {
+    return source;
+  }
+  return `${source.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function sentenceCaseHarvestText(text) {
+  const source = String(text || '').trim();
+  if (!source) {
+    return '';
+  }
+  return source.charAt(0).toUpperCase() + source.slice(1);
+}
+
+function normalizeHarvestUiText(rawText, mode = 'reason') {
+  const source = String(rawText || '').trim();
+  if (!source) {
+    return mode === 'loss'
+      ? 'Ein Teil dieser Linie ist bereits fest verloren.'
+      : (mode === 'opportunity'
+        ? 'Hier liegt gerade der klarste nächste Schritt.'
+        : 'Die Richtung bleibt aktuell vergleichsweise ruhig.');
+  }
+
+  let text = source
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const replacements = [
+    [/\bevent chance utilized\b/gi, 'Gute Phase gut genutzt'],
+    [/\bevent opportunity utilized\b/gi, 'Gute Phase gut genutzt'],
+    [/\binstability penalty active\b/gi, 'Instabile Bedingungen bremsen aktuell'],
+    [/\binstability penalty\b/gi, 'Instabile Bedingungen bremsen aktuell'],
+    [/\bstability penalty\b/gi, 'Instabile Bedingungen bremsen aktuell'],
+    [/\blate stress spike\b/gi, 'Später Stress kostet gerade Qualität'],
+    [/\blate stress\b/gi, 'Später Stress kostet gerade Qualität'],
+    [/\bunresolved event pressure\b/gi, 'Offene Probleme drücken die Prognose'],
+    [/\bevent pressure\b/gi, 'Offene Probleme drücken die Prognose'],
+    [/\bclimate instability\b/gi, 'Unruhiges Klima bremst den Lauf'],
+    [/\bunstable climate\b/gi, 'Unruhiges Klima bremst den Lauf'],
+    [/\bclimate drift\b/gi, 'Unruhiges Klima bremst den Lauf'],
+    [/\baction inefficiency\b/gi, 'Eingriffe waren zuletzt eher ineffizient'],
+    [/\baction inefficiencies\b/gi, 'Eingriffe waren zuletzt eher ineffizient'],
+    [/\binefficient actions?\b/gi, 'Eingriffe waren zuletzt eher ineffizient'],
+    [/\bredundant actions?\b/gi, 'Zu viele unnötige Eingriffe bremsen gerade'],
+    [/\bovercorrection\b/gi, 'Zu starkes Gegensteuern kostet Ruhe'],
+    [/\bunresolved\b/gi, 'offen'],
+    [/\bpenalty\b/gi, 'Bremse'],
+    [/\bmodifier\b/gi, 'Einfluss'],
+    [/\bcoefficient\b/gi, 'Einfluss'],
+    [/\bstate\b/gi, 'Lage'],
+    [/\bpressure\b/gi, 'Druck'],
+    [/\bactive\b/gi, 'spürbar'],
+    [/\bquality loss(es)?\b/gi, 'Ein Teil der Qualität ist bereits verloren'],
+    [/\byield loss(es)?\b/gi, 'Ein Teil des Ertrags ist bereits verloren'],
+    [/\blocked loss(es)?\b/gi, 'Ein Teil dieser Linie ist bereits verloren'],
+    [/\brecovery opportunity\b/gi, 'Verbesserung ist noch möglich'],
+    [/\brecovery opportunities\b/gi, 'Verbesserungen sind noch möglich'],
+    [/\bforecast\b/gi, 'Prognose']
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    text = text.replace(pattern, replacement);
+  }
+
+  text = text
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+\./g, '.')
+    .replace(/\s+,/g, ',')
+    .trim();
+
+  if (mode === 'loss') {
+    text = text
+      .replace(/\bcritical\b/gi, 'klar')
+      .replace(/\bsevere\b/gi, 'spürbar');
+  }
+
+  if (mode === 'opportunity') {
+    text = text
+      .replace(/\bboost\b/gi, 'anheben')
+      .replace(/\bpush(ing)?\b/gi, 'weiter drücken');
+  }
+
+  return clipHarvestUiText(sentenceCaseHarvestText(text), mode === 'hero' ? 88 : 96);
+}
+
+function normalizeHarvestUiLabel(rawLabel, mode = 'driver') {
+  const source = String(rawLabel || '').trim();
+  if (!source) {
+    return mode === 'opportunity' ? 'Beste nächste Verbesserung' : 'Treiber';
+  }
+
+  let label = source
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const replacements = [
+    [/\bevent chance\b/gi, 'Gute Phase'],
+    [/\bevent opportunity\b/gi, 'Gute Phase'],
+    [/\bclimate instability\b/gi, 'Unruhiges Klima'],
+    [/\blate stress spike\b/gi, 'Später Stress'],
+    [/\baction inefficiency\b/gi, 'Ineffiziente Eingriffe'],
+    [/\bquality loss(es)?\b/gi, 'Qualitätsverlust'],
+    [/\byield loss(es)?\b/gi, 'Ertragsverlust'],
+    [/\blocked loss(es)?\b/gi, 'Fester Verlust'],
+    [/\brecovery opportunity\b/gi, 'Nächste Verbesserung'],
+    [/\brecovery opportunities\b/gi, 'Weitere Verbesserungen'],
+    [/\bunresolved event pressure\b/gi, 'Offene Probleme'],
+    [/\bevent pressure\b/gi, 'Offene Probleme']
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    label = label.replace(pattern, replacement);
+  }
+
+  return clipHarvestUiText(sentenceCaseHarvestText(label), 44);
+}
+
+function buildRunSummaryHarvestTone(harvestSummary) {
+  const score = Math.round(Number(harvestSummary && harvestSummary.harvestScore) || 0);
+  const quality = Math.round(Number(harvestSummary && harvestSummary.qualityScore) || 0);
+  if (score >= 88 && quality >= 82) {
+    return {
+      title: 'Starker Run',
+      subtitle: 'Sehr sauberer Abschluss mit klarer Erntelinie.'
+    };
+  }
+  if (score >= 72) {
+    return {
+      title: 'Solide Ernte',
+      subtitle: 'Der Run war stabil und hatte mehrere starke Phasen.'
+    };
+  }
+  if (score >= 56) {
+    return {
+      title: 'Durchwachsener Run',
+      subtitle: 'Gute Ansätze waren da, aber einzelne Bremsen haben Tempo gekostet.'
+    };
+  }
+  return {
+    title: 'Schwieriger Abschluss',
+    subtitle: 'Der Run war unter Druck, trotzdem ist die Richtung für den nächsten Versuch klarer.'
+  };
+}
+
+function buildRunSummaryHarvestMotivation(harvestSummary) {
+  const opportunities = Array.isArray(harvestSummary && harvestSummary.recoveryOpportunities)
+    ? harvestSummary.recoveryOpportunities
+    : [];
+  if (opportunities.length) {
+    const top = opportunities[0];
+    const label = normalizeHarvestUiLabel(top.label || 'nächste Verbesserung', 'opportunity');
+    const reason = normalizeHarvestUiText(top.reason || 'Hier liegt der klarste nächste Hebel.', 'opportunity');
+    return `${label}: ${reason}`;
+  }
+
+  const negative = Array.isArray(harvestSummary && harvestSummary.negativeDrivers) ? harvestSummary.negativeDrivers : [];
+  if (negative.length) {
+    const top = negative[0];
+    const label = normalizeHarvestUiLabel(top.label || 'Bremsfaktor');
+    return `${label} ruhiger spielen, dann ist im nächsten Run mehr drin.`;
+  }
+  return 'Du bist nah an einer stärkeren Ernte. Ein sauberer nächster Schritt reicht oft schon aus.';
+}
+
+function renderRunSummaryHarvestMetricRows(container, harvestSummary) {
+  if (!container) {
+    return;
+  }
+  container.replaceChildren();
+  if (!harvestSummary) {
+    return;
+  }
+
+  const rows = [
+    { key: 'yield', label: 'Yield', value: harvestSummary.yieldScore, tier: 'primary' },
+    { key: 'quality', label: 'Quality', value: harvestSummary.qualityScore, tier: 'primary' },
+    { key: 'stability', label: 'Stability', value: harvestSummary.stabilityScore, tier: 'primary' },
+    { key: 'efficiency', label: 'Efficiency', value: harvestSummary.efficiencyScore, tier: 'secondary' },
+    { key: 'challenge', label: 'Challenge', value: harvestSummary.challengeScore, tier: 'muted' }
+  ];
+
+  for (const item of rows) {
+    const row = document.createElement('article');
+    row.className = `run-summary-harvest-metric run-summary-harvest-metric--${item.tier}`;
+    const hasValue = Number.isFinite(Number(item.value));
+    row.innerHTML = `<span>${escapeHtml(item.label)}</span><strong>${escapeHtml(hasValue ? String(Math.round(Number(item.value) || 0)) : '--')}</strong>`;
+    container.appendChild(row);
+  }
+}
+
+function renderRunSummaryHarvestImpact(container, harvestSummary) {
+  if (!container) {
+    return;
+  }
+  container.replaceChildren();
+  if (!harvestSummary) {
+    return;
+  }
+
+  const positives = Array.isArray(harvestSummary.positiveDrivers) ? harvestSummary.positiveDrivers.slice(0, 3) : [];
+  const negatives = Array.isArray(harvestSummary.negativeDrivers) ? harvestSummary.negativeDrivers.slice(0, 2) : [];
+  const entries = [];
+
+  for (const item of positives) {
+    entries.push({
+      tone: 'positive',
+      title: normalizeHarvestUiLabel(item.label || 'Starker Faktor'),
+      copy: normalizeHarvestUiText(item.reason || 'Hat die Prognose spürbar getragen.')
+    });
+  }
+  for (const item of negatives) {
+    entries.push({
+      tone: 'negative',
+      title: normalizeHarvestUiLabel(item.label || 'Bremsfaktor'),
+      copy: normalizeHarvestUiText(item.reason || 'Hat die Prognose gebremst.')
+    });
+  }
+
+  if (!entries.length) {
+    const empty = document.createElement('p');
+    empty.className = 'sheet-note';
+    empty.textContent = 'Kein einzelner Faktor hat den Run dominant bestimmt.';
+    container.appendChild(empty);
+    return;
+  }
+
+  for (const item of entries.slice(0, 5)) {
+    const node = document.createElement('article');
+    node.className = `run-summary-impact-note run-summary-impact-note--${item.tone}`;
+    node.innerHTML = `<strong>${escapeHtml(item.title)}</strong><p class="sheet-note">${escapeHtml(item.copy)}</p>`;
+    container.appendChild(node);
+  }
+}
+
+function renderRunSummaryHarvestMoments(container, harvestSummary) {
+  if (!container) {
+    return;
+  }
+  container.replaceChildren();
+  if (!harvestSummary) {
+    return;
+  }
+
+  const bestDriver = Array.isArray(harvestSummary.positiveDrivers) && harvestSummary.positiveDrivers.length
+    ? harvestSummary.positiveDrivers[0]
+    : null;
+  const biggestLoss = Array.isArray(harvestSummary.lockedLosses) && harvestSummary.lockedLosses.length
+    ? harvestSummary.lockedLosses[0]
+    : (Array.isArray(harvestSummary.negativeDrivers) && harvestSummary.negativeDrivers.length ? harvestSummary.negativeDrivers[0] : null);
+
+  if (bestDriver) {
+    const bestNode = document.createElement('article');
+    bestNode.className = 'run-summary-impact-note run-summary-impact-note--positive';
+    bestNode.innerHTML = `<strong>Stärkster Moment: ${escapeHtml(normalizeHarvestUiLabel(bestDriver.label || 'Gute Phase'))}</strong><p class="sheet-note">${escapeHtml(normalizeHarvestUiText(bestDriver.reason || 'Diese Phase hat den Run spürbar getragen.'))}</p>`;
+    container.appendChild(bestNode);
+  }
+
+  if (biggestLoss) {
+    const lossNode = document.createElement('article');
+    lossNode.className = 'run-summary-impact-note run-summary-impact-note--negative';
+    lossNode.innerHTML = `<strong>Größter Verlust: ${escapeHtml(normalizeHarvestUiLabel(biggestLoss.label || 'Bremsfaktor'))}</strong><p class="sheet-note">${escapeHtml(normalizeHarvestUiText(biggestLoss.reason || 'Dieser Teil hat den Abschluss spürbar gedrückt.', 'loss'))}</p>`;
+    container.appendChild(lossNode);
+  }
+
+  if (!bestDriver && !biggestLoss) {
+    const empty = document.createElement('p');
+    empty.className = 'sheet-note';
+    empty.textContent = 'Der Run war ausgeglichen, ohne einzelnen dominanten Ausschlag.';
+    container.appendChild(empty);
+  }
+}
+
+function describeVerificationStatus(status, submissionState = 'idle') {
+  const safeStatus = String(status || 'local_only').trim();
+  if (safeStatus === 'verified') {
+    return 'Dieses Ergebnis wurde serverseitig bestätigt.';
+  }
+  if (safeStatus === 'provisional') {
+    return 'Eine vorläufige Prüfung liegt vor. Das finale Ergebnis kann noch nachziehen.';
+  }
+  if (safeStatus === 'under_review') {
+    return 'Dein Ergebnis wird noch vertieft geprüft.';
+  }
+  if (safeStatus === 'rejected') {
+    return 'Dieses Ergebnis konnte nicht verifiziert werden. Die lokale Auswertung bleibt bestehen.';
+  }
+  if (safeStatus === 'submitted' || submissionState === 'submitting' || submissionState === 'polling') {
+    return submissionState === 'submitting'
+      ? 'Die lokale Auswertung wird gerade an den Server übergeben.'
+      : 'Dein Ergebnis wird gerade geprüft.';
+  }
+  return 'Kein Backend-Check vorhanden. Diese Auswertung bleibt lokal.';
+}
+
+function buildVerificationHeroTone(resultLike, verificationStatus, fallbackSummary = null) {
+  const result = resultLike && typeof resultLike === 'object' ? resultLike : {};
+  const score = Math.round(Number(result.harvestScore) || 0);
+  const quality = Math.round(Number(result.qualityScore) || Number(fallbackSummary && fallbackSummary.qualityScore) || 0);
+
+  if (verificationStatus === 'verified') {
+    if (score >= 84 && quality >= 80) {
+      return { title: 'Verifiziert stark', subtitle: 'Der Server bestätigt einen sehr sauberen Abschluss.' };
+    }
+    if (score >= 68) {
+      return { title: 'Verifiziert solide', subtitle: 'Das Ergebnis wurde bestätigt und liegt auf einer stabilen Linie.' };
+    }
+    return { title: 'Verifiziert schwierig', subtitle: 'Der Server bestätigt das Ergebnis, aber der Run blieb unter Druck.' };
+  }
+
+  if (verificationStatus === 'provisional') {
+    return { title: 'Vorläufig geprüft', subtitle: 'Eine erste Server-Prüfung liegt vor. Der finale Check läuft noch.' };
+  }
+
+  return buildRunSummaryHarvestTone(fallbackSummary || result);
+}
+
+function formatHarvestVerificationBadge(status, submissionState = 'idle') {
+  if (status === 'verified') return 'Verifiziert';
+  if (status === 'provisional') return 'Vorläufig geprüft';
+  if (status === 'under_review') return 'Wird geprüft';
+  if (status === 'rejected') return 'Nicht verifizierbar';
+  if (status === 'submitted' || submissionState === 'submitting' || submissionState === 'polling') return 'Wird geprüft';
+  return 'Forecast';
+}
+
+function buildHarvestVerificationInsightCards(readiness, localSummary) {
+  const cards = [];
+  const safeReadiness = readiness && typeof readiness === 'object' ? readiness : getHarvestSubmissionReadinessDefaults();
+  const localScore = Math.round(Number(localSummary && localSummary.harvestScore) || 0);
+  const verifiedResult = normalizeHarvestVerificationResult(safeReadiness.verifiedHarvestResult, 'verified');
+  const provisionalResult = normalizeHarvestVerificationResult(safeReadiness.provisionalHarvestResult, 'provisional');
+  const anomalyFlags = normalizeAnomalyFlags(safeReadiness.anomalyFlags);
+
+  if (safeReadiness.verificationStatus === 'verified' && verifiedResult) {
+    const verifiedScore = Math.round(Number(verifiedResult.harvestScore) || 0);
+    cards.push({
+      tone: 'verified',
+      title: 'Verifiziertes Ergebnis',
+      copy: `Serverwert ${verifiedScore} · lokal ${localScore}. Jetzt zählt die bestätigte Linie.`
+    });
+    if (safeReadiness.leaderboardSnapshot && Number.isFinite(Number(safeReadiness.leaderboardSnapshot.rank))) {
+      const rank = Math.trunc(Number(safeReadiness.leaderboardSnapshot.rank));
+      cards.push({
+        tone: 'soft',
+        title: 'Weekly-Rang',
+        copy: `Aktuell #${rank} im ${formatLeaderboardCategoryLabel(safeReadiness.leaderboardSnapshot.category || 'overall')}-Leaderboard.`
+      });
+    }
+    if (verifiedResult.leaderboardEligible || safeReadiness.leaderboardEligible) {
+      cards.push({
+        tone: 'soft',
+        title: 'Leaderboard-fähig',
+        copy: 'Dieses Ergebnis kann in Weekly-Rankings geführt werden, sobald ein Vergleichsfeld vorliegt.'
+      });
+    }
+    return cards;
+  }
+
+  if (safeReadiness.verificationStatus === 'provisional' && provisionalResult) {
+    const provisionalScore = Math.round(Number(provisionalResult.harvestScore) || 0);
+    cards.push({
+      tone: 'provisional',
+      title: 'Vorläufig geprüft',
+      copy: `Der erste Serverwert liegt bei ${provisionalScore}. Deine lokale Auswertung bleibt bis zum Abschluss sichtbar.`
+    });
+    return cards;
+  }
+
+  if (safeReadiness.verificationStatus === 'under_review') {
+    cards.push({
+      tone: 'review',
+      title: 'Wird geprüft',
+      copy: 'Dein Ergebnis wurde übernommen und braucht noch eine vertiefte Prüfung.'
+    });
+    if (anomalyFlags.length) {
+      cards.push({
+        tone: 'soft',
+        title: 'Server-Hinweis',
+        copy: `Auffällig war vor allem: ${normalizeHarvestUiText(anomalyFlags[0], 'loss')}`
+      });
+    }
+    return cards;
+  }
+
+  if (safeReadiness.verificationStatus === 'rejected') {
+    cards.push({
+      tone: 'rejected',
+      title: 'Nicht verifizierbar',
+      copy: safeReadiness.statusMessage || 'Die lokale Auswertung bleibt erhalten, aber der Server konnte dieses Ergebnis nicht bestätigen.'
+    });
+    if (anomalyFlags.length) {
+      cards.push({
+        tone: 'soft',
+        title: 'Kurz gesagt',
+        copy: normalizeHarvestUiText(anomalyFlags[0], 'loss')
+      });
+    }
+    return cards;
+  }
+
+  if (safeReadiness.submissionState === 'submitting') {
+    cards.push({
+      tone: 'submitted',
+      title: 'Übermittlung läuft',
+      copy: 'Die lokale Auswertung ist da. Der Server-Check wird gerade gestartet.'
+    });
+    return cards;
+  }
+
+  if (safeReadiness.verificationStatus === 'submitted' || safeReadiness.submissionState === 'polling') {
+    cards.push({
+      tone: 'submitted',
+      title: 'Wird geprüft',
+      copy: 'Dein Ergebnis ist angekommen und wird gerade serverseitig bewertet.'
+    });
+    return cards;
+  }
+
+  if (safeReadiness.submissionError) {
+    cards.push({
+      tone: 'soft',
+      title: 'Nur lokal verfügbar',
+      copy: safeReadiness.submissionError
+    });
+    return cards;
+  }
+
+  cards.push({
+    tone: 'soft',
+    title: 'Nur lokal ausgewertet',
+    copy: 'Ohne Server-Check bleibt dieses Ergebnis eine lokale Auswertung.'
+  });
+  return cards;
+}
+
+function renderRunSummaryHarvestVerification(container, readiness, localSummary) {
+  if (!container) {
+    return;
+  }
+  container.replaceChildren();
+  const cards = buildHarvestVerificationInsightCards(readiness, localSummary);
+  const visible = cards.length > 0;
+  container.classList.toggle('hidden', !visible);
+  container.setAttribute('aria-hidden', String(!visible));
+  if (!visible) {
+    return;
+  }
+
+  for (const item of cards) {
+    const card = document.createElement('article');
+    card.className = `run-summary-harvest-status-card run-summary-harvest-status-card--${item.tone || 'soft'}`;
+    card.innerHTML = `<strong>${escapeHtml(String(item.title || 'Status'))}</strong><p class="sheet-note">${escapeHtml(String(item.copy || ''))}</p>`;
+    container.appendChild(card);
+  }
+}
+
+function createHarvestSessionPayload(run) {
+  return {
+    clientVersion: getGrowSimClientVersion(),
+    startedAt: isoFromRealMs(run && run.startedAtRealMs),
+    declaredSetup: buildDeclaredSetup(run),
+    declaredChallenges: buildDeclaredChallenges(run)
+  };
+}
+
+function createHarvestSubmitPayload(summary, run) {
+  const safeSummary = summary && typeof summary === 'object' ? summary : {};
+  const safeRun = run && typeof run === 'object' ? run : getCanonicalRun(state);
+  const readiness = ensureHarvestBackendState(safeRun);
+  const localHarvestSummary = safeSummary.harvestSummary && typeof safeSummary.harvestSummary === 'object'
+    ? safeSummary.harvestSummary
+    : (safeRun.harvest && safeRun.harvest.runOutcomeDraft && typeof safeRun.harvest.runOutcomeDraft === 'object'
+      ? safeRun.harvest.runOutcomeDraft
+      : null);
+
+  const telemetry = {
+    simDay: Number(safeSummary.simDay || state.simulation.simDay || 0),
+    stageLabel: String(safeSummary.stageLabel || ''),
+    actionsCount: Math.max(0, Math.trunc(Number(safeSummary.actionsCount || (state.history && state.history.actions && state.history.actions.length) || 0))),
+    eventsCount: Math.max(0, Math.trunc(Number(safeSummary.eventsCount || (state.history && state.history.events && state.history.events.length) || 0))),
+    finalStatus: {
+      health: round2(Number(state.status && state.status.health) || 0),
+      stress: round2(Number(state.status && state.status.stress) || 0),
+      water: round2(Number(state.status && state.status.water) || 0),
+      nutrition: round2(Number(state.status && state.status.nutrition) || 0),
+      risk: round2(Number(state.status && state.status.risk) || 0),
+      growth: round2(Number(state.status && state.status.growth) || 0)
+    },
+    forecastHistory: Array.isArray(safeRun.harvest && safeRun.harvest.forecastHistory) ? safeRun.harvest.forecastHistory.slice(-10) : [],
+    analysisHistory: Array.isArray(safeRun.harvest && safeRun.harvest.analysisHistory) ? safeRun.harvest.analysisHistory.slice(-6) : []
+  };
+
+  const clientSummary = {
+    runId: Number(safeRun.id || 0),
+    startedAt: isoFromRealMs(safeRun.startedAtRealMs),
+    endedAt: isoFromRealMs(safeSummary.endedAtRealMs || safeRun.endedAtRealMs || Date.now()),
+    endReason: String(safeSummary.endReason || safeRun.endReason || 'death'),
+    summary: {
+      simDay: Number(safeSummary.simDay || 0),
+      stageLabel: String(safeSummary.stageLabel || ''),
+      qualityScore: round2(Number(safeSummary.qualityScore) || 0),
+      qualityTier: String(safeSummary.qualityTier || ''),
+      actionsCount: Math.max(0, Math.trunc(Number(safeSummary.actionsCount || 0))),
+      eventsCount: Math.max(0, Math.trunc(Number(safeSummary.eventsCount || 0)))
+    },
+    harvest: localHarvestSummary ? {
+      harvestScore: round2(Number(localHarvestSummary.harvestScore) || 0),
+      yieldScore: round2(Number(localHarvestSummary.yieldScore) || 0),
+      qualityScore: round2(Number(localHarvestSummary.qualityScore) || 0),
+      stabilityScore: round2(Number(localHarvestSummary.stabilityScore) || 0),
+      efficiencyScore: round2(Number(localHarvestSummary.efficiencyScore) || 0),
+      challengeScore: round2(Number(localHarvestSummary.challengeScore) || 0),
+      qualityBandLabel: String(localHarvestSummary.qualityBandLabel || ''),
+      confidenceBand: String(localHarvestSummary.confidenceBand || ''),
+      positiveDrivers: Array.isArray(localHarvestSummary.positiveDrivers) ? localHarvestSummary.positiveDrivers.slice(0, 3) : [],
+      negativeDrivers: Array.isArray(localHarvestSummary.negativeDrivers) ? localHarvestSummary.negativeDrivers.slice(0, 3) : [],
+      lockedLosses: Array.isArray(localHarvestSummary.lockedLosses) ? localHarvestSummary.lockedLosses.slice(0, 3) : [],
+      recoveryOpportunities: Array.isArray(localHarvestSummary.recoveryOpportunities) ? localHarvestSummary.recoveryOpportunities.slice(0, 3) : []
+    } : null
+  };
+
+  return {
+    sessionId: readiness.backendSessionId,
+    clientVersion: getGrowSimClientVersion(),
+    endedAt: isoFromRealMs(safeSummary.endedAtRealMs || safeRun.endedAtRealMs || Date.now()),
+    endReason: String(safeSummary.endReason || safeRun.endReason || 'death'),
+    declaredSetup: buildDeclaredSetup(safeRun),
+    declaredChallenges: buildDeclaredChallenges(safeRun),
+    clientSummary,
+    telemetry,
+    clientHashes: {
+      setupHash: shortHashFromString(stableSerialize(buildDeclaredSetup(safeRun))),
+      summaryHash: shortHashFromString(stableSerialize(clientSummary)),
+      telemetryHash: shortHashFromString(stableSerialize(telemetry))
+    }
+  };
+}
+
+function clearHarvestVerificationPolling() {
+  if (harvestBackendRuntime.pollTimer !== null) {
+    window.clearTimeout(harvestBackendRuntime.pollTimer);
+    harvestBackendRuntime.pollTimer = null;
+  }
+  harvestBackendRuntime.pollSubmissionId = '';
+  harvestBackendRuntime.pollAttempts = 0;
+}
+
+function applyHarvestVerificationPayload(payload, options = {}) {
+  const run = getCanonicalRun(state);
+  const readiness = ensureHarvestBackendState(run);
+  const status = extractVerificationStatusFromPayload(payload);
+  const result = extractVerificationResultFromPayload(payload, status);
+  const submissionId = extractSubmissionIdFromPayload(payload) || readiness.submissionId;
+  const statusMessage = String(
+    (payload && payload.message)
+    || (payload && payload.detail)
+    || (result && result.explanation)
+    || describeVerificationStatus(status, readiness.submissionState)
+  ).trim();
+  const anomalyFlags = normalizeAnomalyFlags(
+    (payload && payload.anomalyFlags)
+    || (payload && payload.flags)
+    || (result && result.anomalyFlags)
+  );
+
+  readiness.submissionId = submissionId;
+  readiness.verificationStatus = status;
+  readiness.lastVerificationAt = Date.now();
+  readiness.lastVerifiedSyncAtRealMs = Date.now();
+  readiness.statusMessage = statusMessage;
+  readiness.serverCode = typeof payload === 'object' && payload && typeof payload.code === 'string'
+    ? payload.code.trim()
+    : '';
+  readiness.submissionError = '';
+  readiness.pendingSubmission = status === 'submitted' || status === 'provisional';
+  readiness.reviewNeeded = status === 'under_review' || Boolean(payload && payload.reviewNeeded);
+  readiness.leaderboardEligible = Boolean((payload && payload.leaderboardEligible) || (result && result.leaderboardEligible));
+  readiness.anomalyFlags = anomalyFlags;
+  if (status === 'verified') {
+    readiness.verifiedHarvestResult = result;
+    readiness.provisionalHarvestResult = null;
+    readiness.submissionState = 'verified';
+  } else if (status === 'provisional') {
+    readiness.provisionalHarvestResult = result;
+    readiness.submissionState = 'polling';
+  } else if (status === 'rejected') {
+    readiness.submissionState = 'rejected';
+  } else if (status === 'under_review') {
+    readiness.submissionState = 'under_review';
+  } else {
+    readiness.submissionState = options.fromPoll ? 'polling' : 'submitted';
+  }
+}
+
+async function createHarvestRunSessionForCurrentRun(options = {}) {
+  const run = getCanonicalRun(state);
+  const readiness = ensureHarvestBackendState(run);
+  const shouldSkipAuth = !isAuthSessionValid() || !readAuthToken();
+  if (shouldSkipAuth) {
+    readiness.sessionState = 'local_only';
+    readiness.sessionError = 'Ohne Login bleibt dieser Run lokal.';
+    schedulePersistState(true);
+    renderAll();
+    return '';
+  }
+  if (readiness.backendSessionId && !options.force) {
+    return readiness.backendSessionId;
+  }
+  if (harvestBackendRuntime.sessionPromise) {
+    return harvestBackendRuntime.sessionPromise;
+  }
+
+  readiness.sessionState = 'creating';
+  readiness.sessionError = '';
+  renderAll();
+  schedulePersistState(true);
+
+  harvestBackendRuntime.activeRunId = Number(run.id || 0);
+  harvestBackendRuntime.sessionPromise = (async () => {
+    try {
+      const response = await appApiFetch('/v1/run-sessions', {
+        method: 'POST',
+        headers: buildHarvestApiHeaders(),
+        body: JSON.stringify(createHarvestSessionPayload(run))
+      });
+      const payload = await safeReadJson(response);
+      if (!response.ok) {
+        const mappedError = mapHarvestBackendError({
+          status: response.status,
+          code: payload && payload.code,
+          message: payload && payload.message
+        }, 'Die Run-Sitzung konnte nicht angelegt werden.');
+        readiness.sessionState = 'error';
+        readiness.sessionError = mappedError.message;
+        schedulePersistState(true);
+        renderAll();
+        return '';
+      }
+
+      const sessionId = extractSessionIdFromPayload(payload);
+      if (!sessionId) {
+        readiness.sessionState = 'error';
+        readiness.sessionError = 'Die Run-Sitzung wurde serverseitig nicht bestätigt.';
+        schedulePersistState(true);
+        renderAll();
+        return '';
+      }
+
+      readiness.backendSessionId = sessionId;
+      readiness.sessionState = 'ready';
+      readiness.sessionError = '';
+      schedulePersistState(true);
+      renderAll();
+      return sessionId;
+    } catch (error) {
+      const mappedError = mapHarvestBackendError({ network: true, message: error && error.message ? error.message : '' });
+      readiness.sessionState = 'error';
+      readiness.sessionError = mappedError.message;
+      schedulePersistState(true);
+      renderAll();
+      return '';
+    } finally {
+      harvestBackendRuntime.sessionPromise = null;
+    }
+  })();
+
+  return harvestBackendRuntime.sessionPromise;
+}
+
+function shouldResumeHarvestVerification(readiness) {
+  const safe = readiness && typeof readiness === 'object' ? readiness : getHarvestSubmissionReadinessDefaults();
+  return Boolean(
+    safe.submissionId
+    && (safe.verificationStatus === 'submitted' || safe.verificationStatus === 'provisional')
+  );
+}
+
+async function pollHarvestVerificationStatus(options = {}) {
+  const run = getCanonicalRun(state);
+  const readiness = ensureHarvestBackendState(run);
+  if (!readiness.submissionId || !isAuthSessionValid() || !readAuthToken()) {
+    clearHarvestVerificationPolling();
+    return null;
+  }
+  if (harvestBackendRuntime.pollAttempts >= HARVEST_VERIFICATION_MAX_ATTEMPTS && !options.force) {
+    clearHarvestVerificationPolling();
+    readiness.pendingSubmission = false;
+    schedulePersistState(true);
+    renderAll();
+    return null;
+  }
+
+  harvestBackendRuntime.pollAttempts += 1;
+  harvestBackendRuntime.pollSubmissionId = readiness.submissionId;
+  readiness.submissionState = 'polling';
+  schedulePersistState(true);
+  renderAll();
+
+  try {
+    const response = await appApiFetch(`/v1/runs/${encodeURIComponent(readiness.submissionId)}`, {
+      method: 'GET',
+      headers: buildHarvestApiHeaders()
+    });
+    const payload = await safeReadJson(response);
+    if (!response.ok) {
+      const mappedError = mapHarvestBackendError({
+        status: response.status,
+        code: payload && payload.code,
+        message: payload && payload.message
+      }, 'Der Prüfstatus konnte nicht aktualisiert werden.');
+      readiness.submissionError = mappedError.message;
+      readiness.serverCode = mappedError.code;
+      readiness.pendingSubmission = false;
+      readiness.submissionState = 'submitted';
+      schedulePersistState(true);
+      renderAll();
+      clearHarvestVerificationPolling();
+      return null;
+    }
+
+    applyHarvestVerificationPayload(payload, { fromPoll: true });
+    if (readiness.verificationStatus === 'verified') {
+      void refreshRunLeaderboardSnapshot();
+    }
+    schedulePersistState(true);
+    renderAll();
+    const nextStatus = readiness.verificationStatus;
+    if (nextStatus === 'submitted' || nextStatus === 'provisional') {
+      scheduleHarvestVerificationPolling();
+    } else {
+      clearHarvestVerificationPolling();
+    }
+    return payload;
+  } catch (error) {
+    const mappedError = mapHarvestBackendError({ network: true, message: error && error.message ? error.message : '' });
+    readiness.submissionError = mappedError.message;
+    readiness.pendingSubmission = false;
+    schedulePersistState(true);
+    renderAll();
+    clearHarvestVerificationPolling();
+    return null;
+  }
+}
+
+function scheduleHarvestVerificationPolling(options = {}) {
+  const run = getCanonicalRun(state);
+  const readiness = ensureHarvestBackendState(run);
+  if (!shouldResumeHarvestVerification(readiness)) {
+    clearHarvestVerificationPolling();
+    return;
+  }
+  if (options.resetAttempts) {
+    harvestBackendRuntime.pollAttempts = 0;
+  }
+  if (harvestBackendRuntime.pollTimer !== null) {
+    window.clearTimeout(harvestBackendRuntime.pollTimer);
+    harvestBackendRuntime.pollTimer = null;
+  }
+  const delayMs = options.immediate ? 0 : HARVEST_VERIFICATION_POLL_INTERVAL_MS;
+  harvestBackendRuntime.pollTimer = window.setTimeout(() => {
+    harvestBackendRuntime.pollTimer = null;
+    void pollHarvestVerificationStatus();
+  }, delayMs);
+}
+
+async function submitHarvestRunOutcomeIfPossible(options = {}) {
+  const run = getCanonicalRun(state);
+  const profile = getCanonicalProfile(state);
+  const readiness = ensureHarvestBackendState(run);
+  const summary = profile.lastRunSummary && typeof profile.lastRunSummary === 'object'
+    ? profile.lastRunSummary
+    : null;
+  const localHarvestSummary = summary && summary.harvestSummary && typeof summary.harvestSummary === 'object'
+    ? summary.harvestSummary
+    : (run.harvest && run.harvest.runOutcomeDraft && typeof run.harvest.runOutcomeDraft === 'object' ? run.harvest.runOutcomeDraft : null);
+
+  if (!localHarvestSummary || !readiness.localSummaryReady) {
+    return null;
+  }
+  if (!isAuthSessionValid() || !readAuthToken()) {
+    readiness.submissionState = 'local_only';
+    readiness.verificationStatus = 'local_only';
+    readiness.submissionError = 'Ohne Login bleibt dieses Ergebnis lokal.';
+    readiness.pendingSubmission = false;
+    schedulePersistState(true);
+    renderAll();
+    return null;
+  }
+  if (readiness.submissionId && !options.force) {
+    scheduleHarvestVerificationPolling({ immediate: true, resetAttempts: false });
+    return readiness.submissionId;
+  }
+  if (harvestBackendRuntime.submissionPromise) {
+    return harvestBackendRuntime.submissionPromise;
+  }
+
+  if (!readiness.backendSessionId) {
+    await createHarvestRunSessionForCurrentRun();
+  }
+  if (!readiness.backendSessionId) {
+    readiness.submissionState = 'local_only';
+    readiness.verificationStatus = 'local_only';
+    readiness.submissionError = readiness.sessionError || 'Der Backend-Check war für diesen Run nicht erreichbar.';
+    schedulePersistState(true);
+    renderAll();
+    return null;
+  }
+
+  readiness.pendingSubmission = true;
+  readiness.submissionState = 'submitting';
+  readiness.submissionError = '';
+  readiness.statusMessage = 'Die lokale Auswertung wird gerade übermittelt.';
+  schedulePersistState(true);
+  renderAll();
+
+  harvestBackendRuntime.submissionPromise = (async () => {
+    try {
+      const response = await appApiFetch('/v1/runs/submit', {
+        method: 'POST',
+        headers: buildHarvestApiHeaders(),
+        body: JSON.stringify(createHarvestSubmitPayload(summary, run))
+      });
+      const payload = await safeReadJson(response);
+
+      if (!response.ok) {
+        const mappedError = mapHarvestBackendError({
+          status: response.status,
+          code: payload && payload.code,
+          message: payload && payload.message
+        }, 'Die lokale Auswertung konnte nicht serverseitig geprüft werden.');
+        if (mappedError.code === 'duplicate_submission') {
+          const duplicateSubmissionId = extractSubmissionIdFromPayload(payload);
+          if (duplicateSubmissionId) {
+            readiness.submissionId = duplicateSubmissionId;
+            readiness.verificationStatus = 'submitted';
+            readiness.submissionState = 'submitted';
+            readiness.submissionError = '';
+            schedulePersistState(true);
+            renderAll();
+            scheduleHarvestVerificationPolling({ immediate: true, resetAttempts: true });
+            return duplicateSubmissionId;
+          }
+        }
+        readiness.submissionState = 'error';
+        readiness.pendingSubmission = false;
+        readiness.submissionError = mappedError.message;
+        readiness.serverCode = mappedError.code;
+        schedulePersistState(true);
+        renderAll();
+        return null;
+      }
+
+      readiness.submissionId = extractSubmissionIdFromPayload(payload);
+      applyHarvestVerificationPayload(payload, { fromPoll: false });
+      if (readiness.verificationStatus === 'verified') {
+        void refreshRunLeaderboardSnapshot({ force: true });
+      }
+      readiness.pendingSubmission = readiness.verificationStatus === 'submitted' || readiness.verificationStatus === 'provisional';
+      schedulePersistState(true);
+      renderAll();
+      if (readiness.verificationStatus === 'submitted' || readiness.verificationStatus === 'provisional') {
+        scheduleHarvestVerificationPolling({ immediate: readiness.verificationStatus === 'submitted', resetAttempts: true });
+      } else {
+        clearHarvestVerificationPolling();
+      }
+      return readiness.submissionId;
+    } catch (error) {
+      const mappedError = mapHarvestBackendError({ network: true, message: error && error.message ? error.message : '' });
+      readiness.submissionState = 'error';
+      readiness.pendingSubmission = false;
+      readiness.submissionError = mappedError.message;
+      schedulePersistState(true);
+      renderAll();
+      return null;
+    } finally {
+      harvestBackendRuntime.submissionPromise = null;
+    }
+  })();
+
+  return harvestBackendRuntime.submissionPromise;
+}
+
+function resumeHarvestBackendFlowsAfterRestore() {
+  const run = getCanonicalRun(state);
+  const readiness = ensureHarvestBackendState(run);
+  if ((run.status === 'active' || run.status === 'downed') && !readiness.backendSessionId && isAuthSessionValid() && readAuthToken()) {
+    void createHarvestRunSessionForCurrentRun();
+  }
+  if (shouldResumeHarvestVerification(readiness)) {
+    scheduleHarvestVerificationPolling({ immediate: true, resetAttempts: true });
+  }
 }
 
 function resolveScreenContainer(screenId) {
@@ -1473,6 +3262,7 @@ async function boot() {
     await runBootSubstep('sync_active_event_from_catalog', () => syncActiveEventFromCatalog());
     await runBootSubstep('update_visible_overlays', () => updateVisibleOverlays());
     await runBootSubstep('sync_canonical_state_shape', () => syncCanonicalStateShape());
+    await runBootSubstep('resume_harvest_backend_flows', () => resumeHarvestBackendFlowsAfterRestore());
     logBootStep('boot:runtime_sync', {
       nowMs: state.simulation.nowMs,
       simTimeMs: state.simulation.simTimeMs,
@@ -3476,6 +5266,7 @@ function renderOverlayModules() {
   renderCareSheet();
   renderEventSheet();
   renderAnalysisPanel(false);
+  renderLeaderboardSheet(false);
   renderSettingsSheet();
 }
 
@@ -4606,6 +6397,7 @@ function renderSheets() {
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
   toggleSheet(ui.statDetailSheet, activeSheet === 'statDetail');
   toggleSheet(ui.missionsSheet, activeSheet === 'missions');
+  toggleSheet(ui.leaderboardSheet, activeSheet === 'leaderboard');
 }
 
 function renderGameMenu() {
@@ -4669,11 +6461,11 @@ function renderMenuDynamicRows() {
     ui.menuAchievementsBtn.setAttribute('title', 'Im aktuellen Build noch nicht freigeschaltet.');
   }
   if (ui.menuLeaderboardBtn) {
-    ui.menuLeaderboardBtn.disabled = true;
-    ui.menuLeaderboardBtn.setAttribute('aria-disabled', 'true');
-    ui.menuLeaderboardBtn.classList.add('hidden');
-    ui.menuLeaderboardBtn.setAttribute('aria-hidden', 'true');
-    ui.menuLeaderboardBtn.setAttribute('title', 'Im aktuellen Build noch nicht freigeschaltet.');
+    ui.menuLeaderboardBtn.disabled = false;
+    ui.menuLeaderboardBtn.setAttribute('aria-disabled', 'false');
+    ui.menuLeaderboardBtn.classList.remove('hidden');
+    ui.menuLeaderboardBtn.setAttribute('aria-hidden', 'false');
+    ui.menuLeaderboardBtn.setAttribute('title', 'Öffnet das Weekly-Leaderboard für verifizierte Ergebnisse.');
   }
 
   const meta = getCanonicalMeta(state);
@@ -5595,6 +7387,13 @@ function renderAnalysisOverview() {
     { label: 'Effizienz', value: `${Math.round(Number(forecast.efficiencyScore) || 0)}`, tone: 'value_green' },
     { label: 'Schwierigkeit', value: `${Math.round(Number(forecast.challengeScore) || 0)}`, tone: 'value_gold' }
   ] : [];
+  const heroCopy = forecast ? buildHarvestHeroCopy(forecast) : null;
+  const positiveDrivers = Array.isArray(forecast && forecast.positiveDrivers) ? forecast.positiveDrivers.slice(0, 3) : [];
+  const negativeDrivers = Array.isArray(forecast && forecast.negativeDrivers) ? forecast.negativeDrivers.slice(0, 3) : [];
+  const lockedLosses = Array.isArray(forecast && forecast.lockedLosses) ? forecast.lockedLosses.slice(0, 3) : [];
+  const recoveryOpportunities = Array.isArray(forecast && forecast.recoveryOpportunities) ? forecast.recoveryOpportunities.slice(0, 3) : [];
+  const leadOpportunity = recoveryOpportunities.length ? recoveryOpportunities[0] : null;
+  const supportingOpportunities = leadOpportunity ? recoveryOpportunities.slice(1, 3) : [];
 
   const rowsToHtml = (rows) => rows.map((row) => `
       <div class="gs-analysis-status-row">
@@ -5602,88 +7401,136 @@ function renderAnalysisOverview() {
         <strong class="${escapeHtml(String(row.tone || 'value_green'))}">${escapeHtml(String(row.value || '-'))}</strong>
       </div>
     `).join('');
-  const cardsToHtml = (rows, emptyText, badgeText = null) => {
+  const cardsToHtml = (rows, emptyText, mode = 'neutral') => {
     const safeRows = Array.isArray(rows) ? rows : [];
     if (!safeRows.length) {
-      return `<p class="sheet-note">${escapeHtml(emptyText)}</p>`;
+      return `<p class="harvest-section-empty">${escapeHtml(emptyText)}</p>`;
     }
     return safeRows.map((row) => `
-      <article class="gs-analysis-driver">
+      <article class="harvest-driver-card harvest-driver-card--${escapeHtml(mode)}">
         <div class="gs-analysis-driver-head">
-          <strong>${escapeHtml(String(row.label || 'Treiber'))}</strong>
-          <span class="gs-analysis-driver-badge gs-analysis-driver-badge--low">${escapeHtml(String(badgeText || Math.round(Number(row.impact) || 0)))}</span>
+          <strong>${escapeHtml(normalizeHarvestUiLabel(row.label, mode === 'loss' ? 'loss' : 'driver'))}</strong>
+          <span class="gs-analysis-driver-badge gs-analysis-driver-badge--low">${escapeHtml(formatHarvestImpactLabel(row.impact, mode))}</span>
         </div>
-        <p class="gs-analysis-driver-line">${escapeHtml(String(row.reason || ''))}</p>
+        <p class="gs-analysis-driver-line">${escapeHtml(normalizeHarvestUiText(row.reason, mode === 'loss' ? 'loss' : 'reason'))}</p>
       </article>
     `).join('');
   };
-  const opportunityHtml = forecast && Array.isArray(forecast.recoveryOpportunities)
-    ? forecast.recoveryOpportunities.map((item) => `
-      <article class="gs-analysis-driver">
-        <div class="gs-analysis-driver-head">
-          <strong>${escapeHtml(String(item.label || 'Chance'))}</strong>
-          <span class="gs-analysis-driver-badge gs-analysis-driver-badge--medium">+${escapeHtml(String(Math.round(Number(item.estimatedGainMin) || 0)))} bis +${escapeHtml(String(Math.round(Number(item.estimatedGainMax) || 0)))}</span>
+  const leadOpportunityHtml = leadOpportunity ? `
+      <article class="harvest-spotlight-card">
+        <div class="harvest-spotlight-card__head">
+          <div>
+            <span class="harvest-spotlight-card__eyebrow">Größter Hebel jetzt</span>
+            <strong>${escapeHtml(normalizeHarvestUiLabel(leadOpportunity.label, 'opportunity'))}</strong>
+          </div>
+          <span class="gs-analysis-driver-badge gs-analysis-driver-badge--medium">${escapeHtml(describeHarvestGainRange(leadOpportunity))}</span>
         </div>
-        <p class="gs-analysis-driver-line">${escapeHtml(String(item.reason || ''))}</p>
+        <p class="harvest-spotlight-card__copy">${escapeHtml(normalizeHarvestUiText(leadOpportunity.reason || 'Gerade lässt sich hier am meisten zurückholen oder stabilisieren.', 'opportunity'))}</p>
       </article>
-    `).join('')
-    : '<p class="sheet-note">Gerade wirkt kein einzelner lokaler Hebel deutlich größer als der Rest.</p>';
+    ` : `
+      <article class="harvest-spotlight-card harvest-spotlight-card--quiet">
+        <div class="harvest-spotlight-card__head">
+          <div>
+            <span class="harvest-spotlight-card__eyebrow">Größter Hebel jetzt</span>
+            <strong>Kein einzelner Fix dominiert</strong>
+          </div>
+          <span class="gs-analysis-driver-badge gs-analysis-driver-badge--low">Ruhig bleiben</span>
+        </div>
+        <p class="harvest-spotlight-card__copy">Aktuell bringt sauberes Stabilisieren mehr als hektisches Gegensteuern.</p>
+      </article>
+    `;
+  const supportingOpportunityHtml = supportingOpportunities.length ? `
+      <div class="harvest-secondary-list">
+        ${supportingOpportunities.map((item) => `
+          <article class="harvest-secondary-item">
+            <strong>${escapeHtml(normalizeHarvestUiLabel(item.label || 'Weitere Chance', 'opportunity'))}</strong>
+            <span>${escapeHtml(describeHarvestGainRange(item))}</span>
+          </article>
+        `).join('')}
+      </div>
+    ` : '';
 
   ui.analysisPanelOverview.innerHTML = `
     ${forecast ? `
-      <section class="gs-analysis-overview-section gs-analysis-overview-section--harvest">
+      <section class="gs-analysis-overview-section gs-analysis-overview-section--harvest harvest-analysis-hero--premium">
         <div class="harvest-analysis-hero">
-          <div>
-            <span class="harvest-analysis-hero__eyebrow">Lokaler Forecast</span>
+          <div class="harvest-analysis-hero__main">
+            <span class="harvest-analysis-hero__eyebrow">Ernteprognose</span>
             <strong class="harvest-analysis-hero__score">${escapeHtml(String(Math.round(Number(forecast.harvestScore) || 0)))}</strong>
-            <p class="gs-analysis-trend-text">${escapeHtml(String(forecast.lastForecastReason || 'Die lokale Prognose bleibt aktuell vergleichsweise stabil.'))}</p>
+            <h3 class="harvest-analysis-hero__title">${escapeHtml(String(heroCopy && heroCopy.title || 'Solide Prognose'))}</h3>
+            <p class="harvest-analysis-hero__summary">${escapeHtml(String(heroCopy && heroCopy.subtitle || 'Der Run ist aktuell sauber lesbar.'))}</p>
           </div>
           <div class="harvest-analysis-hero__meta">
-            <span>Qualität ${escapeHtml(formatHarvestQualityBand(forecast))}</span>
-            <strong>${escapeHtml(formatHarvestTrendLabel(forecast.forecastTrend))}</strong>
-            <span>Readiness ${escapeHtml(String(forecast.confidenceBand || 'medium'))}</span>
+            <span class="harvest-analysis-hero__pill">Qualität ${escapeHtml(formatHarvestQualityBand(forecast))}</span>
+            <strong class="harvest-analysis-hero__trend">${escapeHtml(formatHarvestTrendLabel(forecast.forecastTrend))}</strong>
+            <span class="harvest-analysis-hero__pill harvest-analysis-hero__pill--soft">${escapeHtml(formatHarvestReadinessLabel(forecast.confidenceBand))}</span>
           </div>
         </div>
+        <p class="harvest-analysis-hero__reason">${escapeHtml(normalizeHarvestUiText(forecast.lastForecastReason || 'Die lokale Richtung bleibt derzeit vergleichsweise ruhig.', 'hero'))}</p>
       </section>
     ` : ''}
     <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Harvest Split</h3>
-      <div class="harvest-analysis-metric-grid">
-        ${rowsToHtml(metricRows)}
+      <div class="harvest-section-headline">
+        <h3 class="figma-section-head">Was die Prognose gerade bewegt</h3>
+        <p class="harvest-section-intro">Oben steht nur, was jetzt wirklich zählt: Stützen, Bremsen und der stärkste nächste Hebel.</p>
+      </div>
+      <div class="harvest-driver-grid">
+        <section class="harvest-driver-column">
+          <div class="harvest-driver-column__head">
+            <h4>Positiv</h4>
+            <span>zieht hoch</span>
+          </div>
+          ${cardsToHtml(positiveDrivers, 'Im Moment trägt kein einzelner Faktor klar über den Rest.', 'positive')}
+        </section>
+        <section class="harvest-driver-column">
+          <div class="harvest-driver-column__head">
+            <h4>Bremst</h4>
+            <span>kostet Prognose</span>
+          </div>
+          ${cardsToHtml(negativeDrivers, 'Gerade drückt kein einzelner Bremsfaktor dominant auf die Linie.', 'negative')}
+        </section>
       </div>
     </section>
     <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Was gerade hilft</h3>
-      ${cardsToHtml(forecast && forecast.positiveDrivers, 'Noch kein klarer positiver Harvest-Treiber im Vordergrund.')}
+      <div class="harvest-section-headline">
+        <h3 class="figma-section-head">Beste nächste Verbesserung</h3>
+        <p class="harvest-section-intro">Wenn du jetzt nur eine Sache sauber spielst, sollte sie hier anfangen.</p>
+      </div>
+      ${leadOpportunityHtml}
+      ${supportingOpportunityHtml}
     </section>
     <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Was gerade bremst</h3>
-      ${cardsToHtml(forecast && forecast.negativeDrivers, 'Aktuell keine dominante Harvest-Bremse erkennbar.')}
+      <div class="harvest-section-headline">
+        <h3 class="figma-section-head">Bereits verlorene Linie</h3>
+        <p class="harvest-section-intro">Ehrlich, aber nicht dominant: Was weg ist, ist getrennt von dem, was du noch drehen kannst.</p>
+      </div>
+      ${cardsToHtml(lockedLosses, 'Noch kein klarer irreversibler Verlust sichtbar. Viel bleibt noch formbar.', 'loss')}
     </section>
     <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Locked Losses</h3>
-      ${cardsToHtml(forecast && forecast.lockedLosses, 'Noch kein klarer irreversibler Verlust erkannt.', 'Fix')}
-    </section>
-    <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Beste nächste Hebel</h3>
-      ${opportunityHtml}
-    </section>
-    <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Historischer Verlauf</h3>
-      <div style="height: 180px; width: 100%; margin-bottom: 15px;">
-        <canvas id="analysisChartCanvas"></canvas>
+      <div class="harvest-section-headline">
+        <h3 class="figma-section-head">Verlauf &amp; Details</h3>
+        <p class="harvest-section-intro">Für tieferes Lesen: Entwicklung, Breakdown und die darunterliegenden Zustände.</p>
+      </div>
+      <div class="harvest-detail-stack">
+        <div class="harvest-analysis-metric-grid">
+          ${rowsToHtml(metricRows)}
+        </div>
+        <div class="harvest-chart-shell" style="height: 180px; width: 100%;">
+          <canvas id="analysisChartCanvas"></canvas>
+        </div>
       </div>
     </section>
     <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Pflanzenstatus</h3>
-      ${rowsToHtml(statusRows)}
-    </section>
-    <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Wurzeln &amp; Boden</h3>
-      ${rowsToHtml(rootRows)}
-    </section>
-    <section class="gs-analysis-overview-section">
-      <h3 class="figma-section-head">Trend</h3>
+      <div class="harvest-detail-grid">
+        <div>
+          <h3 class="figma-section-head">Pflanzenstatus</h3>
+          ${rowsToHtml(statusRows)}
+        </div>
+        <div>
+          <h3 class="figma-section-head">Wurzelzone</h3>
+          ${rowsToHtml(rootRows)}
+        </div>
+      </div>
       <p class="gs-analysis-trend-text">${escapeHtml(trendText)}</p>
       <div class="gs-analysis-overview-meta">
         <span>Nächster sinnvoller Schritt</span>
@@ -5846,14 +7693,15 @@ function renderAnalysisDiagnosis() {
   if (forecast) {
     const heroNode = document.createElement('div');
     heroNode.className = 'gs-analysis-driver gs-analysis-driver--primary';
+    const heroCopy = buildHarvestHeroCopy(forecast);
     heroNode.innerHTML = `
       <div class="gs-analysis-driver-head">
-        <strong>Harvest Readiness</strong>
-        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(String(forecast.confidenceBand || 'medium'))}">${escapeHtml(formatHarvestTrendLabel(forecast.forecastTrend))}</span>
+        <strong>${escapeHtml(String(heroCopy.title || 'Wo der Run gerade steht'))}</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(String(forecast.confidenceBand || 'medium'))}">${escapeHtml(formatHarvestReadinessLabel(forecast.confidenceBand))}</span>
       </div>
-      <p class="gs-analysis-driver-line"><span>Forecast:</span> ${escapeHtml(String(Math.round(Number(forecast.harvestScore) || 0)))}</p>
+      <p class="gs-analysis-driver-line"><span>Prognose:</span> ${escapeHtml(String(Math.round(Number(forecast.harvestScore) || 0)))}</p>
       <p class="gs-analysis-driver-line"><span>Qualität:</span> ${escapeHtml(formatHarvestQualityBand(forecast))}</p>
-      <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(String(forecast.lastForecastReason || 'Keine starke Verschiebung.'))}</p>
+      <p class="gs-analysis-driver-line"><span>Einordnung:</span> ${escapeHtml(String(heroCopy.subtitle || 'Die lokale Richtung ist aktuell sauber lesbar.'))}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(heroNode);
   }
@@ -5863,12 +7711,13 @@ function renderAnalysisDiagnosis() {
     node.className = 'gs-analysis-driver gs-analysis-driver--primary';
     node.innerHTML = `
       <div class="gs-analysis-driver-head">
-        <strong>Hauptproblem: ${escapeHtml(primary.title)}</strong>
+        <strong>Was gerade am meisten drückt</strong>
         <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(primary.severity)}">${escapeHtml(severityLabel(primary.severity))}</span>
       </div>
+      <p class="gs-analysis-driver-line"><span>Thema:</span> ${escapeHtml(primary.title)}</p>
       <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(primary.cause)}</p>
       <p class="gs-analysis-driver-line"><span>Auswirkung:</span> ${escapeHtml(primary.effect)}</p>
-      <p class="gs-analysis-driver-line"><span>Richtung:</span> ${escapeHtml(describeDiagnosisRecommendation(primary))}</p>
+      <p class="gs-analysis-driver-line"><span>Jetzt sinnvoll:</span> ${escapeHtml(describeDiagnosisRecommendation(primary))}</p>
       <p class="gs-analysis-driver-line gs-analysis-driver-line--limit"><span>Grenze:</span> ${escapeHtml(primary.limit)}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(node);
@@ -5909,7 +7758,8 @@ function renderAnalysisDiagnosis() {
         <strong>Größter lokaler Hebel</strong>
         <span class="gs-analysis-driver-badge gs-analysis-driver-badge--medium">Chance</span>
       </div>
-      <p class="gs-analysis-driver-line">${escapeHtml(String(forecast.recoveryOpportunities[0].label || 'Chance'))}: ${escapeHtml(String(forecast.recoveryOpportunities[0].reason || ''))}</p>
+      <p class="gs-analysis-driver-line"><span>Priorität:</span> ${escapeHtml(normalizeHarvestUiLabel(forecast.recoveryOpportunities[0].label || 'Chance', 'opportunity'))}</p>
+      <p class="gs-analysis-driver-line">${escapeHtml(normalizeHarvestUiText(String(forecast.recoveryOpportunities[0].reason || ''), 'opportunity'))}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(node);
   }
@@ -5919,11 +7769,11 @@ function renderAnalysisDiagnosis() {
     stableNode.className = 'gs-analysis-driver';
     stableNode.innerHTML = `
       <div class="gs-analysis-driver-head">
-        <strong>Aktuell kein akutes Hauptproblem</strong>
+        <strong>Aktuell kein akuter Bremsfaktor</strong>
         <span class="gs-analysis-driver-badge gs-analysis-driver-badge--low">Beobachten</span>
       </div>
       <p class="gs-analysis-driver-line"><span>Lage:</span> Wasser, Nährstoffe und Druckwerte wirken aktuell vergleichsweise ruhig.</p>
-      <p class="gs-analysis-driver-line"><span>Nächster Schritt:</span> Keine harte Gegenmaßnahme nötig. Werte weiter beobachten und nur bei klarer Abweichung eingreifen.</p>
+      <p class="gs-analysis-driver-line"><span>Jetzt sinnvoll:</span> Keine harte Gegenmaßnahme nötig. Werte weiter beobachten und nur bei klarer Abweichung eingreifen.</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(stableNode);
   }
@@ -6402,6 +8252,9 @@ function openSheet(name) {
     renderSettingsSheet();
   } else if (name === 'missions') {
     renderMissionsSheet();
+  } else if (name === 'leaderboard') {
+    renderLeaderboardSheet(true);
+    void fetchLeaderboardBundle({ category: ensureLeaderboardUiState(state).category, force: false });
   } else if (name === 'statDetail') {
     renderStatDetailSheet();
   }
@@ -6943,49 +8796,75 @@ function renderRunSummaryOverlay() {
   const harvestSummary = summary.harvestSummary && typeof summary.harvestSummary === 'object'
     ? summary.harvestSummary
     : null;
+  const harvestReadiness = ensureHarvestBackendState(run);
+  const verifiedHarvestResult = normalizeHarvestVerificationResult(harvestReadiness.verifiedHarvestResult, 'verified');
+  const runSummaryHarvestTitleNode = uiNode('runSummaryHarvestTitle', 'runSummaryHarvestTitle');
+  const primaryHarvestSummary = harvestReadiness.verificationStatus === 'verified' && verifiedHarvestResult
+    ? {
+      ...verifiedHarvestResult,
+      qualityBandLabel: verifiedHarvestResult.qualityBandLabel || (harvestSummary && harvestSummary.qualityBandLabel) || 'B'
+    }
+    : harvestSummary;
+  const harvestTone = harvestReadiness.verificationStatus === 'verified' && verifiedHarvestResult
+    ? buildVerificationHeroTone(verifiedHarvestResult, 'verified', harvestSummary)
+    : (harvestSummary ? buildRunSummaryHarvestTone(harvestSummary) : { title: 'Lokale Harvest-Auswertung', subtitle: 'Der Abschluss ist bereit.' });
   if (ui.runSummaryHarvestBadge) {
-    ui.runSummaryHarvestBadge.textContent = harvestSummary ? 'Forecast' : 'Lokal';
-    ui.runSummaryHarvestBadge.dataset.status = 'local';
+    const showsVerifiedPrimary = harvestReadiness.verificationStatus === 'verified' && verifiedHarvestResult;
+    if (runSummaryHarvestTitleNode) {
+      runSummaryHarvestTitleNode.textContent = showsVerifiedPrimary ? 'Verifiziertes Harvest-Ergebnis' : 'Lokale Harvest-Auswertung';
+    }
+    ui.runSummaryHarvestBadge.textContent = showsVerifiedPrimary ? 'Verifiziertes Ergebnis' : 'Lokale Auswertung';
+    ui.runSummaryHarvestBadge.dataset.status = showsVerifiedPrimary ? 'verified' : 'local';
   }
   if (ui.runSummaryHarvestHint) {
-    ui.runSummaryHarvestHint.textContent = harvestSummary && harvestSummary.verificationHint
-      ? String(harvestSummary.verificationHint)
-      : 'Für Ranglisten zählt später die verifizierte Server-Wertung.';
+    ui.runSummaryHarvestHint.textContent = harvestReadiness.statusMessage
+      || describeVerificationStatus(harvestReadiness.verificationStatus, harvestReadiness.submissionState)
+      || (harvestSummary && harvestSummary.verificationHint
+        ? String(harvestSummary.verificationHint)
+        : 'Für Ranglisten zählt später die verifizierte Server-Wertung.');
   }
   if (ui.runSummaryHarvestScore) {
-    ui.runSummaryHarvestScore.textContent = harvestSummary ? String(Math.round(Number(harvestSummary.harvestScore) || 0)) : '0';
+    ui.runSummaryHarvestScore.textContent = primaryHarvestSummary ? String(Math.round(Number(primaryHarvestSummary.harvestScore) || 0)) : '0';
   }
   if (ui.runSummaryHarvestQualityBand) {
-    ui.runSummaryHarvestQualityBand.textContent = harvestSummary ? String(harvestSummary.qualityBandLabel || 'B') : 'B';
+    ui.runSummaryHarvestQualityBand.textContent = primaryHarvestSummary ? String(primaryHarvestSummary.qualityBandLabel || 'B') : 'B';
+  }
+  const runSummaryHarvestHeroToneNode = uiNode('runSummaryHarvestHeroTone', 'runSummaryHarvestHeroTone');
+  if (runSummaryHarvestHeroToneNode) {
+    runSummaryHarvestHeroToneNode.textContent = String(harvestTone.title || 'Lokale Harvest-Auswertung');
   }
   if (ui.runSummaryHarvestInterpretation) {
-    ui.runSummaryHarvestInterpretation.textContent = harvestSummary
-      ? String(harvestSummary.interpretation || 'Lokale Harvest-Auswertung bereit.')
+    const primaryInterpretation = primaryHarvestSummary && typeof primaryHarvestSummary === 'object'
+      ? (primaryHarvestSummary.explanation || primaryHarvestSummary.interpretation || harvestTone.subtitle || 'Lokale Harvest-Auswertung bereit.')
       : 'Lokale Harvest-Auswertung bereit.';
+    const baseInterpretation = primaryHarvestSummary
+      ? normalizeHarvestUiText(String(primaryInterpretation), 'hero')
+      : 'Lokale Harvest-Auswertung bereit.';
+    ui.runSummaryHarvestInterpretation.textContent = baseInterpretation;
   }
-  if (ui.runSummaryHarvestRows) {
-    ui.runSummaryHarvestRows.replaceChildren();
-    const harvestRows = harvestSummary ? [
-      { label: 'Yield', value: Math.round(Number(harvestSummary.yieldScore) || 0) },
-      { label: 'Quality', value: Math.round(Number(harvestSummary.qualityScore) || 0) },
-      { label: 'Stabilität', value: Math.round(Number(harvestSummary.stabilityScore) || 0) },
-      { label: 'Effizienz', value: Math.round(Number(harvestSummary.efficiencyScore) || 0) },
-      { label: 'Schwierigkeit', value: Math.round(Number(harvestSummary.challengeScore) || 0) }
-    ] : [];
-    for (const rowData of harvestRows) {
-      const row = document.createElement('div');
-      row.className = 'figma-static-row run-summary-row';
-      row.innerHTML = `<span>${escapeHtml(String(rowData.label || '-'))}</span><strong>${escapeHtml(String(rowData.value || 0))}</strong>`;
-      ui.runSummaryHarvestRows.appendChild(row);
+  renderRunSummaryHarvestVerification(uiNode('runSummaryHarvestVerification', 'runSummaryHarvestVerification'), harvestReadiness, harvestSummary);
+  renderRunSummaryHarvestMetricRows(ui.runSummaryHarvestRows, primaryHarvestSummary);
+  renderRunSummaryHarvestImpact(uiNode('runSummaryHarvestImpact', 'runSummaryHarvestImpact'), harvestSummary);
+  renderRunSummaryHarvestMoments(uiNode('runSummaryHarvestMoments', 'runSummaryHarvestMoments'), harvestSummary);
+  const runSummaryHarvestMotivationNode = uiNode('runSummaryHarvestMotivation', 'runSummaryHarvestMotivation');
+  if (runSummaryHarvestMotivationNode) {
+    if (harvestReadiness.verificationStatus === 'verified' && verifiedHarvestResult) {
+      runSummaryHarvestMotivationNode.textContent = 'Das Ergebnis ist bestätigt. Ein noch ruhigerer nächster Run kann diese Marke weiter anheben.';
+    } else if (harvestReadiness.verificationStatus === 'rejected') {
+      runSummaryHarvestMotivationNode.textContent = 'Die lokale Auswertung bleibt wertvoll. Ein saubererer nächster Run erhöht die Chance auf ein bestätigtes Ergebnis.';
+    } else if (harvestReadiness.verificationStatus === 'under_review') {
+      runSummaryHarvestMotivationNode.textContent = 'Dein Ergebnis wird noch geprüft. Parallel lohnt sich schon der Blick auf den nächsten sauberen Run.';
+    } else {
+      runSummaryHarvestMotivationNode.textContent = buildRunSummaryHarvestMotivation(harvestSummary);
     }
   }
   if (ui.runSummaryHarvestBests) {
     ui.runSummaryHarvestBests.replaceChildren();
     const bestFlags = harvestSummary && harvestSummary.bestFlags ? harvestSummary.bestFlags : {};
     const bestEntries = [
-      { key: 'bestHarvestScore', label: 'Neuer persönlicher Harvest Score' },
-      { key: 'bestQualityScoreHarvest', label: 'Beste lokale Qualitätslinie' },
-      { key: 'bestStabilityScore', label: 'Beste Stabilität' }
+      { key: 'bestHarvestScore', label: 'Neuer Bestwert: Harvest Score' },
+      { key: 'bestQualityScoreHarvest', label: 'Beste Qualität bisher' },
+      { key: 'bestStabilityScore', label: 'Stabilster Run bisher' }
     ].filter((entry) => Boolean(bestFlags[entry.key]));
     if (!bestEntries.length) {
       const empty = document.createElement('p');
@@ -6995,8 +8874,8 @@ function renderRunSummaryOverlay() {
     } else {
       for (const entry of bestEntries) {
         const row = document.createElement('article');
-        row.className = 'run-summary-unlock';
-        row.innerHTML = `<strong>${escapeHtml(entry.label)}</strong><p class="sheet-note">Diese lokale Auswertung setzt einen neuen persönlichen Referenzwert.</p>`;
+        row.className = 'run-summary-unlock run-summary-unlock--celebration';
+        row.innerHTML = `<strong>${escapeHtml(entry.label)}</strong><p class="sheet-note">Stark gespielt. Dieser Run setzt eine neue persönliche Marke.</p>`;
         ui.runSummaryHarvestBests.appendChild(row);
       }
     }
@@ -7090,6 +8969,7 @@ async function finishRun(reason) {
     syncCanonicalStateShape();
     renderAll();
     schedulePersistState(true);
+    void submitHarvestRunOutcomeIfPossible();
     logRunFlowDebug('finish_run:done', {
       reason,
       finished: Boolean(result && result.finished),
@@ -7124,6 +9004,7 @@ async function finalizeRun(reason) {
     syncCanonicalStateShape();
     renderAll();
     schedulePersistState(true);
+    void submitHarvestRunOutcomeIfPossible();
     logRunFlowDebug('finalize_run:done', {
       reason,
       finalized: Boolean(result && result.finalized),
@@ -7160,6 +9041,9 @@ function logRunFlowDebug(label, extra = {}) {
 
 async function resetRunPreservingProfile() {
   logRunFlowDebug('reset_preserving_profile:start');
+  clearHarvestVerificationPolling();
+  harvestBackendRuntime.sessionPromise = null;
+  harvestBackendRuntime.submissionPromise = null;
   const preservedProfile = JSON.parse(JSON.stringify(getCanonicalProfile(state)));
   const preservedSettings = JSON.parse(JSON.stringify(getCanonicalSettings(state))); const preservedEventCatalog = Array.isArray(state.events && state.events.catalog) ? state.events.catalog.slice() : []; const preservedActionCatalog = Array.isArray(state.actions && state.actions.catalog) ? state.actions.catalog.slice() : [];
   const previousRunId = Math.max(0, Number(getCanonicalRun(state).id || 0));
@@ -7342,6 +9226,10 @@ function formatRecentHistoryHtml(row) {
 
 function onStartRun() {
   const progressionApi = getProgressionApi();
+  const harvestApi = getHarvestApi();
+  clearHarvestVerificationPolling();
+  harvestBackendRuntime.sessionPromise = null;
+  harvestBackendRuntime.submissionPromise = null;
   const setup = sanitizeRunSetup({
     mode: document.getElementById('setupMode').value || 'indoor',
     light: document.getElementById('setupLight').value || 'medium',
@@ -7364,8 +9252,12 @@ function onStartRun() {
     startedAtRealMs: nowMs,
     endedAtRealMs: null,
     finalizedAtRealMs: null,
-    setupSnapshot: { ...setup }
+    setupSnapshot: { ...setup },
+    harvest: harvestApi && typeof harvestApi.getDefaultRunHarvest === 'function'
+      ? harvestApi.getDefaultRunHarvest()
+      : undefined
   };
+  ensureHarvestBackendState(state.run);
   if (progressionApi && typeof progressionApi.chooseRunGoal === 'function') {
     state.run.goal = progressionApi.chooseRunGoal(getCanonicalProfile(state), state.run);
   }
@@ -7412,6 +9304,7 @@ function onStartRun() {
   renderRunSummaryOverlay();
   schedulePersistState(true);
   addLog('system', 'Neuer Run gestartet (Figma-Setup)', state.setup);
+  void createHarvestRunSessionForCurrentRun();
 }
 
 async function onDeathResetClick() {

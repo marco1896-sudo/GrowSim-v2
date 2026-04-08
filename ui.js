@@ -147,6 +147,7 @@ function cacheUi() {
   ui.climateSheet = document.getElementById('climateSheet');
   ui.eventSheet = document.getElementById('eventSheet');
   ui.dashboardSheet = document.getElementById('dashboardSheet');
+  ui.leaderboardSheet = document.getElementById('leaderboardSheet');
   ui.diagnosisSheet = document.getElementById('diagnosisSheet');
   ui.statDetailSheet = document.getElementById('statDetailSheet');
   ui.statDetailTitle = document.getElementById('statDetailTitle');
@@ -170,6 +171,14 @@ function cacheUi() {
   ui.menuAboutBtn = document.getElementById('menuAboutBtn');
   ui.menuAchievementsBtn = document.getElementById('menuAchievementsBtn');
   ui.menuLeaderboardBtn = document.getElementById('menuLeaderboardBtn');
+  ui.leaderboardSheetTitle = document.getElementById('leaderboardSheetTitle');
+  ui.leaderboardSheetSubtitle = document.getElementById('leaderboardSheetSubtitle');
+  ui.leaderboardSheetStatus = document.getElementById('leaderboardSheetStatus');
+  ui.leaderboardCategoryOverallBtn = document.getElementById('leaderboardCategoryOverallBtn');
+  ui.leaderboardCategoryQualityBtn = document.getElementById('leaderboardCategoryQualityBtn');
+  ui.leaderboardMeCard = document.getElementById('leaderboardMeCard');
+  ui.leaderboardTopList = document.getElementById('leaderboardTopList');
+  ui.leaderboardAroundMeList = document.getElementById('leaderboardAroundMeList');
   ui.menuDialog = document.getElementById('menuDialog');
   ui.menuDialogTitle = document.getElementById('menuDialogTitle');
   ui.menuDialogText = document.getElementById('menuDialogText');
@@ -252,13 +261,19 @@ function cacheUi() {
   ui.runSummaryGoalStatus = document.getElementById('runSummaryGoalStatus');
   ui.runSummaryGoalDescription = document.getElementById('runSummaryGoalDescription');
   ui.runSummaryGoalReward = document.getElementById('runSummaryGoalReward');
+  ui.runSummaryHarvestTitle = document.getElementById('runSummaryHarvestTitle');
   ui.runSummaryHarvestBadge = document.getElementById('runSummaryHarvestBadge');
   ui.runSummaryHarvestHint = document.getElementById('runSummaryHarvestHint');
+  ui.runSummaryHarvestVerification = document.getElementById('runSummaryHarvestVerification');
   ui.runSummaryHarvestScore = document.getElementById('runSummaryHarvestScore');
   ui.runSummaryHarvestQualityBand = document.getElementById('runSummaryHarvestQualityBand');
+  ui.runSummaryHarvestHeroTone = document.getElementById('runSummaryHarvestHeroTone');
   ui.runSummaryHarvestInterpretation = document.getElementById('runSummaryHarvestInterpretation');
+  ui.runSummaryHarvestImpact = document.getElementById('runSummaryHarvestImpact');
+  ui.runSummaryHarvestMoments = document.getElementById('runSummaryHarvestMoments');
   ui.runSummaryHarvestRows = document.getElementById('runSummaryHarvestRows');
   ui.runSummaryHarvestBests = document.getElementById('runSummaryHarvestBests');
+  ui.runSummaryHarvestMotivation = document.getElementById('runSummaryHarvestMotivation');
   ui.runSummaryUnlocks = document.getElementById('runSummaryUnlocks');
   ui.runSummaryFinalizeBtn = document.getElementById('runSummaryFinalizeBtn');
   ui.runSummaryNewRunBtn = document.getElementById('runSummaryNewRunBtn');
@@ -676,7 +691,15 @@ function bindMenuOverlayEvents(controller = null) {
     ui.menuAchievementsBtn.addEventListener('click', () => openMenuPlaceholder('Achievements', 'Achievements sind bald verfügbar.'));
   }
   if (ui.menuLeaderboardBtn) {
-    ui.menuLeaderboardBtn.addEventListener('click', () => openMenuPlaceholder('Rangliste', 'Die Rangliste ist bald verfügbar.'));
+    ui.menuLeaderboardBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      closeMenu();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('leaderboard');
+        return;
+      }
+      openSheet('leaderboard');
+    });
   }
   if (ui.menuDialogCancelBtn) {
     ui.menuDialogCancelBtn.addEventListener('click', closeMenuDialog);
@@ -833,13 +856,27 @@ function ensureRequiredUi() {
     'harvestForecastTrend',
     'harvestForecastScore',
     'harvestForecastQuality',
+    'runSummaryHarvestTitle',
     'runSummaryHarvestBadge',
     'runSummaryHarvestHint',
+    'runSummaryHarvestVerification',
     'runSummaryHarvestScore',
     'runSummaryHarvestQualityBand',
+    'runSummaryHarvestHeroTone',
     'runSummaryHarvestInterpretation',
+    'runSummaryHarvestImpact',
+    'runSummaryHarvestMoments',
     'runSummaryHarvestRows',
-    'runSummaryHarvestBests'
+    'runSummaryHarvestBests',
+    'runSummaryHarvestMotivation',
+    'leaderboardSheetTitle',
+    'leaderboardSheetSubtitle',
+    'leaderboardSheetStatus',
+    'leaderboardCategoryOverallBtn',
+    'leaderboardCategoryQualityBtn',
+    'leaderboardMeCard',
+    'leaderboardTopList',
+    'leaderboardAroundMeList'
   ]);
   const requiredKeys = [
     'phaseCard', 'phaseCardTitle', 'phaseCardCycle', 'phaseCardSubtitle', 'phaseProgressFill', 'phaseProgressMarker', 'phaseProgress',
@@ -848,7 +885,7 @@ function ensureRequiredUi() {
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
     'overlayBurn', 'overlayDefMg', 'overlayDefN', 'overlayMoldWarning', 'overlayPestMites', 'overlayPestThrips',
     'careActionBtn', 'analyzeActionBtn', 'boostActionBtn', 'skipNightActionBtn', 'openDiagnosisBtn', 'menuToggleBtn',
-    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'diagnosisSheet', 'statDetailSheet',
+    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'statDetailSheet',
     'statDetailTitle', 'statDetailValue', 'statDetailStatus', 'statDetailExplanation', 'statDetailRecommendation', 'statDetailPrimaryBtn',
     'menuBackdrop', 'gameMenu', 'menuCloseBtn', 'menuHeaderCloseBtn', 'menuNewRunBtn', 'menuRescueBtn', 'menuRescueSubtext',
     'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuAboutBtn',
@@ -1071,6 +1108,7 @@ function renderSheets() {
   toggleSheet(ui.climateSheet, activeSheet === 'climate');
   toggleSheet(ui.eventSheet, activeSheet === 'event');
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
+  toggleSheet(ui.leaderboardSheet, activeSheet === 'leaderboard');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
 }
 
