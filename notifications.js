@@ -144,32 +144,32 @@ const GAMEPLAY_PUSH_CONFIG = Object.freeze({
       threshold: 35,
       title: 'GrowSim',
       body: 'Deine Pflanze braucht Wasser. Zeit für eine kurze Pflege-Session.',
-      tag: 'growsim-water',
-      url: '#care'
+      tag: 'water_warning',
+      url: '/?screen=care'
     }),
     event_occurred: Object.freeze({
       cooldownMs: 30 * 60 * 1000,
       minDurationMs: 0,
       title: 'GrowSim',
       body: 'Ein neues Ereignis ist aufgetreten. Triff jetzt deine Entscheidung.',
-      tag: 'growsim-event',
-      url: '#event'
+      tag: 'event_alert',
+      url: '/?screen=event'
     }),
     harvest_ready: Object.freeze({
       cooldownMs: 24 * 60 * 60 * 1000,
       minDurationMs: 5 * 60 * 1000,
       title: 'GrowSim',
       body: 'Deine Pflanze ist erntereif. Schau in die App für den nächsten Schritt.',
-      tag: 'growsim-harvest',
-      url: '#analysis'
+      tag: 'harvest_ready',
+      url: '/?screen=harvest'
     }),
     daily_reward_available: Object.freeze({
       cooldownMs: 12 * 60 * 60 * 1000,
       minDurationMs: 0,
       title: 'GrowSim',
       body: 'Deine tägliche Belohnung ist verfügbar.',
-      tag: 'growsim-daily-reward',
-      url: '#leaderboard'
+      tag: 'daily_reward',
+      url: '/?screen=reward'
     })
   })
 });
@@ -333,29 +333,41 @@ function canDispatchGameplayPush(runtime, candidate, nowMs) {
 
 function buildGameplayPushPayload(candidate) {
   const config = GAMEPLAY_PUSH_CONFIG.payloadByType[candidate.type];
-  const targetHash = String(config.url || '#');
-  const targetUrl = `${window.location.origin}${window.location.pathname}${targetHash}`;
-  return {
+  if (!config) {
+    return null;
+  }
+
+  const basePayload = {
     type: candidate.type,
     title: config.title,
     body: config.body,
     tag: config.tag,
-    url: targetUrl,
-    data: {
-      type: candidate.type,
-      ...candidate.context
-    }
+    url: String(config.url || '/')
   };
+
+  if (candidate.type === GAMEPLAY_PUSH_TYPES.EVENT_OCCURRED) {
+    const eventId = candidate && candidate.context && candidate.context.eventId
+      ? String(candidate.context.eventId)
+      : '';
+    if (eventId) {
+      basePayload.data = { eventId };
+    }
+  }
+
+  return basePayload;
 }
 
 async function dispatchGameplayPush(candidate, nowMs) {
   const pushApi = window.GrowSimPushManager;
-  if (!pushApi || typeof pushApi.sendTestPush !== 'function') {
+  if (!pushApi || typeof pushApi.sendGameplayPush !== 'function') {
     return false;
   }
 
   const payload = buildGameplayPushPayload(candidate);
-  await pushApi.sendTestPush(payload);
+  if (!payload || !payload.type || !payload.title || !payload.body || !payload.tag || !payload.url) {
+    return false;
+  }
+  await pushApi.sendGameplayPush(payload);
   const runtime = getGameplayPushRuntime();
   runtime.lastSentAtByType[candidate.type] = nowMs;
   runtime.lastSignatureByType[candidate.type] = String(candidate.signature || '');

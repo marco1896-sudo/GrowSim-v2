@@ -425,6 +425,33 @@
     return parsed;
   }
 
+  async function sendGameplayPush(payload = {}) {
+    if (!isAuthenticated()) {
+      throw new Error('Authentication required');
+    }
+
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload) || !Object.keys(payload).length) {
+      throw new Error('Gameplay push payload is required');
+    }
+
+    const apiFetch = getApiFetch();
+    const response = await apiFetch('/push/gameplay-dispatch', {
+      method: 'POST',
+      headers: buildAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+    const parsed = await readJsonSafe(response);
+
+    if (!response.ok) {
+      const message = parsed && typeof parsed.error === 'string'
+        ? parsed.error
+        : `HTTP ${response.status}`;
+      throw new Error(message);
+    }
+
+    return parsed;
+  }
+
   async function getPushStatus(options = {}) {
     const supported = isPushSupported();
     if (!supported) {
@@ -483,6 +510,7 @@
     subscribeToPush,
     unsubscribeFromPush,
     syncExistingSubscriptionWithBackend,
+    sendGameplayPush,
     sendTestPush,
     getPushStatus,
     isAuthenticated
