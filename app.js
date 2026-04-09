@@ -7944,6 +7944,7 @@ function buildEventPresentationSections(viewModel, machineState) {
   const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
   const detail = viewModel && viewModel.detail && typeof viewModel.detail === 'object' ? viewModel.detail : {};
   const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
+  const inspect = isEventAssetInspectionEnabled();
   const sections = [];
   const tone = deriveEventPresentationTone(viewModel, machineState);
 
@@ -7986,10 +7987,10 @@ function buildEventPresentationSections(viewModel, machineState) {
     });
   }
 
-  if (detail.learningNote || shadow.disclaimer || (Array.isArray(shadow.comparisonSummary) && shadow.comparisonSummary.length)) {
+  if (detail.learningNote || shadow.disclaimer || (inspect && Array.isArray(shadow.comparisonSummary) && shadow.comparisonSummary.length)) {
     const analysisParts = [];
     if (detail.learningNote) analysisParts.push(String(detail.learningNote));
-    if (Array.isArray(shadow.comparisonSummary) && shadow.comparisonSummary.length) analysisParts.push(`Offene Abweichungen: ${shadow.comparisonSummary.join(' · ')}`);
+    if (inspect && Array.isArray(shadow.comparisonSummary) && shadow.comparisonSummary.length) analysisParts.push(`Offene Abweichungen: ${shadow.comparisonSummary.join(' · ')}`);
     if (shadow.disclaimer) analysisParts.push(String(shadow.disclaimer));
     sections.push({
       key: 'analysis',

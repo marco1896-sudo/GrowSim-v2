@@ -57,7 +57,7 @@
       newEngineLive: false,
       liveAuthority: 'legacy',
       rollbackAvailable: true,
-      notes: ['Legacy remains the production-safe authority. Internal soft-cutover is explicit, guarded, and rollback-first.']
+      notes: ['Legacy remains the production-safe authority. Internal soft-cutover is explicit, guarded, rollback-first, and Phase 11 authority experiments stay internal-only and tightly scoped.']
     };
   }
 

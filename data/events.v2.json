@@ -39,7 +39,11 @@
             "water": 14,
             "stress": -3,
             "risk": -1
-          }
+          },
+          "intent": "gradual_rehydrate",
+          "contextFit": [
+            "dry"
+          ]
         },
         {
           "id": "water_fast",
@@ -48,7 +52,11 @@
             "water": 20,
             "stress": -1,
             "risk": 3
-          }
+          },
+          "intent": "heavy_water_push",
+          "contextFit": [
+            "dry"
+          ]
         },
         {
           "id": "wait_cycle",
@@ -57,7 +65,11 @@
             "health": -2,
             "stress": 3,
             "risk": 2
-          }
+          },
+          "intent": "delay_action",
+          "contextFit": [
+            "dry"
+          ]
         }
       ],
       "learningNote": "Trockene Töpfe früh erkennen und langsam nachwässern verhindert Stressspitzen.",
@@ -65,7 +77,29 @@
         "vegetative",
         "flowering",
         "harvest"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "dry",
+        "conflictGroup": "water_dry",
+        "warningProfile": {
+          "cadence": "early_visible"
+        },
+        "escalationProfile": {
+          "noActionHooks": [
+            "pressure_retention_possible"
+          ],
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_water_overwater_warning",
@@ -105,7 +139,11 @@
             "water": -8,
             "risk": -4,
             "stress": -2
-          }
+          },
+          "intent": "oxygen_relief",
+          "contextFit": [
+            "wet"
+          ]
         },
         {
           "id": "ignore_moist",
@@ -114,14 +152,42 @@
             "health": -3,
             "risk": 5,
             "stress": 2
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "wet"
+          ]
         }
       ],
       "learningNote": "Zu viel Wasser ohne Sauerstoff hemmt Wurzeln und erhöht Krankheitsrisiken.",
       "allowedPhases": [
         "vegetative",
         "flowering"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "water_wet_root",
+        "warningProfile": {
+          "cadence": "root_zone_alert"
+        },
+        "escalationProfile": {
+          "noActionHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "poorOutcomeHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_nutrition_n_deficit",
@@ -156,7 +222,11 @@
             "nutrition": 10,
             "growth": 1.1,
             "risk": 1
-          }
+          },
+          "intent": "balanced_feed",
+          "contextFit": [
+            "deficit"
+          ]
         },
         {
           "id": "strong_feed",
@@ -166,7 +236,11 @@
             "growth": 1.6,
             "stress": 3,
             "risk": 3
-          }
+          },
+          "intent": "heavy_feed_push",
+          "contextFit": [
+            "deficit"
+          ]
         },
         {
           "id": "observe_only",
@@ -175,14 +249,37 @@
             "health": -2,
             "growth": -0.8,
             "stress": 2
-          }
+          },
+          "intent": "observe_only",
+          "contextFit": [
+            "deficit"
+          ]
         }
       ],
       "learningNote": "Mangel früh mit kleinen, kontrollierten Gaben beheben statt überreagieren.",
       "allowedPhases": [
         "vegetative",
         "flowering"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "deficit",
+        "conflictGroup": "nutrition_deficit",
+        "warningProfile": {
+          "cadence": "progressive_leaf_signal"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_nutrition_lockout",
@@ -240,7 +337,11 @@
             "nutrition": -8,
             "stress": -1,
             "risk": -2
-          }
+          },
+          "intent": "ph_corrective",
+          "contextFit": [
+            "lockout"
+          ]
         },
         {
           "id": "push_feed",
@@ -250,7 +351,11 @@
             "health": -3,
             "stress": 4,
             "risk": 5
-          }
+          },
+          "intent": "heavy_feed_push",
+          "contextFit": [
+            "lockout"
+          ]
         }
       ],
       "learningNote": "Hohe Nährstoffwerte bedeuten nicht automatisch hohe Aufnahme. Balance ist entscheidend.",
@@ -258,7 +363,29 @@
         "vegetative",
         "flowering",
         "harvest"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "lockout",
+        "conflictGroup": "nutrition_lockout",
+        "warningProfile": {
+          "cadence": "uptake_blocked"
+        },
+        "escalationProfile": {
+          "noActionHooks": [
+            "pressure_retention_possible"
+          ],
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_pest_mites_spotted",
@@ -289,7 +416,7 @@
           ]
         }
       },
-      "weight": 1.0,
+      "weight": 1,
       "cooldownRealMinutes": 210,
       "options": [
         {
@@ -299,7 +426,11 @@
             "risk": -8,
             "stress": 1,
             "health": 1
-          }
+          },
+          "intent": "integrated_control",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "raise_fans",
@@ -307,7 +438,11 @@
           "effects": {
             "risk": -3,
             "water": -2
-          }
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "do_nothing",
@@ -316,7 +451,11 @@
             "risk": 7,
             "health": -3,
             "stress": 3
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "population_pressure"
+          ]
         }
       ],
       "learningNote": "Frühes Eingreifen bei Schädlingen ist viel effizienter als späte Notfallmaßnahmen.",
@@ -324,7 +463,26 @@
         "vegetative",
         "flowering",
         "harvest"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "population_pressure",
+        "conflictGroup": "pest_pressure",
+        "warningProfile": {
+          "cadence": "localized_outbreak"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "population_recheck_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "population_recheck_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_pest_thrips_wave",
@@ -368,7 +526,11 @@
             "risk": -9,
             "stress": -1,
             "health": 1
-          }
+          },
+          "intent": "integrated_control",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "hard_spray",
@@ -377,7 +539,11 @@
             "risk": -6,
             "stress": 4,
             "health": -2
-          }
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "population_pressure"
+          ]
         }
       ],
       "learningNote": "Integrierte Kontrolle reduziert Rückschläge besser als harte Einmalmaßnahmen.",
@@ -385,7 +551,26 @@
         "vegetative",
         "flowering",
         "harvest"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "population_pressure",
+        "conflictGroup": "pest_pressure",
+        "warningProfile": {
+          "cadence": "multi_leaf_outbreak"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "population_recheck_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "population_recheck_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_environment_heat_spike",
@@ -435,7 +620,11 @@
             "stress": -4,
             "risk": -3,
             "growth": -0.3
-          }
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "heat_dry"
+          ]
         },
         {
           "id": "power_through",
@@ -444,14 +633,40 @@
             "growth": 0.4,
             "health": -3,
             "stress": 3
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "heat_dry"
+          ]
         }
       ],
       "learningNote": "Kurze Ertragseinbußen durch Klimaanpassung sind oft besser als Hitzestress-Folgen.",
       "allowedPhases": [
         "vegetative",
         "flowering"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "heat_dry",
+        "conflictGroup": "climate_heat_dry",
+        "warningProfile": {
+          "cadence": "acute_climate_spike"
+        },
+        "escalationProfile": {
+          "noActionHooks": [
+            "instability_rebound_followup_possible"
+          ],
+          "poorOutcomeHooks": [
+            "stress_damage_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "instability_rebound_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_environment_cold_night",
@@ -504,7 +719,11 @@
             "stress": -3,
             "risk": -2,
             "water": -1
-          }
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "cold"
+          ]
         },
         {
           "id": "accept_variation",
@@ -512,7 +731,11 @@
           "effects": {
             "stress": 2,
             "growth": -0.6
-          }
+          },
+          "intent": "observe_only",
+          "contextFit": [
+            "cold"
+          ]
         }
       ],
       "learningNote": "Konstante Nachtbedingungen helfen besonders jungen und gestressten Pflanzen.",
@@ -520,7 +743,26 @@
         "seedling",
         "vegetative",
         "flowering"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "cold",
+        "conflictGroup": "climate_cold",
+        "warningProfile": {
+          "cadence": "nighttime_drop"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "stress_damage_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "instability_rebound_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_disease_mold_pocket",
@@ -565,7 +807,11 @@
             "risk": -7,
             "stress": 2,
             "health": 1
-          }
+          },
+          "intent": "surface_cleanup",
+          "contextFit": [
+            "mold_surface"
+          ]
         },
         {
           "id": "ignore_pocket",
@@ -574,14 +820,37 @@
             "risk": 8,
             "health": -4,
             "stress": 3
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "mold_surface"
+          ]
         }
       ],
       "learningNote": "Dichte, feuchte Zonen in der Blütephase früh entschärfen, bevor Schimmel sichtbar wird.",
       "allowedPhases": [
         "flowering",
         "harvest"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "mold_surface",
+        "conflictGroup": "disease_mold",
+        "warningProfile": {
+          "cadence": "dense_canopy_humidity"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_disease_root_warning",
@@ -628,7 +897,7 @@
           "max": 10
         }
       },
-      "weight": 1.0,
+      "weight": 1,
       "cooldownRealMinutes": 240,
       "options": [
         {
@@ -638,7 +907,11 @@
             "water": -10,
             "risk": -5,
             "health": 1
-          }
+          },
+          "intent": "root_recovery",
+          "contextFit": [
+            "wet"
+          ]
         },
         {
           "id": "continue_schedule",
@@ -647,7 +920,11 @@
             "health": -4,
             "risk": 6,
             "stress": 3
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "wet"
+          ]
         },
         {
           "id": "rescue_flush",
@@ -657,14 +934,42 @@
             "nutrition": -6,
             "risk": -1,
             "stress": 2
-          }
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "wet"
+          ]
         }
       ],
       "learningNote": "Wurzelgesundheit hängt stark von Bewässerungsrhythmus und Sauerstoffverfügbarkeit ab.",
       "allowedPhases": [
         "vegetative",
         "flowering"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "disease_root",
+        "warningProfile": {
+          "cadence": "root_zone_damage"
+        },
+        "escalationProfile": {
+          "noActionHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "poorOutcomeHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_outdoor_storm_front",
@@ -783,7 +1088,11 @@
           "effects": {
             "risk": -8,
             "stress": 1
-          }
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
         },
         {
           "id": "wait_dry_window",
@@ -792,7 +1101,11 @@
             "risk": 5,
             "health": -2,
             "stress": 2
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "mold_surface"
+          ]
         }
       ],
       "learningNote": "Lange Nässephasen begünstigen Schimmelrisiko, besonders in dichten Blütebereichen.",
@@ -800,7 +1113,26 @@
       "allowedPhases": [
         "flowering",
         "harvest"
-      ]
+      ],
+      "shadowModel": {
+        "problemPolarity": "mold_surface",
+        "conflictGroup": "disease_mold",
+        "warningProfile": {
+          "cadence": "outdoor_persistent_moisture"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_positive_ideal_mild_days",
@@ -1033,38 +1365,102 @@
       "description": "Blatttemperatur, Luftfeuchte und Luftaustausch liegen sauber im grünen Bereich. Die Pflanze arbeitet sichtbar effizient.",
       "triggers": {
         "all": [
-          { "field": "simulation.isDaytime", "op": "==", "value": true },
-          { "field": "env.temperatureC", "op": ">=", "value": 23 },
-          { "field": "env.temperatureC", "op": "<=", "value": 27.5 },
-          { "field": "env.humidityPercent", "op": ">=", "value": 54 },
-          { "field": "env.humidityPercent", "op": "<=", "value": 66 },
-          { "field": "env.vpdKpa", "op": ">=", "value": 0.95 },
-          { "field": "env.vpdKpa", "op": "<=", "value": 1.22 },
-          { "field": "env.airflowScore", "op": ">=", "value": 58 },
-          { "field": "status.stress", "op": "<=", "value": 35 },
-          { "field": "status.risk", "op": "<=", "value": 32 }
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": true
+          },
+          {
+            "field": "env.temperatureC",
+            "op": ">=",
+            "value": 23
+          },
+          {
+            "field": "env.temperatureC",
+            "op": "<=",
+            "value": 27.5
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 54
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": "<=",
+            "value": 66
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": ">=",
+            "value": 0.95
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": "<=",
+            "value": 1.22
+          },
+          {
+            "field": "env.airflowScore",
+            "op": ">=",
+            "value": 58
+          },
+          {
+            "field": "status.stress",
+            "op": "<=",
+            "value": 35
+          },
+          {
+            "field": "status.risk",
+            "op": "<=",
+            "value": 32
+          }
         ],
-        "stage": { "min": 3, "max": 10 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 3,
+          "max": 10
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 0.85,
       "cooldownRealMinutes": 260,
       "polarity": "positive",
-      "tags": ["climate", "ideal", "vpd", "perfect", "bonus"],
+      "tags": [
+        "climate",
+        "ideal",
+        "vpd",
+        "perfect",
+        "bonus"
+      ],
       "options": [
         {
           "id": "keep_vpd_window",
           "label": "Klima stabil halten",
-          "effects": { "growth": 1.6, "stress": -2, "risk": -1 }
+          "effects": {
+            "growth": 1.6,
+            "stress": -2,
+            "risk": -1
+          }
         },
         {
           "id": "light_push_window",
           "label": "Leicht mehr Licht geben",
-          "effects": { "growth": 2.1, "stress": 1, "risk": 1 }
+          "effects": {
+            "growth": 2.1,
+            "stress": 1,
+            "risk": 1
+          }
         }
       ],
       "learningNote": "Ein gutes VPD-Fenster entsteht aus Temperatur, Luftfeuchte und Luftbewegung zusammen – nicht aus nur einem Wert.",
-      "allowedPhases": ["vegetative", "flowering"]
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ]
     },
     {
       "id": "v2_climate_stable_comfort_bonus",
@@ -1073,36 +1469,91 @@
       "description": "Über längere Zeit bleibt das Zelt ruhig und ausgeglichen. Die Pflanze zeigt entspanntes, gleichmäßiges Wachstum.",
       "triggers": {
         "all": [
-          { "field": "env.temperatureC", "op": ">=", "value": 21.5 },
-          { "field": "env.temperatureC", "op": "<=", "value": 28 },
-          { "field": "env.humidityPercent", "op": ">=", "value": 48 },
-          { "field": "env.humidityPercent", "op": "<=", "value": 67 },
-          { "field": "env.airflowScore", "op": ">=", "value": 50 },
-          { "field": "env.instabilityScore", "op": "<=", "value": 18 },
-          { "field": "status.stress", "op": "<=", "value": 38 },
-          { "field": "status.risk", "op": "<=", "value": 38 }
+          {
+            "field": "env.temperatureC",
+            "op": ">=",
+            "value": 21.5
+          },
+          {
+            "field": "env.temperatureC",
+            "op": "<=",
+            "value": 28
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 48
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": "<=",
+            "value": 67
+          },
+          {
+            "field": "env.airflowScore",
+            "op": ">=",
+            "value": 50
+          },
+          {
+            "field": "env.instabilityScore",
+            "op": "<=",
+            "value": 18
+          },
+          {
+            "field": "status.stress",
+            "op": "<=",
+            "value": 38
+          },
+          {
+            "field": "status.risk",
+            "op": "<=",
+            "value": 38
+          }
         ],
-        "stage": { "min": 3, "max": 10 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 3,
+          "max": 10
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 0.8,
       "cooldownRealMinutes": 320,
       "polarity": "positive",
-      "tags": ["climate", "stable", "comfort", "recovery"],
+      "tags": [
+        "climate",
+        "stable",
+        "comfort",
+        "recovery"
+      ],
       "options": [
         {
           "id": "maintain_comfort",
           "label": "Rhythmus beibehalten",
-          "effects": { "growth": 1.1, "stress": -2, "health": 1 }
+          "effects": {
+            "growth": 1.1,
+            "stress": -2,
+            "health": 1
+          }
         },
         {
           "id": "coast_on_stability",
           "label": "Sanft weiterlaufen lassen",
-          "effects": { "growth": 0.9, "stress": -1, "risk": -1 }
+          "effects": {
+            "growth": 0.9,
+            "stress": -1,
+            "risk": -1
+          }
         }
       ],
       "learningNote": "Nicht nur Spitzenwerte zählen. Ein ruhiges, stabiles Klima senkt versteckten Stress und verbessert die Konstanz.",
-      "allowedPhases": ["vegetative", "flowering"]
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ]
     },
     {
       "id": "v2_climate_airflow_mold_guard",
@@ -1111,35 +1562,88 @@
       "description": "Der Luftstrom hält Blattoberflächen trocken, ohne die Pflanze auszutrocknen. Das senkt versteckten Schimmeldruck.",
       "triggers": {
         "all": [
-          { "field": "env.airflowScore", "op": ">=", "value": 72 },
-          { "field": "env.humidityPercent", "op": ">=", "value": 52 },
-          { "field": "env.humidityPercent", "op": "<=", "value": 68 },
-          { "field": "env.vpdKpa", "op": ">=", "value": 0.9 },
-          { "field": "env.vpdKpa", "op": "<=", "value": 1.35 },
-          { "field": "status.risk", "op": ">=", "value": 14 },
-          { "field": "status.stress", "op": "<=", "value": 42 }
+          {
+            "field": "env.airflowScore",
+            "op": ">=",
+            "value": 72
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 52
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": "<=",
+            "value": 68
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": ">=",
+            "value": 0.9
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": "<=",
+            "value": 1.35
+          },
+          {
+            "field": "status.risk",
+            "op": ">=",
+            "value": 14
+          },
+          {
+            "field": "status.stress",
+            "op": "<=",
+            "value": 42
+          }
         ],
-        "stage": { "min": 4, "max": 10 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 4,
+          "max": 10
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 0.72,
       "cooldownRealMinutes": 280,
       "polarity": "positive",
-      "tags": ["airflow", "ventilation", "mold", "prevention", "climate"],
+      "tags": [
+        "airflow",
+        "ventilation",
+        "mold",
+        "prevention",
+        "climate"
+      ],
       "options": [
         {
           "id": "keep_canopy_open",
           "label": "Luftstrom beibehalten",
-          "effects": { "risk": -4, "health": 1, "stress": -1 }
+          "effects": {
+            "risk": -4,
+            "health": 1,
+            "stress": -1
+          }
         },
         {
           "id": "use_the_window",
           "label": "Fenster für Gesundheit nutzen",
-          "effects": { "risk": -3, "growth": 0.6, "health": 1 }
+          "effects": {
+            "risk": -3,
+            "growth": 0.6,
+            "health": 1
+          }
         }
       ],
       "learningNote": "Gute Luftbewegung ist ein Präventionswerkzeug: Sie hilft besonders dann, wenn Feuchte im brauchbaren, aber nicht perfekten Bereich liegt.",
-      "allowedPhases": ["vegetative", "flowering", "harvest"]
+      "allowedPhases": [
+        "vegetative",
+        "flowering",
+        "harvest"
+      ]
     },
     {
       "id": "v2_climate_veg_leaf_expansion",
@@ -1148,35 +1652,85 @@
       "description": "Die Blattflächen stehen sauber und expansiv. Das Klima unterstützt in der Vegetationsphase spürbar die Blattentwicklung.",
       "triggers": {
         "all": [
-          { "field": "simulation.isDaytime", "op": "==", "value": true },
-          { "field": "env.temperatureC", "op": ">=", "value": 23 },
-          { "field": "env.temperatureC", "op": "<=", "value": 27 },
-          { "field": "env.humidityPercent", "op": ">=", "value": 60 },
-          { "field": "env.humidityPercent", "op": "<=", "value": 68 },
-          { "field": "env.vpdKpa", "op": ">=", "value": 0.85 },
-          { "field": "env.vpdKpa", "op": "<=", "value": 1.15 }
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": true
+          },
+          {
+            "field": "env.temperatureC",
+            "op": ">=",
+            "value": 23
+          },
+          {
+            "field": "env.temperatureC",
+            "op": "<=",
+            "value": 27
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 60
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": "<=",
+            "value": 68
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": ">=",
+            "value": 0.85
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": "<=",
+            "value": 1.15
+          }
         ],
-        "stage": { "min": 3, "max": 6 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 3,
+          "max": 6
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 0.8,
       "cooldownRealMinutes": 240,
       "polarity": "positive",
-      "tags": ["humidity", "veg", "growth", "leaf", "climate"],
+      "tags": [
+        "humidity",
+        "veg",
+        "growth",
+        "leaf",
+        "climate"
+      ],
       "options": [
         {
           "id": "hold_veg_humidity",
           "label": "Veg-Klima halten",
-          "effects": { "growth": 1.8, "stress": -1 }
+          "effects": {
+            "growth": 1.8,
+            "stress": -1
+          }
         },
         {
           "id": "push_leaf_surface",
           "label": "Momentum sanft mitnehmen",
-          "effects": { "growth": 2.0, "risk": 1, "stress": 1 }
+          "effects": {
+            "growth": 2,
+            "risk": 1,
+            "stress": 1
+          }
         }
       ],
       "learningNote": "Etwas mehr Feuchte in der Vegetationsphase kann Blattaufbau unterstützen – solange Temperatur, VPD und Luftbewegung dazu passen.",
-      "allowedPhases": ["vegetative"]
+      "allowedPhases": [
+        "vegetative"
+      ]
     },
     {
       "id": "v2_climate_heat_stress",
@@ -1185,31 +1739,68 @@
       "description": "Die Blätter verlieren etwas Spannung und die Pflanze arbeitet gegen die Wärme. Das Klima ist tagsüber zu heiß geworden.",
       "triggers": {
         "all": [
-          { "field": "simulation.isDaytime", "op": "==", "value": true },
-          { "field": "env.temperatureC", "op": ">=", "value": 30 },
-          { "field": "env.vpdKpa", "op": ">=", "value": 1.35 }
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": true
+          },
+          {
+            "field": "env.temperatureC",
+            "op": ">=",
+            "value": 30
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": ">=",
+            "value": 1.35
+          }
         ],
-        "stage": { "min": 3, "max": 10 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 3,
+          "max": 10
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 1.15,
       "cooldownRealMinutes": 210,
       "polarity": "negative",
-      "tags": ["heat", "temp", "stress", "climate"],
+      "tags": [
+        "heat",
+        "temp",
+        "stress",
+        "climate"
+      ],
       "options": [
         {
           "id": "reduce_heat_load",
           "label": "Wärmelast senken",
-          "effects": { "stress": -3, "risk": -1, "growth": -0.4 }
+          "effects": {
+            "stress": -3,
+            "risk": -1,
+            "growth": -0.4
+          }
         },
         {
           "id": "ride_it_out_heat",
           "label": "Aussitzen",
-          "effects": { "health": -3, "stress": 5, "growth": -1.1, "risk": 2 }
+          "effects": {
+            "health": -3,
+            "stress": 5,
+            "growth": -1.1,
+            "risk": 2
+          }
         }
       ],
       "learningNote": "Zu hohe Temperaturen drücken nicht nur die Komfortzone – sie verstärken über das VPD auch Transpirationsstress.",
-      "allowedPhases": ["vegetative", "flowering", "harvest"]
+      "allowedPhases": [
+        "vegetative",
+        "flowering",
+        "harvest"
+      ]
     },
     {
       "id": "v2_climate_high_vpd_dry_stress",
@@ -1218,31 +1809,67 @@
       "description": "Die Luft ist zu trocken für die aktuelle Last im Zelt. Die Pflanze zeigt erste Anzeichen von Trockenstress.",
       "triggers": {
         "all": [
-          { "field": "simulation.isDaytime", "op": "==", "value": true },
-          { "field": "env.humidityPercent", "op": "<=", "value": 45 },
-          { "field": "env.vpdKpa", "op": ">=", "value": 1.55 }
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": true
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": "<=",
+            "value": 45
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": ">=",
+            "value": 1.55
+          }
         ],
-        "stage": { "min": 3, "max": 10 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 3,
+          "max": 10
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 1.05,
       "cooldownRealMinutes": 220,
       "polarity": "negative",
-      "tags": ["dry", "vpd", "humidity", "stress"],
+      "tags": [
+        "dry",
+        "vpd",
+        "humidity",
+        "stress"
+      ],
       "options": [
         {
           "id": "soften_dry_pull",
           "label": "Klima entschärfen",
-          "effects": { "stress": -3, "risk": -1, "growth": -0.3 }
+          "effects": {
+            "stress": -3,
+            "risk": -1,
+            "growth": -0.3
+          }
         },
         {
           "id": "ignore_dry_pull",
           "label": "Ignorieren",
-          "effects": { "health": -2, "stress": 4, "growth": -0.9, "risk": 1 }
+          "effects": {
+            "health": -2,
+            "stress": 4,
+            "growth": -0.9,
+            "risk": 1
+          }
         }
       ],
       "learningNote": "Ein hoher VPD-Wert ist oft ein Trockenheitsproblem aus Temperatur und Luftfeuchte zusammen – nicht nur 'zu wenig Wasser'.",
-      "allowedPhases": ["vegetative", "flowering"]
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ]
     },
     {
       "id": "v2_climate_flower_humidity_risk",
@@ -1251,31 +1878,93 @@
       "description": "Zwischen den Blüten bleibt Feuchte hängen. Das erhöht das Risiko für Pilz- und Schimmelprobleme.",
       "triggers": {
         "all": [
-          { "field": "env.humidityPercent", "op": ">=", "value": 68 },
-          { "field": "env.vpdKpa", "op": "<=", "value": 0.95 },
-          { "field": "env.airflowScore", "op": "<=", "value": 65 }
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 68
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": "<=",
+            "value": 0.95
+          },
+          {
+            "field": "env.airflowScore",
+            "op": "<=",
+            "value": 65
+          }
         ],
-        "stage": { "min": 7, "max": 11 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 7,
+          "max": 11
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 1.18,
       "cooldownRealMinutes": 240,
       "polarity": "negative",
-      "tags": ["humidity", "mold", "fungus", "flower"],
+      "tags": [
+        "humidity",
+        "mold",
+        "fungus",
+        "flower"
+      ],
       "options": [
         {
           "id": "dry_the_canopy",
           "label": "Canopy trockener fahren",
-          "effects": { "risk": -5, "stress": -1, "health": 1 }
+          "effects": {
+            "risk": -5,
+            "stress": -1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
         },
         {
           "id": "wait_with_humidity",
           "label": "Abwarten",
-          "effects": { "risk": 6, "health": -3, "stress": 2 }
+          "effects": {
+            "risk": 6,
+            "health": -3,
+            "stress": 2
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "mold_surface"
+          ]
         }
       ],
       "learningNote": "Spätere Blüte verzeiht zu hohe Feuchte schlechter. Gute Luftbewegung und trockenere Fenster werden dann wichtiger.",
-      "allowedPhases": ["flowering", "harvest"]
+      "allowedPhases": [
+        "flowering",
+        "harvest"
+      ],
+      "shadowModel": {
+        "problemPolarity": "mold_surface",
+        "conflictGroup": "disease_mold",
+        "warningProfile": {
+          "cadence": "flower_cluster_humidity"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_climate_stagnant_air_warning",
@@ -1284,30 +1973,88 @@
       "description": "Im unteren Blätterdach steht die Luft. Feuchte und Wärme verteilen sich ungleichmäßig.",
       "triggers": {
         "all": [
-          { "field": "env.airflowScore", "op": "<=", "value": 42 },
-          { "field": "env.humidityPercent", "op": ">=", "value": 55 }
+          {
+            "field": "env.airflowScore",
+            "op": "<=",
+            "value": 42
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 55
+          }
         ],
-        "stage": { "min": 4, "max": 11 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 4,
+          "max": 11
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 1.08,
       "cooldownRealMinutes": 180,
       "polarity": "negative",
-      "tags": ["airflow", "ventilation", "stagnant", "disease"],
+      "tags": [
+        "airflow",
+        "ventilation",
+        "stagnant",
+        "disease"
+      ],
       "options": [
         {
           "id": "open_air_path",
           "label": "Luftweg verbessern",
-          "effects": { "risk": -4, "stress": -1 }
+          "effects": {
+            "risk": -4,
+            "stress": -1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
         },
         {
           "id": "ignore_stagnation",
           "label": "Laufen lassen",
-          "effects": { "risk": 5, "health": -2, "stress": 2 }
+          "effects": {
+            "risk": 5,
+            "health": -2,
+            "stress": 2
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "mold_surface"
+          ]
         }
       ],
       "learningNote": "Nicht jeder Schimmel startet mit extrem hoher Feuchte. Schlechte Luftbewegung kann schon vorher Probleme vorbereiten.",
-      "allowedPhases": ["vegetative", "flowering", "harvest"]
+      "allowedPhases": [
+        "vegetative",
+        "flowering",
+        "harvest"
+      ],
+      "shadowModel": {
+        "problemPolarity": "mold_surface",
+        "conflictGroup": "disease_mold",
+        "warningProfile": {
+          "cadence": "stagnant_canopy_layer"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "v2_climate_approaching_risk_zone",
@@ -1316,36 +2063,78 @@
       "description": "Das Zelt ist noch nicht im roten Bereich, aber mehrere Werte driften in eine riskante Richtung.",
       "triggers": {
         "all": [
-          { "field": "env.instabilityScore", "op": "<=", "value": 24 }
+          {
+            "field": "env.instabilityScore",
+            "op": "<=",
+            "value": 24
+          }
         ],
         "any": [
-          { "field": "env.temperatureC", "op": ">=", "value": 29.2 },
-          { "field": "env.humidityPercent", "op": ">=", "value": 68 },
-          { "field": "env.humidityPercent", "op": "<=", "value": 45 },
-          { "field": "env.vpdKpa", "op": ">=", "value": 1.46 }
+          {
+            "field": "env.temperatureC",
+            "op": ">=",
+            "value": 29.2
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 68
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": "<=",
+            "value": 45
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": ">=",
+            "value": 1.46
+          }
         ],
-        "stage": { "min": 3, "max": 11 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 3,
+          "max": 11
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 0.98,
       "cooldownRealMinutes": 150,
       "polarity": "neutral",
       "tone": "neutral",
-      "tags": ["warning", "risk", "climate", "drift"],
+      "tags": [
+        "warning",
+        "risk",
+        "climate",
+        "drift"
+      ],
       "options": [
         {
           "id": "small_climate_correction",
           "label": "Leicht gegensteuern",
-          "effects": { "risk": -2, "stress": -1 }
+          "effects": {
+            "risk": -2,
+            "stress": -1
+          }
         },
         {
           "id": "monitor_only",
           "label": "Nur beobachten",
-          "effects": { "risk": 1, "stress": 1 }
+          "effects": {
+            "risk": 1,
+            "stress": 1
+          }
         }
       ],
       "learningNote": "Gute Grower reagieren oft schon im gelben Bereich. Kleine Korrekturen sind meist günstiger als späte Rettungsaktionen.",
-      "allowedPhases": ["vegetative", "flowering", "harvest"]
+      "allowedPhases": [
+        "vegetative",
+        "flowering",
+        "harvest"
+      ]
     },
     {
       "id": "v2_climate_instability_warning",
@@ -1354,30 +2143,56 @@
       "description": "Temperatur und Luftfeuchte schwanken stärker als der Pflanze guttut. Das sorgt für unnötige Unruhe im Zelt.",
       "triggers": {
         "all": [
-          { "field": "env.instabilityScore", "op": ">=", "value": 28 }
+          {
+            "field": "env.instabilityScore",
+            "op": ">=",
+            "value": 28
+          }
         ],
-        "stage": { "min": 3, "max": 11 },
-        "setup": { "modeIn": ["indoor"] }
+        "stage": {
+          "min": 3,
+          "max": 11
+        },
+        "setup": {
+          "modeIn": [
+            "indoor"
+          ]
+        }
       },
       "weight": 1.02,
       "cooldownRealMinutes": 170,
       "polarity": "neutral",
       "tone": "neutral",
-      "tags": ["climate", "fluctuation", "warning", "drift"],
+      "tags": [
+        "climate",
+        "fluctuation",
+        "warning",
+        "drift"
+      ],
       "options": [
         {
           "id": "stabilize_controller",
           "label": "Ruhe ins Klima bringen",
-          "effects": { "stress": -3, "risk": -1 }
+          "effects": {
+            "stress": -3,
+            "risk": -1
+          }
         },
         {
           "id": "chase_numbers",
           "label": "Weiter an Zahlen ziehen",
-          "effects": { "stress": 2, "risk": 1 }
+          "effects": {
+            "stress": 2,
+            "risk": 1
+          }
         }
       ],
       "learningNote": "Nicht jede schlechte Phase kommt von dauerhaft falschen Werten. Häufige Schwankungen können selbst ein Stressfaktor sein.",
-      "allowedPhases": ["vegetative", "flowering", "harvest"]
+      "allowedPhases": [
+        "vegetative",
+        "flowering",
+        "harvest"
+      ]
     }
   ]
 }

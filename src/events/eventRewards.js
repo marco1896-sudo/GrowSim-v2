@@ -87,6 +87,8 @@
       fitScore: Number(resolutionModel.fitScore || 0),
       escalationRiskShift: Number(resolutionModel.escalationRiskShift || 0),
       plausibleFollowUp: Boolean(resolutionModel.plausibleFollowUp),
+      recoverySignificance: String(resolutionModel.rewardMetadata && resolutionModel.rewardMetadata.recoverySignificance || 'default'),
+      executionRelevant: resolutionModel.rewardMetadata && resolutionModel.rewardMetadata.executionRelevant !== false,
       atSimTimeMs: currentSimTimeMs
     });
 
@@ -167,7 +169,9 @@
     const currentSimTimeMs = Number(input.snapshot && input.snapshot.simulation && input.snapshot.simulation.simTimeMs || 0);
 
     if (!latestGood) blockers.push('no_recent_good_negative_resolution');
-    if (latestGood && !['active', 'escalating', 'escalated'].includes(String(latestGood.shadowStage || ''))) blockers.push('recent_issue_not_severe_enough_for_recovery_reward');
+    if (latestGood && !['active', 'escalating', 'escalated'].includes(String(latestGood.shadowStage || '')) && String(latestGood.recoverySignificance || 'default') !== 'high') {
+      blockers.push('recent_issue_not_severe_enough_for_recovery_reward');
+    }
     if (latestGood && latestGood.escalationRiskShift > -6) blockers.push('recovery_improvement_too_shallow');
     if (latestGood && ((currentSimTimeMs - Number(latestGood.atSimTimeMs || 0)) / (60 * 60 * 1000)) > 8) blockers.push('recovery_window_expired');
     if (Number(rewardState && rewardState.stableWindow && rewardState.stableWindow.stableHours || 0) < 2) blockers.push('post_recovery_stability_too_brief');
@@ -200,6 +204,7 @@
     const currentSimTimeMs = Number(input.snapshot && input.snapshot.simulation && input.snapshot.simulation.simTimeMs || 0);
 
     if (!latestGood) blockers.push('no_recent_good_execution');
+    if (latestGood && latestGood.executionRelevant === false) blockers.push('recent_resolution_not_marked_execution_relevant');
     if (latestGood && latestGood.escalationRiskShift > -8) blockers.push('execution_did_not_reduce_escalation_enough');
     if (latestGood && latestGood.plausibleFollowUp) blockers.push('followup_pressure_still_plausible');
     if (latestGood && ((currentSimTimeMs - Number(latestGood.atSimTimeMs || 0)) / (60 * 60 * 1000)) > 4) blockers.push('execution_window_expired');

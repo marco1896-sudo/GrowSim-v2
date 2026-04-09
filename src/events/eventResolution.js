@@ -26,7 +26,39 @@
     return getEventOptions(eventDef).find((option) => String(option && option.id || '') === targetId) || null;
   }
 
+  function getShadowModel(eventDef) {
+    return eventDef && eventDef.shadowModel && typeof eventDef.shadowModel === 'object'
+      ? eventDef.shadowModel
+      : {};
+  }
+
+  function getExplicitProblemPolarity(eventDef) {
+    return String(getShadowModel(eventDef).problemPolarity || '').trim().toLowerCase();
+  }
+
+  function getOptionContextFit(option) {
+    return Array.isArray(option && option.contextFit)
+      ? option.contextFit.map((entry) => String(entry || '').trim().toLowerCase()).filter(Boolean)
+      : [];
+  }
+
+  function getOptionIntent(option) {
+    return String(option && option.intent || '').trim().toLowerCase();
+  }
+
+  function getEventRewardProfile(eventDef) {
+    const shadowModel = getShadowModel(eventDef);
+    return shadowModel.rewardProfile && typeof shadowModel.rewardProfile === 'object'
+      ? shadowModel.rewardProfile
+      : {};
+  }
+
   function classifyProblemPole(eventDef, shadowEvent) {
+    const explicitPolarity = getExplicitProblemPolarity(eventDef);
+    if (explicitPolarity) {
+      return explicitPolarity;
+    }
+
     const id = String(eventDef && eventDef.id || '').toLowerCase();
     const category = String(eventDef && eventDef.category || 'generic').toLowerCase();
     const specificPressure = Number(shadowEvent && shadowEvent.specificPressure || 0);
@@ -141,6 +173,41 @@
     return score;
   }
 
+  function scoreExplicitIntentFit(option, pole) {
+    const contextFit = getOptionContextFit(option);
+    const intent = getOptionIntent(option);
+    let score = 0;
+
+    if (pole && contextFit.length) {
+      if (contextFit.includes(String(pole).toLowerCase())) {
+        score += 18;
+      } else {
+        score -= 14;
+      }
+    }
+
+    if (intent === 'observe_only' || intent === 'delay_action' || intent === 'ignore') {
+      score -= 18;
+    }
+    if (
+      intent === 'gradual_rehydrate'
+      || intent === 'oxygen_relief'
+      || intent === 'climate_stabilize'
+      || intent === 'ph_corrective'
+      || intent === 'balanced_feed'
+      || intent === 'integrated_control'
+      || intent === 'surface_cleanup'
+      || intent === 'root_recovery'
+    ) {
+      score += 10;
+    }
+    if (intent === 'heavy_feed_push' || intent === 'heavy_water_push' || intent === 'stressful_shortcut') {
+      score -= 12;
+    }
+
+    return score;
+  }
+
   function scoreOptionFit(eventDef, shadowEvent, option, pathKind) {
     if (pathKind === 'no_action') {
       return -28;
@@ -152,6 +219,7 @@
     const pole = classifyProblemPole(eventDef, shadowEvent);
     const category = String(eventDef && eventDef.category || 'generic').toLowerCase();
     let score = scoreGenericOptionFit(option, shadowEvent);
+    score += scoreExplicitIntentFit(option, pole);
 
     if (category === 'water') score += scoreWaterFit(option, pole);
     else if (category === 'nutrition') score += scoreNutritionFit(option, pole);
@@ -251,7 +319,35 @@
     return notes;
   }
 
-  function getFollowUpPlausibility(eventDef, outcomeStatus, shadowStage, fitScore) {
+  function getFollowUpPlausibility(eventDef, outcomeStatus, shadowStage, fitScore, pathKind) {
+    const shadowModel = getShadowModel(eventDef);
+    const escalationProfile = shadowModel.escalationProfile && typeof shadowModel.escalationProfile === 'object'
+      ? shadowModel.escalationProfile
+      : {};
+    const explicitNoActionHooks = Array.isArray(escalationProfile.noActionHooks)
+      ? escalationProfile.noActionHooks.map((entry) => String(entry || '').trim()).filter(Boolean)
+      : [];
+    const explicitPoorOutcomeHooks = Array.isArray(escalationProfile.poorOutcomeHooks)
+      ? escalationProfile.poorOutcomeHooks.map((entry) => String(entry || '').trim()).filter(Boolean)
+      : [];
+    const explicitUnresolvedHooks = Array.isArray(escalationProfile.unresolvedHooks)
+      ? escalationProfile.unresolvedHooks.map((entry) => String(entry || '').trim()).filter(Boolean)
+      : [];
+
+    if (explicitNoActionHooks.length || explicitPoorOutcomeHooks.length || explicitUnresolvedHooks.length) {
+      const hooks = [];
+      if (String(pathKind || '') === 'no_action' && explicitNoActionHooks.length) {
+        hooks.push(...explicitNoActionHooks);
+      }
+      if (outcomeStatus === 'worsened' || outcomeStatus === 'escalated' || fitScore <= -12) {
+        hooks.push(...explicitPoorOutcomeHooks);
+      }
+      if (outcomeStatus === 'unresolved') {
+        hooks.push(...explicitUnresolvedHooks);
+      }
+      return Array.from(new Set(hooks));
+    }
+
     const category = String(eventDef && eventDef.category || 'generic').toLowerCase();
     const plausible = outcomeStatus === 'worsened' || outcomeStatus === 'escalated' || fitScore <= -12;
     if (!plausible) return [];
@@ -289,7 +385,8 @@
     const quality = classifyOutcomeQuality(outcomeStatus, fitScore, categoryPressureDelta, contradictionPenalty);
     const primaryReasons = buildPrimaryReasons(outcomeStatus, fitScore, shadowEvent, pathKind);
     const sideEffectNotes = buildSideEffectNotes(directDeltas, categoryPressureDelta);
-    const followUpHooks = getFollowUpPlausibility(eventDef, outcomeStatus, shadowStage, fitScore);
+    const followUpHooks = getFollowUpPlausibility(eventDef, outcomeStatus, shadowStage, fitScore, pathKind);
+    const rewardProfile = getEventRewardProfile(eventDef);
 
     return {
       resolved: true,
@@ -308,7 +405,11 @@
       escalationRiskShift: categoryPressureDelta,
       followUpHooks,
       plausibleFollowUp: followUpHooks.length > 0,
-      contradictionPenalty
+      contradictionPenalty,
+      rewardMetadata: {
+        recoverySignificance: String(rewardProfile.recoverySignificance || '').trim().toLowerCase() || 'default',
+        executionRelevant: rewardProfile.executionRelevant !== false
+      }
     };
   }
 

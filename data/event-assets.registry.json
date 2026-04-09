@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "phase1-draft",
+  "generatedAt": "phase12-coverage-pass",
   "notes": [
-    "Phase 1 draft registry. Data-only, not wired into the live renderer.",
-    "Asset kind is explicit and future-facing: image, icon, placeholder.",
-    "Filename inference was used only to draft mappings and identify gaps."
+    "Phase 12 coverage pass: registry tightened around the most common player-facing event states.",
+    "Explicit event mappings are preferred over broad category fallback wherever existing assets already fit.",
+    "Placeholders remain only for genuinely uncovered states still tracked in the gap list."
   ],
   "inventorySummary": {
-    "totalAssets": 66,
+    "totalAssets": 29,
     "byDimension": {
-      "2048x2048": 39,
-      "1024x1024": 9,
-      "512x512": 18
+      "2048x2048": 15,
+      "512x512": 8,
+      "1024x1024": 6
     },
     "allSquare": true,
     "variantBases": [
@@ -32,104 +32,453 @@
       "assetKind": "image",
       "width": 2048,
       "height": 2048,
-      "tokens": ["event", "heat", "wave"],
-      "tags": ["environment", "heat", "stress"]
+      "tokens": [
+        "event",
+        "heat",
+        "wave"
+      ],
+      "tags": [
+        "environment",
+        "heat",
+        "stress"
+      ]
     },
     "event-overwatering": {
       "path": "assets/events/event-overwatering.png",
       "assetKind": "image",
       "width": 2048,
       "height": 2048,
-      "tokens": ["event", "overwatering"],
-      "tags": ["water", "root-zone", "stress"]
+      "tokens": [
+        "event",
+        "overwatering"
+      ],
+      "tags": [
+        "water",
+        "root-zone",
+        "stress"
+      ]
     },
     "event-nutrient-deficiency": {
       "path": "assets/events/event-nutrient-deficiency.png",
       "assetKind": "image",
       "width": 2048,
       "height": 2048,
-      "tokens": ["event", "nutrient", "deficiency"],
-      "tags": ["nutrition", "deficiency"]
+      "tokens": [
+        "event",
+        "nutrient",
+        "deficiency"
+      ],
+      "tags": [
+        "nutrition",
+        "deficiency"
+      ]
     },
     "event-pest-attack": {
       "path": "assets/events/event-pest-attack.png",
       "assetKind": "image",
       "width": 2048,
       "height": 2048,
-      "tokens": ["event", "pest", "attack"],
-      "tags": ["pest", "active"]
+      "tokens": [
+        "event",
+        "pest",
+        "attack"
+      ],
+      "tags": [
+        "pest",
+        "active"
+      ]
     },
     "event-unexpected-mold": {
       "path": "assets/events/event-unexpected-mold.png",
       "assetKind": "image",
       "width": 2048,
       "height": 2048,
-      "tokens": ["event", "unexpected", "mold"],
-      "tags": ["disease", "mold"]
+      "tokens": [
+        "event",
+        "unexpected",
+        "mold"
+      ],
+      "tags": [
+        "disease",
+        "mold"
+      ]
     },
     "event-perfect-environment-day": {
       "path": "assets/events/event-perfect-environment-day.png",
       "assetKind": "image",
       "width": 2048,
       "height": 2048,
-      "tokens": ["event", "perfect", "environment", "day"],
-      "tags": ["positive", "stable", "environment"]
+      "tokens": [
+        "event",
+        "perfect",
+        "environment",
+        "day"
+      ],
+      "tags": [
+        "positive",
+        "stable",
+        "environment"
+      ]
     },
     "event-slow-growth-period": {
       "path": "assets/events/event-slow-growth-period.png",
       "assetKind": "placeholder",
       "width": 2048,
       "height": 2048,
-      "tokens": ["event", "slow", "growth", "period"],
-      "tags": ["generic", "placeholder"]
+      "tokens": [
+        "event",
+        "slow",
+        "growth",
+        "period"
+      ],
+      "tags": [
+        "generic",
+        "placeholder"
+      ]
     },
     "heat_wave": {
       "path": "assets/events/heat_wave.png",
       "assetKind": "icon",
       "width": 512,
       "height": 512,
-      "tokens": ["heat", "wave"],
-      "tags": ["environment", "icon", "heat"]
+      "tokens": [
+        "heat",
+        "wave"
+      ],
+      "tags": [
+        "environment",
+        "icon",
+        "heat"
+      ]
     },
     "too_wet_soil": {
       "path": "assets/events/too_wet_soil.png",
       "assetKind": "icon",
       "width": 512,
       "height": 512,
-      "tokens": ["too", "wet", "soil"],
-      "tags": ["water", "icon", "wet"]
+      "tokens": [
+        "too",
+        "wet",
+        "soil"
+      ],
+      "tags": [
+        "water",
+        "icon",
+        "wet"
+      ]
     },
     "nutrient_lockout": {
       "path": "assets/events/nutrient_lockout.png",
       "assetKind": "icon",
       "width": 512,
       "height": 512,
-      "tokens": ["nutrient", "lockout"],
-      "tags": ["nutrition", "icon", "lockout"]
+      "tokens": [
+        "nutrient",
+        "lockout"
+      ],
+      "tags": [
+        "nutrition",
+        "icon",
+        "lockout"
+      ]
     },
     "mite_hotspot": {
       "path": "assets/events/mite_hotspot.png",
       "assetKind": "icon",
       "width": 512,
       "height": 512,
-      "tokens": ["mite", "hotspot"],
-      "tags": ["pest", "icon", "mites"]
+      "tokens": [
+        "mite",
+        "hotspot"
+      ],
+      "tags": [
+        "pest",
+        "icon",
+        "mites"
+      ]
     },
     "disease": {
       "path": "assets/events/disease.png",
       "assetKind": "icon",
       "width": 512,
       "height": 512,
-      "tokens": ["disease"],
-      "tags": ["disease", "icon", "generic"]
+      "tokens": [
+        "disease"
+      ],
+      "tags": [
+        "disease",
+        "icon",
+        "generic"
+      ]
     },
     "beneficial_fungi_colonized": {
       "path": "assets/events/beneficial_fungi_colonized.png",
       "assetKind": "icon",
       "width": 512,
       "height": 512,
-      "tokens": ["beneficial", "fungi", "colonized"],
-      "tags": ["positive", "icon", "soil-life"]
+      "tokens": [
+        "beneficial",
+        "fungi",
+        "colonized"
+      ],
+      "tags": [
+        "positive",
+        "icon",
+        "soil-life"
+      ]
+    },
+    "event-drought-stress": {
+      "path": "assets/events/event-drought-stress.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "drought",
+        "stress"
+      ],
+      "tags": [
+        "water",
+        "warning",
+        "dry"
+      ]
+    },
+    "event-fungus-infection": {
+      "path": "assets/events/event-fungus-infection.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "fungus",
+        "infection"
+      ],
+      "tags": [
+        "disease",
+        "mold",
+        "warning"
+      ]
+    },
+    "event-fungus-outbreak": {
+      "path": "assets/events/event-fungus-outbreak.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "fungus",
+        "outbreak"
+      ],
+      "tags": [
+        "disease",
+        "outbreak",
+        "followup"
+      ]
+    },
+    "event-pest-invasion": {
+      "path": "assets/events/event-pest-invasion.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "pest",
+        "invasion"
+      ],
+      "tags": [
+        "pest",
+        "outbreak",
+        "active"
+      ]
+    },
+    "event-root-explosion": {
+      "path": "assets/events/event-root-explosion.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "root",
+        "explosion"
+      ],
+      "tags": [
+        "root",
+        "followup",
+        "recovery"
+      ]
+    },
+    "event-stress-recovery": {
+      "path": "assets/events/event-stress-recovery.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "stress",
+        "recovery"
+      ],
+      "tags": [
+        "positive",
+        "recovery",
+        "reward"
+      ]
+    },
+    "event-perfect-watering": {
+      "path": "assets/events/event-perfect-watering.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "perfect",
+        "watering"
+      ],
+      "tags": [
+        "positive",
+        "watering",
+        "reward"
+      ]
+    },
+    "event-cold-night": {
+      "path": "assets/events/event-cold-night.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "cold",
+        "night"
+      ],
+      "tags": [
+        "environment",
+        "cold",
+        "night"
+      ]
+    },
+    "fungus_gnat_wave": {
+      "path": "assets/events/fungus_gnat_wave.png",
+      "assetKind": "icon",
+      "width": 1024,
+      "height": 1024,
+      "tokens": [
+        "fungus",
+        "gnat",
+        "wave"
+      ],
+      "tags": [
+        "pest",
+        "gnats",
+        "icon"
+      ]
+    },
+    "root_bound_warning": {
+      "path": "assets/events/root_bound_warning.png",
+      "assetKind": "icon",
+      "width": 512,
+      "height": 512,
+      "tokens": [
+        "root",
+        "bound",
+        "warning"
+      ],
+      "tags": [
+        "root",
+        "pressure",
+        "icon"
+      ]
+    },
+    "thrips_early": {
+      "path": "assets/events/thrips_early.png",
+      "assetKind": "icon",
+      "width": 1024,
+      "height": 1024,
+      "tokens": [
+        "thrips",
+        "early"
+      ],
+      "tags": [
+        "pest",
+        "thrips",
+        "icon"
+      ]
+    },
+    "topsoil_mold": {
+      "path": "assets/events/topsoil_mold.png",
+      "assetKind": "icon",
+      "width": 1024,
+      "height": 1024,
+      "tokens": [
+        "topsoil",
+        "mold"
+      ],
+      "tags": [
+        "disease",
+        "mold",
+        "icon"
+      ]
+    },
+    "late_flower_humidity": {
+      "path": "assets/events/late_flower_humidity.png",
+      "assetKind": "icon",
+      "width": 1024,
+      "height": 1024,
+      "tokens": [
+        "late",
+        "flower",
+        "humidity"
+      ],
+      "tags": [
+        "disease",
+        "humidity",
+        "flower"
+      ]
+    },
+    "cold_root_zone": {
+      "path": "assets/events/cold_root_zone.png",
+      "assetKind": "icon",
+      "width": 1024,
+      "height": 1024,
+      "tokens": [
+        "cold",
+        "root",
+        "zone"
+      ],
+      "tags": [
+        "environment",
+        "root-zone",
+        "cold"
+      ]
+    },
+    "dry_pocket": {
+      "path": "assets/events/dry_pocket.png",
+      "assetKind": "icon",
+      "width": 1024,
+      "height": 1024,
+      "tokens": [
+        "dry",
+        "pocket"
+      ],
+      "tags": [
+        "water",
+        "dry",
+        "icon"
+      ]
+    },
+    "ph_drift_high": {
+      "path": "assets/events/ph_drift_high.png",
+      "assetKind": "icon",
+      "width": 512,
+      "height": 512,
+      "tokens": [
+        "ph",
+        "drift",
+        "high"
+      ],
+      "tags": [
+        "nutrition",
+        "ph",
+        "icon"
+      ]
     }
   },
   "eventMappings": {
@@ -169,19 +518,109 @@
       "fallbackCategory": "positive"
     },
     "drooping_leaves_warning": {
-      "primaryImage": null,
-      "primaryIcon": null,
+      "primaryImage": "event-overwatering",
+      "primaryIcon": "too_wet_soil",
       "fallbackCategory": "water"
     },
     "root_stress_followup": {
-      "primaryImage": null,
-      "primaryIcon": null,
+      "primaryImage": "event-root-explosion",
+      "primaryIcon": "root_bound_warning",
       "fallbackCategory": "disease"
     },
     "stable_growth_reward": {
-      "primaryImage": null,
-      "primaryIcon": null,
+      "primaryImage": "event-perfect-watering",
+      "primaryIcon": "beneficial_fungi_colonized",
       "fallbackCategory": "positive"
+    },
+    "v2_water_dry_pot": {
+      "primaryImage": "event-drought-stress",
+      "primaryIcon": "dry_pocket",
+      "fallbackCategory": "water"
+    },
+    "v2_environment_cold_night": {
+      "primaryImage": "event-cold-night",
+      "primaryIcon": "cold_root_zone",
+      "fallbackCategory": "environment"
+    },
+    "v2_pest_thrips_wave": {
+      "primaryImage": "event-pest-invasion",
+      "primaryIcon": "thrips_early",
+      "fallbackCategory": "pest"
+    },
+    "v2_disease_root_warning": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "root_bound_warning",
+      "fallbackCategory": "disease"
+    },
+    "v2_outdoor_rain_series": {
+      "primaryImage": "event-fungus-outbreak",
+      "primaryIcon": "topsoil_mold",
+      "fallbackCategory": "disease"
+    },
+    "v2_climate_flower_humidity_risk": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "late_flower_humidity",
+      "fallbackCategory": "disease"
+    },
+    "v2_climate_stagnant_air_warning": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "topsoil_mold",
+      "fallbackCategory": "disease"
+    },
+    "v2_climate_airflow_mold_guard": {
+      "primaryImage": "event-stress-recovery",
+      "primaryIcon": "beneficial_fungi_colonized",
+      "fallbackCategory": "positive"
+    },
+    "fungus_gnat_wave": {
+      "primaryImage": "event-pest-invasion",
+      "primaryIcon": "fungus_gnat_wave",
+      "fallbackCategory": "pest"
+    },
+    "root_bound_warning": {
+      "primaryImage": "event-root-explosion",
+      "primaryIcon": "root_bound_warning",
+      "fallbackCategory": "generic"
+    },
+    "thrips_early": {
+      "primaryImage": "event-pest-invasion",
+      "primaryIcon": "thrips_early",
+      "fallbackCategory": "pest"
+    },
+    "mite_hotspot": {
+      "primaryImage": "event-pest-attack",
+      "primaryIcon": "mite_hotspot",
+      "fallbackCategory": "pest"
+    },
+    "soil_too_wet": {
+      "primaryImage": "event-overwatering",
+      "primaryIcon": "soil_too_wet",
+      "fallbackCategory": "water"
+    },
+    "dry_pocket": {
+      "primaryImage": "event-drought-stress",
+      "primaryIcon": "dry_pocket",
+      "fallbackCategory": "water"
+    },
+    "ph_drift_high": {
+      "primaryImage": "event-nutrient-lockout",
+      "primaryIcon": "ph_drift_high",
+      "fallbackCategory": "nutrition"
+    },
+    "topsoil_mold": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "topsoil_mold",
+      "fallbackCategory": "disease"
+    },
+    "late_flower_humidity": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "late_flower_humidity",
+      "fallbackCategory": "disease"
+    },
+    "cold_root_zone": {
+      "primaryImage": "event-cold-night",
+      "primaryIcon": "cold_root_zone",
+      "fallbackCategory": "environment"
     }
   },
   "categoryFallbacks": {

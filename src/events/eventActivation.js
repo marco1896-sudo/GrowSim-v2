@@ -18,23 +18,46 @@
     });
   }
 
+  function getShadowModel(eventDef) {
+    return eventDef && eventDef.shadowModel && typeof eventDef.shadowModel === 'object'
+      ? eventDef.shadowModel
+      : {};
+  }
+
+  function getExplicitProblemPolarity(eventDef) {
+    const shadowModel = getShadowModel(eventDef);
+    return String(shadowModel.problemPolarity || '').trim().toLowerCase();
+  }
+
   function deriveEventSpecificPressure(eventDef, pressureSummary) {
     const category = String(eventDef && eventDef.category || 'generic').toLowerCase();
     const id = String(eventDef && eventDef.id || '').toLowerCase();
     const tags = shared.normalizeStringArray(eventDef && eventDef.tags).map((entry) => entry.toLowerCase());
     const components = pressureSummary && pressureSummary.componentScores ? pressureSummary.componentScores : {};
+    const explicitPolarity = getExplicitProblemPolarity(eventDef);
 
     if (category === 'water') {
+      if (explicitPolarity === 'dry') return Math.max(components.waterDry || 0, components.vpdMismatch || 0);
+      if (explicitPolarity === 'wet') return Math.max(components.waterWet || 0, components.oxygenMismatch || 0);
       if (id.includes('dry') || id.includes('drought') || id.includes('gap')) return Math.max(components.waterDry || 0, components.vpdMismatch || 0);
       return Math.max(components.waterWet || 0, components.oxygenMismatch || 0);
     }
     if (category === 'nutrition') {
+      if (explicitPolarity === 'lockout') {
+        return Math.max(components.phMismatch || 0, components.ecMismatch || 0, components.nutritionHigh || 0);
+      }
+      if (explicitPolarity === 'deficit') {
+        return Math.max(components.nutritionLow || 0, components.nutritionHigh || 0);
+      }
       if (id.includes('lockout') || id.includes('salt') || id.includes('ph') || tags.includes('ph')) {
         return Math.max(components.phMismatch || 0, components.ecMismatch || 0, components.nutritionHigh || 0);
       }
       return Math.max(components.nutritionLow || 0, components.nutritionHigh || 0);
     }
     if (category === 'disease') {
+      if (explicitPolarity === 'mold_surface' || explicitPolarity === 'mold') {
+        return Math.max(components.diseaseHumidity || 0, components.oxygenMismatch || 0);
+      }
       if (id.includes('mold') || tags.includes('mold') || id.includes('fung') || tags.includes('fungal')) {
         return Math.max(components.diseaseHumidity || 0, components.oxygenMismatch || 0);
       }
@@ -44,6 +67,8 @@
       return Math.max(components.pestWindow || 0, components.risk || 0);
     }
     if (category === 'environment') {
+      if (explicitPolarity === 'cold') return Math.max(components.tempMismatch || 0, components.instability || 0);
+      if (explicitPolarity === 'heat_dry') return Math.max(components.tempMismatch || 0, components.vpdMismatch || 0, components.instability || 0);
       if (id.includes('cold') || id.includes('night')) return Math.max(components.tempMismatch || 0, components.instability || 0);
       return Math.max(components.tempMismatch || 0, components.vpdMismatch || 0, components.instability || 0);
     }

@@ -23,7 +23,11 @@
             "water": -8,
             "stress": -3,
             "risk": -2
-          }
+          },
+          "intent": "oxygen_relief",
+          "contextFit": [
+            "wet"
+          ]
         },
         {
           "id": "ignore_signals",
@@ -34,13 +38,36 @@
           },
           "followUps": [
             "set_flag:root_stress_pending"
+          ],
+          "intent": "ignore",
+          "contextFit": [
+            "wet"
           ]
         }
       ],
       "tone": "negative",
       "isFollowUp": false,
       "weight": 5,
-      "pool": "warning"
+      "pool": "warning",
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "water_wet_root",
+        "warningProfile": {
+          "cadence": "visible_canopy_signal"
+        },
+        "escalationProfile": {
+          "noActionHooks": [
+            "root_zone_followup_possible"
+          ],
+          "poorOutcomeHooks": [
+            "root_zone_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "root_stress_followup",
@@ -69,13 +96,36 @@
           "followUps": [
             "clear_flag:root_stress_pending",
             "set_flag:recovery_window"
+          ],
+          "intent": "root_recovery",
+          "contextFit": [
+            "wet"
           ]
         }
       ],
       "tone": "negative",
       "isFollowUp": true,
       "weight": 1,
-      "pool": "recovery"
+      "pool": "recovery",
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "disease_root",
+        "warningProfile": {
+          "cadence": "followup_root_damage"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
     },
     {
       "id": "stable_growth_reward",
@@ -103,13 +153,29 @@
           },
           "followUps": [
             "set_flag:mastery_streak"
+          ],
+          "intent": "maintain_course",
+          "contextFit": [
+            "stability_reward"
           ]
         }
       ],
       "tone": "positive",
       "isFollowUp": false,
       "weight": 1,
-      "pool": "reward"
+      "pool": "reward",
+      "shadowModel": {
+        "problemPolarity": "stability_reward",
+        "conflictGroup": "positive",
+        "warningProfile": {
+          "cadence": "reward_only"
+        },
+        "escalationProfile": {},
+        "rewardProfile": {
+          "recoverySignificance": "low",
+          "executionRelevant": false
+        }
+      }
     }
   ]
 }

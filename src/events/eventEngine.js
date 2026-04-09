@@ -74,6 +74,11 @@
     CHOICE: Object.freeze(['shadow_choice_preview_packaging']),
     UI: Object.freeze(['ui_model_packaging'])
   });
+  const AUTHORITY_EXPERIMENT_SCOPE = Object.freeze({
+    TICK: Object.freeze(['internal_activation_predecision_authority']),
+    CHOICE: Object.freeze([]),
+    UI: Object.freeze([])
+  });
 
   const QA_SAMPLING_LIMIT = 12;
   const QA_SCENARIO_LABELS = Object.freeze([
@@ -1171,6 +1176,169 @@
     return [];
   }
 
+  function getAuthorityExperimentScope(routeKind) {
+    const safeRouteKind = String(routeKind || '').trim().toLowerCase();
+    if (safeRouteKind === 'tick') {
+      return AUTHORITY_EXPERIMENT_SCOPE.TICK.slice();
+    }
+    if (safeRouteKind === 'choice') {
+      return AUTHORITY_EXPERIMENT_SCOPE.CHOICE.slice();
+    }
+    if (safeRouteKind === 'ui') {
+      return AUTHORITY_EXPERIMENT_SCOPE.UI.slice();
+    }
+    return [];
+  }
+
+  function hasAuthorityBaselineDiagnostics(stateLike) {
+    const diagnostics = getShadowDiagnostics(stateLike);
+    return Boolean(
+      diagnostics
+      && diagnostics.activation
+      && diagnostics.pressure
+      && diagnostics.eligibility
+      && diagnostics.persistence
+      && diagnostics.comparison
+    );
+  }
+
+  function evaluateAuthorityExperimentGate(stateLike, readiness, options = {}) {
+    const modeStatus = getModeStatus();
+    const routeKind = String(options.routeKind || 'tick');
+    const scope = getAuthorityExperimentScope(routeKind);
+    const blockers = [];
+    const unresolvedGuardrails = [];
+    const scopeRequested = Boolean(scope.length && modeStatus.softCutoverRequested);
+
+    if (!scope.length) {
+      return {
+        routeKind,
+        scope,
+        scopeRequested: false,
+        granted: false,
+        blockers: [],
+        unresolvedGuardrails: [],
+        fallbackOccurred: false,
+        notes: ['No internal authority experiment is defined for this route in Phase 11.']
+      };
+    }
+
+    if (!modeStatus.softCutoverRequested) {
+      blockers.push('explicit_internal_mode_required');
+    }
+    if (!readiness || readiness.readinessLevel !== 'limited_internal_cutover_testing_only' || !readiness.internalTestingReady) {
+      blockers.push('readiness_blocked');
+    }
+    if (!modeStatus.rollbackAvailable) {
+      blockers.push('rollback_hooks_missing');
+    }
+    if (!readiness || !readiness.persistence || !readiness.persistence.requiredStatePresent) {
+      blockers.push('required_runtime_state_incomplete');
+    }
+    if (!readiness || !readiness.diagnosticsCoverageSufficient) {
+      blockers.push('diagnostics_coverage_insufficient');
+    }
+    if (!hasAuthorityBaselineDiagnostics(stateLike)) {
+      blockers.push('authority_baseline_diagnostics_missing');
+    }
+
+    (readiness && Array.isArray(readiness.blockers) ? readiness.blockers : []).forEach((reason) => {
+      const safeReason = String(reason || '').trim();
+      if (!safeReason) {
+        return;
+      }
+      if (
+        safeReason === 'required_runtime_state_incomplete'
+        || safeReason === 'rollback_hooks_missing'
+        || safeReason.indexOf('parity:') === 0
+        || safeReason.indexOf('subsystem_missing:') === 0
+      ) {
+        unresolvedGuardrails.push(safeReason);
+      }
+    });
+
+    if (unresolvedGuardrails.length) {
+      blockers.push('critical_guardrails_unresolved');
+    }
+
+    return {
+      routeKind,
+      scope,
+      scopeRequested,
+      granted: blockers.length === 0,
+      blockers,
+      unresolvedGuardrails,
+      fallbackOccurred: Boolean(scopeRequested && blockers.length),
+      fallbackReason: blockers.length ? blockers[0] : null,
+      notes: blockers.length
+        ? ['Authority experiment remains on legacy for this route because one or more Phase 11 guardrails blocked it.']
+        : ['Internal authority is granted only for the narrow pre-decision scope; live triggering and mutation remain legacy-owned.']
+    };
+  }
+
+  function buildInternalActivationAuthorityDecision(stateLike, options = {}) {
+    if (!canComputeShadow()) {
+      return {
+        available: false,
+        exercised: false,
+        reason: 'missing_shadow_dependencies'
+      };
+    }
+
+    const snapshot = options.snapshot || shared.buildShadowSnapshot(stateLike);
+    const bucket = getShadowBucket(stateLike);
+    const catalog = Array.isArray(options.catalog)
+      ? options.catalog
+      : (stateLike && stateLike.events && Array.isArray(stateLike.events.catalog) ? stateLike.events.catalog : []);
+    const eligibilityResult = eligibilityApi.evaluateCatalog(catalog, stateLike, {
+      snapshot,
+      allowPositive: false
+    });
+    const pressureState = pressureApi.evaluateLatentPressures(stateLike, {
+      snapshot,
+      previousPressures: bucket.previousPressures,
+      previousSimTimeMs: bucket.previousSimTimeMs
+    });
+    const activationResult = activationApi.activateCandidate({
+      state: stateLike,
+      snapshot,
+      eligibleEntries: eligibilityResult.eligible,
+      pressureState
+    });
+    const topCandidate = activationResult && activationResult.topCandidate ? activationResult.topCandidate : null;
+    const decisionKind = !topCandidate
+      ? 'no_candidate'
+      : (topCandidate.activationState === 'active'
+        ? 'active_candidate_selected'
+        : (topCandidate.activationState === 'warning'
+          ? 'warning_candidate_selected'
+          : 'latent_hold'));
+
+    return {
+      available: true,
+      exercised: true,
+      internalOnly: true,
+      authorityKind: 'activation_predecision',
+      decisionKind,
+      eventId: topCandidate ? String(topCandidate.eventId || '') : null,
+      category: topCandidate ? String(topCandidate.category || '') : null,
+      activationState: topCandidate ? String(topCandidate.activationState || '') : null,
+      activationScore: topCandidate ? Number(topCandidate.activationScore || 0) : 0,
+      thresholdReason: topCandidate ? String(topCandidate.thresholdReason || 'no_candidate') : 'no_candidate',
+      topCandidate,
+      warningIds: Array.isArray(activationResult && activationResult.warnings)
+        ? activationResult.warnings.map((entry) => entry.eventId)
+        : [],
+      activeIds: Array.isArray(activationResult && activationResult.activeCandidates)
+        ? activationResult.activeCandidates.map((entry) => entry.eventId)
+        : [],
+      latentIds: Array.isArray(activationResult && activationResult.latentCandidates)
+        ? activationResult.latentCandidates.map((entry) => entry.eventId)
+        : [],
+      notes: ['This decision artifact is authoritative only for the internal Phase 11 pre-decision experiment. Legacy still owns live event triggering and state mutation.']
+    };
+  }
+
   function evaluateSoftCutoverGate(stateLike, readiness, options = {}) {
     const modeStatus = getModeStatus();
     const routeKind = String(options.routeKind || 'tick');
@@ -1232,6 +1400,7 @@
   function buildRoutingPlan(stateLike, readiness, options = {}) {
     const modeStatus = getModeStatus();
     const gate = evaluateSoftCutoverGate(stateLike, readiness, options);
+    const authorityGate = evaluateAuthorityExperimentGate(stateLike, readiness, options);
     return {
       currentAuthority: 'legacy',
       requestedMode: modeStatus.mode,
@@ -1247,11 +1416,24 @@
       routeKind: gate.routeKind,
       eligibleSoftCutoverResponsibilities: gate.scope.slice(),
       activeSoftCutoverResponsibilities: gate.allowed ? gate.scope.slice() : [],
+      requestedAuthorityScope: authorityGate.scopeRequested ? authorityGate.scope.slice() : [],
+      grantedAuthorityScope: authorityGate.granted ? authorityGate.scope.slice() : [],
+      authorityExperimentActive: Boolean(authorityGate.granted),
+      authorityExperimentExercised: false,
+      authorityFallbackOccurred: Boolean(authorityGate.fallbackOccurred),
+      authorityFallbackReasons: authorityGate.blockers.slice(),
       legacyOwnedResponsibilities: [
         'triggering',
         'activation_authority',
         'resolution_authority',
         'state_mutation',
+        'persistence_authority'
+      ],
+      legacyOwnedAuthorityScope: [
+        'live_event_triggering',
+        'live_event_activation',
+        'resolution_authority',
+        'event_state_mutation',
         'persistence_authority'
       ],
       fallbackOccurred: Boolean(modeStatus.softCutoverRequested && !gate.allowed),
@@ -1262,9 +1444,11 @@
         'Legacy runtime remains the live authority for triggering, activation, and resolution.',
         'Shadow runtime state persists separately under events.shadowRuntime.',
         'Future new-runtime routing must retain a direct rollback path to legacy delegation.',
-        'Phase 10 internal soft cutover only exercises non-destructive modular preflight and packaging responsibilities.'
+        'Phase 10 internal soft cutover only exercises non-destructive modular preflight and packaging responsibilities.',
+        'Phase 11 may grant only internal activation pre-decision authority on tick routes, without handing over live triggering or mutation.'
       ],
       gate,
+      authorityGate,
       notes: gate.allowed
         ? ['Internal soft cutover is active only for the allowed scoped responsibilities; live authority remains legacy.']
         : ['Routing plan keeps legacy authoritative. Internal soft cutover remains gated until every runtime guardrail passes.']
@@ -1305,6 +1489,11 @@
         choice: getSoftCutoverScope('choice'),
         ui: getSoftCutoverScope('ui')
       },
+      authorityExperimentScope: {
+        tick: getAuthorityExperimentScope('tick'),
+        choice: getAuthorityExperimentScope('choice'),
+        ui: getAuthorityExperimentScope('ui')
+      },
       shadowRuntimeCompletenessStatus: subsystemCoverage.completenessStatus,
       diagnosticsCoverageSufficient: Boolean(
         diagnostics
@@ -1322,7 +1511,7 @@
       persistence: persistenceStatus,
       blockers,
       cautions,
-      notes: ['Phase 10 readiness can unlock internal soft-cutover experiments for explicitly scoped responsibilities only. Broad live cutover remains disabled.']
+      notes: ['Phase 10/11 readiness can unlock internal soft-cutover experiments for explicitly scoped responsibilities only. Broad live cutover remains disabled.']
     };
   }
 
@@ -1341,8 +1530,23 @@
       internallyRoutedResponsibilities: routing && Array.isArray(routing.activeSoftCutoverResponsibilities)
         ? routing.activeSoftCutoverResponsibilities.slice()
         : [],
+      requestedAuthorityScope: routing && Array.isArray(routing.requestedAuthorityScope)
+        ? routing.requestedAuthorityScope.slice()
+        : [],
+      grantedAuthorityScope: routing && Array.isArray(routing.grantedAuthorityScope)
+        ? routing.grantedAuthorityScope.slice()
+        : [],
+      authorityExperimentActive: Boolean(routing && routing.authorityExperimentActive),
+      authorityExperimentExercised: Boolean(routing && routing.authorityExperimentExercised),
+      authorityFallbackOccurred: Boolean(routing && routing.authorityFallbackOccurred),
+      authorityFallbackReasons: routing && Array.isArray(routing.authorityFallbackReasons)
+        ? routing.authorityFallbackReasons.slice()
+        : [],
       legacyOwnedResponsibilities: routing && Array.isArray(routing.legacyOwnedResponsibilities)
         ? routing.legacyOwnedResponsibilities.slice()
+        : [],
+      legacyOwnedAuthorityScope: routing && Array.isArray(routing.legacyOwnedAuthorityScope)
+        ? routing.legacyOwnedAuthorityScope.slice()
         : [],
       fallbackOccurred: Boolean(routing && routing.fallbackOccurred),
       fallbackReasons: routing && Array.isArray(routing.fallbackReasons)
@@ -1631,6 +1835,13 @@
     const stateLike = args.length > 1 && args[1] && typeof args[1] === 'object'
       ? args[1]
       : null;
+    const preRouteReadiness = stateLike
+      ? getCutoverReadiness(stateLike)
+      : buildCutoverReadiness(null, null, null);
+    const preRouteRouting = buildRoutingPlan(stateLike, preRouteReadiness, { routeKind: 'tick' });
+    const authorityDecision = preRouteRouting.authorityExperimentActive
+      ? buildInternalActivationAuthorityDecision(stateLike, { nowMs: args[0] })
+      : null;
     const runtime = getLegacyRuntime();
     const delegated = runtime && typeof runtime.runEventStateMachine === 'function'
       ? 'legacy'
@@ -1643,7 +1854,32 @@
       ? getCutoverReadiness(stateLike, { diagnostics })
       : buildCutoverReadiness(null, diagnostics || null, null);
     const routing = buildRoutingPlan(stateLike, readiness, { routeKind: 'tick' });
+    routing.authorityExperimentExercised = Boolean(authorityDecision && authorityDecision.exercised);
+    routing.grantedAuthorityScope = routing.authorityExperimentExercised
+      ? routing.grantedAuthorityScope.slice()
+      : [];
+    if (routing.authorityExperimentActive && !routing.authorityExperimentExercised) {
+      routing.authorityFallbackOccurred = true;
+      routing.authorityFallbackReasons = routing.authorityFallbackReasons.concat(['authority_decision_not_exercised']);
+    }
     engineState.lastRoutingReport = routing;
+    if (diagnostics) {
+      diagnostics.routing = routing;
+      diagnostics.status = buildRuntimeStatus(stateLike, diagnostics, diagnostics.snapshot, { routing, routeKind: 'tick' });
+      diagnostics.authorityExperiment = authorityDecision && authorityDecision.exercised
+        ? { ...authorityDecision }
+        : {
+          available: false,
+          exercised: false,
+          requestedScope: Array.isArray(routing.requestedAuthorityScope) ? routing.requestedAuthorityScope.slice() : [],
+          grantedScope: Array.isArray(routing.grantedAuthorityScope) ? routing.grantedAuthorityScope.slice() : [],
+          fallbackReasons: Array.isArray(routing.authorityFallbackReasons) ? routing.authorityFallbackReasons.slice() : []
+        };
+      const bucket = getShadowBucket(stateLike);
+      if (bucket) {
+        bucket.diagnostics = diagnostics;
+      }
+    }
     recordQaRouteObservation({
       routeKind: 'tick',
       scenarioLabel: getQaScenarioLabel(stateLike),
@@ -1671,6 +1907,15 @@
         routedResponsibilities: Array.isArray(routing.activeSoftCutoverResponsibilities) ? routing.activeSoftCutoverResponsibilities.slice() : [],
         fallbackOccurred: Boolean(routing.fallbackOccurred),
         fallbackReasons: Array.isArray(routing.fallbackReasons) ? routing.fallbackReasons.slice() : []
+      },
+      authorityExperiment: {
+        requestedScope: Array.isArray(routing.requestedAuthorityScope) ? routing.requestedAuthorityScope.slice() : [],
+        grantedScope: Array.isArray(routing.grantedAuthorityScope) ? routing.grantedAuthorityScope.slice() : [],
+        legacyOwnedScope: Array.isArray(routing.legacyOwnedAuthorityScope) ? routing.legacyOwnedAuthorityScope.slice() : [],
+        exercised: Boolean(authorityDecision && authorityDecision.exercised),
+        decision: authorityDecision && authorityDecision.exercised ? { ...authorityDecision } : null,
+        fallbackOccurred: Boolean(routing.authorityFallbackOccurred),
+        fallbackReasons: Array.isArray(routing.authorityFallbackReasons) ? routing.authorityFallbackReasons.slice() : []
       }
     };
   }
@@ -1865,6 +2110,7 @@
       ? getCutoverReadiness(stateLike, { diagnostics })
       : buildCutoverReadiness(null, diagnostics || null, null);
     const routing = buildRoutingPlan(stateLike, readiness, { routeKind: 'choice' });
+    routing.authorityExperimentExercised = false;
     engineState.lastRoutingReport = routing;
     recordQaRouteObservation({
       routeKind: 'choice',
@@ -1893,6 +2139,15 @@
         routedResponsibilities: Array.isArray(routing.activeSoftCutoverResponsibilities) ? routing.activeSoftCutoverResponsibilities.slice() : [],
         fallbackOccurred: Boolean(routing.fallbackOccurred),
         fallbackReasons: Array.isArray(routing.fallbackReasons) ? routing.fallbackReasons.slice() : []
+      },
+      authorityExperiment: {
+        requestedScope: Array.isArray(routing.requestedAuthorityScope) ? routing.requestedAuthorityScope.slice() : [],
+        grantedScope: Array.isArray(routing.grantedAuthorityScope) ? routing.grantedAuthorityScope.slice() : [],
+        legacyOwnedScope: Array.isArray(routing.legacyOwnedAuthorityScope) ? routing.legacyOwnedAuthorityScope.slice() : [],
+        exercised: false,
+        decision: null,
+        fallbackOccurred: Boolean(routing.authorityFallbackOccurred),
+        fallbackReasons: Array.isArray(routing.authorityFallbackReasons) ? routing.authorityFallbackReasons.slice() : []
       }
     };
   }

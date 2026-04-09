@@ -158,6 +158,8 @@ function createStateLike(overrides = {}) {
   assert.ok(appJs.includes('function buildEventPresentationSections('));
   assert.ok(appJs.includes('function buildEventHistorySnapshotMarkup('));
   assert.ok(appJs.includes('gs_event_asset_inspect'));
+  assert.ok(appJs.includes('const inspect = isEventAssetInspectionEnabled();'));
+  assert.ok(appJs.includes("if (inspect && Array.isArray(shadow.comparisonSummary) && shadow.comparisonSummary.length)"));
 })();
 
 (function testIndexContainsHistoryPresentationHook() {

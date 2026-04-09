@@ -96,3 +96,24 @@ For repeated internal QA runs, you can compare exported scenario reports with:
 - `node scripts/compare-soft-cutover-qa-runs.js --format markdown report-a.json report-b.json`
 
 The combined summary is still internal-only. Repeated stability helps compare runs, but it still does not justify broad cutover by itself.
+
+## Phase 11 minimal authority experiment
+
+Phase 11 adds one narrowly bounded internal authority experiment:
+
+- `tick`: `internal_activation_predecision_authority`
+
+What this means:
+
+- the modular engine may author one internal pre-decision artifact for warning/activation selection on a tick
+- this only happens in explicit `internal-soft-cutover` mode
+- readiness, rollback, persistence, and diagnostics guardrails must still pass first
+
+What this does NOT mean:
+
+- live event triggering moved off legacy
+- live activation or resolution authority moved off legacy
+- state mutation or persistence ownership moved off legacy
+- broad cutover is justified
+
+Successful activation of this authority experiment only means the current narrow internal pre-decision scope ran under guardrails for that tick. Legacy remains the production-safe gameplay authority.

@@ -24,7 +24,20 @@
     return Array.from(new Set(idTokens.concat(tagTokens)));
   }
 
+  function getExplicitConflictGroup(eventDef) {
+    const shadowModel = eventDef && eventDef.shadowModel && typeof eventDef.shadowModel === 'object'
+      ? eventDef.shadowModel
+      : {};
+    const explicit = String(shadowModel.conflictGroup || '').trim().toLowerCase();
+    return explicit || null;
+  }
+
   function deriveConflictGroup(eventDef) {
+    const explicitConflictGroup = getExplicitConflictGroup(eventDef);
+    if (explicitConflictGroup) {
+      return explicitConflictGroup;
+    }
+
     const category = String(eventDef && eventDef.category || 'generic').toLowerCase();
     const tokens = tokenizeEvent(eventDef);
 

@@ -72,7 +72,11 @@
             "risk": -8,
             "stress": -2,
             "health": 2
-          }
+          },
+          "intent": "integrated_control",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "overwater_panic",
@@ -81,7 +85,11 @@
             "water": 12,
             "risk": 7,
             "stress": 3
-          }
+          },
+          "intent": "heavy_water_push",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "biological_treatment",
@@ -91,7 +99,11 @@
             "health": 3,
             "nutrition": -2
           },
-          "followUp": "Population in 48h erneut pruefen"
+          "followUp": "Population in 48h erneut pruefen",
+          "intent": "integrated_control",
+          "contextFit": [
+            "population_pressure"
+          ]
         }
       ],
       "allowedPhases": [
@@ -107,6 +119,25 @@
         "stage": {
           "min": 2,
           "max": 7
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "population_pressure",
+        "conflictGroup": "pest_pressure",
+        "warningProfile": {
+          "cadence": "recurring_population"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "population_recheck_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "population_recheck_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
         }
       }
     },
@@ -129,7 +160,11 @@
             "health": 5,
             "growth": 3,
             "risk": -3
-          }
+          },
+          "intent": "ph_corrective",
+          "contextFit": [
+            "lockout"
+          ]
         },
         {
           "id": "strong_feed",
@@ -138,7 +173,11 @@
             "nutrition": 12,
             "stress": 6,
             "risk": 5
-          }
+          },
+          "intent": "heavy_feed_push",
+          "contextFit": [
+            "lockout"
+          ]
         },
         {
           "id": "plain_water_only",
@@ -147,7 +186,11 @@
             "nutrition": -4,
             "stress": -2,
             "growth": -2
-          }
+          },
+          "intent": "observe_only",
+          "contextFit": [
+            "lockout"
+          ]
         }
       ],
       "allowedPhases": [
@@ -161,6 +204,28 @@
         "stage": {
           "min": 3,
           "max": 8
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "lockout",
+        "conflictGroup": "nutrition_lockout",
+        "warningProfile": {
+          "cadence": "uptake_blocked"
+        },
+        "escalationProfile": {
+          "noActionHooks": [
+            "pressure_retention_possible"
+          ],
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
         }
       }
     },
@@ -292,7 +357,11 @@
             "risk": -7,
             "stress": -3,
             "health": 2
-          }
+          },
+          "intent": "oxygen_relief",
+          "contextFit": [
+            "wet"
+          ]
         },
         {
           "id": "transplant_aerated_mix",
@@ -302,7 +371,11 @@
             "health": 5,
             "risk": -8,
             "growth": 2
-          }
+          },
+          "intent": "root_recovery",
+          "contextFit": [
+            "wet"
+          ]
         },
         {
           "id": "water_again",
@@ -311,7 +384,11 @@
             "water": 10,
             "risk": 9,
             "health": -4
-          }
+          },
+          "intent": "heavy_water_push",
+          "contextFit": [
+            "wet"
+          ]
         }
       ],
       "allowedPhases": [
@@ -325,6 +402,30 @@
         "stage": {
           "min": 1,
           "max": 5
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "water_wet_root",
+        "warningProfile": {
+          "cadence": "root_zone_alert"
+        },
+        "escalationProfile": {
+          "noActionHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "poorOutcomeHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
         }
       }
     },
@@ -345,7 +446,11 @@
             "water": 8,
             "stress": -4,
             "health": 3
-          }
+          },
+          "intent": "gradual_rehydrate",
+          "contextFit": [
+            "dry"
+          ]
         },
         {
           "id": "wetting_agent",
@@ -354,7 +459,11 @@
             "water": 6,
             "risk": -3,
             "growth": 2
-          }
+          },
+          "intent": "gradual_rehydrate",
+          "contextFit": [
+            "dry"
+          ]
         },
         {
           "id": "force_heavy_watering",
@@ -363,7 +472,11 @@
             "water": 12,
             "risk": 4,
             "stress": 3
-          }
+          },
+          "intent": "heavy_water_push",
+          "contextFit": [
+            "dry"
+          ]
         }
       ],
       "allowedPhases": [
@@ -377,6 +490,25 @@
         "stage": {
           "min": 1,
           "max": 6
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "dry",
+        "conflictGroup": "water_dry",
+        "warningProfile": {
+          "cadence": "uneven_rehydration"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
         }
       }
     },
@@ -398,7 +530,11 @@
             "nutrition": 7,
             "health": 4,
             "risk": -4
-          }
+          },
+          "intent": "ph_corrective",
+          "contextFit": [
+            "lockout"
+          ]
         },
         {
           "id": "flush_and_reset",
@@ -408,7 +544,11 @@
             "nutrition": -5,
             "stress": 2,
             "risk": -3
-          }
+          },
+          "intent": "ph_corrective",
+          "contextFit": [
+            "lockout"
+          ]
         },
         {
           "id": "no_action_ph",
@@ -417,7 +557,11 @@
             "health": -4,
             "growth": -3,
             "risk": 5
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "lockout"
+          ]
         }
       ],
       "allowedPhases": [
@@ -432,6 +576,25 @@
         "stage": {
           "min": 3,
           "max": 10
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "lockout",
+        "conflictGroup": "nutrition_lockout",
+        "warningProfile": {
+          "cadence": "ph_drift"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
         }
       }
     },
@@ -457,7 +620,11 @@
             "risk": -7,
             "stress": -2,
             "water": -3
-          }
+          },
+          "intent": "surface_cleanup",
+          "contextFit": [
+            "mold_surface"
+          ]
         },
         {
           "id": "add_mulch",
@@ -466,7 +633,11 @@
             "water": 3,
             "risk": -4,
             "health": 2
-          }
+          },
+          "intent": "root_recovery",
+          "contextFit": [
+            "mold_surface"
+          ]
         },
         {
           "id": "ignore_mold",
@@ -475,7 +646,11 @@
             "risk": 6,
             "health": -3,
             "stress": 2
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "mold_surface"
+          ]
         }
       ],
       "allowedPhases": [
@@ -486,6 +661,25 @@
         "stage": {
           "min": 2,
           "max": 6
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "mold_surface",
+        "conflictGroup": "disease_mold",
+        "warningProfile": {
+          "cadence": "surface_humidity"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
         }
       }
     },
@@ -508,7 +702,11 @@
             "health": 6,
             "growth": 5,
             "risk": -4
-          }
+          },
+          "intent": "root_recovery",
+          "contextFit": [
+            "root_pressure"
+          ]
         },
         {
           "id": "root_prune_light",
@@ -517,7 +715,11 @@
             "stress": 7,
             "growth": 3,
             "health": 2
-          }
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "root_pressure"
+          ]
         },
         {
           "id": "delay_transplant",
@@ -527,7 +729,11 @@
             "growth": -3,
             "health": -4,
             "risk": 4
-          }
+          },
+          "intent": "delay_action",
+          "contextFit": [
+            "root_pressure"
+          ]
         }
       ],
       "allowedPhases": [
@@ -537,6 +743,25 @@
         "stage": {
           "min": 3,
           "max": 6
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "root_pressure",
+        "conflictGroup": "root_pressure",
+        "warningProfile": {
+          "cadence": "container_limit_visible"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
         }
       }
     },
@@ -608,7 +833,11 @@
             "risk": -9,
             "stress": -2,
             "health": 2
-          }
+          },
+          "intent": "integrated_control",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "single_spray",
@@ -616,7 +845,11 @@
           "effects": {
             "risk": -3,
             "stress": 1
-          }
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "postpone_treatment",
@@ -625,7 +858,11 @@
             "risk": 8,
             "health": -4,
             "stress": 4
-          }
+          },
+          "intent": "delay_action",
+          "contextFit": [
+            "population_pressure"
+          ]
         }
       ],
       "allowedPhases": [
@@ -637,6 +874,25 @@
         "stage": {
           "min": 2,
           "max": 7
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "population_pressure",
+        "conflictGroup": "pest_pressure",
+        "warningProfile": {
+          "cadence": "early_population_trace"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "population_recheck_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "population_recheck_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
         }
       }
     },
@@ -658,7 +914,11 @@
             "risk": -8,
             "stress": -3,
             "water": 3
-          }
+          },
+          "intent": "integrated_control",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "predatory_mites",
@@ -668,7 +928,11 @@
             "nutrition": -2,
             "health": 2
           },
-          "followUp": "Ansiedlung der Nuetzlinge beobachten"
+          "followUp": "Ansiedlung der Nuetzlinge beobachten",
+          "intent": "integrated_control",
+          "contextFit": [
+            "population_pressure"
+          ]
         },
         {
           "id": "ignore_mites",
@@ -677,7 +941,11 @@
             "risk": 9,
             "health": -5,
             "stress": 5
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "population_pressure"
+          ]
         }
       ],
       "allowedPhases": [
@@ -688,6 +956,25 @@
         "stage": {
           "min": 4,
           "max": 9
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "population_pressure",
+        "conflictGroup": "pest_pressure",
+        "warningProfile": {
+          "cadence": "heat_dry_hotspot"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "population_recheck_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "population_recheck_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
         }
       }
     },
@@ -1042,7 +1329,11 @@
             "risk": -9,
             "stress": 2,
             "health": 3
-          }
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
         },
         {
           "id": "dehumidify_and_hold_feed",
@@ -1051,7 +1342,11 @@
             "risk": -7,
             "nutrition": -3,
             "stress": -1
-          }
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "mold_surface"
+          ]
         },
         {
           "id": "ignore_humidity",
@@ -1071,6 +1366,25 @@
         "stage": {
           "min": 10,
           "max": 12
+        }
+      },
+      "shadowModel": {
+        "problemPolarity": "mold_surface",
+        "conflictGroup": "disease_mold",
+        "warningProfile": {
+          "cadence": "late_flower_humidity"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
         }
       }
     }
