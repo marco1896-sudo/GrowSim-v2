@@ -134,6 +134,7 @@
                 <span id="homeMetaGoalProgress" class="home-meta-progress">0/20</span>
                 <span id="homeMetaGoalStatus" class="home-meta-status" data-status="active">Läuft</span>
               </span>
+              <span id="homeMetaRetentionTeaser" class="home-meta-retention hidden" aria-hidden="true"></span>
             </span>
             <span id="homeMetaBuildChip" class="home-meta-build-chip" data-tone="balanced">Ausgewogen</span>
             <span class="home-meta-caret" aria-hidden="true"></span>
@@ -807,6 +808,30 @@
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
         <div class="figma-top-player-title">Progression</div>
         <div class="figma-top-player-subtitle">Aktive Herausforderungen</div>
+      </section>
+      <section class="figma-section-card retention-card">
+        <div class="retention-sheet-head">
+          <strong>Daily Streak</strong>
+          <small id="missionsDailyCareProgress" class="sheet-note">0/0 abgeschlossen</small>
+        </div>
+        <div id="missionsStreakBlock" class="retention-streak-block">
+          <div class="retention-streak-main">
+            <strong>Daily Streak 0</strong>
+            <span class="retention-streak-status">Heute offen</span>
+          </div>
+          <small>Nächster Milestone: 3</small>
+        </div>
+        <div id="missionsRecoveryWrap" class="retention-recovery-wrap hidden" aria-hidden="true">
+          <small id="missionsRecoveryText" class="sheet-note"></small>
+          <div class="retention-recovery-actions">
+            <button id="missionsRecoveryBtn" class="ghost-btn retention-recovery-btn" type="button" aria-disabled="true" disabled>Kein Credit</button>
+            <button id="missionsRecoveryBonusBtn" class="ghost-btn retention-recovery-btn retention-recovery-btn--soft hidden" type="button" aria-hidden="true">Optionaler Bonus</button>
+          </div>
+        </div>
+        <div class="retention-section-title">Daily Care</div>
+        <div id="missionsDailyCareList" class="retention-task-list"></div>
+        <div class="retention-section-title">Heute freigeschaltet</div>
+        <div id="missionsMicroList" class="retention-micro-list"></div>
       </section>
       <div id="missionsList" class="missions-list">
         <!-- Missions will be injected here -->

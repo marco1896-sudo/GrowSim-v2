@@ -1098,6 +1098,12 @@ async function restoreState(options = {}) {
       completed: restoredCompleted
     };
   }
+  if (saved.retention && typeof saved.retention === 'object') {
+    state.retention = {
+      ...(state.retention && typeof state.retention === 'object' ? state.retention : {}),
+      ...saved.retention
+    };
+  }
 
   migrateLegacyStateIntoCanonical(saved, state);
   normalizeEnvironmentState(state);
@@ -1460,6 +1466,40 @@ function resetStateToDefaults() {
     byId: {},
     completed: []
   };
+  state.retention = {
+    version: 1,
+    streak: {
+      currentCount: 0,
+      bestCount: 0,
+      lastCheckinDayKey: '',
+      lastEvaluatedDayKey: '',
+      freezeCredits: 0,
+      claimedMilestones: [],
+      pendingRewardKeys: [],
+      pendingRecoveryOffer: false,
+      pendingRecoveryDayKey: '',
+      pendingRecoveryStreakCount: 0,
+      recoveryClaimedDayKeys: []
+    },
+    dailyCare: {
+      dayKey: '',
+      tasks: [],
+      completedCount: 0,
+      allCompleteClaimed: false
+    },
+    micro: {
+      unlockedIds: [],
+      unlockedHistory: [],
+      lastShownAt: 0,
+      sessionShownCount: 0
+    },
+    claimLedger: [],
+    analytics: {
+      events: [],
+      eventKeys: [],
+      dailyStats: []
+    }
+  };
 
   state.ui = {
     activeScreen: 'home',
@@ -1678,6 +1718,131 @@ function ensureStateIntegrity(nowMs) {
   state.missions.completed = Array.from(new Set(
     state.missions.completed
       .map((missionId) => String(missionId || '').trim())
+      .filter(Boolean)
+  ));
+  if (!state.retention || typeof state.retention !== 'object') {
+    state.retention = {};
+  }
+  if (!Number.isFinite(Number(state.retention.version))) {
+    state.retention.version = 1;
+  }
+  if (!state.retention.streak || typeof state.retention.streak !== 'object') {
+    state.retention.streak = {};
+  }
+  if (!state.retention.dailyCare || typeof state.retention.dailyCare !== 'object') {
+    state.retention.dailyCare = {};
+  }
+  if (!state.retention.micro || typeof state.retention.micro !== 'object') {
+    state.retention.micro = {};
+  }
+  if (!Array.isArray(state.retention.claimLedger)) {
+    state.retention.claimLedger = [];
+  }
+
+  state.retention.streak.currentCount = Math.max(0, Math.trunc(Number(state.retention.streak.currentCount) || 0));
+  state.retention.streak.bestCount = Math.max(
+    state.retention.streak.currentCount,
+    Math.trunc(Number(state.retention.streak.bestCount) || 0)
+  );
+  state.retention.streak.lastCheckinDayKey = typeof state.retention.streak.lastCheckinDayKey === 'string' ? state.retention.streak.lastCheckinDayKey : '';
+  state.retention.streak.lastEvaluatedDayKey = typeof state.retention.streak.lastEvaluatedDayKey === 'string' ? state.retention.streak.lastEvaluatedDayKey : '';
+  state.retention.streak.freezeCredits = Math.max(0, Math.trunc(Number(state.retention.streak.freezeCredits) || 0));
+  state.retention.streak.claimedMilestones = Array.from(new Set(
+    (Array.isArray(state.retention.streak.claimedMilestones) ? state.retention.streak.claimedMilestones : [])
+      .map((entry) => Math.trunc(Number(entry) || 0))
+      .filter((entry) => entry > 0)
+  ));
+  state.retention.streak.pendingRewardKeys = Array.from(new Set(
+    (Array.isArray(state.retention.streak.pendingRewardKeys) ? state.retention.streak.pendingRewardKeys : [])
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+  ));
+  state.retention.streak.pendingRecoveryOffer = Boolean(state.retention.streak.pendingRecoveryOffer);
+  state.retention.streak.pendingRecoveryDayKey = typeof state.retention.streak.pendingRecoveryDayKey === 'string'
+    ? state.retention.streak.pendingRecoveryDayKey
+    : '';
+  state.retention.streak.pendingRecoveryStreakCount = Math.max(0, Math.trunc(Number(state.retention.streak.pendingRecoveryStreakCount) || 0));
+  state.retention.streak.recoveryClaimedDayKeys = Array.from(new Set(
+    (Array.isArray(state.retention.streak.recoveryClaimedDayKeys) ? state.retention.streak.recoveryClaimedDayKeys : [])
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+  ));
+
+  state.retention.dailyCare.dayKey = typeof state.retention.dailyCare.dayKey === 'string' ? state.retention.dailyCare.dayKey : '';
+  if (!Array.isArray(state.retention.dailyCare.tasks)) {
+    state.retention.dailyCare.tasks = [];
+  }
+  state.retention.dailyCare.tasks = state.retention.dailyCare.tasks
+    .filter((task) => task && typeof task === 'object')
+    .map((task) => ({
+      taskId: String(task.taskId || '').trim(),
+      title: String(task.title || '').trim(),
+      description: String(task.description || '').trim(),
+      dayKey: String(task.dayKey || state.retention.dailyCare.dayKey || '').trim(),
+      trigger: String(task.trigger || '').trim(),
+      sheetName: String(task.sheetName || '').trim(),
+      threshold: Number.isFinite(Number(task.threshold)) ? Number(task.threshold) : null,
+      xp: Math.max(0, Math.trunc(Number(task.xp) || 0)),
+      completedAt: Number.isFinite(Number(task.completedAt)) ? Number(task.completedAt) : null,
+      claimKey: String(task.claimKey || '').trim()
+    }))
+    .filter((task) => task.taskId && task.claimKey);
+  state.retention.dailyCare.completedCount = state.retention.dailyCare.tasks.reduce((count, task) => count + (task.completedAt ? 1 : 0), 0);
+  state.retention.dailyCare.allCompleteClaimed = Boolean(state.retention.dailyCare.allCompleteClaimed);
+
+  if (!Array.isArray(state.retention.micro.unlockedIds)) {
+    state.retention.micro.unlockedIds = [];
+  }
+  state.retention.micro.unlockedIds = Array.from(new Set(
+    state.retention.micro.unlockedIds
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+  ));
+  state.retention.micro.unlockedHistory = (Array.isArray(state.retention.micro.unlockedHistory) ? state.retention.micro.unlockedHistory : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      id: String(entry.id || '').trim(),
+      atRealMs: Number.isFinite(Number(entry.atRealMs)) ? Number(entry.atRealMs) : 0
+    }))
+    .filter((entry) => entry.id && entry.atRealMs > 0)
+    .slice(-60);
+  state.retention.micro.lastShownAt = Number.isFinite(Number(state.retention.micro.lastShownAt)) ? Number(state.retention.micro.lastShownAt) : 0;
+  state.retention.micro.sessionShownCount = Math.max(0, Math.trunc(Number(state.retention.micro.sessionShownCount) || 0));
+
+  if (!state.retention.analytics || typeof state.retention.analytics !== 'object') {
+    state.retention.analytics = {};
+  }
+  state.retention.analytics.events = (Array.isArray(state.retention.analytics.events) ? state.retention.analytics.events : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      event: String(entry.event || '').trim(),
+      atRealMs: Number.isFinite(Number(entry.atRealMs)) ? Number(entry.atRealMs) : 0,
+      dayKey: typeof entry.dayKey === 'string' ? entry.dayKey : '',
+      payload: entry.payload && typeof entry.payload === 'object' ? entry.payload : {}
+    }))
+    .filter((entry) => entry.event)
+    .slice(-180);
+  state.retention.analytics.eventKeys = Array.from(new Set(
+    (Array.isArray(state.retention.analytics.eventKeys) ? state.retention.analytics.eventKeys : [])
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+  )).slice(-180);
+  state.retention.analytics.dailyStats = (Array.isArray(state.retention.analytics.dailyStats) ? state.retention.analytics.dailyStats : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      dayKey: String(entry.dayKey || '').trim(),
+      streakContinued: Number(entry.streakContinued || 0) > 0 ? 1 : 0,
+      tasksCompleted: Math.max(0, Math.trunc(Number(entry.tasksCompleted) || 0)),
+      microUnlocked: Math.max(0, Math.trunc(Number(entry.microUnlocked) || 0)),
+      sessionCount: Math.max(0, Math.trunc(Number(entry.sessionCount) || 0))
+    }))
+    .filter((entry) => entry.dayKey)
+    .sort((left, right) => String(left.dayKey).localeCompare(String(right.dayKey)))
+    .slice(-45);
+
+  state.retention.claimLedger = Array.from(new Set(
+    state.retention.claimLedger
+      .map((entry) => String(entry || '').trim())
       .filter(Boolean)
   ));
 

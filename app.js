@@ -291,6 +291,40 @@ const state = {
     byId: {},
     completed: []
   },
+  retention: {
+    version: 1,
+    streak: {
+      currentCount: 0,
+      bestCount: 0,
+      lastCheckinDayKey: '',
+      lastEvaluatedDayKey: '',
+      freezeCredits: 0,
+      claimedMilestones: [],
+      pendingRewardKeys: [],
+      pendingRecoveryOffer: false,
+      pendingRecoveryDayKey: '',
+      pendingRecoveryStreakCount: 0,
+      recoveryClaimedDayKeys: []
+    },
+    dailyCare: {
+      dayKey: '',
+      tasks: [],
+      completedCount: 0,
+      allCompleteClaimed: false
+    },
+    micro: {
+      unlockedIds: [],
+      unlockedHistory: [],
+      lastShownAt: 0,
+      sessionShownCount: 0
+    },
+    claimLedger: [],
+    analytics: {
+      events: [],
+      eventKeys: [],
+      dailyStats: []
+    }
+  },
   environmentControls: {
     temperatureC: 25,
     humidityPercent: 60,
@@ -502,6 +536,100 @@ const HARVEST_VERIFICATION_MAX_ATTEMPTS = 8;
 const LEADERBOARD_FETCH_COOLDOWN_MS = 45 * 1000;
 const LEADERBOARD_TOP_LIMIT = 10;
 const REWARDS_FETCH_COOLDOWN_MS = 45 * 1000;
+const RETENTION_STREAK_MILESTONES = Object.freeze([3, 7, 14, 30]);
+const RETENTION_DAILY_TASK_MIN = 3;
+const RETENTION_DAILY_TASK_MAX = 5;
+const RETENTION_DAILY_TASK_XP = 8;
+const RETENTION_DAILY_ALL_COMPLETE_XP = 18;
+const RETENTION_STREAK_MILESTONE_XP = Object.freeze({
+  3: 10,
+  7: 18,
+  14: 30,
+  30: 50
+});
+const RETENTION_MICRO_COOLDOWN_MS = 10 * 1000;
+const RETENTION_MICRO_SESSION_LIMIT = 3;
+const RETENTION_ANALYTICS_MAX_EVENTS = 180;
+const RETENTION_ANALYTICS_MAX_DAYS = 45;
+const RETENTION_REWARDED_BONUS_XP = Object.freeze({
+  streak_recovery_credit: 0,
+  daily_all_complete_boost: 10,
+  sim_time_boost: 0
+});
+const MICRO_ACHIEVEMENT_REGISTRY = Object.freeze({
+  streak_milestone_3: Object.freeze({
+    id: 'streak_milestone_3',
+    title: 'Ruhige Hand',
+    shortDescription: 'Drei Tage in Folge drangeblieben.',
+    rarity: 'common',
+    category: 'streak',
+    iconTag: 'Streak',
+    xpRewardOverride: 5
+  }),
+  streak_milestone_7: Object.freeze({
+    id: 'streak_milestone_7',
+    title: 'Stabiler Lauf',
+    shortDescription: 'Eine ganze Woche sauber geführt.',
+    rarity: 'uncommon',
+    category: 'streak',
+    iconTag: 'Streak',
+    xpRewardOverride: 7
+  }),
+  streak_milestone_14: Object.freeze({
+    id: 'streak_milestone_14',
+    title: 'Wachsam geblieben',
+    shortDescription: 'Konstante Pflege über zwei Wochen.',
+    rarity: 'rare',
+    category: 'streak',
+    iconTag: 'Streak',
+    xpRewardOverride: 10
+  }),
+  streak_milestone_30: Object.freeze({
+    id: 'streak_milestone_30',
+    title: 'Saubere Kontrolle',
+    shortDescription: 'Ein kompletter Monatslauf gehalten.',
+    rarity: 'epic',
+    category: 'streak',
+    iconTag: 'Streak',
+    xpRewardOverride: 12
+  }),
+  daily_first_task: Object.freeze({
+    id: 'daily_first_task',
+    title: 'Startklar',
+    shortDescription: 'Die erste Tagesaufgabe erledigt.',
+    rarity: 'common',
+    category: 'daily',
+    iconTag: 'Daily',
+    xpRewardOverride: 4
+  }),
+  daily_pair_clean: Object.freeze({
+    id: 'daily_pair_clean',
+    title: 'Klimafenster gehalten',
+    shortDescription: 'Mehrere Checks sauber abgeschlossen.',
+    rarity: 'uncommon',
+    category: 'daily',
+    iconTag: 'Daily',
+    xpRewardOverride: 5
+  }),
+  daily_full_sweep: Object.freeze({
+    id: 'daily_full_sweep',
+    title: 'Pflegezyklus komplett',
+    shortDescription: 'Alle Daily-Care-Aufgaben erfüllt.',
+    rarity: 'rare',
+    category: 'daily',
+    iconTag: 'Daily',
+    xpRewardOverride: 8
+  }),
+  streak_recovered: Object.freeze({
+    id: 'streak_recovered',
+    title: 'Serie gerettet',
+    shortDescription: 'Der Lauf wurde fair stabilisiert.',
+    rarity: 'rare',
+    category: 'recovery',
+    iconTag: 'Recovery',
+    xpRewardOverride: 6
+  })
+});
 const harvestBackendRuntime = {
   sessionPromise: null,
   submissionPromise: null,
@@ -1159,6 +1287,895 @@ function getUiPrimitives() {
 function getProgressionApi() {
   const api = window.GrowSimProgression; return api && typeof api === 'object' ? api : null;
 }
+
+function getRetentionDefaults() {
+  return {
+    version: 1,
+    streak: {
+      currentCount: 0,
+      bestCount: 0,
+      lastCheckinDayKey: '',
+      lastEvaluatedDayKey: '',
+      freezeCredits: 0,
+      claimedMilestones: [],
+      pendingRewardKeys: [],
+      pendingRecoveryOffer: false,
+      pendingRecoveryDayKey: '',
+      pendingRecoveryStreakCount: 0,
+      recoveryClaimedDayKeys: []
+    },
+    dailyCare: {
+      dayKey: '',
+      tasks: [],
+      completedCount: 0,
+      allCompleteClaimed: false
+    },
+    micro: {
+      unlockedIds: [],
+      unlockedHistory: [],
+      lastShownAt: 0,
+      sessionShownCount: 0
+    },
+    claimLedger: [],
+    analytics: {
+      events: [],
+      eventKeys: [],
+      dailyStats: []
+    }
+  };
+}
+
+function ensureRetentionState(snapshot = state) {
+  if (!snapshot.retention || typeof snapshot.retention !== 'object') {
+    snapshot.retention = getRetentionDefaults();
+  }
+  const retention = snapshot.retention;
+  const defaults = getRetentionDefaults();
+  retention.version = Number.isFinite(Number(retention.version)) ? Number(retention.version) : defaults.version;
+  retention.streak = retention.streak && typeof retention.streak === 'object' ? retention.streak : defaults.streak;
+  retention.dailyCare = retention.dailyCare && typeof retention.dailyCare === 'object' ? retention.dailyCare : defaults.dailyCare;
+  retention.micro = retention.micro && typeof retention.micro === 'object' ? retention.micro : defaults.micro;
+  retention.claimLedger = Array.isArray(retention.claimLedger) ? retention.claimLedger : [];
+  retention.analytics = retention.analytics && typeof retention.analytics === 'object' ? retention.analytics : defaults.analytics;
+
+  retention.streak.currentCount = Math.max(0, Math.trunc(Number(retention.streak.currentCount) || 0));
+  retention.streak.bestCount = Math.max(retention.streak.currentCount, Math.trunc(Number(retention.streak.bestCount) || 0));
+  retention.streak.lastCheckinDayKey = typeof retention.streak.lastCheckinDayKey === 'string' ? retention.streak.lastCheckinDayKey : '';
+  retention.streak.lastEvaluatedDayKey = typeof retention.streak.lastEvaluatedDayKey === 'string' ? retention.streak.lastEvaluatedDayKey : '';
+  retention.streak.freezeCredits = Math.max(0, Math.trunc(Number(retention.streak.freezeCredits) || 0));
+  retention.streak.claimedMilestones = Array.from(new Set((Array.isArray(retention.streak.claimedMilestones) ? retention.streak.claimedMilestones : [])
+    .map((entry) => Math.trunc(Number(entry) || 0))
+    .filter((entry) => entry > 0)));
+  retention.streak.pendingRewardKeys = Array.from(new Set((Array.isArray(retention.streak.pendingRewardKeys) ? retention.streak.pendingRewardKeys : [])
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)));
+  retention.streak.pendingRecoveryOffer = Boolean(retention.streak.pendingRecoveryOffer);
+  retention.streak.pendingRecoveryDayKey = typeof retention.streak.pendingRecoveryDayKey === 'string' ? retention.streak.pendingRecoveryDayKey : '';
+  retention.streak.pendingRecoveryStreakCount = Math.max(0, Math.trunc(Number(retention.streak.pendingRecoveryStreakCount) || 0));
+  retention.streak.recoveryClaimedDayKeys = Array.from(new Set((Array.isArray(retention.streak.recoveryClaimedDayKeys) ? retention.streak.recoveryClaimedDayKeys : [])
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)));
+
+  retention.dailyCare.dayKey = typeof retention.dailyCare.dayKey === 'string' ? retention.dailyCare.dayKey : '';
+  retention.dailyCare.tasks = Array.isArray(retention.dailyCare.tasks) ? retention.dailyCare.tasks : [];
+  retention.dailyCare.tasks = retention.dailyCare.tasks
+    .filter((task) => task && typeof task === 'object')
+    .map((task) => ({
+      taskId: String(task.taskId || '').trim(),
+      title: String(task.title || '').trim(),
+      description: String(task.description || '').trim(),
+      dayKey: String(task.dayKey || retention.dailyCare.dayKey || '').trim(),
+      completedAt: Number.isFinite(Number(task.completedAt)) ? Number(task.completedAt) : null,
+      claimKey: String(task.claimKey || '').trim()
+    }))
+    .filter((task) => task.taskId && task.claimKey);
+  retention.dailyCare.completedCount = retention.dailyCare.tasks.reduce((count, task) => count + (task.completedAt ? 1 : 0), 0);
+  retention.dailyCare.allCompleteClaimed = Boolean(retention.dailyCare.allCompleteClaimed);
+
+  retention.micro.unlockedIds = Array.from(new Set((Array.isArray(retention.micro.unlockedIds) ? retention.micro.unlockedIds : [])
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean)));
+  retention.micro.unlockedHistory = (Array.isArray(retention.micro.unlockedHistory) ? retention.micro.unlockedHistory : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      id: String(entry.id || '').trim(),
+      atRealMs: Number.isFinite(Number(entry.atRealMs)) ? Number(entry.atRealMs) : 0
+    }))
+    .filter((entry) => entry.id && entry.atRealMs > 0)
+    .slice(-60);
+  retention.micro.lastShownAt = Number.isFinite(Number(retention.micro.lastShownAt)) ? Number(retention.micro.lastShownAt) : 0;
+  retention.micro.sessionShownCount = Math.max(0, Math.trunc(Number(retention.micro.sessionShownCount) || 0));
+  retention.claimLedger = Array.from(new Set(retention.claimLedger.map((entry) => String(entry || '').trim()).filter(Boolean)));
+  retention.analytics.events = (Array.isArray(retention.analytics.events) ? retention.analytics.events : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      event: String(entry.event || '').trim(),
+      atRealMs: Number.isFinite(Number(entry.atRealMs)) ? Number(entry.atRealMs) : 0,
+      dayKey: typeof entry.dayKey === 'string' ? entry.dayKey : '',
+      payload: entry.payload && typeof entry.payload === 'object' ? entry.payload : {}
+    }))
+    .filter((entry) => entry.event)
+    .slice(-RETENTION_ANALYTICS_MAX_EVENTS);
+  retention.analytics.eventKeys = Array.from(new Set((Array.isArray(retention.analytics.eventKeys) ? retention.analytics.eventKeys : [])
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean))).slice(-RETENTION_ANALYTICS_MAX_EVENTS);
+  retention.analytics.dailyStats = (Array.isArray(retention.analytics.dailyStats) ? retention.analytics.dailyStats : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      dayKey: String(entry.dayKey || '').trim(),
+      streakContinued: Number(entry.streakContinued || 0) > 0 ? 1 : 0,
+      tasksCompleted: Math.max(0, Math.trunc(Number(entry.tasksCompleted) || 0)),
+      microUnlocked: Math.max(0, Math.trunc(Number(entry.microUnlocked) || 0)),
+      sessionCount: Math.max(0, Math.trunc(Number(entry.sessionCount) || 0))
+    }))
+    .filter((entry) => entry.dayKey)
+    .sort((left, right) => String(left.dayKey).localeCompare(String(right.dayKey)))
+    .slice(-RETENTION_ANALYTICS_MAX_DAYS);
+  return retention;
+}
+
+function getLocalDayKey(nowMs = Date.now()) {
+  const safeNow = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const date = new Date(safeNow);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDayKeyDistance(previousDayKey, nextDayKey) {
+  if (!previousDayKey || !nextDayKey) {
+    return 0;
+  }
+  const left = new Date(`${String(previousDayKey).trim()}T00:00:00`);
+  const right = new Date(`${String(nextDayKey).trim()}T00:00:00`);
+  if (!Number.isFinite(left.getTime()) || !Number.isFinite(right.getTime())) {
+    return 0;
+  }
+  return Math.round((right.getTime() - left.getTime()) / 86400000);
+}
+
+function createRetentionDailyStat(dayKey) {
+  return {
+    dayKey: String(dayKey || '').trim(),
+    streakContinued: 0,
+    tasksCompleted: 0,
+    microUnlocked: 0,
+    sessionCount: 0
+  };
+}
+
+function getRetentionDailyStat(retention, dayKey, createIfMissing = true) {
+  const safeRetention = retention && typeof retention === 'object' ? retention : ensureRetentionState(state);
+  const safeDayKey = String(dayKey || '').trim();
+  if (!safeDayKey) {
+    return null;
+  }
+  if (!safeRetention.analytics || typeof safeRetention.analytics !== 'object') {
+    safeRetention.analytics = { events: [], eventKeys: [], dailyStats: [] };
+  }
+  if (!Array.isArray(safeRetention.analytics.dailyStats)) {
+    safeRetention.analytics.dailyStats = [];
+  }
+  const existing = safeRetention.analytics.dailyStats.find((entry) => entry && entry.dayKey === safeDayKey);
+  if (existing) {
+    return existing;
+  }
+  if (!createIfMissing) {
+    return null;
+  }
+  const created = createRetentionDailyStat(safeDayKey);
+  safeRetention.analytics.dailyStats.push(created);
+  safeRetention.analytics.dailyStats = safeRetention.analytics.dailyStats
+    .filter((entry) => entry && entry.dayKey)
+    .sort((left, right) => String(left.dayKey).localeCompare(String(right.dayKey)))
+    .slice(-RETENTION_ANALYTICS_MAX_DAYS);
+  return safeRetention.analytics.dailyStats.find((entry) => entry && entry.dayKey === safeDayKey) || created;
+}
+
+function applyRetentionEventToDailyStat(stat, event, payload = {}) {
+  if (!stat || typeof stat !== 'object') {
+    return;
+  }
+  const safeEvent = String(event || '').trim();
+  const safePayload = payload && typeof payload === 'object' ? payload : {};
+  if (safeEvent === 'streak_continue') {
+    stat.streakContinued = 1;
+  } else if (safeEvent === 'daily_task_completed') {
+    stat.tasksCompleted = Math.max(0, Math.trunc(Number(stat.tasksCompleted) || 0)) + 1;
+  } else if (safeEvent === 'micro_unlocked') {
+    stat.microUnlocked = Math.max(0, Math.trunc(Number(stat.microUnlocked) || 0)) + 1;
+  } else if (safeEvent === 'retention_session_start') {
+    stat.sessionCount = Math.max(0, Math.trunc(Number(stat.sessionCount) || 0)) + 1;
+  } else if (safeEvent === 'streak_checkin' && safePayload && safePayload.first === true) {
+    stat.sessionCount = Math.max(0, Math.trunc(Number(stat.sessionCount) || 0)) + 1;
+  }
+}
+
+function aggregateDailyRetentionStats(snapshot = state) {
+  const retention = ensureRetentionState(snapshot);
+  const eventList = Array.isArray(retention.analytics && retention.analytics.events) ? retention.analytics.events : [];
+  const dailyByKey = new Map();
+
+  for (const eventEntry of eventList) {
+    if (!eventEntry || typeof eventEntry !== 'object') {
+      continue;
+    }
+    const dayKey = String(eventEntry.dayKey || getLocalDayKey(eventEntry.atRealMs || Date.now())).trim();
+    if (!dayKey) {
+      continue;
+    }
+    if (!dailyByKey.has(dayKey)) {
+      dailyByKey.set(dayKey, createRetentionDailyStat(dayKey));
+    }
+    applyRetentionEventToDailyStat(
+      dailyByKey.get(dayKey),
+      eventEntry.event,
+      eventEntry.payload && typeof eventEntry.payload === 'object' ? eventEntry.payload : {}
+    );
+  }
+
+  retention.analytics.dailyStats = Array.from(dailyByKey.values())
+    .sort((left, right) => String(left.dayKey).localeCompare(String(right.dayKey)))
+    .slice(-RETENTION_ANALYTICS_MAX_DAYS);
+  return retention.analytics.dailyStats;
+}
+
+function getLastNDaysStats(n = 7, snapshot = state, nowMs = Date.now()) {
+  const retention = ensureRetentionState(snapshot);
+  const safeDays = clampInt(Number(n) || 7, 1, 30);
+  aggregateDailyRetentionStats(snapshot);
+  const byKey = new Map(
+    (Array.isArray(retention.analytics.dailyStats) ? retention.analytics.dailyStats : [])
+      .map((entry) => [String(entry.dayKey || ''), entry])
+      .filter((pair) => pair[0])
+  );
+
+  const result = [];
+  const baseDate = new Date(Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now());
+  baseDate.setHours(12, 0, 0, 0);
+  for (let offset = safeDays - 1; offset >= 0; offset -= 1) {
+    const cursor = new Date(baseDate);
+    cursor.setDate(baseDate.getDate() - offset);
+    const dayKey = getLocalDayKey(cursor.getTime());
+    const stat = byKey.get(dayKey) || createRetentionDailyStat(dayKey);
+    const active = Boolean(
+      Number(stat.sessionCount || 0) > 0
+      || Number(stat.tasksCompleted || 0) > 0
+      || Number(stat.microUnlocked || 0) > 0
+      || Number(stat.streakContinued || 0) > 0
+    );
+    result.push({
+      dayKey,
+      streakContinued: Number(stat.streakContinued || 0) > 0 ? 1 : 0,
+      tasksCompleted: Math.max(0, Math.trunc(Number(stat.tasksCompleted) || 0)),
+      microUnlocked: Math.max(0, Math.trunc(Number(stat.microUnlocked) || 0)),
+      sessionCount: Math.max(0, Math.trunc(Number(stat.sessionCount) || 0)),
+      active
+    });
+  }
+  return result;
+}
+
+function formatMicroAchievementFallbackTitle(id) {
+  const safeId = String(id || '').trim();
+  if (!safeId) {
+    return 'Neuer Mikro-Erfolg';
+  }
+  const cleaned = safeId.replace(/[_-]+/g, ' ').trim();
+  return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : 'Neuer Mikro-Erfolg';
+}
+
+function getMicroAchievementDefinition(id) {
+  const safeId = String(id || '').trim();
+  const mapped = MICRO_ACHIEVEMENT_REGISTRY[safeId];
+  if (mapped) {
+    return mapped;
+  }
+  return {
+    id: safeId || 'micro_unknown',
+    title: formatMicroAchievementFallbackTitle(safeId),
+    shortDescription: 'Sauberer Fortschritt in der laufenden Session.',
+    rarity: 'common',
+    category: 'general',
+    iconTag: 'Micro',
+    xpRewardOverride: null
+  };
+}
+
+function emitRetentionAnalytics(event, payload = {}, options = {}) {
+  const safeEvent = String(event || '').trim();
+  if (!safeEvent) {
+    return false;
+  }
+  const retention = ensureRetentionState(state);
+  const eventKey = String(options.eventKey || '').trim();
+  if (eventKey && retention.analytics.eventKeys.includes(eventKey)) {
+    return false;
+  }
+  const nowMs = Number.isFinite(Number(options.nowMs)) ? Number(options.nowMs) : Date.now();
+  const dayKey = getLocalDayKey(nowMs);
+  retention.analytics.events.push({
+    event: safeEvent,
+    atRealMs: nowMs,
+    dayKey,
+    payload: payload && typeof payload === 'object' ? payload : {}
+  });
+  retention.analytics.events = retention.analytics.events.slice(-RETENTION_ANALYTICS_MAX_EVENTS);
+  if (eventKey) {
+    retention.analytics.eventKeys.push(eventKey);
+    retention.analytics.eventKeys = retention.analytics.eventKeys.slice(-RETENTION_ANALYTICS_MAX_EVENTS);
+  }
+  const stat = getRetentionDailyStat(retention, dayKey, true);
+  applyRetentionEventToDailyStat(stat, safeEvent, payload);
+  retention.analytics.dailyStats = (Array.isArray(retention.analytics.dailyStats) ? retention.analytics.dailyStats : [])
+    .sort((left, right) => String(left.dayKey || '').localeCompare(String(right.dayKey || '')))
+    .slice(-RETENTION_ANALYTICS_MAX_DAYS);
+  if (options.skipPersist !== true && typeof schedulePersistState === 'function') {
+    schedulePersistState();
+  }
+  return true;
+}
+
+function hasRetentionClaim(claimKey) {
+  const safeKey = String(claimKey || '').trim();
+  if (!safeKey) {
+    return true;
+  }
+  const retention = ensureRetentionState(state);
+  return retention.claimLedger.includes(safeKey);
+}
+
+function registerRetentionClaim(claimKey) {
+  const safeKey = String(claimKey || '').trim();
+  if (!safeKey) {
+    return false;
+  }
+  const retention = ensureRetentionState(state);
+  if (retention.claimLedger.includes(safeKey)) {
+    return false;
+  }
+  retention.claimLedger.push(safeKey);
+  return true;
+}
+
+function grantRetentionRewardOnce(claimKey, rewardSpec = {}, context = {}) {
+  const safeClaimKey = String(claimKey || '').trim();
+  if (!safeClaimKey || hasRetentionClaim(safeClaimKey)) {
+    return { granted: false, reason: 'duplicate' };
+  }
+  const progressionApi = getProgressionApi();
+  if (!progressionApi || typeof progressionApi.grantRuntimeXp !== 'function') {
+    return { granted: false, reason: 'progression_api_unavailable' };
+  }
+  const xp = Math.max(0, Math.trunc(Number(rewardSpec.xp) || 0));
+  const xpResult = progressionApi.grantRuntimeXp(state, xp, {
+    label: `retention:${safeClaimKey}`,
+    reason: String(context.reason || 'retention')
+  });
+  registerRetentionClaim(safeClaimKey);
+  return {
+    granted: true,
+    xpGranted: Math.max(0, Math.trunc(Number(xpResult && xpResult.grantedXp) || 0)),
+    unlocks: Array.isArray(xpResult && xpResult.unlocked) ? xpResult.unlocked : []
+  };
+}
+
+function getDailyCareTaskTemplates() {
+  return [
+    { taskId: 'open_dashboard', title: 'Lage prüfen', description: 'Öffne Analyse und checke die Kernwerte.', sheetName: 'dashboard', minXp: 8 },
+    { taskId: 'open_climate', title: 'Klima abgleichen', description: 'Prüfe Temperatur, Luftfeuchte und VPD.', sheetName: 'climate', minXp: 8 },
+    { taskId: 'perform_care_action', title: 'Pflegeimpuls setzen', description: 'Führe eine sinnvolle Pflegeaktion aus.', trigger: 'care_action', minXp: 8 },
+    { taskId: 'reduce_stress', title: 'Stress senken', description: 'Bring Stress unter 40.', trigger: 'stress_threshold', threshold: 40, minXp: 9 },
+    { taskId: 'reduce_risk', title: 'Risiko beruhigen', description: 'Bring Risiko unter 45.', trigger: 'risk_threshold', threshold: 45, minXp: 9 }
+  ];
+}
+
+function buildDailyCareTasks(snapshot = state, dayKey = getLocalDayKey(Date.now())) {
+  const templates = getDailyCareTaskTemplates();
+  const status = snapshot.status && typeof snapshot.status === 'object' ? snapshot.status : {};
+  const stress = Number(status.stress || 0);
+  const risk = Number(status.risk || 0);
+  const simDay = Math.max(0, Math.trunc(Number(snapshot.simulation && snapshot.simulation.simDay) || 0));
+  const wanted = clampInt(3 + (stress >= 52 ? 1 : 0) + (risk >= 55 ? 1 : 0), RETENTION_DAILY_TASK_MIN, RETENTION_DAILY_TASK_MAX);
+  const candidates = templates.map((template) => {
+    let priority = 10;
+    if (template.taskId === 'open_dashboard') priority += 6;
+    if (template.taskId === 'perform_care_action') priority += 5;
+    if (template.taskId === 'open_climate') priority += simDay >= 2 ? 4 : 2;
+    if (template.taskId === 'reduce_stress') priority += stress >= 45 ? 9 : -6;
+    if (template.taskId === 'reduce_risk') priority += risk >= 48 ? 9 : -6;
+    return { template, priority };
+  })
+    .filter((entry) => {
+      if (entry.template.taskId === 'reduce_stress' && stress <= 34) return false;
+      if (entry.template.taskId === 'reduce_risk' && risk <= 36) return false;
+      return true;
+    })
+    .sort((left, right) => Number(right.priority) - Number(left.priority));
+
+  const selected = [];
+  for (const candidate of candidates) {
+    if (selected.length >= wanted) {
+      break;
+    }
+    selected.push(candidate.template);
+  }
+  for (const template of templates) {
+    if (selected.length >= RETENTION_DAILY_TASK_MIN) {
+      break;
+    }
+    if (!selected.some((entry) => entry.taskId === template.taskId)) {
+      selected.push(template);
+    }
+  }
+
+  return selected.slice(0, RETENTION_DAILY_TASK_MAX).map((template) => {
+    const taskId = String(template.taskId || '').trim();
+    return {
+      taskId,
+      title: String(template.title || 'Daily Task'),
+      description: String(template.description || ''),
+      dayKey,
+      trigger: String(template.trigger || ''),
+      sheetName: String(template.sheetName || ''),
+      threshold: Number.isFinite(Number(template.threshold)) ? Number(template.threshold) : null,
+      xp: Math.max(0, Math.trunc(Number(template.minXp) || RETENTION_DAILY_TASK_XP)),
+      completedAt: null,
+      claimKey: `daily:task:${dayKey}:${taskId}`
+    };
+  });
+}
+
+function showRetentionToast(message) {
+  const text = String(message || '').trim();
+  if (!text) {
+    return;
+  }
+  const existing = document.getElementById('retentionToast');
+  if (existing) {
+    existing.remove();
+  }
+  const node = document.createElement('div');
+  node.id = 'retentionToast';
+  node.className = 'retention-toast';
+  node.textContent = text;
+  document.body.appendChild(node);
+  window.setTimeout(() => {
+    node.classList.add('is-hidden');
+    window.setTimeout(() => node.remove(), 280);
+  }, 1800);
+}
+
+function unlockMicroAchievement(id, context = {}) {
+  const safeId = String(id || '').trim();
+  if (!safeId) {
+    return { unlocked: false, reason: 'invalid_id' };
+  }
+  const definition = getMicroAchievementDefinition(safeId);
+  const retention = ensureRetentionState(state);
+  if (retention.micro.unlockedIds.includes(safeId)) {
+    return { unlocked: false, reason: 'duplicate' };
+  }
+  retention.micro.unlockedIds.push(safeId);
+  const nowMs = Number.isFinite(Number(context.nowMs)) ? Number(context.nowMs) : Date.now();
+  retention.micro.unlockedHistory.push({
+    id: safeId,
+    atRealMs: nowMs
+  });
+  retention.micro.unlockedHistory = retention.micro.unlockedHistory.slice(-60);
+  emitRetentionAnalytics('micro_unlocked', {
+    id: safeId,
+    rarity: String(definition.rarity || 'common'),
+    category: String(definition.category || 'general')
+  }, {
+    nowMs,
+    eventKey: `micro_unlock:${safeId}`
+  });
+  const canShowToast = (nowMs - Number(retention.micro.lastShownAt || 0)) >= RETENTION_MICRO_COOLDOWN_MS
+    && Number(retention.micro.sessionShownCount || 0) < RETENTION_MICRO_SESSION_LIMIT;
+  if (canShowToast) {
+    retention.micro.lastShownAt = nowMs;
+    retention.micro.sessionShownCount = Number(retention.micro.sessionShownCount || 0) + 1;
+    const toastText = String(context.toastText || `${definition.title} · ${definition.shortDescription}`);
+    showRetentionToast(toastText);
+    emitRetentionAnalytics('micro_shown', {
+      id: safeId,
+      rarity: String(definition.rarity || 'common')
+    }, {
+      nowMs,
+      eventKey: `micro_shown:${safeId}`
+    });
+  }
+  const claimKey = `micro:${safeId}`;
+  const xp = Math.max(0, Math.trunc(Number(context.rewardXp) || Number(definition.xpRewardOverride) || 6));
+  const rewardResult = grantRetentionRewardOnce(claimKey, { xp }, { reason: 'micro' });
+  if (rewardResult.granted) {
+    addLog('system', `Micro-Erfolg: ${String(context.label || definition.title || safeId)}`, {
+      type: 'micro_achievement',
+      id: safeId,
+      xpGranted: rewardResult.xpGranted
+    });
+  }
+  return { unlocked: true };
+}
+
+function evaluateDailyRetention(snapshot = state, nowMs = Date.now(), options = {}) {
+  const retention = ensureRetentionState(snapshot);
+  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const todayKey = getLocalDayKey(now);
+  let changed = false;
+  let rewardsGranted = 0;
+
+  if (retention.dailyCare.dayKey !== todayKey) {
+    retention.dailyCare.dayKey = todayKey;
+    retention.dailyCare.tasks = buildDailyCareTasks(snapshot, todayKey);
+    retention.dailyCare.completedCount = 0;
+    retention.dailyCare.allCompleteClaimed = false;
+    retention.micro.sessionShownCount = 0;
+    emitRetentionAnalytics('daily_task_generated', {
+      taskCount: retention.dailyCare.tasks.length
+    }, {
+      nowMs: now,
+      eventKey: `daily_task_generated:${todayKey}`
+    });
+    changed = true;
+  }
+
+  const streak = retention.streak;
+  if (streak.pendingRecoveryOffer && streak.pendingRecoveryDayKey && streak.pendingRecoveryDayKey !== todayKey) {
+    streak.pendingRecoveryOffer = false;
+    streak.pendingRecoveryDayKey = '';
+    streak.pendingRecoveryStreakCount = 0;
+    changed = true;
+  }
+  if (!streak.lastCheckinDayKey) {
+    streak.currentCount = 1;
+    streak.bestCount = Math.max(streak.bestCount, 1);
+    streak.lastCheckinDayKey = todayKey;
+    streak.lastEvaluatedDayKey = todayKey;
+    emitRetentionAnalytics('streak_checkin', {
+      count: streak.currentCount,
+      first: true
+    }, {
+      nowMs: now,
+      eventKey: `streak_checkin:${todayKey}`
+    });
+    changed = true;
+  } else if (streak.lastEvaluatedDayKey !== todayKey || options.forceCheckin === true) {
+    const dayGap = getDayKeyDistance(streak.lastCheckinDayKey, todayKey);
+    if (dayGap === 1) {
+      streak.currentCount += 1;
+      emitRetentionAnalytics('streak_continue', {
+        count: streak.currentCount
+      }, {
+        nowMs: now,
+        eventKey: `streak_continue:${todayKey}`
+      });
+    } else if (dayGap > 1) {
+      if (streak.freezeCredits > 0) {
+        streak.freezeCredits = Math.max(0, streak.freezeCredits - 1);
+        emitRetentionAnalytics('streak_continue', {
+          count: streak.currentCount,
+          viaFreezeCredit: true
+        }, {
+          nowMs: now,
+          eventKey: `streak_continue:${todayKey}:credit`
+        });
+      } else {
+        const previousCount = Math.max(1, Number(streak.currentCount || 1));
+        streak.pendingRecoveryOffer = true;
+        streak.pendingRecoveryDayKey = todayKey;
+        streak.pendingRecoveryStreakCount = previousCount;
+        streak.currentCount = 1;
+        emitRetentionAnalytics('streak_break', {
+          previousCount,
+          gapDays: dayGap
+        }, {
+          nowMs: now,
+          eventKey: `streak_break:${todayKey}`
+        });
+        emitRetentionAnalytics('streak_recovery_available', {
+          previousCount,
+          freezeCredits: Number(streak.freezeCredits || 0)
+        }, {
+          nowMs: now,
+          eventKey: `streak_recovery_available:${todayKey}`
+        });
+      }
+    }
+    streak.bestCount = Math.max(streak.bestCount, streak.currentCount);
+    streak.lastCheckinDayKey = todayKey;
+    streak.lastEvaluatedDayKey = todayKey;
+    emitRetentionAnalytics('streak_checkin', {
+      count: streak.currentCount
+    }, {
+      nowMs: now,
+      eventKey: `streak_checkin:${todayKey}`
+    });
+    changed = true;
+  }
+
+  for (const milestone of RETENTION_STREAK_MILESTONES) {
+    if (streak.currentCount < milestone) {
+      continue;
+    }
+    if (streak.claimedMilestones.includes(milestone)) {
+      continue;
+    }
+    const claimKey = `streak:milestone:${todayKey}:${milestone}`;
+    const result = grantRetentionRewardOnce(claimKey, {
+      xp: RETENTION_STREAK_MILESTONE_XP[milestone] || 10
+    }, { reason: 'streak_milestone' });
+    streak.claimedMilestones.push(milestone);
+    if (milestone === 7 || milestone === 14 || milestone === 30) {
+      streak.freezeCredits = Math.min(2, Math.max(0, Number(streak.freezeCredits || 0)) + 1);
+    }
+    changed = true;
+    if (result.granted) {
+      rewardsGranted += result.xpGranted;
+      unlockMicroAchievement(`streak_milestone_${milestone}`, {
+        nowMs: now,
+        toastText: `Streak-Meilenstein: ${milestone} Tage`,
+        label: `Streak ${milestone}`,
+        rewardXp: 5
+      });
+    }
+  }
+
+  if (changed && options.skipPersist !== true) {
+    schedulePersistState();
+  }
+  return { changed, dayKey: todayKey, rewardsGranted };
+}
+
+function tryApplyStreakRecovery(nowMs = Date.now()) {
+  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const retention = ensureRetentionState(state);
+  const streak = retention.streak || {};
+  const todayKey = getLocalDayKey(now);
+  if (!streak.pendingRecoveryOffer) {
+    return { ok: false, reason: 'no_offer' };
+  }
+  if (!streak.pendingRecoveryDayKey || streak.pendingRecoveryDayKey !== todayKey) {
+    streak.pendingRecoveryOffer = false;
+    streak.pendingRecoveryDayKey = '';
+    streak.pendingRecoveryStreakCount = 0;
+    return { ok: false, reason: 'offer_expired' };
+  }
+  if (streak.recoveryClaimedDayKeys.includes(todayKey)) {
+    return { ok: false, reason: 'already_claimed' };
+  }
+  if (Number(streak.freezeCredits || 0) <= 0) {
+    return { ok: false, reason: 'no_credits' };
+  }
+  const restoredCount = Math.max(
+    Number(streak.currentCount || 1),
+    Math.max(1, Number(streak.pendingRecoveryStreakCount || 1))
+  );
+  streak.freezeCredits = Math.max(0, Number(streak.freezeCredits || 0) - 1);
+  streak.currentCount = restoredCount;
+  streak.bestCount = Math.max(Number(streak.bestCount || 0), restoredCount);
+  streak.pendingRecoveryOffer = false;
+  streak.pendingRecoveryDayKey = '';
+  streak.pendingRecoveryStreakCount = 0;
+  streak.recoveryClaimedDayKeys.push(todayKey);
+
+  const claimKey = `streak:recovered:${todayKey}`;
+  grantRetentionRewardOnce(claimKey, { xp: 6 }, { reason: 'streak_recovery' });
+  unlockMicroAchievement('streak_recovered', {
+    nowMs: now,
+    toastText: 'Serie gerettet · fair weitergeführt',
+    label: 'Streak Recovery',
+    rewardXp: 6
+  });
+  emitRetentionAnalytics('streak_recovered', {
+    restoredCount
+  }, {
+    nowMs: now,
+    eventKey: `streak_recovered:${todayKey}`
+  });
+  schedulePersistState(true);
+  if (state.ui.openSheet === 'missions' && typeof renderMissionsSheet === 'function') {
+    renderMissionsSheet();
+  }
+  return { ok: true, restoredCount };
+}
+
+function tryApplyRewardedBonus(type, context = {}) {
+  const safeType = String(type || '').trim();
+  const nowMs = Number.isFinite(Number(context.nowMs)) ? Number(context.nowMs) : Date.now();
+  const todayKey = getLocalDayKey(nowMs);
+  const retention = ensureRetentionState(state);
+  const streak = retention.streak || {};
+  const daily = retention.dailyCare || {};
+
+  if (!safeType) {
+    return { ok: false, reason: 'invalid_type' };
+  }
+
+  if (safeType === 'streak_recovery_credit') {
+    const offerOpen = Boolean(streak.pendingRecoveryOffer) && String(streak.pendingRecoveryDayKey || '') === todayKey;
+    if (!offerOpen) {
+      return { ok: false, reason: 'no_recovery_offer' };
+    }
+    const claimKey = `rewarded:streak_recovery_credit:${todayKey}`;
+    if (hasRetentionClaim(claimKey)) {
+      return { ok: false, reason: 'already_claimed' };
+    }
+    streak.freezeCredits = Math.min(2, Math.max(0, Number(streak.freezeCredits || 0)) + 1);
+    registerRetentionClaim(claimKey);
+    emitRetentionAnalytics('rewarded_bonus_applied', {
+      type: safeType
+    }, {
+      nowMs,
+      eventKey: `rewarded_bonus_applied:${safeType}:${todayKey}`
+    });
+    schedulePersistState(true);
+    return { ok: true, type: safeType, credits: streak.freezeCredits };
+  }
+
+  if (safeType === 'daily_all_complete_boost') {
+    const dayKey = String(daily.dayKey || '');
+    if (!dayKey || dayKey !== todayKey || !daily.allCompleteClaimed) {
+      return { ok: false, reason: 'daily_not_complete' };
+    }
+    const claimKey = `rewarded:daily_all_complete_boost:${todayKey}`;
+    const rewardResult = grantRetentionRewardOnce(claimKey, {
+      xp: RETENTION_REWARDED_BONUS_XP.daily_all_complete_boost
+    }, {
+      reason: 'rewarded_daily_boost'
+    });
+    if (!rewardResult.granted) {
+      return { ok: false, reason: rewardResult.reason || 'duplicate' };
+    }
+    emitRetentionAnalytics('rewarded_bonus_applied', {
+      type: safeType,
+      xpGranted: rewardResult.xpGranted
+    }, {
+      nowMs,
+      eventKey: `rewarded_bonus_applied:${safeType}:${todayKey}`
+    });
+    schedulePersistState(true);
+    return { ok: true, type: safeType, xpGranted: rewardResult.xpGranted };
+  }
+
+  if (safeType === 'sim_time_boost') {
+    const claimKey = `rewarded:sim_time_boost:${todayKey}`;
+    if (hasRetentionClaim(claimKey)) {
+      return { ok: false, reason: 'already_claimed' };
+    }
+    if (!state.boost || typeof state.boost !== 'object') {
+      state.boost = {
+        boostUsedToday: 0,
+        boostMaxPerDay: 6,
+        dayStamp: dayStamp(nowMs),
+        boostEndsAtMs: 0
+      };
+    }
+    const currentEndsAt = Number(state.boost.boostEndsAtMs || 0);
+    const baseStart = Math.max(nowMs, currentEndsAt);
+    state.boost.boostEndsAtMs = baseStart + (10 * 60 * 1000);
+    registerRetentionClaim(claimKey);
+    emitRetentionAnalytics('rewarded_bonus_applied', {
+      type: safeType,
+      boostEndsAtMs: state.boost.boostEndsAtMs
+    }, {
+      nowMs,
+      eventKey: `rewarded_bonus_applied:${safeType}:${todayKey}`
+    });
+    schedulePersistState(true);
+    return { ok: true, type: safeType, boostEndsAtMs: state.boost.boostEndsAtMs };
+  }
+
+  return { ok: false, reason: 'unsupported_type' };
+}
+
+function updateDailyCareCompletion(triggerType, payload = {}) {
+  const retention = ensureRetentionState(state);
+  if (!retention.dailyCare.dayKey || !Array.isArray(retention.dailyCare.tasks) || !retention.dailyCare.tasks.length) {
+    return { changed: false };
+  }
+  const nowMs = Number.isFinite(Number(payload.nowMs)) ? Number(payload.nowMs) : Date.now();
+  const todayKey = getLocalDayKey(nowMs);
+  if (retention.dailyCare.dayKey !== todayKey) {
+    return { changed: false };
+  }
+  let changed = false;
+  let newlyCompleted = 0;
+  const status = state.status && typeof state.status === 'object' ? state.status : {};
+
+  for (const task of retention.dailyCare.tasks) {
+    if (!task || task.completedAt) {
+      continue;
+    }
+    let matches = false;
+    if (task.trigger === 'care_action' && triggerType === 'action_success') {
+      matches = true;
+    } else if (task.trigger === 'stress_threshold' && Number(status.stress || 0) <= Number(task.threshold || 40)) {
+      matches = true;
+    } else if (task.trigger === 'risk_threshold' && Number(status.risk || 0) <= Number(task.threshold || 45)) {
+      matches = true;
+    } else if (task.sheetName && triggerType === 'sheet_open' && String(payload.sheetName || '') === task.sheetName) {
+      matches = true;
+    }
+    if (!matches) {
+      continue;
+    }
+    task.completedAt = nowMs;
+    const rewardResult = grantRetentionRewardOnce(task.claimKey, { xp: Number(task.xp || RETENTION_DAILY_TASK_XP) }, {
+      reason: 'daily_task'
+    });
+    if (rewardResult.granted) {
+      addLog('system', `Daily Care: ${task.title}`, {
+        type: 'daily_care_complete',
+        taskId: task.taskId,
+        xpGranted: rewardResult.xpGranted
+      });
+    }
+    emitRetentionAnalytics('daily_task_completed', {
+      taskId: task.taskId
+    }, {
+      nowMs,
+      eventKey: `daily_task_completed:${retention.dailyCare.dayKey}:${task.taskId}`
+    });
+    changed = true;
+    newlyCompleted += 1;
+  }
+
+  retention.dailyCare.completedCount = retention.dailyCare.tasks.reduce((count, task) => count + (task && task.completedAt ? 1 : 0), 0);
+  if (retention.dailyCare.completedCount >= 2) {
+    unlockMicroAchievement('daily_pair_clean', {
+      nowMs,
+      toastText: 'Saubere Daily-Serie',
+      label: 'Daily Pair',
+      rewardXp: 5
+    });
+  }
+
+  const allDone = retention.dailyCare.tasks.length > 0 && retention.dailyCare.tasks.every((task) => Boolean(task && task.completedAt));
+  if (allDone && !retention.dailyCare.allCompleteClaimed) {
+    const allClaimKey = `daily:allComplete:${retention.dailyCare.dayKey}`;
+    grantRetentionRewardOnce(allClaimKey, { xp: RETENTION_DAILY_ALL_COMPLETE_XP }, { reason: 'daily_all_complete' });
+    retention.dailyCare.allCompleteClaimed = true;
+    emitRetentionAnalytics('daily_all_complete', {
+      dayKey: retention.dailyCare.dayKey
+    }, {
+      nowMs,
+      eventKey: `daily_all_complete:${retention.dailyCare.dayKey}`
+    });
+    changed = true;
+    unlockMicroAchievement('daily_full_sweep', {
+      nowMs,
+      toastText: 'Alle Daily-Care Aufgaben erledigt',
+      label: 'Daily Full Sweep',
+      rewardXp: 8
+    });
+  }
+
+  if (newlyCompleted > 0 && retention.dailyCare.completedCount === 1) {
+    unlockMicroAchievement('daily_first_task', {
+      nowMs,
+      toastText: 'Erste Daily-Care Aufgabe abgeschlossen',
+      label: 'First Daily Task',
+      rewardXp: 4
+    });
+  }
+
+  if (changed) {
+    schedulePersistState();
+  }
+  return { changed };
+}
+
+window.__gsEvaluateDailyRetention = (nowMs, options = {}) => evaluateDailyRetention(state, nowMs, options);
+window.__gsRetentionTaskUpdate = (triggerType, payload = {}) => updateDailyCareCompletion(triggerType, payload);
+window.__gsTryStreakRecovery = (nowMs) => tryApplyStreakRecovery(nowMs);
+window.__gsTryApplyRewardedBonus = (type, context = {}) => tryApplyRewardedBonus(type, context);
+window.__gsGetMicroAchievementDefinition = (id) => getMicroAchievementDefinition(id);
+window.__gsEmitRetentionAnalytics = (event, payload = {}, options = {}) => emitRetentionAnalytics(event, payload, options);
+window.__gsAggregateDailyRetentionStats = () => aggregateDailyRetentionStats(state);
+window.__gsGetLastNDaysRetentionStats = (days = 7, nowMs = Date.now()) => getLastNDaysStats(days, state, nowMs);
 
 function requireStorageModule() {
   const storageApi = window.GrowSimStorage;
@@ -3856,6 +4873,12 @@ async function boot() {
     await runBootSubstep('sync_active_event_from_catalog', () => syncActiveEventFromCatalog());
     await runBootSubstep('update_visible_overlays', () => updateVisibleOverlays());
     await runBootSubstep('sync_canonical_state_shape', () => syncCanonicalStateShape());
+    await runBootSubstep('evaluate_daily_retention', () => evaluateDailyRetention(state, bootNowMs, { forceCheckin: true, skipPersist: true }));
+    await runBootSubstep('emit_retention_session_start', () => emitRetentionAnalytics('retention_session_start', {
+      source: 'boot'
+    }, {
+      nowMs: bootNowMs
+    }));
     await runBootSubstep('resume_harvest_backend_flows', () => resumeHarvestBackendFlowsAfterRestore());
     logBootStep('boot:runtime_sync', {
       nowMs: state.simulation.nowMs,
@@ -4808,6 +5831,12 @@ function applyAction(actionId) {
       sideEffects: triggeredSideEffects
     });
   }
+  evaluateDailyRetention(state, nowMs, { forceCheckin: false, skipPersist: true });
+  updateDailyCareCompletion('action_success', {
+    nowMs,
+    actionId: action.id,
+    category: action.category
+  });
   syncRunGoalProgress('action');
   state.actions.lastResult = { ok: true, reason: preCheck.soft ? 'ok_soft' : 'ok', actionId: action.id, atRealTimeMs: nowMs };
   schedulePersistState(true);
@@ -5971,6 +7000,14 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const riskVisual = classifyRiskVisualLevel(Number(status.risk || 0));
   const growthVisual = classifyGrowthVisualLevel(Number(status.growth || 0), growthImpulse);
   const harvestForecast = getCanonicalHarvestForecast(sourceState);
+  const retention = ensureRetentionState(sourceState);
+  const retentionTodayKey = getLocalDayKey(Date.now());
+  const streak = retention.streak || {};
+  const streakCount = Math.max(0, Math.trunc(Number(streak.currentCount) || 0));
+  const streakDoneToday = String(streak.lastCheckinDayKey || '') === retentionTodayKey;
+  const nextMilestone = RETENTION_STREAK_MILESTONES.find((entry) => entry > streakCount) || null;
+  const dailyCompleted = Math.max(0, Math.trunc(Number(retention.dailyCare && retention.dailyCare.completedCount) || 0));
+  const dailyTotal = Array.isArray(retention.dailyCare && retention.dailyCare.tasks) ? retention.dailyCare.tasks.length : 0;
 
   return {
     id: 'home',
@@ -6083,6 +7120,16 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
         buildTradeoff: '',
         buildLoadout: ''
       },
+    retention: {
+      streakCount,
+      streakDoneToday,
+      nextMilestone,
+      dailyCompleted,
+      dailyTotal,
+      teaserText: streakCount > 0
+        ? `Streak ${streakCount} · ${streakDoneToday ? 'heute gesichert' : 'heute offen'}`
+        : 'Starte deine tägliche Streak'
+    },
     harvestForecast: harvestForecast
       ? {
         visible: Boolean(run.status === 'active' || run.status === 'downed'),
@@ -6153,6 +7200,7 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   const homeMetaGoalCompactNode = uiNode('homeMetaGoalCompact', 'homeMetaGoalCompact');
   const homeMetaGoalProgressNode = uiNode('homeMetaGoalProgress', 'homeMetaGoalProgress');
   const homeMetaGoalStatusNode = uiNode('homeMetaGoalStatus', 'homeMetaGoalStatus');
+  const homeMetaRetentionTeaserNode = uiNode('homeMetaRetentionTeaser', 'homeMetaRetentionTeaser');
   const homeMetaBuildChipNode = uiNode('homeMetaBuildChip', 'homeMetaBuildChip');
   const homeMetaDetailNode = uiNode('homeMetaDetail', 'homeMetaDetail');
   const homeMetaDetailStatusNode = uiNode('homeMetaDetailStatus', 'homeMetaDetailStatus');
@@ -6183,6 +7231,13 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   if (homeMetaGoalStatusNode) {
     homeMetaGoalStatusNode.textContent = String(runGoalVm.statusText || '');
     homeMetaGoalStatusNode.dataset.status = String(runGoalVm.status || 'active');
+  }
+  if (homeMetaRetentionTeaserNode) {
+    const retentionVm = vm.retention && typeof vm.retention === 'object' ? vm.retention : {};
+    const teaser = String(retentionVm.teaserText || '').trim();
+    homeMetaRetentionTeaserNode.textContent = teaser;
+    homeMetaRetentionTeaserNode.classList.toggle('hidden', !teaser);
+    homeMetaRetentionTeaserNode.setAttribute('aria-hidden', String(!teaser));
   }
   if (homeMetaBuildChipNode) {
     homeMetaBuildChipNode.textContent = String(runGoalVm.buildTag || runGoalVm.buildTitle || 'Build');
@@ -8804,6 +9859,63 @@ function renderPushToggle() {
   ui.notifTypeReminder.disabled = !enabled;
 }
 
+function buildRetentionInsightsMarkup(nowMs = Date.now()) {
+  const retention = ensureRetentionState(state);
+  aggregateDailyRetentionStats(state);
+  const streak = retention.streak || {};
+  const daily = retention.dailyCare || {};
+  const micro = retention.micro || {};
+  const todayKey = getLocalDayKey(nowMs);
+  const streakCurrent = Math.max(0, Math.trunc(Number(streak.currentCount) || 0));
+  const streakBest = Math.max(streakCurrent, Math.trunc(Number(streak.bestCount) || 0));
+  const stats7 = getLastNDaysStats(7, state, nowMs);
+  const activeDays = stats7.reduce((count, day) => count + (day && day.active ? 1 : 0), 0);
+  const completedToday = Math.max(0, Math.trunc(Number(daily.completedCount) || 0));
+  const totalToday = Array.isArray(daily.tasks) ? daily.tasks.length : 0;
+  const previousCompleted = stats7.slice(0, -1).reverse().find((entry) => Number(entry.tasksCompleted || 0) > 0) || null;
+  const todayMicroHistory = (Array.isArray(micro.unlockedHistory) ? micro.unlockedHistory : [])
+    .filter((entry) => entry && String(getLocalDayKey(entry.atRealMs)) === todayKey);
+  const lastMicroEntry = todayMicroHistory.length ? todayMicroHistory[todayMicroHistory.length - 1] : null;
+  const lastMicroDef = lastMicroEntry ? getMicroAchievementDefinition(lastMicroEntry.id) : null;
+
+  const activityDots = stats7.map((entry) => {
+    const dayLabel = String(entry.dayKey || '').slice(5);
+    const dotClass = entry.active ? 'retention-activity-dot retention-activity-dot--active' : 'retention-activity-dot';
+    return `<span class="${dotClass}" title="${escapeHtml(dayLabel)}"></span>`;
+  }).join('');
+
+  return `
+    <section class="gs-analysis-overview-section retention-insights-section">
+      <div class="harvest-section-headline">
+        <h3 class="figma-section-head">Retention Insights</h3>
+        <p class="harvest-section-intro">Kompakter Blick auf Rhythmus, Konstanz und heutige Session-Qualität.</p>
+      </div>
+      <div class="retention-insights-grid">
+        <article class="retention-insight-card">
+          <span class="retention-insight-label">Streak</span>
+          <strong class="retention-insight-value">${escapeHtml(String(streakCurrent))}</strong>
+          <small>Bester Lauf: ${escapeHtml(String(streakBest))}</small>
+        </article>
+        <article class="retention-insight-card">
+          <span class="retention-insight-label">Aktivität (7 Tage)</span>
+          <div class="retention-activity-row">${activityDots}</div>
+          <small>${escapeHtml(String(activeDays))}/7 Tage aktiv</small>
+        </article>
+        <article class="retention-insight-card">
+          <span class="retention-insight-label">Daily Care</span>
+          <strong class="retention-insight-value">${escapeHtml(totalToday > 0 ? `${completedToday}/${totalToday}` : '0/0')}</strong>
+          <small>${escapeHtml(previousCompleted ? `Zuletzt: ${previousCompleted.tasksCompleted} Aufgaben` : 'Noch kein Vergleichstag')}</small>
+        </article>
+        <article class="retention-insight-card">
+          <span class="retention-insight-label">Micro-Erfolge heute</span>
+          <strong class="retention-insight-value">${escapeHtml(String(todayMicroHistory.length))}</strong>
+          <small>${escapeHtml(lastMicroDef ? lastMicroDef.title : 'Noch kein Unlock heute')}</small>
+        </article>
+      </div>
+    </section>
+  `;
+}
+
 function renderAnalysisOverview() {
   if (!ui.analysisPanelOverview) {
     warnMissingUiOnce('analysisPanelOverview');
@@ -8823,6 +9935,7 @@ function renderAnalysisOverview() {
   const nextCareText = primaryIssue
     ? describeDiagnosisRecommendation(primaryIssue)
     : 'Beobachten und nur bei klarer Abweichung eingreifen.';
+  const retentionInsightsMarkup = buildRetentionInsightsMarkup(Date.now());
 
   const statusRows = [
     { label: 'Wasser', value: `${Math.round(Number(status.water) || 0)}%`, tone: 'value_gold' },
@@ -8929,6 +10042,7 @@ function renderAnalysisOverview() {
     ` : ''}
     ${buildEventCenterMarkup(eventUiViewModel)}
     ${buildRecentEventHistoryMarkup()}
+    ${retentionInsightsMarkup}
     <section class="gs-analysis-overview-section">
       <div class="harvest-section-headline">
         <h3 class="figma-section-head">Was die Prognose gerade bewegt</h3>
@@ -9696,6 +10810,8 @@ function openSheet(name) {
     state.ui.statDetailKey = null;
   }
 
+  const nowMs = Date.now();
+  evaluateDailyRetention(state, nowMs, { skipPersist: true });
   state.ui.openSheet = name;
   renderSheets();
 
@@ -9711,6 +10827,12 @@ function openSheet(name) {
   } else if (name === 'diagnosis') {
     renderSettingsSheet();
   } else if (name === 'missions') {
+    emitRetentionAnalytics('missions_sheet_retention_viewed', {
+      source: 'open_sheet'
+    }, {
+      nowMs,
+      eventKey: `missions_sheet_view:${getLocalDayKey(nowMs)}:${Math.trunc(nowMs / 60000)}`
+    });
     renderMissionsSheet();
   } else if (name === 'leaderboard') {
     renderLeaderboardSheet(true);
@@ -9719,6 +10841,10 @@ function openSheet(name) {
   } else if (name === 'statDetail') {
     renderStatDetailSheet();
   }
+  updateDailyCareCompletion('sheet_open', {
+    nowMs,
+    sheetName: String(name || '')
+  });
 }
 
 function getMissionProgressView(mission) {
@@ -9774,9 +10900,147 @@ function getMissionProgressView(mission) {
 
 function renderMissionsSheet() {
   if (!ui.missionsSheet || state.ui.openSheet !== 'missions') return;
-  ui.missionsList.replaceChildren();
+  const retention = ensureRetentionState(state);
+  const streak = retention.streak || {};
+  const daily = retention.dailyCare || {};
+  const micro = retention.micro || {};
+  const todayKey = getLocalDayKey(Date.now());
+  const streakCount = Math.max(0, Math.trunc(Number(streak.currentCount) || 0));
+  const nextMilestone = RETENTION_STREAK_MILESTONES.find((entry) => entry > streakCount) || null;
+  const streakDoneToday = String(streak.lastCheckinDayKey || '') === todayKey;
 
-  state.missions.catalog.forEach(mission => {
+  const streakBlock = uiNode('missionsStreakBlock', 'missionsStreakBlock');
+  if (streakBlock) {
+    const milestoneLabel = nextMilestone ? `Nächster Milestone: ${nextMilestone}` : 'Alle Milestones freigeschaltet';
+    streakBlock.innerHTML = `
+      <div class="retention-streak-main">
+        <strong>Daily Streak ${streakCount}</strong>
+        <span class="retention-streak-status">${streakDoneToday ? 'Heute gesichert' : 'Heute offen'}</span>
+      </div>
+      <small>${escapeHtml(milestoneLabel)}</small>
+    `;
+  }
+
+  const dailyList = uiNode('missionsDailyCareList', 'missionsDailyCareList');
+  if (dailyList) {
+    dailyList.replaceChildren();
+    const tasks = Array.isArray(daily.tasks) ? daily.tasks : [];
+    if (!tasks.length) {
+      const empty = document.createElement('p');
+      empty.className = 'sheet-note';
+      empty.textContent = 'Daily-Care wird vorbereitet.';
+      dailyList.appendChild(empty);
+    } else {
+      for (const task of tasks) {
+        const row = document.createElement('div');
+        row.className = `retention-task-row${task.completedAt ? ' retention-task-row--done' : ''}`;
+        row.innerHTML = `
+          <span class="retention-task-copy">
+            <strong>${escapeHtml(String(task.title || 'Aufgabe'))}</strong>
+            <small>${escapeHtml(String(task.description || ''))}</small>
+          </span>
+          <span class="retention-task-state">${task.completedAt ? 'Erledigt' : 'Offen'}</span>
+        `;
+        dailyList.appendChild(row);
+      }
+    }
+  }
+
+  const dailyProgressNode = uiNode('missionsDailyCareProgress', 'missionsDailyCareProgress');
+  if (dailyProgressNode) {
+    const completed = Math.max(0, Math.trunc(Number(daily.completedCount) || 0));
+    const total = Array.isArray(daily.tasks) ? daily.tasks.length : 0;
+    dailyProgressNode.textContent = total > 0 ? `${completed}/${total} abgeschlossen` : 'Keine Aufgaben';
+  }
+
+  const recoveryWrapNode = uiNode('missionsRecoveryWrap', 'missionsRecoveryWrap');
+  const recoveryTextNode = uiNode('missionsRecoveryText', 'missionsRecoveryText');
+  const recoveryBtnNode = uiNode('missionsRecoveryBtn', 'missionsRecoveryBtn');
+  const recoveryBonusBtnNode = uiNode('missionsRecoveryBonusBtn', 'missionsRecoveryBonusBtn');
+  const recoveryClaimed = Array.isArray(streak.recoveryClaimedDayKeys) && streak.recoveryClaimedDayKeys.includes(todayKey);
+  const recoveryOpen = Boolean(streak.pendingRecoveryOffer)
+    && String(streak.pendingRecoveryDayKey || '') === todayKey
+    && !recoveryClaimed;
+  if (recoveryWrapNode) {
+    recoveryWrapNode.classList.toggle('hidden', !recoveryOpen);
+    recoveryWrapNode.setAttribute('aria-hidden', String(!recoveryOpen));
+  }
+  if (recoveryTextNode) {
+    if (!recoveryOpen) {
+      recoveryTextNode.textContent = '';
+    } else if (Number(streak.freezeCredits || 0) > 0) {
+      recoveryTextNode.textContent = `Streak-Rettung verfügbar · ${Math.max(0, Math.trunc(Number(streak.pendingRecoveryStreakCount) || 0))} Tage wiederherstellbar.`;
+    } else {
+      recoveryTextNode.textContent = 'Streak-Rettung erkannt. Hook vorbereitet, aktuell kein Recovery-Credit.';
+    }
+  }
+  if (recoveryBtnNode) {
+    const hasCredit = Number(streak.freezeCredits || 0) > 0;
+    recoveryBtnNode.disabled = !recoveryOpen || !hasCredit;
+    recoveryBtnNode.setAttribute('aria-disabled', String(!recoveryOpen || !hasCredit));
+    recoveryBtnNode.textContent = hasCredit ? 'Serie retten' : 'Kein Credit';
+    recoveryBtnNode.onclick = () => {
+      const result = tryApplyStreakRecovery(Date.now());
+      if (!result.ok) {
+        showRetentionToast('Rettung aktuell nicht möglich');
+        return;
+      }
+      showRetentionToast(`Serie gerettet · ${result.restoredCount} Tage`);
+      renderMissionsSheet();
+      renderAll();
+    };
+  }
+  if (recoveryBonusBtnNode) {
+    const hasCredit = Number(streak.freezeCredits || 0) > 0;
+    const showBonusCta = recoveryOpen && !hasCredit;
+    recoveryBonusBtnNode.classList.toggle('hidden', !showBonusCta);
+    recoveryBonusBtnNode.setAttribute('aria-hidden', String(!showBonusCta));
+    recoveryBonusBtnNode.onclick = () => {
+      const result = tryApplyRewardedBonus('streak_recovery_credit', {
+        nowMs: Date.now(),
+        source: 'missions_recovery'
+      });
+      if (!result.ok) {
+        showRetentionToast('Optionaler Bonus aktuell nicht verfügbar');
+        return;
+      }
+      showRetentionToast('Bonus aktiviert · 1 Recovery-Credit');
+      renderMissionsSheet();
+      renderAll();
+    };
+  }
+
+  const microList = uiNode('missionsMicroList', 'missionsMicroList');
+  if (microList) {
+    microList.replaceChildren();
+    const history = Array.isArray(micro.unlockedHistory) ? micro.unlockedHistory : [];
+    const fallbackHistory = history.length
+      ? history
+      : (Array.isArray(micro.unlockedIds) ? micro.unlockedIds.slice(-3).map((id) => ({ id, atRealMs: Date.now() })) : []);
+    const todays = history
+      .filter((entry) => entry && String(getLocalDayKey(entry.atRealMs)) === todayKey)
+      .slice(-3)
+      .reverse();
+    const visibleMicroEntries = todays.length ? todays : fallbackHistory.slice(-3).reverse();
+    if (!visibleMicroEntries.length) {
+      const empty = document.createElement('p');
+      empty.className = 'sheet-note';
+      empty.textContent = 'Heute noch kein Micro-Erfolg.';
+      microList.appendChild(empty);
+    } else {
+      for (const entry of visibleMicroEntries) {
+        const def = getMicroAchievementDefinition(entry.id);
+        const chip = document.createElement('span');
+        chip.className = `retention-micro-chip retention-micro-chip--${String(def.rarity || 'common')}`;
+        chip.title = String(def.shortDescription || '');
+        chip.innerHTML = `<strong>${escapeHtml(String(def.title || 'Micro-Erfolg'))}</strong><small>${escapeHtml(String(def.shortDescription || ''))}</small>`;
+        microList.appendChild(chip);
+      }
+    }
+  }
+
+  ui.missionsList.replaceChildren();
+  state.missions.catalog.forEach((mission) => {
     const isCompleted = state.missions.completed.includes(mission.id);
     const progressView = getMissionProgressView(mission);
     const card = document.createElement('div'); card.className = `figma-section-card mission-card ${isCompleted ? 'mission-completed' : ''}`;

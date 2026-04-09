@@ -454,4 +454,14 @@ const progression = require('../src/progression/progression.js');
   assert.ok(/Starker Durchgang|Nahezu perfekt/.test(goodInsights.rating.title), 'good run should receive a strong rating');
 })();
 
+(function testGrantRuntimeXpUsesExistingLevelFlow() {
+  const state = {
+    profile: progression.getDefaultProfile()
+  };
+  const before = Number(state.profile.totalXp || 0);
+  const result = progression.grantRuntimeXp(state, 35, { label: 'retention:test' });
+  assert.strictEqual(result.grantedXp, 35, 'runtime xp grant should return granted amount');
+  assert.strictEqual(Number(state.profile.totalXp || 0), before + 35, 'runtime xp grant should update profile total xp');
+})();
+
 console.log('progression-logic tests passed');

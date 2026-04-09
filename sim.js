@@ -758,6 +758,12 @@ function tick() {
   if (typeof syncRunGoalProgress === 'function') {
     syncRunGoalProgress('tick');
   }
+  if (typeof window !== 'undefined' && typeof window.__gsEvaluateDailyRetention === 'function') {
+    window.__gsEvaluateDailyRetention(nowMs, { skipPersist: true });
+  }
+  if (typeof window !== 'undefined' && typeof window.__gsRetentionTaskUpdate === 'function') {
+    window.__gsRetentionTaskUpdate('tick', { nowMs });
+  }
   if (typeof window !== 'undefined' && typeof window.checkMissions === 'function') {
     window.checkMissions('tick');
   }

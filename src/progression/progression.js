@@ -1457,6 +1457,21 @@
     };
   }
 
+  function grantRuntimeXp(snapshot, amount, context = {}) {
+    const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : null;
+    if (!stateLike) {
+      return {
+        grantedXp: 0,
+        previousLevel: 1,
+        nextLevel: 1,
+        unlocked: []
+      };
+    }
+    return commitProfileXp(stateLike.profile, amount, {
+      label: context && context.label ? context.label : 'runtime'
+    });
+  }
+
   function grantGoalXpOnce(stateLike, goalLike, nowMs) {
     const goal = normalizeRunGoal(goalLike);
     if (!goal || goal.status !== 'completed' || goal.xpGranted) {
@@ -1879,6 +1894,7 @@
     buildSummaryInsights,
     resolveRunRating,
     buildRunSummaryFromState,
+    grantRuntimeXp,
     markRunAsFinished,
     finalizeRunState,
     shouldAutoFinalizeHarvest,

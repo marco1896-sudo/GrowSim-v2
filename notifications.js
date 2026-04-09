@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 function notificationsApiFetch(path, options = {}) {
   if (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function') {
@@ -43,7 +43,7 @@ function showServiceWorkerHint() {
   const banner = document.createElement('div');
   banner.id = 'swHintBanner';
   banner.className = 'boot-error-banner boot-warning-banner';
-  banner.innerHTML = '<strong>Service Worker noch nicht aktiv – bitte einmal normal neu laden.</strong>';
+  banner.innerHTML = '<strong>Service Worker noch nicht aktiv â€“ bitte einmal normal neu laden.</strong>';
   document.body.appendChild(banner);
 }
 
@@ -132,16 +132,22 @@ const GAMEPLAY_PUSH_TYPES = Object.freeze({
   PLANT_NEEDS_WATER: 'plant_needs_water',
   EVENT_OCCURRED: 'event_occurred',
   HARVEST_READY: 'harvest_ready',
-  DAILY_REWARD_AVAILABLE: 'daily_reward_available'
+  DAILY_REWARD_AVAILABLE: 'daily_reward_available',
+  STREAK_AT_RISK: 'streak_at_risk',
+  DAILY_TASKS_PENDING: 'daily_tasks_pending'
 });
 const GAMEPLAY_PUSH_PRIORITY = Object.freeze({
   plant_needs_water: 3,
+  streak_at_risk: 3,
+  daily_tasks_pending: 2,
   event_occurred: 2,
   harvest_ready: 2,
   daily_reward_available: 1
 });
 const GAMEPLAY_PUSH_TIE_BREAK_ORDER = Object.freeze([
   GAMEPLAY_PUSH_TYPES.PLANT_NEEDS_WATER,
+  GAMEPLAY_PUSH_TYPES.STREAK_AT_RISK,
+  GAMEPLAY_PUSH_TYPES.DAILY_TASKS_PENDING,
   GAMEPLAY_PUSH_TYPES.EVENT_OCCURRED,
   GAMEPLAY_PUSH_TYPES.HARVEST_READY,
   GAMEPLAY_PUSH_TYPES.DAILY_REWARD_AVAILABLE
@@ -149,6 +155,7 @@ const GAMEPLAY_PUSH_TIE_BREAK_ORDER = Object.freeze([
 
 const GAMEPLAY_PUSH_CONFIG = Object.freeze({
   evaluationMinIntervalMs: 15 * 1000,
+  maxPushesPerDay: 3,
   payloadByType: Object.freeze({
     plant_needs_water: Object.freeze({
       cooldownMs: 6 * 60 * 60 * 1000,
@@ -182,9 +189,34 @@ const GAMEPLAY_PUSH_CONFIG = Object.freeze({
       body: 'Deine tägliche Belohnung ist verfügbar.',
       tag: 'daily_reward',
       url: '/?screen=reward'
+    }),
+    streak_at_risk: Object.freeze({
+      cooldownMs: 12 * 60 * 60 * 1000,
+      minDurationMs: 0,
+      title: 'GrowSim',
+      body: 'Dein Streak ist heute noch offen. Ein kurzer Check reicht.',
+      tag: 'streak_risk',
+      url: '/?screen=missions'
+    }),
+    daily_tasks_pending: Object.freeze({
+      cooldownMs: 8 * 60 * 60 * 1000,
+      minDurationMs: 0,
+      title: 'GrowSim',
+      body: 'Heute fehlen noch Daily-Care-Aufgaben.',
+      tag: 'daily_tasks_pending',
+      url: '/?screen=missions'
     })
   })
 });
+
+function getLocalDayKey(nowMs = Date.now()) {
+  const safeNow = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const date = new Date(safeNow);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function getPushAuthToken() {
   const authApi = window.GrowSimAuth;
@@ -238,6 +270,8 @@ function getGameplayPushRuntime() {
   if (!runtime.lastEvaluationAtMs || !Number.isFinite(Number(runtime.lastEvaluationAtMs))) {
     runtime.lastEvaluationAtMs = 0;
   }
+  runtime.lastSentDayKey = typeof runtime.lastSentDayKey === 'string' ? runtime.lastSentDayKey : '';
+  runtime.sentTodayCount = Math.max(0, Math.trunc(Number(runtime.sentTodayCount) || 0));
 
   return runtime;
 }
@@ -270,6 +304,16 @@ function buildGameplayPushSignal(nowMs) {
   const rewardPeriodKey = state && state.ui && state.ui.rewards && state.ui.rewards.rewardsSummary
     ? String(state.ui.rewards.rewardsSummary.periodKey || '').trim()
     : '';
+  const retention = state && state.retention && typeof state.retention === 'object' ? state.retention : {};
+  const streak = retention.streak && typeof retention.streak === 'object' ? retention.streak : {};
+  const dailyCare = retention.dailyCare && typeof retention.dailyCare === 'object' ? retention.dailyCare : {};
+  const todayKey = getLocalDayKey(nowMs);
+  const streakDoneToday = String(streak.lastCheckinDayKey || '') === todayKey;
+  const streakAtRisk = state && state.plant && state.plant.isDead !== true && !streakDoneToday;
+  const dailyTasks = Array.isArray(dailyCare.tasks) ? dailyCare.tasks : [];
+  const dailyTasksPending = String(dailyCare.dayKey || '') === todayKey
+    && dailyTasks.length > 0
+    && dailyTasks.some((task) => !task || !task.completedAt);
 
   if (lowWater) {
     if (!Number.isFinite(Number(runtime.pendingSinceByType.plant_needs_water))) {
@@ -311,6 +355,18 @@ function buildGameplayPushSignal(nowMs) {
       active: dailyRewardAvailable,
       signature: `daily_reward:${rewardPeriodKey || 'current'}:${claimableRewards}`,
       context: { claimableCount: claimableRewards, periodKey: rewardPeriodKey || null }
+    },
+    {
+      type: GAMEPLAY_PUSH_TYPES.STREAK_AT_RISK,
+      active: streakAtRisk,
+      signature: `streak_at_risk:${todayKey}:${streakDoneToday ? 'done' : 'open'}`,
+      context: { dayKey: todayKey }
+    },
+    {
+      type: GAMEPLAY_PUSH_TYPES.DAILY_TASKS_PENDING,
+      active: dailyTasksPending,
+      signature: `daily_tasks_pending:${todayKey}:${dailyTasks.filter((task) => task && task.completedAt).length}/${dailyTasks.length}`,
+      context: { dayKey: todayKey, taskCount: dailyTasks.length }
     }
   ];
 }
@@ -438,6 +494,12 @@ async function evaluateGameplayPushDecisions(nowMs, options = {}) {
   const currentNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
   const runtime = getGameplayPushRuntime();
   const force = options.force === true;
+  const dayKey = getLocalDayKey(currentNowMs);
+
+  if (runtime.lastSentDayKey !== dayKey) {
+    runtime.lastSentDayKey = dayKey;
+    runtime.sentTodayCount = 0;
+  }
 
   if (!force && (currentNowMs - Number(runtime.lastEvaluationAtMs || 0)) < GAMEPLAY_PUSH_CONFIG.evaluationMinIntervalMs) {
     return;
@@ -465,10 +527,14 @@ async function evaluateGameplayPushDecisions(nowMs, options = {}) {
   if (!winner) {
     return;
   }
+  if (Number(runtime.sentTodayCount || 0) >= Number(GAMEPLAY_PUSH_CONFIG.maxPushesPerDay || 3)) {
+    return;
+  }
 
   try {
     const sent = await dispatchGameplayPush(winner, currentNowMs);
     if (sent) {
+      runtime.sentTodayCount = Math.max(0, Math.trunc(Number(runtime.sentTodayCount) || 0)) + 1;
       addLog('system', `Gameplay Push gesendet: ${winner.type}`, {
         pushType: winner.type,
         signature: winner.signature,
@@ -494,7 +560,7 @@ function notifyEventAvailability() {
     return;
   }
 
-  notify('events', 'Grow Simulator', 'Ein Ereignis ist verfügbar. Tippe, um zu reagieren.');
+  notify('events', 'Grow Simulator', 'Ein Ereignis ist verfÃ¼gbar. Tippe, um zu reagieren.');
   notifications.runtime.lastNotifiedEventId = eventId;
 }
 
@@ -552,7 +618,7 @@ function notifyReminder(nowMs) {
     return;
   }
 
-  notify('reminder', 'Grow Simulator', 'Deine Pflanze braucht Pflege. Öffne die App für eine Maßnahme.');
+  notify('reminder', 'Grow Simulator', 'Deine Pflanze braucht Pflege. Ã–ffne die App fÃ¼r eine MaÃŸnahme.');
   notifications.runtime.lastReminderAtRealMs = nowMs;
 }
 

@@ -223,6 +223,14 @@ function cacheUi() {
   ui.notifTypeReminder = document.getElementById('notifTypeReminder');
 
   ui.missionsSheet = document.getElementById('missionsSheet');
+  ui.missionsStreakBlock = document.getElementById('missionsStreakBlock');
+  ui.missionsDailyCareProgress = document.getElementById('missionsDailyCareProgress');
+  ui.missionsDailyCareList = document.getElementById('missionsDailyCareList');
+  ui.missionsMicroList = document.getElementById('missionsMicroList');
+  ui.missionsRecoveryWrap = document.getElementById('missionsRecoveryWrap');
+  ui.missionsRecoveryText = document.getElementById('missionsRecoveryText');
+  ui.missionsRecoveryBtn = document.getElementById('missionsRecoveryBtn');
+  ui.missionsRecoveryBonusBtn = document.getElementById('missionsRecoveryBonusBtn');
   ui.missionsList = document.getElementById('missionsList');
 
   ui.landing = document.getElementById('landing');

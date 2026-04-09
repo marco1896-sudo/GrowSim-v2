@@ -10553,3 +10553,249 @@ body.panelized-ready :is(
     text-overflow: ellipsis;
   }
 }
+
+.home-meta-retention {
+  display: inline-flex;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgba(214, 236, 255, 0.82);
+}
+
+.retention-card {
+  display: grid;
+  gap: 10px;
+}
+
+.retention-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.retention-streak-block {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(19, 34, 56, 0.72);
+  border: 1px solid rgba(122, 169, 223, 0.24);
+}
+
+.retention-streak-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.retention-streak-status {
+  font-size: 11px;
+  color: rgba(206, 233, 255, 0.82);
+}
+
+.retention-section-title {
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: rgba(176, 211, 246, 0.88);
+}
+
+.retention-task-list {
+  display: grid;
+  gap: 8px;
+}
+
+.retention-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(10, 20, 34, 0.82);
+  border: 1px solid rgba(111, 157, 209, 0.2);
+}
+
+.retention-task-row--done {
+  border-color: rgba(114, 218, 173, 0.38);
+  background: rgba(12, 32, 28, 0.72);
+}
+
+.retention-task-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.retention-task-copy strong {
+  font-size: 13px;
+  color: rgba(233, 245, 255, 0.96);
+}
+
+.retention-task-copy small {
+  font-size: 11px;
+  color: rgba(194, 218, 241, 0.82);
+}
+
+.retention-task-state {
+  font-size: 11px;
+  color: rgba(202, 230, 255, 0.88);
+}
+
+.retention-micro-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.retention-micro-chip {
+  display: inline-grid;
+  gap: 1px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(215, 174, 95, 0.42);
+  background: rgba(58, 43, 17, 0.72);
+  min-width: 112px;
+}
+
+.retention-micro-chip strong {
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgba(255, 236, 202, 0.96);
+}
+
+.retention-micro-chip small {
+  font-size: 10px;
+  line-height: 1.15;
+  color: rgba(244, 224, 188, 0.84);
+}
+
+.retention-micro-chip--common {
+  border-color: rgba(146, 175, 206, 0.36);
+  background: rgba(31, 44, 61, 0.74);
+}
+
+.retention-micro-chip--uncommon {
+  border-color: rgba(112, 195, 162, 0.4);
+  background: rgba(24, 55, 47, 0.74);
+}
+
+.retention-micro-chip--rare {
+  border-color: rgba(114, 158, 232, 0.46);
+  background: rgba(26, 40, 73, 0.76);
+}
+
+.retention-micro-chip--epic {
+  border-color: rgba(196, 136, 228, 0.48);
+  background: rgba(54, 29, 78, 0.78);
+}
+
+.retention-recovery-wrap {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px dashed rgba(129, 165, 198, 0.34);
+  background: rgba(16, 26, 41, 0.72);
+}
+
+.retention-recovery-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.retention-recovery-btn {
+  min-width: 92px;
+  font-size: 11px;
+  padding: 6px 9px;
+}
+
+.retention-recovery-btn--soft {
+  border-color: rgba(122, 169, 223, 0.34);
+  background: rgba(18, 34, 56, 0.6);
+}
+
+.retention-insights-section {
+  display: grid;
+  gap: 10px;
+}
+
+.retention-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.retention-insight-card {
+  display: grid;
+  gap: 3px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(118, 160, 209, 0.24);
+  background: rgba(11, 22, 36, 0.7);
+}
+
+.retention-insight-label {
+  font-size: 10px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(173, 208, 244, 0.84);
+}
+
+.retention-insight-value {
+  font-size: 15px;
+  line-height: 1.2;
+  color: rgba(240, 249, 255, 0.98);
+}
+
+.retention-insight-card small {
+  font-size: 11px;
+  color: rgba(190, 214, 238, 0.84);
+}
+
+.retention-activity-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-height: 12px;
+}
+
+.retention-activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(118, 147, 176, 0.38);
+}
+
+.retention-activity-dot--active {
+  background: rgba(106, 215, 169, 0.88);
+}
+
+@media (max-width: 360px) {
+  .retention-insights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.retention-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 12000;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(115, 197, 169, 0.48);
+  background: rgba(10, 28, 23, 0.94);
+  color: rgba(226, 253, 243, 0.98);
+  font-size: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.retention-toast.is-hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px);
+}
