@@ -6954,6 +6954,68 @@ body.panelized-ready :is(
   min-height: 98px;
 }
 
+.settings-push-block {
+  margin-top: 8px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: linear-gradient(180deg, rgba(16, 23, 35, 0.62), rgba(10, 16, 25, 0.56));
+  display: grid;
+  gap: 8px;
+}
+
+.settings-push-status-list {
+  display: grid;
+  gap: 0;
+}
+
+.settings-push-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-push-row .settings-push-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  color: rgba(230, 238, 246, 0.9);
+}
+
+.settings-push-row .settings-push-value {
+  flex: 0 0 auto;
+  min-width: 118px;
+  max-width: none;
+  justify-self: auto;
+  text-align: right;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  letter-spacing: 0.01em;
+}
+
+.settings-push-feedback {
+  margin-top: 2px;
+  line-height: 1.42;
+  color: rgba(222, 235, 227, 0.82);
+}
+
+.settings-push-actions {
+  margin-top: 8px;
+  grid-template-columns: 1fr;
+}
+
+.settings-push-actions--secondary {
+  margin-top: 6px;
+}
+
+.settings-push-actions .action-btn,
+.settings-push-actions .ghost-btn {
+  width: 100%;
+}
+
 .settings-toggle-btn,
 .settings-link-btn {
   min-width: 0;
@@ -6970,6 +7032,16 @@ body.panelized-ready :is(
 .settings-link-row:focus-visible {
   background: rgba(212, 175, 55, 0.12);
   outline: none;
+}
+
+@media (max-width: 360px) {
+  .settings-push-row {
+    align-items: flex-start;
+  }
+
+  .settings-push-row .settings-push-value {
+    min-width: 96px;
+  }
 }
 
 .auth-modal-card {

@@ -773,15 +773,19 @@
           <span>Cloud Sync</span>
           <strong id="settingsCloudSyncValue" class="value_gold">Nicht verbunden</strong>
         </div>
-        <div class="figma-static-row"><span>Push unterstützt</span><strong id="settingsPushSupportValue" class="value_gold">-</strong></div>
-        <div class="figma-static-row"><span>Berechtigung</span><strong id="settingsPushPermissionValue" class="value_gold">-</strong></div>
-        <div class="figma-static-row"><span>Status</span><strong id="settingsPushStatusValue" class="value_gold">-</strong></div>
-        <p id="settingsPushFeedback" class="sheet-note" aria-live="polite">Push ist noch nicht eingerichtet.</p>
-        <div class="menu-dialog-actions">
+        <div class="settings-push-block" aria-label="Push Einstellungen">
+          <div class="settings-push-status-list">
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label">Push unterstützt</span><strong id="settingsPushSupportValue" class="settings-push-value value_gold">-</strong></div>
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label">Berechtigung</span><strong id="settingsPushPermissionValue" class="settings-push-value value_gold">-</strong></div>
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label">Status</span><strong id="settingsPushStatusValue" class="settings-push-value value_gold">-</strong></div>
+          </div>
+          <p id="settingsPushFeedback" class="sheet-note settings-push-feedback" aria-live="polite">Push ist noch nicht eingerichtet.</p>
+        </div>
+        <div class="menu-dialog-actions settings-push-actions">
           <button id="settingsPushEnableBtn" class="action-btn action-primary" type="button">Push aktivieren</button>
           <button id="settingsPushDisableBtn" class="ghost-btn" type="button">Push deaktivieren</button>
         </div>
-        <div class="menu-dialog-actions">
+        <div class="menu-dialog-actions settings-push-actions settings-push-actions--secondary">
           <button id="settingsPushTestBtn" class="ghost-btn" type="button">Test-Benachrichtigung senden</button>
         </div>
         

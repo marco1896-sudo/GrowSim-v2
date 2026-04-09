@@ -8595,32 +8595,32 @@ function getPushManagerApi() {
 function mapPushPermissionLabel(permission) {
   const value = String(permission || 'unsupported');
   if (value === 'granted') {
-    return 'erlaubt';
+    return 'Erlaubt';
   }
   if (value === 'denied') {
-    return 'blockiert';
+    return 'Blockiert';
   }
   if (value === 'default') {
-    return 'nicht entschieden';
+    return 'Nicht entschieden';
   }
-  return 'nicht unterstützt';
+  return 'Nicht unterstützt';
 }
 
 function mapPushStatusLabel(statusCode) {
   const status = String(statusCode || 'unsupported');
   if (status === 'granted_subscribed') {
-    return 'aktiv';
+    return 'Aktiv';
   }
   if (status === 'denied') {
-    return 'blockiert';
+    return 'Blockiert';
   }
   if (status === 'unsupported') {
-    return 'nicht verfügbar';
+    return 'Nicht verfügbar';
   }
   if (status === 'supported_but_not_granted') {
     return 'Berechtigung fehlt';
   }
-  return 'nicht aktiv';
+  return 'Nicht aktiviert';
 }
 
 function isPushStatusSubscribed(statusCode) {
@@ -8652,43 +8652,47 @@ function renderPushSettingsUi() {
   const busy = pushUiRuntime.busy === true;
 
   if (supportNode) {
-    supportNode.textContent = pushUiRuntime.supported ? 'ja' : 'nein';
-    supportNode.className = pushUiRuntime.supported ? 'value_green' : 'value_gold';
+    supportNode.textContent = pushUiRuntime.supported ? 'Ja' : 'Nein';
+    supportNode.className = `settings-push-value ${pushUiRuntime.supported ? 'value_green' : 'value_gold'}`;
   }
   if (permissionNode) {
     permissionNode.textContent = mapPushPermissionLabel(pushUiRuntime.permission);
-    permissionNode.className = pushUiRuntime.permission === 'granted' ? 'value_green' : 'value_gold';
+    permissionNode.className = `settings-push-value ${pushUiRuntime.permission === 'granted' ? 'value_green' : 'value_gold'}`;
   }
   if (statusNode) {
     statusNode.textContent = mapPushStatusLabel(pushUiRuntime.status);
-    statusNode.className = subscribed ? 'value_green' : 'value_gold';
+    statusNode.className = `settings-push-value ${subscribed ? 'value_green' : 'value_gold'}`;
   }
 
   if (feedbackNode) {
     let message = pushUiRuntime.error || pushUiRuntime.message || '';
     if (!message) {
       if (!authed) {
-        message = 'Login erforderlich für Push-Requests.';
+        message = 'Melde dich an, um Push-Benachrichtigungen für deinen Run zu aktivieren.';
       } else if (unsupported) {
-        message = 'Push wird in diesem Browser nicht unterstützt.';
+        message = 'Dieser Browser unterstützt Web-Push aktuell nicht.';
       } else if (denied) {
-        message = 'Benachrichtigungen sind blockiert. Bitte Browser-Einstellungen prüfen.';
+        message = 'Push ist blockiert. Bitte erlaube Benachrichtigungen in deinen Browser- oder OS-Einstellungen.';
       } else if (subscribed) {
-        message = 'Push ist aktiv.';
+        message = 'Push ist aktiv. Du wirst bei wichtigen Gameplay-Ereignissen informiert.';
       } else {
-        message = 'Push ist noch nicht aktiviert.';
+        message = 'Aktiviere Push-Benachrichtigungen, um wichtige Ereignisse deiner Pflanze nicht zu verpassen.';
       }
     }
     feedbackNode.textContent = message;
   }
 
   if (enableBtn) {
+    const showEnable = !subscribed && !denied && !unsupported;
+    enableBtn.classList.toggle('hidden', !showEnable);
     enableBtn.disabled = busy || !authed || unsupported || denied || subscribed;
   }
   if (disableBtn) {
+    disableBtn.classList.toggle('hidden', !subscribed);
     disableBtn.disabled = busy || unsupported || !subscribed;
   }
   if (testBtn) {
+    testBtn.classList.toggle('hidden', !subscribed);
     testBtn.disabled = busy || !authed || unsupported || !subscribed;
   }
 }
