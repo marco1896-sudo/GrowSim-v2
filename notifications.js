@@ -134,6 +134,18 @@ const GAMEPLAY_PUSH_TYPES = Object.freeze({
   HARVEST_READY: 'harvest_ready',
   DAILY_REWARD_AVAILABLE: 'daily_reward_available'
 });
+const GAMEPLAY_PUSH_PRIORITY = Object.freeze({
+  plant_needs_water: 3,
+  event_occurred: 2,
+  harvest_ready: 2,
+  daily_reward_available: 1
+});
+const GAMEPLAY_PUSH_TIE_BREAK_ORDER = Object.freeze([
+  GAMEPLAY_PUSH_TYPES.PLANT_NEEDS_WATER,
+  GAMEPLAY_PUSH_TYPES.EVENT_OCCURRED,
+  GAMEPLAY_PUSH_TYPES.HARVEST_READY,
+  GAMEPLAY_PUSH_TYPES.DAILY_REWARD_AVAILABLE
+]);
 
 const GAMEPLAY_PUSH_CONFIG = Object.freeze({
   evaluationMinIntervalMs: 15 * 1000,
@@ -357,13 +369,61 @@ function buildGameplayPushPayload(candidate) {
   return basePayload;
 }
 
+function getGameplayPushCandidatePriority(type) {
+  return Number(GAMEPLAY_PUSH_PRIORITY[String(type || '').trim()] || 0);
+}
+
+function getGameplayPushTieBreakIndex(type) {
+  const index = GAMEPLAY_PUSH_TIE_BREAK_ORDER.indexOf(String(type || '').trim());
+  return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
+}
+
+function buildDispatchableGameplayCandidate(candidate) {
+  const payload = buildGameplayPushPayload(candidate);
+  if (!payload || !payload.type || !payload.title || !payload.body || !payload.tag || !payload.url) {
+    return null;
+  }
+
+  return {
+    type: String(candidate.type || ''),
+    signature: String(candidate.signature || ''),
+    payload,
+    priority: getGameplayPushCandidatePriority(candidate.type),
+    tieBreakIndex: getGameplayPushTieBreakIndex(candidate.type),
+    context: candidate && candidate.context && typeof candidate.context === 'object'
+      ? { ...candidate.context }
+      : {}
+  };
+}
+
+function pickHighestPriorityGameplayCandidate(candidates) {
+  const safeCandidates = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+  if (!safeCandidates.length) {
+    return null;
+  }
+
+  safeCandidates.sort((a, b) => {
+    if (a.priority !== b.priority) {
+      return b.priority - a.priority;
+    }
+    if (a.tieBreakIndex !== b.tieBreakIndex) {
+      return a.tieBreakIndex - b.tieBreakIndex;
+    }
+    return String(a.type || '').localeCompare(String(b.type || ''));
+  });
+
+  return safeCandidates[0] || null;
+}
+
 async function dispatchGameplayPush(candidate, nowMs) {
   const pushApi = window.GrowSimPushManager;
   if (!pushApi || typeof pushApi.sendGameplayPush !== 'function') {
     return false;
   }
 
-  const payload = buildGameplayPushPayload(candidate);
+  const payload = candidate && candidate.payload && typeof candidate.payload === 'object'
+    ? candidate.payload
+    : buildGameplayPushPayload(candidate);
   if (!payload || !payload.type || !payload.title || !payload.body || !payload.tag || !payload.url) {
     return false;
   }
@@ -389,25 +449,37 @@ async function evaluateGameplayPushDecisions(nowMs, options = {}) {
   }
 
   const candidates = buildGameplayPushSignal(currentNowMs);
+  const dispatchableCandidates = [];
   for (const candidate of candidates) {
     if (!canDispatchGameplayPush(runtime, candidate, currentNowMs)) {
       continue;
     }
 
-    try {
-      const sent = await dispatchGameplayPush(candidate, currentNowMs);
-      if (sent) {
-        addLog('system', `Gameplay Push gesendet: ${candidate.type}`, {
-          pushType: candidate.type,
-          signature: candidate.signature
-        });
-      }
-    } catch (error) {
-      addLog('system', `Gameplay Push fehlgeschlagen: ${candidate.type}`, {
-        pushType: candidate.type,
-        error: error && error.message ? String(error.message) : String(error)
+    const dispatchable = buildDispatchableGameplayCandidate(candidate);
+    if (dispatchable) {
+      dispatchableCandidates.push(dispatchable);
+    }
+  }
+
+  const winner = pickHighestPriorityGameplayCandidate(dispatchableCandidates);
+  if (!winner) {
+    return;
+  }
+
+  try {
+    const sent = await dispatchGameplayPush(winner, currentNowMs);
+    if (sent) {
+      addLog('system', `Gameplay Push gesendet: ${winner.type}`, {
+        pushType: winner.type,
+        signature: winner.signature,
+        priority: winner.priority
       });
     }
+  } catch (error) {
+    addLog('system', `Gameplay Push fehlgeschlagen: ${winner.type}`, {
+      pushType: winner.type,
+      error: error && error.message ? String(error.message) : String(error)
+    });
   }
 }
 
