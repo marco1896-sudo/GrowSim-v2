@@ -581,6 +581,13 @@ function normalizeEventTimingState(nowRealMs) {
   if (!Number.isFinite(Number(scheduler.nextEventSimTimeMs))) {
     scheduler.nextEventSimTimeMs = toSimDeadline(scheduler.nextEventRealTimeMs, EVENT_ROLL_MIN_REAL_MS);
   }
+  if (String(state.events.machineState || 'idle') === 'idle') {
+    const maxNormalDelayMs = 120 * 60 * 1000;
+    const remainingMs = Number(scheduler.nextEventSimTimeMs || 0) - nowSimMs;
+    if (remainingMs > maxNormalDelayMs) {
+      scheduler.nextEventSimTimeMs = nowSimMs + deterministicEventDelayMs(context.nowRealMs);
+    }
+  }
   if (!Number.isFinite(Number(scheduler.lastEventSimTimeMs))) {
     scheduler.lastEventSimTimeMs = 0;
   }
@@ -1539,12 +1546,30 @@ function shouldTriggerEvent(roll) {
 }
 
 function deterministicEventDelayMs(nowMs) {
-  const { nowRealMs, nowSimMs } = normalizeEventTimingState(nowMs);
-  const { minSimMs, maxSimMs } = getEventDelayWindowSimRange(nowRealMs);
-  const span = Math.max(0, maxSimMs - minSimMs);
-  const bucket = getEventBucket(nowSimMs, minSimMs);
-  const u = deterministicUnitFloat(`delay:${bucket}`);
-  return minSimMs + Math.floor(u * span);
+  const context = getEventTimingContext(nowMs);
+  const nowSimMs = Number(context.nowSimMs || 0);
+  const riskUnit = clamp((Number(state.status && state.status.risk) || 0) / 100, 0, 1);
+  const pressureUnit = clamp(computeEnvironmentEventPressure(), 0, 1);
+  const dynamicUnit = clamp((riskUnit * 0.65) + (pressureUnit * 0.35), 0, 1);
+  const hourlyBucket = getEventBucket(nowSimMs, 60 * 60 * 1000);
+  const variability = deterministicUnitFloat(`delay_slot:${hourlyBucket}:${Math.round(dynamicUnit * 100)}`);
+
+  let minutes = 120;
+  if (dynamicUnit >= 0.66) {
+    minutes = variability > 0.85 ? 90 : 60;
+  } else if (dynamicUnit >= 0.33) {
+    if (variability < 0.2) {
+      minutes = 60;
+    } else if (variability > 0.85) {
+      minutes = 120;
+    } else {
+      minutes = 90;
+    }
+  } else {
+    minutes = variability < 0.2 ? 90 : 120;
+  }
+
+  return minutes * 60 * 1000;
 }
 
 function cooldownMs(nowMs = state.simulation.nowMs) {

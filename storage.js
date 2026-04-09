@@ -1918,7 +1918,19 @@ function syncCanonicalStateShape() {
   state.seed = sim.globalSeed;
   state.plantId = sim.plantId;
 
-  sim.simDay = Math.floor(simDayFloat());
+  let canonicalPlantDay = Number.NaN;
+  if (typeof getPlantTimeFromElapsed === 'function') {
+    try {
+      const plantTime = getPlantTimeFromElapsed();
+      canonicalPlantDay = Number(plantTime && plantTime.simDay);
+    } catch (_) {
+      canonicalPlantDay = Number.NaN;
+    }
+  }
+  if (!Number.isFinite(canonicalPlantDay)) {
+    canonicalPlantDay = Number(simDayFloat());
+  }
+  sim.simDay = Math.max(0, Math.floor(Number.isFinite(canonicalPlantDay) ? canonicalPlantDay : 0));
   sim.simHour = simHour(sim.simTimeMs);
   sim.simMinute = new Date(sim.simTimeMs).getMinutes();
   sim.dayWindow = { startHour: STORAGE_SIM_DAY_START_HOUR, endHour: STORAGE_SIM_NIGHT_START_HOUR };

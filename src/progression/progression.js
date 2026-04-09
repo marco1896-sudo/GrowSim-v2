@@ -34,6 +34,7 @@
     'Reife',
     'Erntereif'
   ]);
+  const DEFAULT_GROW_DURATION_DAYS = 84;
 
   const SETUP_OPTION_META = Object.freeze({
     genetics: Object.freeze({
@@ -1101,13 +1102,25 @@
     };
   }
 
+  function resolveSimulationDay(snapshot) {
+    return Math.max(0, Math.trunc(Number(snapshot && snapshot.simulation && snapshot.simulation.simDay) || 0));
+  }
+
+  function resolveLifecycleDurationDays(snapshot) {
+    const lifecycleDays = Number(snapshot && snapshot.plant && snapshot.plant.lifecycle && snapshot.plant.lifecycle.totalSimDays);
+    if (Number.isFinite(lifecycleDays) && lifecycleDays > 0) {
+      return Math.max(1, Math.trunc(lifecycleDays));
+    }
+    return DEFAULT_GROW_DURATION_DAYS;
+  }
+
   function buildRunSummaryFromState(snapshot, reason, nowMs) {
     const stateLike = snapshot && typeof snapshot === 'object' ? snapshot : {};
     const run = normalizeRunState(stateLike.run);
     const setup = stateLike.setup && typeof stateLike.setup === 'object'
       ? { ...stateLike.setup }
       : (run.setupSnapshot ? { ...run.setupSnapshot } : null);
-    const simDay = Math.max(0, Math.trunc(Number(stateLike.simulation && stateLike.simulation.simDay) || 0));
+    const simDay = resolveSimulationDay(stateLike);
     const stageIndex = clampInt(Number(stateLike.plant && stateLike.plant.stageIndex) || 0, 0, 11);
     const qualityScore = deriveQualityScoreFromState(stateLike);
     const qualityTier = getQualityTier(qualityScore);
@@ -1828,7 +1841,12 @@
     const phase = String(plant.phase || '');
     const stageIndex = clampInt(Number(plant.stageIndex) || 0, 0, 11);
     const stageKey = String(plant.stageKey || '');
-    return phase === 'harvest' && (stageIndex >= 11 || stageKey === 'stage_12');
+    const harvestReadyStageIndex = Math.max(0, STAGE_LABELS.length - 1);
+    const harvestReadyStageKey = `stage_${String(STAGE_LABELS.length).padStart(2, '0')}`;
+    const harvestReadyDay = resolveLifecycleDurationDays(stateLike);
+    const simDay = resolveSimulationDay(stateLike);
+    const stageReady = stageIndex >= harvestReadyStageIndex || stageKey === harvestReadyStageKey;
+    return phase === 'harvest' && stageReady && simDay >= harvestReadyDay;
   }
 
   const api = Object.freeze({

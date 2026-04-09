@@ -345,13 +345,21 @@ const progression = require('../src/progression/progression.js');
       status: 'active',
       finalizedAtRealMs: null
     },
+    simulation: {
+      simDay: 83
+    },
     plant: {
       phase: 'harvest',
       stageIndex: 11,
-      stageKey: 'stage_12'
+      stageKey: 'stage_12',
+      lifecycle: {
+        totalSimDays: 84
+      }
     }
   };
-  assert.strictEqual(progression.shouldAutoFinalizeHarvest(state), true, 'harvest-ready active run should finalize');
+  assert.strictEqual(progression.shouldAutoFinalizeHarvest(state), false, 'harvest-ready stage before day 84 must not finalize');
+  state.simulation.simDay = 84;
+  assert.strictEqual(progression.shouldAutoFinalizeHarvest(state), true, 'harvest-ready active run should finalize at day 84');
   state.run.finalizedAtRealMs = 100;
   assert.strictEqual(progression.shouldAutoFinalizeHarvest(state), false, 'finalized run must not auto-finalize again');
 })();

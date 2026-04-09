@@ -299,4 +299,42 @@ function buildContext(savedSnapshot) {
   assert.strictEqual(Boolean(ctx.state.profile.lastRunSummary), true, 'finalized old saves should keep the persisted summary');
 })();
 
+(function testCanonicalSimDayUsesPlantTimelineWhenAvailable() {
+  const ctx = buildContext(null);
+  ctx.resetStateToDefaults();
+  ctx.state.simulation.simTimeMs = 86_400_000 * 42;
+  ctx.state.simulation.simEpochMs = 0;
+  ctx.state.simulation.nowMs = Date.now();
+  ctx.state.simulation.lastTickRealTimeMs = ctx.state.simulation.nowMs;
+  ctx.simDayFloat = () => 42;
+  ctx.getPlantTimeFromElapsed = () => ({ simDay: 84 });
+
+  ctx.syncCanonicalStateShape();
+
+  assert.strictEqual(
+    ctx.state.simulation.simDay,
+    84,
+    'canonical simulation day should follow plant timeline day to keep UI/summary aligned with harvest logic'
+  );
+})();
+
+(function testCanonicalSimDayDoesNotDoubleAcrossRepeatedSyncPasses() {
+  const ctx = buildContext(null);
+  ctx.resetStateToDefaults();
+  ctx.state.simulation.simTimeMs = 86_400_000 * 42;
+  ctx.state.simulation.simEpochMs = 0;
+  ctx.state.simulation.nowMs = Date.now();
+  ctx.state.simulation.lastTickRealTimeMs = ctx.state.simulation.nowMs;
+  ctx.simDayFloat = () => 42;
+  ctx.getPlantTimeFromElapsed = () => ({ simDay: 60 });
+
+  ctx.syncCanonicalStateShape();
+  const firstPassDay = ctx.state.simulation.simDay;
+  ctx.syncCanonicalStateShape();
+  const secondPassDay = ctx.state.simulation.simDay;
+
+  assert.strictEqual(firstPassDay, 60, 'first canonical sync should adopt plant timeline day');
+  assert.strictEqual(secondPassDay, 60, 'repeated canonical sync must not double-count resume/catch-up day progress');
+})();
+
 console.log('storage-profile-run-migration tests passed');
