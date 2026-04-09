@@ -48,7 +48,10 @@ function showServiceWorkerHint() {
 }
 
 async function schedulePushIfAllowed(_force) {
-  // Lokale Benachrichtigungen nutzen aktuell kein Backend-Push-Scheduling.
+  const nowMs = Date.now();
+  await evaluateGameplayPushDecisions(nowMs, {
+    force: _force === true
+  });
 }
 
 function canNotify(type) {
@@ -122,6 +125,278 @@ function evaluateNotificationTriggers(nowMs) {
   notifyEventAvailability();
   notifyCriticalState(nowMs);
   notifyReminder(nowMs);
+  void evaluateGameplayPushDecisions(nowMs);
+}
+
+const GAMEPLAY_PUSH_TYPES = Object.freeze({
+  PLANT_NEEDS_WATER: 'plant_needs_water',
+  EVENT_OCCURRED: 'event_occurred',
+  HARVEST_READY: 'harvest_ready',
+  DAILY_REWARD_AVAILABLE: 'daily_reward_available'
+});
+
+const GAMEPLAY_PUSH_CONFIG = Object.freeze({
+  evaluationMinIntervalMs: 15 * 1000,
+  payloadByType: Object.freeze({
+    plant_needs_water: Object.freeze({
+      cooldownMs: 6 * 60 * 60 * 1000,
+      minDurationMs: 20 * 60 * 1000,
+      threshold: 35,
+      title: 'GrowSim',
+      body: 'Deine Pflanze braucht Wasser. Zeit für eine kurze Pflege-Session.',
+      tag: 'growsim-water',
+      url: '#care'
+    }),
+    event_occurred: Object.freeze({
+      cooldownMs: 30 * 60 * 1000,
+      minDurationMs: 0,
+      title: 'GrowSim',
+      body: 'Ein neues Ereignis ist aufgetreten. Triff jetzt deine Entscheidung.',
+      tag: 'growsim-event',
+      url: '#event'
+    }),
+    harvest_ready: Object.freeze({
+      cooldownMs: 24 * 60 * 60 * 1000,
+      minDurationMs: 5 * 60 * 1000,
+      title: 'GrowSim',
+      body: 'Deine Pflanze ist erntereif. Schau in die App für den nächsten Schritt.',
+      tag: 'growsim-harvest',
+      url: '#analysis'
+    }),
+    daily_reward_available: Object.freeze({
+      cooldownMs: 12 * 60 * 60 * 1000,
+      minDurationMs: 0,
+      title: 'GrowSim',
+      body: 'Deine tägliche Belohnung ist verfügbar.',
+      tag: 'growsim-daily-reward',
+      url: '#leaderboard'
+    })
+  })
+});
+
+function getPushAuthToken() {
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.getToken !== 'function') {
+    return '';
+  }
+  const token = authApi.getToken();
+  return typeof token === 'string' ? token.trim() : '';
+}
+
+function isPushUserAuthenticated() {
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.isAuthenticated !== 'function') {
+    return false;
+  }
+  return Boolean(authApi.isAuthenticated() && getPushAuthToken());
+}
+
+function isGameplayPushAllowed() {
+  if (!state || !state.settings || state.settings.pushNotificationsEnabled !== true) {
+    return false;
+  }
+  if (!isPushUserAuthenticated()) {
+    return false;
+  }
+  if (!state.simulation || state.simulation.isDaytime !== true) {
+    return false;
+  }
+  return true;
+}
+
+function getGameplayPushRuntime() {
+  const notifications = getCanonicalNotificationsSettings(state);
+  if (!notifications.runtime || typeof notifications.runtime !== 'object') {
+    notifications.runtime = {};
+  }
+  if (!notifications.runtime.gameplayPush || typeof notifications.runtime.gameplayPush !== 'object') {
+    notifications.runtime.gameplayPush = {};
+  }
+  const runtime = notifications.runtime.gameplayPush;
+
+  if (!runtime.lastSentAtByType || typeof runtime.lastSentAtByType !== 'object') {
+    runtime.lastSentAtByType = {};
+  }
+  if (!runtime.lastSignatureByType || typeof runtime.lastSignatureByType !== 'object') {
+    runtime.lastSignatureByType = {};
+  }
+  if (!runtime.pendingSinceByType || typeof runtime.pendingSinceByType !== 'object') {
+    runtime.pendingSinceByType = {};
+  }
+  if (!runtime.lastEvaluationAtMs || !Number.isFinite(Number(runtime.lastEvaluationAtMs))) {
+    runtime.lastEvaluationAtMs = 0;
+  }
+
+  return runtime;
+}
+
+function buildGameplayPushSignal(nowMs) {
+  const runtime = getGameplayPushRuntime();
+  const status = state && state.status ? state.status : {};
+  const events = state && state.events ? state.events : {};
+  const plant = state && state.plant ? state.plant : {};
+  const run = state && state.run ? state.run : {};
+  const waterValue = Number(status.water || 0);
+  const lowWater = waterValue > 0 && waterValue <= GAMEPLAY_PUSH_CONFIG.payloadByType.plant_needs_water.threshold;
+  const activeEventId = events.machineState === 'activeEvent' && events.activeEventId
+    ? String(events.activeEventId)
+    : '';
+  const harvestReady = Boolean(
+    plant.isDead !== true
+    && (
+      String(plant.phase || '').toLowerCase() === 'harvest'
+      || String(plant.stageKey || '').toLowerCase().includes('harvest')
+      || Number(plant.stageIndex || 0) >= 11
+      || String(run.status || '').toLowerCase() === 'finished'
+    )
+  );
+
+  const claimableRewards = (typeof window.getClaimableWeeklyRewardsCount === 'function')
+    ? Number(window.getClaimableWeeklyRewardsCount() || 0)
+    : 0;
+  const dailyRewardAvailable = claimableRewards > 0;
+  const rewardPeriodKey = state && state.ui && state.ui.rewards && state.ui.rewards.rewardsSummary
+    ? String(state.ui.rewards.rewardsSummary.periodKey || '').trim()
+    : '';
+
+  if (lowWater) {
+    if (!Number.isFinite(Number(runtime.pendingSinceByType.plant_needs_water))) {
+      runtime.pendingSinceByType.plant_needs_water = nowMs;
+    }
+  } else {
+    runtime.pendingSinceByType.plant_needs_water = 0;
+  }
+
+  if (harvestReady) {
+    if (!Number.isFinite(Number(runtime.pendingSinceByType.harvest_ready))) {
+      runtime.pendingSinceByType.harvest_ready = nowMs;
+    }
+  } else {
+    runtime.pendingSinceByType.harvest_ready = 0;
+  }
+
+  return [
+    {
+      type: GAMEPLAY_PUSH_TYPES.PLANT_NEEDS_WATER,
+      active: lowWater,
+      signature: `water:${Math.max(0, Math.round(waterValue))}`,
+      context: { water: Math.round(waterValue) }
+    },
+    {
+      type: GAMEPLAY_PUSH_TYPES.EVENT_OCCURRED,
+      active: Boolean(activeEventId),
+      signature: activeEventId ? `event:${activeEventId}` : '',
+      context: { eventId: activeEventId }
+    },
+    {
+      type: GAMEPLAY_PUSH_TYPES.HARVEST_READY,
+      active: harvestReady,
+      signature: `harvest:${String(plant.stageKey || plant.phase || 'ready')}`,
+      context: { stageKey: String(plant.stageKey || ''), phase: String(plant.phase || '') }
+    },
+    {
+      type: GAMEPLAY_PUSH_TYPES.DAILY_REWARD_AVAILABLE,
+      active: dailyRewardAvailable,
+      signature: `daily_reward:${rewardPeriodKey || 'current'}:${claimableRewards}`,
+      context: { claimableCount: claimableRewards, periodKey: rewardPeriodKey || null }
+    }
+  ];
+}
+
+function canDispatchGameplayPush(runtime, candidate, nowMs) {
+  if (!candidate || candidate.active !== true) {
+    return false;
+  }
+
+  const config = GAMEPLAY_PUSH_CONFIG.payloadByType[candidate.type];
+  if (!config) {
+    return false;
+  }
+
+  const pendingSince = Number(runtime.pendingSinceByType[candidate.type] || 0);
+  if (config.minDurationMs > 0 && (!pendingSince || (nowMs - pendingSince) < config.minDurationMs)) {
+    return false;
+  }
+
+  const lastSentAt = Number(runtime.lastSentAtByType[candidate.type] || 0);
+  if (lastSentAt > 0 && (nowMs - lastSentAt) < config.cooldownMs) {
+    return false;
+  }
+
+  const previousSignature = String(runtime.lastSignatureByType[candidate.type] || '');
+  if (previousSignature && previousSignature === String(candidate.signature || '')) {
+    return false;
+  }
+
+  return true;
+}
+
+function buildGameplayPushPayload(candidate) {
+  const config = GAMEPLAY_PUSH_CONFIG.payloadByType[candidate.type];
+  const targetHash = String(config.url || '#');
+  const targetUrl = `${window.location.origin}${window.location.pathname}${targetHash}`;
+  return {
+    type: candidate.type,
+    title: config.title,
+    body: config.body,
+    tag: config.tag,
+    url: targetUrl,
+    data: {
+      type: candidate.type,
+      ...candidate.context
+    }
+  };
+}
+
+async function dispatchGameplayPush(candidate, nowMs) {
+  const pushApi = window.GrowSimPushManager;
+  if (!pushApi || typeof pushApi.sendTestPush !== 'function') {
+    return false;
+  }
+
+  const payload = buildGameplayPushPayload(candidate);
+  await pushApi.sendTestPush(payload);
+  const runtime = getGameplayPushRuntime();
+  runtime.lastSentAtByType[candidate.type] = nowMs;
+  runtime.lastSignatureByType[candidate.type] = String(candidate.signature || '');
+  return true;
+}
+
+async function evaluateGameplayPushDecisions(nowMs, options = {}) {
+  const currentNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const runtime = getGameplayPushRuntime();
+  const force = options.force === true;
+
+  if (!force && (currentNowMs - Number(runtime.lastEvaluationAtMs || 0)) < GAMEPLAY_PUSH_CONFIG.evaluationMinIntervalMs) {
+    return;
+  }
+  runtime.lastEvaluationAtMs = currentNowMs;
+
+  if (!isGameplayPushAllowed()) {
+    return;
+  }
+
+  const candidates = buildGameplayPushSignal(currentNowMs);
+  for (const candidate of candidates) {
+    if (!canDispatchGameplayPush(runtime, candidate, currentNowMs)) {
+      continue;
+    }
+
+    try {
+      const sent = await dispatchGameplayPush(candidate, currentNowMs);
+      if (sent) {
+        addLog('system', `Gameplay Push gesendet: ${candidate.type}`, {
+          pushType: candidate.type,
+          signature: candidate.signature
+        });
+      }
+    } catch (error) {
+      addLog('system', `Gameplay Push fehlgeschlagen: ${candidate.type}`, {
+        pushType: candidate.type,
+        error: error && error.message ? String(error.message) : String(error)
+      });
+    }
+  }
 }
 
 function notifyEventAvailability() {
@@ -298,6 +573,7 @@ window.GrowSimNotifications = Object.freeze({
   canNotify,
   notify,
   evaluateNotificationTriggers,
+  evaluateGameplayPushDecisions,
   notifyEventAvailability,
   notifyCriticalState,
   notifyReminder,
