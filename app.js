@@ -484,6 +484,17 @@ let authGatePausedAtMs = 0;
 let bootWaitingForAuth = false;
 let startupAuthGateResolver = null;
 let settingsEventsInitialized = false;
+let pushStatusRefreshPromise = null;
+const pushUiRuntime = {
+  status: 'unsupported',
+  permission: 'unsupported',
+  supported: false,
+  hasSubscription: false,
+  busy: false,
+  message: '',
+  error: '',
+  lastUpdatedAtMs: 0
+};
 
 const actionDebounceUntil = Object.create(null);
 const HARVEST_VERIFICATION_POLL_INTERVAL_MS = 7000;
@@ -3834,6 +3845,7 @@ async function boot() {
     await runBootSubstep('apply_background_asset', () => applyBackgroundAsset());
     bootStep = 'service_worker';
     await runBootSubstep('register_service_worker', () => registerServiceWorker());
+    await runBootSubstep('refresh_push_status', () => refreshPushStatus({ force: true }));
     logBootStep('boot:service_worker');
 
     setBootStep('init_simulation', getBootUserMessage('init_simulation'));
@@ -7071,9 +7083,14 @@ function renderMenuDynamicRows() {
   ui.menuRescueSubtext.textContent = rescueUsed ? '1× pro Run bereits genutzt.' : (meta.rescue.lastResult || (rescueNeeded ? 'Jetzt als Rettungsaktion verfügbar.' : '1× pro Run bei kritischem Zustand.'));
 
   const notifications = getCanonicalNotificationsSettings(state);
-  const enabled = notifications.enabled === true;
+  const enabled = isPushStatusSubscribed(pushUiRuntime.status);
+  notifications.enabled = enabled;
+  state.settings.pushNotificationsEnabled = enabled;
   ui.menuPushBtn.setAttribute('aria-pressed', String(enabled));
-  ui.menuPushStatus.textContent = notifications.lastMessage ? String(notifications.lastMessage) : (enabled ? 'Aktiviert' : 'Deaktiviert');
+  ui.menuPushBtn.disabled = pushUiRuntime.busy === true || pushUiRuntime.status === 'unsupported';
+  ui.menuPushStatus.textContent = pushUiRuntime.error
+    ? String(pushUiRuntime.error)
+    : (pushUiRuntime.message ? String(pushUiRuntime.message) : (enabled ? 'Aktiviert' : 'Deaktiviert'));
 }
 
 function toggleSheet(sheetNode, visible) {
@@ -8566,25 +8583,221 @@ function renderSettingsSheet() {
 
   migrateSettings(state);
   renderPushToggle();
+  void refreshPushStatus({ skipRender: false, force: false });
   updateSettingsUI();
 }
 
+function getPushManagerApi() {
+  const api = window.GrowSimPushManager;
+  return api && typeof api.getPushStatus === 'function' ? api : null;
+}
+
+function mapPushPermissionLabel(permission) {
+  const value = String(permission || 'unsupported');
+  if (value === 'granted') {
+    return 'erlaubt';
+  }
+  if (value === 'denied') {
+    return 'blockiert';
+  }
+  if (value === 'default') {
+    return 'nicht entschieden';
+  }
+  return 'nicht unterstützt';
+}
+
+function mapPushStatusLabel(statusCode) {
+  const status = String(statusCode || 'unsupported');
+  if (status === 'granted_subscribed') {
+    return 'aktiv';
+  }
+  if (status === 'denied') {
+    return 'blockiert';
+  }
+  if (status === 'unsupported') {
+    return 'nicht verfügbar';
+  }
+  if (status === 'supported_but_not_granted') {
+    return 'Berechtigung fehlt';
+  }
+  return 'nicht aktiv';
+}
+
+function isPushStatusSubscribed(statusCode) {
+  return String(statusCode || '') === 'granted_subscribed';
+}
+
+function syncPushFlagsWithCanonicalSettings(statusCode) {
+  const notifications = getCanonicalNotificationsSettings(state);
+  const enabled = isPushStatusSubscribed(statusCode);
+  notifications.enabled = enabled;
+  state.settings.pushNotificationsEnabled = enabled;
+  if (!enabled && (notifications.lastMessage === null || notifications.lastMessage === undefined || notifications.lastMessage === '')) {
+    notifications.lastMessage = 'Push ist nicht aktiv.';
+  }
+}
+
+function renderPushSettingsUi() {
+  const supportNode = document.getElementById('settingsPushSupportValue');
+  const permissionNode = document.getElementById('settingsPushPermissionValue');
+  const statusNode = document.getElementById('settingsPushStatusValue');
+  const feedbackNode = document.getElementById('settingsPushFeedback');
+  const enableBtn = document.getElementById('settingsPushEnableBtn');
+  const disableBtn = document.getElementById('settingsPushDisableBtn');
+  const testBtn = document.getElementById('settingsPushTestBtn');
+  const authed = isAuthSessionValid() && Boolean(readAuthToken());
+  const unsupported = pushUiRuntime.status === 'unsupported';
+  const denied = pushUiRuntime.status === 'denied';
+  const subscribed = isPushStatusSubscribed(pushUiRuntime.status);
+  const busy = pushUiRuntime.busy === true;
+
+  if (supportNode) {
+    supportNode.textContent = pushUiRuntime.supported ? 'ja' : 'nein';
+    supportNode.className = pushUiRuntime.supported ? 'value_green' : 'value_gold';
+  }
+  if (permissionNode) {
+    permissionNode.textContent = mapPushPermissionLabel(pushUiRuntime.permission);
+    permissionNode.className = pushUiRuntime.permission === 'granted' ? 'value_green' : 'value_gold';
+  }
+  if (statusNode) {
+    statusNode.textContent = mapPushStatusLabel(pushUiRuntime.status);
+    statusNode.className = subscribed ? 'value_green' : 'value_gold';
+  }
+
+  if (feedbackNode) {
+    let message = pushUiRuntime.error || pushUiRuntime.message || '';
+    if (!message) {
+      if (!authed) {
+        message = 'Login erforderlich für Push-Requests.';
+      } else if (unsupported) {
+        message = 'Push wird in diesem Browser nicht unterstützt.';
+      } else if (denied) {
+        message = 'Benachrichtigungen sind blockiert. Bitte Browser-Einstellungen prüfen.';
+      } else if (subscribed) {
+        message = 'Push ist aktiv.';
+      } else {
+        message = 'Push ist noch nicht aktiviert.';
+      }
+    }
+    feedbackNode.textContent = message;
+  }
+
+  if (enableBtn) {
+    enableBtn.disabled = busy || !authed || unsupported || denied || subscribed;
+  }
+  if (disableBtn) {
+    disableBtn.disabled = busy || unsupported || !subscribed;
+  }
+  if (testBtn) {
+    testBtn.disabled = busy || !authed || unsupported || !subscribed;
+  }
+}
+
+async function refreshPushStatus(options = {}) {
+  const force = options.force === true;
+  const skipRender = options.skipRender === true;
+
+  if (!force && pushStatusRefreshPromise) {
+    return pushStatusRefreshPromise;
+  }
+
+  const task = (async () => {
+    const pushApi = getPushManagerApi();
+    const authed = isAuthSessionValid() && Boolean(readAuthToken());
+    pushUiRuntime.error = '';
+    pushUiRuntime.message = '';
+
+    if (!pushApi) {
+      pushUiRuntime.supported = false;
+      pushUiRuntime.permission = 'unsupported';
+      pushUiRuntime.status = 'unsupported';
+      pushUiRuntime.hasSubscription = false;
+      pushUiRuntime.lastUpdatedAtMs = Date.now();
+      syncPushFlagsWithCanonicalSettings(pushUiRuntime.status);
+      if (!skipRender) {
+        renderPushToggle();
+        renderPushSettingsUi();
+      }
+      return pushUiRuntime.status;
+    }
+
+    if (authed) {
+      try {
+        await pushApi.syncExistingSubscriptionWithBackend();
+      } catch (error) {
+        console.warn('[push] subscription sync skipped', error);
+      }
+    }
+
+    const status = await pushApi.getPushStatus({ waitForReady: true, timeoutMs: 6000 });
+    pushUiRuntime.supported = status && status.supported === true;
+    pushUiRuntime.permission = status && status.permission ? String(status.permission) : 'unsupported';
+    pushUiRuntime.status = status && status.status ? String(status.status) : 'unsupported';
+    pushUiRuntime.hasSubscription = Boolean(status && status.subscription);
+    pushUiRuntime.lastUpdatedAtMs = Date.now();
+
+    if (!authed && pushUiRuntime.status === 'granted_subscribed') {
+      pushUiRuntime.message = 'Push lokal aktiv. Für Tests bitte einloggen.';
+    }
+
+    syncPushFlagsWithCanonicalSettings(pushUiRuntime.status);
+    if (!skipRender) {
+      renderPushToggle();
+      renderPushSettingsUi();
+    }
+    return pushUiRuntime.status;
+  })().catch((error) => {
+    pushUiRuntime.error = error && error.message ? String(error.message) : 'Push-Status konnte nicht gelesen werden.';
+    pushUiRuntime.message = '';
+    if (!skipRender) {
+      renderPushToggle();
+      renderPushSettingsUi();
+    }
+    return pushUiRuntime.status;
+  }).finally(() => {
+    if (pushStatusRefreshPromise === task) {
+      pushStatusRefreshPromise = null;
+    }
+  });
+
+  pushStatusRefreshPromise = task;
+  return task;
+}
+
 function renderPushToggle() {
+  const notifications = getCanonicalNotificationsSettings(state);
+  const enabled = isPushStatusSubscribed(pushUiRuntime.status);
+  notifications.enabled = enabled;
+  state.settings.pushNotificationsEnabled = enabled;
+  if (!notifications.lastMessage && pushUiRuntime.message) {
+    notifications.lastMessage = pushUiRuntime.message;
+  }
+
+  if (ui.menuPushBtn) {
+    ui.menuPushBtn.setAttribute('aria-pressed', String(enabled));
+    ui.menuPushBtn.disabled = pushUiRuntime.busy === true || pushUiRuntime.status === 'unsupported';
+  }
+  if (ui.menuPushStatus) {
+    const menuStatus = pushUiRuntime.error
+      ? pushUiRuntime.error
+      : (pushUiRuntime.message || mapPushStatusLabel(pushUiRuntime.status));
+    ui.menuPushStatus.textContent = menuStatus;
+  }
+
   if (!ui.pushToggleBtn || !ui.pushToggleStatus || !ui.pushToggleFeedback || !ui.notifTypeEvents || !ui.notifTypeCritical || !ui.notifTypeReminder) {
     return;
   }
 
-  const notifications = getCanonicalNotificationsSettings(state);
-  const enabled = notifications.enabled === true; ui.pushToggleBtn.textContent = enabled ? 'AN' : 'AUS';
-  ui.pushToggleBtn.setAttribute('aria-pressed', String(enabled)); ui.pushToggleStatus.textContent = enabled ? 'Aktiv' : 'Deaktiviert';
-
+  ui.pushToggleBtn.textContent = enabled ? 'AN' : 'AUS';
+  ui.pushToggleBtn.setAttribute('aria-pressed', String(enabled));
+  ui.pushToggleStatus.textContent = enabled ? 'Aktiv' : 'Deaktiviert';
+  ui.pushToggleFeedback.textContent = notifications.lastMessage ? String(notifications.lastMessage) : '';
   ui.notifTypeEvents.checked = notifications.types.events === true;
   ui.notifTypeCritical.checked = notifications.types.critical === true;
   ui.notifTypeReminder.checked = notifications.types.reminder === true;
-
   ui.notifTypeEvents.disabled = !enabled;
   ui.notifTypeCritical.disabled = !enabled;
-  ui.notifTypeReminder.disabled = !enabled; ui.pushToggleFeedback.textContent = notifications.lastMessage ? String(notifications.lastMessage) : '';
+  ui.notifTypeReminder.disabled = !enabled;
 }
 
 function renderAnalysisOverview() {
@@ -10645,96 +10858,148 @@ async function onDeathRescueClick() {
 }
 
 async function onPushToggleClick() {
-  const notifications = getCanonicalNotificationsSettings(state);
-  const currentlyEnabled = notifications.enabled === true;
-
-  if (currentlyEnabled) {
-    notifications.enabled = false;
-    state.settings.pushNotificationsEnabled = false;
-    notifications.lastMessage = 'Benachrichtigungen deaktiviert.';
-    renderPushToggle();
-    renderGameMenu();
-    schedulePersistState(true);
+  if (pushUiRuntime.busy) {
     return;
   }
 
-  if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
-    notifications.enabled = false;
-    state.settings.pushNotificationsEnabled = false;
-    notifications.lastMessage = 'Benachrichtigungen werden in diesem Browser nicht unterstützt.';
-    renderPushToggle();
-    renderGameMenu();
-    schedulePersistState(true);
+  if (isPushStatusSubscribed(pushUiRuntime.status)) {
+    await onPushDisableClick();
     return;
   }
 
-  let permission = Notification.permission;
-  let permissionTimedOut = false;
-  if (permission !== 'granted') {
-    const permissionResult = await requestNotificationPermissionSafe();
-    permission = permissionResult.permission;
-    permissionTimedOut = permissionResult.timedOut === true;
-  }
-
-  if (permission !== 'granted') {
-    notifications.enabled = false;
-    state.settings.pushNotificationsEnabled = false;
-    notifications.lastMessage = permissionTimedOut ? 'Berechtigungsdialog nicht bestätigt. Bitte Benachrichtigungen im Browser erlauben.' : 'Berechtigung nicht erteilt. Bitte Benachrichtigungen im Browser erlauben.';
-    renderPushToggle();
-    renderGameMenu();
-    schedulePersistState(true);
-    return;
-  }
-
-  if (!navigator.serviceWorker.controller) {
-    notifications.enabled = false;
-    state.settings.pushNotificationsEnabled = false;
-    notifications.lastMessage = 'Service Worker noch nicht aktiv – bitte einmal normal neu laden.';
-    renderPushToggle();
-    renderGameMenu();
-    schedulePersistState(true);
-    return;
-  }
-
-  notifications.enabled = true;
-  state.settings.pushNotificationsEnabled = true;
-  notifications.lastMessage = 'Benachrichtigungen aktiviert.';
-  renderPushToggle();
-  renderGameMenu();
-  schedulePersistState(true);
+  await onPushEnableClick();
 }
 
-async function requestNotificationPermissionSafe(timeoutMs = 1800) {
-  if (typeof Notification === 'undefined' || typeof Notification.requestPermission !== 'function') {
-    return { permission: 'denied', timedOut: false };
+async function onPushEnableClick() {
+  const notifications = getCanonicalNotificationsSettings(state);
+  const pushApi = getPushManagerApi();
+  const authed = isAuthSessionValid() && Boolean(readAuthToken());
+  if (!pushApi) {
+    notifications.lastMessage = 'Push wird in diesem Browser nicht unterstützt.';
+    pushUiRuntime.error = '';
+    pushUiRuntime.message = notifications.lastMessage;
+    pushUiRuntime.status = 'unsupported';
+    renderPushToggle();
+    renderPushSettingsUi();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
+  if (!authed) {
+    notifications.lastMessage = 'Bitte zuerst einloggen, um Push zu aktivieren.';
+    pushUiRuntime.error = '';
+    pushUiRuntime.message = notifications.lastMessage;
+    renderPushToggle();
+    renderPushSettingsUi();
+    renderGameMenu();
+    return;
   }
 
+  pushUiRuntime.busy = true;
+  pushUiRuntime.error = '';
+  pushUiRuntime.message = 'Push wird aktiviert...';
+  renderPushToggle();
+  renderPushSettingsUi();
+
   try {
-    const requestResult = Notification.requestPermission();
-    if (!requestResult || typeof requestResult.then !== 'function') {
-      return { permission: String(requestResult || Notification.permission || 'default'), timedOut: false };
-    }
+    await pushApi.subscribeToPush();
+    notifications.lastMessage = 'Push erfolgreich aktiviert.';
+    pushUiRuntime.message = notifications.lastMessage;
+  } catch (error) {
+    const message = error && error.message ? String(error.message) : 'Push konnte nicht aktiviert werden.';
+    notifications.lastMessage = message;
+    pushUiRuntime.error = message;
+    pushUiRuntime.message = '';
+  } finally {
+    pushUiRuntime.busy = false;
+    await refreshPushStatus({ force: true });
+    renderPushToggle();
+    renderPushSettingsUi();
+    renderGameMenu();
+    schedulePersistState(true);
+  }
+}
 
-    let timeoutHandle = null;
-    const timeoutResult = new Promise((resolve) => {
-      timeoutHandle = window.setTimeout(() => resolve({ timedOut: true }), timeoutMs);
-    });
-    const resolvedResult = requestResult
-      .then((value) => ({ permission: String(value || Notification.permission || 'default'), timedOut: false }))
-      .catch(() => ({ permission: String(Notification.permission || 'default'), timedOut: false }));
+async function onPushDisableClick() {
+  const notifications = getCanonicalNotificationsSettings(state);
+  const pushApi = getPushManagerApi();
+  if (!pushApi) {
+    notifications.lastMessage = 'Push wird in diesem Browser nicht unterstützt.';
+    pushUiRuntime.status = 'unsupported';
+    pushUiRuntime.message = notifications.lastMessage;
+    pushUiRuntime.error = '';
+    renderPushToggle();
+    renderPushSettingsUi();
+    renderGameMenu();
+    schedulePersistState(true);
+    return;
+  }
 
-    const winner = await Promise.race([resolvedResult, timeoutResult]);
-    if (timeoutHandle !== null) {
-      window.clearTimeout(timeoutHandle);
-    }
+  pushUiRuntime.busy = true;
+  pushUiRuntime.error = '';
+  pushUiRuntime.message = 'Push wird deaktiviert...';
+  renderPushToggle();
+  renderPushSettingsUi();
 
-    if (winner && winner.timedOut) {
-      return { permission: String(Notification.permission || 'default'), timedOut: true };
-    }
+  try {
+    await pushApi.unsubscribeFromPush();
+    notifications.lastMessage = 'Push deaktiviert.';
+    pushUiRuntime.message = notifications.lastMessage;
+  } catch (error) {
+    const message = error && error.message ? String(error.message) : 'Push konnte nicht deaktiviert werden.';
+    notifications.lastMessage = message;
+    pushUiRuntime.error = message;
+    pushUiRuntime.message = '';
+  } finally {
+    pushUiRuntime.busy = false;
+    await refreshPushStatus({ force: true });
+    renderPushToggle();
+    renderPushSettingsUi();
+    renderGameMenu();
+    schedulePersistState(true);
+  }
+}
 
-    return winner || { permission: String(Notification.permission || 'default'), timedOut: false };
-  } catch (_error) {
-    return { permission: String(Notification.permission || 'default'), timedOut: false };
+async function onPushTestClick() {
+  const pushApi = getPushManagerApi();
+  const notifications = getCanonicalNotificationsSettings(state);
+  if (!pushApi) {
+    pushUiRuntime.error = 'Push ist in diesem Browser nicht verfügbar.';
+    renderPushSettingsUi();
+    return;
+  }
+  if (!isAuthSessionValid() || !readAuthToken()) {
+    pushUiRuntime.error = 'Bitte einloggen, um eine Test-Benachrichtigung zu senden.';
+    renderPushSettingsUi();
+    return;
+  }
+  if (!isPushStatusSubscribed(pushUiRuntime.status)) {
+    pushUiRuntime.error = 'Push ist noch nicht aktiv.';
+    renderPushSettingsUi();
+    return;
+  }
+
+  pushUiRuntime.busy = true;
+  pushUiRuntime.error = '';
+  pushUiRuntime.message = 'Test-Benachrichtigung wird gesendet...';
+  renderPushSettingsUi();
+  renderPushToggle();
+  try {
+    await pushApi.sendTestPush();
+    notifications.lastMessage = 'Test-Benachrichtigung ausgelöst.';
+    pushUiRuntime.message = notifications.lastMessage;
+  } catch (error) {
+    const message = error && error.message ? String(error.message) : 'Test-Benachrichtigung fehlgeschlagen.';
+    notifications.lastMessage = message;
+    pushUiRuntime.error = message;
+    pushUiRuntime.message = '';
+  } finally {
+    pushUiRuntime.busy = false;
+    await refreshPushStatus({ force: true });
+    renderPushToggle();
+    renderPushSettingsUi();
+    renderGameMenu();
+    schedulePersistState(true);
   }
 }
 
@@ -12829,6 +13094,8 @@ function updateSettingsUI() {
         : 'Nicht mit Cloud verbunden. Klick öffnet Login/Registrierung.'
     );
   }
+
+  renderPushSettingsUi();
 }
 
 let authModalMode = 'login';
@@ -13094,7 +13361,13 @@ async function refreshStateAfterAuth() {
     console.info('[auth] remote load failed');
   }
 
+  try {
+    await refreshPushStatus({ force: true });
+  } catch (error) {
+    console.warn('[push] refresh after auth failed', error);
+  }
   updateSettingsUI();
+  renderPushSettingsUi();
   renderAll();
 }
 
@@ -13183,9 +13456,14 @@ function performAuthLogout() {
   }
   authApi.logout();
   console.info('[auth] logout success');
+  pushUiRuntime.error = '';
+  pushUiRuntime.message = 'Login erforderlich für Push-Requests.';
+  pushUiRuntime.busy = false;
   setAuthGateActive(true);
   closeCloudAuthModal({ force: true });
+  void refreshPushStatus({ force: true });
   updateSettingsUI();
+  renderPushSettingsUi();
   renderAll();
   openCloudAuthModal({ gate: true });
   schedulePersistState(true);
@@ -13195,6 +13473,7 @@ function ensureSettingsUiReady() {
   migrateSettings(state);
   initSettingsEvents();
   updateSettingsUI();
+  void refreshPushStatus({ force: false });
 }
 
 function initSettingsEvents() {
@@ -13290,6 +13569,27 @@ function initSettingsEvents() {
         event.preventDefault();
         openCloudAuthModal();
       }
+    });
+  }
+
+  const pushEnableBtn = byId('settingsPushEnableBtn');
+  if (pushEnableBtn) {
+    pushEnableBtn.addEventListener('click', () => {
+      void onPushEnableClick();
+    });
+  }
+
+  const pushDisableBtn = byId('settingsPushDisableBtn');
+  if (pushDisableBtn) {
+    pushDisableBtn.addEventListener('click', () => {
+      void onPushDisableClick();
+    });
+  }
+
+  const pushTestBtn = byId('settingsPushTestBtn');
+  if (pushTestBtn) {
+    pushTestBtn.addEventListener('click', () => {
+      void onPushTestClick();
     });
   }
 

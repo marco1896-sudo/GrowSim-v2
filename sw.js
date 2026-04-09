@@ -222,32 +222,89 @@ async function navigationNetworkFirst(request) {
   }
 }
 
-self.addEventListener('push', (event) => {
-  let payload = {
+function parsePushPayload(event) {
+  const fallback = {
     title: 'Grow Simulator',
-    body: 'Ein neues Ereignis wartet.',
-    eventId: 'unknown'
+    body: 'Es gibt ein neues Update in deiner Grow-Session.',
+    icon: appPath('icons/icon-192.png'),
+    badge: appPath('icons/icon-192.png'),
+    tag: 'growsim-push',
+    url: appPath(''),
+    type: 'generic',
+    data: {}
   };
 
-  if (event.data) {
+  if (!event || !event.data) {
+    return fallback;
+  }
+
+  let parsed = null;
+  try {
+    parsed = event.data.json();
+  } catch (_error) {
     try {
-      const parsed = event.data.json();
-      payload = {
-        ...payload,
-        ...parsed
-      };
-    } catch (_error) {
-      payload.body = event.data.text();
+      parsed = { body: String(event.data.text() || '') };
+    } catch (_innerError) {
+      parsed = null;
     }
   }
+
+  if (!parsed || typeof parsed !== 'object') {
+    return fallback;
+  }
+
+  const rawData = parsed.data && typeof parsed.data === 'object' ? parsed.data : {};
+  const payloadUrl = typeof parsed.url === 'string' && parsed.url.trim()
+    ? parsed.url.trim()
+    : (typeof rawData.url === 'string' ? rawData.url.trim() : '');
+
+  return {
+    title: typeof parsed.title === 'string' && parsed.title.trim() ? parsed.title.trim() : fallback.title,
+    body: typeof parsed.body === 'string' && parsed.body.trim() ? parsed.body.trim() : fallback.body,
+    icon: typeof parsed.icon === 'string' && parsed.icon.trim() ? parsed.icon.trim() : fallback.icon,
+    badge: typeof parsed.badge === 'string' && parsed.badge.trim() ? parsed.badge.trim() : fallback.badge,
+    tag: typeof parsed.tag === 'string' && parsed.tag.trim() ? parsed.tag.trim() : fallback.tag,
+    url: payloadUrl || fallback.url,
+    type: typeof parsed.type === 'string' && parsed.type.trim() ? parsed.type.trim() : fallback.type,
+    data: rawData
+  };
+}
+
+function resolveNotificationTargetUrl(rawUrl, fallbackUrl = appPath('')) {
+  const normalizedFallback = fallbackUrl || appPath('');
+  const candidate = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+  if (!candidate) {
+    return normalizedFallback;
+  }
+
+  try {
+    const parsed = new URL(candidate, self.location.origin);
+    if (parsed.origin !== self.location.origin) {
+      return normalizedFallback;
+    }
+    return parsed.toString();
+  } catch (_error) {
+    return normalizedFallback;
+  }
+}
+
+self.addEventListener('push', (event) => {
+  const payload = parsePushPayload(event);
+  const targetUrl = resolveNotificationTargetUrl(
+    payload.url || (payload.data && payload.data.url) || '',
+    appPath('')
+  );
 
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: appPath('icons/icon-192.png'),
-      badge: appPath('icons/icon-192.png'),
+      icon: payload.icon || appPath('icons/icon-192.png'),
+      badge: payload.badge || appPath('icons/icon-192.png'),
+      tag: payload.tag || 'growsim-push',
       data: {
-        url: `${appPath('')}#event=${encodeURIComponent(payload.eventId || 'unknown')}`
+        type: payload.type || 'generic',
+        url: targetUrl,
+        payload: payload.data && typeof payload.data === 'object' ? payload.data : {}
       }
     })
   );
@@ -255,19 +312,37 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || appPath('');
+
+  const notificationData = event.notification && event.notification.data && typeof event.notification.data === 'object'
+    ? event.notification.data
+    : {};
+  const targetUrl = resolveNotificationTargetUrl(notificationData.url || '', appPath(''));
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      let bestClient = null;
       for (const client of windowClients) {
-        if ('focus' in client) {
-          client.navigate(targetUrl);
-          return client.focus();
+        if (client.url === targetUrl) {
+          bestClient = client;
+          break;
+        }
+        if (!bestClient) {
+          bestClient = client;
         }
       }
 
+      if (bestClient) {
+        if ('focus' in bestClient) {
+          bestClient.focus();
+        }
+        if ('navigate' in bestClient && targetUrl && bestClient.url !== targetUrl) {
+          return bestClient.navigate(targetUrl);
+        }
+        return bestClient;
+      }
+
       if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+        return clients.openWindow(targetUrl || appPath(''));
       }
 
       return null;

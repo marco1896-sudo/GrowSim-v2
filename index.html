@@ -773,7 +773,17 @@
           <span>Cloud Sync</span>
           <strong id="settingsCloudSyncValue" class="value_gold">Nicht verbunden</strong>
         </div>
-        <div class="figma-static-row"><span>Push-Steuerung</span><span class="subtitle">im Menü</span></div>
+        <div class="figma-static-row"><span>Push unterstützt</span><strong id="settingsPushSupportValue" class="value_gold">-</strong></div>
+        <div class="figma-static-row"><span>Berechtigung</span><strong id="settingsPushPermissionValue" class="value_gold">-</strong></div>
+        <div class="figma-static-row"><span>Status</span><strong id="settingsPushStatusValue" class="value_gold">-</strong></div>
+        <p id="settingsPushFeedback" class="sheet-note" aria-live="polite">Push ist noch nicht eingerichtet.</p>
+        <div class="menu-dialog-actions">
+          <button id="settingsPushEnableBtn" class="action-btn action-primary" type="button">Push aktivieren</button>
+          <button id="settingsPushDisableBtn" class="ghost-btn" type="button">Push deaktivieren</button>
+        </div>
+        <div class="menu-dialog-actions">
+          <button id="settingsPushTestBtn" class="ghost-btn" type="button">Test-Benachrichtigung senden</button>
+        </div>
         
         <div class="figma-settings-actions" style="display: flex; justify-content: space-between; margin-top: 20px;">
           <button id="analysisResetBtn" class="action-btn action-secondary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;">RESET</button>
@@ -1195,6 +1205,7 @@
       { src: 'src/harvest/harvestModel.js' },
       { src: 'src/progression/progression.js' },
       { src: 'src/auth/auth.js' },
+      { src: 'src/push/pushManager.js' },
       { src: 'storage.js' },
       { src: 'notifications.js' },
       { src: 'src/ui/components/primitives.js' },
