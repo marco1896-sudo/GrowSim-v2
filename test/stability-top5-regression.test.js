@@ -2,67 +2,24 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
-const http = require('http');
 const path = require('path');
 const { chromium } = require('playwright');
+const {
+  installAuthHarness: setupAuthHarness,
+  waitForBoot: waitForBootReady,
+  clearClientStorage: resetClientStorage
+} = require('./support/browserRuntime');
+const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
-const HOST = '0.0.0.0';
-const CLIENT_HOST = '127.0.0.1';
-const PORT = 4187;
-const APP_URL = `http://${CLIENT_HOST}:${PORT}/`;
+const HOST = '127.0.0.1';
+const CLIENT_HOST = HOST;
+let PORT = 0;
+let APP_URL = '';
 const DB_NAME = 'grow-sim-db';
 const DB_STORE = 'kv';
 const DB_KEY = 'state-v2';
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
-
-function contentTypeFor(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const byExt = {
-    '.css': 'text/css; charset=utf-8',
-    '.html': 'text/html; charset=utf-8',
-    '.ico': 'image/x-icon',
-    '.jpeg': 'image/jpeg',
-    '.jpg': 'image/jpeg',
-    '.js': 'text/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.svg': 'image/svg+xml; charset=utf-8',
-    '.webmanifest': 'application/manifest+json; charset=utf-8',
-    '.webp': 'image/webp'
-  };
-  return byExt[ext] || 'application/octet-stream';
-}
-
-function createStaticServer(rootDir) {
-  return http.createServer((req, res) => {
-    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
-    const relativePath = decodeURIComponent(requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname);
-    const safeRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    const filePath = path.join(rootDir, safeRelativePath);
-
-    if (!filePath.startsWith(rootDir)) {
-      res.writeHead(403);
-      res.end('Forbidden');
-      return;
-    }
-
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        res.writeHead(error.code === 'ENOENT' ? 404 : 500);
-        res.end(error.code === 'ENOENT' ? 'Not found' : 'Internal server error');
-        return;
-      }
-
-      res.writeHead(200, {
-        'Content-Type': contentTypeFor(filePath),
-        'Cache-Control': 'no-store'
-      });
-      res.end(data);
-    });
-  });
-}
 
 function createRemoteState({ simTimeMs, savedAtRealMs, displayName = 'Cloud Save' }) {
   const nowMs = Number(savedAtRealMs) || Date.now();
@@ -253,7 +210,7 @@ function createRemoteState({ simTimeMs, savedAtRealMs, displayName = 'Cloud Save
       care: {
         selectedCategory: null,
         selectedActionId: null,
-        feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
+        feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' }
       },
       analysis: {
         activeTab: 'overview'
@@ -434,14 +391,10 @@ async function writeIndexedDbState(page, snapshot) {
   }, { snapshot, dbName: DB_NAME, storeName: DB_STORE, key: DB_KEY });
 }
 
-async function waitForBoot(page) {
-  await page.waitForFunction(() => window.__gsBootOk === true, null, { timeout: 30000 });
-}
-
 async function evaluateAfterStableBoot(page, expression) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      await waitForBoot(page);
+      await waitForBootReady(page);
       return await page.evaluate(expression);
     } catch (error) {
       if (!String(error && error.message ? error.message : error).includes('Execution context was destroyed') || attempt === 2) {
@@ -496,7 +449,7 @@ async function scenarioResetPath(page) {
   await installApiMocks(page, { allowAuthSession: true });
   await seedValidAuthSession(page);
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await waitForBoot(page);
+  await waitForBootReady(page);
 
   const result = await page.evaluate(() => {
     resetStateToDefaults();
@@ -519,7 +472,7 @@ async function scenarioCanonicalOwnership(page) {
   await installApiMocks(page, { allowAuthSession: true });
   await seedValidAuthSession(page);
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await waitForBoot(page);
+  await waitForBootReady(page);
 
   const ownership = await page.evaluate(() => ({
     domainOwnership: window.__gsDomainOwnership,
@@ -585,7 +538,7 @@ async function scenarioCloudRetryAfterLogin(page) {
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
   await waitForGate(page);
   await loginThroughGate(page);
-  await waitForBoot(page);
+  await waitForBootReady(page);
 
   const restored = await evaluateAfterStableBoot(page, () => ({
     simTimeMs: Number(window.__gsState.simulation.simTimeMs),
@@ -624,7 +577,7 @@ async function scenarioFreshnessArbitration(page) {
   }, { authTokenKey: AUTH_TOKEN_KEY, localState: newerLocalState });
 
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await waitForBoot(page);
+  await waitForBootReady(page);
 
   const restored = await page.evaluate(() => ({
     simTimeMs: Number(window.__gsState.simulation.simTimeMs),
@@ -681,7 +634,7 @@ async function scenarioWatchdogTerminalState(page) {
   await seedValidAuthSession(page);
 
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await waitForBoot(page);
+  await waitForBootReady(page);
   await startRun(page);
 
   await page.evaluate(() => {
@@ -730,7 +683,7 @@ async function scenarioValidSessionStartupSkipsGate(page) {
   const stats = await installApiMocks(page, { allowAuthSession: true });
   await seedValidAuthSession(page);
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await waitForBoot(page);
+  await waitForBootReady(page);
 
   const state = await page.evaluate(() => {
     const modal = document.getElementById('authModal');
@@ -757,8 +710,9 @@ async function runScenario(browser, name, scenario) {
 }
 
 async function main() {
-  const server = createStaticServer(ROOT);
-  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+  const { server, port: resolvedPort } = await startStaticServer(ROOT, HOST);
+  PORT = Number(resolvedPort || 0);
+  APP_URL = `http://${CLIENT_HOST}:${PORT}/`;
 
   const browser = await chromium.launch({ headless: true });
   try {
@@ -771,7 +725,7 @@ async function main() {
     await runScenario(browser, 'auth gate freezes and resumes simulation', scenarioAuthGateFreeze);
     await runScenario(browser, 'watchdog ignores valid terminal render loop', scenarioWatchdogTerminalState);
   } finally {
-    await browser.close();
+    await closeBrowser(browser);
     await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
   }
 }
@@ -780,3 +734,5 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
+

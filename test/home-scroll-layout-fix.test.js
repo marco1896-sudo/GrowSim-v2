@@ -2,118 +2,36 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
-const http = require('http');
 const path = require('path');
 const { chromium } = require('playwright');
+const {
+  installAuthHarness: setupAuthHarness,
+  waitForBoot: waitForBootReady,
+  clearClientStorage: resetClientStorage
+} = require('./support/browserRuntime');
+const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
-const HOST = '0.0.0.0';
-const CLIENT_HOST = '127.0.0.1';
-const PORT = 4182;
+const HOST = '127.0.0.1';
+const CLIENT_HOST = HOST;
+let PORT = 0;
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
 
-function contentTypeFor(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const byExt = {
-    '.css': 'text/css; charset=utf-8',
-    '.html': 'text/html; charset=utf-8',
-    '.ico': 'image/x-icon',
-    '.jpeg': 'image/jpeg',
-    '.jpg': 'image/jpeg',
-    '.js': 'text/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.svg': 'image/svg+xml; charset=utf-8',
-    '.webmanifest': 'application/manifest+json; charset=utf-8',
-    '.webp': 'image/webp'
-  };
-  return byExt[ext] || 'application/octet-stream';
-}
-
-function createStaticServer(rootDir) {
-  return http.createServer((req, res) => {
-    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
-    const relativePath = decodeURIComponent(requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname);
-    const safeRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    const filePath = path.join(rootDir, safeRelativePath);
-
-    if (!filePath.startsWith(rootDir)) {
-      res.writeHead(403);
-      res.end('Forbidden');
-      return;
-    }
-
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        res.writeHead(error.code === 'ENOENT' ? 404 : 500);
-        res.end(error.code === 'ENOENT' ? 'Not found' : 'Internal server error');
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': contentTypeFor(filePath) });
-      res.end(data);
-    });
-  });
-}
-
-async function installAuthHarness(page) {
-  await page.addInitScript((tokenKey) => {
-    localStorage.setItem(tokenKey, 'test-auth-token');
-  }, AUTH_TOKEN_KEY);
-
-  await page.route('https://api.growsimulator.tech/api/**', async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-
-    if (url.pathname === '/api/auth/me') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          user: {
-            id: 'scroll-test-user',
-            email: 'scroll@test.local',
-            displayName: 'Scroll Test'
-          }
-        })
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/save') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: request.method() === 'GET'
-          ? JSON.stringify({ save: null })
-          : JSON.stringify({ ok: true })
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: 'Unhandled test route' })
-    });
-  });
-}
-
-async function waitForBoot(page) {
-  await page.waitForFunction(() => window.__gsBootOk === true, null, { timeout: 25000 });
-}
-
 async function main() {
-  const server = createStaticServer(ROOT);
-  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+  const { server, port: resolvedPort } = await startStaticServer(ROOT, HOST);
+  PORT = Number(resolvedPort || 0);
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
 
   try {
-    await installAuthHarness(page);
+    await setupAuthHarness(page, AUTH_TOKEN_KEY, {
+      id: 'scroll-test-user',
+      email: 'scroll@test.local',
+      displayName: 'Scroll Test'
+    });
     await page.goto(`http://${CLIENT_HOST}:${PORT}/`, { waitUntil: 'domcontentloaded' });
-    await waitForBoot(page);
+    await waitForBootReady(page);
 
     const result = await page.evaluate(async () => {
       const container = document.querySelector('.home-content-scroll');
@@ -166,8 +84,8 @@ async function main() {
     assert.ok(Math.abs(result.after.scrollTop - result.after.maxScrollTop) <= 2, 'container should reach the bottom without clipping');
     assert.ok(result.after.fillerBottom <= result.after.containerBottom + 170, 'extra content should remain reachable within the padded scroll area');
   } finally {
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
+    await closeBrowser(browser);
+    await closeServer(server);
   }
 }
 
@@ -179,3 +97,5 @@ main()
     console.error(error);
     process.exit(1);
   });
+
+

@@ -1319,6 +1319,54 @@ function getProgressionApi() {
   const api = window.GrowSimProgression; return api && typeof api === 'object' ? api : null;
 }
 
+function getMenuUiPresentationApi() {
+  const api = window.GrowSimMenuUiPresentation;
+  return api && typeof api === 'object' ? api : null;
+}
+
+function getMenuUiTextBundle() {
+  const api = getMenuUiPresentationApi();
+  return api && api.TEXT ? api.TEXT : null;
+}
+
+function getPushUiPresentationApi() {
+  const api = window.GrowSimPushUiPresentation;
+  return api && typeof api === 'object' ? api : null;
+}
+
+function getPushUiTextBundle() {
+  const api = getPushUiPresentationApi();
+  return api && api.TEXT ? api.TEXT : null;
+}
+
+function resolvePushUiPresentation() {
+  const api = getPushUiPresentationApi();
+  if (!api || typeof api.resolvePushPresentation !== 'function') {
+    return null;
+  }
+
+  const notifications = getCanonicalNotificationsSettings(state);
+  return api.resolvePushPresentation(state, {
+    pushUiRuntime,
+    notifications,
+    authed: isAuthSessionValid() && Boolean(readAuthToken()),
+    pushEnabled: api && typeof api.isPushActive === 'function'
+      ? api.isPushActive(pushUiRuntime.status)
+      : notifications.enabled === true
+  });
+}
+
+window.GrowSimAppUiRuntime = Object.freeze({
+  renderDeathOverlay: () => renderDeathOverlay(),
+  renderGameMenu: () => renderGameMenu(),
+  renderPushToggle: () => renderPushToggle(),
+  openMenu: () => openMenu(),
+  closeMenu: () => closeMenu(),
+  openMenuDialog: (options) => openMenuDialog(options || {}),
+  closeMenuDialog: () => closeMenuDialog(),
+  onPushToggleClick: () => onPushToggleClick()
+});
+
 function getRetentionDefaults() {
   return {
     version: 1,
@@ -7203,11 +7251,11 @@ const REWARD_ACTION_PRESENTATION_CONFIG = Object.freeze({
     successToast: 'Climate Stabilize aktiv · Klima beruhigt'
   }),
   [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: Object.freeze({
-    label: 'Emergency Save',
+    label: 'Notfallrettung',
     compactLabel: 'Notfallrettung',
     tone: 'emergency',
     showWhenUnavailableInHome: false,
-    successToast: 'Emergency Save aktiv · Run gerettet'
+    successToast: 'Notfallrettung aktiviert · Run gerettet'
   })
 });
 
@@ -7895,6 +7943,7 @@ function getRewardActionGrantState(type, payload = {}) {
   }
   const providerStatus = getRewardProviderStatus(snapshot);
   const policy = getRewardActionRuntimePolicy(actionType);
+  const rewardText = getMenuUiTextBundle() && getMenuUiTextBundle().reward ? getMenuUiTextBundle().reward : null;
   const pendingSameAction = rewardGrantRuntime.pending && rewardGrantRuntime.actionType === actionType;
   if (rewardGrantRuntime.pending && !pendingSameAction) {
     return {
@@ -7927,7 +7976,7 @@ function getRewardActionGrantState(type, payload = {}) {
       providerStatus,
       reason: 'direct_mode',
       hint: policy === 'rewarded_required'
-        ? 'Lokaler Direct-Modus aktiv. Reward wird ohne Provider simuliert.'
+        ? (rewardText ? rewardText.direct : 'Lokaler Direct-Modus aktiv. Reward wird ohne Provider simuliert.')
         : ''
     };
   }
@@ -7939,7 +7988,7 @@ function getRewardActionGrantState(type, payload = {}) {
       grantMode: 'debug_rewarded',
       providerStatus,
       reason: 'debug_rewarded',
-      hint: 'Debug-Reward aktiv.'
+      hint: rewardText ? rewardText.debug : 'Debug-Reward aktiv.'
     };
   }
   if (providerStatus.state === 'initializing') {
@@ -7950,7 +7999,7 @@ function getRewardActionGrantState(type, payload = {}) {
       grantMode: 'provider_rewarded',
       providerStatus,
       reason: 'provider_initializing',
-      hint: 'Rewarded wird gerade vorbereitet.'
+      hint: rewardText ? rewardText.preparing : 'Rewarded wird gerade vorbereitet.'
     };
   }
   if (providerStatus.state === 'error') {
@@ -7961,7 +8010,7 @@ function getRewardActionGrantState(type, payload = {}) {
       grantMode: 'provider_rewarded',
       providerStatus,
       reason: 'provider_error',
-      hint: 'Rewarded ist aktuell technisch nicht bereit.'
+      hint: rewardText ? rewardText.error : 'Rewarded ist aktuell technisch nicht bereit.'
     };
   }
   if (!providerStatus.available) {
@@ -7972,7 +8021,7 @@ function getRewardActionGrantState(type, payload = {}) {
       grantMode: 'provider_rewarded',
       providerStatus,
       reason: 'provider_unavailable',
-      hint: 'Rewarded ist gerade nicht verfuegbar.'
+      hint: rewardText ? rewardText.unavailable : 'Rewarded ist gerade nicht verfuegbar.'
     };
   }
   return {
@@ -8555,12 +8604,13 @@ function getEmergencySaveRewardAvailability(sourceState = state) {
   const run = typeof getCanonicalRun === 'function' ? getCanonicalRun(safeState) : (safeState.run || {});
   const meta = typeof getCanonicalMeta === 'function' ? getCanonicalMeta(safeState) : (safeState.meta || {});
   const rescueMeta = meta && meta.rescue && typeof meta.rescue === 'object' ? meta.rescue : {};
+  const rescueText = getMenuUiTextBundle() && getMenuUiTextBundle().rescue ? getMenuUiTextBundle().rescue : null;
 
   if (String(run.status || 'active') !== 'active' && String(run.status || '') !== 'downed') {
-    return { ok: false, reason: 'run_inactive', hint: 'Emergency Save steht nur waehrend eines aktiven Runs bereit.' };
+    return { ok: false, reason: 'run_inactive', hint: rescueText ? rescueText.unavailable : 'Notfallrettung ist aktuell nicht verfügbar.' };
   }
   if (Boolean(rescueMeta.used)) {
-    return { ok: false, reason: 'already_used', hint: 'Emergency Save ist nur 1x pro Run verfuegbar.' };
+    return { ok: false, reason: 'already_used', hint: rescueText ? rescueText.used : 'Rettungsaktion ist nur 1× pro Run verfügbar.' };
   }
 
   const dead = Boolean(plant.isDead) || String(plant.phase || '') === 'dead';
@@ -8569,7 +8619,7 @@ function getEmergencySaveRewardAvailability(sourceState = state) {
       ok: true,
       reason: 'revive_run',
       score: 1,
-      hint: 'Emergency Save kann diesen Run knapp zurueck ins Spiel holen.'
+      hint: rescueText ? rescueText.appliedRevived : 'Notfallrettung angewendet. Der Run wurde knapp gerettet.'
     };
   }
 
@@ -8604,7 +8654,7 @@ function getEmergencySaveRewardAvailability(sourceState = state) {
       ok: false,
       reason: 'not_critical_enough',
       score: round2(emergencyScore),
-      hint: 'Emergency Save bleibt fuer echte Krisen reserviert.'
+      hint: rescueText ? rescueText.notRequired : 'Notfallrettung ist aktuell nicht erforderlich.'
     };
   }
 
@@ -8613,8 +8663,8 @@ function getEmergencySaveRewardAvailability(sourceState = state) {
     reason: 'stabilize_critical_run',
     score: round2(emergencyScore),
     hint: emergencyScore >= 0.82
-      ? 'Emergency Save kann den Run knapp wieder in einen ueberlebbaren Bereich heben.'
-      : 'Emergency Save steht als seltene Notfallhilfe bereit.'
+      ? (rescueText ? rescueText.appliedRevived : 'Notfallrettung angewendet. Der Run wurde knapp gerettet.')
+      : (rescueText ? rescueText.readySubtext : '1× pro Run bei kritischem Zustand.')
   };
 }
 
@@ -8664,7 +8714,7 @@ function executeEmergencySaveRewardAction(context = {}) {
   const availability = getEmergencySaveRewardAvailability(state);
   if (!availability.ok) {
     const blockedResult = { ok: false, reason: availability.reason || 'not_available' };
-    addLog('action', 'Emergency Save blockiert', blockedResult);
+    addLog('action', 'Notfallrettung blockiert', blockedResult);
     return blockedResult;
   }
 
@@ -8677,9 +8727,10 @@ function executeEmergencySaveRewardAction(context = {}) {
   const nowMs = Date.now();
   meta.rescue.used = true;
   meta.rescue.usedAtRealMs = nowMs;
+  const rescueText = getMenuUiTextBundle() && getMenuUiTextBundle().rescue ? getMenuUiTextBundle().rescue : null;
   meta.rescue.lastResult = rescueResult.wasDead
-    ? 'Emergency Save angewendet. Der Run wurde knapp zurueckgeholt.'
-    : 'Emergency Save angewendet. Der Run ist wieder knapp stabil.';
+    ? (rescueText ? rescueText.appliedRevived : 'Notfallrettung angewendet. Der Run wurde knapp gerettet.')
+    : (rescueText ? rescueText.appliedStable : 'Rettungsaktion angewendet. Die Pflanze stabilisiert sich.');
 
   updateVisibleOverlays();
   syncCanonicalStateShape();
@@ -8693,7 +8744,7 @@ function executeEmergencySaveRewardAction(context = {}) {
   const history = getCanonicalHistory(state);
   history.system.push({
     type: 'rescue',
-    label: 'Emergency Save',
+    label: 'Notfallrettung',
     atRealTimeMs: timestamp.realMs,
     atSimTimeMs: timestamp.simMs,
     simStamp: timestamp.simStamp,
@@ -8718,7 +8769,7 @@ function executeEmergencySaveRewardAction(context = {}) {
     deltaSummary: rescueResult.effectsApplied,
     severityScore: round2(Number(availability.score || 0))
   };
-  addLog('action', 'Emergency Save aktiviert', result);
+  addLog('action', 'Notfallrettung aktiviert', result);
   return result;
 }
 
@@ -9004,7 +9055,7 @@ const REWARD_ACTION_REGISTRY = Object.freeze({
     handler: executeCareBoostRewardAction
   },
   [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: {
-    label: 'Emergency Save',
+    label: 'Notfallrettung',
     getAvailability: getEmergencySaveRewardAvailability,
     handler: executeEmergencySaveRewardAction
   },
@@ -10675,62 +10726,83 @@ function renderMenuDynamicRows() {
     return;
   }
 
-  if (ui.menuStatsBtn) {
-    ui.menuStatsBtn.setAttribute('title', 'Öffnet denselben Analyse-Report wie Analyse-Button und Death-Flow.');
+  const menuUiApi = getMenuUiPresentationApi();
+  const meta = getCanonicalMeta(state);
+  const notifications = getCanonicalNotificationsSettings(state);
+  const rescueRewardControl = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'menu' });
+  const rewardPresentation = menuUiApi && typeof menuUiApi.resolveRewardPresentation === 'function'
+    ? menuUiApi.resolveRewardPresentation(state, {
+      rewardControl: rescueRewardControl,
+      sourceMode: rescueRewardControl.providerMode || ''
+    })
+    : null;
+  const menuPresentation = menuUiApi && typeof menuUiApi.resolveMenuPresentation === 'function'
+    ? menuUiApi.resolveMenuPresentation(state, {
+      rescueMeta: meta.rescue || {},
+      pending: rescueAdPending,
+      rewardControl: rescueRewardControl,
+      rewardPresentation,
+      pushUiRuntime,
+      pushEnabled: isPushStatusSubscribed(pushUiRuntime.status),
+      notifications,
+      authed: isAuthSessionValid() && Boolean(readAuthToken())
+    })
+    : null;
+  const menuEntries = menuPresentation && menuPresentation.entries ? menuPresentation.entries : {};
+
+  if (ui.menuStatsBtn && menuEntries.stats) {
+    ui.menuStatsBtn.setAttribute('title', String(menuEntries.stats.title || ''));
   }
-  if (ui.menuSupportBtn) {
-    ui.menuSupportBtn.setAttribute('title', 'Öffnet den freiwilligen Support-Flow für GrowSim.');
+  if (ui.menuSupportBtn && menuEntries.support) {
+    ui.menuSupportBtn.setAttribute('title', String(menuEntries.support.title || ''));
   }
-  if (ui.menuMissionsBtn) {
-    ui.menuMissionsBtn.setAttribute('title', 'Öffnet Missionen und den aktuellen Fortschritt.');
+  if (ui.menuMissionsBtn && menuEntries.missions) {
+    ui.menuMissionsBtn.setAttribute('title', String(menuEntries.missions.title || ''));
   }
-  if (ui.menuAboutBtn) {
-    ui.menuAboutBtn.setAttribute('title', 'Zeigt den aktuellen Projektstatus. Weitere Hilfe folgt später.');
+  if (ui.menuAboutBtn && menuEntries.about) {
+    ui.menuAboutBtn.setAttribute('title', String(menuEntries.about.title || ''));
   }
-  if (ui.menuLanguageBtn) {
-    ui.menuLanguageBtn.setAttribute('title', 'Öffnet die lokal verfügbaren Einstellungen.');
+  if (ui.menuLanguageBtn && menuEntries.language) {
+    ui.menuLanguageBtn.setAttribute('title', String(menuEntries.language.title || ''));
   }
   if (ui.analyzeActionBtn) {
     ui.analyzeActionBtn.setAttribute('title', 'Öffnet den Analyse-Report und den protokollierten Run-Verlauf.');
   }
   const menuRescueLabel = document.getElementById('menuRescueLabel');
   if (ui.menuAchievementsBtn) {
-    ui.menuAchievementsBtn.disabled = true;
-    ui.menuAchievementsBtn.setAttribute('aria-disabled', 'true');
+    const achievementsPresentation = menuEntries.achievements || {};
+    ui.menuAchievementsBtn.disabled = achievementsPresentation.disabled === true;
+    ui.menuAchievementsBtn.setAttribute('aria-disabled', String(achievementsPresentation.disabled === true));
     ui.menuAchievementsBtn.classList.add('hidden');
     ui.menuAchievementsBtn.setAttribute('aria-hidden', 'true');
-    ui.menuAchievementsBtn.setAttribute('title', 'Im aktuellen Build noch nicht freigeschaltet.');
+    ui.menuAchievementsBtn.setAttribute('title', String(achievementsPresentation.title || ''));
   }
   if (ui.menuLeaderboardBtn) {
-    ui.menuLeaderboardBtn.disabled = false;
-    ui.menuLeaderboardBtn.setAttribute('aria-disabled', 'false');
+    const leaderboardPresentation = menuEntries.leaderboard || {};
+    ui.menuLeaderboardBtn.disabled = leaderboardPresentation.disabled === true;
+    ui.menuLeaderboardBtn.setAttribute('aria-disabled', String(leaderboardPresentation.disabled === true));
     ui.menuLeaderboardBtn.classList.remove('hidden');
     ui.menuLeaderboardBtn.setAttribute('aria-hidden', 'false');
+    ui.menuLeaderboardBtn.setAttribute('title', String(leaderboardPresentation.title || ''));
   }
 
-  const meta = getCanonicalMeta(state);
-  const rescuePresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'menu' });
-  const rescueUsed = Boolean(meta.rescue.used);
-  const rescueBlocked = rescueAdPending || Boolean(rescuePresentation.disabled);
-  ui.menuRescueBtn.disabled = rescueBlocked;
-  ui.menuRescueBtn.setAttribute('aria-disabled', String(rescueBlocked));
-  ui.menuRescueBtn.setAttribute('title', String(rescuePresentation.hint || 'Emergency Save bleibt fuer kritische Situationen reserviert.'));
+  const rescuePresentation = menuEntries.rescue || {};
+  ui.menuRescueBtn.disabled = rescuePresentation.disabled === true;
+  ui.menuRescueBtn.setAttribute('aria-disabled', String(rescuePresentation.disabled === true));
+  ui.menuRescueBtn.setAttribute('title', String(rescuePresentation.title || ''));
   if (menuRescueLabel) {
     menuRescueLabel.textContent = String(rescuePresentation.label || 'Notfallrettung');
   }
-  ui.menuRescueSubtext.textContent = rescueUsed && meta.rescue.lastResult
-    ? String(meta.rescue.lastResult)
-    : String(rescuePresentation.hint || 'Emergency Save bleibt fuer kritische Situationen reserviert.');
+  ui.menuRescueSubtext.textContent = String(rescuePresentation.subtext || '');
 
-  const notifications = getCanonicalNotificationsSettings(state);
   const enabled = isPushStatusSubscribed(pushUiRuntime.status);
   notifications.enabled = enabled;
   state.settings.pushNotificationsEnabled = enabled;
   ui.menuPushBtn.setAttribute('aria-pressed', String(enabled));
-  ui.menuPushBtn.disabled = pushUiRuntime.busy === true || pushUiRuntime.status === 'unsupported';
-  ui.menuPushStatus.textContent = pushUiRuntime.error
-    ? String(pushUiRuntime.error)
-    : (pushUiRuntime.message ? String(pushUiRuntime.message) : (enabled ? 'Aktiviert' : 'Deaktiviert'));
+  const pushPresentation = menuEntries.push || {};
+  ui.menuPushBtn.disabled = pushPresentation.disabled === true;
+  ui.menuPushBtn.setAttribute('title', String(pushPresentation.title || ''));
+  ui.menuPushStatus.textContent = String(pushPresentation.subtext || '');
 }
 
 function toggleSheet(sheetNode, visible) {
@@ -12279,6 +12351,10 @@ function getPushManagerApi() {
 }
 
 function mapPushPermissionLabel(permission) {
+  const pushApi = getPushUiPresentationApi();
+  if (pushApi && typeof pushApi.mapPermissionLabel === 'function') {
+    return pushApi.mapPermissionLabel(permission);
+  }
   const value = String(permission || 'unsupported');
   if (value === 'granted') {
     return 'Erlaubt';
@@ -12293,6 +12369,10 @@ function mapPushPermissionLabel(permission) {
 }
 
 function mapPushStatusLabel(statusCode) {
+  const pushApi = getPushUiPresentationApi();
+  if (pushApi && typeof pushApi.mapStatusLabel === 'function') {
+    return pushApi.mapStatusLabel(statusCode, pushUiRuntime.busy === true);
+  }
   const status = String(statusCode || 'unsupported');
   if (status === 'granted_subscribed') {
     return 'Aktiv';
@@ -12310,6 +12390,10 @@ function mapPushStatusLabel(statusCode) {
 }
 
 function isPushStatusSubscribed(statusCode) {
+  const pushApi = getPushUiPresentationApi();
+  if (pushApi && typeof pushApi.isPushActive === 'function') {
+    return pushApi.isPushActive(statusCode);
+  }
   return String(statusCode || '') === 'granted_subscribed';
 }
 
@@ -12319,7 +12403,10 @@ function syncPushFlagsWithCanonicalSettings(statusCode) {
   notifications.enabled = enabled;
   state.settings.pushNotificationsEnabled = enabled;
   if (!enabled && (notifications.lastMessage === null || notifications.lastMessage === undefined || notifications.lastMessage === '')) {
-    notifications.lastMessage = 'Push ist nicht aktiv.';
+    const pushText = getPushUiTextBundle();
+    notifications.lastMessage = pushText && pushText.feedback
+      ? pushText.feedback.inactive
+      : 'Push ist nicht aktiv.';
   }
 }
 
@@ -12331,55 +12418,42 @@ function renderPushSettingsUi() {
   const enableBtn = document.getElementById('settingsPushEnableBtn');
   const disableBtn = document.getElementById('settingsPushDisableBtn');
   const testBtn = document.getElementById('settingsPushTestBtn');
-  const authed = isAuthSessionValid() && Boolean(readAuthToken());
-  const unsupported = pushUiRuntime.status === 'unsupported';
-  const denied = pushUiRuntime.status === 'denied';
-  const subscribed = isPushStatusSubscribed(pushUiRuntime.status);
-  const busy = pushUiRuntime.busy === true;
+  const presentation = resolvePushUiPresentation();
+  const settingsPresentation = presentation && presentation.settings ? presentation.settings : null;
+  const subscribed = presentation ? presentation.active === true : isPushStatusSubscribed(pushUiRuntime.status);
+  const busy = presentation ? presentation.busy === true : (pushUiRuntime.busy === true);
 
   if (supportNode) {
-    supportNode.textContent = pushUiRuntime.supported ? 'Ja' : 'Nein';
-    supportNode.className = `settings-push-value ${pushUiRuntime.supported ? 'value_green' : 'value_gold'}`;
+    supportNode.textContent = settingsPresentation ? settingsPresentation.supportLabel : (pushUiRuntime.supported ? 'Ja' : 'Nein');
+    supportNode.className = `settings-push-value ${(presentation && presentation.supported) ? 'value_green' : 'value_gold'}`;
   }
   if (permissionNode) {
-    permissionNode.textContent = mapPushPermissionLabel(pushUiRuntime.permission);
+    permissionNode.textContent = settingsPresentation ? settingsPresentation.permissionLabel : mapPushPermissionLabel(pushUiRuntime.permission);
     permissionNode.className = `settings-push-value ${pushUiRuntime.permission === 'granted' ? 'value_green' : 'value_gold'}`;
   }
   if (statusNode) {
-    statusNode.textContent = mapPushStatusLabel(pushUiRuntime.status);
+    statusNode.textContent = settingsPresentation ? settingsPresentation.statusLabel : mapPushStatusLabel(pushUiRuntime.status);
     statusNode.className = `settings-push-value ${subscribed ? 'value_green' : 'value_gold'}`;
   }
 
   if (feedbackNode) {
-    let message = pushUiRuntime.error || pushUiRuntime.message || '';
-    if (!message) {
-      if (!authed) {
-        message = 'Melde dich an, um Push-Benachrichtigungen für deinen Run zu aktivieren.';
-      } else if (unsupported) {
-        message = 'Dieser Browser unterstützt Web-Push aktuell nicht.';
-      } else if (denied) {
-        message = 'Push ist blockiert. Bitte erlaube Benachrichtigungen in deinen Browser- oder OS-Einstellungen.';
-      } else if (subscribed) {
-        message = 'Push ist aktiv. Du wirst bei wichtigen Gameplay-Ereignissen informiert.';
-      } else {
-        message = 'Aktiviere Push-Benachrichtigungen, um wichtige Ereignisse deiner Pflanze nicht zu verpassen.';
-      }
-    }
-    feedbackNode.textContent = message;
+    feedbackNode.textContent = settingsPresentation ? settingsPresentation.feedback : '';
   }
 
   if (enableBtn) {
-    const showEnable = !subscribed && !denied && !unsupported;
+    const showEnable = settingsPresentation ? settingsPresentation.enableVisible : !subscribed;
     enableBtn.classList.toggle('hidden', !showEnable);
-    enableBtn.disabled = busy || !authed || unsupported || denied || subscribed;
+    enableBtn.disabled = settingsPresentation ? settingsPresentation.enableDisabled : busy;
   }
   if (disableBtn) {
-    disableBtn.classList.toggle('hidden', !subscribed);
-    disableBtn.disabled = busy || unsupported || !subscribed;
+    const showDisable = settingsPresentation ? settingsPresentation.disableVisible : subscribed;
+    disableBtn.classList.toggle('hidden', !showDisable);
+    disableBtn.disabled = settingsPresentation ? settingsPresentation.disableDisabled : !subscribed;
   }
   if (testBtn) {
-    testBtn.classList.toggle('hidden', !subscribed);
-    testBtn.disabled = busy || !authed || unsupported || !subscribed;
+    const showTest = settingsPresentation ? settingsPresentation.testVisible : subscribed;
+    testBtn.classList.toggle('hidden', !showTest);
+    testBtn.disabled = settingsPresentation ? settingsPresentation.testDisabled : !subscribed;
   }
 }
 
@@ -12462,15 +12536,17 @@ function renderPushToggle() {
   if (!notifications.lastMessage && pushUiRuntime.message) {
     notifications.lastMessage = pushUiRuntime.message;
   }
+  const presentation = resolvePushUiPresentation();
+  const togglePresentation = presentation && presentation.toggle ? presentation.toggle : null;
 
   if (ui.menuPushBtn) {
     ui.menuPushBtn.setAttribute('aria-pressed', String(enabled));
-    ui.menuPushBtn.disabled = pushUiRuntime.busy === true || pushUiRuntime.status === 'unsupported';
+    ui.menuPushBtn.disabled = togglePresentation ? togglePresentation.disabled === true : (pushUiRuntime.busy === true || pushUiRuntime.status === 'unsupported');
   }
   if (ui.menuPushStatus) {
-    const menuStatus = pushUiRuntime.error
-      ? pushUiRuntime.error
-      : (pushUiRuntime.message || mapPushStatusLabel(pushUiRuntime.status));
+    const menuStatus = presentation && presentation.menuEntry
+      ? presentation.menuEntry.subtext
+      : (pushUiRuntime.error || pushUiRuntime.message || mapPushStatusLabel(pushUiRuntime.status));
     ui.menuPushStatus.textContent = menuStatus;
   }
 
@@ -12478,16 +12554,16 @@ function renderPushToggle() {
     return;
   }
 
-  ui.pushToggleBtn.textContent = enabled ? 'AN' : 'AUS';
-  ui.pushToggleBtn.setAttribute('aria-pressed', String(enabled));
-  ui.pushToggleStatus.textContent = enabled ? 'Aktiv' : 'Deaktiviert';
-  ui.pushToggleFeedback.textContent = notifications.lastMessage ? String(notifications.lastMessage) : '';
-  ui.notifTypeEvents.checked = notifications.types.events === true;
-  ui.notifTypeCritical.checked = notifications.types.critical === true;
-  ui.notifTypeReminder.checked = notifications.types.reminder === true;
-  ui.notifTypeEvents.disabled = !enabled;
-  ui.notifTypeCritical.disabled = !enabled;
-  ui.notifTypeReminder.disabled = !enabled;
+  ui.pushToggleBtn.textContent = togglePresentation ? togglePresentation.buttonLabel : (enabled ? 'AN' : 'AUS');
+  ui.pushToggleBtn.setAttribute('aria-pressed', String(togglePresentation ? togglePresentation.pressed === true : enabled));
+  ui.pushToggleStatus.textContent = togglePresentation ? togglePresentation.statusLabel : (enabled ? 'Aktiv' : 'Deaktiviert');
+  ui.pushToggleFeedback.textContent = togglePresentation ? String(togglePresentation.feedback || '') : (notifications.lastMessage ? String(notifications.lastMessage) : '');
+  ui.notifTypeEvents.checked = togglePresentation ? togglePresentation.typeStates.events === true : notifications.types.events === true;
+  ui.notifTypeCritical.checked = togglePresentation ? togglePresentation.typeStates.critical === true : notifications.types.critical === true;
+  ui.notifTypeReminder.checked = togglePresentation ? togglePresentation.typeStates.reminder === true : notifications.types.reminder === true;
+  ui.notifTypeEvents.disabled = togglePresentation ? togglePresentation.typesDisabled === true : !enabled;
+  ui.notifTypeCritical.disabled = togglePresentation ? togglePresentation.typesDisabled === true : !enabled;
+  ui.notifTypeReminder.disabled = togglePresentation ? togglePresentation.typesDisabled === true : !enabled;
 }
 
 function buildRetentionInsightsMarkup(nowMs = Date.now()) {
@@ -14553,13 +14629,31 @@ function renderDeathOverlay() {
 
   if (ui.deathRescueBtn && ui.deathRescueSubtext && ui.deathRescueFeedback) {
     const meta = getCanonicalMeta(state);
-    const rescuePresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'death_overlay' });
-    const rescueBlocked = rescueAdPending || Boolean(rescuePresentation.disabled);
-    ui.deathRescueBtn.disabled = rescueBlocked;
-    ui.deathRescueBtn.setAttribute('aria-disabled', String(rescueBlocked));
-    ui.deathRescueBtn.setAttribute('title', String(rescuePresentation.hint || 'Emergency Save bleibt fuer kritische Situationen reserviert.'));
-    ui.deathRescueBtn.textContent = rescueBlocked ? `${String(rescuePresentation.label || 'Notfallrettung')} gesperrt` : String(rescuePresentation.label || 'Notfallrettung');
-    ui.deathRescueSubtext.textContent = String(rescuePresentation.hint || 'Emergency Save bleibt fuer kritische Situationen reserviert.');
+    const menuUiApi = getMenuUiPresentationApi();
+    const rewardControl = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'death_overlay' });
+    const rewardPresentation = menuUiApi && typeof menuUiApi.resolveRewardPresentation === 'function'
+      ? menuUiApi.resolveRewardPresentation(state, {
+        rewardControl,
+        sourceMode: rewardControl.providerMode || ''
+      })
+      : null;
+    const rescuePresentation = menuUiApi && typeof menuUiApi.resolveRescuePresentation === 'function'
+      ? menuUiApi.resolveRescuePresentation(state, {
+        context: 'death_overlay',
+        rescueMeta: meta.rescue || {},
+        pending: rescueAdPending,
+        rewardControl,
+        rewardPresentation
+      })
+      : null;
+    const safePresentation = rescuePresentation || {};
+    ui.deathRescueBtn.disabled = safePresentation.disabled === true;
+    ui.deathRescueBtn.setAttribute('aria-disabled', String(safePresentation.disabled === true));
+    ui.deathRescueBtn.setAttribute('title', String(safePresentation.title || ''));
+    ui.deathRescueBtn.textContent = safePresentation.disabled === true
+      ? `${String(safePresentation.label || 'Notfallrettung')} gesperrt`
+      : String(safePresentation.label || 'Notfallrettung');
+    ui.deathRescueSubtext.textContent = String(safePresentation.subtext || '');
     ui.deathRescueFeedback.textContent = meta.rescue.lastResult ? String(meta.rescue.lastResult) : '';
   }
 }
@@ -14712,8 +14806,24 @@ async function onDeathRescueClick() {
   }
   const result = await triggerRewardAction(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { source: 'rescue_entry' });
   if (!result.ok) {
-    const rescuePresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'menu' });
-    meta.rescue.lastResult = String(rescuePresentation.hint || 'Emergency Save ist aktuell nicht verfuegbar.');
+    const menuUiApi = getMenuUiPresentationApi();
+    const rewardControl = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'menu' });
+    const rewardPresentation = menuUiApi && typeof menuUiApi.resolveRewardPresentation === 'function'
+      ? menuUiApi.resolveRewardPresentation(state, {
+        rewardControl,
+        sourceMode: rewardControl.providerMode || ''
+      })
+      : null;
+    const rescuePresentation = menuUiApi && typeof menuUiApi.resolveRescuePresentation === 'function'
+      ? menuUiApi.resolveRescuePresentation(state, {
+        context: 'menu',
+        rescueMeta: meta.rescue || {},
+        pending: rescueAdPending,
+        rewardControl,
+        rewardPresentation
+      })
+      : null;
+    meta.rescue.lastResult = String((rescuePresentation && rescuePresentation.subtext) || 'Notfallrettung ist aktuell nicht verfügbar.');
   }
   renderDeathOverlay();
   renderGameMenu();
@@ -14736,9 +14846,11 @@ async function onPushToggleClick() {
 async function onPushEnableClick() {
   const notifications = getCanonicalNotificationsSettings(state);
   const pushApi = getPushManagerApi();
+  const pushText = getPushUiTextBundle();
+  const pushActionText = pushText && pushText.action ? pushText.action : null;
   const authed = isAuthSessionValid() && Boolean(readAuthToken());
   if (!pushApi) {
-    notifications.lastMessage = 'Push wird in diesem Browser nicht unterstützt.';
+    notifications.lastMessage = pushActionText ? pushActionText.unsupported : 'Push wird in diesem Browser nicht unterstützt.';
     pushUiRuntime.error = '';
     pushUiRuntime.message = notifications.lastMessage;
     pushUiRuntime.status = 'unsupported';
@@ -14749,7 +14861,7 @@ async function onPushEnableClick() {
     return;
   }
   if (!authed) {
-    notifications.lastMessage = 'Bitte zuerst einloggen, um Push zu aktivieren.';
+    notifications.lastMessage = pushText && pushText.feedback ? pushText.feedback.unauthenticated : 'Bitte zuerst einloggen, um Push zu aktivieren.';
     pushUiRuntime.error = '';
     pushUiRuntime.message = notifications.lastMessage;
     renderPushToggle();
@@ -14760,13 +14872,13 @@ async function onPushEnableClick() {
 
   pushUiRuntime.busy = true;
   pushUiRuntime.error = '';
-  pushUiRuntime.message = 'Push wird aktiviert...';
+  pushUiRuntime.message = pushText && pushText.feedback ? pushText.feedback.loading : 'Push wird aktiviert...';
   renderPushToggle();
   renderPushSettingsUi();
 
   try {
     await pushApi.subscribeToPush();
-    notifications.lastMessage = 'Push erfolgreich aktiviert.';
+    notifications.lastMessage = pushActionText ? pushActionText.enabled : 'Push erfolgreich aktiviert.';
     pushUiRuntime.message = notifications.lastMessage;
   } catch (error) {
     const message = error && error.message ? String(error.message) : 'Push konnte nicht aktiviert werden.';
@@ -14787,8 +14899,10 @@ async function onPushEnableClick() {
 async function onPushDisableClick() {
   const notifications = getCanonicalNotificationsSettings(state);
   const pushApi = getPushManagerApi();
+  const pushText = getPushUiTextBundle();
+  const pushActionText = pushText && pushText.action ? pushText.action : null;
   if (!pushApi) {
-    notifications.lastMessage = 'Push wird in diesem Browser nicht unterstützt.';
+    notifications.lastMessage = pushActionText ? pushActionText.unsupported : 'Push wird in diesem Browser nicht unterstützt.';
     pushUiRuntime.status = 'unsupported';
     pushUiRuntime.message = notifications.lastMessage;
     pushUiRuntime.error = '';
@@ -14801,13 +14915,13 @@ async function onPushDisableClick() {
 
   pushUiRuntime.busy = true;
   pushUiRuntime.error = '';
-  pushUiRuntime.message = 'Push wird deaktiviert...';
+  pushUiRuntime.message = pushText && pushText.feedback ? pushText.feedback.loading : 'Push wird deaktiviert...';
   renderPushToggle();
   renderPushSettingsUi();
 
   try {
     await pushApi.unsubscribeFromPush();
-    notifications.lastMessage = 'Push deaktiviert.';
+    notifications.lastMessage = pushActionText ? pushActionText.disabled : 'Push deaktiviert.';
     pushUiRuntime.message = notifications.lastMessage;
   } catch (error) {
     const message = error && error.message ? String(error.message) : 'Push konnte nicht deaktiviert werden.';

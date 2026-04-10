@@ -1,55 +1,14 @@
-import fs from 'node:fs';
+ï»¿import fs from 'node:fs';
 import path from 'node:path';
-import http from 'node:http';
+import { createRequire } from 'node:module';
 import { chromium } from 'playwright';
 
+const require = createRequire(import.meta.url);
+const { startStaticServer, closeBrowser, closeContext, closeServer } = require('../test/support/serverRuntime.js');
+
 const ROOT = process.cwd();
-const PORT = 4173;
-const SCREENSHOT_DIR = path.join(ROOT, 'visual-tests', 'screenshots');
-
-function contentType(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const map = {
-    '.html': 'text/html; charset=utf-8',
-    '.css': 'text/css; charset=utf-8',
-    '.js': 'application/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.webp': 'image/webp',
-    '.svg': 'image/svg+xml',
-    '.ico': 'image/x-icon',
-    '.webmanifest': 'application/manifest+json',
-  };
-  return map[ext] || 'application/octet-stream';
-}
-
-function startStaticServer(rootDir, port) {
-  const server = http.createServer((req, res) => {
-    const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
-    const sanitized = urlPath === '/' ? '/index.html' : urlPath;
-    const requested = path.join(rootDir, sanitized);
-    const fullPath = path.normalize(requested);
-    if (!fullPath.startsWith(rootDir)) {
-      res.statusCode = 403;
-      res.end('Forbidden');
-      return;
-    }
-    if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
-      res.statusCode = 404;
-      res.end('Not Found');
-      return;
-    }
-    res.setHeader('Content-Type', contentType(fullPath));
-    fs.createReadStream(fullPath).pipe(res);
-  });
-
-  return new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(port, '0.0.0.0', () => resolve(server));
-  });
-}
+let PORT = 0;
+const SCREENSHOT_DIR = path.join(ROOT, 'test-results', 'visual-probes', 'hud');
 
 async function applyHudVisualState(page, state) {
   await page.evaluate((payload) => {
@@ -102,11 +61,12 @@ async function applyHudVisualState(page, state) {
 
 async function main() {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
-  const server = await startStaticServer(ROOT, PORT);
+  const { server, port: resolvedPort } = await startStaticServer(ROOT, '127.0.0.1', PORT);
+  PORT = Number(resolvedPort || 0);
   const browser = await chromium.launch();
   const context = await browser.newContext({
     viewport: { width: 540, height: 1080 },
-    deviceScaleFactor: 1.5,
+    deviceScaleFactor: 1.5
   });
   const page = await context.newPage();
 
@@ -115,8 +75,8 @@ async function main() {
       name: '01-default-live',
       nextEvent: '29:18',
       growthImpulse: '1.75',
-      dayTime: 'Tag 24 · 14:32',
-      phase: 'Blüte',
+      dayTime: 'Tag 24 Â· 14:32',
+      phase: 'BlÃ¼te',
       phaseAge: 'Tag 24',
       phaseSubtitle: '68% -> Reife',
       water: 70,
@@ -128,16 +88,16 @@ async function main() {
       rootHealth: '78%',
       oxygen: '78%',
       ppfd: '720 PPFD',
-      temperature: '25.3°C',
+      temperature: '25.3Â°C',
       humidity: '61%',
-      airflow: 'Gut',
+      airflow: 'Gut'
     },
     {
       name: '02-high-risk-stress',
       nextEvent: '04:50',
       growthImpulse: '0.82',
-      dayTime: 'Tag 31 · 22:40',
-      phase: 'Späte Blüte',
+      dayTime: 'Tag 31 Â· 22:40',
+      phase: 'SpÃ¤te BlÃ¼te',
       phaseAge: 'Tag 31',
       phaseSubtitle: '89% -> Ernte',
       water: 34,
@@ -149,16 +109,16 @@ async function main() {
       rootHealth: '55%',
       oxygen: '49%',
       ppfd: '540 PPFD',
-      temperature: '29.4°C',
+      temperature: '29.4Â°C',
       humidity: '72%',
-      airflow: 'Schwach',
+      airflow: 'Schwach'
     },
     {
       name: '03-healthy-peak',
       nextEvent: '43:09',
       growthImpulse: '2.06',
-      dayTime: 'Tag 40 · 10:16',
-      phase: 'Premium-Blüte',
+      dayTime: 'Tag 40 Â· 10:16',
+      phase: 'Premium-BlÃ¼te',
       phaseAge: 'Tag 40',
       phaseSubtitle: '94% -> Finale',
       water: 86,
@@ -170,33 +130,30 @@ async function main() {
       rootHealth: '94%',
       oxygen: '91%',
       ppfd: '890 PPFD',
-      temperature: '24.1°C',
+      temperature: '24.1Â°C',
       humidity: '56%',
-      airflow: 'Stark',
-    },
+      airflow: 'Stark'
+    }
   ];
 
   try {
-    await page.goto(`http://0.0.0.0:${PORT}/`, { waitUntil: 'networkidle' });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1800);
     for (const state of states) {
       await applyHudVisualState(page, state);
       await page.waitForTimeout(220);
       const file = path.join(SCREENSHOT_DIR, `${state.name}.png`);
       await page.screenshot({ path: file, fullPage: true });
-      // eslint-disable-next-line no-console
       console.log(`Saved ${file}`);
     }
   } finally {
-    await context.close();
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
+    await closeContext(context);
+    await closeBrowser(browser);
+    await closeServer(server);
   }
 }
 
 main().catch((error) => {
-  // eslint-disable-next-line no-console
   console.error(error);
   process.exitCode = 1;
 });
-

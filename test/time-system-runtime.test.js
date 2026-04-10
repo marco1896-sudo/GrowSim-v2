@@ -1,106 +1,17 @@
-const { chromium } = require('playwright');
+﻿const { chromium } = require('playwright');
 const assert = require('assert');
-const fs = require('fs');
-const http = require('http');
 const path = require('path');
+const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
+const {
+  installAuthHarness: setupAuthHarness,
+  waitForBoot: waitForBootReady
+} = require('./support/browserRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
-const HOST = '0.0.0.0';
-const CLIENT_HOST = '127.0.0.1';
-const PORT = 4176;
-const APP_URL = `http://${CLIENT_HOST}:${PORT}/`;
+const HOST = '127.0.0.1';
+let APP_URL = '';
 const LS_STATE_KEY = 'grow-sim-state-v2';
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
-
-function contentTypeFor(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const byExt = {
-    '.css': 'text/css; charset=utf-8',
-    '.html': 'text/html; charset=utf-8',
-    '.ico': 'image/x-icon',
-    '.jpeg': 'image/jpeg',
-    '.jpg': 'image/jpeg',
-    '.js': 'text/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.svg': 'image/svg+xml; charset=utf-8',
-    '.webmanifest': 'application/manifest+json; charset=utf-8',
-    '.webp': 'image/webp'
-  };
-  return byExt[ext] || 'application/octet-stream';
-}
-
-function createStaticServer(rootDir) {
-  return http.createServer((req, res) => {
-    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
-    const relativePath = decodeURIComponent(requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname);
-    const safeRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    const filePath = path.join(rootDir, safeRelativePath);
-
-    if (!filePath.startsWith(rootDir)) {
-      res.writeHead(403);
-      res.end('Forbidden');
-      return;
-    }
-
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        res.writeHead(error.code === 'ENOENT' ? 404 : 500);
-        res.end(error.code === 'ENOENT' ? 'Not found' : 'Internal server error');
-        return;
-      }
-
-      res.writeHead(200, {
-        'Content-Type': contentTypeFor(filePath),
-        'Cache-Control': 'no-store'
-      });
-      res.end(data);
-    });
-  });
-}
-
-async function installAuthHarness(page) {
-  await page.addInitScript((tokenKey) => {
-    localStorage.setItem(tokenKey, 'test-auth-token');
-  }, AUTH_TOKEN_KEY);
-
-  await page.route('https://api.growsimulator.tech/api/**', async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-
-    if (url.pathname === '/api/auth/me') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          user: {
-            id: 'test-user',
-            email: 'time@test.local',
-            displayName: 'Time Test'
-          }
-        })
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/save') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: request.method() === 'GET'
-          ? JSON.stringify({ save: null })
-          : JSON.stringify({ ok: true })
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: 'Unhandled test route' })
-    });
-  });
-}
 
 function assertApproxRatio(label, simDeltaMs, realDeltaMs, expectedSpeed, tolerance = 1.5) {
   const ratio = simDeltaMs / realDeltaMs;
@@ -196,7 +107,7 @@ async function scenarioLiveX12(page) {
 
 async function scenarioSimTimeNeverDecreases(page) {
   await startFreshRun(page);
-  const result = await page.evaluate(() => {
+  const result = await page.evaluate(async () => {
     const beforeSimTimeMs = Number(window.__gsState.simulation.simTimeMs);
     const beforeLastTickRealTimeMs = Number(window.__gsState.simulation.lastTickRealTimeMs);
     setSimulationTimeMs(beforeSimTimeMs - (2 * 60 * 60 * 1000), beforeLastTickRealTimeMs - 5000, {
@@ -244,7 +155,7 @@ async function scenarioBaseSpeedChanges(page) {
 
 async function scenarioCareActionsDoNotJumpTime(page) {
   await startFreshRun(page);
-  const result = await page.evaluate(() => {
+  const result = await page.evaluate(async () => {
     const runAction = (actionId, setup) => {
       if (typeof setup === 'function') {
         setup();
@@ -455,7 +366,7 @@ async function scenarioSettingsSimSpeedUi(page) {
 
 async function scenarioNegativeRealDeltaClamp(page) {
   await startFreshRun(page);
-  const result = await page.evaluate(() => {
+  const result = await page.evaluate(async () => {
     const beforeSimTimeMs = Number(window.__gsState.simulation.simTimeMs);
     const beforeLastTickRealTimeMs = Number(window.__gsState.simulation.lastTickRealTimeMs);
     const advanceResult = advanceSimulationTime(beforeLastTickRealTimeMs - 10000, {
@@ -590,7 +501,7 @@ async function scenarioResumeHooksDoNotMultiFire(page) {
 
 async function scenarioSkipNight(page) {
   await startFreshRun(page);
-  const result = await page.evaluate(() => {
+  const result = await page.evaluate(async () => {
     const dayKey = (ts) => {
       const d = new Date(ts);
       const y = d.getFullYear();
@@ -606,7 +517,7 @@ async function scenarioSkipNight(page) {
     const nextDayStartSimMs = getNextDayStartSimTime(currentSimTimeMs);
     const remainingNightSimMs = nextDayStartSimMs - currentSimTimeMs;
     const expectedRealDeltaMs = convertSimDeltaToFutureRealDeltaMs(remainingNightSimMs, nowMs);
-    onSkipNightAction();
+    await Promise.resolve(onSkipNightAction());
     return {
       expectedSimTimeMs: nextDayStartSimMs,
       actualSimTimeMs: Number(window.__gsState.simulation.simTimeMs),
@@ -959,12 +870,17 @@ async function scenarioRetentionInsightsRender(page) {
 }
 
 async function main() {
-  const server = createStaticServer(ROOT);
-  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+  const { server, baseUrl } = await startStaticServer(ROOT, HOST, undefined, {
+    defaultHeaders: { 'Cache-Control': 'no-store' }
+  });
+  APP_URL = `${baseUrl}/`;
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
-  await installAuthHarness(page);
+  await setupAuthHarness(page, AUTH_TOKEN_KEY, {
+    email: 'time@test.local',
+    displayName: 'Time Test'
+  });
 
   try {
     await scenarioLiveX12(page);
@@ -991,8 +907,8 @@ async function main() {
     await scenarioRetentionInsightsRender(page);
     console.log('time-system-runtime: all scenarios passed');
   } finally {
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
+    await closeBrowser(browser);
+    await closeServer(server);
   }
 }
 
@@ -1000,3 +916,4 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+

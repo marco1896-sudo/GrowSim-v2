@@ -43,7 +43,7 @@ function showServiceWorkerHint() {
   const banner = document.createElement('div');
   banner.id = 'swHintBanner';
   banner.className = 'boot-error-banner boot-warning-banner';
-  banner.innerHTML = '<strong>Service Worker noch nicht aktiv â€“ bitte einmal normal neu laden.</strong>';
+  banner.innerHTML = '<strong>Service Worker noch nicht aktiv – bitte einmal normal neu laden.</strong>';
   document.body.appendChild(banner);
 }
 
@@ -590,7 +590,7 @@ function notifyEventAvailability() {
     return;
   }
 
-  notify('events', 'Grow Simulator', 'Ein Ereignis ist verfÃ¼gbar. Tippe, um zu reagieren.');
+  notify('events', 'Grow Simulator', 'Ein Ereignis ist verfügbar. Tippe, um zu reagieren.');
   notifications.runtime.lastNotifiedEventId = eventId;
 }
 
@@ -648,7 +648,7 @@ function notifyReminder(nowMs) {
     return;
   }
 
-  notify('reminder', 'Grow Simulator', 'Deine Pflanze braucht Pflege. Ã–ffne die App fÃ¼r eine MaÃŸnahme.');
+  notify('reminder', 'Grow Simulator', 'Deine Pflanze braucht Pflege. Öffne die App für eine Maßnahme.');
   notifications.runtime.lastReminderAtRealMs = nowMs;
 }
 

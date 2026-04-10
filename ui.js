@@ -6,6 +6,16 @@ let sheetsOverlayBindingsBound = false;
 let homeMetaExpanded = false;
 const warnedMissingUiKeys = new Set();
 
+function getMenuUiPresentationApi() {
+  const api = window.GrowSimMenuUiPresentation;
+  return api && typeof api === 'object' ? api : null;
+}
+
+function getMenuUiTextBundle() {
+  const api = getMenuUiPresentationApi();
+  return api && api.TEXT ? api.TEXT : null;
+}
+
 function firstExistingNode(...selectors) {
   for (const selector of selectors) {
     if (!selector) {
@@ -1227,6 +1237,11 @@ function renderSheets() {
 }
 
 function renderGameMenu() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.renderGameMenu === 'function') {
+    return appUiRuntime.renderGameMenu();
+  }
+  // Legacy fallback: keep only minimal visibility toggles if app runtime wiring is unavailable.
   if (!ui.menuBackdrop || !ui.gameMenu || !ui.menuToggleBtn) {
     return;
   }
@@ -1244,8 +1259,6 @@ function renderGameMenu() {
     ui.menuDialog.classList.toggle('hidden', !dialogOpen);
     ui.menuDialog.setAttribute('aria-hidden', String(!dialogOpen));
   }
-
-  renderMenuDynamicRows();
 }
 
 function renderMenuDynamicRows() {
@@ -1253,20 +1266,42 @@ function renderMenuDynamicRows() {
     return;
   }
 
-  const meta = getCanonicalMeta(state);
-  const rescueUsed = Boolean(meta.rescue.used);
-  const rescueBlocked = rescueAdPending || rescueUsed;
-  ui.menuRescueBtn.disabled = rescueBlocked;
-  ui.menuRescueSubtext.textContent = rescueUsed
-    ? '1× pro Run bereits genutzt.'
-    : (meta.rescue.lastResult || '1× pro Run verfügbar.');
-
   const notifications = getCanonicalNotificationsSettings(state);
+  const presentationApi = getMenuUiPresentationApi();
+  const rewardControl = typeof window.getRewardActionPresentation === 'function'
+    ? window.getRewardActionPresentation('emergency_save', { state, context: 'menu' })
+    : {};
+  const menuPresentation = presentationApi && typeof presentationApi.resolveMenuPresentation === 'function'
+    ? presentationApi.resolveMenuPresentation(state, {
+      rewardControl,
+      rescueMeta: getCanonicalMeta(state).rescue,
+      pending: rescueAdPending,
+      pushEnabled: notifications.enabled === true,
+      pushUiRuntime: state.ui && state.ui.push ? state.ui.push : {}
+    })
+    : null;
+  const rescuePresentation = menuPresentation && menuPresentation.entries ? menuPresentation.entries.rescue : null;
+  const pushPresentation = menuPresentation && menuPresentation.entries ? menuPresentation.entries.push : null;
+
+  ui.menuRescueBtn.disabled = rescuePresentation ? rescuePresentation.disabled === true : false;
+  ui.menuRescueBtn.setAttribute('aria-disabled', String(ui.menuRescueBtn.disabled));
+  ui.menuRescueBtn.title = rescuePresentation && rescuePresentation.title
+    ? String(rescuePresentation.title)
+    : '';
+  ui.menuRescueSubtext.textContent = rescuePresentation && rescuePresentation.subtext
+    ? String(rescuePresentation.subtext)
+    : '';
+
   const enabled = notifications.enabled === true;
   ui.menuPushBtn.setAttribute('aria-pressed', String(enabled));
-  ui.menuPushStatus.textContent = notifications.lastMessage
-    ? String(notifications.lastMessage)
-    : (enabled ? 'Aktiviert' : 'Deaktiviert');
+  ui.menuPushBtn.disabled = pushPresentation ? pushPresentation.disabled === true : false;
+  ui.menuPushBtn.setAttribute('aria-disabled', String(ui.menuPushBtn.disabled));
+  ui.menuPushBtn.title = pushPresentation && pushPresentation.title
+    ? String(pushPresentation.title)
+    : '';
+  ui.menuPushStatus.textContent = pushPresentation && pushPresentation.subtext
+    ? String(pushPresentation.subtext)
+    : '';
 }
 
 function toggleSheet(sheetNode, visible) {
@@ -1545,6 +1580,11 @@ function renderAnalysisPanel(force = false) {
 }
 
 function renderPushToggle() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.renderPushToggle === 'function') {
+    return appUiRuntime.renderPushToggle();
+  }
+
   if (!ui.pushToggleBtn || !ui.pushToggleStatus || !ui.pushToggleFeedback || !ui.notifTypeEvents || !ui.notifTypeCritical || !ui.notifTypeReminder) {
     return;
   }
@@ -1826,6 +1866,11 @@ function onMenuToggleClick() {
 }
 
 function openMenu() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.openMenu === 'function') {
+    return appUiRuntime.openMenu();
+  }
+  // Legacy fallback: local toggle only.
   state.ui.openSheet = null;
   renderSheets();
   state.ui.menuOpen = true;
@@ -1833,6 +1878,11 @@ function openMenu() {
 }
 
 function closeMenu() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.closeMenu === 'function') {
+    return appUiRuntime.closeMenu();
+  }
+  // Legacy fallback: local toggle only.
   if (state.ui.menuDialogOpen) {
     closeMenuDialog();
   }
@@ -1864,6 +1914,11 @@ function onMenuNewRunClick() {
 }
 
 function openMenuDialog({ title, message, cancelLabel = 'Abbrechen', confirmLabel = 'OK', onConfirm = null }) {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.openMenuDialog === 'function') {
+    return appUiRuntime.openMenuDialog({ title, message, cancelLabel, confirmLabel, onConfirm });
+  }
+  // Legacy fallback: keep baseline dialog behavior only.
   if (!ui.menuDialogTitle || !ui.menuDialogText || !ui.menuDialogCancelBtn || !ui.menuDialogConfirmBtn) {
     return;
   }
@@ -1889,6 +1944,11 @@ function openMenuDialog({ title, message, cancelLabel = 'Abbrechen', confirmLabe
 }
 
 function closeMenuDialog() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.closeMenuDialog === 'function') {
+    return appUiRuntime.closeMenuDialog();
+  }
+  // Legacy fallback: keep baseline close behavior only.
   state.ui.menuDialogOpen = false;
   menuDialogConfirmHandler = null;
   if (ui.menuDialogConfirmBtn) {
@@ -1915,6 +1975,11 @@ function renderLanding() {
 }
 
 function renderDeathOverlay() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.renderDeathOverlay === 'function') {
+    return appUiRuntime.renderDeathOverlay();
+  }
+  // Legacy fallback: keep only visibility handling to avoid competing product logic in ui.js.
   if (!ui.deathOverlay || !ui.deathDriverList || !ui.deathHistoryList) {
     return;
   }
@@ -1922,45 +1987,6 @@ function renderDeathOverlay() {
   const visible = Boolean(state.ui.deathOverlayOpen && isPlantDead());
   ui.deathOverlay.classList.toggle('hidden', !visible);
   ui.deathOverlay.setAttribute('aria-hidden', String(!visible));
-
-  if (!visible) {
-    return;
-  }
-
-  const topDrivers = diagnosisDrivers().slice(0, 3);
-  ui.deathDriverList.replaceChildren();
-  for (const item of topDrivers) {
-    const row = document.createElement('li');
-    row.innerHTML = `<strong>${escapeHtml(String(item.label || 'Unklare Ursache'))}</strong><br>${escapeHtml(String(item.reason || 'Kein Detail verfügbar'))}`;
-    ui.deathDriverList.appendChild(row);
-  }
-
-  const recent = collectRecentHistoryEntries(3);
-  ui.deathHistoryList.replaceChildren();
-  if (!recent.length) {
-    const empty = document.createElement('li');
-    empty.textContent = 'Keine Aktionen oder Ereignisse protokolliert.';
-    ui.deathHistoryList.appendChild(empty);
-  } else {
-    for (const row of recent) {
-      const item = document.createElement('li');
-      item.innerHTML = formatRecentHistoryHtml(row);
-      ui.deathHistoryList.appendChild(item);
-    }
-  }
-
-  if (ui.deathRescueBtn && ui.deathRescueSubtext && ui.deathRescueFeedback) {
-    const meta = getCanonicalMeta(state);
-    const rescueUsed = Boolean(meta.rescue.used);
-    ui.deathRescueBtn.disabled = rescueAdPending || rescueUsed;
-    ui.deathRescueBtn.textContent = rescueUsed
-      ? 'Rettungsaktion bereits genutzt'
-      : 'Rettungsaktion nutzen';
-    ui.deathRescueSubtext.textContent = rescueUsed
-      ? '1× pro Run bereits verbraucht.'
-      : '1× pro Run';
-    ui.deathRescueFeedback.textContent = meta.rescue.lastResult ? String(meta.rescue.lastResult) : '';
-  }
 }
 
 function collectRecentHistoryEntries(limit = 3) {
@@ -2052,12 +2078,15 @@ function onDeathAnalyzeClick() {
 
 async function onDeathRescueClick() {
   const meta = getCanonicalMeta(state);
+  const rescueText = getMenuUiTextBundle() && getMenuUiTextBundle().rescue
+    ? getMenuUiTextBundle().rescue
+    : null;
   if (rescueAdPending) {
     return;
   }
 
   if (meta.rescue.used) {
-    meta.rescue.lastResult = 'Rettungsaktion ist nur 1× pro Run verfügbar.';
+    meta.rescue.lastResult = rescueText ? rescueText.used : 'Rettungsaktion ist nur 1x pro Run verfuegbar.';
     renderDeathOverlay();
     schedulePersistState(true);
     return;
@@ -2066,7 +2095,7 @@ async function onDeathRescueClick() {
   const beforeHealth = Number(state.status.health) || 0;
   const deadNow = isPlantDead();
   if (!deadNow && beforeHealth >= 20) {
-    meta.rescue.lastResult = 'Notfallrettung ist aktuell nicht erforderlich.';
+    meta.rescue.lastResult = rescueText ? rescueText.notRequired : 'Notfallrettung ist aktuell nicht erforderlich.';
     renderDeathOverlay();
     schedulePersistState(true);
     return;
@@ -2076,7 +2105,7 @@ async function onDeathRescueClick() {
 
   const rescueResult = applyRescueEffects();
   if (!rescueResult.ok) {
-    meta.rescue.lastResult = 'Notfallrettung ist aktuell nicht erforderlich.';
+    meta.rescue.lastResult = rescueText ? rescueText.notRequired : 'Notfallrettung ist aktuell nicht erforderlich.';
     renderDeathOverlay();
     schedulePersistState(true);
     return;
@@ -2085,7 +2114,9 @@ async function onDeathRescueClick() {
   const nowMs = Date.now();
   meta.rescue.used = true;
   meta.rescue.usedAtRealMs = nowMs;
-  meta.rescue.lastResult = 'Rettungsaktion angewendet. Die Pflanze stabilisiert sich.';
+  meta.rescue.lastResult = rescueResult.wasDead
+    ? (rescueText ? rescueText.appliedRevived : 'Notfallrettung angewendet. Der Run wurde knapp gerettet.')
+    : (rescueText ? rescueText.appliedStable : 'Rettungsaktion angewendet. Die Pflanze stabilisiert sich.');
 
   const timestamp = {
     realMs: nowMs,
@@ -2113,6 +2144,10 @@ async function onDeathRescueClick() {
 }
 
 async function onPushToggleClick() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.onPushToggleClick === 'function') {
+    return appUiRuntime.onPushToggleClick();
+  }
   const notifications = getCanonicalNotificationsSettings(state);
   const currentlyEnabled = notifications.enabled === true;
 

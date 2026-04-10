@@ -1266,6 +1266,54 @@
       return `${value}${separator}v=${encodeURIComponent(buildId)}`;
     };
 
+    const showScriptLoaderError = (definition, error) => {
+      const scriptSrc = definition && definition.src ? String(definition.src) : 'unknown';
+      const message = error && error.message ? String(error.message) : String(error || 'Unbekannter Loader-Fehler');
+      const payload = {
+        buildId,
+        phase: 'core',
+        scriptSrc,
+        error: message
+      };
+
+      window.__gsBootOk = false;
+      window.__gsBootTrace = Array.isArray(window.__gsBootTrace) ? window.__gsBootTrace : [];
+      window.__gsBootTrace.push({
+        ...payload,
+        timestampMs: Date.now()
+      });
+      window.__gsBootState = {
+        step: 'script_loader_failed',
+        progress: 5,
+        message: `Ladedatei fehlgeschlagen: ${scriptSrc}`
+      };
+
+      console.error('[boot] core script failed', payload);
+
+      const existing = document.getElementById('scriptBootErrorBanner');
+      if (existing) {
+        return;
+      }
+
+      const banner = document.createElement('aside');
+      banner.id = 'scriptBootErrorBanner';
+      banner.className = 'boot-error-banner';
+      banner.innerHTML = `
+        <strong>Fehler beim Starten</strong>
+        <p>Die App konnte nicht vollständig geladen werden. Bitte neu laden.</p>
+        <div class="boot-error-actions">
+          <button type="button" id="scriptBootReloadBtn" class="action-btn action-primary">Neu laden</button>
+          <span>Build ${buildId} · Datei: ${scriptSrc}</span>
+        </div>
+      `;
+      document.body.appendChild(banner);
+
+      const reloadBtn = document.getElementById('scriptBootReloadBtn');
+      if (reloadBtn) {
+        reloadBtn.addEventListener('click', () => window.location.reload());
+      }
+    };
+
     const coreScriptList = [
       { src: 'src/config/api.js', type: 'module' },
       { src: 'src/config/simulation.js' },
@@ -1302,6 +1350,8 @@
       { src: 'src/ui/components/primitives.js' },
       { src: 'src/ui/controller/uiController.js' },
       { src: 'src/ui/runtime/screenRuntimeManager.js' },
+      { src: 'src/ui/state/pushUiPresentation.js' },
+      { src: 'src/ui/state/menuUiPresentation.js' },
       { src: 'src/ui/mappings/homeMapping.js' },
       { src: 'src/ui/care/careActionHints.js' },
       { src: 'src/ui/mappings/careMapping.js' },
@@ -1352,12 +1402,25 @@
     (async () => {
       console.info('[boot] script loader start', { buildId });
       for (const definition of coreScriptList) {
-        await loadScript(definition);
-        console.info('[boot] core script loaded', definition.src);
+        try {
+          await loadScript(definition);
+          console.info('[boot] core script loaded', {
+            buildId,
+            scriptSrc: definition.src,
+            phase: 'core'
+          });
+        } catch (error) {
+          showScriptLoaderError(definition, error);
+          throw error;
+        }
       }
       loadOptionalScripts();
     })().catch((error) => {
-      console.error('[boot] script boot failed', error);
+      console.error('[boot] script boot failed', {
+        buildId,
+        phase: 'core',
+        error: error && error.message ? error.message : String(error)
+      });
     });
   })();
 </script>

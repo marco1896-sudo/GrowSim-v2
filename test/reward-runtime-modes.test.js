@@ -2,106 +2,17 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
-const http = require('http');
 const path = require('path');
 const { chromium } = require('playwright');
+const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
+const {
+  installAuthHarness: setupAuthHarness,
+  waitForBoot: waitForBootReady
+} = require('./support/browserRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
-const HOST = '0.0.0.0';
-const CLIENT_HOST = '127.0.0.1';
-const PORT = 4187;
+const HOST = '127.0.0.1';
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
-
-function contentTypeFor(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const byExt = {
-    '.css': 'text/css; charset=utf-8',
-    '.html': 'text/html; charset=utf-8',
-    '.ico': 'image/x-icon',
-    '.jpeg': 'image/jpeg',
-    '.jpg': 'image/jpeg',
-    '.js': 'text/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.svg': 'image/svg+xml; charset=utf-8',
-    '.webmanifest': 'application/manifest+json; charset=utf-8',
-    '.webp': 'image/webp'
-  };
-  return byExt[ext] || 'application/octet-stream';
-}
-
-function createStaticServer(rootDir) {
-  return http.createServer((req, res) => {
-    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
-    const relativePath = decodeURIComponent(requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname);
-    const safeRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    const filePath = path.join(rootDir, safeRelativePath);
-
-    if (!filePath.startsWith(rootDir)) {
-      res.writeHead(403);
-      res.end('Forbidden');
-      return;
-    }
-
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        res.writeHead(error.code === 'ENOENT' ? 404 : 500);
-        res.end(error.code === 'ENOENT' ? 'Not found' : 'Internal server error');
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': contentTypeFor(filePath) });
-      res.end(data);
-    });
-  });
-}
-
-async function installAuthHarness(page) {
-  await page.addInitScript((tokenKey) => {
-    localStorage.setItem(tokenKey, 'reward-runtime-test');
-  }, AUTH_TOKEN_KEY);
-
-  await page.route('https://api.growsimulator.tech/api/**', async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-
-    if (url.pathname === '/api/auth/me') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          user: {
-            id: 'reward-runtime-user',
-            email: 'reward@test.local',
-            displayName: 'Reward Runtime'
-          }
-        })
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/save') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: request.method() === 'GET'
-          ? JSON.stringify({ save: null })
-          : JSON.stringify({ ok: true })
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: 'Unhandled test route' })
-    });
-  });
-}
-
-async function waitForBoot(page) {
-  await page.waitForFunction(() => window.__gsBootOk === true, null, { timeout: 25000 });
-}
 
 async function runRewardScenario(page, scenario) {
   return page.evaluate(async (input) => {
@@ -155,16 +66,20 @@ async function runRewardScenario(page, scenario) {
 }
 
 async function main() {
-  const server = createStaticServer(ROOT);
-  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+  const { server, baseUrl } = await startStaticServer(ROOT, HOST);
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
 
   try {
-    await installAuthHarness(page);
-    await page.goto(`http://${CLIENT_HOST}:${PORT}/`, { waitUntil: 'domcontentloaded' });
-    await waitForBoot(page);
+    await setupAuthHarness(page, AUTH_TOKEN_KEY, {
+      id: 'reward-runtime-user',
+      email: 'reward@test.local',
+      displayName: 'Reward Runtime',
+      token: 'reward-runtime-test'
+    });
+    await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded' });
+    await waitForBootReady(page, 25000);
 
     const direct = await runRewardScenario(page, { mode: 'direct' });
     assert.strictEqual(direct.result.ok, true, 'direct mode should still execute reward action');
@@ -210,8 +125,8 @@ async function main() {
     assert.strictEqual(emergencySoftLaunch.result.ok, false, 'soft launch should keep emergency save disabled by default');
     assert.strictEqual(emergencySoftLaunch.result.reason, 'reward_action_disabled', 'soft launch should block emergency save through rollout gating');
   } finally {
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
+    await closeBrowser(browser);
+    await closeServer(server);
   }
 }
 

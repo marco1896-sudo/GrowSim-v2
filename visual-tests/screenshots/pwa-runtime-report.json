@@ -1,19 +1,10 @@
 {
-  "url": "http://0.0.0.0:4173/",
-  "startedAt": "2026-03-14T15:17:48.898Z",
+  "url": "http://127.0.0.1:63019/",
+  "startedAt": "2026-04-10T17:25:44.590Z",
   "initial": {
     "bootOk": true,
-    "bootMetrics": {
-      "startPerfMs": 54.30000001192093,
-      "startEpochMs": 1773501469299,
-      "firstHudRenderMs": 204.4,
-      "spriteReadyMs": 816.1,
-      "serviceWorkerReadyMs": 18.8,
-      "bootCompleteMs": 212.5,
-      "spriteReady": true,
-      "serviceWorkerReady": true
-    },
-    "swHintVisible": false,
+    "bootMetrics": null,
+    "swHintVisible": true,
     "hasHud": true,
     "sw": {
       "supported": true,
@@ -32,16 +23,7 @@
   },
   "afterReload": {
     "bootOk": true,
-    "bootMetrics": {
-      "startPerfMs": 52.10000002384186,
-      "startEpochMs": 1773501472790,
-      "firstHudRenderMs": 76.6,
-      "spriteReadyMs": 200.9,
-      "serviceWorkerReadyMs": 17.9,
-      "bootCompleteMs": 106.3,
-      "spriteReady": true,
-      "serviceWorkerReady": true
-    },
+    "bootMetrics": null,
     "swHintVisible": false,
     "hasHud": true,
     "sw": {
@@ -61,16 +43,7 @@
   },
   "offlineReload": {
     "bootOk": true,
-    "bootMetrics": {
-      "startPerfMs": 78.80000001192093,
-      "startEpochMs": 1773501475960,
-      "firstHudRenderMs": 59.7,
-      "spriteReadyMs": 183.3,
-      "serviceWorkerReadyMs": 3.6,
-      "bootCompleteMs": 76,
-      "spriteReady": true,
-      "serviceWorkerReady": true
-    },
+    "bootMetrics": null,
     "swHintVisible": false,
     "hasHud": true,
     "sw": {
@@ -88,11 +61,16 @@
       }
     }
   },
-  "consoleErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+  ],
   "pageErrors": [],
   "response404": [],
   "requestFailed": [
-    "http://0.0.0.0:4173/assets/sprites/ui_icon_sheet.webp :: net::ERR_ABORTED",
-    "http://0.0.0.0:4173/assets/plant_growth/plant_growth_sprite.png :: net::ERR_ABORTED"
+    "https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap :: net::ERR_INTERNET_DISCONNECTED",
+    "https://cdn.jsdelivr.net/npm/chart.js :: net::ERR_INTERNET_DISCONNECTED",
+    "https://www.paypalobjects.com/donate/sdk/donate-sdk.js :: net::ERR_INTERNET_DISCONNECTED"
   ]
 }

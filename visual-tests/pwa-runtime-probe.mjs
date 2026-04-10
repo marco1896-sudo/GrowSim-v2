@@ -1,62 +1,16 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import path from 'node:path';
-import http from 'node:http';
+import { createRequire } from 'node:module';
 import { chromium } from 'playwright';
 
+const require = createRequire(import.meta.url);
+const { startStaticServer, closeBrowser, closeContext, closeServer } = require('../test/support/serverRuntime.js');
+const { installAuthHarness, waitForBoot } = require('../test/support/browserRuntime.js');
+
 const ROOT = process.cwd();
-const PORT = 4173;
-const OUT_DIR = path.join(ROOT, 'visual-tests', 'screenshots');
+let PORT = 0;
+const OUT_DIR = path.join(ROOT, 'test-results', 'visual-probes', 'pwa');
 const OUT_JSON = path.join(OUT_DIR, 'pwa-runtime-report.json');
-
-function contentType(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const map = {
-    '.html': 'text/html; charset=utf-8',
-    '.css': 'text/css; charset=utf-8',
-    '.js': 'application/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.webp': 'image/webp',
-    '.svg': 'image/svg+xml',
-    '.ico': 'image/x-icon',
-    '.webmanifest': 'application/manifest+json'
-  };
-  return map[ext] || 'application/octet-stream';
-}
-
-function startStaticServer(rootDir, port) {
-  const server = http.createServer((req, res) => {
-    const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
-    const sanitized = urlPath === '/' ? '/index.html' : urlPath;
-    const requested = path.join(rootDir, sanitized);
-    const fullPath = path.normalize(requested);
-
-    if (!fullPath.startsWith(rootDir)) {
-      res.statusCode = 403;
-      res.end('Forbidden');
-      return;
-    }
-
-    if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
-      res.statusCode = 404;
-      res.end('Not Found');
-      return;
-    }
-
-    res.setHeader('Content-Type', contentType(fullPath));
-    if (path.basename(fullPath) === 'sw.js') {
-      res.setHeader('Cache-Control', 'no-cache');
-    }
-    fs.createReadStream(fullPath).pipe(res);
-  });
-
-  return new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(port, '0.0.0.0', () => resolve(server));
-  });
-}
 
 async function collectPageState(page) {
   return page.evaluate(async () => {
@@ -109,7 +63,12 @@ async function collectPageState(page) {
 
 async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
-  const server = await startStaticServer(ROOT, PORT);
+  const { server, port: resolvedPort } = await startStaticServer(ROOT, '127.0.0.1', PORT, {
+    defaultHeaders: {
+      'Cache-Control': 'no-store'
+    }
+  });
+  PORT = Number(resolvedPort || 0);
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 430, height: 932 },
@@ -140,7 +99,7 @@ async function main() {
     requestFailed.push(`${req.url()} :: ${req.failure() ? req.failure().errorText : 'failed'}`);
   });
 
-  const url = `http://0.0.0.0:${PORT}/`;
+  const url = `http://127.0.0.1:${PORT}/`;
   const report = {
     url,
     startedAt: new Date().toISOString(),
@@ -154,15 +113,21 @@ async function main() {
   };
 
   try {
+    await installAuthHarness(page, 'grow-sim-auth-token-v1', {
+      id: 'pwa-probe-user',
+      email: 'pwa-probe@test.local',
+      displayName: 'PWA Probe',
+      token: 'pwa-probe-token'
+    });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => window.__gsBootOk === true, null, { timeout: 15000 });
+    await waitForBoot(page, 25000);
     await page.waitForTimeout(1200);
 
     report.initial = await collectPageState(page);
     await page.screenshot({ path: path.join(OUT_DIR, 'pwa-probe-initial.png'), fullPage: true });
 
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => window.__gsBootOk === true, null, { timeout: 15000 });
+    await waitForBoot(page, 25000);
     await page.waitForTimeout(900);
     report.afterReload = await collectPageState(page);
     await page.screenshot({ path: path.join(OUT_DIR, 'pwa-probe-reload.png'), fullPage: true });
@@ -177,9 +142,9 @@ async function main() {
     fs.writeFileSync(OUT_JSON, JSON.stringify(report, null, 2));
     console.log(JSON.stringify(report, null, 2));
   } finally {
-    await context.close();
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
+    await closeContext(context);
+    await closeBrowser(browser);
+    await closeServer(server);
   }
 }
 
@@ -187,4 +152,3 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-

@@ -6,9 +6,9 @@ const fs = require('fs');
 
 async function runOfflineRegressionTest() {
 const ROOT = path.resolve(__dirname, '..');
-const HOST = '0.0.0.0';
-const CLIENT_HOST = '127.0.0.1';
-const PORT = 4175;
+const HOST = '127.0.0.1';
+const CLIENT_HOST = HOST;
+let PORT = 0;
 
   function contentTypeFor(filePath) {
     const ext = path.extname(filePath).toLowerCase();
@@ -55,7 +55,8 @@ const PORT = 4175;
   }
 
   const server = createStaticServer(ROOT);
-  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+  await new Promise((resolve) => server.listen(0, HOST, resolve));
+  PORT = Number(server.address().port || 0);
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
@@ -309,3 +310,5 @@ runOfflineRegressionTest().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+

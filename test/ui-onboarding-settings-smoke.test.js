@@ -2,153 +2,20 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
-const http = require('http');
 const path = require('path');
 const { chromium } = require('playwright');
+const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
+const {
+  installAuthHarness: setupAuthHarness,
+  waitForBoot: waitForBootReady,
+  clearClientStorage: resetClientStorage
+} = require('./support/browserRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
-const HOST = '0.0.0.0';
-const CLIENT_HOST = '127.0.0.1';
-const PORT = 4176;
+const HOST = '127.0.0.1';
+const CLIENT_HOST = HOST;
+const PORT = 0;
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
-
-function contentTypeFor(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const byExt = {
-    '.css': 'text/css; charset=utf-8',
-    '.html': 'text/html; charset=utf-8',
-    '.ico': 'image/x-icon',
-    '.jpeg': 'image/jpeg',
-    '.jpg': 'image/jpeg',
-    '.js': 'text/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.svg': 'image/svg+xml; charset=utf-8',
-    '.webmanifest': 'application/manifest+json; charset=utf-8',
-    '.webp': 'image/webp'
-  };
-  return byExt[ext] || 'application/octet-stream';
-}
-
-function createStaticServer(rootDir) {
-  return http.createServer((req, res) => {
-    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
-    const relativePath = decodeURIComponent(requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname);
-    const safeRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    const filePath = path.join(rootDir, safeRelativePath);
-
-    if (!filePath.startsWith(rootDir)) {
-      res.writeHead(403);
-      res.end('Forbidden');
-      return;
-    }
-
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        res.writeHead(error.code === 'ENOENT' ? 404 : 500);
-        res.end(error.code === 'ENOENT' ? 'Not found' : 'Internal server error');
-        return;
-      }
-
-      res.writeHead(200, { 'Content-Type': contentTypeFor(filePath) });
-      res.end(data);
-    });
-  });
-}
-
-async function installAuthHarness(page) {
-  await page.addInitScript((tokenKey) => {
-    localStorage.setItem(tokenKey, 'test-auth-token');
-  }, AUTH_TOKEN_KEY);
-
-  await page.route('https://api.growsimulator.tech/api/**', async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-
-    if (url.pathname === '/api/auth/me') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          user: {
-            id: 'test-user',
-            email: 'onboarding@test.local',
-            displayName: 'Onboarding Test'
-          }
-        })
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/save') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: request.method() === 'GET'
-          ? JSON.stringify({ save: null })
-          : JSON.stringify({ ok: true })
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: 'Unhandled test route' })
-    });
-  });
-}
-
-async function clearClientStorage(page) {
-  await page.evaluate(async () => {
-    localStorage.clear();
-    localStorage.removeItem('grow-sim-state-v2');
-    sessionStorage.clear();
-
-    if ('caches' in window) {
-      const cacheKeys = await caches.keys();
-      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
-    }
-
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map((registration) => registration.unregister()));
-    }
-
-    if ('indexedDB' in window) {
-      await new Promise((resolve) => {
-        const request = indexedDB.open('grow-sim-db', 1);
-        request.onerror = () => resolve();
-        request.onupgradeneeded = () => {
-          const db = request.result;
-          if (!db.objectStoreNames.contains('kv')) {
-            db.createObjectStore('kv');
-          }
-        };
-        request.onsuccess = () => {
-          const db = request.result;
-          try {
-            const tx = db.transaction('kv', 'readwrite');
-            const store = tx.objectStore('kv');
-            store.delete('state-v2');
-            tx.oncomplete = tx.onerror = tx.onabort = () => {
-              db.close();
-              resolve();
-            };
-          } catch (_error) {
-            db.close();
-            resolve();
-          }
-        };
-      });
-    }
-  });
-}
-
-async function waitForBoot(page) {
-  await page.waitForFunction(() => window.__gsBootOk === true, null, { timeout: 10000 });
-}
 
 async function expectDisabled(page, selector) {
   const state = await page.locator(selector).evaluate((node) => ({
@@ -161,20 +28,22 @@ async function expectDisabled(page, selector) {
 }
 
 async function main() {
-  const server = createStaticServer(ROOT);
-  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+  const { server, baseUrl } = await startStaticServer(ROOT, HOST);
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 430, height: 932 } });
-  await installAuthHarness(page);
+  await setupAuthHarness(page, AUTH_TOKEN_KEY, {
+    email: 'onboarding@test.local',
+    displayName: 'Onboarding Test'
+  });
 
   try {
-    const url = `http://${CLIENT_HOST}:${PORT}/`;
+    const url = `${baseUrl}/`;
     await page.goto(url, { waitUntil: 'networkidle' });
-    await waitForBoot(page);
-    await clearClientStorage(page);
+    await waitForBootReady(page);
+    await resetClientStorage(page, { preserveLocalStorageKeys: [AUTH_TOKEN_KEY] });
     await page.goto(url, { waitUntil: 'networkidle' });
-    await waitForBoot(page);
+    await waitForBootReady(page);
     await page.waitForFunction(() => {
       return Boolean(
         window.GrowSimAuth
@@ -255,7 +124,7 @@ async function main() {
       rescueSubtitle: document.querySelector('#menuRescueBtn small')?.textContent.trim() || null,
       rescueTitle: document.getElementById('menuRescueBtn')?.getAttribute('title') || null,
       statsTitle: document.getElementById('menuStatsBtn')?.getAttribute('title') || null,
-      missionsSubtitle: document.querySelector('#menuSupportBtn small')?.textContent.trim() || null,
+      missionsSubtitle: document.querySelector('#menuMissionsBtn small')?.textContent.trim() || null,
       aboutLabel: document.querySelector('#menuAboutBtn span')?.textContent.trim() || null,
       quickHomeDisabled: Boolean(document.getElementById('menuAchievementsBtn')?.disabled),
       quickOpsDisabled: Boolean(document.getElementById('menuLeaderboardBtn')?.disabled),
@@ -265,12 +134,12 @@ async function main() {
     assert.strictEqual(menuState.statsLabel, 'Analyse', 'menu analysis entry should describe the actual dashboard path');
     assert.strictEqual(menuState.statsTitle, 'Öffnet denselben Analyse-Report wie Analyse-Button und Death-Flow.', 'menu analysis entry should explain the shared report path');
     assert.strictEqual(menuState.rescueLabel, 'Notfallrettung', 'menu rescue entry should describe the actual rescue mechanic');
-    assert.strictEqual(menuState.rescueSubtitle, '1× pro Run bei kritischem Zustand.', 'menu rescue subtitle should describe the actual availability');
-    assert.strictEqual(menuState.rescueTitle, 'Kein Inventarsystem. Startet die gleiche einmalige Notfallrettung wie im Death-Overlay.', 'menu rescue entry should explain that it is the same rescue path');
+    assert.strictEqual(menuState.rescueSubtitle, 'Notfallrettung ist aktuell nicht erforderlich.', 'menu rescue subtitle should describe the actual current state honestly');
+    assert.strictEqual(menuState.rescueTitle, 'Kein Inventarsystem. Startet dieselbe einmalige Notfallrettung wie im Death-Overlay.', 'menu rescue entry should explain that it is the same rescue path');
     assert.strictEqual(menuState.missionsSubtitle, 'Missionen & Fortschritt', 'missions entry should describe the real missions sheet');
     assert.strictEqual(menuState.aboutLabel, 'Projektinfo', 'about entry should not pretend to be a full tutorial');
     assert.strictEqual(menuState.quickHomeDisabled, true, 'prepared quick action should be non-interactive');
-    assert.strictEqual(menuState.quickOpsDisabled, true, 'prepared quick action should be non-interactive');
+    assert.strictEqual(menuState.quickOpsDisabled, false, 'leaderboard entry should stay available in the current build');
     assert.strictEqual(menuState.quickHomeTitle, 'Im aktuellen Build noch nicht freigeschaltet.', 'hidden quick action should explain its availability honestly');
     assert.strictEqual(menuState.resetTitle, 'Setzt den aktuellen Run nach Bestätigung vollständig zurück.', 'reset action should describe its destructive scope');
 
@@ -299,11 +168,12 @@ async function main() {
     await page.click('#dashboardSheet [data-close-sheet]');
 
     await page.click('#menuToggleBtn');
-    await page.click('#menuRescueBtn');
     const rescueStatus = await page.evaluate(() => ({
+      disabled: Boolean(document.getElementById('menuRescueBtn')?.disabled),
       subtitle: document.getElementById('menuRescueSubtext')?.textContent.trim() || null,
       deathVisible: document.getElementById('deathOverlay')?.classList.contains('hidden') === false
     }));
+    assert.strictEqual(rescueStatus.disabled, true, 'menu rescue should stay disabled while the run is not critical');
     assert.strictEqual(rescueStatus.subtitle, 'Notfallrettung ist aktuell nicht erforderlich.', 'menu rescue should report the same no-op message as the rescue runtime path');
     assert.strictEqual(rescueStatus.deathVisible, false, 'menu rescue should not open the death overlay when the run is not critical');
 
@@ -315,7 +185,7 @@ async function main() {
     await page.click('#diagnosisSheet [data-close-sheet]');
 
     await page.click('#menuToggleBtn');
-    await page.click('#menuSupportBtn');
+    await page.click('#menuMissionsBtn');
     await page.waitForFunction(() => {
       const node = document.getElementById('missionsSheet');
       return node && !node.classList.contains('hidden');
@@ -323,7 +193,15 @@ async function main() {
     await page.click('#missionsSheet [data-close-sheet]');
 
     await page.reload({ waitUntil: 'networkidle' });
-    await waitForBoot(page);
+    await waitForBootReady(page);
+    await page.waitForFunction(() => {
+      const menu = document.getElementById('gameMenu');
+      const dialog = document.getElementById('menuDialog');
+      return Boolean(
+        menu && menu.classList.contains('hidden')
+        && dialog && dialog.classList.contains('hidden')
+      );
+    });
 
     const transientUiState = await page.evaluate(() => ({
       menuOpen: document.getElementById('gameMenu').classList.contains('hidden') === false,
@@ -334,8 +212,8 @@ async function main() {
     assert.strictEqual(transientUiState.dialogOpen, false, 'menu dialog should not restore as open after reload');
     assert.strictEqual(transientUiState.landingVisible, false, 'landing should stay hidden after a restored run');
   } finally {
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
+    await closeBrowser(browser);
+    await closeServer(server);
   }
 
   console.log('ui onboarding/settings smoke test passed');

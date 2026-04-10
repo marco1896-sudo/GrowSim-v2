@@ -2,142 +2,38 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
-const http = require('http');
 const path = require('path');
 const { chromium } = require('playwright');
+const {
+  installAuthHarness: setupAuthHarness,
+  waitForBoot: waitForBootReady,
+  clearClientStorage: resetClientStorage
+} = require('./support/browserRuntime');
+const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
-const HOST = '0.0.0.0';
-const CLIENT_HOST = '127.0.0.1';
-const PORT = 4178;
+const HOST = '127.0.0.1';
+const CLIENT_HOST = HOST;
+let PORT = 0;
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
 
-function contentTypeFor(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const byExt = {
-    '.css': 'text/css; charset=utf-8',
-    '.html': 'text/html; charset=utf-8',
-    '.ico': 'image/x-icon',
-    '.jpeg': 'image/jpeg',
-    '.jpg': 'image/jpeg',
-    '.js': 'text/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.svg': 'image/svg+xml; charset=utf-8',
-    '.webmanifest': 'application/manifest+json; charset=utf-8',
-    '.webp': 'image/webp'
-  };
-  return byExt[ext] || 'application/octet-stream';
-}
-
-function createStaticServer(rootDir) {
-  return http.createServer((req, res) => {
-    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
-    const relativePath = decodeURIComponent(requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname);
-    const safeRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    const filePath = path.join(rootDir, safeRelativePath);
-
-    if (!filePath.startsWith(rootDir)) {
-      res.writeHead(403);
-      res.end('Forbidden');
-      return;
-    }
-
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        res.writeHead(error.code === 'ENOENT' ? 404 : 500);
-        res.end(error.code === 'ENOENT' ? 'Not found' : 'Internal server error');
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': contentTypeFor(filePath) });
-      res.end(data);
-    });
-  });
-}
-
-async function installAuthHarness(page) {
-  await page.addInitScript((tokenKey) => {
-    localStorage.setItem(tokenKey, 'test-auth-token');
-  }, AUTH_TOKEN_KEY);
-
-  await page.route('https://api.growsimulator.tech/api/**', async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-
-    if (url.pathname === '/api/auth/me') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          user: {
-            id: 'test-user',
-            email: 'progress@test.local',
-            displayName: 'Progress Test'
-          }
-        })
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/save') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: request.method() === 'GET'
-          ? JSON.stringify({ save: null })
-          : JSON.stringify({ ok: true })
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: 'Unhandled test route' })
-    });
-  });
-}
-
-async function clearClientStorage(page) {
-  await page.evaluate(async () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    if ('caches' in window) {
-      const cacheKeys = await caches.keys();
-      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
-    }
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map((registration) => registration.unregister()));
-    }
-    if ('indexedDB' in window) {
-      await new Promise((resolve) => {
-        const request = indexedDB.deleteDatabase('grow-sim-db');
-        request.onerror = request.onsuccess = request.onblocked = () => resolve();
-      });
-    }
-  });
-}
-
-async function waitForBoot(page) {
-  await page.waitForFunction(() => window.__gsBootOk === true, null, { timeout: 15000 });
-}
-
 async function main() {
-  const server = createStaticServer(ROOT);
-  await new Promise((resolve) => server.listen(PORT, HOST, resolve));
+  const { server, port: resolvedPort } = await startStaticServer(ROOT, HOST);
+  PORT = Number(resolvedPort || 0);
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 430, height: 932 } });
-  await installAuthHarness(page);
+  await setupAuthHarness(page, AUTH_TOKEN_KEY, {
+      email: 'progress@test.local',
+      displayName: 'Progress Test'
+    });
 
   try {
     const url = `http://${CLIENT_HOST}:${PORT}/`;
     await page.goto(url, { waitUntil: 'networkidle' });
-    await waitForBoot(page);
-    await clearClientStorage(page);
+    await waitForBootReady(page);
+    await resetClientStorage(page);
     await page.goto(url, { waitUntil: 'networkidle' });
-    await waitForBoot(page);
+    await waitForBootReady(page);
 
     for (const selector of [
       '[data-setup-select="setupGenetics"][data-setup-value="indica"]',
@@ -248,7 +144,12 @@ async function main() {
         && window.getComputedStyle(confirmBtn).visibility !== 'hidden';
       return !isHiddenByClass && isVisible;
     }, null, { timeout: 10000 });
-    await page.click('#menuDialogConfirmBtn', { force: true });
+    await page.evaluate(() => {
+      const confirmBtn = document.getElementById('menuDialogConfirmBtn');
+      if (confirmBtn) {
+        confirmBtn.click();
+      }
+    });
     await page.waitForFunction(() => window.getCanonicalRun().status === 'finished');
     await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
 
@@ -316,7 +217,7 @@ async function main() {
     assert.strictEqual(summaryScrollProbe.ctaReachable, true, 'scrolling the summary must bring the bottom CTA into the visible viewport');
 
     await page.reload({ waitUntil: 'networkidle' });
-    await waitForBoot(page);
+    await waitForBootReady(page);
     await page.waitForFunction(() => window.getCanonicalRun().status === 'finished');
     await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
 
@@ -412,7 +313,7 @@ async function main() {
     assert.ok(/High Output|Fast Genetics|Hardy Genetics/.test(harvestResult.feedbackText), 'summary feedback should reference the selected setup');
 
     await page.reload({ waitUntil: 'networkidle' });
-    await waitForBoot(page);
+    await waitForBootReady(page);
     await page.waitForFunction(() => window.getCanonicalRun().status === 'ended');
     await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
     await page.locator('#runSummaryNewRunBtn').evaluate((node) => node.click());
@@ -427,7 +328,7 @@ async function main() {
   } finally {
     await page.close().catch(() => {});
     await browser.close().catch(() => {});
-    await new Promise((resolve) => server.close(resolve));
+    await closeServer(server);
   }
 }
 
@@ -439,3 +340,5 @@ main()
     console.error(error);
     process.exitCode = 1;
   });
+
+
