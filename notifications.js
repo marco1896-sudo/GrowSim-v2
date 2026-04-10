@@ -47,7 +47,27 @@ function showServiceWorkerHint() {
   document.body.appendChild(banner);
 }
 
+const CLIENT_GAMEPLAY_PUSH_DEBUG_FLAG_KEY = 'growsim:debug-client-gameplay-push-dispatch';
+
+function isClientGameplayPushDispatchEnabled() {
+  if (window && window.__GROWSIM_ENABLE_CLIENT_GAMEPLAY_PUSH__ === true) {
+    return true;
+  }
+
+  try {
+    const raw = window && window.localStorage
+      ? String(window.localStorage.getItem(CLIENT_GAMEPLAY_PUSH_DEBUG_FLAG_KEY) || '').trim().toLowerCase()
+      : '';
+    return raw === '1' || raw === 'true' || raw === 'on' || raw === 'enabled';
+  } catch (_error) {
+    return false;
+  }
+}
+
 async function schedulePushIfAllowed(_force) {
+  if (!isClientGameplayPushDispatchEnabled()) {
+    return;
+  }
   const nowMs = Date.now();
   await evaluateGameplayPushDecisions(nowMs, {
     force: _force === true
@@ -125,7 +145,9 @@ function evaluateNotificationTriggers(nowMs) {
   notifyEventAvailability();
   notifyCriticalState(nowMs);
   notifyReminder(nowMs);
-  void evaluateGameplayPushDecisions(nowMs);
+  if (isClientGameplayPushDispatchEnabled()) {
+    void evaluateGameplayPushDecisions(nowMs);
+  }
 }
 
 const GAMEPLAY_PUSH_TYPES = Object.freeze({
@@ -472,6 +494,10 @@ function pickHighestPriorityGameplayCandidate(candidates) {
 }
 
 async function dispatchGameplayPush(candidate, nowMs) {
+  if (!isClientGameplayPushDispatchEnabled()) {
+    return false;
+  }
+
   const pushApi = window.GrowSimPushManager;
   if (!pushApi || typeof pushApi.sendGameplayPush !== 'function') {
     return false;
@@ -491,6 +517,10 @@ async function dispatchGameplayPush(candidate, nowMs) {
 }
 
 async function evaluateGameplayPushDecisions(nowMs, options = {}) {
+  if (!isClientGameplayPushDispatchEnabled()) {
+    return;
+  }
+
   const currentNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
   const runtime = getGameplayPushRuntime();
   const force = options.force === true;
@@ -720,6 +750,7 @@ function dbDelete(db, key) {
 window.GrowSimNotifications = Object.freeze({
   showServiceWorkerHint,
   schedulePushIfAllowed,
+  isClientGameplayPushDispatchEnabled,
   canNotify,
   notify,
   evaluateNotificationTriggers,
