@@ -78,6 +78,15 @@
               return { ok: true, command: commandId };
             }
             return { ok: false, reason: 'menu_stats_unavailable' };
+          case 'open_support':
+            if (typeof this.deps.closeMenu === 'function') {
+              this.deps.closeMenu();
+            }
+            if (typeof this.deps.openSheet === 'function') {
+              this.deps.openSheet('support');
+              return { ok: true, command: commandId };
+            }
+            return { ok: false, reason: 'menu_support_unavailable' };
           case 'new_run':
             if (typeof this.deps.closeMenu === 'function') {
               this.deps.closeMenu();

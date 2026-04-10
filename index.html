@@ -850,6 +850,53 @@
     </div>
   </section>
 
+  <section id="supportSheet" class="bottom-sheet figma-sheet figma-sheet-support hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <div class="support-sheet-heading">
+        <h2>GrowSim unterstützen</h2>
+        <p class="sheet-note">Hilf mit, neue Features, Events und Premium-Verbesserungen für GrowSim möglich zu machen.</p>
+      </div>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+    </header>
+    <div class="sheet-content figma-sheet-content support-sheet-content">
+      <section class="figma-section-card support-card">
+        <small class="support-section-eyebrow">Support-Stufen</small>
+        <div id="supportOptionList" class="support-option-list" role="list">
+          <button class="support-option-btn" type="button" data-support-tier="seed">
+            <span class="support-option-copy">
+              <strong>Samen</strong>
+              <small>Kleiner Push für neue Ideen</small>
+            </span>
+            <span class="support-option-value">3 €</span>
+          </button>
+          <button class="support-option-btn is-active" type="button" data-support-tier="growth">
+            <span class="support-option-copy">
+              <strong>Wachstum</strong>
+              <small>Solider Beitrag für Content</small>
+            </span>
+            <span class="support-option-value">5 €</span>
+          </button>
+          <button class="support-option-btn" type="button" data-support-tier="bloom">
+            <span class="support-option-copy">
+              <strong>Blüte</strong>
+              <small>Starker Boost für Premium-Features</small>
+            </span>
+            <span class="support-option-value">10 €</span>
+          </button>
+          <button class="support-option-btn support-option-btn--custom" type="button" data-support-tier="custom">
+            <span class="support-option-copy">
+              <strong>Freier Betrag</strong>
+              <small>Flexible Unterstützung</small>
+            </span>
+            <span class="support-option-value">Flexible</span>
+          </button>
+        </div>
+        <button id="supportPrimaryCtaBtn" class="action-btn action-primary support-primary-cta" type="button">Mit PayPal unterstützen</button>
+        <p id="supportSecondaryHint" class="sheet-note support-secondary-hint">Freiwillig. Jeder Beitrag hilft direkt bei der Weiterentwicklung.</p>
+      </section>
+    </div>
+  </section>
+
   <section id="leaderboardSheet" class="bottom-sheet figma-sheet figma-sheet-leaderboard hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2>Leaderboard</h2>
@@ -1105,6 +1152,7 @@
         <button id="runSummaryFinalizeBtn" class="action-btn action-primary" type="button">Abschließen</button>
         <button id="runSummaryNewRunBtn" class="action-btn action-primary" type="button">Neuen Run starten</button>
         <button id="runSummaryAnalyzeBtn" class="action-btn action-ghost" type="button">Analyse öffnen</button>
+        <button id="runSummarySupportBtn" class="action-btn action-ghost run-summary-support-btn" type="button">GrowSim unterstützen</button>
       </div>
     </div>
   </section>
@@ -1128,7 +1176,8 @@
           <small id="menuLeaderboardSubtext">Nur verifizierte Ergebnisse</small>
         </button>
         <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span id="menuRescueLabel">Notfallrettung</span><small id="menuRescueSubtext">1× pro Run bei kritischem Zustand.</small></button>
-        <button id="menuSupportBtn" class="menu-entry figma-menu-entry" type="button"><span>Missionen</span><small>Missionen &amp; Fortschritt</small></button>
+        <button id="menuSupportBtn" class="menu-entry figma-menu-entry figma-menu-entry--support" type="button"><span>GrowSim unterstützen</span><small>Freiwilliger Support für neue Features</small></button>
+        <button id="menuMissionsBtn" class="menu-entry figma-menu-entry" type="button"><span>Missionen</span><small>Missionen &amp; Fortschritt</small></button>
         <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span>Projektinfo</span><small>Status &amp; Hinweise</small></button>
         <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span>Einstellungen</span><small>Einstellungen öffnen</small></button>
         <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span>Speichern und Beenden</span><small>Neuen Run starten</small></button>
@@ -1206,6 +1255,8 @@
     </div>
   </section>
 
+  <div id="paypalDonateSdkContainer" class="hidden" aria-hidden="true"></div>
+
 <script>
   (function loadVersionedScripts() {
     const buildId = (window.GrowSimBuild && window.GrowSimBuild.id) ? String(window.GrowSimBuild.id) : 'dev';
@@ -1260,7 +1311,8 @@
     ];
 
     const optionalScriptList = [
-      { src: 'https://cdn.jsdelivr.net/npm/chart.js', external: true }
+      { src: 'https://cdn.jsdelivr.net/npm/chart.js', external: true },
+      { src: 'https://www.paypalobjects.com/donate/sdk/donate-sdk.js', external: true }
     ];
 
     const SCRIPT_LOAD_TIMEOUT_MS = 15000;

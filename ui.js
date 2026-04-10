@@ -171,6 +171,7 @@ function cacheUi() {
   ui.menuPushStatus = document.getElementById('menuPushStatus');
   ui.menuLanguageBtn = document.getElementById('menuLanguageBtn');
   ui.menuSupportBtn = document.getElementById('menuSupportBtn');
+  ui.menuMissionsBtn = document.getElementById('menuMissionsBtn');
   ui.menuAboutBtn = document.getElementById('menuAboutBtn');
   ui.menuAchievementsBtn = document.getElementById('menuAchievementsBtn');
   ui.menuLeaderboardBtn = document.getElementById('menuLeaderboardBtn');
@@ -234,6 +235,11 @@ function cacheUi() {
   ui.missionsRecoveryBtn = document.getElementById('missionsRecoveryBtn');
   ui.missionsRecoveryBonusBtn = document.getElementById('missionsRecoveryBonusBtn');
   ui.missionsList = document.getElementById('missionsList');
+  ui.supportSheet = document.getElementById('supportSheet');
+  ui.supportOptionList = document.getElementById('supportOptionList');
+  ui.supportPrimaryCtaBtn = document.getElementById('supportPrimaryCtaBtn');
+  ui.supportSecondaryHint = document.getElementById('supportSecondaryHint');
+  ui.supportOptionButtons = Array.from(document.querySelectorAll('[data-support-tier]'));
 
   ui.landing = document.getElementById('landing');
   ui.startRunBtn = document.getElementById('startRunBtn');
@@ -298,6 +304,7 @@ function cacheUi() {
   ui.runSummaryFinalizeBtn = document.getElementById('runSummaryFinalizeBtn');
   ui.runSummaryNewRunBtn = document.getElementById('runSummaryNewRunBtn');
   ui.runSummaryAnalyzeBtn = document.getElementById('runSummaryAnalyzeBtn');
+  ui.runSummarySupportBtn = document.getElementById('runSummarySupportBtn');
   ui.screenViews = Array.from(document.querySelectorAll('.hud-screen[data-screen]'));
   ui.screenNavButtons = Array.from(document.querySelectorAll('[data-screen-target]'));
 
@@ -353,6 +360,18 @@ function bindUi() {
   }
   if (ui.runSummaryAnalyzeBtn) {
     ui.runSummaryAnalyzeBtn.addEventListener('click', onRunSummaryAnalyzeClick);
+  }
+  if (ui.runSummarySupportBtn) {
+    ui.runSummarySupportBtn.addEventListener('click', () => {
+      if (typeof onRunSummarySupportClick === 'function') {
+        onRunSummarySupportClick();
+      } else {
+        if (typeof setSupportEntrySource === 'function') {
+          setSupportEntrySource('run_summary');
+        }
+        openSheet('support');
+      }
+    });
   }
   if (ui.leaderboardRewardsList) {
     ui.leaderboardRewardsList.addEventListener('click', handleRewardClaimButtonClick);
@@ -716,7 +735,29 @@ function bindMenuOverlayEvents(controller = null) {
     });
   }
   if (ui.menuSupportBtn) {
-    ui.menuSupportBtn.addEventListener('click', () => openSheet('missions'));
+    ui.menuSupportBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      if (typeof setSupportEntrySource === 'function') {
+        setSupportEntrySource('menu');
+      }
+      closeMenu();
+      if (activeController && typeof activeController.handleMenuCommand === 'function') {
+        activeController.handleMenuCommand('open_support');
+        return;
+      }
+      openSheet('support');
+    });
+  }
+  if (ui.menuMissionsBtn) {
+    ui.menuMissionsBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      closeMenu();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('missions');
+        return;
+      }
+      openSheet('missions');
+    });
   }
   if (ui.menuAboutBtn) {
     ui.menuAboutBtn.addEventListener('click', () => openMenuPlaceholder('Über das Spiel', 'Grow Simulator MVP · Weitere Infos folgen.'));
@@ -780,7 +821,35 @@ function bindSheetsOverlayEvents(controller = null) {
 
   const settingsSupportBtn = document.getElementById('settingsSupportBtn');
   if (settingsSupportBtn) {
-    settingsSupportBtn.addEventListener('click', () => openMenuPlaceholder('Support', 'Support-Optionen folgen in einem späteren Update.'));
+    settingsSupportBtn.addEventListener('click', () => {
+      if (typeof setSupportEntrySource === 'function') {
+        setSupportEntrySource('settings');
+      }
+      closeSheet();
+      openSheet('support');
+    });
+  }
+
+  if (ui.supportOptionList) {
+    ui.supportOptionList.addEventListener('click', (event) => {
+      const button = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('[data-support-tier]')
+        : null;
+      if (!button) {
+        return;
+      }
+      const tierId = String(button.dataset.supportTier || '');
+      if (typeof onSupportTierSelected === 'function') {
+        onSupportTierSelected(tierId, { source: 'sheet_option' });
+      }
+    });
+  }
+  if (ui.supportPrimaryCtaBtn) {
+    ui.supportPrimaryCtaBtn.addEventListener('click', () => {
+      if (typeof onSupportPrimaryCtaClick === 'function') {
+        onSupportPrimaryCtaClick({ source: 'sheet_primary_cta' });
+      }
+    });
   }
 
   if (ui.backdrop) {
@@ -929,7 +998,7 @@ function ensureRequiredUi() {
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
     'overlayBurn', 'overlayDefMg', 'overlayDefN', 'overlayMoldWarning', 'overlayPestMites', 'overlayPestThrips',
     'careActionBtn', 'careBoostActionBtn', 'climateStabilizeActionBtn', 'analyzeActionBtn', 'boostActionBtn', 'skipNightActionBtn', 'openDiagnosisBtn', 'menuToggleBtn',
-    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'statDetailSheet',
+    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'statDetailSheet', 'supportSheet',
     'statDetailTitle', 'statDetailValue', 'statDetailStatus', 'statDetailExplanation', 'statDetailRecommendation', 'statDetailPrimaryBtn',
     'menuBackdrop', 'gameMenu', 'menuCloseBtn', 'menuHeaderCloseBtn', 'menuNewRunBtn', 'menuRescueBtn', 'menuRescueSubtext',
     'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuAboutBtn',
@@ -1154,6 +1223,7 @@ function renderSheets() {
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
   toggleSheet(ui.leaderboardSheet, activeSheet === 'leaderboard');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
+  toggleSheet(ui.supportSheet, activeSheet === 'support');
 }
 
 function renderGameMenu() {
@@ -1725,7 +1795,7 @@ function escapeHtml(value) {
 }
 
 function openSheet(name) {
-  if (isPlantDead() && name !== 'dashboard') {
+  if (isPlantDead() && name !== 'dashboard' && name !== 'support') {
     return;
   }
   if (state.ui.menuOpen) {
@@ -1742,6 +1812,8 @@ function openSheet(name) {
     renderCareSheet(true);
   } else if (name === 'climate') {
     renderHud();
+  } else if (name === 'support' && typeof renderSupportSheet === 'function') {
+    renderSupportSheet(true);
   }
 }
 

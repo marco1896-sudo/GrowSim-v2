@@ -5794,6 +5794,24 @@ body.panelized-ready :is(
   content: "";
 }
 
+.figma-menu-screen .figma-menu-entry--support {
+  border-color: rgba(110, 228, 184, 0.36);
+  background:
+    radial-gradient(circle at top right, rgba(92, 246, 176, 0.18), rgba(92, 246, 176, 0) 52%),
+    linear-gradient(180deg, rgba(16, 24, 23, 0.96), rgba(12, 18, 17, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 24px rgba(0, 0, 0, 0.28);
+}
+
+.figma-menu-screen .figma-menu-entry--support span {
+  color: rgba(228, 250, 241, 0.96);
+}
+
+.figma-menu-screen .figma-menu-entry--support small {
+  color: rgba(182, 225, 209, 0.88);
+}
+
 .figma-onboarding-overlay {
   position: fixed;
   inset: 0;
@@ -10843,6 +10861,136 @@ body.panelized-ready :is(
 .retention-card {
   display: grid;
   gap: 10px;
+}
+
+.support-sheet-content {
+  display: grid;
+  gap: 10px;
+}
+
+.support-sheet-heading {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.support-card {
+  display: grid;
+  gap: 10px;
+}
+
+.support-section-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(165, 216, 195, 0.9);
+}
+
+.support-option-list {
+  display: grid;
+  gap: 8px;
+}
+
+.support-option-btn {
+  width: 100%;
+  border: 1px solid rgba(114, 174, 149, 0.32);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at top right, rgba(85, 194, 154, 0.12), rgba(85, 194, 154, 0) 50%),
+    linear-gradient(180deg, rgba(15, 25, 23, 0.94), rgba(10, 17, 16, 0.94));
+  min-height: 62px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  color: rgba(227, 248, 239, 0.95);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 200ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.support-option-btn:hover,
+.support-option-btn:focus-visible {
+  border-color: rgba(137, 231, 191, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 18px rgba(0, 0, 0, 0.28);
+  transform: translateY(-1px);
+}
+
+.support-option-btn:active {
+  transform: translateY(0);
+}
+
+.support-option-btn.is-active {
+  border-color: rgba(150, 240, 199, 0.74);
+  background:
+    radial-gradient(circle at top right, rgba(121, 241, 194, 0.2), rgba(121, 241, 194, 0) 52%),
+    linear-gradient(180deg, rgba(16, 34, 30, 0.94), rgba(11, 22, 20, 0.94));
+  box-shadow:
+    0 0 0 1px rgba(128, 231, 187, 0.3),
+    0 10px 22px rgba(0, 0, 0, 0.3);
+}
+
+.support-option-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.support-option-copy strong {
+  font-size: 15px;
+  line-height: 1.2;
+  color: rgba(233, 251, 244, 0.98);
+}
+
+.support-option-copy small {
+  font-size: 11px;
+  line-height: 1.2;
+  color: rgba(181, 222, 205, 0.86);
+}
+
+.support-option-value {
+  border-radius: 999px;
+  padding: 4px 10px;
+  border: 1px solid rgba(139, 210, 181, 0.34);
+  background: rgba(20, 42, 35, 0.82);
+  color: rgba(214, 244, 230, 0.95);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.support-option-btn--custom .support-option-value {
+  border-style: dashed;
+}
+
+.support-primary-cta {
+  min-height: 48px;
+  margin-top: 2px;
+}
+
+.support-secondary-hint {
+  margin: 0;
+  color: rgba(192, 213, 204, 0.84) !important;
+}
+
+.run-summary-support-btn {
+  border-color: rgba(114, 189, 157, 0.45);
+  color: rgba(214, 246, 230, 0.94);
+}
+
+#paypalDonateSdkContainer {
+  position: fixed;
+  left: -9999px;
+  bottom: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
 }
 
 .retention-sheet-head {

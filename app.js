@@ -544,6 +544,13 @@ const pushUiRuntime = {
   error: '',
   lastUpdatedAtMs: 0
 };
+const supportFlowRuntime = {
+  selectedTierId: 'growth',
+  activeSession: null,
+  sdkPrimed: false,
+  sdkPrimeAttempted: false,
+  entrySource: 'sheet_open'
+};
 
 const actionDebounceUntil = Object.create(null);
 const HARVEST_VERIFICATION_POLL_INTERVAL_MS = 7000;
@@ -570,6 +577,15 @@ const RETENTION_REWARDED_BONUS_XP = Object.freeze({
   streak_recovery_credit: 0,
   daily_all_complete_boost: 10,
   sim_time_boost: 0
+});
+const SUPPORT_TELEMETRY_MAX_EVENTS = 80;
+const SUPPORT_PAYPAL_HOSTED_BUTTON_ID = '7F7NEL33DP6QQ';
+const SUPPORT_PAYPAL_DONATE_BASE_URL = `https://www.paypal.com/donate?hosted_button_id=${encodeURIComponent(SUPPORT_PAYPAL_HOSTED_BUTTON_ID)}`;
+const SUPPORT_TIERS = Object.freeze({
+  seed: Object.freeze({ id: 'seed', label: 'Samen', amount: '3.00', currencyCode: 'EUR', displayAmount: '3 €' }),
+  growth: Object.freeze({ id: 'growth', label: 'Wachstum', amount: '5.00', currencyCode: 'EUR', displayAmount: '5 €' }),
+  bloom: Object.freeze({ id: 'bloom', label: 'Blüte', amount: '10.00', currencyCode: 'EUR', displayAmount: '10 €' }),
+  custom: Object.freeze({ id: 'custom', label: 'Freier Betrag', amount: null, currencyCode: 'EUR', displayAmount: 'Freie Wahl' })
 });
 const MICRO_ACHIEVEMENT_REGISTRY = Object.freeze({
   streak_milestone_3: Object.freeze({
@@ -1630,6 +1646,344 @@ function emitRetentionAnalytics(event, payload = {}, options = {}) {
     schedulePersistState();
   }
   return true;
+}
+
+function resolveSupportTier(tierId) {
+  const safeTierId = String(tierId || '').trim().toLowerCase();
+  if (safeTierId && SUPPORT_TIERS[safeTierId]) {
+    return SUPPORT_TIERS[safeTierId];
+  }
+  return SUPPORT_TIERS.growth;
+}
+
+function setSupportEntrySource(source) {
+  supportFlowRuntime.entrySource = String(source || 'sheet_open');
+}
+
+function ensureSupportTelemetryHistory() {
+  if (!state.history || typeof state.history !== 'object') {
+    state.history = { actions: [], events: [], system: [], systemLog: [], telemetry: [] };
+  }
+  if (!Array.isArray(state.history.telemetry)) {
+    state.history.telemetry = [];
+  }
+  return state.history.telemetry;
+}
+
+function emitSupportTelemetry(eventName, payload = {}, options = {}) {
+  const safeEvent = String(eventName || '').trim();
+  if (!safeEvent) {
+    return false;
+  }
+  const nowMs = Number.isFinite(Number(options.nowMs)) ? Number(options.nowMs) : Date.now();
+  const telemetry = ensureSupportTelemetryHistory();
+  telemetry.push({
+    event: safeEvent,
+    category: 'support',
+    atRealMs: nowMs,
+    dayKey: getLocalDayKey(nowMs),
+    payload: payload && typeof payload === 'object' ? payload : {}
+  });
+  if (telemetry.length > SUPPORT_TELEMETRY_MAX_EVENTS) {
+    telemetry.splice(0, telemetry.length - SUPPORT_TELEMETRY_MAX_EVENTS);
+  }
+  emitRetentionAnalytics(safeEvent, payload, { nowMs, skipPersist: true });
+  if (options.skipPersist !== true && typeof schedulePersistState === 'function') {
+    schedulePersistState();
+  }
+  return true;
+}
+
+function buildSupportDonateUrl(tier) {
+  const safeTier = tier && typeof tier === 'object' ? tier : resolveSupportTier('growth');
+  const url = new URL(SUPPORT_PAYPAL_DONATE_BASE_URL);
+  if (safeTier.amount) {
+    url.searchParams.set('amount', String(safeTier.amount));
+    url.searchParams.set('currency_code', String(safeTier.currencyCode || 'EUR'));
+  }
+  return url.toString();
+}
+
+function ensureSupportFocusObserver() {
+  if (supportFlowRuntime.focusObserverBound) {
+    return;
+  }
+  supportFlowRuntime.focusObserverBound = true;
+  window.addEventListener('focus', () => {
+    const session = supportFlowRuntime.activeSession;
+    if (!session || session.completed) {
+      return;
+    }
+    if ((Date.now() - Number(session.openedAtMs || 0)) < 900) {
+      return;
+    }
+    emitSupportTelemetry('support_cancelled_if_detectable', {
+      source: session.source || 'unknown',
+      tierId: session.tierId || 'growth',
+      method: session.method || 'unknown',
+      reason: 'focus_returned_without_completion_signal'
+    });
+    supportFlowRuntime.activeSession = null;
+  }, true);
+}
+
+function markSupportSessionCompleted(outcomeEvent, payload = {}) {
+  const session = supportFlowRuntime.activeSession;
+  if (!session || session.completed) {
+    return;
+  }
+  session.completed = true;
+  emitSupportTelemetry(outcomeEvent, {
+    tierId: session.tierId || 'growth',
+    source: session.source || 'unknown',
+    method: session.method || 'unknown',
+    ...payload
+  });
+  supportFlowRuntime.activeSession = null;
+}
+
+function startSupportSession(tier, source, method) {
+  supportFlowRuntime.activeSession = {
+    tierId: tier && tier.id ? String(tier.id) : 'growth',
+    source: String(source || 'unknown'),
+    method: String(method || 'unknown'),
+    openedAtMs: Date.now(),
+    completed: false
+  };
+}
+
+function openExternalSupportUrl(url) {
+  const safeUrl = String(url || '').trim();
+  if (!safeUrl) {
+    return { ok: false, reason: 'empty_url' };
+  }
+  try {
+    const opened = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+    if (opened && !opened.closed) {
+      try {
+        opened.opener = null;
+      } catch (_error) {
+      }
+      return { ok: true, mode: 'new_context' };
+    }
+  } catch (_error) {
+  }
+  try {
+    window.location.assign(safeUrl);
+    return { ok: true, mode: 'same_context' };
+  } catch (_error) {
+    return { ok: false, reason: 'window_open_blocked' };
+  }
+}
+
+function isPaypalDonateSdkReady() {
+  return Boolean(
+    window.PayPal
+    && window.PayPal.Donation
+    && typeof window.PayPal.Donation.Button === 'function'
+  );
+}
+
+function ensurePaypalSdkButtonHost() {
+  const host = document.getElementById('paypalDonateSdkContainer');
+  if (!host) {
+    return null;
+  }
+  host.classList.add('hidden');
+  host.setAttribute('aria-hidden', 'true');
+  return host;
+}
+
+function buildPaypalSdkDonationConfig(tier, source) {
+  const safeTier = tier && typeof tier === 'object' ? tier : resolveSupportTier('growth');
+  const safeSource = String(source || 'support_flow');
+  const config = {
+    env: 'production',
+    hosted_button_id: SUPPORT_PAYPAL_HOSTED_BUTTON_ID,
+    image: {
+      src: 'https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif',
+      alt: 'Mit PayPal unterstützen',
+      title: 'Mit PayPal unterstützen'
+    },
+    onComplete: (params) => {
+      const rawStatus = params && (params.st || params.status || params.payment_status);
+      const normalizedStatus = String(rawStatus || '').toLowerCase();
+      if (normalizedStatus.includes('completed')) {
+        markSupportSessionCompleted('support_completed_if_detectable', {
+          source: safeSource,
+          sdkStatus: normalizedStatus || null
+        });
+      } else {
+        markSupportSessionCompleted('support_cancelled_if_detectable', {
+          source: safeSource,
+          sdkStatus: normalizedStatus || null
+        });
+      }
+    }
+  };
+  if (safeTier.amount) {
+    config.amount = String(safeTier.amount);
+    config.currency_code = String(safeTier.currencyCode || 'EUR');
+  }
+  return config;
+}
+
+function primeSupportPaypalSdkButtons() {
+  if (supportFlowRuntime.sdkPrimed) {
+    return true;
+  }
+  if (!isPaypalDonateSdkReady()) {
+    supportFlowRuntime.sdkPrimed = false;
+    return false;
+  }
+  const host = ensurePaypalSdkButtonHost();
+  if (!host) {
+    supportFlowRuntime.sdkPrimed = false;
+    return false;
+  }
+  if (supportFlowRuntime.sdkPrimeAttempted && host.querySelector('[data-support-sdk-tier]')) {
+    supportFlowRuntime.sdkPrimed = true;
+    return true;
+  }
+  supportFlowRuntime.sdkPrimeAttempted = true;
+  host.replaceChildren();
+  const tierIds = Object.keys(SUPPORT_TIERS);
+  let renderedCount = 0;
+  for (const tierId of tierIds) {
+    const tier = SUPPORT_TIERS[tierId];
+    const slot = document.createElement('div');
+    slot.className = 'support-sdk-slot';
+    slot.dataset.supportSdkTier = tierId;
+    host.appendChild(slot);
+    try {
+      const donationButton = window.PayPal.Donation.Button(buildPaypalSdkDonationConfig(tier, `sdk_slot_${tierId}`));
+      if (donationButton && typeof donationButton.render === 'function') {
+        donationButton.render(slot);
+        renderedCount += 1;
+      }
+    } catch (_error) {
+    }
+  }
+  supportFlowRuntime.sdkPrimed = renderedCount > 0;
+  return supportFlowRuntime.sdkPrimed;
+}
+
+function findSupportSdkTriggerNode(tierId) {
+  const host = ensurePaypalSdkButtonHost();
+  if (!host) {
+    return null;
+  }
+  const safeTierId = String(tierId || 'growth');
+  const slot = host.querySelector(`[data-support-sdk-tier="${safeTierId}"]`);
+  if (!slot) {
+    return null;
+  }
+  return slot.querySelector('button, input[type="image"], input[type="submit"], a, [role="button"]');
+}
+
+function renderSupportSheet(force = false) {
+  if (!ui.supportSheet || !ui.supportOptionList || !ui.supportPrimaryCtaBtn) {
+    return;
+  }
+  if (!force && state.ui.openSheet !== 'support') {
+    return;
+  }
+  const selectedTier = resolveSupportTier(supportFlowRuntime.selectedTierId);
+  supportFlowRuntime.selectedTierId = selectedTier.id;
+  const optionButtons = Array.from(ui.supportOptionList.querySelectorAll('[data-support-tier]'));
+  for (const button of optionButtons) {
+    const tierId = String(button.dataset.supportTier || '').trim().toLowerCase();
+    const active = tierId === selectedTier.id;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+  ui.supportPrimaryCtaBtn.textContent = 'Mit PayPal unterstützen';
+  ui.supportPrimaryCtaBtn.setAttribute('data-support-tier', selectedTier.id);
+  ui.supportPrimaryCtaBtn.setAttribute('title', `${selectedTier.label} · ${selectedTier.displayAmount}`);
+  if (ui.supportSecondaryHint) {
+    ui.supportSecondaryHint.textContent = 'Freiwillig. Jeder Beitrag hilft direkt bei der Weiterentwicklung.';
+  }
+  primeSupportPaypalSdkButtons();
+}
+
+function selectSupportTier(tierId) {
+  const tier = resolveSupportTier(tierId);
+  supportFlowRuntime.selectedTierId = tier.id;
+  renderSupportSheet(true);
+  return tier;
+}
+
+function openSupportPaypal(tier, source = 'sheet_option') {
+  const safeTier = tier && typeof tier === 'object' ? tier : resolveSupportTier('growth');
+  ensureSupportFocusObserver();
+  const sdkPrimed = primeSupportPaypalSdkButtons();
+  if (sdkPrimed) {
+    const trigger = findSupportSdkTriggerNode(safeTier.id);
+    if (trigger) {
+      emitSupportTelemetry('support_paypal_opened', {
+        source: String(source || 'sheet_option'),
+        tierId: safeTier.id,
+        tierLabel: safeTier.label,
+        amount: safeTier.amount || null,
+        method: 'sdk'
+      });
+      startSupportSession(safeTier, source, 'sdk');
+      try {
+        trigger.click();
+        return { ok: true, method: 'sdk' };
+      } catch (_error) {
+      }
+    }
+  }
+
+  const url = buildSupportDonateUrl(safeTier);
+  emitSupportTelemetry('support_paypal_opened', {
+    source: String(source || 'sheet_option'),
+    tierId: safeTier.id,
+    tierLabel: safeTier.label,
+    amount: safeTier.amount || null,
+    method: 'url_fallback'
+  });
+  startSupportSession(safeTier, source, 'url_fallback');
+  const openResult = openExternalSupportUrl(url);
+  if (!openResult.ok) {
+    markSupportSessionCompleted('support_cancelled_if_detectable', {
+      reason: openResult.reason || 'open_failed'
+    });
+    openMenuDialog({
+      title: 'PayPal konnte nicht geöffnet werden',
+      message: 'Bitte Popup-Blocker prüfen oder den Support später erneut versuchen.',
+      cancelLabel: 'Schließen',
+      confirmLabel: '',
+      onConfirm: null
+    });
+    return { ok: false, reason: openResult.reason || 'open_failed' };
+  }
+  return { ok: true, method: openResult.mode || 'url_fallback' };
+}
+
+function onSupportTierSelected(tierId, context = {}) {
+  const tier = selectSupportTier(tierId);
+  const source = String(context && context.source ? context.source : 'sheet_option');
+  emitSupportTelemetry('support_option_selected', {
+    source,
+    tierId: tier.id,
+    tierLabel: tier.label,
+    amount: tier.amount || null
+  });
+  return openSupportPaypal(tier, source);
+}
+
+function onSupportPrimaryCtaClick(context = {}) {
+  const tier = resolveSupportTier(supportFlowRuntime.selectedTierId);
+  const source = String(context && context.source ? context.source : 'sheet_primary_cta');
+  emitSupportTelemetry('support_option_selected', {
+    source,
+    tierId: tier.id,
+    tierLabel: tier.label,
+    amount: tier.amount || null
+  });
+  return openSupportPaypal(tier, source);
 }
 
 function hasRetentionClaim(claimKey) {
@@ -10279,6 +10633,7 @@ function renderSheets() {
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
   toggleSheet(ui.statDetailSheet, activeSheet === 'statDetail');
   toggleSheet(ui.missionsSheet, activeSheet === 'missions');
+  toggleSheet(ui.supportSheet, activeSheet === 'support');
   toggleSheet(ui.leaderboardSheet, activeSheet === 'leaderboard');
 }
 
@@ -10324,7 +10679,10 @@ function renderMenuDynamicRows() {
     ui.menuStatsBtn.setAttribute('title', 'Öffnet denselben Analyse-Report wie Analyse-Button und Death-Flow.');
   }
   if (ui.menuSupportBtn) {
-    ui.menuSupportBtn.setAttribute('title', 'Öffnet Missionen und den aktuellen Fortschritt.');
+    ui.menuSupportBtn.setAttribute('title', 'Öffnet den freiwilligen Support-Flow für GrowSim.');
+  }
+  if (ui.menuMissionsBtn) {
+    ui.menuMissionsBtn.setAttribute('title', 'Öffnet Missionen und den aktuellen Fortschritt.');
   }
   if (ui.menuAboutBtn) {
     ui.menuAboutBtn.setAttribute('title', 'Zeigt den aktuellen Projektstatus. Weitere Hilfe folgt später.');
@@ -13072,7 +13430,7 @@ function openSheet(name) {
     openCloudAuthModal({ gate: true });
     return;
   }
-  if (isPlantDead() && name !== 'dashboard') {
+  if (isPlantDead() && name !== 'dashboard' && name !== 'support') {
     return;
   }
   if (state.ui.menuOpen) {
@@ -13107,6 +13465,15 @@ function openSheet(name) {
       eventKey: `missions_sheet_view:${getLocalDayKey(nowMs)}:${Math.trunc(nowMs / 60000)}`
     });
     renderMissionsSheet();
+  } else if (name === 'support') {
+    const source = String(supportFlowRuntime.entrySource || 'sheet_open');
+    supportFlowRuntime.entrySource = 'sheet_open';
+    renderSupportSheet(true);
+    emitSupportTelemetry('support_entry_opened', {
+      source
+    }, {
+      nowMs
+    });
   } else if (name === 'leaderboard') {
     renderLeaderboardSheet(true);
     void fetchLeaderboardBundle({ category: ensureLeaderboardUiState(state).category, force: false });
@@ -14136,6 +14503,13 @@ async function onRunSummaryAnalyzeClick() {
     await finalizeRun(run.endReason || 'death');
   }
   openHarvestAnalysis();
+}
+
+function onRunSummarySupportClick() {
+  setSupportEntrySource('run_summary');
+  state.ui.runSummaryOpen = false;
+  renderRunSummaryOverlay();
+  openSheet('support');
 }
 
 function renderDeathOverlay() {
