@@ -12175,6 +12175,7 @@ async function onPushEnableClick() {
     pushUiRuntime.message = notifications.lastMessage;
   } catch (error) {
     const message = error && error.message ? String(error.message) : 'Push konnte nicht aktiviert werden.';
+    console.error('[push] activation failed', { message, error });
     notifications.lastMessage = message;
     pushUiRuntime.error = message;
     pushUiRuntime.message = '';

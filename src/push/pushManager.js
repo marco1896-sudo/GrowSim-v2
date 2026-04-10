@@ -91,9 +91,10 @@
     const waitForReady = options.waitForReady !== false;
     const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Number(options.timeoutMs) : 6000;
 
+    let directRegistration = null;
     try {
-      const directRegistration = await navigator.serviceWorker.getRegistration();
-      if (directRegistration) {
+      directRegistration = await navigator.serviceWorker.getRegistration();
+      if (directRegistration && (!waitForReady || directRegistration.active)) {
         return directRegistration;
       }
     } catch (_error) {
@@ -112,7 +113,7 @@
           timeoutHandle = window.setTimeout(() => resolve(null), Math.max(500, timeoutMs));
         })
       ]);
-      return readyRegistration || null;
+      return readyRegistration || directRegistration || null;
     } catch (_error) {
       return null;
     } finally {
@@ -229,7 +230,9 @@
     const apiFetch = getApiFetch();
     const response = await apiFetch('/push/subscribe', {
       method: 'POST',
-      headers: buildAuthHeaders(),
+      headers: buildAuthHeaders({
+        'Content-Type': 'application/json'
+      }),
       body: JSON.stringify({ subscription })
     });
     const payload = await readJsonSafe(response);
@@ -257,7 +260,9 @@
     const apiFetch = getApiFetch();
     const response = await apiFetch('/push/unsubscribe', {
       method: 'POST',
-      headers: buildAuthHeaders(),
+      headers: buildAuthHeaders({
+        'Content-Type': 'application/json'
+      }),
       body: JSON.stringify({
         endpoint,
         subscription
@@ -283,42 +288,69 @@
       throw new Error('Authentication required');
     }
 
-    const registration = await getServiceWorkerRegistration({
-      waitForReady: true,
-      timeoutMs: options.timeoutMs
-    });
-    if (!registration) {
-      throw new Error('Service worker registration unavailable');
-    }
+    try {
+      const registration = await getServiceWorkerRegistration({
+        waitForReady: true,
+        timeoutMs: options.timeoutMs
+      });
+      if (!registration || !registration.pushManager) {
+        throw new Error('Service Worker Registration fehlt oder ist noch nicht aktiv.');
+      }
 
-    const permission = await requestPushPermission();
-    if (permission !== 'granted') {
-      throw new Error(permission === 'denied' ? 'Notification permission denied' : 'Notification permission not granted');
-    }
+      const permission = await requestPushPermission();
+      if (permission !== 'granted') {
+        throw new Error(permission === 'denied'
+          ? 'Benachrichtigungen sind blockiert.'
+          : 'Benachrichtigungsberechtigung wurde nicht erteilt.');
+      }
 
-    const existing = await getExistingPushSubscription(registration);
-    if (existing) {
-      await postSubscribeToBackend(existing.toJSON ? existing.toJSON() : existing);
+      const existing = await getExistingPushSubscription(registration);
+      if (existing) {
+        await postSubscribeToBackend(existing.toJSON ? existing.toJSON() : existing);
+        return {
+          subscription: existing,
+          reused: true
+        };
+      }
+
+      let publicKey = '';
+      try {
+        publicKey = typeof options.publicKey === 'string' && options.publicKey.trim()
+          ? options.publicKey.trim()
+          : await fetchPushPublicKey();
+      } catch (error) {
+        throw new Error(`Public Key konnte nicht geladen werden (${error && error.message ? String(error.message) : 'unbekannter Fehler'}).`);
+      }
+
+      const applicationServerKey = urlBase64ToUint8Array(publicKey);
+      if (!(applicationServerKey instanceof Uint8Array) || applicationServerKey.length === 0) {
+        throw new Error('VAPID-Key ist ungültig oder leer.');
+      }
+
+      let created;
+      try {
+        created = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+      } catch (error) {
+        throw new Error(`Push-Subscription konnte nicht erstellt werden (${error && error.message ? String(error.message) : 'unbekannter Fehler'}).`);
+      }
+
+      try {
+        await postSubscribeToBackend(created.toJSON ? created.toJSON() : created);
+      } catch (error) {
+        throw new Error(`Backend hat die Subscription abgelehnt (${error && error.message ? String(error.message) : 'unbekannter Fehler'}).`);
+      }
+
       return {
-        subscription: existing,
-        reused: true
+        subscription: created,
+        reused: false
       };
+    } catch (error) {
+      const message = error && error.message ? String(error.message) : 'Push konnte nicht aktiviert werden.';
+      throw new Error(message);
     }
-
-    const publicKey = typeof options.publicKey === 'string' && options.publicKey.trim()
-      ? options.publicKey.trim()
-      : await fetchPushPublicKey();
-
-    const created = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey)
-    });
-
-    await postSubscribeToBackend(created.toJSON ? created.toJSON() : created);
-    return {
-      subscription: created,
-      reused: false
-    };
   }
 
   async function unsubscribeFromPush(options = {}) {
@@ -410,7 +442,9 @@
     const apiFetch = getApiFetch();
     const response = await apiFetch('/push/test', {
       method: 'POST',
-      headers: buildAuthHeaders(),
+      headers: buildAuthHeaders({
+        'Content-Type': 'application/json'
+      }),
       body: JSON.stringify(payload && typeof payload === 'object' ? payload : {})
     });
     const parsed = await readJsonSafe(response);
@@ -437,7 +471,9 @@
     const apiFetch = getApiFetch();
     const response = await apiFetch('/push/gameplay-dispatch', {
       method: 'POST',
-      headers: buildAuthHeaders(),
+      headers: buildAuthHeaders({
+        'Content-Type': 'application/json'
+      }),
       body: JSON.stringify(payload)
     });
     const parsed = await readJsonSafe(response);
