@@ -320,6 +320,18 @@
             <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/icon_boost_neu.png" width="56" height="56" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true">Boost</span>
           </button>
+          <button id="careBoostActionBtn" class="home-action-btn" type="button" aria-label="Care Boost aktivieren">
+            <img id="careBoostActionIcon" class="home-action-icon" src="assets/ui/icons/time_boost.png" width="56" height="56" alt="" aria-hidden="true">
+            <span class="home-action-title" aria-hidden="true">Care Boost</span>
+          </button>
+          <button id="climateStabilizeActionBtn" class="home-action-btn" type="button" aria-label="Climate Stabilize aktivieren">
+            <img id="climateStabilizeActionIcon" class="home-action-icon" src="assets/ui/icons/icon_vpd.svg" width="56" height="56" alt="" aria-hidden="true">
+            <span class="home-action-title" aria-hidden="true">Climate Stabilize</span>
+          </button>
+          <button id="skipNightActionBtn" class="home-action-btn" type="button" aria-label="Night Shift aktivieren">
+            <img id="skipNightActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_nightshift.png" width="56" height="56" alt="" aria-hidden="true">
+            <span class="home-action-title" aria-hidden="true">Night Shift</span>
+          </button>
           <button id="eventsActionBtn" class="home-action-btn" type="button" aria-label="Events öffnen">
             <img id="eventsActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_events_neu.png" width="56" height="56" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true">Events</span>
@@ -335,7 +347,6 @@
         </section>
 
         <article id="healthRing" class="hidden" style="--value:85;"><strong id="healthValue">85</strong></article>
-        <button id="skipNightActionBtn" class="hidden" type="button">Nacht überspringen</button>
       </section>
     </main>
 </div>
@@ -1244,6 +1255,7 @@
       { src: 'src/ui/care/careActionHints.js' },
       { src: 'src/ui/mappings/careMapping.js' },
       { src: 'src/ui/screens/screenModules.js' },
+      { src: 'src/monetization/googleAdPlacementRewardProvider.js' },
       { src: 'app.js' }
     ];
 

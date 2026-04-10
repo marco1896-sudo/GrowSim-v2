@@ -82,6 +82,14 @@ const BOOST_SIM_SPEED = Number.isFinite(Number(growSimSharedConfig.BOOST_SIM_SPE
 const CARE_ACTION_TIME_DIAGNOSTIC_THRESHOLD_MS = 1000;
 const BOOST_DURATION_REAL_MS = 30 * 60 * 1000;
 const BOOST_MAX_REMAINING_REAL_MS = 60 * 60 * 1000;
+const REWARD_ACTION_TYPES = Object.freeze({
+  NIGHT_SHIFT: 'night_shift',
+  FAST_FORWARD_EVENT: 'fast_forward_event',
+  CARE_BOOST: 'care_boost',
+  CLIMATE_STABILIZE: 'climate_stabilize',
+  EMERGENCY_SAVE: 'emergency_save',
+  CLIMATE_FIX: 'climate_stabilize'
+});
 const SIM_TIME_COMPRESSION = DEFAULT_BASE_SIM_SPEED;
 const SIM_DAY_START_HOUR = CONFIG.simulation.dayStartHour;
 const SIM_NIGHT_START_HOUR = CONFIG.simulation.nightStartHour;
@@ -445,6 +453,13 @@ const state = {
     boostMaxPerDay: 6,
     dayStamp: dayStamp(now),
     boostEndsAtMs: 0
+  },
+  rewardActions: {
+    provider: 'direct',
+    lastTriggeredAtMs: 0,
+    lastGrantedAtMs: 0,
+    lastExecutedAtMs: 0,
+    byType: {}
   },
   actions: {
     catalog: [],
@@ -6667,24 +6682,1862 @@ function onBoostAction() {
   schedulePersistState(true);
 }
 
-function onSkipNightAction() {
-  if (isPlantDead()) {
-    addLog('action', 'Nacht überspringen blockiert: Pflanze ist eingegangen', null);
-    renderAll();
+function onCareBoostAction() {
+  return triggerRewardAction(REWARD_ACTION_TYPES.CARE_BOOST);
+}
+
+function onClimateStabilizeAction() {
+  return triggerRewardAction(REWARD_ACTION_TYPES.CLIMATE_STABILIZE);
+}
+
+function ensureRewardActionRuntime(snapshot = state) {
+  const target = snapshot && typeof snapshot === 'object' ? snapshot : state;
+  if (!target.rewardActions || typeof target.rewardActions !== 'object') {
+    target.rewardActions = {};
+  }
+
+  const runtime = target.rewardActions;
+  if (typeof runtime.provider !== 'string' || !runtime.provider.trim()) {
+    runtime.provider = 'direct';
+  }
+  if (!Number.isFinite(Number(runtime.lastTriggeredAtMs))) {
+    runtime.lastTriggeredAtMs = 0;
+  }
+  if (!Number.isFinite(Number(runtime.lastExecutedAtMs))) {
+    runtime.lastExecutedAtMs = 0;
+  }
+  if (!Number.isFinite(Number(runtime.lastGrantedAtMs))) {
+    runtime.lastGrantedAtMs = 0;
+  }
+  if (!runtime.byType || typeof runtime.byType !== 'object') {
+    runtime.byType = {};
+  }
+  return runtime;
+}
+
+const REWARD_ACTION_CONTROL_CONFIG = Object.freeze({
+  [REWARD_ACTION_TYPES.NIGHT_SHIFT]: Object.freeze({
+    cooldownMs: 5 * 60 * 1000
+  }),
+  [REWARD_ACTION_TYPES.CARE_BOOST]: Object.freeze({
+    cooldownMs: 15 * 60 * 1000
+  }),
+  [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: Object.freeze({
+    cooldownMs: 7 * 60 * 1000
+  }),
+  [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: Object.freeze({
+    cooldownMs: 18 * 60 * 1000
+  }),
+  [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: Object.freeze({
+    cooldownMs: 90 * 60 * 1000
+  })
+});
+
+const REWARD_ACTION_EXECUTION_POLICY = Object.freeze({
+  [REWARD_ACTION_TYPES.NIGHT_SHIFT]: 'rewarded_preferred',
+  [REWARD_ACTION_TYPES.CARE_BOOST]: 'rewarded_preferred',
+  [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: 'rewarded_preferred',
+  [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: 'rewarded_required',
+  [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: 'rewarded_required'
+});
+
+const REWARD_ACTION_BALANCE_PROFILE = Object.freeze({
+  [REWARD_ACTION_TYPES.NIGHT_SHIFT]: Object.freeze({
+    role: 'night_utility',
+    valueTier: 'medium',
+    cadence: 'frequent',
+    rolloutStage: 'soft_launch'
+  }),
+  [REWARD_ACTION_TYPES.CARE_BOOST]: Object.freeze({
+    role: 'run_stabilizer',
+    valueTier: 'medium',
+    cadence: 'moderate',
+    rolloutStage: 'soft_launch'
+  }),
+  [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: Object.freeze({
+    role: 'context_skip',
+    valueTier: 'medium_high',
+    cadence: 'contextual',
+    rolloutStage: 'production_candidate'
+  }),
+  [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: Object.freeze({
+    role: 'climate_recovery',
+    valueTier: 'high',
+    cadence: 'moderate',
+    rolloutStage: 'soft_launch'
+  }),
+  [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: Object.freeze({
+    role: 'run_rescue',
+    valueTier: 'very_high',
+    cadence: 'rare',
+    rolloutStage: 'production_candidate'
+  })
+});
+
+const REWARD_ROLLOUT_PRESETS = Object.freeze({
+  local: Object.freeze({
+    stage: 'local',
+    rewardSystemEnabled: true,
+    telemetryEnabled: true,
+    qaVisibilityEnabled: false,
+    providerModeOverride: 'inherit',
+    actions: Object.freeze({})
+  }),
+  staging: Object.freeze({
+    stage: 'staging',
+    rewardSystemEnabled: true,
+    telemetryEnabled: true,
+    qaVisibilityEnabled: true,
+    providerModeOverride: 'inherit',
+    actions: Object.freeze({})
+  }),
+  soft_launch: Object.freeze({
+    stage: 'soft_launch',
+    rewardSystemEnabled: true,
+    telemetryEnabled: true,
+    qaVisibilityEnabled: false,
+    providerModeOverride: 'inherit',
+    actions: Object.freeze({
+      [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: Object.freeze({
+        enabled: false
+      }),
+      [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: Object.freeze({
+        enabled: false
+      })
+    })
+  }),
+  production_candidate: Object.freeze({
+    stage: 'production_candidate',
+    rewardSystemEnabled: true,
+    telemetryEnabled: true,
+    qaVisibilityEnabled: false,
+    providerModeOverride: 'inherit',
+    actions: Object.freeze({})
+  })
+});
+
+const REWARD_FEATURE_DEFAULTS = Object.freeze({
+  rewardSystemEnabled: true,
+  telemetryEnabled: true,
+  qaVisibilityEnabled: false,
+  providerModeOverride: 'inherit',
+  rolloutStage: 'inherit',
+  actions: Object.freeze({})
+});
+
+const REWARD_TELEMETRY_BUFFER_LIMIT = 40;
+
+const REWARD_ACTION_PRESENTATION_CONFIG = Object.freeze({
+  [REWARD_ACTION_TYPES.NIGHT_SHIFT]: Object.freeze({
+    label: 'Night Shift',
+    tone: 'utility',
+    successToast: 'Night Shift aktiv · Tagesbeginn erreicht'
+  }),
+  [REWARD_ACTION_TYPES.CARE_BOOST]: Object.freeze({
+    label: 'Care Boost',
+    tone: 'utility',
+    successToast: 'Care Boost aktiv · Run stabilisiert'
+  }),
+  [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: Object.freeze({
+    label: 'Event Fast Forward',
+    tone: 'utility',
+    successToast: 'Event Fast Forward aktiv'
+  }),
+  [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: Object.freeze({
+    label: 'Climate Stabilize',
+    tone: 'utility',
+    successToast: 'Climate Stabilize aktiv · Klima beruhigt'
+  }),
+  [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: Object.freeze({
+    label: 'Emergency Save',
+    compactLabel: 'Notfallrettung',
+    tone: 'emergency',
+    showWhenUnavailableInHome: false,
+    successToast: 'Emergency Save aktiv · Run gerettet'
+  })
+});
+
+const rewardGrantRuntime = {
+  pending: false,
+  requestId: 0,
+  actionType: '',
+  mode: 'direct'
+};
+
+const rewardOpsRuntime = {
+  telemetry: [],
+  telemetrySeq: 0,
+  lastProviderStatusKey: ''
+};
+
+function getRewardActionControlConfig(type) {
+  const actionType = String(type || '').trim().toLowerCase();
+  return REWARD_ACTION_CONTROL_CONFIG[actionType] || Object.freeze({ cooldownMs: 0 });
+}
+
+function getRewardActionExecutionPolicy(type) {
+  const actionType = String(type || '').trim().toLowerCase();
+  return String(REWARD_ACTION_EXECUTION_POLICY[actionType] || 'rewarded_preferred');
+}
+
+function getRewardActionBalanceProfile(type) {
+  const actionType = String(type || '').trim().toLowerCase();
+  return REWARD_ACTION_BALANCE_PROFILE[actionType] || Object.freeze({
+    role: 'utility',
+    valueTier: 'medium',
+    cadence: 'moderate',
+    rolloutStage: 'soft_launch'
+  });
+}
+
+function getRewardFeatureStorageKey() {
+  return 'gs_reward_feature_flags';
+}
+
+function normalizeRewardFeatureBoolean(value, fallback) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'on') {
+      return true;
+    }
+    if (normalized === 'false' || normalized === '0' || normalized === 'off') {
+      return false;
+    }
+  }
+  return fallback;
+}
+
+function normalizeRewardPolicyOverride(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (
+    normalized === 'inherit'
+    || normalized === 'direct'
+    || normalized === 'rewarded_preferred'
+    || normalized === 'rewarded_required'
+  ) {
+    return normalized;
+  }
+  return 'inherit';
+}
+
+function normalizeRewardProviderModeOverride(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (
+    normalized === 'inherit'
+    || normalized === 'direct'
+    || normalized === 'debug_rewarded'
+    || normalized === 'provider_rewarded'
+  ) {
+    return normalized;
+  }
+  return 'inherit';
+}
+
+function normalizeRewardRolloutStage(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (
+    normalized === 'inherit'
+    || normalized === 'local'
+    || normalized === 'staging'
+    || normalized === 'soft_launch'
+    || normalized === 'production_candidate'
+  ) {
+    return normalized;
+  }
+  return 'inherit';
+}
+
+function detectRewardEnvironmentName() {
+  const explicit = String(window.__GROWSIM_ENV__ || (window.GrowSimBuild && window.GrowSimBuild.environment) || '').trim().toLowerCase();
+  if (explicit === 'local' || explicit === 'staging' || explicit === 'production') {
+    return explicit;
+  }
+  const hostname = String(window.location && window.location.hostname || '').trim().toLowerCase();
+  if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.local')) {
+    return 'local';
+  }
+  if (
+    hostname.includes('staging')
+    || hostname.includes('preview')
+    || hostname.includes('test')
+    || hostname.includes('qa')
+    || hostname.includes('dev')
+  ) {
+    return 'staging';
+  }
+  return 'production';
+}
+
+function getDefaultRewardRolloutStage(environment = detectRewardEnvironmentName()) {
+  const env = String(environment || '').trim().toLowerCase();
+  if (env === 'local') {
+    return 'local';
+  }
+  if (env === 'staging') {
+    return 'staging';
+  }
+  return 'soft_launch';
+}
+
+function getRewardRolloutPreset(stage) {
+  const normalizedStage = normalizeRewardRolloutStage(stage);
+  const presetKey = normalizedStage === 'inherit' ? getDefaultRewardRolloutStage() : normalizedStage;
+  return REWARD_ROLLOUT_PRESETS[presetKey] || REWARD_ROLLOUT_PRESETS.soft_launch;
+}
+
+function readRewardFeatureConfigOverride() {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return {};
+    }
+    const raw = localStorage.getItem(getRewardFeatureStorageKey());
+    if (!raw) {
+      return {};
+    }
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_error) {
+    return {};
+  }
+}
+
+function writeRewardFeatureConfigOverride(config) {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return false;
+    }
+    localStorage.setItem(getRewardFeatureStorageKey(), JSON.stringify(config && typeof config === 'object' ? config : {}));
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function getRewardFeatureConfig() {
+  const override = readRewardFeatureConfigOverride();
+  const environment = detectRewardEnvironmentName();
+  const rolloutStage = normalizeRewardRolloutStage(
+    override.rolloutStage
+    || readRewardDebugStorageValue('gs_reward_rollout_stage')
+    || window.__GROWSIM_REWARD_ROLLOUT_STAGE__
+    || getDefaultRewardRolloutStage(environment)
+  );
+  const preset = getRewardRolloutPreset(rolloutStage);
+  const actionsOverride = override.actions && typeof override.actions === 'object' ? override.actions : {};
+  const actionDefaults = {};
+  for (const actionType of Object.values(REWARD_ACTION_TYPES)) {
+    const presetAction = preset.actions && preset.actions[actionType] && typeof preset.actions[actionType] === 'object'
+      ? preset.actions[actionType]
+      : {};
+    const rawAction = actionsOverride[actionType] && typeof actionsOverride[actionType] === 'object'
+      ? actionsOverride[actionType]
+      : {};
+    actionDefaults[actionType] = {
+      enabled: normalizeRewardFeatureBoolean(
+        rawAction.enabled,
+        normalizeRewardFeatureBoolean(presetAction.enabled, true)
+      ),
+      policyOverride: normalizeRewardPolicyOverride(rawAction.policyOverride || presetAction.policyOverride),
+      debugVisibility: normalizeRewardFeatureBoolean(
+        rawAction.debugVisibility,
+        normalizeRewardFeatureBoolean(presetAction.debugVisibility, false)
+      )
+    };
+  }
+  return {
+    environment,
+    rolloutStage: rolloutStage === 'inherit' ? getDefaultRewardRolloutStage(environment) : rolloutStage,
+    rewardSystemEnabled: normalizeRewardFeatureBoolean(override.rewardSystemEnabled, preset.rewardSystemEnabled),
+    telemetryEnabled: normalizeRewardFeatureBoolean(override.telemetryEnabled, preset.telemetryEnabled),
+    qaVisibilityEnabled: normalizeRewardFeatureBoolean(override.qaVisibilityEnabled, preset.qaVisibilityEnabled),
+    providerModeOverride: normalizeRewardProviderModeOverride(override.providerModeOverride || preset.providerModeOverride),
+    actions: actionDefaults
+  };
+}
+
+function updateRewardFeatureConfigOverride(patch = {}) {
+  const current = readRewardFeatureConfigOverride();
+  const next = {
+    ...current,
+    ...(patch && typeof patch === 'object' ? patch : {})
+  };
+  const currentActions = current.actions && typeof current.actions === 'object' ? current.actions : {};
+  const patchActions = patch && patch.actions && typeof patch.actions === 'object' ? patch.actions : {};
+  next.actions = {
+    ...currentActions
+  };
+  for (const [actionType, actionPatch] of Object.entries(patchActions)) {
+    next.actions[actionType] = {
+      ...(currentActions[actionType] && typeof currentActions[actionType] === 'object' ? currentActions[actionType] : {}),
+      ...(actionPatch && typeof actionPatch === 'object' ? actionPatch : {})
+    };
+  }
+  writeRewardFeatureConfigOverride(next);
+  return getRewardFeatureConfig();
+}
+
+function clearRewardFeatureConfigOverride() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(getRewardFeatureStorageKey());
+    }
+  } catch (_error) {
+    // ignore storage cleanup issues in debug-only path
+  }
+  return getRewardFeatureConfig();
+}
+
+function getRewardActionFeatureState(type) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const config = getRewardFeatureConfig();
+  const rawState = config.actions[actionType] && typeof config.actions[actionType] === 'object'
+    ? config.actions[actionType]
+    : {};
+  return {
+    enabled: rawState.enabled !== false,
+    policyOverride: normalizeRewardPolicyOverride(rawState.policyOverride),
+    debugVisibility: rawState.debugVisibility === true
+  };
+}
+
+function getRewardRolloutState(type = '') {
+  const config = getRewardFeatureConfig();
+  const actionType = String(type || '').trim().toLowerCase();
+  const balanceProfile = actionType ? getRewardActionBalanceProfile(actionType) : null;
+  return {
+    environment: String(config.environment || detectRewardEnvironmentName()),
+    rolloutStage: String(config.rolloutStage || getDefaultRewardRolloutStage()),
+    rewardSystemEnabled: config.rewardSystemEnabled !== false,
+    telemetryEnabled: config.telemetryEnabled !== false,
+    qaVisibilityEnabled: config.qaVisibilityEnabled === true,
+    providerModeOverride: normalizeRewardProviderModeOverride(config.providerModeOverride),
+    actionType,
+    actionEnabled: actionType ? getRewardActionFeatureState(actionType).enabled : true,
+    recommendedStage: balanceProfile ? String(balanceProfile.rolloutStage || '') : ''
+  };
+}
+
+function isRewardActionEnabled(type) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const rollout = getRewardRolloutState(actionType);
+  if (!rollout.rewardSystemEnabled) {
+    return false;
+  }
+  return getRewardActionFeatureState(actionType).enabled;
+}
+
+function getRewardActionRuntimePolicy(type) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const featureState = getRewardActionFeatureState(actionType);
+  if (featureState.policyOverride !== 'inherit') {
+    return featureState.policyOverride;
+  }
+  return getRewardActionExecutionPolicy(actionType);
+}
+
+function isRewardTelemetryEnabled() {
+  return getRewardFeatureConfig().telemetryEnabled !== false;
+}
+
+function isRewardQaVisibilityEnabled() {
+  return getRewardFeatureConfig().qaVisibilityEnabled === true;
+}
+
+function summarizeRewardTelemetryResult(result) {
+  if (!result || typeof result !== 'object') {
+    return null;
+  }
+  const summary = {
+    ok: result.ok !== false,
+    reason: String(result.reason || '')
+  };
+  if (Number.isFinite(Number(result.score))) {
+    summary.score = round2(Number(result.score));
+  }
+  if (Number.isFinite(Number(result.remainingSimMs))) {
+    summary.remainingSimMs = Math.max(0, Number(result.remainingSimMs));
+  }
+  if (result.mode) {
+    summary.mode = String(result.mode);
+  }
+  return summary;
+}
+
+function recordRewardTelemetry(eventName, payload = {}) {
+  if (!isRewardTelemetryEnabled()) {
+    return null;
+  }
+  const actionType = String(payload.type || payload.actionType || '').trim().toLowerCase();
+  const rolloutState = actionType ? getRewardRolloutState(actionType) : getRewardRolloutState();
+  const controlConfig = actionType ? getRewardActionControlConfig(actionType) : { cooldownMs: 0 };
+  const entry = {
+    seq: ++rewardOpsRuntime.telemetrySeq,
+    eventName: String(eventName || '').trim().toLowerCase() || 'reward_event',
+    actionType,
+    timestampMs: Math.max(0, Number(payload.timestampMs || payload.nowMs) || Date.now()),
+    providerMode: String(payload.providerMode || payload.provider || payload.mode || ''),
+    providerStatus: String(
+      payload.providerStatus
+      || (payload.providerState && payload.providerState.state)
+      || ''
+    ),
+    policy: String(payload.policy || (actionType ? getRewardActionRuntimePolicy(actionType) : '')),
+    rolloutStage: String(payload.rolloutStage || rolloutState.rolloutStage || ''),
+    environment: String(payload.environment || rolloutState.environment || ''),
+    featureEnabled: payload.featureEnabled !== undefined ? payload.featureEnabled === true : rolloutState.actionEnabled !== false,
+    reason: String(payload.reason || ''),
+    cooldownConfigMs: Math.max(0, Number(payload.cooldownConfigMs) || Number(controlConfig.cooldownMs) || 0),
+    cooldownRemainingMs: Math.max(0, Number(payload.cooldownRemainingMs) || 0),
+    availabilityReason: String(
+      payload.availabilityReason
+      || (payload.availability && payload.availability.reason)
+      || ''
+    ),
+    result: summarizeRewardTelemetryResult(payload.result || payload.grantResult || null)
+  };
+  rewardOpsRuntime.telemetry.push(entry);
+  if (rewardOpsRuntime.telemetry.length > REWARD_TELEMETRY_BUFFER_LIMIT) {
+    rewardOpsRuntime.telemetry.splice(0, rewardOpsRuntime.telemetry.length - REWARD_TELEMETRY_BUFFER_LIMIT);
+  }
+  dispatchRewardActionHook('onRewardTelemetry', entry);
+  return entry;
+}
+
+function getRewardTelemetryEntries(limit = REWARD_TELEMETRY_BUFFER_LIMIT) {
+  const maxItems = clampInt(Number(limit) || REWARD_TELEMETRY_BUFFER_LIMIT, 1, REWARD_TELEMETRY_BUFFER_LIMIT);
+  return rewardOpsRuntime.telemetry.slice(-maxItems).map((entry) => ({ ...entry }));
+}
+
+function clearRewardTelemetryEntries() {
+  rewardOpsRuntime.telemetry = [];
+  rewardOpsRuntime.telemetrySeq = 0;
+}
+
+function buildRewardDebugSummary() {
+  const providerStatus = getRewardProviderStatus(state);
+  const actionSummaries = Object.values(REWARD_ACTION_TYPES).map((actionType) => {
+    const presentation = getRewardActionPresentation(actionType, { context: 'debug' });
+    const featureState = getRewardActionFeatureState(actionType);
+    const balanceProfile = getRewardActionBalanceProfile(actionType);
+    const controlConfig = getRewardActionControlConfig(actionType);
+    const usageRecord = ensureRewardActionUsageRecord(actionType, state);
+    const cooldownRemainingMs = getRewardActionCooldownRemaining(actionType, state, Date.now());
+    return {
+      type: actionType,
+      enabled: featureState.enabled,
+      policy: getRewardActionRuntimePolicy(actionType),
+      role: String(balanceProfile.role || ''),
+      valueTier: String(balanceProfile.valueTier || ''),
+      cadence: String(balanceProfile.cadence || ''),
+      rolloutStage: String(balanceProfile.rolloutStage || ''),
+      debugVisibility: featureState.debugVisibility,
+      disabled: presentation.disabled,
+      hidden: presentation.hidden,
+      reason: presentation.reason,
+      cooldownMs: Math.max(0, Number(controlConfig.cooldownMs) || 0),
+      cooldownRemainingMs,
+      sessionUses: Math.max(0, Number(usageRecord.sessionUses) || 0),
+      lifetimeUses: Math.max(0, Number(usageRecord.lifetimeUses) || 0)
+    };
+  });
+
+  return {
+    qaVisibilityEnabled: isRewardQaVisibilityEnabled(),
+    provider: {
+      mode: providerStatus.mode,
+      state: providerStatus.state,
+      available: providerStatus.available,
+      reason: providerStatus.reason,
+      lastError: String(providerStatus.lastError || ''),
+      hasClientConfig: providerStatus.hasClientConfig === true,
+      hasRewardedSlot: providerStatus.hasRewardedSlot === true,
+      requestPending: providerStatus.requestPending === true,
+      environment: String(providerStatus.environment || ''),
+      configSource: String(providerStatus.configSource || ''),
+      configEnabled: providerStatus.configEnabled === true,
+      validation: providerStatus.validation && typeof providerStatus.validation === 'object'
+        ? {
+          ok: providerStatus.validation.ok !== false,
+          primaryReason: String(providerStatus.validation.primaryReason || ''),
+          issueCount: Array.isArray(providerStatus.validation.issues) ? providerStatus.validation.issues.length : 0
+        }
+        : null
+    },
+    pending: {
+      active: rewardGrantRuntime.pending,
+      actionType: rewardGrantRuntime.actionType,
+      mode: rewardGrantRuntime.mode,
+      requestId: rewardGrantRuntime.requestId
+    },
+    rollout: getRewardRolloutState(),
+    balanceSnapshot: actionSummaries.map((entry) => ({
+      type: entry.type,
+      enabled: entry.enabled,
+      policy: entry.policy,
+      role: entry.role,
+      valueTier: entry.valueTier,
+      cooldownMs: entry.cooldownMs,
+      cooldownRemainingMs: entry.cooldownRemainingMs,
+      sessionUses: entry.sessionUses
+    })),
+    actions: actionSummaries,
+    telemetry: getRewardTelemetryEntries(10)
+  };
+}
+
+function readRewardDebugStorageValue(key) {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return '';
+    }
+    return String(localStorage.getItem(key) || '').trim();
+  } catch (_error) {
+    return '';
+  }
+}
+
+function getRewardProviderMode(snapshot = state) {
+  const runtime = ensureRewardActionRuntime(snapshot);
+  const featureConfig = getRewardFeatureConfig();
+  if (featureConfig.providerModeOverride !== 'inherit') {
+    return featureConfig.providerModeOverride;
+  }
+  const explicitMode = readRewardDebugStorageValue('gs_reward_provider_mode');
+  if (explicitMode === 'direct' || explicitMode === 'debug_rewarded' || explicitMode === 'provider_rewarded') {
+    return explicitMode;
+  }
+  if (typeof window !== 'undefined' && window.__GROWSIM_DEBUG_REWARDED__ === true) {
+    return 'debug_rewarded';
+  }
+  const providerMode = String(runtime.provider || '').trim().toLowerCase();
+  if (providerMode === 'debug_rewarded' || providerMode === 'provider_rewarded' || providerMode === 'direct') {
+    return providerMode;
+  }
+  return 'direct';
+}
+
+function getRewardProvider() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const directProvider = window.GrowSimRewardProvider;
+  if (directProvider && typeof directProvider === 'object') {
+    return directProvider;
+  }
+  const rewardedProvider = window.GrowSimRewardedProvider;
+  if (rewardedProvider && typeof rewardedProvider === 'object') {
+    return rewardedProvider;
+  }
+  return null;
+}
+
+function getRewardProviderStatus(snapshot = state) {
+  const mode = getRewardProviderMode(snapshot);
+  rewardGrantRuntime.mode = mode;
+  let status;
+  if (mode === 'direct') {
+    status = {
+      mode,
+      state: 'direct',
+      available: true,
+      canRequestReward: false,
+      reason: 'direct_mode'
+    };
+  } else if (mode === 'debug_rewarded') {
+    status = {
+      mode,
+      state: 'debug',
+      available: true,
+      canRequestReward: true,
+      reason: 'debug_rewarded'
+    };
+  } else {
+    const provider = getRewardProvider();
+    if (!provider) {
+      status = {
+        mode,
+        state: 'unavailable',
+        available: false,
+        canRequestReward: false,
+        reason: 'provider_unavailable'
+      };
+    } else {
+      let providerSnapshot = {};
+      if (typeof provider.getStatus === 'function') {
+        try {
+          providerSnapshot = provider.getStatus(snapshot) || {};
+        } catch (_error) {
+          providerSnapshot = {
+            state: 'error',
+            reason: 'provider_error',
+            available: false,
+            canRequestReward: false
+          };
+        }
+      }
+      const shouldInitProvider = providerSnapshot.hasClientConfig === true
+        && providerSnapshot.initialized !== true
+        && typeof provider.init === 'function';
+      if (shouldInitProvider) {
+        try {
+          provider.init();
+        } catch (_error) {
+          // status mapping below keeps the provider non-blocking even if init throws synchronously
+        }
+        providerSnapshot = {
+          ...providerSnapshot,
+          state: 'initializing',
+          reason: 'provider_initializing',
+          available: false,
+          canRequestReward: false
+        };
+      }
+      const requestFn = (
+        typeof provider.requestRewardGrant === 'function'
+          ? provider.requestRewardGrant
+          : (typeof provider.requestRewardedGrant === 'function'
+            ? provider.requestRewardedGrant
+            : null)
+      );
+      const providerState = String(providerSnapshot.state || (requestFn ? 'ready' : 'unavailable') || 'unavailable');
+      const providerReason = String(
+        providerSnapshot.reason
+        || (providerState === 'ready' ? 'provider_ready' : (providerState === 'initializing' ? 'provider_initializing' : 'provider_unavailable'))
+      );
+      const canRequestReward = requestFn && providerSnapshot.canRequestReward !== false && providerState === 'ready';
+      const isAvailable = Boolean(requestFn) && providerSnapshot.available !== false && providerState === 'ready';
+      status = {
+        mode,
+        state: providerState,
+        available: isAvailable,
+        canRequestReward,
+        provider,
+        requestFn: canRequestReward ? requestFn : null,
+        providerName: String(providerSnapshot.name || provider.name || provider.id || 'reward_provider'),
+        reason: providerReason,
+        lastError: String(providerSnapshot.lastError || ''),
+        hasClientConfig: providerSnapshot.hasClientConfig === true,
+        hasRewardedSlot: providerSnapshot.hasRewardedSlot === true,
+        requestPending: providerSnapshot.requestPending === true,
+        environment: String(providerSnapshot.environment || ''),
+        configSource: String(providerSnapshot.configSource || ''),
+        configEnabled: providerSnapshot.configEnabled === true,
+        configSummary: providerSnapshot.configSummary && typeof providerSnapshot.configSummary === 'object'
+          ? providerSnapshot.configSummary
+          : null,
+        validation: providerSnapshot.validation && typeof providerSnapshot.validation === 'object'
+          ? providerSnapshot.validation
+          : null
+      };
+    }
+  }
+  const statusKey = `${String(status.mode || '')}:${String(status.state || '')}:${String(status.reason || '')}`;
+  if (rewardOpsRuntime.lastProviderStatusKey !== statusKey) {
+    rewardOpsRuntime.lastProviderStatusKey = statusKey;
+    recordRewardTelemetry('reward_provider_status_changed', {
+      providerMode: String(status.mode || ''),
+      providerStatus: String(status.state || ''),
+      reason: String(status.reason || ''),
+      timestampMs: Date.now()
+    });
+  }
+  return status;
+}
+
+function isRewardProviderAvailable(snapshot = state) {
+  const status = getRewardProviderStatus(snapshot);
+  return Boolean(status.available);
+}
+
+function getRewardDebugGrantConfig() {
+  const forcedResult = (() => {
+    const fromWindow = typeof window !== 'undefined' ? String(window.__GROWSIM_DEBUG_REWARDED_RESULT__ || '').trim().toLowerCase() : '';
+    const fromStorage = readRewardDebugStorageValue('gs_reward_debug_result').toLowerCase();
+    const candidate = fromWindow || fromStorage;
+    return candidate === 'cancel' || candidate === 'error' || candidate === 'success' ? candidate : 'success';
+  })();
+  const delayMs = (() => {
+    const fromWindow = typeof window !== 'undefined' ? Number(window.__GROWSIM_DEBUG_REWARDED_DELAY_MS__) : NaN;
+    const fromStorage = Number(readRewardDebugStorageValue('gs_reward_debug_delay_ms'));
+    const candidate = Number.isFinite(fromWindow) ? fromWindow : fromStorage;
+    return clampInt(Number.isFinite(candidate) ? candidate : 420, 0, 5000);
+  })();
+  return {
+    result: forcedResult,
+    delayMs
+  };
+}
+
+function simulateRewardGrant(type, payload = {}, options = {}) {
+  const debugConfig = getRewardDebugGrantConfig();
+  const actionType = String(type || '').trim().toLowerCase();
+  recordRewardTelemetry('reward_debug_simulated', {
+    type: actionType,
+    providerMode: 'debug_rewarded',
+    providerStatus: 'debug',
+    reason: debugConfig.result,
+    timestampMs: Date.now()
+  });
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      if (debugConfig.result === 'cancel') {
+        resolve({
+          ok: false,
+          reason: 'reward_cancelled',
+          mode: 'debug_rewarded',
+          type: actionType
+        });
+        return;
+      }
+      if (debugConfig.result === 'error') {
+        resolve({
+          ok: false,
+          reason: 'reward_error',
+          mode: 'debug_rewarded',
+          type: actionType
+        });
+        return;
+      }
+      resolve({
+        ok: true,
+        reason: 'reward_granted',
+        mode: 'debug_rewarded',
+        type: actionType,
+        grantedAtMs: Date.now(),
+        payload,
+        options
+      });
+    }, debugConfig.delayMs);
+  });
+}
+
+function getRewardActionGrantState(type, payload = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const snapshot = payload && payload.state ? payload.state : state;
+  if (!getRewardRolloutState(actionType).rewardSystemEnabled) {
+    return {
+      ok: false,
+      actionType,
+      policy: getRewardActionRuntimePolicy(actionType),
+      grantMode: 'direct',
+      providerStatus: getRewardProviderStatus(snapshot),
+      reason: 'reward_system_disabled',
+      hint: 'Reward-Utilities sind aktuell deaktiviert.'
+    };
+  }
+  if (!isRewardActionEnabled(actionType)) {
+    return {
+      ok: false,
+      actionType,
+      policy: getRewardActionRuntimePolicy(actionType),
+      grantMode: 'direct',
+      providerStatus: getRewardProviderStatus(snapshot),
+      reason: 'reward_action_disabled',
+      hint: 'Diese Utility ist aktuell deaktiviert.'
+    };
+  }
+  const providerStatus = getRewardProviderStatus(snapshot);
+  const policy = getRewardActionRuntimePolicy(actionType);
+  const pendingSameAction = rewardGrantRuntime.pending && rewardGrantRuntime.actionType === actionType;
+  if (rewardGrantRuntime.pending && !pendingSameAction) {
+    return {
+      ok: false,
+      actionType,
+      policy,
+      grantMode: providerStatus.mode === 'direct' ? 'direct' : providerStatus.mode,
+      providerStatus,
+      reason: 'reward_pending',
+      hint: 'Eine Reward-Aktion wird gerade verarbeitet.'
+    };
+  }
+  if (policy === 'direct') {
+    return {
+      ok: true,
+      actionType,
+      policy,
+      grantMode: 'direct',
+      providerStatus,
+      reason: 'direct_mode',
+      hint: ''
+    };
+  }
+  if (providerStatus.mode === 'direct') {
+    return {
+      ok: true,
+      actionType,
+      policy,
+      grantMode: 'direct',
+      providerStatus,
+      reason: 'direct_mode',
+      hint: policy === 'rewarded_required'
+        ? 'Lokaler Direct-Modus aktiv. Reward wird ohne Provider simuliert.'
+        : ''
+    };
+  }
+  if (providerStatus.mode === 'debug_rewarded') {
+    return {
+      ok: true,
+      actionType,
+      policy,
+      grantMode: 'debug_rewarded',
+      providerStatus,
+      reason: 'debug_rewarded',
+      hint: 'Debug-Reward aktiv.'
+    };
+  }
+  if (providerStatus.state === 'initializing') {
+    return {
+      ok: false,
+      actionType,
+      policy,
+      grantMode: 'provider_rewarded',
+      providerStatus,
+      reason: 'provider_initializing',
+      hint: 'Rewarded wird gerade vorbereitet.'
+    };
+  }
+  if (providerStatus.state === 'error') {
+    return {
+      ok: false,
+      actionType,
+      policy,
+      grantMode: 'provider_rewarded',
+      providerStatus,
+      reason: 'provider_error',
+      hint: 'Rewarded ist aktuell technisch nicht bereit.'
+    };
+  }
+  if (!providerStatus.available) {
+    return {
+      ok: false,
+      actionType,
+      policy,
+      grantMode: 'provider_rewarded',
+      providerStatus,
+      reason: 'provider_unavailable',
+      hint: 'Rewarded ist gerade nicht verfuegbar.'
+    };
+  }
+  return {
+    ok: true,
+    actionType,
+    policy,
+    grantMode: 'provider_rewarded',
+    providerStatus,
+    reason: 'provider_ready',
+    hint: ''
+  };
+}
+
+async function requestRewardGrant(type, payload = {}, options = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const gateState = options.gateState && typeof options.gateState === 'object'
+    ? options.gateState
+    : getRewardActionGrantState(actionType, payload);
+
+  if (!gateState.ok) {
+    return {
+      ok: false,
+      type: actionType,
+      reason: String(gateState.reason || 'provider_unavailable'),
+      mode: String(gateState.grantMode || gateState.providerStatus && gateState.providerStatus.mode || 'direct')
+    };
+  }
+
+  if (gateState.grantMode === 'direct') {
+    return {
+      ok: true,
+      type: actionType,
+      reason: 'reward_granted',
+      mode: 'direct',
+      grantedAtMs: Date.now()
+    };
+  }
+
+  if (gateState.grantMode === 'debug_rewarded') {
+    return simulateRewardGrant(actionType, payload, options);
+  }
+
+  const providerStatus = gateState.providerStatus || getRewardProviderStatus(state);
+  const requestFn = providerStatus.requestFn;
+  const provider = providerStatus.provider;
+  if (typeof requestFn !== 'function') {
+    return {
+      ok: false,
+      type: actionType,
+      reason: String(providerStatus.reason || 'provider_unavailable'),
+      mode: 'provider_rewarded'
+    };
+  }
+
+  try {
+    const providerResult = await requestFn.call(provider, {
+      type: actionType,
+      payload,
+      options
+    });
+    const normalized = providerResult && typeof providerResult === 'object' ? providerResult : {};
+    if (normalized.ok === false) {
+      return {
+        ok: false,
+        type: actionType,
+        reason: String(normalized.reason || providerStatus.reason || 'reward_error'),
+        mode: 'provider_rewarded',
+        providerName: providerStatus.providerName || ''
+      };
+    }
+    return {
+      ok: true,
+      type: actionType,
+      reason: 'reward_granted',
+      mode: 'provider_rewarded',
+      providerName: providerStatus.providerName || '',
+      grantedAtMs: Date.now()
+    };
+  } catch (_error) {
+    return {
+      ok: false,
+      type: actionType,
+      reason: 'reward_error',
+      mode: 'provider_rewarded',
+      providerName: providerStatus.providerName || ''
+    };
+  }
+}
+
+window.GrowSimRewardBridge = window.GrowSimRewardBridge || Object.freeze({
+  getMode: () => getRewardProviderMode(state),
+  getStatus: () => getRewardProviderStatus(state),
+  isAvailable: () => isRewardProviderAvailable(state),
+  initProvider: () => {
+    const provider = getRewardProvider();
+    if (provider && typeof provider.init === 'function') {
+      return provider.init();
+    }
+    return Promise.resolve(getRewardProviderStatus(state));
+  },
+  requestGrant: (type, payload = {}, options = {}) => requestRewardGrant(type, payload, options),
+  simulateGrant: (type, payload = {}, options = {}) => simulateRewardGrant(type, payload, options)
+});
+
+function maybeInitRewardProviderRuntime() {
+  if (getRewardProviderMode(state) !== 'provider_rewarded') {
     return;
+  }
+  const provider = getRewardProvider();
+  if (!provider || typeof provider.init !== 'function') {
+    return;
+  }
+  try {
+    provider.init();
+  } catch (_error) {
+    // Provider init remains best-effort and must never block boot.
+  }
+}
+
+window.setTimeout(maybeInitRewardProviderRuntime, 0);
+
+window.GrowSimRewardDebug = window.GrowSimRewardDebug || Object.freeze({
+  getSummary: () => buildRewardDebugSummary(),
+  getTelemetry: (limit = 20) => getRewardTelemetryEntries(limit),
+  clearTelemetry: () => clearRewardTelemetryEntries(),
+  getFlags: () => getRewardFeatureConfig(),
+  setFlags: (patch = {}) => updateRewardFeatureConfigOverride(patch),
+  clearFlags: () => clearRewardFeatureConfigOverride()
+});
+
+function ensureRewardActionUsageRecord(type, snapshot = state) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const runtime = ensureRewardActionRuntime(snapshot);
+  if (!runtime.byType[actionType] || typeof runtime.byType[actionType] !== 'object') {
+    runtime.byType[actionType] = {};
+  }
+  const record = runtime.byType[actionType];
+  if (!Number.isFinite(Number(record.lastTriggeredAtMs))) {
+    record.lastTriggeredAtMs = 0;
+  }
+  if (!Number.isFinite(Number(record.lastGrantedAtMs))) {
+    record.lastGrantedAtMs = 0;
+  }
+  if (!Number.isFinite(Number(record.lastExecutedAtMs))) {
+    record.lastExecutedAtMs = 0;
+  }
+  if (!Number.isFinite(Number(record.lastUsedAtMs))) {
+    record.lastUsedAtMs = 0;
+  }
+  if (!Number.isFinite(Number(record.lastRejectedAtMs))) {
+    record.lastRejectedAtMs = 0;
+  }
+  if (!Number.isFinite(Number(record.sessionUses))) {
+    record.sessionUses = 0;
+  }
+  if (!Number.isFinite(Number(record.lifetimeUses))) {
+    record.lifetimeUses = 0;
+  }
+  if (typeof record.lastResult !== 'string') {
+    record.lastResult = '';
+  }
+  if (typeof record.lastRejectedReason !== 'string') {
+    record.lastRejectedReason = '';
+  }
+  return record;
+}
+
+function getRewardActionCooldownRemaining(type, snapshot = state, nowMs = Date.now()) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const cooldownMs = Math.max(0, Number(getRewardActionControlConfig(actionType).cooldownMs) || 0);
+  if (cooldownMs <= 0) {
+    return 0;
+  }
+  const runtime = ensureRewardActionRuntime(snapshot);
+  const rawRecord = runtime.byType && runtime.byType[actionType] && typeof runtime.byType[actionType] === 'object'
+    ? runtime.byType[actionType]
+    : null;
+  const lastUsedAtMs = Math.max(
+    Number(rawRecord && rawRecord.lastUsedAtMs) || 0,
+    Number(rawRecord && rawRecord.lastExecutedAtMs) || 0
+  );
+  if (lastUsedAtMs <= 0) {
+    return 0;
+  }
+  return Math.max(0, (lastUsedAtMs + cooldownMs) - Math.max(0, Number(nowMs) || 0));
+}
+
+function formatRewardCooldownHint(cooldownRemainingMs) {
+  const remainingMs = Math.max(0, Number(cooldownRemainingMs) || 0);
+  if (remainingMs <= 0) {
+    return '';
+  }
+  if (remainingMs >= 60000) {
+    return `In ${Math.max(1, Math.ceil(remainingMs / 60000))} Min wieder bereit.`;
+  }
+  return `In ${Math.max(1, Math.ceil(remainingMs / 1000))} Sek wieder bereit.`;
+}
+
+function dispatchRewardActionHook(hookName, payload = {}) {
+  const hooks = window.GrowSimRewardHooks;
+  const handler = hooks && typeof hooks === 'object' ? hooks[hookName] : null;
+  if (typeof handler !== 'function') {
+    return;
+  }
+  try {
+    handler(payload);
+  } catch (error) {
+    console.warn(`[reward-hook] ${hookName} failed`, error);
+  }
+}
+
+function onRewardActionTriggered(type, payload = {}) {
+  const normalizedPayload = {
+    type: String(type || '').trim().toLowerCase(),
+    ...payload
+  };
+  recordRewardTelemetry('reward_triggered', normalizedPayload);
+  dispatchRewardActionHook('onRewardActionTriggered', normalizedPayload);
+}
+
+function onRewardActionGranted(type, payload = {}) {
+  const normalizedPayload = {
+    type: String(type || '').trim().toLowerCase(),
+    ...payload
+  };
+  recordRewardTelemetry('reward_granted', normalizedPayload);
+  dispatchRewardActionHook('onRewardActionGranted', normalizedPayload);
+}
+
+function onRewardActionExecuted(type, payload = {}) {
+  const normalizedPayload = {
+    type: String(type || '').trim().toLowerCase(),
+    ...payload
+  };
+  recordRewardTelemetry('reward_executed', normalizedPayload);
+  dispatchRewardActionHook('onRewardActionExecuted', normalizedPayload);
+}
+
+function onRewardActionRejected(type, payload = {}) {
+  const normalizedPayload = {
+    type: String(type || '').trim().toLowerCase(),
+    ...payload
+  };
+  recordRewardTelemetry('reward_rejected', normalizedPayload);
+  dispatchRewardActionHook('onRewardActionRejected', normalizedPayload);
+}
+
+function markRewardActionUsed(type, meta = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const runtime = ensureRewardActionRuntime(state);
+  const record = ensureRewardActionUsageRecord(actionType, state);
+  const nowMs = Math.max(0, Number(meta.nowMs) || Date.now());
+  const result = meta.result && typeof meta.result === 'object' ? meta.result : null;
+
+  if (Boolean(meta.triggered)) {
+    runtime.lastTriggeredAtMs = nowMs;
+    record.lastTriggeredAtMs = nowMs;
+  }
+  if (Boolean(meta.granted)) {
+    runtime.lastGrantedAtMs = nowMs;
+    record.lastGrantedAtMs = nowMs;
+  }
+  if (Boolean(meta.executed)) {
+    runtime.lastExecutedAtMs = nowMs;
+    record.lastExecutedAtMs = nowMs;
+    record.lastUsedAtMs = nowMs;
+    record.sessionUses = Math.max(0, Math.trunc(Number(record.sessionUses) || 0)) + 1;
+    record.lifetimeUses = Math.max(0, Math.trunc(Number(record.lifetimeUses) || 0)) + 1;
+  }
+  if (Boolean(meta.rejected)) {
+    record.lastRejectedAtMs = nowMs;
+    record.lastRejectedReason = String(meta.reason || (result && result.reason) || 'rejected');
+  }
+  if (typeof meta.lastResult === 'string' && meta.lastResult.trim()) {
+    record.lastResult = meta.lastResult.trim();
+  } else if (result) {
+    record.lastResult = result.ok ? 'ok' : String(result.reason || 'failed');
+  }
+  return record;
+}
+
+function getRewardActionPresentationConfig(type) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const registryEntry = REWARD_ACTION_REGISTRY[actionType];
+  const configured = REWARD_ACTION_PRESENTATION_CONFIG[actionType] || {};
+  return {
+    label: String(configured.label || (registryEntry && registryEntry.label) || 'Reward Action'),
+    compactLabel: String(configured.compactLabel || configured.label || (registryEntry && registryEntry.label) || 'Reward Action'),
+    tone: String(configured.tone || 'utility'),
+    successToast: String(configured.successToast || '').trim(),
+    showWhenUnavailableInHome: configured.showWhenUnavailableInHome !== false
+  };
+}
+
+function getRewardActionPresentation(type, payload = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const context = String(payload.context || 'default').trim().toLowerCase();
+  const config = getRewardActionPresentationConfig(actionType);
+  const featureState = getRewardActionFeatureState(actionType);
+  const usage = canUseRewardAction(actionType, payload);
+  const gateState = getRewardActionGrantState(actionType, payload);
+  const cooldownRemainingMs = Math.max(0, Number(usage.cooldownRemainingMs) || 0);
+  const cooldownText = formatRewardCooldownHint(cooldownRemainingMs);
+  const disabled = !Boolean(usage.ok) || !Boolean(gateState.ok);
+  const availability = usage.availability && typeof usage.availability === 'object' ? usage.availability : {};
+  const hint = String(
+    gateState.hint
+    || usage.hint
+    || availability.hint
+    || (disabled ? 'Aktuell nicht verfuegbar.' : '')
+  );
+  const hidden = context === 'home'
+    ? Boolean((disabled && config.showWhenUnavailableInHome === false) || (!featureState.enabled && featureState.debugVisibility !== true))
+    : false;
+
+  return {
+    type: actionType,
+    label: context === 'menu' || context === 'death_overlay' ? config.compactLabel : config.label,
+    title: context === 'menu' || context === 'death_overlay' ? config.compactLabel : config.label,
+    tone: config.tone,
+    disabled,
+    hidden,
+    reason: String((!usage.ok ? usage.reason : gateState.reason) || (disabled ? 'not_available' : 'ok')),
+    hint,
+    cooldownRemainingMs,
+    cooldownText,
+    availability,
+    providerMode: String(gateState.grantMode || ''),
+    debugVisible: featureState.debugVisibility === true,
+    successToast: config.successToast,
+    priority: disabled
+      ? 0
+      : (config.tone === 'emergency' ? 100 : 50)
+  };
+}
+
+function scoreRewardEffectDelta(metric, delta) {
+  const safeMetric = String(metric || '').trim().toLowerCase();
+  const safeDelta = Number(delta);
+  if (!Number.isFinite(safeDelta) || !safeMetric) {
+    return 0;
+  }
+
+  if (safeMetric === 'health') {
+    return safeDelta * 1.1;
+  }
+  if (safeMetric === 'growth') {
+    return safeDelta * 0.7;
+  }
+  if (safeMetric === 'water' || safeMetric === 'nutrition') {
+    return safeDelta * 0.85;
+  }
+  if (safeMetric === 'stress' || safeMetric === 'risk') {
+    return safeDelta * -1;
+  }
+  return 0;
+}
+
+function scoreRewardEffectsObject(effects = {}) {
+  const safeEffects = effects && typeof effects === 'object' ? effects : {};
+  let score = 0;
+  for (const [metric, delta] of Object.entries(safeEffects)) {
+    score += scoreRewardEffectDelta(metric, delta);
+  }
+  return round2(score);
+}
+
+function getCareBoostRewardAvailability(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+  const status = safeState.status && typeof safeState.status === 'object' ? safeState.status : {};
+
+  if (Boolean(plant.isDead) || String(plant.phase || '') === 'dead') {
+    return { ok: false, reason: 'plant_dead', hint: 'Care Boost steht nur waehrend eines aktiven Runs bereit.' };
+  }
+
+  const water = clamp(Number(status.water || 0), 0, 100);
+  const nutrition = clamp(Number(status.nutrition || 0), 0, 100);
+  const health = clamp(Number(status.health || 0), 0, 100);
+  const stress = clamp(Number(status.stress || 0), 0, 100);
+  const risk = clamp(Number(status.risk || 0), 0, 100);
+  const needScore = clamp(
+    (clamp((70 - water) / 34, 0, 1) * 0.26)
+    + (clamp((68 - nutrition) / 32, 0, 1) * 0.22)
+    + (clamp((stress - 20) / 44, 0, 1) * 0.24)
+    + (clamp((risk - 18) / 42, 0, 1) * 0.2)
+    + (clamp((82 - health) / 34, 0, 1) * 0.18),
+    0,
+    1.2
+  );
+
+  if (needScore < 0.14) {
+    return {
+      ok: false,
+      reason: 'already_stable',
+      score: round2(needScore),
+      hint: 'Care Boost ist aktuell nicht noetig.'
+    };
+  }
+
+  if (needScore < 0.22) {
+    return {
+      ok: false,
+      reason: 'too_minor_for_boost',
+      score: round2(needScore),
+      hint: 'Care Boost bleibt fuer deutlich spuerbare Run-Spannung reserviert.'
+    };
+  }
+
+  return {
+    ok: true,
+    reason: 'ok',
+    score: round2(needScore),
+    hint: needScore >= 0.62
+      ? 'Care Boost stabilisiert den Run aktuell spuerbar.'
+      : 'Care Boost steht als sanfter Stabilizer bereit.'
+  };
+}
+
+function getEventFastForwardChoiceDetails(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const options = Array.isArray(safeState.events && safeState.events.activeOptions) ? safeState.events.activeOptions : [];
+  let best = null;
+
+  for (const option of options) {
+    if (!option || typeof option !== 'object') {
+      continue;
+    }
+    const directScore = scoreRewardEffectsObject(option.effects || {});
+    const sideEffectScore = (Array.isArray(option.sideEffects) ? option.sideEffects : []).reduce((sum, sideEffect) => {
+      if (!sideEffect || typeof sideEffect !== 'object') {
+        return sum;
+      }
+      const chance = clamp(Number(sideEffect.chance) || 0, 0, 1);
+      return sum + (scoreRewardEffectsObject(sideEffect.effects || {}) * chance * 0.85);
+    }, 0);
+    const totalScore = round2(directScore + sideEffectScore);
+    if (!best || totalScore > best.score || (totalScore === best.score && String(option.id || '') < String(best.option.id || ''))) {
+      best = {
+        option,
+        score: totalScore
+      };
+    }
+  }
+
+  return best;
+}
+
+function getEventFastForwardRewardAvailability(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+  const eventsState = safeState.events && typeof safeState.events === 'object' ? safeState.events : {};
+  const simulation = safeState.simulation && typeof safeState.simulation === 'object' ? safeState.simulation : {};
+
+  if (Boolean(plant.isDead) || String(plant.phase || '') === 'dead') {
+    return { ok: false, reason: 'plant_dead', hint: 'Event Fast Forward ist nach Run-Ende nicht verfuegbar.' };
+  }
+
+  if (String(eventsState.machineState || '') === 'activeEvent') {
+    const bestChoice = getEventFastForwardChoiceDetails(safeState);
+    if (!bestChoice || !bestChoice.option) {
+      return { ok: false, reason: 'no_fast_forward_target', hint: 'Dieses Event braucht eine manuelle Entscheidung.' };
+    }
+    if (Number(bestChoice.score) <= 0.35) {
+      return { ok: false, reason: 'manual_choice_recommended', hint: 'Dieses Event ist zu offen fuer eine sichere Schnellaufloesung.' };
+    }
+    return {
+      ok: true,
+      reason: 'resolve_active_event',
+      mode: 'resolve_active_event',
+      optionId: String(bestChoice.option.id || ''),
+      optionLabel: String(bestChoice.option.label || 'Option'),
+      optionScore: round2(bestChoice.score),
+      hint: `Sichere Schnellaufloesung ueber "${String(bestChoice.option.label || 'Option')}".`
+    };
+  }
+
+  if (String(eventsState.machineState || '') === 'resolving') {
+    const remainingSimMs = Math.max(
+      0,
+      Number(eventsState.resolvingUntilSimTimeMs || 0) - Number(simulation.simTimeMs || 0)
+    );
+    if (remainingSimMs <= 0) {
+      return { ok: false, reason: 'already_resolved', hint: 'Die Event-Auswertung ist bereits abgeschlossen.' };
+    }
+    return {
+      ok: true,
+      reason: 'finish_resolving_event',
+      mode: 'finish_resolving_event',
+      remainingSimMs,
+      hint: 'Event Fast Forward beendet die laufende Auswertung sofort.'
+    };
+  }
+
+  return { ok: false, reason: 'no_fast_forward_target', hint: 'Kein Event ist aktuell fuer Fast Forward geeignet.' };
+}
+
+function getClimateStabilizeRewardAvailability(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+  if (Boolean(plant.isDead) || String(plant.phase || '') === 'dead') {
+    return { ok: false, reason: 'plant_dead', hint: 'Climate Stabilize steht nur waehrend eines aktiven Runs bereit.' };
+  }
+
+  if (String((safeState.setup && safeState.setup.mode) || '') !== 'indoor') {
+    return { ok: false, reason: 'unsupported_setup', hint: 'Climate Stabilize ist aktuell nur fuer Indoor-Runs verfuegbar.' };
+  }
+
+  const envApi = window.GrowSimEnvModel;
+  if (!envApi
+    || typeof envApi.ensureClimateState !== 'function'
+    || typeof envApi.computeVpdKpa !== 'function'
+    || typeof envApi.relativeHumidityFromAbsoluteHumidity !== 'function') {
+    return { ok: false, reason: 'climate_api_unavailable', hint: 'Die Klima-Runtime ist gerade nicht vollstaendig bereit.' };
+  }
+
+  const controls = ensureEnvironmentControls(safeState);
+  const climate = envApi.ensureClimateState(safeState, safeState.status, safeState.simulation, safeState.plant);
+  const tent = climate && climate.tent && typeof climate.tent === 'object' ? climate.tent : null;
+  if (!tent) {
+    return { ok: false, reason: 'climate_unavailable', hint: 'Die Klima-Lage kann aktuell nicht stabilisiert werden.' };
+  }
+
+  const periodKey = Boolean(safeState.simulation && safeState.simulation.isDaytime) ? 'day' : 'night';
+  const target = controls.targets && controls.targets[periodKey] && typeof controls.targets[periodKey] === 'object'
+    ? controls.targets[periodKey]
+    : (controls.targets && controls.targets.day ? controls.targets.day : getEnvironmentControlDefaults().targets.day);
+  const tempC = clamp(Number(tent.temperatureC) || Number(controls.temperatureC) || 22, 10, 40);
+  const humidityPercent = clamp(
+    Number(tent.humidityPercent)
+      || envApi.relativeHumidityFromAbsoluteHumidity(tempC, Number(tent.absoluteHumidityGm3) || 0)
+      || Number(controls.humidityPercent)
+      || 55,
+    0,
+    100
+  );
+  const vpdKpa = clamp(Number(tent.vpdKpa) || envApi.computeVpdKpa(tempC, humidityPercent), 0.2, 3.2);
+
+  const tempDelta = Math.abs(tempC - Number(target.temperatureC || tempC));
+  const humidityDelta = Math.abs(humidityPercent - Number(target.humidityPercent || humidityPercent));
+  const vpdDelta = Math.abs(vpdKpa - Number(target.vpdKpa || vpdKpa));
+  const severity = clamp(
+    (clamp(tempDelta / 3.4, 0, 1.2) * 0.4)
+    + (clamp(humidityDelta / 14, 0, 1.2) * 0.32)
+    + (clamp(vpdDelta / 0.48, 0, 1.2) * 0.28),
+    0,
+    1.4
+  );
+
+  if (severity < 0.26) {
+    return {
+      ok: false,
+      reason: 'already_stable',
+      score: round2(severity),
+      tempDelta: round2(tempDelta),
+      humidityDelta: round2(humidityDelta),
+      vpdDelta: round2(vpdDelta),
+      hint: 'Das Klima liegt bereits in einem stabilen Bereich.'
+    };
+  }
+
+  return {
+    ok: true,
+    reason: 'ok',
+    score: round2(severity),
+    tempDelta: round2(tempDelta),
+    humidityDelta: round2(humidityDelta),
+    vpdDelta: round2(vpdDelta),
+    periodKey,
+    hint: severity >= 0.68
+      ? 'Climate Stabilize kann die aktuelle Klima-Lage spuerbar beruhigen.'
+      : 'Climate Stabilize steht fuer eine sanfte Klima-Korrektur bereit.'
+  };
+}
+
+function getEmergencySaveRewardAvailability(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+  const status = safeState.status && typeof safeState.status === 'object' ? safeState.status : {};
+  const run = typeof getCanonicalRun === 'function' ? getCanonicalRun(safeState) : (safeState.run || {});
+  const meta = typeof getCanonicalMeta === 'function' ? getCanonicalMeta(safeState) : (safeState.meta || {});
+  const rescueMeta = meta && meta.rescue && typeof meta.rescue === 'object' ? meta.rescue : {};
+
+  if (String(run.status || 'active') !== 'active' && String(run.status || '') !== 'downed') {
+    return { ok: false, reason: 'run_inactive', hint: 'Emergency Save steht nur waehrend eines aktiven Runs bereit.' };
+  }
+  if (Boolean(rescueMeta.used)) {
+    return { ok: false, reason: 'already_used', hint: 'Emergency Save ist nur 1x pro Run verfuegbar.' };
+  }
+
+  const dead = Boolean(plant.isDead) || String(plant.phase || '') === 'dead';
+  if (dead) {
+    return {
+      ok: true,
+      reason: 'revive_run',
+      score: 1,
+      hint: 'Emergency Save kann diesen Run knapp zurueck ins Spiel holen.'
+    };
+  }
+
+  const health = clamp(Number(status.health || 0), 0, 100);
+  const water = clamp(Number(status.water || 0), 0, 100);
+  const nutrition = clamp(Number(status.nutrition || 0), 0, 100);
+  const stress = clamp(Number(status.stress || 0), 0, 100);
+  const risk = clamp(Number(status.risk || 0), 0, 100);
+
+  const diagnosticsApi = getDiagnosticsApi();
+  const diagnostics = diagnosticsApi && typeof diagnosticsApi.computePlantDiagnostics === 'function'
+    ? diagnosticsApi.computePlantDiagnostics(safeState)
+    : null;
+  const issues = Array.isArray(diagnostics && diagnostics.allIssues) ? diagnostics.allIssues : [];
+  const peakIssueScore = issues.reduce((maxScore, issue) => Math.max(maxScore, Number(issue && issue.score) || 0), 0);
+  const criticalIssue = issues.find((issue) => issue && issue.severity === 'critical');
+
+  const emergencyScore = clamp(
+    (clamp((28 - health) / 28, 0, 1) * 0.34)
+    + (clamp((water < 18 ? (18 - water) / 18 : 0), 0, 1) * 0.14)
+    + (clamp((nutrition < 18 ? (18 - nutrition) / 18 : 0), 0, 1) * 0.12)
+    + (clamp((stress - 74) / 26, 0, 1) * 0.18)
+    + (clamp((risk - 72) / 28, 0, 1) * 0.18)
+    + (clamp((peakIssueScore - 68) / 32, 0, 1) * 0.12),
+    0,
+    1.4
+  );
+
+  const severeButRecoverable = health <= 28 || risk >= 78 || stress >= 82 || Boolean(criticalIssue);
+  if (!severeButRecoverable || emergencyScore < 0.42) {
+    return {
+      ok: false,
+      reason: 'not_critical_enough',
+      score: round2(emergencyScore),
+      hint: 'Emergency Save bleibt fuer echte Krisen reserviert.'
+    };
+  }
+
+  return {
+    ok: true,
+    reason: 'stabilize_critical_run',
+    score: round2(emergencyScore),
+    hint: emergencyScore >= 0.82
+      ? 'Emergency Save kann den Run knapp wieder in einen ueberlebbaren Bereich heben.'
+      : 'Emergency Save steht als seltene Notfallhilfe bereit.'
+  };
+}
+
+function getRewardActionAvailability(type, payload = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const entry = REWARD_ACTION_REGISTRY[actionType];
+  if (!entry || typeof entry.getAvailability !== 'function') {
+    return { ok: false, reason: 'unsupported_reward_action' };
+  }
+  return entry.getAvailability(payload && payload.state ? payload.state : state, payload);
+}
+
+function canUseRewardAction(type, payload = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const targetState = payload && payload.state ? payload.state : state;
+  const nowMs = Math.max(0, Number(payload && payload.nowMs) || Date.now());
+  const availability = getRewardActionAvailability(actionType, { ...payload, state: targetState });
+  if (!availability.ok) {
+    return {
+      ok: false,
+      reason: String(availability.reason || 'not_available'),
+      availability,
+      cooldownRemainingMs: 0,
+      hint: String(availability.hint || '')
+    };
+  }
+  const cooldownRemainingMs = getRewardActionCooldownRemaining(actionType, targetState, nowMs);
+  if (cooldownRemainingMs > 0) {
+    return {
+      ok: false,
+      reason: 'cooldown_active',
+      availability,
+      cooldownRemainingMs,
+      hint: formatRewardCooldownHint(cooldownRemainingMs)
+    };
+  }
+  return {
+    ok: true,
+    reason: 'ok',
+    availability,
+    cooldownRemainingMs: 0,
+    hint: String(availability.hint || '')
+  };
+}
+
+function executeEmergencySaveRewardAction(context = {}) {
+  const availability = getEmergencySaveRewardAvailability(state);
+  if (!availability.ok) {
+    const blockedResult = { ok: false, reason: availability.reason || 'not_available' };
+    addLog('action', 'Emergency Save blockiert', blockedResult);
+    return blockedResult;
+  }
+
+  const rescueResult = applyRescueEffects();
+  if (!rescueResult || !rescueResult.ok) {
+    return { ok: false, reason: 'not_critical_enough' };
+  }
+
+  const meta = getCanonicalMeta(state);
+  const nowMs = Date.now();
+  meta.rescue.used = true;
+  meta.rescue.usedAtRealMs = nowMs;
+  meta.rescue.lastResult = rescueResult.wasDead
+    ? 'Emergency Save angewendet. Der Run wurde knapp zurueckgeholt.'
+    : 'Emergency Save angewendet. Der Run ist wieder knapp stabil.';
+
+  updateVisibleOverlays();
+  syncCanonicalStateShape();
+  syncRunGoalProgress('reward_action');
+
+  const timestamp = {
+    realMs: nowMs,
+    simMs: Number(state.simulation.simTimeMs || 0),
+    simStamp: simStampFromMs(Number(state.simulation.simTimeMs || 0))
+  };
+  const history = getCanonicalHistory(state);
+  history.system.push({
+    type: 'rescue',
+    label: 'Emergency Save',
+    atRealTimeMs: timestamp.realMs,
+    atSimTimeMs: timestamp.simMs,
+    simStamp: timestamp.simStamp,
+    effectsApplied: rescueResult.effectsApplied,
+    wasDead: rescueResult.wasDead
+  });
+  if (history.system.length > MAX_HISTORY_LOG) {
+    history.system = history.system.slice(-MAX_HISTORY_LOG);
+  }
+
+  if (state.run && typeof state.run === 'object') {
+    state.run.status = 'active';
+    state.run.endReason = null;
+    state.run.finalizedAtRealMs = null;
+  }
+
+  const result = {
+    ok: true,
+    reason: 'emergency_save_applied',
+    provider: String(context.provider || 'direct'),
+    wasDead: Boolean(rescueResult.wasDead),
+    deltaSummary: rescueResult.effectsApplied,
+    severityScore: round2(Number(availability.score || 0))
+  };
+  addLog('action', 'Emergency Save aktiviert', result);
+  return result;
+}
+
+function executeClimateStabilizeRewardAction(context = {}) {
+  const availability = getClimateStabilizeRewardAvailability(state);
+  if (!availability.ok) {
+    const blockedResult = { ok: false, reason: availability.reason || 'not_available' };
+    addLog('action', 'Climate Stabilize blockiert', blockedResult);
+    return blockedResult;
+  }
+
+  const envApi = window.GrowSimEnvModel;
+  if (!envApi
+    || typeof envApi.ensureClimateState !== 'function'
+    || typeof envApi.computeVpdKpa !== 'function'
+    || typeof envApi.absoluteHumidityFromRelativeHumidity !== 'function'
+    || typeof envApi.relativeHumidityFromAbsoluteHumidity !== 'function') {
+    return { ok: false, reason: 'climate_api_unavailable' };
+  }
+
+  const controls = ensureEnvironmentControls(state);
+  const climate = envApi.ensureClimateState(state, state.status, state.simulation, state.plant);
+  if (!climate || !climate.tent) {
+    return { ok: false, reason: 'climate_unavailable' };
+  }
+
+  const defaults = getEnvironmentControlDefaults();
+  const periodKey = availability.periodKey === 'night' ? 'night' : 'day';
+  const target = controls.targets && controls.targets[periodKey] && typeof controls.targets[periodKey] === 'object'
+    ? controls.targets[periodKey]
+    : controls.targets.day;
+  const defaultTarget = defaults && defaults.targets && defaults.targets[periodKey] && typeof defaults.targets[periodKey] === 'object'
+    ? defaults.targets[periodKey]
+    : defaults.targets.day;
+
+  const before = {
+    temperatureC: round2(Number(climate.tent.temperatureC) || Number(controls.temperatureC) || 0),
+    humidityPercent: round2(Number(climate.tent.humidityPercent) || Number(controls.humidityPercent) || 0),
+    vpdKpa: round2(Number(climate.tent.vpdKpa) || envApi.computeVpdKpa(Number(climate.tent.temperatureC) || 22, Number(climate.tent.humidityPercent) || 55))
+  };
+
+  const blendedTargetTemp = clamp(
+    Number(target.temperatureC || defaultTarget.temperatureC) + clamp((Number(defaultTarget.temperatureC || 24) - Number(target.temperatureC || 24)) * 0.45, -1.6, 1.6),
+    16,
+    32
+  );
+  const blendedTargetHumidity = clamp(
+    Number(target.humidityPercent || defaultTarget.humidityPercent) + clamp((Number(defaultTarget.humidityPercent || 58) - Number(target.humidityPercent || 58)) * 0.45, -8, 8),
+    35,
+    82
+  );
+  const blendedTargetVpd = clamp(
+    Number(target.vpdKpa || defaultTarget.vpdKpa || 1.15) + clamp((Number(defaultTarget.vpdKpa || 1.15) - Number(target.vpdKpa || 1.15)) * 0.35, -0.18, 0.18),
+    0.5,
+    2.1
+  );
+
+  target.temperatureC = round1(blendedTargetTemp);
+  target.humidityPercent = clampInt(blendedTargetHumidity, 30, 90);
+  target.vpdKpa = round2(blendedTargetVpd);
+  if (periodKey === 'day') {
+    controls.temperatureC = round1(target.temperatureC);
+    controls.humidityPercent = clampInt(target.humidityPercent, 30, 90);
+  }
+
+  const nextTempC = clamp(
+    before.temperatureC + clamp((Number(target.temperatureC) - before.temperatureC) * 0.48, -2.2, 2.2),
+    10,
+    38
+  );
+  const nextRh = clamp(
+    before.humidityPercent + clamp((Number(target.humidityPercent) - before.humidityPercent) * 0.52, -10, 10),
+    28,
+    92
+  );
+  climate.tent.temperatureC = round1(nextTempC);
+  climate.tent.absoluteHumidityGm3 = clamp(envApi.absoluteHumidityFromRelativeHumidity(nextTempC, nextRh), 0, 80);
+  climate.tent.humidityPercent = clampInt(envApi.relativeHumidityFromAbsoluteHumidity(nextTempC, climate.tent.absoluteHumidityGm3), 0, 100);
+  climate.tent.vpdKpa = round2(envApi.computeVpdKpa(nextTempC, climate.tent.humidityPercent));
+
+  if (typeof syncClimateStateToLegacyReadout === 'function') {
+    syncClimateStateToLegacyReadout(climate, controls, state.simulation, state);
+  }
+
+  updateVisibleOverlays();
+  syncCanonicalStateShape();
+
+  const after = {
+    temperatureC: round2(Number(climate.tent.temperatureC) || nextTempC),
+    humidityPercent: round2(Number(climate.tent.humidityPercent) || nextRh),
+    vpdKpa: round2(Number(climate.tent.vpdKpa) || envApi.computeVpdKpa(nextTempC, nextRh))
+  };
+
+  const result = {
+    ok: true,
+    reason: 'climate_stabilized',
+    provider: String(context.provider || 'direct'),
+    periodKey,
+    deltaSummary: {
+      temperatureC: round2(after.temperatureC - before.temperatureC),
+      humidityPercent: round2(after.humidityPercent - before.humidityPercent),
+      vpdKpa: round2(after.vpdKpa - before.vpdKpa)
+    },
+    severityScore: round2(Number(availability.score || 0))
+  };
+  addLog('action', 'Climate Stabilize aktiviert', result);
+  return result;
+}
+
+function executeCareBoostRewardAction(context = {}) {
+  const availability = getCareBoostRewardAvailability(state);
+  if (!availability.ok) {
+    const blockedResult = { ok: false, reason: availability.reason || 'not_available' };
+    addLog('action', 'Care Boost blockiert', blockedResult);
+    return blockedResult;
+  }
+
+  const before = snapshotStatus();
+  const water = clamp(Number(state.status.water || 0), 0, 100);
+  const nutrition = clamp(Number(state.status.nutrition || 0), 0, 100);
+  const health = clamp(Number(state.status.health || 0), 0, 100);
+  const stress = clamp(Number(state.status.stress || 0), 0, 100);
+  const risk = clamp(Number(state.status.risk || 0), 0, 100);
+
+  const deltas = {
+    water: round2(clamp(4 + Math.max(0, (68 - water) * 0.18), 4, 12)),
+    nutrition: round2(clamp(3 + Math.max(0, (66 - nutrition) * 0.15), 3, 10)),
+    health: round2(clamp(1.5 + Math.max(0, (74 - health) * 0.08), 1.5, 5)),
+    stress: round2(-clamp(5 + Math.max(0, (stress - 24) * 0.14), 5, 14)),
+    risk: round2(-clamp(4 + Math.max(0, (risk - 18) * 0.13), 4, 12))
+  };
+
+  state.status.water += deltas.water;
+  state.status.nutrition += deltas.nutrition;
+  state.status.health += deltas.health;
+  state.status.stress += deltas.stress;
+  state.status.risk += deltas.risk;
+
+  clampStatus();
+  updateVisibleOverlays();
+  syncCanonicalStateShape();
+  syncRunGoalProgress('reward_action');
+
+  const after = snapshotStatus();
+  const deltaSummary = summarizeDelta(before, after);
+  const result = {
+    ok: true,
+    reason: 'care_boost_applied',
+    provider: String(context.provider || 'direct'),
+    deltaSummary,
+    needScore: round2(Number(availability.score || 0))
+  };
+  addLog('action', 'Care Boost aktiviert', result);
+  return result;
+}
+
+function executeNightShiftRewardAction(context = {}) {
+  if (isPlantDead()) {
+    const blockedResult = { ok: false, reason: 'plant_dead' };
+    addLog('action', 'Night Shift blockiert: Pflanze ist eingegangen', blockedResult);
+    return blockedResult;
   }
 
   if (state.simulation.isDaytime) {
-    addLog('action', 'Nacht überspringen blockiert: Bereits Tagphase', null);
-    renderAll();
-    return;
+    const blockedResult = { ok: false, reason: 'daytime_only' };
+    addLog('action', 'Night Shift blockiert: Nur nachts verfügbar', blockedResult);
+    return blockedResult;
   }
 
   const nowMs = Date.now();
-  const usage = consumeBoostUsage(nowMs, 'Nacht überspringen');
+  const usage = consumeBoostUsage(nowMs, 'Night Shift');
   if (!usage.ok) {
-    renderAll();
-    return;
+    return { ok: false, reason: usage.reason || 'usage_blocked' };
   }
 
   const currentSimTimeMs = Number(state.simulation.simTimeMs) || alignToSimStartHour(nowMs, SIM_START_HOUR);
@@ -6697,9 +8550,16 @@ function onSkipNightAction() {
       reason: 'skip_night_align'
     });
     runEventStateMachine(state.simulation.nowMs);
-    renderAll();
-    schedulePersistState(true);
-    return;
+    const alignedResult = {
+      ok: true,
+      reason: 'aligned_to_day_start',
+      skippedNightSimMinutes: 0,
+      usedToday: state.boost.boostUsedToday,
+      simTimeAfter: state.simulation.simTimeMs,
+      provider: String(context.provider || 'direct')
+    };
+    addLog('action', 'Night Shift: Tagesbeginn erreicht', alignedResult);
+    return alignedResult;
   }
 
   const elapsedRealMs = convertSimDeltaToFutureRealDeltaMs(remainingNightSimMs, nowMs);
@@ -6728,14 +8588,345 @@ function onSkipNightAction() {
   syncCanonicalStateShape();
   runEventStateMachine(state.simulation.nowMs);
 
-  addLog('action', 'Nacht übersprungen: Tagesbeginn erreicht', {
+  const result = {
+    ok: true,
+    reason: 'advanced_to_day_start',
     usedToday: state.boost.boostUsedToday,
     skippedNightSimMinutes: Math.round(remainingNightSimMs / 60000),
-    simTimeAfter: state.simulation.simTimeMs
+    simTimeAfter: state.simulation.simTimeMs,
+    provider: String(context.provider || 'direct')
+  };
+  addLog('action', 'Night Shift: Tagesbeginn erreicht', result);
+  return result;
+}
+
+function executeFastForwardEventRewardAction(context = {}) {
+  const availability = getEventFastForwardRewardAvailability(state);
+  if (!availability.ok) {
+    const blockedResult = { ok: false, reason: availability.reason || 'not_available' };
+    addLog('action', 'Event Fast Forward blockiert', blockedResult);
+    return blockedResult;
+  }
+
+  if (availability.mode === 'resolve_active_event') {
+    const selectedOptionId = String(availability.optionId || '');
+    const selectedOptionLabel = String(availability.optionLabel || 'Option');
+    onEventOptionClick(selectedOptionId);
+    const result = {
+      ok: true,
+      reason: 'resolved_active_event',
+      provider: String(context.provider || 'direct'),
+      optionId: selectedOptionId,
+      optionLabel: selectedOptionLabel
+    };
+    addLog('action', 'Event Fast Forward aktiviert', result);
+    return result;
+  }
+
+  if (availability.mode === 'finish_resolving_event') {
+    const nowMs = Date.now();
+    const remainingSimMs = Math.max(0, Number(availability.remainingSimMs || 0));
+    state.events.resolvingUntilSimTimeMs = Number(state.simulation.simTimeMs || 0);
+    state.events.resolvingUntilMs = nowMs;
+    runEventStateMachine(nowMs);
+    syncCanonicalStateShape();
+    const result = {
+      ok: true,
+      reason: 'finished_resolving_event',
+      provider: String(context.provider || 'direct'),
+      skippedResolveSimMinutes: Math.round(remainingSimMs / 60000)
+    };
+    addLog('action', 'Event Fast Forward aktiviert', result);
+    return result;
+  }
+
+  return { ok: false, reason: 'unsupported_fast_forward_mode' };
+}
+
+const REWARD_ACTION_REGISTRY = Object.freeze({
+  [REWARD_ACTION_TYPES.CARE_BOOST]: {
+    label: 'Care Boost',
+    getAvailability: getCareBoostRewardAvailability,
+    handler: executeCareBoostRewardAction
+  },
+  [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: {
+    label: 'Emergency Save',
+    getAvailability: getEmergencySaveRewardAvailability,
+    handler: executeEmergencySaveRewardAction
+  },
+  [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: {
+    label: 'Climate Stabilize',
+    getAvailability: getClimateStabilizeRewardAvailability,
+    handler: executeClimateStabilizeRewardAction
+  },
+  [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: {
+    label: 'Event Fast Forward',
+    getAvailability: getEventFastForwardRewardAvailability,
+    handler: executeFastForwardEventRewardAction
+  },
+  [REWARD_ACTION_TYPES.NIGHT_SHIFT]: {
+    label: 'Night Shift',
+    getAvailability: (sourceState) => {
+      const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+      const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+      const simulation = safeState.simulation && typeof safeState.simulation === 'object' ? safeState.simulation : {};
+      if (Boolean(plant.isDead) || String(plant.phase || '') === 'dead') {
+        return { ok: false, reason: 'plant_dead', hint: 'Night Shift steht nur waehrend eines aktiven Runs bereit.' };
+      }
+      if (Boolean(simulation.isDaytime)) {
+        return { ok: false, reason: 'daytime_only', hint: 'Night Shift ist nur nachts verfuegbar.' };
+      }
+      const currentSimTimeMs = Number(simulation.simTimeMs || 0);
+      const nextDayStartSimMs = getNextDayStartSimTime(currentSimTimeMs);
+      const remainingNightMinutes = Math.max(0, Math.round((nextDayStartSimMs - currentSimTimeMs) / 60000));
+      if (remainingNightMinutes > 0 && remainingNightMinutes < 90) {
+        return { ok: false, reason: 'night_almost_over', hint: 'Night Shift lohnt sich erst bei einer spuerbaren Restnacht.' };
+      }
+      return { ok: true, reason: 'ok', hint: 'Night Shift bringt den Run kontrolliert bis zum Morgen.' };
+    },
+    handler: executeNightShiftRewardAction
+  }
+});
+
+function executeRewardAction(type, payload = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const runtime = ensureRewardActionRuntime(state);
+  const entry = REWARD_ACTION_REGISTRY[actionType];
+  const nowMs = Date.now();
+
+  if (!entry || typeof entry.handler !== 'function') {
+    const unsupportedResult = { ok: false, reason: 'unsupported_reward_action', type: actionType };
+    addLog('system', 'Reward Action nicht unterstützt', unsupportedResult);
+    const record = ensureRewardActionUsageRecord(actionType, state);
+    record.lastResult = unsupportedResult.reason;
+    record.lastTriggeredAtMs = Number(runtime.lastTriggeredAtMs) || 0;
+    record.lastExecutedAtMs = Number(runtime.lastExecutedAtMs) || 0;
+    return unsupportedResult;
+  }
+
+  const result = entry.handler({
+    payload,
+    nowMs,
+    provider: String(payload && payload.grantResult && payload.grantResult.mode || runtime.provider)
+  }) || { ok: false, reason: 'empty_result' };
+
+  runtime.lastExecutedAtMs = nowMs;
+  const record = ensureRewardActionUsageRecord(actionType, state);
+  record.lastResult = result.ok ? 'ok' : String(result.reason || 'failed');
+  record.lastTriggeredAtMs = Number(runtime.lastTriggeredAtMs) || nowMs;
+  record.lastExecutedAtMs = nowMs;
+
+  return result;
+}
+
+async function triggerRewardAction(type, payload = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const runtime = ensureRewardActionRuntime(state);
+  const nowMs = Date.now();
+  const runtimePolicy = getRewardActionRuntimePolicy(actionType);
+  markRewardActionUsed(actionType, { nowMs, triggered: true, lastResult: 'triggered' });
+  onRewardActionTriggered(actionType, {
+    payload,
+    provider: getRewardProviderMode(state),
+    policy: runtimePolicy,
+    nowMs
   });
 
+  const usageCheck = canUseRewardAction(actionType, {
+    ...payload,
+    state,
+    nowMs
+  });
+  if (!usageCheck.ok) {
+    const blockedResult = {
+      ok: false,
+      type: actionType,
+      reason: String(usageCheck.reason || 'reward_action_blocked'),
+      cooldownRemainingMs: Math.max(0, Number(usageCheck.cooldownRemainingMs) || 0)
+    };
+    markRewardActionUsed(actionType, {
+      nowMs,
+      rejected: true,
+      reason: blockedResult.reason,
+      result: blockedResult
+    });
+    onRewardActionRejected(actionType, {
+      payload,
+      provider: getRewardProviderMode(state),
+      policy: runtimePolicy,
+      reason: blockedResult.reason,
+      availability: usageCheck.availability || null,
+      cooldownRemainingMs: blockedResult.cooldownRemainingMs,
+      result: blockedResult,
+      nowMs
+    });
+    addLog('action', `${String(REWARD_ACTION_REGISTRY[actionType] && REWARD_ACTION_REGISTRY[actionType].label || 'Reward Action')} blockiert`, blockedResult);
+    renderAll();
+    schedulePersistState(true);
+    return blockedResult;
+  }
+
+  const gateState = getRewardActionGrantState(actionType, {
+    ...payload,
+    state,
+    nowMs
+  });
+  if (!gateState.ok) {
+    const gateRejectedResult = {
+      ok: false,
+      type: actionType,
+      reason: String(gateState.reason || 'provider_unavailable')
+    };
+    markRewardActionUsed(actionType, {
+      nowMs,
+      rejected: true,
+      reason: gateRejectedResult.reason,
+      result: gateRejectedResult
+    });
+    onRewardActionRejected(actionType, {
+      payload,
+      provider: gateState.providerStatus && gateState.providerStatus.mode ? gateState.providerStatus.mode : runtime.provider,
+      providerStatus: gateState.providerStatus && gateState.providerStatus.state ? gateState.providerStatus.state : '',
+      policy: runtimePolicy,
+      reason: gateRejectedResult.reason,
+      availability: usageCheck.availability || null,
+      result: gateRejectedResult,
+      nowMs
+    });
+    if (typeof showRetentionToast === 'function' && gateRejectedResult.reason !== 'reward_pending') {
+      showRetentionToast(String(gateState.hint || 'Reward-Aktion aktuell nicht verfuegbar.'));
+    }
+    renderAll();
+    schedulePersistState(true);
+    return gateRejectedResult;
+  }
+
+  rewardGrantRuntime.pending = gateState.grantMode !== 'direct';
+  rewardGrantRuntime.actionType = rewardGrantRuntime.pending ? actionType : '';
+  rewardGrantRuntime.requestId += 1;
+  const activeRequestId = rewardGrantRuntime.requestId;
+  recordRewardTelemetry('reward_grant_requested', {
+    type: actionType,
+    providerMode: String(gateState.grantMode || ''),
+    providerStatus: gateState.providerStatus && gateState.providerStatus.state ? gateState.providerStatus.state : '',
+    policy: runtimePolicy,
+    availability: usageCheck.availability || null,
+    cooldownRemainingMs: Math.max(0, Number(usageCheck.cooldownRemainingMs) || 0),
+    timestampMs: nowMs
+  });
+  renderAll();
+
+  let grantResult;
+  try {
+    grantResult = await requestRewardGrant(actionType, payload, {
+      gateState,
+      nowMs
+    });
+  } finally {
+    if (rewardGrantRuntime.requestId === activeRequestId) {
+      rewardGrantRuntime.pending = false;
+      rewardGrantRuntime.actionType = '';
+    }
+  }
+
+  if (!grantResult || !grantResult.ok) {
+    const rejectedResult = {
+      ok: false,
+      type: actionType,
+      reason: String(grantResult && grantResult.reason || 'reward_error')
+    };
+    markRewardActionUsed(actionType, {
+      nowMs,
+      rejected: true,
+      reason: rejectedResult.reason,
+      result: rejectedResult
+    });
+    onRewardActionRejected(actionType, {
+      payload,
+      provider: String(grantResult && grantResult.mode || gateState.grantMode || runtime.provider),
+      providerStatus: gateState.providerStatus && gateState.providerStatus.state ? gateState.providerStatus.state : '',
+      policy: runtimePolicy,
+      reason: rejectedResult.reason,
+      availability: usageCheck.availability || null,
+      result: rejectedResult,
+      nowMs
+    });
+    if (typeof showRetentionToast === 'function') {
+      const rejectHint = rejectedResult.reason === 'reward_cancelled'
+        ? 'Aktion nicht bestaetigt'
+        : 'Reward-Aktion aktuell nicht verfuegbar';
+      showRetentionToast(rejectHint);
+    }
+    renderAll();
+    schedulePersistState(true);
+    return rejectedResult;
+  }
+
+  const grantAtMs = Math.max(nowMs, Number(grantResult.grantedAtMs) || Date.now());
+  markRewardActionUsed(actionType, { nowMs: grantAtMs, granted: true, lastResult: 'granted' });
+  onRewardActionGranted(actionType, {
+    payload,
+    provider: String(grantResult.mode || gateState.grantMode || runtime.provider),
+    providerStatus: gateState.providerStatus && gateState.providerStatus.state ? gateState.providerStatus.state : '',
+    policy: runtimePolicy,
+    availability: usageCheck.availability || null,
+    grantResult,
+    nowMs: grantAtMs
+  });
+
+  const executeAtMs = Date.now();
+  const result = executeRewardAction(actionType, {
+    ...payload,
+    grantResult
+  });
+  if (result.ok) {
+    markRewardActionUsed(actionType, {
+      nowMs: executeAtMs,
+      executed: true,
+      result
+    });
+    onRewardActionExecuted(actionType, {
+      payload,
+      provider: String(grantResult.mode || gateState.grantMode || runtime.provider),
+      providerStatus: gateState.providerStatus && gateState.providerStatus.state ? gateState.providerStatus.state : '',
+      policy: runtimePolicy,
+      grantResult,
+      result,
+      nowMs: executeAtMs
+    });
+  } else {
+    markRewardActionUsed(actionType, {
+      nowMs: executeAtMs,
+      rejected: true,
+      reason: result.reason || 'execution_failed',
+      result
+    });
+    onRewardActionRejected(actionType, {
+      payload,
+      provider: String(grantResult.mode || gateState.grantMode || runtime.provider),
+      providerStatus: gateState.providerStatus && gateState.providerStatus.state ? gateState.providerStatus.state : '',
+      policy: runtimePolicy,
+      reason: result.reason || 'execution_failed',
+      grantResult,
+      result,
+      nowMs: executeAtMs
+    });
+  }
   renderAll();
   schedulePersistState(true);
+
+  if (result.ok && typeof showRetentionToast === 'function') {
+    const presentation = getRewardActionPresentation(actionType, payload);
+    if (presentation.successToast) {
+      showRetentionToast(presentation.successToast);
+    }
+  }
+
+  return result;
+}
+
+function onSkipNightAction() {
+  return triggerRewardAction(REWARD_ACTION_TYPES.NIGHT_SHIFT);
 }
 
 function onClearLog() {
@@ -6982,7 +9173,10 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
 
   const environment = deriveEnvironmentReadout(sourceState);
   const roots = deriveRootZoneReadout(environment, sourceState);
-  const showSkipNight = !dead && !Boolean(simulation.isDaytime);
+  const careBoostPresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.CARE_BOOST, { state: sourceState, context: 'home' });
+  const skipNightPresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.NIGHT_SHIFT, { state: sourceState, context: 'home' });
+  const climateStabilizePresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.CLIMATE_STABILIZE, { state: sourceState, context: 'home' });
+  const emergencySavePresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state: sourceState, context: 'home' });
   const storedRunGoal = run && run.goal && typeof run.goal === 'object' ? run.goal : null;
   const runGoal = progressionApi && typeof progressionApi.evaluateRunGoal === 'function' && storedRunGoal
     ? progressionApi.evaluateRunGoal(storedRunGoal, sourceState, {
@@ -7071,10 +9265,19 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
     },
     actions: {
       careDisabled: dead,
+      careBoostDisabled: dead || Boolean(careBoostPresentation.disabled),
+      careBoostHint: String(careBoostPresentation.hint || ''),
       boostDisabled: dead,
+      climateStabilizeDisabled: dead || Boolean(climateStabilizePresentation.disabled),
+      climateStabilizeHint: String(climateStabilizePresentation.hint || ''),
       diagnosisDisabled: dead,
-      skipNightDisabled: dead || Boolean(simulation.isDaytime),
-      showSkipNight
+      emergencySaveHint: String(emergencySavePresentation.hint || ''),
+      emergencySaveReady: Boolean(!dead && !emergencySavePresentation.disabled),
+      skipNightDisabled: dead || Boolean(skipNightPresentation.disabled),
+      skipNightHint: String(skipNightPresentation.hint || ''),
+      showSkipNight: !Boolean(skipNightPresentation.hidden),
+      showCareBoost: true,
+      showClimateStabilize: !Boolean(climateStabilizePresentation.hidden)
     },
     diagnostics: {
       summary: String(diagnostics && diagnostics.summary || ''),
@@ -7383,15 +9586,33 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   renderPanelReadouts(vm);
 
   const careActionBtnNode = uiNode('careActionBtn', 'careActionBtn');
+  const careBoostActionBtnNode = uiNode('careBoostActionBtn', 'careBoostActionBtn');
   const boostActionBtnNode = uiNode('boostActionBtn', 'boostActionBtn');
+  const climateStabilizeActionBtnNode = uiNode('climateStabilizeActionBtn', 'climateStabilizeActionBtn');
   const diagnosisBtnNode = uiNode('openDiagnosisBtn', 'openDiagnosisBtn');
   const skipNightBtnNode = uiNode('skipNightActionBtn', 'skipNightActionBtn');
 
   if (careActionBtnNode) {
     careActionBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.careDisabled);
   }
+  if (careBoostActionBtnNode) {
+    careBoostActionBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.careBoostDisabled);
+    careBoostActionBtnNode.classList.toggle('hidden', !Boolean(vm.actions && vm.actions.showCareBoost));
+    careBoostActionBtnNode.title = String(
+      (vm.actions && vm.actions.careBoostHint)
+      || (Boolean(vm.actions && vm.actions.careBoostDisabled) ? 'Care Boost ist aktuell nicht noetig.' : 'Care Boost aktivieren')
+    );
+  }
   if (boostActionBtnNode) {
     boostActionBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.boostDisabled);
+  }
+  if (climateStabilizeActionBtnNode) {
+    climateStabilizeActionBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.climateStabilizeDisabled);
+    climateStabilizeActionBtnNode.classList.toggle('hidden', !Boolean(vm.actions && vm.actions.showClimateStabilize));
+    climateStabilizeActionBtnNode.title = String(
+      (vm.actions && vm.actions.climateStabilizeHint)
+      || (Boolean(vm.actions && vm.actions.climateStabilizeDisabled) ? 'Climate Stabilize ist aktuell nicht noetig.' : 'Climate Stabilize aktivieren')
+    );
   }
   if (diagnosisBtnNode) {
     diagnosisBtnNode.disabled = dead || Boolean(vm.actions && vm.actions.diagnosisDisabled);
@@ -7399,6 +9620,10 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   if (skipNightBtnNode) {
     skipNightBtnNode.disabled = Boolean(vm.actions && vm.actions.skipNightDisabled);
     skipNightBtnNode.classList.toggle('hidden', !Boolean(vm.actions && vm.actions.showSkipNight));
+    skipNightBtnNode.title = String(
+      (vm.actions && vm.actions.skipNightHint)
+      || (Boolean(vm.actions && vm.actions.skipNightDisabled) ? 'Night Shift ist nur nachts verfuegbar' : 'Night Shift aktivieren')
+    );
   }
 
   renderOverlayVisibility(vm.overlays);
@@ -8126,16 +10351,18 @@ function renderMenuDynamicRows() {
   }
 
   const meta = getCanonicalMeta(state);
+  const rescuePresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'menu' });
   const rescueUsed = Boolean(meta.rescue.used);
-  const rescueBlocked = rescueAdPending || rescueUsed;
-  const rescueNeeded = Boolean(isPlantDead() || (Number(state.status && state.status.health) || 0) < 20);
+  const rescueBlocked = rescueAdPending || Boolean(rescuePresentation.disabled);
   ui.menuRescueBtn.disabled = rescueBlocked;
   ui.menuRescueBtn.setAttribute('aria-disabled', String(rescueBlocked));
-  ui.menuRescueBtn.setAttribute('title', 'Kein Inventarsystem. Startet die gleiche einmalige Notfallrettung wie im Death-Overlay.');
+  ui.menuRescueBtn.setAttribute('title', String(rescuePresentation.hint || 'Emergency Save bleibt fuer kritische Situationen reserviert.'));
   if (menuRescueLabel) {
-    menuRescueLabel.textContent = 'Notfallrettung';
+    menuRescueLabel.textContent = String(rescuePresentation.label || 'Notfallrettung');
   }
-  ui.menuRescueSubtext.textContent = rescueUsed ? '1× pro Run bereits genutzt.' : (meta.rescue.lastResult || (rescueNeeded ? 'Jetzt als Rettungsaktion verfügbar.' : '1× pro Run bei kritischem Zustand.'));
+  ui.menuRescueSubtext.textContent = rescueUsed && meta.rescue.lastResult
+    ? String(meta.rescue.lastResult)
+    : String(rescuePresentation.hint || 'Emergency Save bleibt fuer kritische Situationen reserviert.');
 
   const notifications = getCanonicalNotificationsSettings(state);
   const enabled = isPushStatusSubscribed(pushUiRuntime.status);
@@ -9445,6 +11672,7 @@ function getModernEventSheetContentState(viewModel, machineState) {
     ? state.events.catalog.find((entry) => entry && entry.id === state.events.activeEventId)
     : null;
   const eventContext = describeActiveEventContext(eventDef);
+  const fastForwardPresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.FAST_FORWARD_EVENT, { state, context: 'event_sheet' });
 
   if (machineState === 'activeEvent') {
     return {
@@ -9455,7 +11683,15 @@ function getModernEventSheetContentState(viewModel, machineState) {
         eventContext.cause ? `Warum jetzt: ${eventContext.cause}` : '',
         eventContext.focus ? `Fokus: ${eventContext.focus}` : ''
       ].filter(Boolean).join(' | '),
-      options: Array.isArray(state.events.activeOptions) ? state.events.activeOptions.slice() : []
+      options: Array.isArray(state.events.activeOptions) ? state.events.activeOptions.slice() : [],
+      rewardAction: !fastForwardPresentation.disabled
+        ? {
+          type: REWARD_ACTION_TYPES.FAST_FORWARD_EVENT,
+          label: String(fastForwardPresentation.label || 'Event Fast Forward'),
+          note: String(fastForwardPresentation.hint || 'Schnellaufloesung verfuegbar.'),
+          tone: String(fastForwardPresentation.tone || 'utility')
+        }
+        : null
     };
   }
 
@@ -9465,7 +11701,15 @@ function getModernEventSheetContentState(viewModel, machineState) {
       title: String(state.events.activeEventTitle || popup.title || 'Ereignis wird ausgewertet'),
       description: 'Deine Entscheidung wird jetzt ausgewertet. Das Ergebnis erscheint nach Ablauf des Timers.',
       meta: `Ergebnis in: ${formatCountdown(leftMs)}`,
-      options: []
+      options: [],
+      rewardAction: !fastForwardPresentation.disabled
+        ? {
+          type: REWARD_ACTION_TYPES.FAST_FORWARD_EVENT,
+          label: String(fastForwardPresentation.label || 'Event Fast Forward'),
+          note: String(fastForwardPresentation.hint || 'Die Restwartezeit kann sofort beendet werden.'),
+          tone: String(fastForwardPresentation.tone || 'utility')
+        }
+        : null
     };
   }
 
@@ -9510,28 +11754,56 @@ function buildModernEventOptionListMarkup(options) {
   `).join('');
 }
 
+function buildModernEventRewardActionMarkup(rewardAction) {
+  const safeRewardAction = rewardAction && typeof rewardAction === 'object' ? rewardAction : null;
+  if (!safeRewardAction || !safeRewardAction.type) {
+    return '';
+  }
+
+  return `
+    <button
+      class="event-reward-action-btn"
+      type="button"
+      data-event-reward-action="${escapeHtml(String(safeRewardAction.type || ''))}"
+      data-tone="${escapeHtml(String(safeRewardAction.tone || 'utility'))}"
+      title="${escapeHtml(String(safeRewardAction.note || safeRewardAction.label || 'Reward Action'))}"
+    >
+      <span class="event-reward-action-btn__label">${escapeHtml(String(safeRewardAction.label || 'Reward Action'))}</span>
+      <span class="event-reward-action-btn__note">${escapeHtml(String(safeRewardAction.note || ''))}</span>
+    </button>
+  `;
+}
+
 function bindModernEventSheetInteractions(root, options) {
   if (!root) {
     return;
   }
 
   const safeOptions = Array.isArray(options) ? options : [];
-  if (!safeOptions.length) {
-    return;
+  if (safeOptions.length) {
+    root.querySelectorAll('[data-event-option-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const optionId = String(button.getAttribute('data-event-option-id') || '');
+        if (!optionId) {
+          return;
+        }
+        const controller = getUiController();
+        if (controller && typeof controller.handleEventOption === 'function') {
+          controller.handleEventOption(optionId);
+          return;
+        }
+        onEventOptionClick(optionId);
+      });
+    });
   }
 
-  root.querySelectorAll('[data-event-option-id]').forEach((button) => {
+  root.querySelectorAll('[data-event-reward-action]').forEach((button) => {
     button.addEventListener('click', () => {
-      const optionId = String(button.getAttribute('data-event-option-id') || '');
-      if (!optionId) {
+      const actionType = String(button.getAttribute('data-event-reward-action') || '').trim();
+      if (!actionType) {
         return;
       }
-      const controller = getUiController();
-      if (controller && typeof controller.handleEventOption === 'function') {
-        controller.handleEventOption(optionId);
-        return;
-      }
-      onEventOptionClick(optionId);
+      triggerRewardAction(actionType);
     });
   });
 }
@@ -9563,6 +11835,7 @@ function renderModernEventSheetContent(viewModel, machineState) {
       <p class="sheet-note event-sheet-modern__meta">${escapeHtml(String(contentState.meta || ''))}</p>
       ${buildEventInsightHtml(viewModel, machineState)}
       <div class="event-option-list event-sheet-modern__options">${buildModernEventOptionListMarkup(contentState.options)}</div>
+      ${buildModernEventRewardActionMarkup(contentState.rewardAction)}
       <div class="event-history-slot" aria-hidden="false">${buildEventHistorySnapshotMarkup()}</div>
       ${inspect ? `<p class="event-sheet-modern__inspector">Root ownership: modern-exclusive</p>` : ''}
     </section>
@@ -11906,12 +14179,14 @@ function renderDeathOverlay() {
 
   if (ui.deathRescueBtn && ui.deathRescueSubtext && ui.deathRescueFeedback) {
     const meta = getCanonicalMeta(state);
-    const rescueUsed = Boolean(meta.rescue.used);
-    ui.deathRescueBtn.disabled = rescueAdPending || rescueUsed;
-    ui.deathRescueBtn.setAttribute('aria-disabled', String(rescueAdPending || rescueUsed));
-    ui.deathRescueBtn.setAttribute('title', 'Startet die gleiche einmalige Notfallrettung wie der Menü-Eintrag.');
-    ui.deathRescueBtn.textContent = rescueUsed ? 'Notfallrettung bereits genutzt' : 'Notfallrettung nutzen';
-    ui.deathRescueSubtext.textContent = rescueUsed ? '1× pro Run bereits verbraucht.' : '1× pro Run bei kritischem Zustand'; ui.deathRescueFeedback.textContent = meta.rescue.lastResult ? String(meta.rescue.lastResult) : '';
+    const rescuePresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'death_overlay' });
+    const rescueBlocked = rescueAdPending || Boolean(rescuePresentation.disabled);
+    ui.deathRescueBtn.disabled = rescueBlocked;
+    ui.deathRescueBtn.setAttribute('aria-disabled', String(rescueBlocked));
+    ui.deathRescueBtn.setAttribute('title', String(rescuePresentation.hint || 'Emergency Save bleibt fuer kritische Situationen reserviert.'));
+    ui.deathRescueBtn.textContent = rescueBlocked ? `${String(rescuePresentation.label || 'Notfallrettung')} gesperrt` : String(rescuePresentation.label || 'Notfallrettung');
+    ui.deathRescueSubtext.textContent = String(rescuePresentation.hint || 'Emergency Save bleibt fuer kritische Situationen reserviert.');
+    ui.deathRescueFeedback.textContent = meta.rescue.lastResult ? String(meta.rescue.lastResult) : '';
   }
 }
 
@@ -12061,66 +14336,12 @@ async function onDeathRescueClick() {
     renderGameMenu();
     return;
   }
-
-  if (meta.rescue.used) {
-    meta.rescue.lastResult = 'Notfallrettung ist nur 1× pro Run verfügbar.';
-    renderDeathOverlay();
-    renderGameMenu();
-    schedulePersistState(true);
-    return;
+  const result = await triggerRewardAction(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { source: 'rescue_entry' });
+  if (!result.ok) {
+    const rescuePresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.EMERGENCY_SAVE, { state, context: 'menu' });
+    meta.rescue.lastResult = String(rescuePresentation.hint || 'Emergency Save ist aktuell nicht verfuegbar.');
   }
-
-  const beforeHealth = Number(state.status.health) || 0;
-  const deadNow = isPlantDead();
-  if (!deadNow && beforeHealth >= 20) {
-    meta.rescue.lastResult = 'Notfallrettung ist aktuell nicht erforderlich.';
-    renderDeathOverlay();
-    renderGameMenu();
-    schedulePersistState(true);
-    return;
-  }
-
-  rescueAdPending = false;
-
-  const rescueResult = applyRescueEffects();
-  if (!rescueResult.ok) {
-    meta.rescue.lastResult = 'Notfallrettung ist aktuell nicht erforderlich.';
-    renderDeathOverlay();
-    renderGameMenu();
-    schedulePersistState(true);
-    return;
-  }
-
-  const nowMs = Date.now();
-  meta.rescue.used = true;
-  meta.rescue.usedAtRealMs = nowMs;
-  meta.rescue.lastResult = 'Notfallrettung angewendet. Die Pflanze stabilisiert sich.';
-
-  const timestamp = {
-    realMs: nowMs,
-    simMs: Number(state.simulation.simTimeMs || 0),
-    simStamp: simStampFromMs(Number(state.simulation.simTimeMs || 0))
-  };
-  const history = getCanonicalHistory(state);
-  history.system.push({
-    type: 'rescue',
-    label: 'Notfallrettung',
-    effectsApplied: rescueResult.effectsApplied,
-    wasDead: rescueResult.wasDead,
-    timestamp,
-    atRealTimeMs: timestamp.realMs,
-    atSimTimeMs: timestamp.simMs
-  });
-  if (history.system.length > MAX_HISTORY_LOG) {
-    history.system = history.system.slice(-MAX_HISTORY_LOG);
-  }
-
-  updateVisibleOverlays();
-  state.run.status = 'active';
-  state.run.endReason = null;
-  state.run.finalizedAtRealMs = null;
-  syncCanonicalStateShape();
-  renderAll();
+  renderDeathOverlay();
   renderGameMenu();
   schedulePersistState(true);
 }

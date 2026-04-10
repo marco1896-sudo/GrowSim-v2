@@ -544,6 +544,24 @@ function getCanonicalSimulation(snapshot) {
   if (!Number.isFinite(s.boost.boostEndsAtMs)) {
     s.boost.boostEndsAtMs = 0;
   }
+  if (!s.rewardActions || typeof s.rewardActions !== 'object') {
+    s.rewardActions = {};
+  }
+  if (typeof s.rewardActions.provider !== 'string' || !s.rewardActions.provider.trim()) {
+    s.rewardActions.provider = 'direct';
+  }
+  if (!Number.isFinite(Number(s.rewardActions.lastTriggeredAtMs))) {
+    s.rewardActions.lastTriggeredAtMs = 0;
+  }
+  if (!Number.isFinite(Number(s.rewardActions.lastGrantedAtMs))) {
+    s.rewardActions.lastGrantedAtMs = 0;
+  }
+  if (!Number.isFinite(Number(s.rewardActions.lastExecutedAtMs))) {
+    s.rewardActions.lastExecutedAtMs = 0;
+  }
+  if (!s.rewardActions.byType || typeof s.rewardActions.byType !== 'object') {
+    s.rewardActions.byType = {};
+  }
 
   return s.simulation;
 }
@@ -1453,6 +1471,13 @@ function resetStateToDefaults() {
     dayStamp: dayStamp(fallbackNow),
     boostEndsAtMs: 0
   };
+state.rewardActions = {
+  provider: 'direct',
+  lastTriggeredAtMs: 0,
+  lastGrantedAtMs: 0,
+  lastExecutedAtMs: 0,
+  byType: {}
+};
 
   state.actions = {
     catalog: normalizedActions,
@@ -1652,6 +1677,24 @@ function ensureStateIntegrity(nowMs) {
   }
   if (typeof state.boost.dayStamp !== 'string' || !state.boost.dayStamp) {
     state.boost.dayStamp = dayStamp(nowMs);
+  }
+  if (!state.rewardActions || typeof state.rewardActions !== 'object') {
+    state.rewardActions = {};
+  }
+  if (typeof state.rewardActions.provider !== 'string' || !state.rewardActions.provider.trim()) {
+    state.rewardActions.provider = 'direct';
+  }
+  if (!Number.isFinite(Number(state.rewardActions.lastTriggeredAtMs))) {
+    state.rewardActions.lastTriggeredAtMs = 0;
+  }
+  if (!Number.isFinite(Number(state.rewardActions.lastGrantedAtMs))) {
+    state.rewardActions.lastGrantedAtMs = 0;
+  }
+  if (!Number.isFinite(Number(state.rewardActions.lastExecutedAtMs))) {
+    state.rewardActions.lastExecutedAtMs = 0;
+  }
+  if (!state.rewardActions.byType || typeof state.rewardActions.byType !== 'object') {
+    state.rewardActions.byType = {};
   }
 
   const machineStates = new Set(['idle', 'activeEvent', 'resolving', 'resolved', 'cooldown']);

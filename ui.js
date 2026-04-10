@@ -118,6 +118,8 @@ function cacheUi() {
   ui.overlayPestThrips = document.getElementById('overlayPestThrips');
 
   ui.careActionBtn = document.getElementById('careActionBtn');
+  ui.careBoostActionBtn = document.getElementById('careBoostActionBtn');
+  ui.climateStabilizeActionBtn = document.getElementById('climateStabilizeActionBtn');
   ui.analyzeActionBtn = document.getElementById('analyzeActionBtn');
   ui.boostActionBtn = document.getElementById('boostActionBtn');
   ui.skipNightActionBtn = document.getElementById('skipNightActionBtn');
@@ -525,6 +527,14 @@ function bindHomeScreenEvents(controller = null) {
     ui.boostActionBtn.addEventListener('click', () => withDebouncedAction('boost', ui.boostActionBtn, onBoostAction));
   }
 
+  if (ui.careBoostActionBtn) {
+    ui.careBoostActionBtn.addEventListener('click', () => withDebouncedAction('careBoost', ui.careBoostActionBtn, onCareBoostAction));
+  }
+
+  if (ui.climateStabilizeActionBtn) {
+    ui.climateStabilizeActionBtn.addEventListener('click', () => withDebouncedAction('climateStabilize', ui.climateStabilizeActionBtn, onClimateStabilizeAction));
+  }
+
   if (ui.skipNightActionBtn) {
     ui.skipNightActionBtn.addEventListener('click', () => withDebouncedAction('skipNight', ui.skipNightActionBtn, onSkipNightAction));
   }
@@ -918,7 +928,7 @@ function ensureRequiredUi() {
     'healthValue', 'stressValue', 'waterValue', 'nutritionValue', 'growthValue', 'riskValue',
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
     'overlayBurn', 'overlayDefMg', 'overlayDefN', 'overlayMoldWarning', 'overlayPestMites', 'overlayPestThrips',
-    'careActionBtn', 'analyzeActionBtn', 'boostActionBtn', 'skipNightActionBtn', 'openDiagnosisBtn', 'menuToggleBtn',
+    'careActionBtn', 'careBoostActionBtn', 'climateStabilizeActionBtn', 'analyzeActionBtn', 'boostActionBtn', 'skipNightActionBtn', 'openDiagnosisBtn', 'menuToggleBtn',
     'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'statDetailSheet',
     'statDetailTitle', 'statDetailValue', 'statDetailStatus', 'statDetailExplanation', 'statDetailRecommendation', 'statDetailPrimaryBtn',
     'menuBackdrop', 'gameMenu', 'menuCloseBtn', 'menuHeaderCloseBtn', 'menuNewRunBtn', 'menuRescueBtn', 'menuRescueSubtext',

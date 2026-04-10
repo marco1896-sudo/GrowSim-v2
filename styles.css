@@ -4038,6 +4038,51 @@ body.panelized-ready :is(
   border-bottom: 0;
 }
 
+.event-reward-action-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(160, 220, 187, 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(106, 186, 146, 0.12), transparent 45%),
+    linear-gradient(180deg, rgba(16, 27, 23, 0.96), rgba(10, 18, 15, 0.98));
+  color: #e7f2ea;
+  text-align: left;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 12px 24px rgba(0, 0, 0, 0.18);
+  transition: transform 140ms ease, border-color 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.event-reward-action-btn:hover,
+.event-reward-action-btn:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(186, 233, 206, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 14px 28px rgba(0, 0, 0, 0.2);
+}
+
+.event-reward-action-btn:active {
+  transform: translateY(1px);
+}
+
+.event-reward-action-btn__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.event-reward-action-btn__note {
+  display: block;
+  margin-top: 4px;
+  color: rgba(214, 230, 220, 0.74);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .figma-sheet-event .figma-section-card--event {
   min-height: 234px;
 }
@@ -8758,14 +8803,16 @@ body.panelized-ready :is(
   padding: 4px 4px 0;
   gap: 8px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: start;
 }
 
 .home-action-panel .home-action-btn,
+.home-action-panel #careBoostActionBtn,
 .home-action-panel #careActionBtn,
 .home-action-panel #analyzeActionBtn,
 .home-action-panel #eventsActionBtn,
+.home-action-panel #skipNightActionBtn,
 .home-action-panel #boostActionBtn {
   height: 98px;
   border: 0;
@@ -9811,6 +9858,28 @@ body.panelized-ready :is(
   animation: premium-hud-float 6.4s ease-in-out infinite;
 }
 
+.home-action-panel #careBoostActionBtn {
+  position: absolute;
+  left: 20px;
+  top: auto;
+  bottom: 212px;
+  width: 88px;
+  height: 102px;
+  display: flex;
+  animation: premium-hud-float 6.9s ease-in-out infinite 0.35s;
+}
+
+.home-action-panel #climateStabilizeActionBtn {
+  position: absolute;
+  left: 18px;
+  top: auto;
+  bottom: 112px;
+  width: 90px;
+  height: 102px;
+  display: flex;
+  animation: premium-hud-float 7.1s ease-in-out infinite 0.55s;
+}
+
 .home-action-panel #eventsActionBtn {
   position: absolute;
   right: var(--home-right-side-inset);
@@ -9819,6 +9888,17 @@ body.panelized-ready :is(
   width: 84px;
   height: 126px;
   animation: premium-hud-float 7.2s ease-in-out infinite 0.2s;
+}
+
+.home-action-panel #skipNightActionBtn {
+  position: absolute;
+  right: var(--home-right-side-inset);
+  top: calc(var(--home-right-watering-top) + var(--home-right-actions-gap));
+  left: auto;
+  display: flex;
+  width: 84px;
+  height: 126px;
+  animation: premium-hud-float 7.2s ease-in-out infinite 1.6s;
 }
 
 .home-action-panel #analyzeActionBtn {
@@ -9862,7 +9942,22 @@ body.panelized-ready :is(
   height: 78px;
 }
 
+.home-action-panel #careBoostActionBtn .home-action-icon {
+  width: 68px;
+  height: 68px;
+}
+
+.home-action-panel #climateStabilizeActionBtn .home-action-icon {
+  width: 66px;
+  height: 66px;
+}
+
 .home-action-panel #eventsActionBtn .home-action-icon {
+  width: 84px;
+  height: 84px;
+}
+
+.home-action-panel #skipNightActionBtn .home-action-icon {
   width: 84px;
   height: 84px;
 }
@@ -9877,14 +9972,29 @@ body.panelized-ready :is(
   height: 84px;
 }
 
+.home-action-panel #careBoostActionIcon,
+.home-action-panel #climateStabilizeActionIcon,
 .home-action-panel #eventsActionIcon,
+.home-action-panel #skipNightActionIcon,
 .home-action-panel #analyzeActionIcon,
 .home-action-panel #careActionIcon {
   width: 84px;
   height: 84px;
 }
 
+.home-action-panel #careBoostActionIcon {
+  width: 68px;
+  height: 68px;
+}
+
+.home-action-panel #climateStabilizeActionIcon {
+  width: 66px;
+  height: 66px;
+  opacity: 0.96;
+}
+
 #eventsActionBtn .home-side-icon,
+#skipNightActionBtn .home-side-icon,
 #analyzeActionBtn .home-side-icon,
 #careActionBtn .home-side-icon {
   width: 84px;
@@ -9937,6 +10047,29 @@ body.panelized-ready :is(
   opacity: 0.96;
 }
 
+.home-action-panel .home-action-btn:disabled {
+  cursor: default;
+  opacity: 0.9;
+  filter: saturate(0.66);
+}
+
+.home-action-panel .home-action-btn:disabled .home-action-icon {
+  transform: none;
+  filter:
+    drop-shadow(0 8px 16px rgba(0, 0, 0, 0.24))
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.02))
+    brightness(0.86);
+}
+
+.home-action-panel .home-action-btn:disabled:hover .home-action-icon,
+.home-action-panel .home-action-btn:disabled:focus-visible .home-action-icon {
+  transform: none;
+  filter:
+    drop-shadow(0 8px 16px rgba(0, 0, 0, 0.24))
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.02))
+    brightness(0.86);
+}
+
 @keyframes premium-hud-float {
   0%,
   100% {
@@ -9962,6 +10095,9 @@ body.panelized-ready :is(
   .home-climate-card::after,
   .home-progress-panel::after,
   #boostActionBtn,
+  .home-action-panel #careBoostActionBtn,
+  .home-action-panel #climateStabilizeActionBtn,
+  .home-action-panel #skipNightActionBtn,
   .home-action-panel #eventsActionBtn,
   .home-action-panel #analyzeActionBtn,
   .home-action-panel #careActionBtn {
@@ -9986,6 +10122,16 @@ body.panelized-ready :is(
     left: 10px;
     top: auto;
     bottom: 316px;
+  }
+
+  .home-action-panel #careBoostActionBtn {
+    left: 16px;
+    bottom: 212px;
+  }
+
+  .home-action-panel #climateStabilizeActionBtn {
+    left: 14px;
+    bottom: 116px;
   }
 
   .home-progress-title {
