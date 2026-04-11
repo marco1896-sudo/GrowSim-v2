@@ -99,13 +99,27 @@ assert(
 );
 
 assert(
-  cssSource.includes('bottom: calc(82px + env(safe-area-inset-bottom));'),
+  cssSource.includes('bottom: calc(24px + env(safe-area-inset-bottom));'),
   'core stats bar should be positioned visibly deeper in the lower home area'
 );
 
 assert(
-  cssSource.includes('bottom: calc(74px + env(safe-area-inset-bottom));'),
+  cssSource.includes('bottom: calc(18px + env(safe-area-inset-bottom));'),
   'small-screen core stats bar should preserve the deeper lower anchoring'
+);
+
+assert(
+  cssSource.includes('.home-core-stats-bar > #stressRing') &&
+    cssSource.includes('.home-core-stats-bar > #riskRing') &&
+    cssSource.includes('.home-core-stats-bar > #waterRing') &&
+    cssSource.includes('.home-core-stats-bar > #nutritionRing'),
+  'all four core stat slots should receive the same scoped reset inside the stats bar'
+);
+
+assert(
+  cssSource.includes('.home-core-stats-bar > #stressRing::after') &&
+    cssSource.includes('content: none;'),
+  'legacy stress pseudo-element styling should be disabled inside the core stats bar'
 );
 
 console.log('home core stats popup regression test passed');

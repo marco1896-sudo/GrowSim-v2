@@ -11379,14 +11379,14 @@ body.panelized-ready :is(
 }
 
 .home-content-scroll {
-  padding-bottom: calc(196px + env(safe-area-inset-bottom));
+  padding-bottom: calc(150px + env(safe-area-inset-bottom));
 }
 
 .home-core-stats-bar {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: calc(82px + env(safe-area-inset-bottom));
+  bottom: calc(24px + env(safe-area-inset-bottom));
   height: 88px;
   z-index: 12;
   display: grid;
@@ -11430,6 +11430,26 @@ body.panelized-ready :is(
   background: radial-gradient(circle at 50% 50%, rgba(15, 22, 20, 0.46), rgba(15, 22, 20, 0) 72%);
   filter: blur(10px);
   opacity: 0.94;
+}
+
+.home-core-stats-bar > #waterRing,
+.home-core-stats-bar > #nutritionRing,
+.home-core-stats-bar > #stressRing,
+.home-core-stats-bar > #riskRing {
+  position: relative;
+  inset: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  box-shadow: none;
+}
+
+.home-core-stats-bar > #waterRing::after,
+.home-core-stats-bar > #nutritionRing::after,
+.home-core-stats-bar > #stressRing::after,
+.home-core-stats-bar > #riskRing::after {
+  content: none;
 }
 
 .home-core-stat {
@@ -11706,7 +11726,7 @@ body.panelized-ready :is(
   .home-core-stats-bar {
     left: 12px;
     right: 12px;
-    bottom: calc(74px + env(safe-area-inset-bottom));
+    bottom: calc(18px + env(safe-area-inset-bottom));
   }
 
   .home-stat-popup {
