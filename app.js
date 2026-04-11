@@ -1360,6 +1360,7 @@ window.GrowSimAppUiRuntime = Object.freeze({
   renderDeathOverlay: () => renderDeathOverlay(),
   renderGameMenu: () => renderGameMenu(),
   renderPushToggle: () => renderPushToggle(),
+  openSheet: (name) => openSheet(name),
   openMenu: () => openMenu(),
   closeMenu: () => closeMenu(),
   openMenuDialog: (options) => openMenuDialog(options || {}),
@@ -1444,10 +1445,24 @@ function ensureRetentionState(snapshot = state) {
       title: String(task.title || '').trim(),
       description: String(task.description || '').trim(),
       dayKey: String(task.dayKey || retention.dailyCare.dayKey || '').trim(),
+      trigger: String(task.trigger || '').trim(),
+      sheetName: String(task.sheetName || '').trim(),
+      threshold: Number.isFinite(Number(task.threshold)) ? Number(task.threshold) : null,
+      xp: Math.max(0, Math.trunc(Number(task.xp) || 0)),
       completedAt: Number.isFinite(Number(task.completedAt)) ? Number(task.completedAt) : null,
+      rewardGrantedAt: Number.isFinite(Number(task.rewardGrantedAt)) ? Number(task.rewardGrantedAt) : null,
       claimKey: String(task.claimKey || '').trim()
     }))
     .filter((task) => task.taskId && task.claimKey);
+  retention.dailyCare.tasks = retention.dailyCare.tasks.map((task) => {
+    if (!task.rewardGrantedAt && task.completedAt && retention.claimLedger.includes(task.claimKey)) {
+      return {
+        ...task,
+        rewardGrantedAt: task.completedAt
+      };
+    }
+    return task;
+  });
   retention.dailyCare.completedCount = retention.dailyCare.tasks.reduce((count, task) => count + (task.completedAt ? 1 : 0), 0);
   retention.dailyCare.allCompleteClaimed = Boolean(retention.dailyCare.allCompleteClaimed);
 
@@ -2139,6 +2154,7 @@ function buildDailyCareTasks(snapshot = state, dayKey = getLocalDayKey(Date.now(
       threshold: Number.isFinite(Number(template.threshold)) ? Number(template.threshold) : null,
       xp: Math.max(0, Math.trunc(Number(template.minXp) || RETENTION_DAILY_TASK_XP)),
       completedAt: null,
+      rewardGrantedAt: null,
       claimKey: `daily:task:${dayKey}:${taskId}`
     };
   });
@@ -2194,7 +2210,7 @@ function unlockMicroAchievement(id, context = {}) {
   if (canShowToast) {
     retention.micro.lastShownAt = nowMs;
     retention.micro.sessionShownCount = Number(retention.micro.sessionShownCount || 0) + 1;
-    const toastText = String(context.toastText || `${definition.title} · ${definition.shortDescription}`);
+    const toastText = String(context.toastText || `${definition.title} freigeschaltet`);
     showRetentionToast(toastText);
     emitRetentionAnalytics('micro_shown', {
       id: safeId,
@@ -2500,51 +2516,92 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
   }
   let changed = false;
   let newlyCompleted = 0;
+  const completionFeedback = [];
   const status = state.status && typeof state.status === 'object' ? state.status : {};
 
-  for (const task of retention.dailyCare.tasks) {
-    if (!task || task.completedAt) {
-      continue;
+  const settleTaskReward = (task, nowMs) => {
+    if (!task || !task.completedAt || task.rewardGrantedAt) {
+      return { changed: false, granted: false, pending: false };
     }
-    let matches = false;
-    if (task.trigger === 'care_action' && triggerType === 'action_success') {
-      matches = true;
-    } else if (task.trigger === 'stress_threshold' && Number(status.stress || 0) <= Number(task.threshold || 40)) {
-      matches = true;
-    } else if (task.trigger === 'risk_threshold' && Number(status.risk || 0) <= Number(task.threshold || 45)) {
-      matches = true;
-    } else if (task.sheetName && triggerType === 'sheet_open' && String(payload.sheetName || '') === task.sheetName) {
-      matches = true;
-    }
-    if (!matches) {
-      continue;
-    }
-    task.completedAt = nowMs;
     const rewardResult = grantRetentionRewardOnce(task.claimKey, { xp: Number(task.xp || RETENTION_DAILY_TASK_XP) }, {
       reason: 'daily_task'
     });
     if (rewardResult.granted) {
+      task.rewardGrantedAt = nowMs;
       addLog('system', `Daily Care: ${task.title}`, {
         type: 'daily_care_complete',
         taskId: task.taskId,
         xpGranted: rewardResult.xpGranted
       });
+      return { changed: true, granted: true, pending: false };
     }
-    emitRetentionAnalytics('daily_task_completed', {
-      taskId: task.taskId
-    }, {
-      nowMs,
-      eventKey: `daily_task_completed:${retention.dailyCare.dayKey}:${task.taskId}`
-    });
-    changed = true;
-    newlyCompleted += 1;
+    if (rewardResult.reason === 'duplicate' || hasRetentionClaim(task.claimKey)) {
+      task.rewardGrantedAt = task.completedAt || nowMs;
+      return { changed: true, granted: false, pending: false };
+    }
+    return { changed: false, granted: false, pending: true };
+  };
+
+  for (const task of retention.dailyCare.tasks) {
+    if (!task) {
+      continue;
+    }
+    if (!task.completedAt) {
+      let matches = false;
+      if (task.trigger === 'care_action' && triggerType === 'action_success') {
+        matches = true;
+      } else if (task.trigger === 'stress_threshold' && Number(status.stress || 0) <= Number(task.threshold || 40)) {
+        matches = true;
+      } else if (task.trigger === 'risk_threshold' && Number(status.risk || 0) <= Number(task.threshold || 45)) {
+        matches = true;
+      } else if (task.sheetName && triggerType === 'sheet_open' && String(payload.sheetName || '') === task.sheetName) {
+        matches = true;
+      }
+      if (!matches) {
+        continue;
+      }
+
+      task.completedAt = nowMs;
+      emitRetentionAnalytics('daily_task_completed', {
+        taskId: task.taskId
+      }, {
+        nowMs,
+        eventKey: `daily_task_completed:${retention.dailyCare.dayKey}:${task.taskId}`
+      });
+      changed = true;
+      newlyCompleted += 1;
+    }
+
+    const settlement = settleTaskReward(task, nowMs);
+    if (settlement.changed) {
+      changed = true;
+    }
+    if (task.completedAt === nowMs) {
+      if (settlement.granted) {
+        completionFeedback.push(`Daily geschafft: ${String(task.title || 'Aufgabe')} · +${Math.max(0, Math.trunc(Number(task.xp || RETENTION_DAILY_TASK_XP)))} XP`);
+      } else if (settlement.pending) {
+        completionFeedback.push(`Daily geschafft: ${String(task.title || 'Aufgabe')} · Belohnung kommt gleich mit`);
+      } else {
+        completionFeedback.push(`Daily geschafft: ${String(task.title || 'Aufgabe')} · Belohnung gesichert`);
+      }
+    }
+  }
+
+  for (const task of retention.dailyCare.tasks) {
+    if (!task || !task.completedAt || task.rewardGrantedAt) {
+      continue;
+    }
+    if (hasRetentionClaim(task.claimKey)) {
+      task.rewardGrantedAt = task.completedAt;
+      changed = true;
+    }
   }
 
   retention.dailyCare.completedCount = retention.dailyCare.tasks.reduce((count, task) => count + (task && task.completedAt ? 1 : 0), 0);
   if (retention.dailyCare.completedCount >= 2) {
     unlockMicroAchievement('daily_pair_clean', {
       nowMs,
-      toastText: 'Saubere Daily-Serie',
+      toastText: 'Starke Daily-Serie',
       label: 'Daily Pair',
       rewardXp: 5
     });
@@ -2553,30 +2610,38 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
   const allDone = retention.dailyCare.tasks.length > 0 && retention.dailyCare.tasks.every((task) => Boolean(task && task.completedAt));
   if (allDone && !retention.dailyCare.allCompleteClaimed) {
     const allClaimKey = `daily:allComplete:${retention.dailyCare.dayKey}`;
-    grantRetentionRewardOnce(allClaimKey, { xp: RETENTION_DAILY_ALL_COMPLETE_XP }, { reason: 'daily_all_complete' });
-    retention.dailyCare.allCompleteClaimed = true;
-    emitRetentionAnalytics('daily_all_complete', {
-      dayKey: retention.dailyCare.dayKey
-    }, {
-      nowMs,
-      eventKey: `daily_all_complete:${retention.dailyCare.dayKey}`
-    });
-    changed = true;
-    unlockMicroAchievement('daily_full_sweep', {
-      nowMs,
-      toastText: 'Alle Daily-Care Aufgaben erledigt',
-      label: 'Daily Full Sweep',
-      rewardXp: 8
-    });
+    const allCompleteReward = grantRetentionRewardOnce(allClaimKey, { xp: RETENTION_DAILY_ALL_COMPLETE_XP }, { reason: 'daily_all_complete' });
+    if (allCompleteReward.granted || allCompleteReward.reason === 'duplicate' || hasRetentionClaim(allClaimKey)) {
+      retention.dailyCare.allCompleteClaimed = true;
+      emitRetentionAnalytics('daily_all_complete', {
+        dayKey: retention.dailyCare.dayKey
+      }, {
+        nowMs,
+        eventKey: `daily_all_complete:${retention.dailyCare.dayKey}`
+      });
+      changed = true;
+      unlockMicroAchievement('daily_full_sweep', {
+        nowMs,
+        toastText: 'Alle Daily-Ziele für heute erledigt',
+        label: 'Daily Full Sweep',
+        rewardXp: 8
+      });
+    }
   }
 
   if (newlyCompleted > 0 && retention.dailyCare.completedCount === 1) {
     unlockMicroAchievement('daily_first_task', {
       nowMs,
-      toastText: 'Erste Daily-Care Aufgabe abgeschlossen',
+      toastText: 'Erste Daily-Aufgabe erledigt',
       label: 'First Daily Task',
       rewardXp: 4
     });
+  }
+
+  if (completionFeedback.length === 1) {
+    showRetentionToast(completionFeedback[0]);
+  } else if (completionFeedback.length > 1) {
+    showRetentionToast(`Daily-Schub: ${completionFeedback.length} Aufgaben geschafft`);
   }
 
   if (changed) {
@@ -9734,9 +9799,24 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       nextMilestone,
       dailyCompleted,
       dailyTotal,
-      teaserText: streakCount > 0
-        ? `Streak ${streakCount} · ${streakDoneToday ? 'heute gesichert' : 'heute offen'}`
-        : 'Starte deine tägliche Streak'
+      teaserText: (() => {
+        if (dailyTotal > 0) {
+          const remaining = Math.max(0, dailyTotal - dailyCompleted);
+          if (remaining === 0) {
+            return 'Heute abgeschlossen - stark';
+          }
+          if (remaining === 1) {
+            return 'Fast geschafft - noch 1 Aufgabe';
+          }
+          if (dailyCompleted > 0) {
+            return `${dailyCompleted}/${dailyTotal} geschafft - bleib dran`;
+          }
+          return `${dailyTotal} kleine Ziele warten heute`;
+        }
+        return streakCount > 0
+          ? `Streak ${streakCount} · ${streakDoneToday ? 'heute gesichert' : 'heute offen'}`
+          : 'Heute kurz reinschauen und loslegen';
+      })()
     },
     harvestForecast: harvestForecast
       ? {
@@ -13647,17 +13727,41 @@ function renderMissionsSheet() {
       empty.textContent = 'Daily-Care wird vorbereitet.';
       dailyList.appendChild(empty);
     } else {
+      const status = state.status && typeof state.status === 'object' ? state.status : {};
+      let hasClaimablePending = false;
       for (const task of tasks) {
+        const completed = Boolean(task.completedAt);
+        const rewardGranted = Boolean(task.rewardGrantedAt) || hasRetentionClaim(task.claimKey);
+        if (completed && !rewardGranted) {
+          hasClaimablePending = true;
+        }
+        const threshold = Number(task.threshold || 0);
+        const inProgress = !completed && (
+          (task.trigger === 'stress_threshold' && Number(status.stress || 0) <= (threshold + 10))
+          || (task.trigger === 'risk_threshold' && Number(status.risk || 0) <= (threshold + 10))
+        );
+        const stateLabel = !completed
+          ? (inProgress ? 'In Arbeit' : 'Offen')
+          : (rewardGranted ? 'Abgeholt' : 'Claimbar');
+        const stateHint = !completed
+          ? (inProgress ? 'Noch ein sauberer Schritt.' : 'Guter nächster Schritt.')
+          : (rewardGranted ? 'Für heute gesichert.' : 'Belohnung kommt automatisch.');
         const row = document.createElement('div');
-        row.className = `retention-task-row${task.completedAt ? ' retention-task-row--done' : ''}`;
+        row.className = `retention-task-row${completed && rewardGranted ? ' retention-task-row--done' : ''}`;
         row.innerHTML = `
           <span class="retention-task-copy">
             <strong>${escapeHtml(String(task.title || 'Aufgabe'))}</strong>
-            <small>${escapeHtml(String(task.description || ''))}</small>
+            <small>${escapeHtml(stateHint)}</small>
           </span>
-          <span class="retention-task-state">${task.completedAt ? 'Erledigt' : 'Offen'}</span>
+          <span class="retention-task-state">${stateLabel}</span>
         `;
         dailyList.appendChild(row);
+      }
+      if (hasClaimablePending) {
+        const note = document.createElement('p');
+        note.className = 'sheet-note';
+        note.textContent = 'Claimbar heißt: erledigt - die Belohnung kommt automatisch mit.';
+        dailyList.appendChild(note);
       }
     }
   }
@@ -13666,7 +13770,15 @@ function renderMissionsSheet() {
   if (dailyProgressNode) {
     const completed = Math.max(0, Math.trunc(Number(daily.completedCount) || 0));
     const total = Array.isArray(daily.tasks) ? daily.tasks.length : 0;
-    dailyProgressNode.textContent = total > 0 ? `${completed}/${total} abgeschlossen` : 'Keine Aufgaben';
+    if (total <= 0) {
+      dailyProgressNode.textContent = 'Heute keine Daily-Ziele offen';
+    } else if (completed <= 0) {
+      dailyProgressNode.textContent = `${total} Daily-Ziele für heute offen`;
+    } else if (completed >= total) {
+      dailyProgressNode.textContent = 'Heute alles erledigt';
+    } else {
+      dailyProgressNode.textContent = `${completed}/${total} geschafft - weiter so`;
+    }
   }
 
   const recoveryWrapNode = uiNode('missionsRecoveryWrap', 'missionsRecoveryWrap');
@@ -13741,7 +13853,7 @@ function renderMissionsSheet() {
     if (!visibleMicroEntries.length) {
       const empty = document.createElement('p');
       empty.className = 'sheet-note';
-      empty.textContent = 'Heute noch kein Micro-Erfolg.';
+      empty.textContent = 'Heute wartet noch dein erster Micro-Erfolg.';
       microList.appendChild(empty);
     } else {
       for (const entry of visibleMicroEntries) {
@@ -13749,7 +13861,7 @@ function renderMissionsSheet() {
         const chip = document.createElement('span');
         chip.className = `retention-micro-chip retention-micro-chip--${String(def.rarity || 'common')}`;
         chip.title = String(def.shortDescription || '');
-        chip.innerHTML = `<strong>${escapeHtml(String(def.title || 'Micro-Erfolg'))}</strong><small>${escapeHtml(String(def.shortDescription || ''))}</small>`;
+        chip.innerHTML = `<strong>${escapeHtml(String(def.title || 'Micro-Erfolg'))}</strong><small>${escapeHtml(String(def.iconTag || 'Micro-Gewinn'))}</small>`;
         microList.appendChild(chip);
       }
     }

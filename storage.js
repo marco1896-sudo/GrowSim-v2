@@ -1827,9 +1827,19 @@ function ensureStateIntegrity(nowMs) {
       threshold: Number.isFinite(Number(task.threshold)) ? Number(task.threshold) : null,
       xp: Math.max(0, Math.trunc(Number(task.xp) || 0)),
       completedAt: Number.isFinite(Number(task.completedAt)) ? Number(task.completedAt) : null,
+      rewardGrantedAt: Number.isFinite(Number(task.rewardGrantedAt)) ? Number(task.rewardGrantedAt) : null,
       claimKey: String(task.claimKey || '').trim()
     }))
     .filter((task) => task.taskId && task.claimKey);
+  state.retention.dailyCare.tasks = state.retention.dailyCare.tasks.map((task) => {
+    if (!task.rewardGrantedAt && task.completedAt && state.retention.claimLedger.includes(task.claimKey)) {
+      return {
+        ...task,
+        rewardGrantedAt: task.completedAt
+      };
+    }
+    return task;
+  });
   state.retention.dailyCare.completedCount = state.retention.dailyCare.tasks.reduce((count, task) => count + (task.completedAt ? 1 : 0), 0);
   state.retention.dailyCare.allCompleteClaimed = Boolean(state.retention.dailyCare.allCompleteClaimed);
 

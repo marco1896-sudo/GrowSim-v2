@@ -1835,6 +1835,11 @@ function escapeHtml(value) {
 }
 
 function openSheet(name) {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.openSheet === 'function') {
+    return appUiRuntime.openSheet(name);
+  }
+  // Legacy fallback: only used when app runtime bridge is unavailable.
   if (isPlantDead() && name !== 'dashboard' && name !== 'support') {
     return;
   }
