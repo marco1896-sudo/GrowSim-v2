@@ -108,4 +108,14 @@ assert(
   'small-screen core stats bar should preserve the deeper lower anchoring'
 );
 
+assert(
+  cssSource.includes('.home-core-stats-bar > .home-core-stat {'),
+  'all four core stat slots should share a scoped structural baseline inside the core bar'
+);
+
+assert(
+  cssSource.includes('.home-core-stats-bar > .home-core-stat::after {'),
+  'all four core stat slots should disable stray legacy pseudo-element effects inside the core bar'
+);
+
 console.log('home core stats popup regression test passed');
