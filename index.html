@@ -268,49 +268,47 @@
           </div>
         </article>
 
-        <section id="dataVizHud" class="home-status-panel" aria-label="Pflanzen-Dashboard">
-          <div class="home-status-column">
-            <h2 class="home-status-title">Pflanzenstatus</h2>
-            <article id="waterRing" class="home-status-row" role="button" tabindex="0" aria-label="Wasser Details öffnen" style="--value:70;">
-              <div class="home-status-label"><img src="assets/ui/icons/icon_water.svg" alt="" aria-hidden="true"><span id="plantWaterLabel">Wasser</span></div>
-              <strong id="waterValue">70%</strong>
-              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
-            </article>
-            <article id="nutritionRing" class="home-status-row" role="button" tabindex="0" aria-label="Nährstoffe Details öffnen" style="--value:65;">
-              <div class="home-status-label"><img src="assets/ui/icons/icon_nutrients.svg" alt="" aria-hidden="true"><span id="plantNutritionLabel">Nährstoffe</span></div>
-              <strong id="nutritionValue">65%</strong>
-              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
-            </article>
-            <article id="growthRing" class="home-status-row" role="button" tabindex="0" aria-label="Wachstum Details öffnen" style="--value:3;">
-              <div class="home-status-label"><img src="assets/ui/icons/icon_growth.svg" alt="" aria-hidden="true"><span id="plantGrowthLabel">Wachstum</span></div>
-              <strong id="growthValue">2.6%</strong>
-              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
-            </article>
-            <article id="riskRing" class="home-status-row" role="button" tabindex="0" aria-label="Risiko Details öffnen" style="--value:20;">
-              <div class="home-status-label"><img src="assets/ui/icons/icon_risk.svg" alt="" aria-hidden="true"><span id="plantRiskLabel">Risiko</span></div>
-              <strong id="riskValue">20%</strong>
-              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
-            </article>
-            <article id="stressRing" class="home-status-row" style="--value:15;">
-              <div class="home-status-label"><img src="assets/ui/icons/icon_stress.svg" alt="" aria-hidden="true"><span id="plantStressLabel">Stress</span></div>
-              <strong id="stressValue">15%</strong>
-              <div class="home-status-track" aria-hidden="true"><span class="home-status-fill"></span></div>
-            </article>
-          </div>
-
-          <div class="home-status-divider" aria-hidden="true"></div>
-
-          <div class="home-root-column">
-            <h2 class="home-status-title">Wurzeln &amp; Boden</h2>
-            <div class="home-root-row"><img src="assets/ui/icons/icon_ph.svg" alt="" aria-hidden="true"><span id="rootPhLabel">pH</span><strong id="rootPhValue">5.9</strong></div>
-            <div class="home-root-row"><img src="assets/ui/icons/icon_ec.svg" alt="" aria-hidden="true"><span id="rootEcLabel">EC</span><strong id="rootEcValue">1.3 mS</strong></div>
-            <div class="home-root-row"><img src="assets/ui/icons/icon_roots.svg" alt="" aria-hidden="true"><span id="rootHealthLabel">Wurzelgesundheit</span><strong id="rootHealthValue">20%</strong></div>
-            <div class="home-root-row"><img src="assets/ui/icons/icon_o2.svg" alt="" aria-hidden="true"><span id="rootOxygenLabel">Sauerstoff</span><strong id="rootOxygenValue">78%</strong></div>
-          </div>
-          <section id="homeGuidancePanel" class="home-guidance-panel hidden" aria-label="Diagnose-Hinweise" aria-live="polite" aria-hidden="true">
-            <div id="homeGuidanceList" class="home-guidance-list"></div>
-          </section>
+        <section id="coreStatsBar" class="home-core-stats-bar" aria-label="Kernwerte">
+          <article id="waterRing" class="home-core-stat home-core-stat--water" data-core-stat-key="water" role="button" tabindex="0" aria-label="Wasser anzeigen" style="--value:70;">
+            <span class="home-core-stat__icon-wrap" aria-hidden="true">
+              <img class="home-core-stat__icon" src="assets/ui/icons/icon_water.svg" alt="">
+            </span>
+            <strong id="waterValue" class="home-core-stat__value">70%</strong>
+            <span class="home-core-stat__track" aria-hidden="true"><span class="home-core-stat__fill"></span></span>
+            <span id="plantWaterLabel" class="visually-hidden">Wasser</span>
+          </article>
+          <article id="nutritionRing" class="home-core-stat home-core-stat--nutrients" data-core-stat-key="nutrients" role="button" tabindex="0" aria-label="Nährstoffe anzeigen" style="--value:65;">
+            <span class="home-core-stat__icon-wrap" aria-hidden="true">
+              <img class="home-core-stat__icon" src="assets/ui/icons/icon_nutrients.svg" alt="">
+            </span>
+            <strong id="nutritionValue" class="home-core-stat__value">65%</strong>
+            <span class="home-core-stat__track" aria-hidden="true"><span class="home-core-stat__fill"></span></span>
+            <span id="plantNutritionLabel" class="visually-hidden">Nährstoffe</span>
+          </article>
+          <article id="stressRing" class="home-core-stat home-core-stat--stress" data-core-stat-key="stress" role="button" tabindex="0" aria-label="Stress anzeigen" style="--value:15;">
+            <span class="home-core-stat__icon-wrap" aria-hidden="true">
+              <img class="home-core-stat__icon" src="assets/ui/icons/icon_stress.svg" alt="">
+            </span>
+            <strong id="stressValue" class="home-core-stat__value">15%</strong>
+            <span class="home-core-stat__track" aria-hidden="true"><span class="home-core-stat__fill"></span></span>
+            <span id="plantStressLabel" class="visually-hidden">Stress</span>
+          </article>
+          <article id="riskRing" class="home-core-stat home-core-stat--risk" data-core-stat-key="risk" role="button" tabindex="0" aria-label="Risiko anzeigen" style="--value:20;">
+            <span class="home-core-stat__icon-wrap" aria-hidden="true">
+              <img class="home-core-stat__icon" src="assets/ui/icons/icon_risk.svg" alt="">
+            </span>
+            <strong id="riskValue" class="home-core-stat__value">20%</strong>
+            <span class="home-core-stat__track" aria-hidden="true"><span class="home-core-stat__fill"></span></span>
+            <span id="plantRiskLabel" class="visually-hidden">Risiko</span>
+          </article>
         </section>
+
+        <aside id="homeStatPopup" class="home-stat-popup hidden" aria-hidden="true" role="dialog" aria-live="polite">
+          <strong id="homeStatPopupTitle" class="home-stat-popup__title">Wasserhaushalt</strong>
+          <p id="homeStatPopupText" class="home-stat-popup__copy">Wasserhaushalt stabil.</p>
+          <p id="homeStatPopupTrend" class="home-stat-popup__trend hidden" aria-hidden="true"></p>
+          <button id="homeStatPopupAction" class="home-stat-popup__action hidden" type="button" aria-hidden="true">Gießen</button>
+        </aside>
 
         </div>
 
@@ -347,6 +345,14 @@
         </section>
 
         <article id="healthRing" class="hidden" style="--value:85;"><strong id="healthValue">85</strong></article>
+        <article id="growthRing" class="hidden" style="--value:3;"><strong id="growthValue">3</strong><span id="plantGrowthLabel" class="visually-hidden">Wachstum</span></article>
+        <strong id="rootPhValue" class="hidden">5.9</strong>
+        <strong id="rootEcValue" class="hidden">1.3 mS</strong>
+        <strong id="rootHealthValue" class="hidden">20%</strong>
+        <strong id="rootOxygenValue" class="hidden">78%</strong>
+        <section id="homeGuidancePanel" class="home-guidance-panel hidden" aria-label="Diagnose-Hinweise" aria-live="polite" aria-hidden="true">
+          <div id="homeGuidanceList" class="home-guidance-list"></div>
+        </section>
       </section>
     </main>
 </div>
@@ -897,6 +903,111 @@
     </div>
   </section>
 
+  <section id="imprint-sheet" class="bottom-sheet figma-sheet figma-sheet-legal hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Impressum</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+    </header>
+    <div class="sheet-content figma-sheet-content legal-sheet-content">
+      <article class="legal-document" aria-label="Impressum Inhalt">
+        <p><strong>Angaben gemäß § 5 DDG</strong></p>
+        <p><strong>Name:</strong><br>Marco Tepaß</p>
+        <p><strong>Anschrift:</strong><br>An der Freude 20a<br>49593 Bersenbrück<br>Deutschland</p>
+        <p><strong>Kontakt:</strong><br>E-Mail: <a href="mailto:marco.tepass@gmail.com">marco.tepass@gmail.com</a></p>
+        <p><strong>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:</strong><br>Marco Tepaß<br>Anschrift wie oben</p>
+        <p><strong>Haftung für Inhalte:</strong><br>Die Inhalte dieser App wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität übernehmen wir keine Gewähr.</p>
+        <p><strong>Haftung für Links:</strong><br>Diese App kann Links zu externen Websites enthalten. Für deren Inhalte übernehmen wir keine Haftung.</p>
+        <p><strong>Urheberrecht:</strong><br>Alle Inhalte dieser App unterliegen dem deutschen Urheberrecht.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="privacy-sheet" class="bottom-sheet figma-sheet figma-sheet-legal hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Datenschutz</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+    </header>
+    <div class="sheet-content figma-sheet-content legal-sheet-content">
+      <article class="legal-document" aria-label="Datenschutz Inhalt">
+        <h3>Datenschutzerklärung</h3>
+
+        <section class="legal-section">
+          <h4>1. Allgemeine Hinweise</h4>
+          <p>Der Schutz deiner persönlichen Daten ist uns ein wichtiges Anliegen. Diese Datenschutzerklärung informiert darüber, welche Daten in der App „GrowSim“ erhoben und wie sie verwendet werden.</p>
+        </section>
+
+        <section class="legal-section">
+          <h4>2. Verantwortlicher</h4>
+          <p>Marco Tepaß<br>An der Freude 20a<br>49593 Bersenbrück<br>Deutschland<br>E-Mail: <a href="mailto:marco.tepass@gmail.com">marco.tepass@gmail.com</a></p>
+        </section>
+
+        <section class="legal-section">
+          <h4>3. Erhebung und Speicherung personenbezogener Daten</h4>
+          <p>Wir erheben und verarbeiten personenbezogene Daten nur, soweit dies zur Bereitstellung der App erforderlich ist.</p>
+          <p>Dies umfasst insbesondere:</p>
+          <ul>
+            <li>E-Mail-Adresse bei Registrierung und Login</li>
+            <li>Kontodaten im Rahmen der Authentifizierung</li>
+            <li>Spielstände, Einstellungen und appbezogene Nutzungsdaten im Rahmen der Cloud-Synchronisierung</li>
+            <li>lokal gespeicherte Daten innerhalb der App</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h4>4. Zweck der Verarbeitung</h4>
+          <p>Die Daten werden verwendet für:</p>
+          <ul>
+            <li>Bereitstellung und Funktion der App</li>
+            <li>Speicherung und Synchronisierung von Spielständen</li>
+            <li>Anmeldung und Kontoverwaltung</li>
+            <li>technische Stabilität und Weiterentwicklung der App</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h4>5. Speicherung der Daten</h4>
+          <p>Daten können lokal auf dem Gerät sowie auf Servern zur Bereitstellung der App gespeichert werden. Es werden technische und organisatorische Maßnahmen getroffen, um die Daten zu schützen.</p>
+        </section>
+
+        <section class="legal-section">
+          <h4>6. Weitergabe von Daten</h4>
+          <p>Eine Weitergabe an Dritte erfolgt nicht, außer:</p>
+          <ul>
+            <li>wenn dies gesetzlich erforderlich ist</li>
+            <li>wenn dies technisch zur Bereitstellung der App notwendig ist, zum Beispiel im Rahmen von Hosting oder Backend-Infrastruktur</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h4>7. Lokale Speicherung</h4>
+          <p>Die App nutzt lokale Speichertechnologien, insbesondere LocalStorage und/oder IndexedDB, um Daten auf dem Gerät zu speichern.</p>
+        </section>
+
+        <section class="legal-section">
+          <h4>8. Deine Rechte</h4>
+          <p>Du hast im Rahmen der gesetzlichen Vorschriften das Recht auf:</p>
+          <ul>
+            <li>Auskunft über deine gespeicherten Daten</li>
+            <li>Berichtigung unrichtiger Daten</li>
+            <li>Löschung</li>
+            <li>Einschränkung der Verarbeitung</li>
+            <li>Datenübertragbarkeit</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h4>9. Kontakt</h4>
+          <p>Bei Fragen zum Datenschutz:<br><a href="mailto:marco.tepass@gmail.com">marco.tepass@gmail.com</a></p>
+        </section>
+
+        <section class="legal-section">
+          <h4>10. Änderungen</h4>
+          <p>Diese Datenschutzerklärung kann angepasst werden, wenn sich Funktionen oder technische Grundlagen der App ändern.</p>
+        </section>
+      </article>
+    </div>
+  </section>
+
   <section id="leaderboardSheet" class="bottom-sheet figma-sheet figma-sheet-leaderboard hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2>Leaderboard</h2>
@@ -1179,6 +1290,8 @@
         <button id="menuSupportBtn" class="menu-entry figma-menu-entry figma-menu-entry--support" type="button"><span>GrowSim unterstützen</span><small>Freiwilliger Support für neue Features</small></button>
         <button id="menuMissionsBtn" class="menu-entry figma-menu-entry" type="button"><span>Missionen</span><small>Missionen &amp; Fortschritt</small></button>
         <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span>Projektinfo</span><small>Status &amp; Hinweise</small></button>
+        <button id="menuImprintBtn" class="menu-entry figma-menu-entry" type="button"><span>Impressum</span><small>Anbieterkennzeichnung</small></button>
+        <button id="menuPrivacyBtn" class="menu-entry figma-menu-entry" type="button"><span>Datenschutz</span><small>Datenschutzerklärung</small></button>
         <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span>Einstellungen</span><small>Einstellungen öffnen</small></button>
         <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span>Speichern und Beenden</span><small>Neuen Run starten</small></button>
       </section>

@@ -506,7 +506,8 @@ const state = {
       claimInFlightGrantId: '',
       lastFetchedAt: null
     },
-    statDetailKey: null
+    statDetailKey: null,
+    activeStatPopup: null
   },
   lastEventId: null,
   lastChoiceId: null,
@@ -9983,15 +9984,40 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
     boostUsageTextNode.textContent = String(vm.boostText || '');
   }
 
-  setRing(uiNode('healthRing', 'healthRing'), uiNode('healthValue', 'healthValue'), Number(vm.rings && vm.rings.health || 0));
-  setRing(uiNode('stressRing', 'stressRing'), uiNode('stressValue', 'stressValue'), Number(vm.rings && vm.rings.stress || 0));
-  setRing(uiNode('waterRing', 'waterRing'), uiNode('waterValue', 'waterValue'), Number(vm.rings && vm.rings.water || 0));
-  setRing(uiNode('nutritionRing', 'nutritionRing'), uiNode('nutritionValue', 'nutritionValue'), Number(vm.rings && vm.rings.nutrition || 0));
-  setRing(uiNode('growthRing', 'growthRing'), uiNode('growthValue', 'growthValue'), Number(vm.rings && vm.rings.growth || 0));
-  setRing(uiNode('riskRing', 'riskRing'), uiNode('riskValue', 'riskValue'), Number(vm.rings && vm.rings.risk || 0));
-  applyRingVisualState(uiNode('stressRing', 'stressRing'), 'stressVisual', vm.motion && vm.motion.stressVisual);
-  applyRingVisualState(uiNode('riskRing', 'riskRing'), 'riskVisual', vm.motion && vm.motion.riskVisual);
-  applyRingVisualState(uiNode('growthRing', 'growthRing'), 'growthVisual', vm.motion && vm.motion.growthVisual);
+  const healthRingNode = uiNode('healthRing', 'healthRing');
+  const stressRingNode = uiNode('stressRing', 'stressRing');
+  const waterRingNode = uiNode('waterRing', 'waterRing');
+  const nutritionRingNode = uiNode('nutritionRing', 'nutritionRing');
+  const growthRingNode = uiNode('growthRing', 'growthRing');
+  const riskRingNode = uiNode('riskRing', 'riskRing');
+  setRing(healthRingNode, uiNode('healthValue', 'healthValue'), Number(vm.rings && vm.rings.health || 0));
+  setRing(stressRingNode, uiNode('stressValue', 'stressValue'), Number(vm.rings && vm.rings.stress || 0));
+  setRing(waterRingNode, uiNode('waterValue', 'waterValue'), Number(vm.rings && vm.rings.water || 0));
+  setRing(nutritionRingNode, uiNode('nutritionValue', 'nutritionValue'), Number(vm.rings && vm.rings.nutrition || 0));
+  setRing(growthRingNode, uiNode('growthValue', 'growthValue'), Number(vm.rings && vm.rings.growth || 0));
+  setRing(riskRingNode, uiNode('riskValue', 'riskValue'), Number(vm.rings && vm.rings.risk || 0));
+  if (stressRingNode) {
+    stressRingNode.removeAttribute('data-stress-visual');
+  }
+  if (riskRingNode) {
+    riskRingNode.removeAttribute('data-risk-visual');
+  }
+  applyRingVisualState(growthRingNode, 'growthVisual', vm.motion && vm.motion.growthVisual);
+  const activeStatPopupKey = normalizeHomeStatPopupKey(state.ui && state.ui.activeStatPopup);
+  const interactiveRingNodes = [
+    uiNode('waterRing', 'waterRing'),
+    uiNode('nutritionRing', 'nutritionRing'),
+    uiNode('stressRing', 'stressRing'),
+    uiNode('riskRing', 'riskRing')
+  ];
+  for (const ringNode of interactiveRingNodes) {
+    if (!ringNode) {
+      continue;
+    }
+    const ringKey = normalizeHomeStatPopupKey(ringNode.dataset.coreStatKey || ringNode.id.replace('Ring', ''));
+    ringNode.classList.toggle('home-core-stat--active', ringKey === activeStatPopupKey);
+  }
+  renderHomeStatPopup(vm);
   applyPlantMotionState(vm);
 
   const plantCanvas = uiNode('plantImage', 'plantImage');
@@ -10038,34 +10064,13 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
 
   const homeGuidancePanelNode = uiNode('homeGuidancePanel', 'homeGuidancePanel');
   const homeGuidanceListNode = uiNode('homeGuidanceList', 'homeGuidanceList');
-  const homeGuidanceHints = Array.isArray(vm.diagnostics && vm.diagnostics.hints) ? vm.diagnostics.hints : [];
   if (homeGuidancePanelNode) {
-    homeGuidancePanelNode.classList.toggle('hidden', !homeGuidanceHints.length);
-    homeGuidancePanelNode.setAttribute('aria-hidden', String(!homeGuidanceHints.length));
+    homeGuidancePanelNode.classList.add('hidden');
+    homeGuidancePanelNode.setAttribute('aria-hidden', 'true');
   }
   if (homeGuidanceListNode) {
-    const previousGuidanceSignature = String(homeGuidanceListNode.dataset.signature || '');
-    const nextGuidanceSignature = homeGuidanceHints.map((hint) => String(hint && hint.id || '')).join('|');
     homeGuidanceListNode.replaceChildren();
-    for (const hint of homeGuidanceHints.slice(0, 3)) {
-      const item = document.createElement('div');
-      item.className = `home-guidance-item home-guidance-item--${escapeHtml(String(hint.tone || 'stabilize'))}`;
-      if (nextGuidanceSignature && nextGuidanceSignature !== previousGuidanceSignature) {
-        item.classList.add('home-guidance-item--fresh');
-      }
-      item.innerHTML = `
-        <strong class="home-guidance-item__title">${escapeHtml(String(hint.title || 'Hinweis'))}</strong>
-        <p class="home-guidance-item__body">${escapeHtml(String(hint.body || ''))}</p>
-      `;
-      homeGuidanceListNode.appendChild(item);
-    }
-    homeGuidanceListNode.dataset.signature = nextGuidanceSignature;
-    if (nextGuidanceSignature && nextGuidanceSignature !== previousGuidanceSignature) {
-      clearTimeout(homeGuidanceListNode._guidanceFreshTimerId);
-      homeGuidanceListNode._guidanceFreshTimerId = setTimeout(() => {
-        homeGuidanceListNode.querySelectorAll('.home-guidance-item--fresh').forEach((node) => node.classList.remove('home-guidance-item--fresh'));
-      }, GUIDANCE_FRESH_ANIMATION_MS);
-    }
+    homeGuidanceListNode.dataset.signature = '';
   }
 
   renderPanelReadouts(vm);
@@ -10762,6 +10767,8 @@ function renderSheets() {
   toggleSheet(ui.eventSheet, activeSheet === 'event');
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
+  toggleSheet(ui.imprintSheet, activeSheet === 'imprint');
+  toggleSheet(ui.privacySheet, activeSheet === 'privacy');
   toggleSheet(ui.statDetailSheet, activeSheet === 'statDetail');
   toggleSheet(ui.missionsSheet, activeSheet === 'missions');
   toggleSheet(ui.supportSheet, activeSheet === 'support');
@@ -13540,12 +13547,219 @@ const STAT_DETAIL_CONFIG = Object.freeze({
   })
 });
 
-function onStatRingPress(statKey) {
-  if (!STAT_DETAIL_CONFIG[statKey]) {
+const HOME_STAT_POPUP_KEYS = new Set(['water', 'nutrients', 'stress', 'risk']);
+
+function normalizeHomeStatPopupKey(statKey) {
+  if (statKey === 'nutrition') {
+    return 'nutrients';
+  }
+  return String(statKey || '').trim().toLowerCase();
+}
+
+function closeHomeStatPopup(options = {}) {
+  const shouldRender = options && options.render !== false;
+  if (!state.ui || state.ui.activeStatPopup === null) {
     return;
   }
-  state.ui.statDetailKey = statKey;
-  openSheet('statDetail');
+  state.ui.activeStatPopup = null;
+  if (shouldRender) {
+    renderHud();
+  }
+}
+
+function getHomeStatPopupModel(statKey, homeVm) {
+  const vm = homeVm && typeof homeVm === 'object' ? homeVm : buildHomeViewModel(state);
+  const rings = vm.rings || {};
+  const water = Math.round(Number(rings.water || 0));
+  const nutrients = Math.round(Number(rings.nutrition || 0));
+  const stress = Math.round(Number(rings.stress || 0));
+  const risk = Math.round(Number(rings.risk || 0));
+  const growthImpulse = Number(state.simulation && state.simulation.growthImpulse || 0);
+
+  if (statKey === 'water') {
+    if (water <= 30) {
+      return {
+        title: 'Wasserhaushalt',
+        primary: 'Wasser wird knapp.',
+        secondary: risk >= 55 ? 'Bedarf steigt.' : 'Verbrauch leicht erhöht.',
+        actionLabel: 'Gießen',
+        action: () => openSheet('care')
+      };
+    }
+    if (water <= 55) {
+      return {
+        title: 'Wasserhaushalt',
+        primary: 'Wasserreserve sinkt.',
+        secondary: growthImpulse >= 0.08 ? 'Bedarf steigt.' : 'Verbrauch leicht erhöht.',
+        actionLabel: 'Gießen',
+        action: () => openSheet('care')
+      };
+    }
+    return {
+      title: 'Wasserhaushalt',
+      primary: 'Wasserhaushalt stabil.',
+      secondary: growthImpulse >= 0.08 ? 'Verbrauch leicht erhöht.' : 'Aufnahme aktuell ruhig.',
+      actionLabel: 'Gießen',
+      action: () => openSheet('care')
+    };
+  }
+
+  if (statKey === 'nutrients') {
+    if (nutrients <= 30) {
+      return {
+        title: 'Nährstoffbalance',
+        primary: 'Versorgung wird knapp.',
+        secondary: 'Werte sollten beobachtet werden.',
+        actionLabel: 'Düngen',
+        action: () => openSheet('care')
+      };
+    }
+    if (nutrients <= 55) {
+      return {
+        title: 'Nährstoffbalance',
+        primary: 'Nährstoffbedarf steigt.',
+        secondary: growthImpulse >= 0.06 ? 'Bedarf nimmt langsam zu.' : 'Werte sollten beobachtet werden.',
+        actionLabel: 'Düngen',
+        action: () => openSheet('care')
+      };
+    }
+    return {
+      title: 'Nährstoffbalance',
+      primary: 'Versorgung aktuell stabil.',
+      secondary: growthImpulse >= 0.06 ? 'Bedarf nimmt langsam zu.' : 'Aufnahme bleibt ruhig.',
+      actionLabel: 'Düngen',
+      action: () => openSheet('care')
+    };
+  }
+
+  if (statKey === 'stress') {
+    if (stress >= 70) {
+      return {
+        title: 'Stresslevel',
+        primary: 'Stress steigt an.',
+        secondary: 'Beobachtung empfohlen.'
+      };
+    }
+    if (stress >= 40) {
+      return {
+        title: 'Stresslevel',
+        primary: 'Leichte Belastung erkennbar.',
+        secondary: 'Beobachtung empfohlen.'
+      };
+    }
+    return {
+      title: 'Stresslevel',
+      primary: 'Stress aktuell unkritisch.',
+      secondary: 'Keine direkte Maßnahme nötig.'
+    };
+  }
+
+  if (risk >= 70) {
+    return {
+      title: 'Risikoanalyse',
+      primary: 'Risiko nimmt zu.',
+      secondary: 'Beobachtung empfohlen.'
+    };
+  }
+  if (risk >= 40) {
+    return {
+      title: 'Risikoanalyse',
+      primary: 'Einige Werte sollten beobachtet werden.',
+      secondary: 'Trend aktuell stabil.'
+    };
+  }
+  return {
+    title: 'Risikoanalyse',
+    primary: 'Kein akutes Risiko erkannt.',
+    secondary: 'Keine direkte Maßnahme nötig.'
+  };
+}
+
+function renderHomeStatPopup(homeVm = null) {
+  const popupNode = uiNode('homeStatPopup', 'homeStatPopup');
+  if (!popupNode) {
+    return;
+  }
+  const activeKey = normalizeHomeStatPopupKey(state.ui && state.ui.activeStatPopup);
+  if (!HOME_STAT_POPUP_KEYS.has(activeKey)) {
+    popupNode.classList.add('hidden');
+    popupNode.setAttribute('aria-hidden', 'true');
+    popupNode.removeAttribute('data-stat');
+    return;
+  }
+
+  const model = getHomeStatPopupModel(activeKey, homeVm);
+  const titleNode = uiNode('homeStatPopupTitle', 'homeStatPopupTitle');
+  const textNode = uiNode('homeStatPopupText', 'homeStatPopupText');
+  const trendNode = uiNode('homeStatPopupTrend', 'homeStatPopupTrend');
+  const actionNode = uiNode('homeStatPopupAction', 'homeStatPopupAction');
+
+  popupNode.dataset.stat = activeKey;
+  popupNode.classList.remove('hidden');
+  popupNode.setAttribute('aria-hidden', 'false');
+  if (titleNode) {
+    titleNode.textContent = String(model.title || '');
+  }
+  if (textNode) {
+    textNode.textContent = String(model.primary || '');
+  }
+  if (trendNode) {
+    const secondary = String(model.secondary || '').trim();
+    trendNode.textContent = secondary;
+    trendNode.classList.toggle('hidden', !secondary);
+    trendNode.setAttribute('aria-hidden', String(!secondary));
+  }
+  if (actionNode) {
+    const hasAction = typeof model.action === 'function' && String(model.actionLabel || '').trim().length > 0;
+    actionNode.textContent = String(model.actionLabel || '');
+    actionNode.classList.toggle('hidden', !hasAction);
+    actionNode.setAttribute('aria-hidden', String(!hasAction));
+    actionNode.disabled = !hasAction;
+  }
+
+  const barNode = uiNode('coreStatsBar', 'coreStatsBar');
+  const anchorNode = document.querySelector(`[data-core-stat-key="${activeKey}"]`);
+  const popupParent = popupNode.offsetParent instanceof Element ? popupNode.offsetParent : popupNode.parentElement;
+  if (!barNode || !anchorNode || !popupParent) {
+    return;
+  }
+
+  const popupParentRect = popupParent.getBoundingClientRect();
+  const barRect = barNode.getBoundingClientRect();
+  const anchorRect = anchorNode.getBoundingClientRect();
+  const popupRect = popupNode.getBoundingClientRect();
+
+  const margin = 8;
+  const topOffset = 8;
+  const maxLeft = Math.max(margin, popupParentRect.width - popupRect.width - margin);
+  const anchorCenter = (anchorRect.left + (anchorRect.width / 2)) - popupParentRect.left;
+  const left = clamp(anchorCenter - (popupRect.width / 2), margin, maxLeft);
+  const top = Math.max(margin, (barRect.top - popupParentRect.top) - popupRect.height - topOffset);
+
+  popupNode.style.left = `${Math.round(left)}px`;
+  popupNode.style.top = `${Math.round(top)}px`;
+}
+
+function onStatRingPress(statKey) {
+  const normalized = normalizeHomeStatPopupKey(statKey);
+  if (!HOME_STAT_POPUP_KEYS.has(normalized)) {
+    return;
+  }
+  state.ui.activeStatPopup = state.ui.activeStatPopup === normalized ? null : normalized;
+  renderHud();
+}
+
+function onHomeStatPopupAction() {
+  const activeKey = normalizeHomeStatPopupKey(state.ui && state.ui.activeStatPopup);
+  if (!HOME_STAT_POPUP_KEYS.has(activeKey)) {
+    return;
+  }
+  const model = getHomeStatPopupModel(activeKey, buildHomeViewModel(state));
+  if (typeof model.action !== 'function') {
+    return;
+  }
+  closeHomeStatPopup({ render: false });
+  model.action();
 }
 
 function onStatDetailPrimaryAction() {
@@ -13582,11 +13796,11 @@ function renderStatDetailSheet() {
 }
 
 function openSheet(name) {
-  if (authGateActive) {
+  if (authGateActive && name !== 'imprint' && name !== 'privacy') {
     openCloudAuthModal({ gate: true });
     return;
   }
-  if (isPlantDead() && name !== 'dashboard' && name !== 'support') {
+  if (isPlantDead() && name !== 'dashboard' && name !== 'support' && name !== 'imprint' && name !== 'privacy') {
     return;
   }
   if (state.ui.menuOpen) {
@@ -13596,6 +13810,7 @@ function openSheet(name) {
   if (name !== 'statDetail') {
     state.ui.statDetailKey = null;
   }
+  closeHomeStatPopup({ render: false });
 
   const nowMs = Date.now();
   evaluateDailyRetention(state, nowMs, { skipPersist: true });
@@ -13904,6 +14119,7 @@ function openMenu() {
     openCloudAuthModal({ gate: true });
     return;
   }
+  closeHomeStatPopup({ render: false });
   state.ui.openSheet = null;
   renderSheets();
   state.ui.menuOpen = true;
@@ -13914,6 +14130,7 @@ function closeMenu() {
   if (state.ui.menuDialogOpen) {
     closeMenuDialog();
   }
+  closeHomeStatPopup({ render: false });
   state.ui.menuOpen = false;
   renderGameMenu();
 }
@@ -15136,6 +15353,7 @@ async function resetRun() {
   state.ui.deathOverlayOpen = false;
   state.ui.deathOverlayAcknowledged = false;
   state.ui.runSummaryOpen = false;
+  state.ui.activeStatPopup = null;
   for (const key of Object.keys(actionDebounceUntil)) {
     delete actionDebounceUntil[key];
   }
@@ -15204,6 +15422,7 @@ function closeSheet() {
   }
   state.ui.openSheet = null;
   state.ui.statDetailKey = null;
+  state.ui.activeStatPopup = null;
   renderSheets();
 }
 
@@ -17301,6 +17520,7 @@ function setAuthGateActive(active) {
   state.ui.menuOpen = false;
   state.ui.menuDialogOpen = false;
   state.ui.statDetailKey = null;
+  state.ui.activeStatPopup = null;
 }
 
 function getAuthModalNodes() {

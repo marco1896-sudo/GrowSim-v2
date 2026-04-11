@@ -1073,6 +1073,7 @@ async function restoreState(options = {}) {
     state.ui.menuOpen = false;
     state.ui.menuDialogOpen = false;
     state.ui.statDetailKey = null;
+    state.ui.activeStatPopup = null;
   }
   if (saved.setup && typeof saved.setup === 'object') {
     state.setup = normalizeSetupState(saved.setup, state.simulation);
@@ -1531,6 +1532,7 @@ state.rewardActions = {
     openSheet: null,
     menuOpen: false,
     menuDialogOpen: false,
+    activeStatPopup: null,
     selectedBackground: 'bg_dark_01.jpg',
     visibleOverlayIds: [],
     deathOverlayOpen: false,
@@ -1983,6 +1985,9 @@ function ensureStateIntegrity(nowMs) {
   }
   if (typeof state.ui.menuDialogOpen !== 'boolean') {
     state.ui.menuDialogOpen = false;
+  }
+  if (!['water', 'nutrients', 'stress', 'risk', null].includes(state.ui.activeStatPopup)) {
+    state.ui.activeStatPopup = null;
   }
   if (!Array.isArray(state.ui.visibleOverlayIds)) {
     state.ui.visibleOverlayIds = [];

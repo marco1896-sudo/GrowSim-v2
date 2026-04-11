@@ -106,6 +106,12 @@ function cacheUi() {
   ui.nutritionRing = document.getElementById('nutritionRing');
   ui.growthRing = document.getElementById('growthRing');
   ui.riskRing = document.getElementById('riskRing');
+  ui.coreStatsBar = document.getElementById('coreStatsBar');
+  ui.homeStatPopup = document.getElementById('homeStatPopup');
+  ui.homeStatPopupTitle = document.getElementById('homeStatPopupTitle');
+  ui.homeStatPopupText = document.getElementById('homeStatPopupText');
+  ui.homeStatPopupTrend = document.getElementById('homeStatPopupTrend');
+  ui.homeStatPopupAction = document.getElementById('homeStatPopupAction');
 
   ui.healthValue = document.getElementById('healthValue');
   ui.stressValue = document.getElementById('stressValue');
@@ -162,6 +168,8 @@ function cacheUi() {
   ui.dashboardSheet = document.getElementById('dashboardSheet');
   ui.leaderboardSheet = document.getElementById('leaderboardSheet');
   ui.diagnosisSheet = document.getElementById('diagnosisSheet');
+  ui.imprintSheet = document.getElementById('imprint-sheet');
+  ui.privacySheet = document.getElementById('privacy-sheet');
   ui.statDetailSheet = document.getElementById('statDetailSheet');
   ui.statDetailTitle = document.getElementById('statDetailTitle');
   ui.statDetailValue = document.getElementById('statDetailValue');
@@ -183,6 +191,8 @@ function cacheUi() {
   ui.menuSupportBtn = document.getElementById('menuSupportBtn');
   ui.menuMissionsBtn = document.getElementById('menuMissionsBtn');
   ui.menuAboutBtn = document.getElementById('menuAboutBtn');
+  ui.menuImprintBtn = document.getElementById('menuImprintBtn');
+  ui.menuPrivacyBtn = document.getElementById('menuPrivacyBtn');
   ui.menuAchievementsBtn = document.getElementById('menuAchievementsBtn');
   ui.menuLeaderboardBtn = document.getElementById('menuLeaderboardBtn');
   ui.menuLeaderboardLabel = document.getElementById('menuLeaderboardLabel');
@@ -402,6 +412,9 @@ function bindUi() {
   for (const navButton of ui.screenNavButtons || []) {
     if (!navButton) continue;
     navButton.addEventListener('click', () => {
+      if (typeof closeHomeStatPopup === 'function') {
+        closeHomeStatPopup({ render: false });
+      }
       switchHudScreen(navButton.dataset.screenTarget);
     });
   }
@@ -619,8 +632,8 @@ function bindHomeScreenEvents(controller = null) {
 
   const statRingBindings = [
     { node: ui.waterRing, key: 'water' },
-    { node: ui.nutritionRing, key: 'nutrition' },
-    { node: ui.growthRing, key: 'growth' },
+    { node: ui.nutritionRing, key: 'nutrients' },
+    { node: ui.stressRing, key: 'stress' },
     { node: ui.riskRing, key: 'risk' }
   ];
   for (const binding of statRingBindings) {
@@ -632,6 +645,45 @@ function bindHomeScreenEvents(controller = null) {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         onStatRingPress(binding.key);
+      }
+    });
+  }
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!state || !state.ui || !state.ui.activeStatPopup) {
+      return;
+    }
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    if (target.closest('[data-core-stat-key]')) {
+      return;
+    }
+    if (ui.homeStatPopup && ui.homeStatPopup.contains(target)) {
+      return;
+    }
+    if (typeof closeHomeStatPopup === 'function') {
+      closeHomeStatPopup();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') {
+      return;
+    }
+    if (!state || !state.ui || !state.ui.activeStatPopup) {
+      return;
+    }
+    if (typeof closeHomeStatPopup === 'function') {
+      closeHomeStatPopup();
+    }
+  });
+
+  if (ui.homeStatPopupAction) {
+    ui.homeStatPopupAction.addEventListener('click', () => {
+      if (typeof onHomeStatPopupAction === 'function') {
+        onHomeStatPopupAction();
       }
     });
   }
@@ -771,6 +823,28 @@ function bindMenuOverlayEvents(controller = null) {
   }
   if (ui.menuAboutBtn) {
     ui.menuAboutBtn.addEventListener('click', () => openMenuPlaceholder('Über das Spiel', 'Grow Simulator MVP · Weitere Infos folgen.'));
+  }
+  if (ui.menuImprintBtn) {
+    ui.menuImprintBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      closeMenu();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('imprint');
+        return;
+      }
+      openSheet('imprint');
+    });
+  }
+  if (ui.menuPrivacyBtn) {
+    ui.menuPrivacyBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      closeMenu();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('privacy');
+        return;
+      }
+      openSheet('privacy');
+    });
   }
   if (ui.menuAchievementsBtn) {
     ui.menuAchievementsBtn.addEventListener('click', () => openMenuPlaceholder('Achievements', 'Achievements sind bald verfügbar.'));
@@ -1008,10 +1082,10 @@ function ensureRequiredUi() {
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
     'overlayBurn', 'overlayDefMg', 'overlayDefN', 'overlayMoldWarning', 'overlayPestMites', 'overlayPestThrips',
     'careActionBtn', 'careBoostActionBtn', 'climateStabilizeActionBtn', 'analyzeActionBtn', 'boostActionBtn', 'skipNightActionBtn', 'openDiagnosisBtn', 'menuToggleBtn',
-    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'statDetailSheet', 'supportSheet',
+    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'imprintSheet', 'privacySheet', 'statDetailSheet', 'supportSheet',
     'statDetailTitle', 'statDetailValue', 'statDetailStatus', 'statDetailExplanation', 'statDetailRecommendation', 'statDetailPrimaryBtn',
     'menuBackdrop', 'gameMenu', 'menuCloseBtn', 'menuHeaderCloseBtn', 'menuNewRunBtn', 'menuRescueBtn', 'menuRescueSubtext',
-    'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuAboutBtn',
+    'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuAboutBtn', 'menuImprintBtn', 'menuPrivacyBtn',
     'menuAchievementsBtn', 'menuLeaderboardBtn', 'menuDialog', 'menuDialogTitle', 'menuDialogText', 'menuDialogCancelBtn', 'menuDialogConfirmBtn',
     'careCategoryList', 'careActionList', 'careEffectsList', 'careExecuteButton', 'careFeedback', 'eventStateBadge', 'eventTitle', 'eventText', 'eventMeta', 'eventOptionList',
     'analysisTabOverview', 'analysisTabDiagnosis', 'analysisTabTimeline', 'analysisPanelOverview', 'analysisPanelDiagnosis', 'analysisPanelTimeline',
@@ -1233,6 +1307,8 @@ function renderSheets() {
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
   toggleSheet(ui.leaderboardSheet, activeSheet === 'leaderboard');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
+  toggleSheet(ui.imprintSheet, activeSheet === 'imprint');
+  toggleSheet(ui.privacySheet, activeSheet === 'privacy');
   toggleSheet(ui.supportSheet, activeSheet === 'support');
 }
 
