@@ -34,6 +34,16 @@ assert(
 );
 
 assert(
+  indexSource.includes('id="careBoostActionBtn" class="home-action-btn hidden"'),
+  'care boost icon should be hidden in home markup by default'
+);
+
+assert(
+  indexSource.includes('id="climateStabilizeActionBtn" class="home-action-btn hidden"'),
+  'climate stabilize icon should be hidden in home markup by default'
+);
+
+assert(
   appSource.includes('activeStatPopup: null'),
   'ui state should track activeStatPopup'
 );
@@ -99,23 +109,66 @@ assert(
 );
 
 assert(
-  cssSource.includes('bottom: calc(82px + env(safe-area-inset-bottom));'),
-  'core stats bar should be positioned visibly deeper in the lower home area'
+  cssSource.includes('bottom: calc(80px + env(safe-area-inset-bottom));'),
+  'core stats bar should stay clear of the progress card after the bottom-cluster correction'
 );
 
 assert(
-  cssSource.includes('bottom: calc(74px + env(safe-area-inset-bottom));'),
-  'small-screen core stats bar should preserve the deeper lower anchoring'
+  cssSource.includes('bottom: calc(72px + env(safe-area-inset-bottom));'),
+  'small-screen core stats bar should keep the corrected non-overlapping anchoring'
 );
 
 assert(
-  cssSource.includes('.home-core-stats-bar > .home-core-stat {'),
+  cssSource.includes('--home-content-offset: clamp(444px, calc(var(--home-layout-height) * 0.566), 474px);'),
+  'progress cluster should move up together with the core stats bar to keep the phase card fully visible'
+);
+
+assert(
+  cssSource.includes('top: calc(var(--home-right-watering-top) + (var(--home-right-actions-gap) * 0.86));'),
+  'night shift icon should use the calibrated right-column position after home icon cleanup'
+);
+
+assert(
+  appSource.includes('[REWARD_ACTION_TYPES.NIGHT_SHIFT]: \'direct\','),
+  'night shift should run in direct mode without rewarded-ad dependency'
+);
+
+assert(
+  appSource.includes('showCareBoost: false,'),
+  'care boost icon should be removed from the home action panel'
+);
+
+assert(
+  appSource.includes('showClimateStabilize: false'),
+  'climate stabilize icon should be removed from the home action panel'
+);
+
+assert(
+  cssSource.includes('#coreStatsBar > .home-core-stat {'),
   'all four core stat slots should share a scoped structural baseline inside the core bar'
 );
 
 assert(
-  cssSource.includes('.home-core-stats-bar > .home-core-stat::after {'),
+  cssSource.includes('#coreStatsBar > .home-core-stat::after {'),
   'all four core stat slots should disable stray legacy pseudo-element effects inside the core bar'
+);
+
+assert(
+  !cssSource.includes('#stressRing {\n  position: absolute;'),
+  'legacy global stress ring positioning should no longer affect the core stats bar'
+);
+
+assert(
+  !cssSource.includes('#stressRing {\n  box-shadow:'),
+  'legacy global stress ring shadows should no longer distort the core stats bar slot'
+);
+
+assert(
+  cssSource.includes('width: 100%;') &&
+    cssSource.includes('justify-self: stretch;') &&
+    cssSource.includes('box-sizing: border-box;') &&
+    cssSource.includes('position: relative;'),
+  'core stat slots should explicitly fill equal tracks with a stable shared box model'
 );
 
 console.log('home core stats popup regression test passed');

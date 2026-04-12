@@ -7202,7 +7202,7 @@ const REWARD_ACTION_CONTROL_CONFIG = Object.freeze({
 });
 
 const REWARD_ACTION_EXECUTION_POLICY = Object.freeze({
-  [REWARD_ACTION_TYPES.NIGHT_SHIFT]: 'rewarded_preferred',
+  [REWARD_ACTION_TYPES.NIGHT_SHIFT]: 'direct',
   [REWARD_ACTION_TYPES.CARE_BOOST]: 'rewarded_preferred',
   [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: 'rewarded_preferred',
   [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: 'rewarded_required',
@@ -9747,8 +9747,8 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       skipNightDisabled: dead || Boolean(skipNightPresentation.disabled),
       skipNightHint: String(skipNightPresentation.hint || ''),
       showSkipNight: !Boolean(skipNightPresentation.hidden),
-      showCareBoost: true,
-      showClimateStabilize: !Boolean(climateStabilizePresentation.hidden)
+      showCareBoost: false,
+      showClimateStabilize: false
     },
     diagnostics: {
       summary: String(diagnostics && diagnostics.summary || ''),

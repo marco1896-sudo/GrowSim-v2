@@ -1225,12 +1225,6 @@ body::after {
   left: 14px;
 }
 
-#stressRing {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-}
-
 .hero-card #healthRing,
 .hero-card #stressRing {
   transform: scale(0.65);
@@ -1247,24 +1241,6 @@ body::after {
 
 #healthRing::after {
   border-color: rgba(157, 228, 144, 0.26);
-}
-
-#stressRing {
-  box-shadow:
-    0 0 0 1px rgba(219, 128, 128, 0.22),
-    0 10px 22px rgba(48, 18, 20, 0.4),
-    0 0 16px rgba(235, 110, 118, 0.22);
-}
-
-#stressRing::after {
-  border-color: rgba(236, 126, 134, 0.3);
-}
-
-#stressRing[data-value^="7"]::after,
-#stressRing[data-value^="8"]::after,
-#stressRing[data-value^="9"]::after,
-#stressRing[data-value="100"]::after {
-  animation: stress-alert-pulse 1.8s ease-in-out infinite;
 }
 
 .hero-stack::after {
@@ -8498,10 +8474,10 @@ body.panelized-ready :is(
   --home-scene-bottom-offset: clamp(286px, calc(var(--home-layout-height) * 0.372), 314px);
   --home-scene-height: clamp(334px, calc(var(--home-layout-height) * 0.428), 364px);
   --home-plant-viewport-overscan-top: clamp(56px, calc(var(--home-layout-height) * 0.0718), 72px);
-  --home-content-offset: clamp(442px, calc(var(--home-layout-height) * 0.565), 472px);
+  --home-content-offset: clamp(444px, calc(var(--home-layout-height) * 0.566), 474px);
   --home-content-pad-x: 12px;
   --home-content-gap: 18px;
-  --home-progress-overlap: clamp(42px, calc(var(--home-layout-height) * 0.058), 50px);
+  --home-progress-overlap: clamp(28px, calc(var(--home-layout-height) * 0.038), 36px);
   --home-scene-top: calc(var(--home-layout-height) - var(--home-scene-bottom-offset) - var(--home-scene-height));
   --home-scene-center-y: calc(var(--home-safe-top) + var(--home-scene-top) + (var(--home-scene-height) * 0.5));
   --home-right-side-inset: 12px;
@@ -9979,7 +9955,7 @@ body.panelized-ready :is(
 .home-action-panel #skipNightActionBtn {
   position: absolute;
   right: var(--home-right-side-inset);
-  top: calc(var(--home-right-watering-top) + var(--home-right-actions-gap));
+  top: calc(var(--home-right-watering-top) + (var(--home-right-actions-gap) * 0.86));
   left: auto;
   display: flex;
   width: 76px;
@@ -11377,7 +11353,7 @@ body.panelized-ready :is(
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: calc(82px + env(safe-area-inset-bottom));
+  bottom: calc(80px + env(safe-area-inset-bottom));
   height: 88px;
   z-index: 12;
   display: grid;
@@ -11546,16 +11522,26 @@ body.panelized-ready :is(
   --core-color: #ec7e7e;
 }
 
-.home-core-stats-bar > .home-core-stat {
+#coreStatsBar > .home-core-stat {
+  width: 100%;
+  max-width: none;
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
   display: grid;
   grid-template-rows: auto auto auto;
   justify-items: center;
   align-content: center;
+  justify-self: stretch;
+  align-self: stretch;
   gap: 6px;
   min-width: 0;
   min-height: 66px;
   margin: 0;
   padding: 8px 5px 7px;
+  box-sizing: border-box;
   border-radius: 15px;
   border: 1px solid rgba(255, 255, 255, 0.035);
   background:
@@ -11564,14 +11550,16 @@ body.panelized-ready :is(
   box-shadow: none;
   outline: none;
   outline-offset: 0;
+  transform: none;
+  will-change: auto;
 }
 
-.home-core-stats-bar > .home-core-stat::after {
+#coreStatsBar > .home-core-stat::after {
   content: none;
 }
 
-.home-core-stats-bar > .home-core-stat:hover,
-.home-core-stats-bar > .home-core-stat:focus-visible {
+#coreStatsBar > .home-core-stat:hover,
+#coreStatsBar > .home-core-stat:focus-visible {
   outline: none;
   outline-offset: 0;
   background:
@@ -11583,8 +11571,8 @@ body.panelized-ready :is(
     0 10px 16px rgba(3, 8, 10, 0.22);
 }
 
-.home-core-stats-bar > .home-core-stat:active,
-.home-core-stats-bar > .home-core-stat.home-core-stat--active {
+#coreStatsBar > .home-core-stat:active,
+#coreStatsBar > .home-core-stat.home-core-stat--active {
   transform: translateY(1px) scale(0.988);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.03)),
@@ -11746,7 +11734,7 @@ body.panelized-ready :is(
   .home-core-stats-bar {
     left: 12px;
     right: 12px;
-    bottom: calc(74px + env(safe-area-inset-bottom));
+    bottom: calc(72px + env(safe-area-inset-bottom));
   }
 
   .home-stat-popup {
