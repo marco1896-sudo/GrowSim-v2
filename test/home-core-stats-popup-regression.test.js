@@ -114,23 +114,26 @@ assert(
 );
 
 assert(
+  cssSource.includes('top: auto;'),
+  'iphone portrait bottom cluster should stop using the scroll-flow top anchor'
+);
+
+assert(
   cssSource.includes('bottom: calc(42px + env(safe-area-inset-bottom));'),
-  'iphone portrait should anchor the core stats bar lower to avoid overlap and reduce unused bottom space'
+  'iphone portrait bottom cluster should be anchored directly from the bottom edge'
 );
 
 assert(
-  cssSource.includes('bottom: calc(36px + env(safe-area-inset-bottom));'),
-  'narrow portrait iphones should keep a slightly tighter bottom anchoring'
+  cssSource.includes('display: flex;') &&
+    cssSource.includes('flex-direction: column;') &&
+    cssSource.includes('gap: 12px;'),
+  'iphone portrait should turn the existing home content container into a stacked bottom cluster'
 );
 
 assert(
-  cssSource.includes('--home-content-offset: clamp(432px, calc(var(--home-layout-height) * 0.552), 462px);'),
-  'iphone portrait should use a dedicated content offset for stable bottom-cluster stacking'
-);
-
-assert(
-  cssSource.includes('--home-progress-overlap: clamp(22px, calc(var(--home-layout-height) * 0.032), 30px);'),
-  'iphone portrait should use a dedicated progress overlap to preserve card spacing'
+  cssSource.includes('.home-content-scroll .home-progress-panel {') &&
+    cssSource.includes('margin-top: 0;'),
+  'iphone portrait progress card should no longer depend on scroll-offset overlap spacing'
 );
 
 assert(
@@ -141,6 +144,18 @@ assert(
 assert(
   cssSource.includes('@media (max-width: 390px) and (orientation: portrait) {'),
   'narrow iphone override should remain portrait-scoped'
+);
+
+assert(
+  cssSource.includes('position: relative;') &&
+    cssSource.includes('bottom: auto;') &&
+    cssSource.includes('width: 100%;'),
+  'iphone portrait should place the core stats bar inside the shared bottom cluster instead of anchoring it separately'
+);
+
+assert(
+  cssSource.includes('.home-content-scroll {\n    bottom: calc(36px + env(safe-area-inset-bottom));'),
+  'narrow iphone portrait should tighten the shared bottom-cluster anchor without changing desktop'
 );
 
 assert(
