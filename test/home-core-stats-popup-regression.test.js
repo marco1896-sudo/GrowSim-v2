@@ -114,8 +114,33 @@ assert(
 );
 
 assert(
-  cssSource.includes('bottom: calc(72px + env(safe-area-inset-bottom));'),
-  'small-screen core stats bar should keep the corrected non-overlapping anchoring'
+  cssSource.includes('bottom: calc(42px + env(safe-area-inset-bottom));'),
+  'iphone portrait should anchor the core stats bar lower to avoid overlap and reduce unused bottom space'
+);
+
+assert(
+  cssSource.includes('bottom: calc(36px + env(safe-area-inset-bottom));'),
+  'narrow portrait iphones should keep a slightly tighter bottom anchoring'
+);
+
+assert(
+  cssSource.includes('--home-content-offset: clamp(432px, calc(var(--home-layout-height) * 0.552), 462px);'),
+  'iphone portrait should use a dedicated content offset for stable bottom-cluster stacking'
+);
+
+assert(
+  cssSource.includes('--home-progress-overlap: clamp(22px, calc(var(--home-layout-height) * 0.032), 30px);'),
+  'iphone portrait should use a dedicated progress overlap to preserve card spacing'
+);
+
+assert(
+  cssSource.includes('@media (max-width: 430px) and (orientation: portrait) {'),
+  'mobile cluster correction should be scoped to iphone portrait breakpoints'
+);
+
+assert(
+  cssSource.includes('@media (max-width: 390px) and (orientation: portrait) {'),
+  'narrow iphone override should remain portrait-scoped'
 );
 
 assert(
