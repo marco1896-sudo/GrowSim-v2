@@ -5,7 +5,7 @@
     "build:stamp": "node scripts/bump-build-id.js",
     "test": "npm run check:syntax && npm run check:ui-architecture && npm run test:smoke && npm run test:runtime",
     "test:smoke": "node test/ui-onboarding-settings-smoke.test.js && node test/ui-care-sheet-regression.test.js && node test/ui-feedback-phase7.test.js && node test/ui-progression-run-loop.smoke.test.js",
-    "test:runtime": "node test/menu-ui-presentation.test.js && node test/push-ui-presentation.test.js && node test/ui-runtime-wiring.test.js && node test/home-core-stats-popup-regression.test.js && node test/daily-tasks-ui-state.test.js && node test/daily-tasks-runtime.test.js && node test/time-system-runtime.test.js && node test/reward-runtime-modes.test.js && node test/event-scheduler-runtime.test.js",
+    "test:runtime": "node test/menu-ui-presentation.test.js && node test/push-ui-presentation.test.js && node test/ui-runtime-wiring.test.js && node test/home-core-stats-popup-regression.test.js && node test/daily-tasks-ui-state.test.js && node test/daily-tasks-runtime.test.js && node test/time-system-runtime.test.js && node test/coin-economy-source-regression.test.js && node test/coin-pack-catalog-adapter.test.js && node test/reward-runtime-modes.test.js && node test/event-scheduler-runtime.test.js",
     "check:ui-architecture": "node dev/scripts/ui-architecture-guard.js",
     "check:syntax": "node --check app.js && node --check ui.js && node --check notifications.js && node --check src/ui/state/pushUiPresentation.js && node --check src/ui/state/menuUiPresentation.js && node --check test/support/serverRuntime.js && node --check test/support/browserRuntime.js"
   },

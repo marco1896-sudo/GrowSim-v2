@@ -88,7 +88,30 @@ const REWARD_ACTION_TYPES = Object.freeze({
   CARE_BOOST: 'care_boost',
   CLIMATE_STABILIZE: 'climate_stabilize',
   EMERGENCY_SAVE: 'emergency_save',
+  TIME_SKIP_SHORT: 'time_skip_short',
+  TIME_SKIP_LONG: 'time_skip_long',
+  EVENT_START: 'event_start',
+  EVENT_REROLL: 'event_reroll',
+  AUTO_CARE: 'auto_care',
+  GROWTH_BOOST: 'growth_boost',
   CLIMATE_FIX: 'climate_stabilize'
+});
+const COIN_EARN_RANGES = Object.freeze({
+  daily_reward: Object.freeze({ min: 50, max: 150 }),
+  event_completion: Object.freeze({ min: 20, max: 80 }),
+  harvest_completion: Object.freeze({ min: 200, max: 500 }),
+  level_up: Object.freeze({ min: 100, max: 300 })
+});
+const COIN_SPEND_COSTS = Object.freeze({
+  [REWARD_ACTION_TYPES.NIGHT_SHIFT]: 50,
+  [REWARD_ACTION_TYPES.TIME_SKIP_SHORT]: 50,
+  [REWARD_ACTION_TYPES.TIME_SKIP_LONG]: 120,
+  [REWARD_ACTION_TYPES.EVENT_START]: 80,
+  [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: 200,
+  [REWARD_ACTION_TYPES.EVENT_REROLL]: 100,
+  [REWARD_ACTION_TYPES.AUTO_CARE]: 120,
+  [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: 80,
+  [REWARD_ACTION_TYPES.GROWTH_BOOST]: 100
 });
 const SIM_TIME_COMPRESSION = DEFAULT_BASE_SIM_SPEED;
 const SIM_DAY_START_HOUR = CONFIG.simulation.dayStartHour;
@@ -260,6 +283,7 @@ const state = {
       usedAtRealMs: null,
       lastResult: null
     },
+    rewardLedger: {},
     persistence: {
       lastSavedAtRealMs: Date.now()
     }
@@ -441,6 +465,7 @@ const state = {
   history: { actions: [], events: [], system: [], systemLog: [], telemetry: [] },
   debug: { enabled: false, showInternalTicks: false, forceDaytime: false },
   status: {
+    coins: 0,
     health: 85,
     stress: 15,
     water: 70,
@@ -1977,6 +2002,216 @@ function selectSupportTier(tierId) {
   return tier;
 }
 
+function getCoinShopDefinitions() {
+  return [
+    {
+      id: REWARD_ACTION_TYPES.TIME_SKIP_SHORT,
+      icon: '1h',
+      title: '+1h Zeit',
+      description: 'Springt den Run um eine Sim-Stunde nach vorn.',
+      price: getRewardActionCoinCost(REWARD_ACTION_TYPES.TIME_SKIP_SHORT)
+    },
+    {
+      id: REWARD_ACTION_TYPES.TIME_SKIP_LONG,
+      icon: '3h',
+      title: '+3h Zeit',
+      description: 'Drückt längere Leerlaufzeit sofort zusammen.',
+      price: getRewardActionCoinCost(REWARD_ACTION_TYPES.TIME_SKIP_LONG)
+    },
+    {
+      id: REWARD_ACTION_TYPES.EVENT_START,
+      icon: 'EV',
+      title: 'Event sofort starten',
+      description: 'Zieht das nächste verfügbare Event direkt vor.',
+      price: getRewardActionCoinCost(REWARD_ACTION_TYPES.EVENT_START)
+    },
+    {
+      id: REWARD_ACTION_TYPES.EMERGENCY_SAVE,
+      icon: 'SOS',
+      title: 'Emergency Save',
+      description: 'Stabilisiert einen kritischen Run sofort.',
+      price: getRewardActionCoinCost(REWARD_ACTION_TYPES.EMERGENCY_SAVE)
+    },
+    {
+      id: REWARD_ACTION_TYPES.EVENT_REROLL,
+      icon: 'RR',
+      title: 'Event Reroll',
+      description: 'Ersetzt ein laufendes Event durch eine neue Chance.',
+      price: getRewardActionCoinCost(REWARD_ACTION_TYPES.EVENT_REROLL)
+    },
+    {
+      id: REWARD_ACTION_TYPES.AUTO_CARE,
+      icon: 'AC',
+      title: 'Auto-Care',
+      description: 'Pflegt Wasser, Nährstoffe und Stress für 2h mit.',
+      price: getRewardActionCoinCost(REWARD_ACTION_TYPES.AUTO_CARE)
+    },
+    {
+      id: REWARD_ACTION_TYPES.CLIMATE_STABILIZE,
+      icon: 'CL',
+      title: 'Klima stabilisieren',
+      description: 'Beruhigt Temperatur, Luftfeuchte und VPD sofort.',
+      price: getRewardActionCoinCost(REWARD_ACTION_TYPES.CLIMATE_STABILIZE)
+    },
+    {
+      id: REWARD_ACTION_TYPES.GROWTH_BOOST,
+      icon: 'GB',
+      title: 'Growth Boost',
+      description: 'Legt für 2h einen sauberen Wachstumsschub auf.',
+      price: getRewardActionCoinCost(REWARD_ACTION_TYPES.GROWTH_BOOST)
+    }
+  ];
+}
+
+async function onCoinShopActionClick(actionType) {
+  const safeActionType = String(actionType || '').trim();
+  if (!safeActionType || coinUiRuntime.pendingActionId) {
+    return;
+  }
+  coinUiRuntime.pendingActionId = safeActionType;
+  renderCoinShopSheet(true);
+  try {
+    await triggerRewardAction(safeActionType, {
+      source: 'coin_shop',
+      openShopOnBlocked: false
+    });
+  } finally {
+    coinUiRuntime.pendingActionId = '';
+    renderCoinShopSheet(true);
+  }
+}
+
+async function onCoinPackPurchaseClick(packId) {
+  const safePackId = String(packId || '').trim();
+  if (!safePackId || coinUiRuntime.pendingPackId) {
+    return;
+  }
+  const catalogApi = window.GrowSimCoinPackCatalog;
+  const purchaseApi = window.GrowSimPurchaseService;
+  if (!catalogApi || typeof catalogApi.getCoinPackById !== 'function' || !purchaseApi || typeof purchaseApi.purchaseCoinPack !== 'function') {
+    return;
+  }
+  const pack = catalogApi.getCoinPackById(safePackId);
+  if (!pack) {
+    return;
+  }
+
+  coinUiRuntime.pendingPackId = safePackId;
+  emitCoinTelemetry({
+    type: 'coin_pack_attempt',
+    payload: {
+      packId: pack.id,
+      coins: pack.coins,
+      priceLabel: pack.priceLabel
+    }
+  });
+  renderCoinShopSheet(true);
+  try {
+    const result = await purchaseApi.purchaseCoinPack(pack, {
+      source: 'coin_shop'
+    });
+    if (!result || !result.ok) {
+      if (typeof showRetentionToast === 'function') {
+        showRetentionToast('Coin-Kauf aktuell nicht verfügbar');
+      }
+      return;
+    }
+    grantCoins(pack.coins, 'coin_pack_purchase', `coin_pack:${pack.id}:${Date.now()}`);
+    emitCoinTelemetry({
+      type: 'coin_pack_success',
+      payload: {
+        packId: pack.id,
+        coins: pack.coins,
+        mode: result.mode || 'unknown'
+      }
+    });
+    if (typeof showRetentionToast === 'function') {
+      showRetentionToast(`${pack.title} · +${pack.coins} Coins`);
+    }
+  } finally {
+    coinUiRuntime.pendingPackId = '';
+    renderCoinShopSheet(true);
+  }
+}
+
+function renderCoinShopSheet(force = false) {
+  const sheetNode = uiNode('coinShopSheet', 'coinShopSheet');
+  if (!sheetNode || (!force && state.ui.openSheet !== 'coinShop')) {
+    return;
+  }
+
+  const balanceNode = uiNode('coinShopBalanceText', 'coinShopBalanceText');
+  const statusNode = uiNode('coinShopStatusText', 'coinShopStatusText');
+  const itemListNode = uiNode('coinShopItemList', 'coinShopItemList');
+  const packListNode = uiNode('coinPackList', 'coinPackList');
+  const packStatusNode = uiNode('coinPackStatusText', 'coinPackStatusText');
+  if (!balanceNode || !statusNode || !itemListNode || !packListNode || !packStatusNode) {
+    return;
+  }
+
+  const coins = getCoins();
+  balanceNode.textContent = `${formatCompactNumber(coins)} Coins verfügbar`;
+  statusNode.textContent = coinUiRuntime.pendingActionId
+    ? 'Kauf wird angewendet...'
+    : 'Alle Effekte greifen direkt ohne Inventar.';
+
+  itemListNode.replaceChildren();
+  const shopItems = getCoinShopDefinitions();
+  for (const item of shopItems) {
+    const presentation = getRewardActionPresentation(item.id, { state, context: 'coin_shop' });
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'coin-shop-card';
+    card.dataset.tone = String(presentation.tone || 'utility');
+    card.disabled = presentation.disabled === true || coinUiRuntime.pendingActionId === item.id;
+    card.setAttribute('aria-disabled', String(card.disabled));
+    card.innerHTML = `
+      <span class="coin-shop-card__icon">${escapeHtml(String(item.icon || 'C'))}</span>
+      <span class="coin-shop-card__copy">
+        <strong>${escapeHtml(String(item.title || 'Coin-Aktion'))}</strong>
+        <small>${escapeHtml(String(presentation.hint || item.description || ''))}</small>
+      </span>
+      <span class="coin-shop-card__meta">
+        <strong>${escapeHtml(String(formatCompactNumber(item.price)))} C</strong>
+        <small>${card.disabled && presentation.reason === 'insufficient_coins' ? 'Zu wenig Coins' : 'Direkt anwenden'}</small>
+      </span>
+    `;
+    card.addEventListener('click', () => {
+      void onCoinShopActionClick(item.id);
+    });
+    itemListNode.appendChild(card);
+  }
+
+  const catalogApi = window.GrowSimCoinPackCatalog;
+  const purchaseApi = window.GrowSimPurchaseService;
+  const packs = catalogApi && typeof catalogApi.listCoinPacks === 'function' ? catalogApi.listCoinPacks() : [];
+  const purchaseMode = purchaseApi && typeof purchaseApi.getPurchaseMode === 'function' ? purchaseApi.getPurchaseMode() : 'disabled';
+  packStatusNode.textContent = purchaseMode === 'debug_fake'
+    ? 'Debug-Käufe aktiv. Coins werden direkt gutgeschrieben.'
+    : 'Coin-Packs sind vorbereitet. Direktkauf bleibt bis zum Provider-Setup deaktiviert.';
+
+  packListNode.replaceChildren();
+  for (const pack of packs) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `coin-pack-card${pack.highlight ? ' coin-pack-card--highlight' : ''}`;
+    button.disabled = purchaseMode !== 'debug_fake' || coinUiRuntime.pendingPackId === pack.id;
+    button.setAttribute('aria-disabled', String(button.disabled));
+    button.innerHTML = `
+      <span class="coin-pack-card__head">
+        <strong>${escapeHtml(String(pack.title || 'Pack'))}</strong>
+        <small>${escapeHtml(String(pack.badge || ''))}</small>
+      </span>
+      <span class="coin-pack-card__coins">+${escapeHtml(String(formatCompactNumber(pack.coins || 0)))} Coins</span>
+      <span class="coin-pack-card__price">${escapeHtml(String(pack.priceLabel || ''))}</span>
+    `;
+    button.addEventListener('click', () => {
+      void onCoinPackPurchaseClick(pack.id);
+    });
+    packListNode.appendChild(button);
+  }
+}
+
 function openSupportPaypal(tier, source = 'sheet_option') {
   const safeTier = tier && typeof tier === 'object' ? tier : resolveSupportTier('growth');
   ensureSupportFocusObserver();
@@ -2087,10 +2322,12 @@ function grantRetentionRewardOnce(claimKey, rewardSpec = {}, context = {}) {
     reason: String(context.reason || 'retention')
   });
   registerRetentionClaim(safeClaimKey);
+  const levelUpCoins = grantLevelUpCoinsFromXpResult(xpResult, 'level_up', `retention_level:${safeClaimKey}`);
   return {
     granted: true,
     xpGranted: Math.max(0, Math.trunc(Number(xpResult && xpResult.grantedXp) || 0)),
-    unlocks: Array.isArray(xpResult && xpResult.unlocked) ? xpResult.unlocked : []
+    unlocks: Array.isArray(xpResult && xpResult.unlocked) ? xpResult.unlocked : [],
+    coinsGranted: levelUpCoins
   };
 }
 
@@ -2275,6 +2512,14 @@ function evaluateDailyRetention(snapshot = state, nowMs = Date.now(), options = 
       nowMs: now,
       eventKey: `streak_checkin:${todayKey}`
     });
+    const dailyReward = grantCoins(
+      resolveCoinRewardAmount('daily_reward', clamp((Number(streak.currentCount || 1) - 1) / 7, 0, 1)),
+      'daily_reward',
+      `daily_reward:${todayKey}`
+    );
+    if (dailyReward.ok) {
+      rewardsGranted += dailyReward.amount;
+    }
     changed = true;
   } else if (streak.lastEvaluatedDayKey !== todayKey || options.forceCheckin === true) {
     const dayGap = getDayKeyDistance(streak.lastCheckinDayKey, todayKey);
@@ -2327,6 +2572,14 @@ function evaluateDailyRetention(snapshot = state, nowMs = Date.now(), options = 
       nowMs: now,
       eventKey: `streak_checkin:${todayKey}`
     });
+    const dailyReward = grantCoins(
+      resolveCoinRewardAmount('daily_reward', clamp((Number(streak.currentCount || 1) - 1) / 7, 0, 1)),
+      'daily_reward',
+      `daily_reward:${todayKey}`
+    );
+    if (dailyReward.ok) {
+      rewardsGranted += dailyReward.amount;
+    }
     changed = true;
   }
 
@@ -5446,9 +5699,7 @@ function mountHudComponents() {
       role: 'Gärtner',
       xpText: 'XP: 7.350 / 8.650',
       xpPercent: 84,
-      currencyCoins: '2.480',
-      currencyGems: '55',
-      currencyStars: '114'
+      currencyCoins: '2.480'
     },
     environment: {
       temperature: '25.3°C',
@@ -7187,14 +7438,32 @@ const REWARD_ACTION_CONTROL_CONFIG = Object.freeze({
   [REWARD_ACTION_TYPES.NIGHT_SHIFT]: Object.freeze({
     cooldownMs: 5 * 60 * 1000
   }),
+  [REWARD_ACTION_TYPES.TIME_SKIP_SHORT]: Object.freeze({
+    cooldownMs: 10 * 1000
+  }),
+  [REWARD_ACTION_TYPES.TIME_SKIP_LONG]: Object.freeze({
+    cooldownMs: 10 * 1000
+  }),
   [REWARD_ACTION_TYPES.CARE_BOOST]: Object.freeze({
     cooldownMs: 15 * 60 * 1000
+  }),
+  [REWARD_ACTION_TYPES.AUTO_CARE]: Object.freeze({
+    cooldownMs: 15 * 1000
   }),
   [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: Object.freeze({
     cooldownMs: 7 * 60 * 1000
   }),
+  [REWARD_ACTION_TYPES.EVENT_START]: Object.freeze({
+    cooldownMs: 20 * 1000
+  }),
+  [REWARD_ACTION_TYPES.EVENT_REROLL]: Object.freeze({
+    cooldownMs: 20 * 1000
+  }),
   [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: Object.freeze({
     cooldownMs: 18 * 60 * 1000
+  }),
+  [REWARD_ACTION_TYPES.GROWTH_BOOST]: Object.freeze({
+    cooldownMs: 15 * 1000
   }),
   [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: Object.freeze({
     cooldownMs: 90 * 60 * 1000
@@ -7203,10 +7472,16 @@ const REWARD_ACTION_CONTROL_CONFIG = Object.freeze({
 
 const REWARD_ACTION_EXECUTION_POLICY = Object.freeze({
   [REWARD_ACTION_TYPES.NIGHT_SHIFT]: 'direct',
+  [REWARD_ACTION_TYPES.TIME_SKIP_SHORT]: 'direct',
+  [REWARD_ACTION_TYPES.TIME_SKIP_LONG]: 'direct',
   [REWARD_ACTION_TYPES.CARE_BOOST]: 'rewarded_preferred',
-  [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: 'rewarded_preferred',
-  [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: 'rewarded_required',
-  [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: 'rewarded_required'
+  [REWARD_ACTION_TYPES.AUTO_CARE]: 'direct',
+  [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: 'direct',
+  [REWARD_ACTION_TYPES.EVENT_START]: 'direct',
+  [REWARD_ACTION_TYPES.EVENT_REROLL]: 'direct',
+  [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: 'direct',
+  [REWARD_ACTION_TYPES.GROWTH_BOOST]: 'direct',
+  [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: 'direct'
 });
 
 const REWARD_ACTION_BALANCE_PROFILE = Object.freeze({
@@ -7216,14 +7491,44 @@ const REWARD_ACTION_BALANCE_PROFILE = Object.freeze({
     cadence: 'frequent',
     rolloutStage: 'soft_launch'
   }),
+  [REWARD_ACTION_TYPES.TIME_SKIP_SHORT]: Object.freeze({
+    role: 'time_control',
+    valueTier: 'medium',
+    cadence: 'frequent',
+    rolloutStage: 'production_candidate'
+  }),
+  [REWARD_ACTION_TYPES.TIME_SKIP_LONG]: Object.freeze({
+    role: 'time_control',
+    valueTier: 'high',
+    cadence: 'frequent',
+    rolloutStage: 'production_candidate'
+  }),
   [REWARD_ACTION_TYPES.CARE_BOOST]: Object.freeze({
     role: 'run_stabilizer',
     valueTier: 'medium',
     cadence: 'moderate',
     rolloutStage: 'soft_launch'
   }),
+  [REWARD_ACTION_TYPES.AUTO_CARE]: Object.freeze({
+    role: 'comfort_automation',
+    valueTier: 'high',
+    cadence: 'contextual',
+    rolloutStage: 'production_candidate'
+  }),
   [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: Object.freeze({
     role: 'context_skip',
+    valueTier: 'medium_high',
+    cadence: 'contextual',
+    rolloutStage: 'production_candidate'
+  }),
+  [REWARD_ACTION_TYPES.EVENT_START]: Object.freeze({
+    role: 'event_control',
+    valueTier: 'medium',
+    cadence: 'contextual',
+    rolloutStage: 'production_candidate'
+  }),
+  [REWARD_ACTION_TYPES.EVENT_REROLL]: Object.freeze({
+    role: 'risk_management',
     valueTier: 'medium_high',
     cadence: 'contextual',
     rolloutStage: 'production_candidate'
@@ -7233,6 +7538,12 @@ const REWARD_ACTION_BALANCE_PROFILE = Object.freeze({
     valueTier: 'high',
     cadence: 'moderate',
     rolloutStage: 'soft_launch'
+  }),
+  [REWARD_ACTION_TYPES.GROWTH_BOOST]: Object.freeze({
+    role: 'growth_acceleration',
+    valueTier: 'medium_high',
+    cadence: 'contextual',
+    rolloutStage: 'production_candidate'
   }),
   [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: Object.freeze({
     role: 'run_rescue',
@@ -7301,20 +7612,50 @@ const REWARD_ACTION_PRESENTATION_CONFIG = Object.freeze({
     tone: 'utility',
     successToast: 'Night Shift aktiv · Tagesbeginn erreicht'
   }),
+  [REWARD_ACTION_TYPES.TIME_SKIP_SHORT]: Object.freeze({
+    label: '+1h Zeit',
+    tone: 'utility',
+    successToast: '+1h angewendet'
+  }),
+  [REWARD_ACTION_TYPES.TIME_SKIP_LONG]: Object.freeze({
+    label: '+3h Zeit',
+    tone: 'utility',
+    successToast: '+3h angewendet'
+  }),
   [REWARD_ACTION_TYPES.CARE_BOOST]: Object.freeze({
     label: 'Care Boost',
     tone: 'utility',
     successToast: 'Care Boost aktiv · Run stabilisiert'
+  }),
+  [REWARD_ACTION_TYPES.AUTO_CARE]: Object.freeze({
+    label: 'Auto-Care',
+    tone: 'utility',
+    successToast: 'Auto-Care aktiv · 2h Betreuung laufen'
   }),
   [REWARD_ACTION_TYPES.FAST_FORWARD_EVENT]: Object.freeze({
     label: 'Event Fast Forward',
     tone: 'utility',
     successToast: 'Event Fast Forward aktiv'
   }),
+  [REWARD_ACTION_TYPES.EVENT_START]: Object.freeze({
+    label: 'Event Start',
+    tone: 'utility',
+    successToast: 'Event sofort gestartet'
+  }),
+  [REWARD_ACTION_TYPES.EVENT_REROLL]: Object.freeze({
+    label: 'Event Reroll',
+    tone: 'utility',
+    successToast: 'Event neu gewürfelt'
+  }),
   [REWARD_ACTION_TYPES.CLIMATE_STABILIZE]: Object.freeze({
     label: 'Climate Stabilize',
     tone: 'utility',
     successToast: 'Climate Stabilize aktiv · Klima beruhigt'
+  }),
+  [REWARD_ACTION_TYPES.GROWTH_BOOST]: Object.freeze({
+    label: 'Growth Boost',
+    tone: 'utility',
+    successToast: 'Growth Boost aktiv · 2h Wachstumsschub laufen'
   }),
   [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: Object.freeze({
     label: 'Notfallrettung',
@@ -7331,6 +7672,7 @@ const rewardGrantRuntime = {
   actionType: '',
   mode: 'direct'
 };
+const rewardActionInFlight = new Set();
 
 const rewardOpsRuntime = {
   telemetry: [],
@@ -7471,6 +7813,229 @@ function readRewardFeatureConfigOverride() {
     return {};
   }
 }
+
+const coinUiRuntime = {
+  pendingActionId: '',
+  pendingPackId: ''
+};
+
+function getRewardLedger(snapshot = state) {
+  const target = snapshot && typeof snapshot === 'object' ? snapshot : state;
+  if (!target.meta || typeof target.meta !== 'object') {
+    target.meta = {};
+  }
+  if (!target.meta.rewardLedger || typeof target.meta.rewardLedger !== 'object') {
+    target.meta.rewardLedger = {};
+  }
+  return target.meta.rewardLedger;
+}
+
+function ensureCurrencyState(snapshot = state) {
+  const target = snapshot && typeof snapshot === 'object' ? snapshot : state;
+  if (!target.status || typeof target.status !== 'object') {
+    target.status = {};
+  }
+  if (!Number.isFinite(Number(target.status.coins))) {
+    target.status.coins = 0;
+  }
+  target.status.coins = Math.max(0, Math.trunc(Number(target.status.coins) || 0));
+  delete target.status.gems;
+  delete target.status.stars;
+
+  const ledger = getRewardLedger(target);
+  for (const key of Object.keys(ledger)) {
+    if (!ledger[key] || typeof ledger[key] !== 'object') {
+      delete ledger[key];
+      continue;
+    }
+    ledger[key].grantedAtMs = Number.isFinite(Number(ledger[key].grantedAtMs)) ? Number(ledger[key].grantedAtMs) : 0;
+    ledger[key].amount = Math.max(0, Math.trunc(Number(ledger[key].amount) || 0));
+    ledger[key].reason = typeof ledger[key].reason === 'string' ? ledger[key].reason : '';
+  }
+
+  if (target.meta && typeof target.meta === 'object' && target.meta.inventory && typeof target.meta.inventory === 'object') {
+    delete target.meta.inventory.gems;
+    delete target.meta.inventory.stars;
+    if (!Number.isFinite(Number(target.meta.inventory.coins))) {
+      delete target.meta.inventory.coins;
+    }
+    if (!Object.keys(target.meta.inventory).length) {
+      delete target.meta.inventory;
+    }
+  }
+
+  return target.status;
+}
+
+function getCoins(snapshot = state) {
+  const status = ensureCurrencyState(snapshot);
+  return Math.max(0, Math.trunc(Number(status.coins) || 0));
+}
+
+function canAfford(amount, snapshot = state) {
+  const safeAmount = Math.max(0, Math.trunc(Number(amount) || 0));
+  return getCoins(snapshot) >= safeAmount;
+}
+
+function emitCoinTelemetry(event) {
+  const safeEvent = event && typeof event === 'object' ? event : {};
+  const history = getCanonicalHistory(state);
+  history.telemetry = Array.isArray(history.telemetry) ? history.telemetry : [];
+  history.telemetry.push({
+    type: typeof safeEvent.type === 'string' ? safeEvent.type : 'coin_event',
+    atMs: Number.isFinite(Number(safeEvent.atMs)) ? Number(safeEvent.atMs) : Date.now(),
+    payload: safeEvent.payload && typeof safeEvent.payload === 'object' ? safeEvent.payload : {}
+  });
+  if (history.telemetry.length > MAX_HISTORY_LOG) {
+    history.telemetry = history.telemetry.slice(-MAX_HISTORY_LOG);
+  }
+}
+
+function grantCoins(amount, reason, dedupKey = '') {
+  const safeAmount = Math.max(0, Math.trunc(Number(amount) || 0));
+  const safeReason = String(reason || 'coin_grant').trim() || 'coin_grant';
+  const safeDedupKey = String(dedupKey || '').trim();
+  ensureCurrencyState(state);
+  const ledger = getRewardLedger(state);
+  if (safeDedupKey && ledger[safeDedupKey]) {
+    return {
+      ok: false,
+      reason: 'duplicate',
+      amount: 0,
+      coins: getCoins(),
+      dedupKey: safeDedupKey
+    };
+  }
+  if (safeAmount <= 0) {
+    return {
+      ok: false,
+      reason: 'invalid_amount',
+      amount: 0,
+      coins: getCoins(),
+      dedupKey: safeDedupKey
+    };
+  }
+
+  state.status.coins = getCoins() + safeAmount;
+  if (safeDedupKey) {
+    ledger[safeDedupKey] = {
+      reason: safeReason,
+      amount: safeAmount,
+      grantedAtMs: Date.now()
+    };
+  }
+  emitCoinTelemetry({
+    type: 'coin_grant',
+    payload: {
+      amount: safeAmount,
+      reason: safeReason,
+      dedupKey: safeDedupKey,
+      balance: getCoins()
+    }
+  });
+  return {
+    ok: true,
+    reason: safeReason,
+    amount: safeAmount,
+    coins: getCoins(),
+    dedupKey: safeDedupKey
+  };
+}
+
+function spendCoins(amount, reason) {
+  const safeAmount = Math.max(0, Math.trunc(Number(amount) || 0));
+  const safeReason = String(reason || 'coin_spend').trim() || 'coin_spend';
+  ensureCurrencyState(state);
+  if (safeAmount <= 0) {
+    return {
+      ok: false,
+      reason: 'invalid_amount',
+      amount: 0,
+      coins: getCoins()
+    };
+  }
+  if (!canAfford(safeAmount)) {
+    emitCoinTelemetry({
+      type: 'coin_spend_blocked',
+      payload: {
+        amount: safeAmount,
+        reason: safeReason,
+        balance: getCoins()
+      }
+    });
+    return {
+      ok: false,
+      reason: 'insufficient_coins',
+      amount: safeAmount,
+      coins: getCoins()
+    };
+  }
+  state.status.coins = Math.max(0, getCoins() - safeAmount);
+  emitCoinTelemetry({
+    type: 'coin_spend',
+    payload: {
+      amount: safeAmount,
+      reason: safeReason,
+      balance: getCoins()
+    }
+  });
+  return {
+    ok: true,
+    reason: safeReason,
+    amount: safeAmount,
+    coins: getCoins()
+  };
+}
+
+function resolveCoinRewardAmount(rangeKey, signalValue = 0) {
+  const range = COIN_EARN_RANGES[rangeKey];
+  if (!range) {
+    return 0;
+  }
+  const min = Math.max(0, Math.trunc(Number(range.min) || 0));
+  const max = Math.max(min, Math.trunc(Number(range.max) || min));
+  const normalizedSignal = clamp(Number(signalValue) || 0, 0, 1);
+  return Math.round(min + ((max - min) * normalizedSignal));
+}
+
+function getEmergencySaveCoinCost(snapshot = state) {
+  const availability = getEmergencySaveRewardAvailability(snapshot);
+  if (!availability || !availability.ok) {
+    return COIN_SPEND_COSTS[REWARD_ACTION_TYPES.EMERGENCY_SAVE];
+  }
+  const severity = clamp(Number(availability.score) || 0, 0, 1);
+  return Math.round(150 + (severity * 150));
+}
+
+function getRewardActionCoinCost(type, snapshot = state) {
+  const actionType = String(type || '').trim().toLowerCase();
+  if (actionType === REWARD_ACTION_TYPES.EMERGENCY_SAVE) {
+    return getEmergencySaveCoinCost(snapshot);
+  }
+  return Math.max(0, Math.trunc(Number(COIN_SPEND_COSTS[actionType]) || 0));
+}
+
+function grantLevelUpCoinsFromXpResult(xpResult, reason, dedupPrefix) {
+  const previousLevel = Math.max(1, Math.trunc(Number(xpResult && xpResult.previousLevel) || 1));
+  const nextLevel = Math.max(previousLevel, Math.trunc(Number(xpResult && xpResult.nextLevel) || previousLevel));
+  let granted = 0;
+  for (let level = previousLevel + 1; level <= nextLevel; level += 1) {
+    const signal = clamp((level - 1) / 12, 0, 1);
+    const amount = resolveCoinRewardAmount('level_up', signal);
+    const grantResult = grantCoins(amount, reason || 'level_up', `${String(dedupPrefix || 'level_up')}:${level}`);
+    if (grantResult.ok) {
+      granted += amount;
+    }
+  }
+  return granted;
+}
+
+window.ensureCurrencyState = ensureCurrencyState;
+window.getCoins = getCoins;
+window.canAfford = canAfford;
+window.grantCoins = grantCoins;
+window.spendCoins = spendCoins;
+window.emitCoinTelemetry = emitCoinTelemetry;
 
 function writeRewardFeatureConfigOverride(config) {
   try {
@@ -8389,11 +8954,15 @@ function getRewardActionPresentation(type, payload = {}) {
   const featureState = getRewardActionFeatureState(actionType);
   const usage = canUseRewardAction(actionType, payload);
   const gateState = getRewardActionGrantState(actionType, payload);
+  const coinCost = getRewardActionCoinCost(actionType, payload.state || state);
+  const affordable = coinCost > 0 ? canAfford(coinCost, payload.state || state) : true;
   const cooldownRemainingMs = Math.max(0, Number(usage.cooldownRemainingMs) || 0);
   const cooldownText = formatRewardCooldownHint(cooldownRemainingMs);
-  const disabled = !Boolean(usage.ok) || !Boolean(gateState.ok);
+  const disabled = !Boolean(usage.ok) || !Boolean(gateState.ok) || !affordable;
   const availability = usage.availability && typeof usage.availability === 'object' ? usage.availability : {};
   const hint = String(
+    (!affordable && coinCost > 0 ? `Nicht genug Coins · ${coinCost} benötigt.` : '')
+    || 
     gateState.hint
     || usage.hint
     || availability.hint
@@ -8415,6 +8984,8 @@ function getRewardActionPresentation(type, payload = {}) {
     cooldownRemainingMs,
     cooldownText,
     availability,
+    coinCost,
+    affordable,
     providerMode: String(gateState.grantMode || ''),
     debugVisible: featureState.debugVisibility === true,
     successToast: config.successToast,
@@ -9033,12 +9604,10 @@ function executeNightShiftRewardAction(context = {}) {
     return alignedResult;
   }
 
-  const elapsedRealMs = convertSimDeltaToFutureRealDeltaMs(remainingNightSimMs, nowMs);
-  const targetRealMs = nowMs + elapsedRealMs;
   const wasDeadBeforeSkip = isPlantDead();
 
-  advanceSimulationTime(targetRealMs, {
-    suppressDeath: true,
+  setSimulationTimeMs(nextDayStartSimMs, nowMs, {
+    suppressLogs: true,
     reason: 'skip_night'
   });
 
@@ -9057,7 +9626,7 @@ function executeNightShiftRewardAction(context = {}) {
   }
 
   syncCanonicalStateShape();
-  runEventStateMachine(state.simulation.nowMs);
+  runEventStateMachine(nowMs);
 
   const result = {
     ok: true,
@@ -9114,11 +9683,239 @@ function executeFastForwardEventRewardAction(context = {}) {
   return { ok: false, reason: 'unsupported_fast_forward_mode' };
 }
 
+function getTimeSkipRewardAvailability(sourceState = state, hours = 1) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+  if (Boolean(plant.isDead) || String(plant.phase || '') === 'dead') {
+    return { ok: false, reason: 'plant_dead', hint: 'Zeitsprung ist nach Run-Ende nicht verfügbar.' };
+  }
+  const safeHours = hours === 3 ? 3 : 1;
+  return {
+    ok: true,
+    reason: 'ok',
+    hours: safeHours,
+    hint: `Springt den Run direkt um ${safeHours}h Sim-Zeit vor.`
+  };
+}
+
+function executeTimeSkipRewardAction(context = {}) {
+  const hours = Number(context.hours) === 3 ? 3 : 1;
+  const availability = getTimeSkipRewardAvailability(state, hours);
+  if (!availability.ok) {
+    return { ok: false, reason: availability.reason || 'not_available' };
+  }
+  const nowMs = Date.now();
+  const currentSimTimeMs = Number(state.simulation.simTimeMs || 0);
+  const targetSimTimeMs = currentSimTimeMs + (hours * 60 * 60 * 1000);
+  setSimulationTimeMs(targetSimTimeMs, nowMs, {
+    suppressLogs: true,
+    reason: `coin_time_skip_${hours}h`
+  });
+  runEventStateMachine(nowMs);
+  syncCanonicalStateShape();
+  return {
+    ok: true,
+    reason: 'time_skipped',
+    provider: String(context.provider || 'direct'),
+    hours,
+    simTimeAfter: Number(state.simulation.simTimeMs || targetSimTimeMs)
+  };
+}
+
+function getEventStartRewardAvailability(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+  const eventsState = safeState.events && typeof safeState.events === 'object' ? safeState.events : {};
+  if (Boolean(plant.isDead) || String(plant.phase || '') === 'dead') {
+    return { ok: false, reason: 'plant_dead', hint: 'Event Start steht nur im aktiven Run bereit.' };
+  }
+  if (String(eventsState.machineState || '') === 'activeEvent') {
+    return { ok: false, reason: 'event_already_active', hint: 'Es läuft bereits ein Event.' };
+  }
+  if (String(eventsState.machineState || '') === 'resolving') {
+    return { ok: false, reason: 'event_resolving', hint: 'Das aktuelle Event wird noch ausgewertet.' };
+  }
+  return {
+    ok: true,
+    reason: 'ok',
+    hint: 'Startet sofort das nächste verfügbare Event.'
+  };
+}
+
+function executeEventStartRewardAction(context = {}) {
+  const availability = getEventStartRewardAvailability(state);
+  if (!availability.ok) {
+    return { ok: false, reason: availability.reason || 'not_available' };
+  }
+  const nowMs = Date.now();
+  state.events.cooldownUntilMs = 0;
+  state.events.cooldownUntilSimTimeMs = 0;
+  state.events.scheduler.nextEventSimTimeMs = Number(state.simulation.simTimeMs || 0);
+  state.events.scheduler.nextEventRealTimeMs = nowMs;
+  runEventStateMachine(nowMs);
+  syncCanonicalStateShape();
+  return {
+    ok: true,
+    reason: 'event_started',
+    provider: String(context.provider || 'direct')
+  };
+}
+
+function getEventRerollRewardAvailability(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const eventsState = safeState.events && typeof safeState.events === 'object' ? safeState.events : {};
+  if (String(eventsState.machineState || '') !== 'activeEvent' || !String(eventsState.activeEventId || '').trim()) {
+    return { ok: false, reason: 'no_active_event', hint: 'Ein Reroll braucht ein aktives Event.' };
+  }
+  return {
+    ok: true,
+    reason: 'ok',
+    hint: 'Ersetzt das aktuelle Event sofort durch ein neues.'
+  };
+}
+
+function executeEventRerollRewardAction(context = {}) {
+  const availability = getEventRerollRewardAvailability(state);
+  if (!availability.ok) {
+    return { ok: false, reason: availability.reason || 'not_available' };
+  }
+  const currentEventId = String(state.events.activeEventId || '').trim();
+  const nowMs = Date.now();
+  const cooldownUntilSimMs = Number(state.simulation.simTimeMs || 0) + (6 * 60 * 60 * 1000);
+  state.events.scheduler.eventCooldownsSim = state.events.scheduler.eventCooldownsSim && typeof state.events.scheduler.eventCooldownsSim === 'object'
+    ? state.events.scheduler.eventCooldownsSim
+    : {};
+  state.events.scheduler.eventCooldownsSim[currentEventId] = cooldownUntilSimMs;
+  state.events.machineState = 'idle';
+  state.events.active = null;
+  state.events.activeEventId = null;
+  state.events.activeEventTitle = '';
+  state.events.activeEventText = '';
+  state.events.activeLearningNote = '';
+  state.events.activeOptions = [];
+  state.events.pendingOutcome = null;
+  state.events.resolvedOutcome = null;
+  state.events.cooldownUntilMs = 0;
+  state.events.cooldownUntilSimTimeMs = 0;
+  state.events.scheduler.nextEventSimTimeMs = Number(state.simulation.simTimeMs || 0);
+  state.events.scheduler.nextEventRealTimeMs = nowMs;
+  runEventStateMachine(nowMs);
+  syncCanonicalStateShape();
+  return {
+    ok: true,
+    reason: 'event_rerolled',
+    provider: String(context.provider || 'direct'),
+    previousEventId: currentEventId
+  };
+}
+
+function getAutoCareRewardAvailability(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+  if (Boolean(plant.isDead) || String(plant.phase || '') === 'dead') {
+    return { ok: false, reason: 'plant_dead', hint: 'Auto-Care ist nur im aktiven Run verfügbar.' };
+  }
+  const hasActive = Array.isArray(safeState.actions && safeState.actions.activeEffects)
+    && safeState.actions.activeEffects.some((effect) => effect && effect.actionId === REWARD_ACTION_TYPES.AUTO_CARE);
+  if (hasActive) {
+    return { ok: false, reason: 'already_active', hint: 'Auto-Care läuft bereits.' };
+  }
+  return {
+    ok: true,
+    reason: 'ok',
+    hint: 'Stabilisiert Wasser, Nährstoffe und Stress für 2h.'
+  };
+}
+
+function executeAutoCareRewardAction(context = {}) {
+  const availability = getAutoCareRewardAvailability(state);
+  if (!availability.ok) {
+    return { ok: false, reason: availability.reason || 'not_available' };
+  }
+  const nowMs = Date.now();
+  state.actions.activeEffects.push({
+    id: `${REWARD_ACTION_TYPES.AUTO_CARE}:${nowMs}:${state.simulation.tickCount}`,
+    actionId: REWARD_ACTION_TYPES.AUTO_CARE,
+    remainingSimMs: 2 * 60 * 60 * 1000,
+    rates: {
+      waterPerHour: 3.2,
+      nutritionPerHour: 2.4,
+      stressPerHour: -2.6,
+      riskPerHour: -1.8
+    }
+  });
+  syncCanonicalStateShape();
+  return {
+    ok: true,
+    reason: 'auto_care_started',
+    provider: String(context.provider || 'direct'),
+    remainingSimMs: 2 * 60 * 60 * 1000
+  };
+}
+
+function getGrowthBoostRewardAvailability(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const plant = safeState.plant && typeof safeState.plant === 'object' ? safeState.plant : {};
+  if (Boolean(plant.isDead) || String(plant.phase || '') === 'dead') {
+    return { ok: false, reason: 'plant_dead', hint: 'Growth Boost ist nur im aktiven Run verfügbar.' };
+  }
+  const hasActive = Array.isArray(safeState.actions && safeState.actions.activeEffects)
+    && safeState.actions.activeEffects.some((effect) => effect && effect.actionId === REWARD_ACTION_TYPES.GROWTH_BOOST);
+  if (hasActive) {
+    return { ok: false, reason: 'already_active', hint: 'Growth Boost läuft bereits.' };
+  }
+  return {
+    ok: true,
+    reason: 'ok',
+    hint: 'Gibt der Pflanze für 2h einen sauberen Wachstumsimpuls.'
+  };
+}
+
+function executeGrowthBoostRewardAction(context = {}) {
+  const availability = getGrowthBoostRewardAvailability(state);
+  if (!availability.ok) {
+    return { ok: false, reason: availability.reason || 'not_available' };
+  }
+  const nowMs = Date.now();
+  state.actions.activeEffects.push({
+    id: `${REWARD_ACTION_TYPES.GROWTH_BOOST}:${nowMs}:${state.simulation.tickCount}`,
+    actionId: REWARD_ACTION_TYPES.GROWTH_BOOST,
+    remainingSimMs: 2 * 60 * 60 * 1000,
+    rates: {
+      growthPerHour: 2.8,
+      healthPerHour: 0.9,
+      stressPerHour: -0.8
+    }
+  });
+  syncCanonicalStateShape();
+  return {
+    ok: true,
+    reason: 'growth_boost_started',
+    provider: String(context.provider || 'direct'),
+    remainingSimMs: 2 * 60 * 60 * 1000
+  };
+}
+
 const REWARD_ACTION_REGISTRY = Object.freeze({
+  [REWARD_ACTION_TYPES.TIME_SKIP_SHORT]: {
+    label: '+1h Zeit',
+    getAvailability: (sourceState) => getTimeSkipRewardAvailability(sourceState, 1),
+    handler: (context) => executeTimeSkipRewardAction({ ...context, hours: 1 })
+  },
+  [REWARD_ACTION_TYPES.TIME_SKIP_LONG]: {
+    label: '+3h Zeit',
+    getAvailability: (sourceState) => getTimeSkipRewardAvailability(sourceState, 3),
+    handler: (context) => executeTimeSkipRewardAction({ ...context, hours: 3 })
+  },
   [REWARD_ACTION_TYPES.CARE_BOOST]: {
     label: 'Care Boost',
     getAvailability: getCareBoostRewardAvailability,
     handler: executeCareBoostRewardAction
+  },
+  [REWARD_ACTION_TYPES.AUTO_CARE]: {
+    label: 'Auto-Care',
+    getAvailability: getAutoCareRewardAvailability,
+    handler: executeAutoCareRewardAction
   },
   [REWARD_ACTION_TYPES.EMERGENCY_SAVE]: {
     label: 'Notfallrettung',
@@ -9134,6 +9931,21 @@ const REWARD_ACTION_REGISTRY = Object.freeze({
     label: 'Event Fast Forward',
     getAvailability: getEventFastForwardRewardAvailability,
     handler: executeFastForwardEventRewardAction
+  },
+  [REWARD_ACTION_TYPES.EVENT_START]: {
+    label: 'Event Start',
+    getAvailability: getEventStartRewardAvailability,
+    handler: executeEventStartRewardAction
+  },
+  [REWARD_ACTION_TYPES.EVENT_REROLL]: {
+    label: 'Event Reroll',
+    getAvailability: getEventRerollRewardAvailability,
+    handler: executeEventRerollRewardAction
+  },
+  [REWARD_ACTION_TYPES.GROWTH_BOOST]: {
+    label: 'Growth Boost',
+    getAvailability: getGrowthBoostRewardAvailability,
+    handler: executeGrowthBoostRewardAction
   },
   [REWARD_ACTION_TYPES.NIGHT_SHIFT]: {
     label: 'Night Shift',
@@ -9192,6 +10004,15 @@ function executeRewardAction(type, payload = {}) {
 
 async function triggerRewardAction(type, payload = {}) {
   const actionType = String(type || '').trim().toLowerCase();
+  if (rewardActionInFlight.has(actionType)) {
+    return {
+      ok: false,
+      type: actionType,
+      reason: 'action_in_progress'
+    };
+  }
+  rewardActionInFlight.add(actionType);
+  try {
   const runtime = ensureRewardActionRuntime(state);
   const nowMs = Date.now();
   const runtimePolicy = getRewardActionRuntimePolicy(actionType);
@@ -9272,6 +10093,49 @@ async function triggerRewardAction(type, payload = {}) {
     return gateRejectedResult;
   }
 
+  const coinCost = getRewardActionCoinCost(actionType, state);
+  if (coinCost > 0 && !canAfford(coinCost)) {
+    const coinBlockedResult = {
+      ok: false,
+      type: actionType,
+      reason: 'insufficient_coins',
+      requiredCoins: coinCost,
+      currentCoins: getCoins()
+    };
+    markRewardActionUsed(actionType, {
+      nowMs,
+      rejected: true,
+      reason: coinBlockedResult.reason,
+      result: coinBlockedResult
+    });
+    emitCoinTelemetry({
+      type: 'coin_spend_blocked',
+      payload: {
+        actionType,
+        amount: coinCost,
+        balance: getCoins()
+      }
+    });
+    onRewardActionRejected(actionType, {
+      payload,
+      provider: 'coin',
+      policy: runtimePolicy,
+      reason: coinBlockedResult.reason,
+      availability: usageCheck.availability || null,
+      result: coinBlockedResult,
+      nowMs
+    });
+    if (typeof showRetentionToast === 'function') {
+      showRetentionToast(`Nicht genug Coins · ${coinCost} benötigt`);
+    }
+    if (payload.openShopOnBlocked !== false) {
+      openSheet('coinShop');
+    }
+    renderAll();
+    schedulePersistState(true);
+    return coinBlockedResult;
+  }
+
   rewardGrantRuntime.pending = gateState.grantMode !== 'direct';
   rewardGrantRuntime.actionType = rewardGrantRuntime.pending ? actionType : '';
   rewardGrantRuntime.requestId += 1;
@@ -9350,6 +10214,17 @@ async function triggerRewardAction(type, payload = {}) {
     ...payload,
     grantResult
   });
+  let spendResult = null;
+  if (result.ok && coinCost > 0) {
+    spendResult = spendCoins(coinCost, `reward_action:${actionType}`);
+    if (!spendResult.ok) {
+      result.ok = false;
+      result.reason = spendResult.reason || 'coin_spend_failed';
+    } else {
+      result.coinCost = coinCost;
+      result.coinsAfter = spendResult.coins;
+    }
+  }
   if (result.ok) {
     markRewardActionUsed(actionType, {
       nowMs: executeAtMs,
@@ -9394,6 +10269,9 @@ async function triggerRewardAction(type, payload = {}) {
   }
 
   return result;
+  } finally {
+    rewardActionInFlight.delete(actionType);
+  }
 }
 
 function onSkipNightAction() {
@@ -9624,7 +10502,6 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const run = getCanonicalRun(sourceState);
   const progressionApi = getProgressionApi();
 
-  const simDay = Number(simulation.simDay || 0);
   const levelProgress = progressionApi && typeof progressionApi.getLevelProgress === 'function' ? progressionApi.getLevelProgress(profile) : {
       level: Number(profile.level || 1),
       currentXp: Number(profile.totalXp || 0),
@@ -9637,9 +10514,7 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const xpCurrent = Number(levelProgress.currentXp || 0);
   const xpTarget = Number(levelProgress.nextThreshold || xpCurrent);
   const xpRatio = clamp((Number(levelProgress.xpPercent || 0) / 100), 0, 1);
-  const coinBalance = Number(status.coins || (2480 + Math.round(simDay * 28)));
-  const gemBalance = Number(status.gems || 55);
-  const starBalance = Number(status.stars || (114 + Math.round(Number(status.growth || 0) / 2)));
+  const coinBalance = getCoins(sourceState);
   const playerLevel = Number(profile.level || 1); const playerRole = playerLevel >= 6 ? 'Master Grower' : (playerLevel >= 4 ? 'Lead Grower' : (playerLevel >= 2 ? 'Grow Operator' : 'Starter'));
 
   const environment = deriveEnvironmentReadout(sourceState);
@@ -9722,8 +10597,6 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
         : `XP: ${formatCompactNumber(xpCurrent)} · MAX`,
       xpPercent: Math.round(xpRatio * 100),
       coinText: formatCompactNumber(coinBalance),
-      gemText: formatCompactNumber(gemBalance),
-      starText: formatCompactNumber(starBalance),
       envTempText: `${environment.temperatureC.toFixed(1)}°C`,
       envHumidityText: `${environment.humidityPercent}%`,
       envVpdText: `${environment.vpdKpa.toFixed(1)} kPa`,
@@ -10150,11 +11023,7 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   }
 
   const coinNode = uiNode('currencyCoinValue', 'playerCoinValue');
-  const gemNode = uiNode('currencyGemValue', 'playerGemValue');
-  const starNode = uiNode('currencyStarValue', 'playerStarValue');
   if (coinNode) coinNode.textContent = String(panel.coinText || '');
-  if (gemNode) gemNode.textContent = String(panel.gemText || '');
-  if (starNode) starNode.textContent = String(panel.starText || '');
 
   const envTempNode = uiNode('envTemperatureValue', 'envTempValue');
   const envHumidityNode = uiNode('envHumidityValue', 'envHumidityValue');
@@ -10772,6 +11641,7 @@ function renderSheets() {
   toggleSheet(ui.statDetailSheet, activeSheet === 'statDetail');
   toggleSheet(ui.missionsSheet, activeSheet === 'missions');
   toggleSheet(ui.supportSheet, activeSheet === 'support');
+  toggleSheet(ui.coinShopSheet, activeSheet === 'coinShop');
   toggleSheet(ui.leaderboardSheet, activeSheet === 'leaderboard');
 }
 
@@ -10845,6 +11715,9 @@ function renderMenuDynamicRows() {
   }
   if (ui.menuMissionsBtn && menuEntries.missions) {
     ui.menuMissionsBtn.setAttribute('title', String(menuEntries.missions.title || ''));
+  }
+  if (ui.menuCoinShopBtn) {
+    ui.menuCoinShopBtn.setAttribute('title', 'Öffnet den Coin-Shop für Zeit, Komfort und direkte Kontrolle.');
   }
   if (ui.menuAboutBtn && menuEntries.about) {
     ui.menuAboutBtn.setAttribute('title', String(menuEntries.about.title || ''));
@@ -13800,7 +14673,7 @@ function openSheet(name) {
     openCloudAuthModal({ gate: true });
     return;
   }
-  if (isPlantDead() && name !== 'dashboard' && name !== 'support' && name !== 'imprint' && name !== 'privacy') {
+  if (isPlantDead() && name !== 'dashboard' && name !== 'support' && name !== 'coinShop' && name !== 'imprint' && name !== 'privacy') {
     return;
   }
   if (state.ui.menuOpen) {
@@ -13845,6 +14718,8 @@ function openSheet(name) {
     }, {
       nowMs
     });
+  } else if (name === 'coinShop') {
+    renderCoinShopSheet(true);
   } else if (name === 'leaderboard') {
     renderLeaderboardSheet(true);
     void fetchLeaderboardBundle({ category: ensureLeaderboardUiState(state).category, force: false });
@@ -14090,8 +14965,6 @@ function renderMissionsSheet() {
     
     let rewardText = '';
     if (mission.reward.coins) rewardText += `🪙 ${mission.reward.coins} `;
-    if (mission.reward.gems) rewardText += `💎 ${mission.reward.gems} `;
-    if (mission.reward.stars) rewardText += `⭐ ${mission.reward.stars} `;
 
     card.innerHTML = `
       <div class="figma-static-row">
@@ -14767,6 +15640,21 @@ async function finalizeRun(reason) {
   if (result && result.summary) {
     state.profile.lastRunSummary = result.summary;
   }
+  if (result && result.summary) {
+    const levelUpCoins = grantLevelUpCoinsFromXpResult({
+      previousLevel: Number(result.summary.levelBefore || state.profile.level || 1),
+      nextLevel: Number(result.summary.levelAfter || state.profile.level || 1)
+    }, 'level_up', `run_finalize:${String(state.run && state.run.id || 0)}`);
+    if (reason === 'harvest') {
+      const harvestSignal = clamp((Number(result.summary.qualityScore || 0) - 50) / 40, 0, 1);
+      grantCoins(
+        resolveCoinRewardAmount('harvest_completion', harvestSignal),
+        'harvest_completion',
+        `harvest_completion:${String(state.run && state.run.id || 0)}`
+      );
+    }
+    result.summary.coinLevelReward = levelUpCoins;
+  }
 
   if ((result && result.finalized) || (result && result.alreadyFinalized)) {
     state.ui.deathOverlayOpen = false;
@@ -15069,13 +15957,7 @@ function onStartRun() {
   state.meta.rescue.usedAtRealMs = null;
   state.meta.rescue.lastResult = null;
 
-  // Figma-spec starting resources based on setup
-  const startingCoins = setup.potSize === 'xlarge'
-    ? 1500
-    : (setup.potSize === 'large' ? 1800 : (setup.potSize === 'medium' ? 2480 : 3200));
-  state.status.coins = startingCoins;
-  state.status.gems = 55;
-  state.status.stars = 10;
+  ensureCurrencyState(state);
 
   state.simulation.startRealTimeMs = nowMs;
   state.simulation.lastTickRealTimeMs = nowMs;
@@ -15415,6 +16297,16 @@ function closeSheet() {
     return;
   }
   if (currentSheet === 'event' && state.events.machineState === 'resolved') {
+    const resolvedOutcome = state.events.resolvedOutcome && typeof state.events.resolvedOutcome === 'object'
+      ? state.events.resolvedOutcome
+      : {};
+    const outcomeSignal = clamp(((resolvedOutcome.summary === 'good' ? 0.8 : (resolvedOutcome.summary === 'bad' ? 0.2 : 0.5))), 0, 1);
+    const eventId = String(resolvedOutcome.eventId || state.events.activeEventId || 'event');
+    grantCoins(
+      resolveCoinRewardAmount('event_completion', outcomeSignal),
+      'event_completion',
+      `event_completion:${eventId}:${String(resolvedOutcome.optionId || state.events.lastChoiceId || 'auto')}`
+    );
     enterEventCooldown(state.simulation.nowMs);
     renderAll();
     schedulePersistState(true);
@@ -17261,10 +18153,10 @@ window.checkMissions = function(triggerType, payload) {
 window.completeMission = function(mission) {
   state.missions.completed.push(mission.id);
   if (mission.reward) {
-    if (!state.meta.inventory) state.meta.inventory = { coins: 0, gems: 0, stars: 0 };
-    if (mission.reward.coins) state.meta.inventory.coins += mission.reward.coins;
-    if (mission.reward.gems) state.meta.inventory.gems += mission.reward.gems;
-    if (mission.reward.stars) state.meta.inventory.stars += mission.reward.stars;
+    const missionCoins = Math.max(0, Math.trunc(Number(mission.reward.coins) || 0));
+    if (missionCoins > 0) {
+      grantCoins(missionCoins, 'mission_completion', `mission:${String(mission.id || '')}`);
+    }
   }
   if (typeof addLog === 'function') {
     addLog('system', "Mission erfuellt: " + mission.title, { missionId: mission.id, reward: mission.reward });
@@ -17272,9 +18164,7 @@ window.completeMission = function(mission) {
   if (typeof openMenuDialog === 'function') {
     const reward = mission && mission.reward && typeof mission.reward === 'object' ? mission.reward : {};
     const rewardItems = [
-      reward.coins ? { icon: 'C', value: `+${reward.coins}`, label: 'Coins', tone: 'gold' } : null,
-      reward.gems ? { icon: 'G', value: `+${reward.gems}`, label: 'Gems', tone: 'mint' } : null,
-      reward.stars ? { icon: 'S', value: `+${reward.stars}`, label: 'Stars', tone: 'violet' } : null
+      reward.coins ? { icon: 'C', value: `+${reward.coins}`, label: 'Coins', tone: 'gold' } : null
     ].filter(Boolean);
     openMenuDialog({
       title: mission.title,

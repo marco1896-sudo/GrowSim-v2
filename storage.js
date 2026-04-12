@@ -682,7 +682,51 @@ function getCanonicalMeta(snapshot) {
   if (!Number.isFinite(Number(s.meta.persistence.lastSavedAtRealMs))) {
     s.meta.persistence.lastSavedAtRealMs = 0;
   }
+  if (!s.meta.rewardLedger || typeof s.meta.rewardLedger !== 'object') {
+    s.meta.rewardLedger = {};
+  }
   return s.meta;
+}
+
+function ensureStorageCurrencyState(snapshot) {
+  const s = snapshot || state;
+  if (!s.status || typeof s.status !== 'object') {
+    s.status = {};
+  }
+  const parsedCoins = Number(s.status.coins);
+  s.status.coins = Number.isFinite(parsedCoins) ? Math.max(0, Math.round(parsedCoins)) : 0;
+  if (Object.prototype.hasOwnProperty.call(s.status, 'gems')) {
+    delete s.status.gems;
+  }
+  if (Object.prototype.hasOwnProperty.call(s.status, 'stars')) {
+    delete s.status.stars;
+  }
+
+  const meta = getCanonicalMeta(s);
+  if (!meta.rewardLedger || typeof meta.rewardLedger !== 'object') {
+    meta.rewardLedger = {};
+  }
+
+  if (meta.inventory && typeof meta.inventory === 'object') {
+    delete meta.inventory.gems;
+    delete meta.inventory.stars;
+    if (!Number.isFinite(Number(meta.inventory.coins))) {
+      delete meta.inventory.coins;
+    }
+    if (!Object.keys(meta.inventory).length) {
+      delete meta.inventory;
+    }
+  }
+
+  if (typeof window !== 'undefined' && typeof window.ensureCurrencyState === 'function') {
+    try {
+      window.ensureCurrencyState(s);
+    } catch (error) {
+      console.warn('[storage] currency normalization fallback used', error);
+    }
+  }
+
+  return s.status;
 }
 
 function getCanonicalSettings(snapshot) {
@@ -1124,6 +1168,7 @@ async function restoreState(options = {}) {
     };
   }
 
+  ensureStorageCurrencyState(state);
   migrateLegacyStateIntoCanonical(saved, state);
   normalizeEnvironmentState(state);
   getCanonicalSimulation(state);
@@ -1149,6 +1194,7 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
   const plant = getCanonicalPlant(targetState);
   const events = getCanonicalEvents(targetState);
   const history = getCanonicalHistory(targetState);
+  ensureStorageCurrencyState(targetState);
 
   if (saved.sim && typeof saved.sim === 'object') {
     targetState.simulation = {
@@ -1463,7 +1509,8 @@ function resetStateToDefaults() {
     water: 70,
     nutrition: 65,
     growth: 0,
-    risk: 20
+    risk: 20,
+    coins: 0
   };
 
   state.boost = {
@@ -1977,6 +2024,8 @@ function ensureStateIntegrity(nowMs) {
   }
 
   const validSheets = new Set([null, 'care', 'climate', 'event', 'dashboard', 'diagnosis', 'statDetail', 'missions', 'leaderboard']);
+  validSheets.add('support');
+  validSheets.add('coinShop');
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }
@@ -2128,6 +2177,7 @@ function syncCanonicalStateShape() {
   const settings = getCanonicalSettings(state);
   const profile = getCanonicalProfile(state);
   const run = getCanonicalRun(state);
+  ensureStorageCurrencyState(state);
   if (state.setup && typeof state.setup === 'object' && run.status === 'idle' && !isRunFinalized(run)) {
     run.status = plant.isDead ? 'downed' : 'active';
     run.startedAtRealMs = Number.isFinite(Number(run.startedAtRealMs))
@@ -2258,6 +2308,7 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
   const plant = getCanonicalPlant(s);
   const events = getCanonicalEvents(s);
   const history = getCanonicalHistory(s);
+  ensureStorageCurrencyState(s);
 
   s.sim = {
     nowMs: sim.nowMs,

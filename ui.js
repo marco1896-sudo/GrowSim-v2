@@ -171,6 +171,7 @@ function cacheUi() {
   ui.imprintSheet = document.getElementById('imprint-sheet');
   ui.privacySheet = document.getElementById('privacy-sheet');
   ui.statDetailSheet = document.getElementById('statDetailSheet');
+  ui.coinShopSheet = document.getElementById('coinShopSheet');
   ui.statDetailTitle = document.getElementById('statDetailTitle');
   ui.statDetailValue = document.getElementById('statDetailValue');
   ui.statDetailStatus = document.getElementById('statDetailStatus');
@@ -190,6 +191,7 @@ function cacheUi() {
   ui.menuLanguageBtn = document.getElementById('menuLanguageBtn');
   ui.menuSupportBtn = document.getElementById('menuSupportBtn');
   ui.menuMissionsBtn = document.getElementById('menuMissionsBtn');
+  ui.menuCoinShopBtn = document.getElementById('menuCoinShopBtn');
   ui.menuAboutBtn = document.getElementById('menuAboutBtn');
   ui.menuImprintBtn = document.getElementById('menuImprintBtn');
   ui.menuPrivacyBtn = document.getElementById('menuPrivacyBtn');
@@ -821,6 +823,17 @@ function bindMenuOverlayEvents(controller = null) {
       openSheet('missions');
     });
   }
+  if (ui.menuCoinShopBtn) {
+    ui.menuCoinShopBtn.addEventListener('click', () => {
+      const activeController = resolveController();
+      closeMenu();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('coinShop');
+        return;
+      }
+      openSheet('coinShop');
+    });
+  }
   if (ui.menuAboutBtn) {
     ui.menuAboutBtn.addEventListener('click', () => openMenuPlaceholder('Über das Spiel', 'Grow Simulator MVP · Weitere Infos folgen.'));
   }
@@ -1082,10 +1095,10 @@ function ensureRequiredUi() {
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
     'overlayBurn', 'overlayDefMg', 'overlayDefN', 'overlayMoldWarning', 'overlayPestMites', 'overlayPestThrips',
     'careActionBtn', 'careBoostActionBtn', 'climateStabilizeActionBtn', 'analyzeActionBtn', 'boostActionBtn', 'skipNightActionBtn', 'openDiagnosisBtn', 'menuToggleBtn',
-    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'imprintSheet', 'privacySheet', 'statDetailSheet', 'supportSheet',
+    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'imprintSheet', 'privacySheet', 'statDetailSheet', 'supportSheet', 'coinShopSheet',
     'statDetailTitle', 'statDetailValue', 'statDetailStatus', 'statDetailExplanation', 'statDetailRecommendation', 'statDetailPrimaryBtn',
     'menuBackdrop', 'gameMenu', 'menuCloseBtn', 'menuHeaderCloseBtn', 'menuNewRunBtn', 'menuRescueBtn', 'menuRescueSubtext',
-    'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuAboutBtn', 'menuImprintBtn', 'menuPrivacyBtn',
+    'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuMissionsBtn', 'menuCoinShopBtn', 'menuAboutBtn', 'menuImprintBtn', 'menuPrivacyBtn',
     'menuAchievementsBtn', 'menuLeaderboardBtn', 'menuDialog', 'menuDialogTitle', 'menuDialogText', 'menuDialogCancelBtn', 'menuDialogConfirmBtn',
     'careCategoryList', 'careActionList', 'careEffectsList', 'careExecuteButton', 'careFeedback', 'eventStateBadge', 'eventTitle', 'eventText', 'eventMeta', 'eventOptionList',
     'analysisTabOverview', 'analysisTabDiagnosis', 'analysisTabTimeline', 'analysisPanelOverview', 'analysisPanelDiagnosis', 'analysisPanelTimeline',

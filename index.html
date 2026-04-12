@@ -114,10 +114,8 @@
               </div>
             </div>
             <div class="home-player-tools">
-              <div class="home-currency-stack" aria-label="Währungen">
+              <div class="home-currency-stack" aria-label="Coins">
                 <div class="home-currency-row home-currency-row--gold"><span>&#x1FA99;</span><strong id="playerCoinValue">2.480</strong></div>
-                <div class="home-currency-row home-currency-row--cyan"><span>&#x1F48E;</span><strong id="playerGemValue">55</strong></div>
-                <div class="home-currency-row home-currency-row--star"><span>&#x2B50;</span><strong id="playerStarValue">114</strong></div>
               </div>
               <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
                 <img src="assets/ui/icons/menu.svg" alt="" aria-hidden="true">
@@ -856,6 +854,33 @@
     </div>
   </section>
 
+  <section id="coinShopSheet" class="bottom-sheet figma-sheet figma-sheet-shop hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Coin-Shop</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+    </header>
+    <div class="sheet-content figma-sheet-content shop-sheet-content">
+      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
+        <div class="figma-top-player-title">Direkt anwenden</div>
+        <div id="coinShopBalanceText" class="figma-top-player-subtitle">Coins werden geladen</div>
+      </section>
+      <section class="figma-section-card shop-sheet-panel">
+        <div class="shop-sheet-head">
+          <strong>Gameplay-Kontrolle</strong>
+          <small id="coinShopStatusText" class="sheet-note">Alle Effekte werden sofort angewendet.</small>
+        </div>
+        <div id="coinShopItemList" class="coin-shop-list"></div>
+      </section>
+      <section class="figma-section-card shop-sheet-panel">
+        <div class="shop-sheet-head">
+          <strong>Coin-Packs</strong>
+          <small id="coinPackStatusText" class="sheet-note">Optional. Für Tests nur im Debug-Modus direkt aktivierbar.</small>
+        </div>
+        <div id="coinPackList" class="coin-pack-list"></div>
+      </section>
+    </div>
+  </section>
+
   <section id="supportSheet" class="bottom-sheet figma-sheet figma-sheet-support hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <div class="support-sheet-heading">
@@ -1287,6 +1312,7 @@
           <small id="menuLeaderboardSubtext">Nur verifizierte Ergebnisse</small>
         </button>
         <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span id="menuRescueLabel">Notfallrettung</span><small id="menuRescueSubtext">1× pro Run bei kritischem Zustand.</small></button>
+        <button id="menuCoinShopBtn" class="menu-entry figma-menu-entry figma-menu-entry--shop" type="button"><span>Coin-Shop</span><small>Zeit, Komfort und Kontrolle direkt kaufen</small></button>
         <button id="menuSupportBtn" class="menu-entry figma-menu-entry figma-menu-entry--support" type="button"><span>GrowSim unterstützen</span><small>Freiwilliger Support für neue Features</small></button>
         <button id="menuMissionsBtn" class="menu-entry figma-menu-entry" type="button"><span>Missionen</span><small>Missionen &amp; Fortschritt</small></button>
         <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span>Projektinfo</span><small>Status &amp; Hinweise</small></button>
@@ -1470,6 +1496,8 @@
       { src: 'src/ui/mappings/careMapping.js' },
       { src: 'src/ui/screens/screenModules.js' },
       { src: 'src/monetization/googleAdPlacementRewardProvider.js' },
+      { src: 'src/monetization/coinPackCatalog.js' },
+      { src: 'src/monetization/purchaseServiceAdapter.js' },
       { src: 'app.js' }
     ];
 

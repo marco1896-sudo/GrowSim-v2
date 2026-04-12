@@ -99,4 +99,13 @@ for (const methodName of [
   );
 }
 
+assert(
+  uiSource.includes("ui.menuCoinShopBtn = document.getElementById('menuCoinShopBtn');"),
+  'ui runtime should bind the coin shop menu button'
+);
+assert(
+  uiSource.includes("openSheet('coinShop')"),
+  'ui runtime should allow opening the coin shop sheet'
+);
+
 console.log('ui-runtime-wiring.test.js passed');

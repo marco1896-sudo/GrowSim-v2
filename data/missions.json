@@ -3,28 +3,28 @@
     "id": "mission_001",
     "title": "Erste Schritte",
     "description": "Erreiche Tag 3 mit deiner Pflanze.",
-    "reward": { "coins": 500, "stars": 5 },
+    "reward": { "coins": 500 },
     "condition": { "type": "min_day", "value": 3 }
   },
   {
     "id": "mission_002",
     "title": "Stabile Umgebung",
     "description": "Halte den Stress für 2 Sim-Stunden unter 20%.",
-    "reward": { "coins": 800, "gems": 10 },
+    "reward": { "coins": 800 },
     "condition": { "type": "max_stress_duration", "value": 20, "duration": 120 }
   },
   {
     "id": "mission_003",
     "title": "Ruhige Hand",
     "description": "Halte den Durchschnittsstress für 6 Sim-Stunden unter 30%.",
-    "reward": { "coins": 1200, "stars": 15 },
+    "reward": { "coins": 1200 },
     "condition": { "type": "max_stress_duration", "value": 30, "duration": 360 }
   },
   {
     "id": "mission_004",
     "title": "Grüner Daumen",
     "description": "Erreiche eine Pflanzengesundheit von 95%.",
-    "reward": { "coins": 1000, "gems": 5 },
+    "reward": { "coins": 1000 },
     "condition": { "type": "min_health", "value": 95 }
   }
 ]
