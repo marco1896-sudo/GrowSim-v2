@@ -154,8 +154,30 @@ assert(
 );
 
 assert(
-  cssSource.includes('top: calc(var(--home-right-watering-top) + (var(--home-right-actions-gap) * 0.86));'),
-  'night shift icon should use the calibrated right-column position after home icon cleanup'
+  cssSource.includes('--home-side-utility-top: calc(100% - 400px);'),
+  'side utility icons should share a dedicated vertical reference line'
+);
+
+assert(
+  cssSource.includes('@keyframes home-hero-breathe') &&
+    cssSource.includes('@keyframes premium-orb-ready'),
+  'home screen should define the premium ambient and orb-ready motion hooks'
+);
+
+assert(
+  cssSource.includes('#boostActionBtn {') &&
+    cssSource.includes('top: var(--home-side-utility-top);') &&
+    cssSource.includes('.home-action-panel #skipNightActionBtn {'),
+  'boost and night shift icons should use the same shared top anchor'
+);
+
+assert(
+  cssSource.includes('.home-player-panel::before') &&
+    cssSource.includes('.home-player-panel::after') &&
+    cssSource.includes('.home-progress-panel:hover,') &&
+    cssSource.includes('#boostActionBtn::after') &&
+    cssSource.includes('.home-action-panel #skipNightActionBtn::after'),
+  'premium polish should add consistent card sheen and shared orb surfaces for the two side utility actions'
 );
 
 assert(
