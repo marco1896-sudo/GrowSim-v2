@@ -119,7 +119,7 @@ assert(
 );
 
 assert(
-  cssSource.includes('bottom: calc(42px + env(safe-area-inset-bottom));'),
+  cssSource.includes('bottom: calc(26px + env(safe-area-inset-bottom));'),
   'iphone portrait bottom cluster should be anchored directly from the bottom edge'
 );
 
@@ -154,7 +154,7 @@ assert(
 );
 
 assert(
-  cssSource.includes('.home-content-scroll {\n    bottom: calc(36px + env(safe-area-inset-bottom));'),
+  cssSource.includes('.home-content-scroll {\n    bottom: calc(22px + env(safe-area-inset-bottom));'),
   'narrow iphone portrait should tighten the shared bottom-cluster anchor without changing desktop'
 );
 
