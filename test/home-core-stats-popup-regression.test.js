@@ -109,53 +109,43 @@ assert(
 );
 
 assert(
-  cssSource.includes('bottom: calc(80px + env(safe-area-inset-bottom));'),
-  'core stats bar should stay clear of the progress card after the bottom-cluster correction'
+  cssSource.includes('.home-core-stats-bar {\n  position: relative;'),
+  'core stats bar should participate in the shared bottom cluster instead of anchoring separately'
 );
 
 assert(
   cssSource.includes('top: auto;'),
-  'iphone portrait bottom cluster should stop using the scroll-flow top anchor'
+  'bottom cluster should stop using the scroll-flow top anchor'
 );
 
 assert(
-  cssSource.includes('bottom: calc(0px + env(safe-area-inset-bottom));'),
-  'narrow viewport bottom cluster should anchor flush to the bottom edge plus safe-area inset'
+  cssSource.includes('padding-bottom: calc(8px + env(safe-area-inset-bottom));'),
+  'bottom cluster should reserve only a small final safe-area gap at the lower edge'
 );
 
 assert(
   cssSource.includes('display: flex;') &&
     cssSource.includes('flex-direction: column;') &&
     cssSource.includes('gap: 12px;'),
-  'iphone portrait should turn the existing home content container into a stacked bottom cluster'
+  'home content container should act as a stacked bottom cluster'
 );
 
 assert(
   cssSource.includes('.home-content-scroll .home-progress-panel {') &&
     cssSource.includes('margin-top: 0;'),
-  'iphone portrait progress card should no longer depend on scroll-offset overlap spacing'
-);
-
-assert(
-  cssSource.includes('@media (max-width: 430px) {'),
-  'mobile cluster correction should target the active narrow viewport path'
-);
-
-assert(
-  cssSource.includes('@media (max-width: 390px) {'),
-  'extra-narrow viewport override should remain width-scoped'
+  'progress card should no longer depend on scroll-offset overlap spacing'
 );
 
 assert(
   cssSource.includes('position: relative;') &&
     cssSource.includes('bottom: auto;') &&
     cssSource.includes('width: 100%;'),
-  'iphone portrait should place the core stats bar inside the shared bottom cluster instead of anchoring it separately'
+  'core stats bar should live inside the shared bottom cluster instead of anchoring separately'
 );
 
 assert(
-  cssSource.includes('.home-content-scroll {\n    bottom: calc(0px + env(safe-area-inset-bottom));'),
-  'extra-narrow viewport should keep the shared bottom-cluster anchored at the same bottom baseline'
+  !cssSource.includes('padding-bottom: calc(196px + env(safe-area-inset-bottom));'),
+  'bottom cluster should no longer keep the old oversized lower reserve that pushed it upward'
 );
 
 assert(

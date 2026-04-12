@@ -9389,9 +9389,18 @@ body.panelized-ready :is(
 
 /* Home screen Figma import: limit changes to progress, status, roots, and action icons */
 .home-content-scroll {
-  top: calc(var(--home-safe-top) + var(--home-content-offset));
-  padding: 0 var(--home-content-pad-x) calc(120px + env(safe-area-inset-bottom));
-  gap: var(--home-content-gap);
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  margin-top: auto;
+  padding: 0 12px calc(8px + env(safe-area-inset-bottom));
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .home-progress-panel {
@@ -9416,7 +9425,7 @@ body.panelized-ready :is(
 }
 
 .home-content-scroll .home-progress-panel {
-  margin-top: var(--home-progress-overlap);
+  margin-top: 0;
 }
 
 .home-progress-panel::before {
@@ -11346,14 +11355,15 @@ body.panelized-ready :is(
 }
 
 .home-content-scroll {
-  padding-bottom: calc(196px + env(safe-area-inset-bottom));
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
 }
 
 .home-core-stats-bar {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: calc(80px + env(safe-area-inset-bottom));
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
   height: 88px;
   z-index: 12;
   display: grid;
@@ -11732,44 +11742,11 @@ body.panelized-ready :is(
 
 @media (max-width: 390px) {
   .home-core-stats-bar {
-    left: 12px;
-    right: 12px;
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    left: auto;
+    right: auto;
   }
 
   .home-stat-popup {
     width: 242px;
-  }
-}
-
-@media (max-width: 430px) {
-  .home-content-scroll {
-    top: auto;
-    right: 12px;
-    bottom: calc(0px + env(safe-area-inset-bottom));
-    left: 12px;
-    padding: 0;
-    overflow: visible;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .home-content-scroll .home-progress-panel {
-    margin-top: 0;
-  }
-
-  .home-core-stats-bar {
-    position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    width: 100%;
-  }
-}
-
-@media (max-width: 390px) {
-  .home-content-scroll {
-    bottom: calc(0px + env(safe-area-inset-bottom));
   }
 }
