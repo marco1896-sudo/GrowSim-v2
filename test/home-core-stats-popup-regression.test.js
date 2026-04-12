@@ -119,8 +119,8 @@ assert(
 );
 
 assert(
-  cssSource.includes('bottom: calc(26px + env(safe-area-inset-bottom));'),
-  'iphone portrait bottom cluster should be anchored directly from the bottom edge'
+  cssSource.includes('bottom: calc(0px + env(safe-area-inset-bottom));'),
+  'narrow viewport bottom cluster should anchor flush to the bottom edge plus safe-area inset'
 );
 
 assert(
@@ -137,13 +137,13 @@ assert(
 );
 
 assert(
-  cssSource.includes('@media (max-width: 430px) and (orientation: portrait) {'),
-  'mobile cluster correction should be scoped to iphone portrait breakpoints'
+  cssSource.includes('@media (max-width: 430px) {'),
+  'mobile cluster correction should target the active narrow viewport path'
 );
 
 assert(
-  cssSource.includes('@media (max-width: 390px) and (orientation: portrait) {'),
-  'narrow iphone override should remain portrait-scoped'
+  cssSource.includes('@media (max-width: 390px) {'),
+  'extra-narrow viewport override should remain width-scoped'
 );
 
 assert(
@@ -154,8 +154,8 @@ assert(
 );
 
 assert(
-  cssSource.includes('.home-content-scroll {\n    bottom: calc(22px + env(safe-area-inset-bottom));'),
-  'narrow iphone portrait should tighten the shared bottom-cluster anchor without changing desktop'
+  cssSource.includes('.home-content-scroll {\n    bottom: calc(0px + env(safe-area-inset-bottom));'),
+  'extra-narrow viewport should keep the shared bottom-cluster anchored at the same bottom baseline'
 );
 
 assert(
