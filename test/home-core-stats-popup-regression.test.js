@@ -177,7 +177,15 @@ assert(
     cssSource.includes('.home-progress-panel:hover,') &&
     cssSource.includes('#boostActionBtn::after') &&
     cssSource.includes('.home-action-panel #skipNightActionBtn::after'),
-  'premium polish should add consistent card sheen and shared orb surfaces for the two side utility actions'
+  'premium polish should keep card sheen and matched orb surface treatments for x24 and night shift'
+);
+
+assert(
+  cssSource.includes('/* Final orb-family normalization: x24 + Night Shift as a matched premium pair. */') &&
+    cssSource.includes('#boostActionBtn::before,') &&
+    cssSource.includes('.home-action-panel #skipNightActionBtn::before {') &&
+    cssSource.includes('.home-action-panel #skipNightActionBtn::after {'),
+  'x24 and night shift should share the same premium orb material family'
 );
 
 assert(
