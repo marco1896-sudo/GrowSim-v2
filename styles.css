@@ -12420,6 +12420,60 @@ body.panelized-ready :is(
     0 18px 32px rgba(0, 0, 0, 0.28);
 }
 
+.figma-sheet-insufficient-coins .insufficient-coins-content {
+  display: grid;
+  gap: 12px;
+}
+
+.insufficient-coins-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.insufficient-coins-metric {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(152, 173, 197, 0.2);
+  background: rgba(13, 18, 27, 0.72);
+}
+
+.insufficient-coins-metric span {
+  font-size: 11px;
+  color: rgba(194, 211, 231, 0.78);
+}
+
+.insufficient-coins-metric strong {
+  color: #f6fbff;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.insufficient-coins-metric--missing {
+  border-color: rgba(246, 187, 86, 0.36);
+  background:
+    radial-gradient(circle at top right, rgba(255, 214, 112, 0.14), rgba(255, 214, 112, 0) 48%),
+    rgba(18, 17, 13, 0.84);
+}
+
+.insufficient-coins-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.insufficient-coins-cta {
+  min-height: 48px;
+}
+
+@media (max-width: 420px) {
+  .insufficient-coins-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 420px) {
   .coin-shop-card,
   .coin-pack-card {

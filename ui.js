@@ -172,6 +172,7 @@ function cacheUi() {
   ui.privacySheet = document.getElementById('privacy-sheet');
   ui.statDetailSheet = document.getElementById('statDetailSheet');
   ui.coinShopSheet = document.getElementById('coinShopSheet');
+  ui.insufficientCoinsSheet = document.getElementById('insufficientCoinsSheet');
   ui.statDetailTitle = document.getElementById('statDetailTitle');
   ui.statDetailValue = document.getElementById('statDetailValue');
   ui.statDetailStatus = document.getElementById('statDetailStatus');
@@ -1100,7 +1101,7 @@ function ensureRequiredUi() {
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
     'overlayBurn', 'overlayDefMg', 'overlayDefN', 'overlayMoldWarning', 'overlayPestMites', 'overlayPestThrips',
     'careActionBtn', 'careBoostActionBtn', 'climateStabilizeActionBtn', 'analyzeActionBtn', 'boostActionBtn', 'skipNightActionBtn', 'openDiagnosisBtn', 'menuToggleBtn',
-    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'imprintSheet', 'privacySheet', 'statDetailSheet', 'supportSheet', 'coinShopSheet',
+    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'imprintSheet', 'privacySheet', 'statDetailSheet', 'supportSheet', 'coinShopSheet', 'insufficientCoinsSheet',
     'statDetailTitle', 'statDetailValue', 'statDetailStatus', 'statDetailExplanation', 'statDetailRecommendation', 'statDetailPrimaryBtn',
     'menuBackdrop', 'gameMenu', 'menuCloseBtn', 'menuHeaderCloseBtn', 'menuNewRunBtn', 'menuRescueBtn', 'menuRescueSubtext',
     'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuMissionsBtn', 'menuCoinShopBtn', 'menuAboutBtn', 'menuImprintBtn', 'menuPrivacyBtn',
@@ -1329,6 +1330,7 @@ function renderSheets() {
   toggleSheet(ui.privacySheet, activeSheet === 'privacy');
   toggleSheet(ui.supportSheet, activeSheet === 'support');
   toggleSheet(ui.coinShopSheet, activeSheet === 'coinShop');
+  toggleSheet(ui.insufficientCoinsSheet, activeSheet === 'insufficientCoins');
 }
 
 function renderGameMenu() {
@@ -1935,7 +1937,7 @@ function openSheet(name) {
     return appUiRuntime.openSheet(name);
   }
   // Legacy fallback: only used when app runtime bridge is unavailable.
-  if (isPlantDead() && name !== 'dashboard' && name !== 'support' && name !== 'coinShop' && name !== 'imprint' && name !== 'privacy') {
+  if (isPlantDead() && name !== 'dashboard' && name !== 'support' && name !== 'coinShop' && name !== 'insufficientCoins' && name !== 'imprint' && name !== 'privacy') {
     return;
   }
   if (state.ui.menuOpen) {

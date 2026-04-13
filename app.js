@@ -2080,8 +2080,7 @@ async function onCoinShopActionClick(actionType) {
   renderCoinShopSheet(true);
   try {
     const result = await triggerRewardAction(safeActionType, {
-      source: 'coin_shop',
-      openShopOnBlocked: false
+      source: 'coin_shop'
     });
     if (!result || !result.ok) {
       const reason = String(result && result.reason || 'action_failed');
@@ -7867,12 +7866,182 @@ const coinUiRuntime = {
   pendingPackId: '',
   statusMessage: '',
   statusTone: 'info',
-  renderRetryQueued: false
+  renderRetryQueued: false,
+  insufficientFlow: {
+    requiredCoins: 0,
+    currentCoins: 0,
+    missingCoins: 0,
+    actionType: '',
+    source: '',
+    statusMessage: '',
+    openedAtMs: 0,
+    requestSignature: '',
+    inFlight: false,
+    rewardedPending: false
+  }
 };
 
 function setCoinShopStatusMessage(message, tone = 'info') {
   coinUiRuntime.statusMessage = String(message || '').trim();
   coinUiRuntime.statusTone = String(tone || 'info');
+}
+
+function resolveInsufficientCoinsRewardedOption() {
+  const providerStatus = getRewardProviderStatus(state);
+  const requestFn = providerStatus && typeof providerStatus.requestFn === 'function' ? providerStatus.requestFn : null;
+  const canUse = Boolean(providerStatus && providerStatus.canRequestReward && requestFn);
+  return {
+    available: canUse,
+    requestFn,
+    providerMode: providerStatus && providerStatus.mode ? String(providerStatus.mode) : 'direct',
+    providerState: providerStatus && providerStatus.state ? String(providerStatus.state) : 'unavailable'
+  };
+}
+
+function openInsufficientCoinsFlow(details = {}) {
+  const safeDetails = details && typeof details === 'object' ? details : {};
+  const requiredCoins = Math.max(0, Math.trunc(Number(safeDetails.requiredCoins) || 0));
+  const currentCoins = Math.max(0, Math.trunc(Number(safeDetails.currentCoins) || getCoins()));
+  const missingCoins = Math.max(0, requiredCoins - currentCoins);
+  const actionType = String(safeDetails.actionType || '').trim();
+  const source = String(safeDetails.source || 'runtime').trim() || 'runtime';
+  const nowMs = Date.now();
+  const requestSignature = `${actionType}:${requiredCoins}:${currentCoins}:${source}`;
+  const flow = coinUiRuntime.insufficientFlow;
+  const openedRecently = flow.requestSignature === requestSignature && (nowMs - Number(flow.openedAtMs || 0)) < 550;
+  if (state.ui.openSheet === 'insufficientCoins' && (flow.inFlight || openedRecently)) {
+    return false;
+  }
+
+  flow.requiredCoins = requiredCoins;
+  flow.currentCoins = currentCoins;
+  flow.missingCoins = missingCoins;
+  flow.actionType = actionType;
+  flow.source = source;
+  flow.statusMessage = `Dir fehlen ${formatCompactNumber(missingCoins)} Coins für diese Aktion.`;
+  flow.openedAtMs = nowMs;
+  flow.requestSignature = requestSignature;
+  flow.inFlight = true;
+  flow.rewardedPending = false;
+
+  openSheet('insufficientCoins');
+  setTimeout(() => {
+    coinUiRuntime.insufficientFlow.inFlight = false;
+    if (state.ui.openSheet === 'insufficientCoins') {
+      renderInsufficientCoinsSheet(true);
+    }
+  }, 220);
+  return true;
+}
+
+function onInsufficientCoinsOpenShopClick() {
+  const flow = coinUiRuntime.insufficientFlow;
+  if (flow.inFlight) {
+    return;
+  }
+  flow.statusMessage = 'Coin-Shop wird geöffnet...';
+  setCoinShopStatusMessage('Nicht genug Coins. Du kannst direkt Packs oder Aktionen auswählen.', 'info');
+  renderInsufficientCoinsSheet(true);
+  openSheet('coinShop');
+}
+
+async function onInsufficientCoinsRewardedClick() {
+  const flow = coinUiRuntime.insufficientFlow;
+  if (flow.rewardedPending || flow.inFlight) {
+    return;
+  }
+  const rewardedOption = resolveInsufficientCoinsRewardedOption();
+  if (!rewardedOption.available || typeof rewardedOption.requestFn !== 'function') {
+    flow.statusMessage = 'Rewarded ist gerade nicht verfügbar.';
+    renderInsufficientCoinsSheet(true);
+    if (typeof showRetentionToast === 'function') {
+      showRetentionToast('Rewarded aktuell nicht verfügbar');
+    }
+    return;
+  }
+
+  flow.rewardedPending = true;
+  flow.statusMessage = 'Rewarded wird geladen...';
+  renderInsufficientCoinsSheet(true);
+  let rewardedResult = null;
+  try {
+    rewardedResult = await rewardedOption.requestFn('insufficient_coins_topup', {
+      source: 'insufficient_coins_sheet',
+      actionType: flow.actionType,
+      requiredCoins: flow.requiredCoins,
+      missingCoins: flow.missingCoins
+    });
+  } catch (_error) {
+    rewardedResult = { ok: false, reason: 'reward_error' };
+  } finally {
+    flow.rewardedPending = false;
+  }
+
+  if (!rewardedResult || !rewardedResult.ok) {
+    flow.statusMessage = 'Rewarded wurde nicht abgeschlossen.';
+    renderInsufficientCoinsSheet(true);
+    if (typeof showRetentionToast === 'function') {
+      showRetentionToast('Rewarded nicht abgeschlossen');
+    }
+    return;
+  }
+
+  const targetTopup = Math.max(50, Math.min(200, Math.max(flow.missingCoins, 80)));
+  const rewardAmount = Math.max(50, Math.trunc(Number(rewardedResult.coins) || targetTopup));
+  const dedupKey = `insufficient_rewarded:${String(rewardedResult.grantedAtMs || Date.now())}:${String(flow.actionType || 'action')}`;
+  const grantResult = grantCoins(rewardAmount, 'insufficient_rewarded_topup', dedupKey);
+  if (!grantResult.ok) {
+    flow.statusMessage = 'Rewarded abgeschlossen, Gutschrift war doppelt und wurde übersprungen.';
+    renderInsufficientCoinsSheet(true);
+    return;
+  }
+  flow.currentCoins = grantResult.coins;
+  flow.missingCoins = Math.max(0, flow.requiredCoins - flow.currentCoins);
+  flow.statusMessage = `+${formatCompactNumber(rewardAmount)} Coins gutgeschrieben.`;
+  renderInsufficientCoinsSheet(true);
+  if (typeof showRetentionToast === 'function') {
+    showRetentionToast(`Rewarded Bonus · +${rewardAmount} Coins`);
+  }
+}
+
+function renderInsufficientCoinsSheet(force = false) {
+  const sheetNode = uiNode('insufficientCoinsSheet', 'insufficientCoinsSheet');
+  if (!sheetNode || (!force && state.ui.openSheet !== 'insufficientCoins')) {
+    return;
+  }
+  const hintNode = uiNode('insufficientCoinsHintText', 'insufficientCoinsHintText');
+  const currentNode = uiNode('insufficientCoinsCurrentValue', 'insufficientCoinsCurrentValue');
+  const requiredNode = uiNode('insufficientCoinsRequiredValue', 'insufficientCoinsRequiredValue');
+  const missingNode = uiNode('insufficientCoinsMissingValue', 'insufficientCoinsMissingValue');
+  const openShopBtn = uiNode('insufficientCoinsOpenShopBtn', 'insufficientCoinsOpenShopBtn');
+  const rewardedBtn = uiNode('insufficientCoinsRewardedBtn', 'insufficientCoinsRewardedBtn');
+  const cancelBtn = uiNode('insufficientCoinsCancelBtn', 'insufficientCoinsCancelBtn');
+  if (!hintNode || !currentNode || !requiredNode || !missingNode || !openShopBtn || !rewardedBtn || !cancelBtn) {
+    return;
+  }
+
+  const flow = coinUiRuntime.insufficientFlow;
+  const currentCoins = getCoins();
+  flow.currentCoins = currentCoins;
+  flow.missingCoins = Math.max(0, flow.requiredCoins - currentCoins);
+  const rewardedOption = resolveInsufficientCoinsRewardedOption();
+
+  hintNode.textContent = flow.statusMessage || `Für diese Aktion fehlen ${formatCompactNumber(flow.missingCoins)} Coins.`;
+  currentNode.textContent = `${formatCompactNumber(currentCoins)} C`;
+  requiredNode.textContent = `${formatCompactNumber(flow.requiredCoins)} C`;
+  missingNode.textContent = `${formatCompactNumber(flow.missingCoins)} C`;
+
+  openShopBtn.disabled = flow.inFlight || flow.rewardedPending;
+  cancelBtn.disabled = flow.inFlight || flow.rewardedPending;
+  openShopBtn.onclick = () => onInsufficientCoinsOpenShopClick();
+  cancelBtn.onclick = () => closeSheet();
+
+  const showRewarded = rewardedOption.available;
+  rewardedBtn.classList.toggle('hidden', !showRewarded);
+  rewardedBtn.setAttribute('aria-hidden', String(!showRewarded));
+  rewardedBtn.disabled = !showRewarded || flow.rewardedPending || flow.inFlight;
+  rewardedBtn.textContent = flow.rewardedPending ? 'Rewarded läuft…' : 'Werbung ansehen';
+  rewardedBtn.onclick = showRewarded ? (() => { void onInsufficientCoinsRewardedClick(); }) : null;
 }
 
 function getRewardLedger(snapshot = state) {
@@ -10184,9 +10353,12 @@ async function triggerRewardAction(type, payload = {}) {
     if (typeof showRetentionToast === 'function') {
       showRetentionToast(`Nicht genug Coins · ${coinCost} benötigt`);
     }
-    if (payload.openShopOnBlocked !== false) {
-      openSheet('coinShop');
-    }
+    openInsufficientCoinsFlow({
+      requiredCoins: coinCost,
+      currentCoins: getCoins(),
+      actionType,
+      source: String(payload.source || 'reward_action')
+    });
     renderAll();
     schedulePersistState(true);
     return coinBlockedResult;
@@ -10294,9 +10466,12 @@ async function triggerRewardAction(type, payload = {}) {
       if (typeof showRetentionToast === 'function') {
         showRetentionToast('Nicht genug Coins fuer diese Aktion');
       }
-      if (payload.openShopOnBlocked !== false) {
-        openSheet('coinShop');
-      }
+      openInsufficientCoinsFlow({
+        requiredCoins: coinCost,
+        currentCoins: getCoins(),
+        actionType,
+        source: String(payload.source || 'reward_action')
+      });
       renderAll();
       schedulePersistState(true);
       return spendBlockedResult;
@@ -11736,6 +11911,7 @@ function renderSheets() {
   toggleSheet(ui.missionsSheet, activeSheet === 'missions');
   toggleSheet(ui.supportSheet, activeSheet === 'support');
   toggleSheet(ui.coinShopSheet, activeSheet === 'coinShop');
+  toggleSheet(ui.insufficientCoinsSheet, activeSheet === 'insufficientCoins');
   toggleSheet(ui.leaderboardSheet, activeSheet === 'leaderboard');
 }
 
@@ -14767,7 +14943,7 @@ function openSheet(name) {
     openCloudAuthModal({ gate: true });
     return;
   }
-  if (isPlantDead() && name !== 'dashboard' && name !== 'support' && name !== 'coinShop' && name !== 'imprint' && name !== 'privacy') {
+  if (isPlantDead() && name !== 'dashboard' && name !== 'support' && name !== 'coinShop' && name !== 'insufficientCoins' && name !== 'imprint' && name !== 'privacy') {
     return;
   }
   if (state.ui.menuOpen) {
@@ -14822,6 +14998,8 @@ function openSheet(name) {
         renderCoinShopSheet(true);
       }
     }, 0);
+  } else if (name === 'insufficientCoins') {
+    renderInsufficientCoinsSheet(true);
   } else if (name === 'leaderboard') {
     renderLeaderboardSheet(true);
     void fetchLeaderboardBundle({ category: ensureLeaderboardUiState(state).category, force: false });
@@ -16413,6 +16591,11 @@ function closeSheet() {
     renderAll();
     schedulePersistState(true);
     return;
+  }
+  if (currentSheet === 'insufficientCoins') {
+    coinUiRuntime.insufficientFlow.inFlight = false;
+    coinUiRuntime.insufficientFlow.rewardedPending = false;
+    coinUiRuntime.insufficientFlow.statusMessage = '';
   }
   state.ui.openSheet = null;
   state.ui.statDetailKey = null;

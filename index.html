@@ -881,6 +881,40 @@
     </div>
   </section>
 
+  <section id="insufficientCoinsSheet" class="bottom-sheet figma-sheet figma-sheet-shop figma-sheet-insufficient-coins hidden" aria-hidden="true">
+    <header class="sheet-header figma-sheet-header">
+      <h2>Nicht genug Coins</h2>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+    </header>
+    <div class="sheet-content figma-sheet-content insufficient-coins-content">
+      <section class="figma-section-card shop-sheet-panel">
+        <div class="shop-sheet-head">
+          <strong>Aktion blockiert</strong>
+          <small id="insufficientCoinsHintText" class="sheet-note">Für diese Aktion fehlen noch Coins.</small>
+        </div>
+        <div class="insufficient-coins-metrics" aria-live="polite">
+          <div class="insufficient-coins-metric">
+            <span>Aktuell</span>
+            <strong id="insufficientCoinsCurrentValue">0 C</strong>
+          </div>
+          <div class="insufficient-coins-metric">
+            <span>Benötigt</span>
+            <strong id="insufficientCoinsRequiredValue">0 C</strong>
+          </div>
+          <div class="insufficient-coins-metric insufficient-coins-metric--missing">
+            <span>Fehlen</span>
+            <strong id="insufficientCoinsMissingValue">0 C</strong>
+          </div>
+        </div>
+        <div class="insufficient-coins-actions">
+          <button id="insufficientCoinsOpenShopBtn" class="action-btn action-primary insufficient-coins-cta" type="button">Coins holen</button>
+          <button id="insufficientCoinsRewardedBtn" class="ghost-btn insufficient-coins-cta hidden" type="button" aria-hidden="true">Werbung ansehen</button>
+          <button id="insufficientCoinsCancelBtn" class="ghost-btn insufficient-coins-cta" type="button">Abbrechen</button>
+        </div>
+      </section>
+    </div>
+  </section>
+
   <section id="supportSheet" class="bottom-sheet figma-sheet figma-sheet-support hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <div class="support-sheet-heading">

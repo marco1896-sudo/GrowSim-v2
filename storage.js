@@ -2026,6 +2026,7 @@ function ensureStateIntegrity(nowMs) {
   const validSheets = new Set([null, 'care', 'climate', 'event', 'dashboard', 'diagnosis', 'statDetail', 'missions', 'leaderboard']);
   validSheets.add('support');
   validSheets.add('coinShop');
+  validSheets.add('insufficientCoins');
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
   }
