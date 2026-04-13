@@ -828,8 +828,13 @@ function bindMenuOverlayEvents(controller = null) {
       const activeController = resolveController();
       closeMenu();
       if (activeController && typeof activeController.handleOpenSheet === 'function') {
-        activeController.handleOpenSheet('coinShop');
-        return;
+        try {
+          activeController.handleOpenSheet('coinShop');
+        } catch (_error) {
+        }
+        if (state && state.ui && state.ui.openSheet === 'coinShop') {
+          return;
+        }
       }
       openSheet('coinShop');
     });
@@ -1323,6 +1328,7 @@ function renderSheets() {
   toggleSheet(ui.imprintSheet, activeSheet === 'imprint');
   toggleSheet(ui.privacySheet, activeSheet === 'privacy');
   toggleSheet(ui.supportSheet, activeSheet === 'support');
+  toggleSheet(ui.coinShopSheet, activeSheet === 'coinShop');
 }
 
 function renderGameMenu() {
@@ -1929,7 +1935,7 @@ function openSheet(name) {
     return appUiRuntime.openSheet(name);
   }
   // Legacy fallback: only used when app runtime bridge is unavailable.
-  if (isPlantDead() && name !== 'dashboard' && name !== 'support') {
+  if (isPlantDead() && name !== 'dashboard' && name !== 'support' && name !== 'coinShop' && name !== 'imprint' && name !== 'privacy') {
     return;
   }
   if (state.ui.menuOpen) {

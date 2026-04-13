@@ -2065,16 +2065,36 @@ function getCoinShopDefinitions() {
 
 async function onCoinShopActionClick(actionType) {
   const safeActionType = String(actionType || '').trim();
-  if (!safeActionType || coinUiRuntime.pendingActionId) {
+  if (!safeActionType) {
+    setCoinShopStatusMessage('Aktion nicht verfuegbar.', 'error');
+    renderCoinShopSheet(true);
+    return;
+  }
+  if (coinUiRuntime.pendingActionId) {
+    setCoinShopStatusMessage('Bitte kurz warten, Aktion laeuft bereits.', 'info');
+    renderCoinShopSheet(true);
     return;
   }
   coinUiRuntime.pendingActionId = safeActionType;
+  setCoinShopStatusMessage('Kauf wird angewendet...', 'info');
   renderCoinShopSheet(true);
   try {
-    await triggerRewardAction(safeActionType, {
+    const result = await triggerRewardAction(safeActionType, {
       source: 'coin_shop',
       openShopOnBlocked: false
     });
+    if (!result || !result.ok) {
+      const reason = String(result && result.reason || 'action_failed');
+      if (reason === 'insufficient_coins') {
+        setCoinShopStatusMessage('Nicht genug Coins. Unten findest du passende Coin-Packs.', 'error');
+      } else if (reason === 'action_in_progress') {
+        setCoinShopStatusMessage('Aktion laeuft bereits.', 'info');
+      } else {
+        setCoinShopStatusMessage('Aktion konnte nicht ausgefuehrt werden.', 'error');
+      }
+      return;
+    }
+    setCoinShopStatusMessage('Aktion erfolgreich angewendet.', 'success');
   } finally {
     coinUiRuntime.pendingActionId = '';
     renderCoinShopSheet(true);
@@ -2083,20 +2103,35 @@ async function onCoinShopActionClick(actionType) {
 
 async function onCoinPackPurchaseClick(packId) {
   const safePackId = String(packId || '').trim();
-  if (!safePackId || coinUiRuntime.pendingPackId) {
+  if (!safePackId) {
+    setCoinShopStatusMessage('Coin-Pack nicht verfuegbar.', 'error');
+    renderCoinShopSheet(true);
+    return;
+  }
+  if (coinUiRuntime.pendingPackId) {
+    setCoinShopStatusMessage('Kauf wird bereits verarbeitet.', 'info');
+    renderCoinShopSheet(true);
     return;
   }
   const catalogApi = window.GrowSimCoinPackCatalog;
   const purchaseApi = window.GrowSimPurchaseService;
   if (!catalogApi || typeof catalogApi.getCoinPackById !== 'function' || !purchaseApi || typeof purchaseApi.purchaseCoinPack !== 'function') {
+    setCoinShopStatusMessage('Coin-Kauf derzeit nicht verfuegbar.', 'error');
+    if (typeof showRetentionToast === 'function') {
+      showRetentionToast('Coin-Shop derzeit nicht verfuegbar');
+    }
+    renderCoinShopSheet(true);
     return;
   }
   const pack = catalogApi.getCoinPackById(safePackId);
   if (!pack) {
+    setCoinShopStatusMessage('Ausgewaehltes Coin-Pack wurde nicht gefunden.', 'error');
+    renderCoinShopSheet(true);
     return;
   }
 
   coinUiRuntime.pendingPackId = safePackId;
+  setCoinShopStatusMessage('Kauf wird vorbereitet...', 'info');
   emitCoinTelemetry({
     type: 'coin_pack_attempt',
     payload: {
@@ -2111,6 +2146,7 @@ async function onCoinPackPurchaseClick(packId) {
       source: 'coin_shop'
     });
     if (!result || !result.ok) {
+      setCoinShopStatusMessage('Coin-Kauf aktuell nicht verfuegbar.', 'error');
       if (typeof showRetentionToast === 'function') {
         showRetentionToast('Coin-Kauf aktuell nicht verfügbar');
       }
@@ -2128,6 +2164,7 @@ async function onCoinPackPurchaseClick(packId) {
     if (typeof showRetentionToast === 'function') {
       showRetentionToast(`${pack.title} · +${pack.coins} Coins`);
     }
+    setCoinShopStatusMessage(`${pack.title} erfolgreich gekauft.`, 'success');
   } finally {
     coinUiRuntime.pendingPackId = '';
     renderCoinShopSheet(true);
@@ -2146,14 +2183,25 @@ function renderCoinShopSheet(force = false) {
   const packListNode = uiNode('coinPackList', 'coinPackList');
   const packStatusNode = uiNode('coinPackStatusText', 'coinPackStatusText');
   if (!balanceNode || !statusNode || !itemListNode || !packListNode || !packStatusNode) {
+    if (force && !coinUiRuntime.renderRetryQueued) {
+      coinUiRuntime.renderRetryQueued = true;
+      setTimeout(() => {
+        coinUiRuntime.renderRetryQueued = false;
+        renderCoinShopSheet(true);
+      }, 0);
+    }
     return;
   }
+  coinUiRuntime.renderRetryQueued = false;
 
   const coins = getCoins();
   balanceNode.textContent = `${formatCompactNumber(coins)} Coins verfügbar`;
-  statusNode.textContent = coinUiRuntime.pendingActionId
+  const defaultStatus = 'Alle Effekte greifen direkt ohne Inventar.';
+  const statusText = coinUiRuntime.pendingActionId
     ? 'Kauf wird angewendet...'
-    : 'Alle Effekte greifen direkt ohne Inventar.';
+    : (coinUiRuntime.statusMessage || defaultStatus);
+  statusNode.textContent = statusText;
+  statusNode.dataset.tone = String(coinUiRuntime.statusTone || 'info');
 
   itemListNode.replaceChildren();
   const shopItems = getCoinShopDefinitions();
@@ -7816,8 +7864,16 @@ function readRewardFeatureConfigOverride() {
 
 const coinUiRuntime = {
   pendingActionId: '',
-  pendingPackId: ''
+  pendingPackId: '',
+  statusMessage: '',
+  statusTone: 'info',
+  renderRetryQueued: false
 };
+
+function setCoinShopStatusMessage(message, tone = 'info') {
+  coinUiRuntime.statusMessage = String(message || '').trim();
+  coinUiRuntime.statusTone = String(tone || 'info');
+}
 
 function getRewardLedger(snapshot = state) {
   const target = snapshot && typeof snapshot === 'object' ? snapshot : state;
@@ -10209,21 +10265,59 @@ async function triggerRewardAction(type, payload = {}) {
     nowMs: grantAtMs
   });
 
+  let spendResult = null;
+  if (coinCost > 0) {
+    spendResult = spendCoins(coinCost, `reward_action:${actionType}`);
+    if (!spendResult.ok) {
+      const spendBlockedResult = {
+        ok: false,
+        type: actionType,
+        reason: spendResult.reason || 'coin_spend_failed',
+        requiredCoins: coinCost,
+        currentCoins: getCoins()
+      };
+      markRewardActionUsed(actionType, {
+        nowMs: Date.now(),
+        rejected: true,
+        reason: spendBlockedResult.reason,
+        result: spendBlockedResult
+      });
+      onRewardActionRejected(actionType, {
+        payload,
+        provider: 'coin',
+        policy: runtimePolicy,
+        reason: spendBlockedResult.reason,
+        availability: usageCheck.availability || null,
+        result: spendBlockedResult,
+        nowMs: Date.now()
+      });
+      if (typeof showRetentionToast === 'function') {
+        showRetentionToast('Nicht genug Coins fuer diese Aktion');
+      }
+      if (payload.openShopOnBlocked !== false) {
+        openSheet('coinShop');
+      }
+      renderAll();
+      schedulePersistState(true);
+      return spendBlockedResult;
+    }
+  }
+
   const executeAtMs = Date.now();
   const result = executeRewardAction(actionType, {
     ...payload,
     grantResult
   });
-  let spendResult = null;
-  if (result.ok && coinCost > 0) {
-    spendResult = spendCoins(coinCost, `reward_action:${actionType}`);
-    if (!spendResult.ok) {
-      result.ok = false;
-      result.reason = spendResult.reason || 'coin_spend_failed';
-    } else {
-      result.coinCost = coinCost;
-      result.coinsAfter = spendResult.coins;
-    }
+  if (!result.ok && spendResult && spendResult.ok && coinCost > 0) {
+    grantCoins(
+      coinCost,
+      `reward_action_refund:${actionType}`,
+      `coin_refund:${actionType}:${activeRequestId}:${executeAtMs}`
+    );
+    result.coinsAfter = getCoins();
+  } else if (result.ok && spendResult && spendResult.ok && coinCost > 0) {
+    result.coinCost = coinCost;
+    result.coinsAfter = getCoins();
   }
   if (result.ok) {
     markRewardActionUsed(actionType, {
@@ -14719,7 +14813,15 @@ function openSheet(name) {
       nowMs
     });
   } else if (name === 'coinShop') {
+    if (!coinUiRuntime.pendingActionId && !coinUiRuntime.pendingPackId) {
+      setCoinShopStatusMessage('', 'info');
+    }
     renderCoinShopSheet(true);
+    setTimeout(() => {
+      if (state.ui.openSheet === 'coinShop') {
+        renderCoinShopSheet(true);
+      }
+    }, 0);
   } else if (name === 'leaderboard') {
     renderLeaderboardSheet(true);
     void fetchLeaderboardBundle({ category: ensureLeaderboardUiState(state).category, force: false });
