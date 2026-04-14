@@ -35,12 +35,26 @@ async function main() {
         window.onStartRun();
       }
 
-      const setNightWindow = () => {
+      const setSimHour = (targetHour) => {
         const currentSim = Number(window.__gsState.simulation.simTimeMs) || Date.now();
-        window.setSimulationTimeMs(currentSim + (18 * hourMs), Date.now(), {
+        const shifted = new Date(currentSim);
+        const currentHour = shifted.getHours();
+        if (targetHour <= currentHour) {
+          shifted.setDate(shifted.getDate() + 1);
+        }
+        shifted.setHours(targetHour, 0, 0, 0);
+        window.setSimulationTimeMs(shifted.getTime(), Date.now(), {
           suppressLogs: true,
-          reason: 'nightshift_test_force_night'
+          reason: `nightshift_test_set_hour_${targetHour}`
         });
+      };
+
+      const setNightWindow = () => {
+        setSimHour(23);
+      };
+
+      const setDayWindow = () => {
+        setSimHour(12);
       };
 
       window.ensureCurrencyState(window.__gsState);
@@ -86,12 +100,20 @@ async function main() {
       const noCoinResult = await window.triggerRewardAction('night_shift', { openShopOnBlocked: false });
       const afterNoCoinSimMs = Number(window.__gsState.simulation.simTimeMs) || 0;
 
-      const careRect = document.getElementById('careActionBtn') && document.getElementById('careActionBtn').getBoundingClientRect
-        ? document.getElementById('careActionBtn').getBoundingClientRect()
+      const boostRect = document.getElementById('boostActionBtn') && document.getElementById('boostActionBtn').getBoundingClientRect
+        ? document.getElementById('boostActionBtn').getBoundingClientRect()
         : null;
       const nightRect = document.getElementById('skipNightActionBtn') && document.getElementById('skipNightActionBtn').getBoundingClientRect
         ? document.getElementById('skipNightActionBtn').getBoundingClientRect()
         : null;
+      const nightNode = document.getElementById('skipNightActionBtn');
+      const nightVisibleAtNight = nightNode ? !nightNode.classList.contains('hidden') : false;
+
+      setDayWindow();
+      if (typeof window.renderAll === 'function') {
+        window.renderAll();
+      }
+      const nightVisibleAtDay = nightNode ? !nightNode.classList.contains('hidden') : false;
 
       return {
         beforeCoins,
@@ -106,23 +128,27 @@ async function main() {
         noCoinResult,
         beforeNoCoinSimMs,
         afterNoCoinSimMs,
-        careRect: careRect ? { top: careRect.top, left: careRect.left } : null,
-        nightRect: nightRect ? { top: nightRect.top, left: nightRect.left } : null
+        boostRect: boostRect ? { top: boostRect.top, left: boostRect.left, width: boostRect.width, height: boostRect.height } : null,
+        nightRect: nightRect ? { top: nightRect.top, left: nightRect.left, width: nightRect.width, height: nightRect.height } : null,
+        nightVisibleAtNight,
+        nightVisibleAtDay
       };
     }, { hourMs: HOUR_MS });
 
     const okCount = [report.firstResult, report.secondResult].filter((entry) => entry && entry.ok === true).length;
     assert.strictEqual(okCount, 1, 'night shift spam should only execute once');
-    assert.strictEqual(report.afterCoins, report.beforeCoins - 50, 'night shift should cost exactly 50 coins');
+    assert.strictEqual(report.afterCoins, report.beforeCoins - 25, 'night shift should cost exactly 25 coins');
     assert(report.afterSimMs > report.beforeSimMs, 'night shift should advance simulation time');
     assert(report.afterWaitSimMs > report.afterSimMs, 'simulation time should keep running after night shift');
     assert(report.eventRemainingAfterMs < report.eventRemainingBeforeMs, 'event countdown should keep running after night shift');
     assert.strictEqual(report.noCoinResult && report.noCoinResult.ok, false, 'night shift should fail with missing coins');
     assert.strictEqual(report.noCoinResult && report.noCoinResult.reason, 'insufficient_coins', 'missing coins should report insufficient_coins');
     assert.strictEqual(report.afterNoCoinSimMs, report.beforeNoCoinSimMs, 'failed no-coin night shift must not advance time');
-    assert(report.nightRect && report.careRect, 'night/care action buttons should be present in DOM');
-    assert(report.nightRect.top > report.careRect.top, 'night shift icon should be below care icon');
-    assert(Math.abs(report.nightRect.left - report.careRect.left) <= 2, 'night shift icon should align to the same right column');
+    assert.strictEqual(report.nightVisibleAtNight, true, 'night shift should be visible at night');
+    assert.strictEqual(report.nightVisibleAtDay, false, 'night shift should be hidden during daytime');
+    assert(report.nightRect && report.boostRect, 'night/boost action buttons should be present in DOM');
+    assert(report.nightRect.top < report.boostRect.top, 'night shift icon should be above x24 boost icon');
+    assert(Math.abs(report.nightRect.left - report.boostRect.left) <= 2, 'night shift and x24 should align in the same left stack');
   } finally {
     await closeBrowser(browser);
     await closeServer(server);

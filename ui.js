@@ -4,6 +4,7 @@ let homeBindingsBound = false;
 let menuOverlayBindingsBound = false;
 let sheetsOverlayBindingsBound = false;
 let homeMetaExpanded = false;
+let homeHudAnchorRafId = 0;
 const warnedMissingUiKeys = new Set();
 
 function getMenuUiPresentationApi() {
@@ -84,6 +85,8 @@ function cacheUi() {
     || (ui.homeMetaToggle ? ui.homeMetaToggle.querySelector('.home-meta-progress, .goal-progress') : null);
   ui.homeMetaGoalStatus = document.getElementById('homeMetaGoalStatus')
     || (ui.homeMetaToggle ? ui.homeMetaToggle.querySelector('.home-meta-status, [data-goal-status]') : null);
+  ui.homeMetaRetentionTeaser = document.getElementById('homeMetaRetentionTeaser')
+    || (ui.homeMetaToggle ? ui.homeMetaToggle.querySelector('.home-meta-retention') : null);
   ui.homeMetaBuildChip = document.getElementById('homeMetaBuildChip')
     || (ui.homeMetaToggle ? ui.homeMetaToggle.querySelector('.home-meta-build-chip, [data-build-chip]') : null);
   ui.homeMetaDetail = document.getElementById('homeMetaDetail');
@@ -633,6 +636,31 @@ function bindHomeScreenEvents(controller = null) {
     });
   }
 
+  if (ui.homeMetaRetentionTeaser) {
+    const openMissionsFromTeaser = () => {
+      const activeController = resolveController();
+      if (activeController && typeof activeController.handleOpenSheet === 'function') {
+        activeController.handleOpenSheet('missions');
+        return;
+      }
+      openSheet('missions');
+    };
+    ui.homeMetaRetentionTeaser.addEventListener('click', (event) => {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      openMissionsFromTeaser();
+    });
+    ui.homeMetaRetentionTeaser.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        event.stopPropagation();
+        openMissionsFromTeaser();
+      }
+    });
+  }
+
   const statRingBindings = [
     { node: ui.waterRing, key: 'water' },
     { node: ui.nutritionRing, key: 'nutrients' },
@@ -728,6 +756,37 @@ function bindHomeScreenEvents(controller = null) {
   }
 
   homeBindingsBound = true;
+  refreshHomeHudTopAnchors();
+  window.addEventListener('resize', scheduleHomeHudTopAnchorsRefresh, { passive: true });
+  window.addEventListener('orientationchange', scheduleHomeHudTopAnchorsRefresh, { passive: true });
+}
+
+function refreshHomeHudTopAnchors() {
+  if (!ui || !ui.homePlayerPanel) {
+    return;
+  }
+  const homeScreenNode = ui.homePlayerPanel.closest('.home-screen');
+  if (!(homeScreenNode instanceof HTMLElement)) {
+    return;
+  }
+  const measuredBottom = ui.homePlayerPanel.offsetTop + ui.homePlayerPanel.offsetHeight;
+  if (Number.isFinite(measuredBottom) && measuredBottom > 0) {
+    homeScreenNode.style.setProperty('--home-player-panel-bottom', `${Math.round(measuredBottom)}px`);
+  }
+}
+
+function scheduleHomeHudTopAnchorsRefresh() {
+  if (typeof requestAnimationFrame !== 'function' || typeof cancelAnimationFrame !== 'function') {
+    refreshHomeHudTopAnchors();
+    return;
+  }
+  if (homeHudAnchorRafId) {
+    cancelAnimationFrame(homeHudAnchorRafId);
+  }
+  homeHudAnchorRafId = requestAnimationFrame(() => {
+    homeHudAnchorRafId = 0;
+    refreshHomeHudTopAnchors();
+  });
 }
 
 function setHomeMetaExpanded(expanded) {
@@ -744,9 +803,11 @@ function setHomeMetaExpanded(expanded) {
   if (ui.homePlayerPanel) {
     ui.homePlayerPanel.classList.toggle('home-player-panel--meta-open', homeMetaExpanded);
   }
+  scheduleHomeHudTopAnchorsRefresh();
 }
 
 window.setHomeMetaExpanded = setHomeMetaExpanded;
+window.refreshHomeHudTopAnchors = refreshHomeHudTopAnchors;
 function bindMenuOverlayEvents(controller = null) {
   if (menuOverlayBindingsBound) {
     return;
