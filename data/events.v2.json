@@ -2193,6 +2193,3222 @@
         "flowering",
         "harvest"
       ]
+    },
+    {
+      "id": "v2_water_late_watering_pattern",
+      "category": "water",
+      "title": "Gießen kommt wieder zu spät",
+      "description": "Die Pflanze fängt vor dem nächsten Gießfenster schon sichtbar an nachzulassen. Der Wasserhaushalt wird zu sprunghaft.",
+      "warningText": "Die Gießintervalle passen nicht mehr sauber zum aktuellen Verbrauch.",
+      "triggers": {
+        "all": [
+          {
+            "field": "status.water",
+            "op": "<=",
+            "value": 38
+          },
+          {
+            "field": "status.stress",
+            "op": ">=",
+            "value": 24
+          },
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": true
+          }
+        ],
+        "stage": {
+          "min": 3,
+          "max": 7
+        }
+      },
+      "weight": 1.02,
+      "cooldownRealMinutes": 250,
+      "resolveTimeMinutes": 50,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "water",
+        "dry",
+        "cadence",
+        "root"
+      ],
+      "options": [
+        {
+          "id": "tighten_watering_window",
+          "label": "Gießfenster enger takten",
+          "effects": {
+            "water": 8,
+            "stress": -3,
+            "risk": -2,
+            "growth": 0.4
+          },
+          "intent": "gradual_rehydrate",
+          "contextFit": [
+            "dry"
+          ]
+        },
+        {
+          "id": "water_big_shot",
+          "label": "Mit einer großen Gabe gegensteuern",
+          "effects": {
+            "water": 16,
+            "stress": -1,
+            "risk": 2,
+            "growth": 0.2
+          },
+          "intent": "heavy_water_push",
+          "contextFit": [
+            "dry"
+          ]
+        },
+        {
+          "id": "let_it_ride",
+          "label": "Muster erst mal laufen lassen",
+          "effects": {
+            "health": -2,
+            "stress": 4,
+            "risk": 2,
+            "growth": -0.6
+          },
+          "intent": "delay_action",
+          "contextFit": [
+            "dry"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Das Gie?fenster wurde n?her an den tats?chlichen Verbrauch gelegt. Die Pflanze musste weniger zwischen Trockenstress und Nachversorgung pendeln.",
+          "cause": "Vor der Anpassung lief der Topf regelm??ig weiter trocken als f?r diese Phase sinnvoll war.",
+          "result": "Der Wasserhaushalt wurde ruhiger und das Wachstum kann wieder gleichm??iger arbeiten.",
+          "guidance": "Beobachte jetzt 1 bis 2 Zyklen lang nur noch den tats?chlichen Verbrauch statt starr nach Uhr zu gie?en."
+        },
+        "worsened": {
+          "explanation": "Die Korrektur war zu grob oder zu sp?t. Der Rhythmus bleibt instabil.",
+          "cause": "Die Pflanze kam weiter wiederholt an die Trockenheitsgrenze.",
+          "result": "Stress und Wurzeldruck bleiben erh?ht.",
+          "guidance": "Arbeite mit kleineren, fr?heren Anpassungen statt mit sp?ten Rettungsgaben."
+        },
+        "escalated": {
+          "explanation": "Das Muster wurde weiter verschleppt. Aus leichtem Durst wird wiederkehrender Trockenstress.",
+          "cause": "Wasser wurde erst korrigiert, als die Pflanze schon deutlich nachlie?.",
+          "result": "Ein Folgeereignis zum instabilen Gie?rhythmus kann nachziehen.",
+          "guidance": "Lege den Fokus jetzt auf Konstanz statt auf einzelne starke Gaben."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "stabilized": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "worsened": [
+          "v2_water_poor_dryback"
+        ],
+        "escalated": [
+          "v2_water_poor_dryback"
+        ]
+      },
+      "learningNote": "Nicht nur die Wassermenge, sondern auch der Zeitpunkt entscheidet darüber, ob die Pflanze ruhig läuft.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "dry",
+        "conflictGroup": "water_dry",
+        "warningProfile": {
+          "cadence": "recurring_dryback"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_water_poor_dryback",
+      "category": "water",
+      "title": "Medium trocknet schlecht ab",
+      "description": "Das Substrat verliert Wasser nur zäh. Die Oberfläche täuscht Trockenheit an, während die Wurzelzone noch zu voll steht.",
+      "warningText": "Die Dryback-Phase ist zu schwach und nimmt der Wurzelzone Luft.",
+      "triggers": {
+        "all": [
+          {
+            "field": "status.water",
+            "op": ">=",
+            "value": 74
+          },
+          {
+            "field": "root.oxygenPercent",
+            "op": "<=",
+            "value": 62
+          },
+          {
+            "field": "status.risk",
+            "op": ">=",
+            "value": 34
+          }
+        ],
+        "stage": {
+          "min": 3,
+          "max": 8
+        }
+      },
+      "weight": 1.05,
+      "cooldownRealMinutes": 240,
+      "resolveTimeMinutes": 60,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "water",
+        "wet",
+        "dryback",
+        "root"
+      ],
+      "options": [
+        {
+          "id": "increase_dryback_window",
+          "label": "Dryback bewusst verlängern",
+          "effects": {
+            "water": -7,
+            "risk": -4,
+            "stress": -2
+          },
+          "intent": "oxygen_relief",
+          "contextFit": [
+            "wet"
+          ]
+        },
+        {
+          "id": "lighten_next_irrigation",
+          "label": "Nächste Gabe kleiner fahren",
+          "effects": {
+            "water": -4,
+            "risk": -2,
+            "growth": -0.2
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "wet"
+          ]
+        },
+        {
+          "id": "keep_schedule",
+          "label": "Beim bisherigen Schema bleiben",
+          "effects": {
+            "health": -2,
+            "stress": 2,
+            "risk": 4
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "wet"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Das Medium bekam wieder mehr Luft zwischen den Gaben. Die Wurzelzone konnte sich erholen.",
+          "cause": "Vorher blieb zu viel Restfeuchte im Topf zurück.",
+          "result": "Der Druck auf Wurzeln und Mikrobiologie wurde reduziert.",
+          "guidance": "Behalte jetzt eher den Topfzustand als starre Mengen im Blick."
+        },
+        "stabilized": {
+          "explanation": "Die Lage wurde etwas abgefangen, aber das Substrat trocknet noch nicht ganz sauber ab.",
+          "cause": "Die letzte Anpassung hat Feuchte reduziert, aber nicht konsequent genug.",
+          "result": "Die Wurzelzone bleibt etwas anfällig.",
+          "guidance": "Nutze noch 1 bis 2 Zyklen für kontrollierten Dryback ohne hektische Gegenmaßnahmen."
+        },
+        "escalated": {
+          "explanation": "Das Medium blieb weiter zu lange nass. Die Sauerstoffversorgung bricht stärker ein.",
+          "cause": "Der gestaute Wasserfilm im Wurzelbereich wurde nicht sauber aufgelöst.",
+          "result": "Ein Folgeereignis zur Wurzelbelastung ist jetzt plausibel.",
+          "guidance": "Arbeite sofort ruhiger und luftiger, statt einfach weiterzugießen."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "stabilized": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "worsened": [
+          "v2_water_root_oxygen_debt"
+        ],
+        "escalated": [
+          "v2_water_root_oxygen_debt"
+        ]
+      },
+      "learningNote": "Gute Dryback-Phasen schützen die Wurzelzone. Dauerfeuchte macht Probleme oft erst verzögert sichtbar.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "water_wet_root",
+        "warningProfile": {
+          "cadence": "sticky_dryback"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_water_root_oxygen_debt",
+      "category": "water",
+      "title": "Sauerstoffmangel im Wurzelbereich",
+      "description": "Der Wurzelraum wirkt schwer, müde und zu feucht. Die Pflanze verliert sichtbar Tempo, obwohl genug Wasser im Medium steht.",
+      "warningText": "Die Wurzelzone bekommt zu wenig Luft und reagiert schon auf die anhaltende Nässe.",
+      "triggers": {
+        "all": [
+          {
+            "field": "status.water",
+            "op": ">=",
+            "value": 80
+          },
+          {
+            "field": "root.oxygenPercent",
+            "op": "<=",
+            "value": 54
+          },
+          {
+            "field": "root.healthPercent",
+            "op": "<=",
+            "value": 72
+          }
+        ],
+        "stage": {
+          "min": 4,
+          "max": 9
+        }
+      },
+      "weight": 1.1,
+      "cooldownRealMinutes": 270,
+      "resolveTimeMinutes": 70,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "water",
+        "wet",
+        "oxygen",
+        "root"
+      ],
+      "options": [
+        {
+          "id": "pause_and_air_out",
+          "label": "Gießpause und Wurzelzone entlasten",
+          "effects": {
+            "water": -10,
+            "risk": -5,
+            "stress": -3,
+            "health": 1
+          },
+          "intent": "root_recovery",
+          "contextFit": [
+            "wet"
+          ]
+        },
+        {
+          "id": "partial_flush",
+          "label": "Mit leichter Spülung retten",
+          "effects": {
+            "water": -6,
+            "risk": -2,
+            "stress": 1,
+            "health": -1
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "wet"
+          ]
+        },
+        {
+          "id": "water_again_lightly",
+          "label": "Noch einmal leicht nachgießen",
+          "effects": {
+            "water": 6,
+            "risk": 5,
+            "stress": 3,
+            "health": -3
+          },
+          "intent": "heavy_water_push",
+          "contextFit": [
+            "wet"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Wurzelzone bekam wieder Luft. Dadurch konnte der Stoffwechsel im Medium anlaufen und der Druck sank.",
+          "cause": "Vorher stand zu viel Wasser bei zu wenig Sauerstoff im Wurzelraum.",
+          "result": "Das Wachstum bleibt zwar kurz gebremst, stabilisiert sich aber wieder.",
+          "guidance": "Halte die nächsten Zyklen bewusst trockener und vermeide Rettungsgießen."
+        },
+        "worsened": {
+          "explanation": "Die Maßnahme war zu aggressiv oder nicht passend. Die Wurzelzone blieb instabil.",
+          "cause": "Sauerstoffmangel reagiert schlecht auf hektische Korrekturen.",
+          "result": "Gesundheit und Risikodruck verschlechtern sich weiter.",
+          "guidance": "Arbeite jetzt ruhig, trocken und mit klarer Priorität auf Luft statt auf Menge."
+        },
+        "escalated": {
+          "explanation": "Das Medium blieb weiter überlastet. Aus Sauerstoffmangel wird echte Wurzelbelastung.",
+          "cause": "Die feuchte, schwach belüftete Wurzelzone konnte sich nicht mehr selbst ausgleichen.",
+          "result": "Ein Folgeereignis zur Wurzelgesundheit wurde wahrscheinlicher.",
+          "guidance": "Schadensbegrenzung ist jetzt wichtiger als Wachstum oder Futterdruck."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "stabilized": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "worsened": [
+          "root_stress_followup",
+          "v2_disease_root_warning"
+        ],
+        "escalated": [
+          "v2_disease_root_warning",
+          "root_stress_followup"
+        ]
+      },
+      "learningNote": "Wurzeln brauchen nicht nur Wasser, sondern vor allem abwechselnd Wasser und Luft. Zu nasses Medium bremst oft erst verzögert sichtbar.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "water_wet_root",
+        "warningProfile": {
+          "cadence": "oxygen_debt"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "root_zone_followup_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_root_zone_cold_warning",
+      "category": "environment",
+      "title": "Wurzelzone zu kalt",
+      "description": "In der dunklen Phase fällt das Umfeld spürbar ab. Die Wurzelzone arbeitet träge und die Aufnahme verlangsamt sich.",
+      "warningText": "Kühle Nächte drücken Leistung und Trocknung im Wurzelbereich.",
+      "triggers": {
+        "all": [
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": false
+          },
+          {
+            "field": "env.temperatureC",
+            "op": "<=",
+            "value": 19
+          },
+          {
+            "field": "root.healthPercent",
+            "op": "<=",
+            "value": 80
+          }
+        ],
+        "stage": {
+          "min": 3,
+          "max": 10
+        }
+      },
+      "weight": 0.92,
+      "cooldownRealMinutes": 280,
+      "resolveTimeMinutes": 60,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "root",
+        "cold",
+        "night",
+        "climate"
+      ],
+      "options": [
+        {
+          "id": "insulate_root_zone",
+          "label": "Wurzelbereich entlasten",
+          "effects": {
+            "stress": -2,
+            "risk": -1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "cold_root"
+          ]
+        },
+        {
+          "id": "reduce_lights_off_watering",
+          "label": "Nachts weniger Feuchte stehen lassen",
+          "effects": {
+            "water": -4,
+            "risk": -2,
+            "stress": -1
+          },
+          "intent": "oxygen_relief",
+          "contextFit": [
+            "cold_root"
+          ]
+        },
+        {
+          "id": "do_nothing_cold_root",
+          "label": "Abwarten",
+          "effects": {
+            "health": -2,
+            "stress": 2,
+            "risk": 2,
+            "growth": -0.5
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "cold_root"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Wurzelzone wurde entlastet und musste nachts weniger kalt-nass arbeiten.",
+          "cause": "Kühle Bedingungen hatten Aufnahme und Trocknung verlangsamt.",
+          "result": "Die Pflanze stabilisiert Wasser- und Nährstofffluss wieder sauberer.",
+          "guidance": "Prüfe besonders die dunkle Phase, nicht nur die Tageswerte."
+        },
+        "escalated": {
+          "explanation": "Die kalte Wurzelzone blieb bestehen und drückt weiter auf Aufnahme und Tempo.",
+          "cause": "Kühle Nächte und feuchte Töpfe verstärken sich gegenseitig.",
+          "result": "Ein Kältefolgeevent wird wahrscheinlicher.",
+          "guidance": "Reduziere Nachtstress zuerst, bevor du Futter oder Wasser erhöhst."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "stabilized": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "worsened": [
+          "v2_environment_cold_night"
+        ],
+        "escalated": [
+          "v2_environment_cold_night"
+        ]
+      },
+      "learningNote": "Zu kalte Wurzelzonen bremsen die Pflanze oft subtil. Auffällig wird das meist erst über schwächere Aufnahme und schwerere Töpfe.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "cold_root",
+        "conflictGroup": "climate_cold_root",
+        "warningProfile": {
+          "cadence": "night_root_drag"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_nutrition_ph_drift_slow",
+      "category": "nutrition",
+      "title": "pH driftet langsam weg",
+      "description": "Die Aufnahme ist noch nicht blockiert, aber die Wurzelzone läuft schleichend aus dem stabilen Bereich.",
+      "warningText": "Der pH-Wert kippt nicht hart, aber konstant in die falsche Richtung.",
+      "triggers": {
+        "all": [
+          {
+            "field": "root.ph",
+            "op": "<=",
+            "value": 5.5
+          },
+          {
+            "field": "status.risk",
+            "op": ">=",
+            "value": 24
+          }
+        ],
+        "stage": {
+          "min": 3,
+          "max": 10
+        }
+      },
+      "weight": 0.98,
+      "cooldownRealMinutes": 250,
+      "resolveTimeMinutes": 90,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "nutrition",
+        "ph",
+        "drift",
+        "rootzone"
+      ],
+      "options": [
+        {
+          "id": "correct_ph_gently",
+          "label": "pH sauber nachführen",
+          "effects": {
+            "risk": -3,
+            "stress": -1,
+            "nutrition": 2
+          },
+          "intent": "ph_corrective",
+          "contextFit": [
+            "lockout"
+          ]
+        },
+        {
+          "id": "swing_back_hard",
+          "label": "Hart gegenkorrigieren",
+          "effects": {
+            "nutrition": 4,
+            "stress": 2,
+            "risk": 3
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "lockout"
+          ]
+        },
+        {
+          "id": "ignore_ph_drift",
+          "label": "Noch laufen lassen",
+          "effects": {
+            "health": -1,
+            "stress": 2,
+            "risk": 3
+          },
+          "intent": "observe_only",
+          "contextFit": [
+            "lockout"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die pH-Korrektur war ruhig genug, um das System wieder ins Aufnahmefenster zu führen.",
+          "cause": "Der Drift war noch früh genug erkennbar und musste nicht aggressiv gestoppt werden.",
+          "result": "Die Nährstoffaufnahme stabilisiert sich, ohne neues Pendeln auszulösen.",
+          "guidance": "Halte jetzt Konstanz statt weiterer Gegenbewegungen."
+        },
+        "worsened": {
+          "explanation": "Die Anpassung war hilfreich gemeint, hat das System aber zu stark in Bewegung gebracht.",
+          "cause": "Schnelle Gegenschläge verschieben pH und Aufnahme oft erneut.",
+          "result": "Das Risiko für Lockout bleibt bestehen.",
+          "guidance": "Korrigiere künftig in kleineren Schritten und gib dem Medium Zeit."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_nutrition_uptake_stabilizing"
+        ],
+        "stabilized": [
+          "v2_nutrition_post_correction_instability"
+        ],
+        "worsened": [
+          "v2_nutrition_lockout"
+        ],
+        "escalated": [
+          "v2_nutrition_lockout"
+        ]
+      },
+      "learningNote": "pH-Probleme werden meist gefährlich, wenn man auf langsamen Drift mit hektischen Gegenbewegungen reagiert.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "lockout",
+        "conflictGroup": "nutrition_lockout",
+        "warningProfile": {
+          "cadence": "slow_drift"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_nutrition_salt_buildup",
+      "category": "nutrition",
+      "title": "Salzaufbau im Medium",
+      "description": "Die Wurzelzone wirkt schwer und die Aufnahme wird ruppiger. Hohe Restsalze drücken auf die Pufferfähigkeit des Mediums.",
+      "warningText": "EC und Rückstände im Medium laufen langsam in eine unruhige Richtung.",
+      "triggers": {
+        "all": [
+          {
+            "field": "root.ec",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "field": "status.risk",
+            "op": ">=",
+            "value": 32
+          }
+        ],
+        "stage": {
+          "min": 4,
+          "max": 10
+        }
+      },
+      "weight": 1.02,
+      "cooldownRealMinutes": 270,
+      "resolveTimeMinutes": 95,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "nutrition",
+        "ec",
+        "salt",
+        "rootzone"
+      ],
+      "options": [
+        {
+          "id": "reset_feed_pressure",
+          "label": "Futterdruck sauber senken",
+          "effects": {
+            "nutrition": -4,
+            "risk": -4,
+            "stress": -1
+          },
+          "intent": "ph_corrective",
+          "contextFit": [
+            "lockout"
+          ]
+        },
+        {
+          "id": "micro_flush_and_recover",
+          "label": "Leicht spülen und beruhigen",
+          "effects": {
+            "water": 4,
+            "risk": -2,
+            "stress": 1
+          },
+          "intent": "root_recovery",
+          "contextFit": [
+            "lockout"
+          ]
+        },
+        {
+          "id": "push_feed_anyway",
+          "label": "Weiter Druck auf EC geben",
+          "effects": {
+            "nutrition": 5,
+            "stress": 3,
+            "risk": 4,
+            "health": -2
+          },
+          "intent": "heavy_feed_push",
+          "contextFit": [
+            "lockout"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Der Salzstress wurde abgebaut, ohne das Medium komplett zu destabilisieren.",
+          "cause": "Zu viel Restladung hatte die Aufnahme unnötig rau gemacht.",
+          "result": "Die Wurzelzone arbeitet wieder berechenbarer.",
+          "guidance": "Erhöhe Futter erst wieder, wenn die Pflanze sichtbar ruhiger läuft."
+        },
+        "escalated": {
+          "explanation": "Die Salzlast blieb zu hoch oder wurde noch weiter gedrückt.",
+          "cause": "Ein überladenes Medium reagiert oft zuerst mit instabiler Aufnahme statt mit sofort sichtbarem Mangel.",
+          "result": "Ein Lockout-Folgeevent wurde wahrscheinlicher.",
+          "guidance": "Jetzt zuerst die Wurzelzone beruhigen, nicht das Wachstum pushen."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_nutrition_uptake_stabilizing"
+        ],
+        "stabilized": [
+          "v2_nutrition_post_correction_instability"
+        ],
+        "worsened": [
+          "v2_nutrition_lockout"
+        ],
+        "escalated": [
+          "v2_nutrition_lockout"
+        ]
+      },
+      "learningNote": "Salzaufbau fühlt sich oft zuerst wie ein diffuser Leistungsabfall an. Die Ursache sitzt dann im Medium, nicht in fehlendem Futter.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "lockout",
+        "conflictGroup": "nutrition_lockout",
+        "warningProfile": {
+          "cadence": "salt_accumulation"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_nutrition_n_excess_transition",
+      "category": "nutrition",
+      "title": "Zu viel Stickstoff zur falschen Zeit",
+      "description": "Die Pflanze bleibt im Übergang sehr weich und dunkelgrün. Der Wuchs schiebt Blattmasse, wo Struktur wichtiger wäre.",
+      "warningText": "Im Stretch liegt noch zu viel N-Druck im System.",
+      "triggers": {
+        "all": [
+          {
+            "field": "status.nutrition",
+            "op": ">=",
+            "value": 74
+          },
+          {
+            "field": "plant.stageIndex",
+            "op": ">=",
+            "value": 6
+          },
+          {
+            "field": "plant.stageIndex",
+            "op": "<=",
+            "value": 8
+          }
+        ],
+        "stage": {
+          "min": 6,
+          "max": 8
+        }
+      },
+      "weight": 0.9,
+      "cooldownRealMinutes": 280,
+      "resolveTimeMinutes": 90,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "nutrition",
+        "nitrogen",
+        "stretch",
+        "canopy"
+      ],
+      "options": [
+        {
+          "id": "pull_n_back",
+          "label": "Stickstoffdruck zurücknehmen",
+          "effects": {
+            "nutrition": -5,
+            "stress": -1,
+            "risk": -2,
+            "growth": -0.2
+          },
+          "intent": "balanced_feed",
+          "contextFit": [
+            "deficit"
+          ]
+        },
+        {
+          "id": "keep_feed_hot",
+          "label": "Futterplan heiß weiterfahren",
+          "effects": {
+            "nutrition": 3,
+            "stress": 2,
+            "risk": 3,
+            "growth": 0.5
+          },
+          "intent": "heavy_feed_push",
+          "contextFit": [
+            "deficit"
+          ]
+        },
+        {
+          "id": "trim_leaf_pressure_only",
+          "label": "Nur optisch gegensteuern",
+          "effects": {
+            "stress": 1,
+            "risk": 1,
+            "growth": -0.1
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "deficit"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Der Stickstoffdruck wurde passend zur Übergangsphase reduziert. Die Pflanze kann Struktur sauberer aufbauen.",
+          "cause": "Zu viel N hielt das System zu weich und blattlastig.",
+          "result": "Stretch und Blattmasse geraten wieder eher in Balance.",
+          "guidance": "Arbeite jetzt mit ruhiger Ernährung statt mit harten Schnitten."
+        },
+        "worsened": {
+          "explanation": "Das System blieb zu stickstofflastig oder wurde nur oberflächlich korrigiert.",
+          "cause": "Im Stretch wirkt überhöhter N-Druck oft verzögert über weiches Gewebe und dichte Krone.",
+          "result": "Struktur- und Canopy-Druck steigen weiter.",
+          "guidance": "Reduziere die Ursache im Futterplan, nicht nur die sichtbaren Symptome."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_nutrition_uptake_stabilizing"
+        ],
+        "stabilized": [
+          "v2_nutrition_uptake_stabilizing"
+        ],
+        "worsened": [
+          "v2_structure_canopy_density_warning"
+        ],
+        "escalated": [
+          "v2_structure_canopy_density_warning"
+        ]
+      },
+      "learningNote": "Was in der Vegetation noch angenehm satt wirkt, wird im Stretch schnell zu weich und unruhig.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "deficit",
+        "conflictGroup": "nutrition_nitrogen_timing",
+        "warningProfile": {
+          "cadence": "transition_overpush"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_nutrition_k_demand_early_flower",
+      "category": "nutrition",
+      "title": "Frühzeichen steigenden Kaliumbedarfs",
+      "description": "Mit beginnender Blütenlast verschiebt sich der Bedarf. Die Pflanze wirkt noch stabil, aber nicht mehr ganz ausbalanciert.",
+      "warningText": "Die frühe Blüte zieht mehr Kalium, als der aktuelle Plan sauber liefert.",
+      "triggers": {
+        "all": [
+          {
+            "field": "status.nutrition",
+            "op": "<=",
+            "value": 52
+          },
+          {
+            "field": "plant.stageIndex",
+            "op": ">=",
+            "value": 7
+          },
+          {
+            "field": "plant.stageIndex",
+            "op": "<=",
+            "value": 9
+          }
+        ],
+        "stage": {
+          "min": 7,
+          "max": 9
+        }
+      },
+      "weight": 0.98,
+      "cooldownRealMinutes": 240,
+      "resolveTimeMinutes": 85,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "nutrition",
+        "potassium",
+        "flower",
+        "uptake"
+      ],
+      "options": [
+        {
+          "id": "raise_k_gently",
+          "label": "Blütefutter sauber anheben",
+          "effects": {
+            "nutrition": 7,
+            "risk": 1,
+            "growth": 0.5
+          },
+          "intent": "balanced_feed",
+          "contextFit": [
+            "deficit"
+          ]
+        },
+        {
+          "id": "overcorrect_k",
+          "label": "Schnell stark hochziehen",
+          "effects": {
+            "nutrition": 12,
+            "stress": 2,
+            "risk": 3
+          },
+          "intent": "heavy_feed_push",
+          "contextFit": [
+            "deficit"
+          ]
+        },
+        {
+          "id": "keep_old_mix",
+          "label": "Alten Mix beibehalten",
+          "effects": {
+            "health": -1,
+            "growth": -0.5,
+            "stress": 1
+          },
+          "intent": "observe_only",
+          "contextFit": [
+            "deficit"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Ernährung wurde passend zur Blütenphase nachgeführt. Die Pflanze muss die Last nicht mehr aus Reserven abfangen.",
+          "cause": "Frühe Blüte verschiebt den Bedarf weg von vegetativer Sättigung hin zu stabiler Blütenversorgung.",
+          "result": "Struktur und Qualität können sauberer weiterlaufen.",
+          "guidance": "Erhöhe jetzt lieber schrittweise als mit einer harten Einzelkorrektur."
+        },
+        "stabilized": {
+          "explanation": "Der Bedarf wurde teilweise getroffen, das System bleibt aber noch sensibel.",
+          "cause": "Die Blüte fordert bereits mehr, als der alte Plan zuverlässig liefert.",
+          "result": "Das Wachstum bleibt stabil, aber noch ohne großen Puffer.",
+          "guidance": "Beobachte 1 bis 2 Zyklen auf gleichmäßige Entwicklung statt sofort weiter zu pushen."
+        }
+      },
+      "learningNote": "Frühe Blüte braucht oft keine brutale Korrektur, sondern eine saubere Verschiebung des Ernährungsschwerpunkts.",
+      "followUpRules": {
+        "improved": [
+          "v2_nutrition_uptake_stabilizing"
+        ],
+        "stabilized": [
+          "v2_nutrition_uptake_stabilizing"
+        ],
+        "worsened": [
+          "v2_nutrition_post_correction_instability"
+        ],
+        "escalated": [
+          "v2_nutrition_post_correction_instability"
+        ]
+      },
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "deficit",
+        "conflictGroup": "nutrition_flower_demand",
+        "warningProfile": {
+          "cadence": "early_flower_shift"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_climate_rh_night_high",
+      "category": "environment",
+      "title": "RH nachts zu hoch",
+      "description": "In der Dunkelphase bleibt zu viel Feuchte im Raum. Die Blüten- und Blattoberflächen trocknen nur langsam ab.",
+      "warningText": "Die Nachtfeuchte sitzt zu lange im Bestand und baut unnötigen Krankheitsdruck auf.",
+      "triggers": {
+        "all": [
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": false
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 67
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": "<=",
+            "value": 0.95
+          }
+        ],
+        "stage": {
+          "min": 7,
+          "max": 11
+        }
+      },
+      "weight": 1.08,
+      "cooldownRealMinutes": 255,
+      "resolveTimeMinutes": 55,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "climate",
+        "humidity",
+        "night",
+        "flower"
+      ],
+      "options": [
+        {
+          "id": "dry_night_window",
+          "label": "Nachtfenster trockener fahren",
+          "effects": {
+            "risk": -4,
+            "stress": -1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
+        },
+        {
+          "id": "boost_air_exchange_night",
+          "label": "Luftaustausch nachts erhöhen",
+          "effects": {
+            "risk": -3,
+            "stress": 0
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
+        },
+        {
+          "id": "ignore_night_rh",
+          "label": "Auf Tageswerte vertrauen",
+          "effects": {
+            "risk": 5,
+            "health": -2,
+            "stress": 2
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "mold_surface"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Nacht wurde trockener geführt. Feuchte konnte aus der Krone abziehen, bevor sie sich festsetzt.",
+          "cause": "Vorher blieb die Oberfläche zu lange in einem zu feuchten Fenster.",
+          "result": "Der Pilzdruck sinkt spürbar.",
+          "guidance": "Beobachte besonders den Übergang in die Dunkelphase, nicht nur den Mittelwert des Tages."
+        },
+        "escalated": {
+          "explanation": "Die Feuchtenacht blieb bestehen. Die Krone trocknet weiter zu langsam ab.",
+          "cause": "Niedriger VPD und hohe RH in der Blüte verstärken sich gegenseitig.",
+          "result": "Ein Folgeereignis zur Feuchterisikolage ist jetzt plausibel.",
+          "guidance": "Ziehe Feuchte erst aus der Nacht heraus, bevor du an Einzelproblemen herumkorrigierst."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_climate_microclimate_relief"
+        ],
+        "stabilized": [
+          "v2_climate_microclimate_relief"
+        ],
+        "worsened": [
+          "v2_climate_flower_humidity_risk"
+        ],
+        "escalated": [
+          "v2_climate_flower_humidity_risk"
+        ]
+      },
+      "learningNote": "Späte Feuchteprobleme entstehen oft nachts. Wer nur tagsüber misst, sieht den eigentlichen Druck zu spät.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "mold_surface",
+        "conflictGroup": "disease_mold",
+        "warningProfile": {
+          "cadence": "night_humidity"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_climate_weak_air_movement",
+      "category": "environment",
+      "title": "Schwache Luftbewegung",
+      "description": "Die Luft im Bestand steht zu still. Feuchte und Wärme werden im Blatt- und Blütenraum schlechter abgeführt.",
+      "warningText": "Der Bestand ist zu träge belüftet und baut lokale Mikroklimata auf.",
+      "triggers": {
+        "all": [
+          {
+            "field": "env.airflowScore",
+            "op": "<=",
+            "value": 44
+          },
+          {
+            "field": "status.risk",
+            "op": ">=",
+            "value": 28
+          }
+        ],
+        "stage": {
+          "min": 4,
+          "max": 11
+        }
+      },
+      "weight": 0.98,
+      "cooldownRealMinutes": 245,
+      "resolveTimeMinutes": 45,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "airflow",
+        "canopy",
+        "humidity",
+        "climate"
+      ],
+      "options": [
+        {
+          "id": "restore_air_movement",
+          "label": "Luftpfad freier machen",
+          "effects": {
+            "risk": -3,
+            "stress": -1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "rebalance_canopy_edges",
+          "label": "Luft an kritischen Zonen verbessern",
+          "effects": {
+            "risk": -2,
+            "stress": 0
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "ignore_weak_airflow",
+          "label": "Belüftung so lassen",
+          "effects": {
+            "risk": 4,
+            "stress": 1,
+            "health": -1
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "environment"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Mehr Luftbewegung hat Feuchte und Wärme besser aus dem Bestand gezogen.",
+          "cause": "Vorher blieben lokale Taschen im Blatt- und Blütenraum stehen.",
+          "result": "Das Mikroklima ist ausgeglichener und weniger anfällig.",
+          "guidance": "Achte darauf, Luft durch die Krone zu führen, nicht nur darüber hinweg."
+        },
+        "escalated": {
+          "explanation": "Die Luft blieb zu träge. Der Bestand trocknet und kühlt weiter ungleichmäßig ab.",
+          "cause": "Schwacher Airflow verstärkt andere Druckfaktoren statt allein sichtbar zu sein.",
+          "result": "Ein Folgeereignis zum stehenden Mikroklima wird plausibler.",
+          "guidance": "Stabiler Luftaustausch entlastet mehrere Probleme gleichzeitig."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_climate_microclimate_relief"
+        ],
+        "stabilized": [
+          "v2_climate_microclimate_relief"
+        ],
+        "worsened": [
+          "v2_climate_stagnant_air_warning"
+        ],
+        "escalated": [
+          "v2_climate_stagnant_air_warning"
+        ]
+      },
+      "learningNote": "Schwache Luftbewegung ist selten das einzige Problem, macht aber viele andere Probleme wahrscheinlicher.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "environment",
+        "conflictGroup": "climate_airflow",
+        "warningProfile": {
+          "cadence": "weak_airflow"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_light_lamp_too_close",
+      "category": "environment",
+      "title": "Lampe etwas zu nah",
+      "description": "Die Pflanzenspitzen laufen nahe am Lichtfenster. Wärme- und Lichtdruck sind noch nicht kritisch, aber schon unruhig.",
+      "warningText": "Die Spitzen bekommen mehr Lichtdruck, als die aktuelle Distanz sauber abfangen kann.",
+      "triggers": {
+        "all": [
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": true
+          },
+          {
+            "field": "env.temperatureC",
+            "op": ">=",
+            "value": 28
+          },
+          {
+            "field": "env.vpdKpa",
+            "op": ">=",
+            "value": 1.45
+          },
+          {
+            "field": "setup.light",
+            "op": "==",
+            "value": "high"
+          }
+        ],
+        "stage": {
+          "min": 4,
+          "max": 10
+        }
+      },
+      "weight": 0.96,
+      "cooldownRealMinutes": 230,
+      "resolveTimeMinutes": 35,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "light",
+        "heat",
+        "vpd",
+        "canopy"
+      ],
+      "options": [
+        {
+          "id": "back_off_light_distance",
+          "label": "Lichtdistanz leicht erhöhen",
+          "effects": {
+            "stress": -3,
+            "risk": -2,
+            "growth": -0.2
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "heat_dry"
+          ]
+        },
+        {
+          "id": "soften_environment_around_light",
+          "label": "Umfeld um das Licht entschärfen",
+          "effects": {
+            "stress": -2,
+            "risk": -1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "heat_dry"
+          ]
+        },
+        {
+          "id": "push_through_light",
+          "label": "Lichtdruck bewusst stehen lassen",
+          "effects": {
+            "stress": 3,
+            "risk": 3,
+            "growth": 0.3,
+            "health": -1
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "heat_dry"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Lichtspitzen wurden rechtzeitig entlastet. Die Pflanze musste weniger gegen Hitze- und Lichtdruck verteidigen.",
+          "cause": "Zu geringe Distanz hatte das obere Blätterdach schon aus dem Komfortfenster gedrückt.",
+          "result": "Der Canopy-Bereich arbeitet wieder ruhiger.",
+          "guidance": "Nutze lieber etwas Reserve im Abstand als dauerhaften Grenzbetrieb."
+        },
+        "escalated": {
+          "explanation": "Der Lichtdruck blieb zu hoch. Die Spitzen stehen weiter unter Hitzelast.",
+          "cause": "Hohe Intensität plus hohes VPD verschärfen sich gegenseitig.",
+          "result": "Ein Hitzefolgeevent wird wahrscheinlicher.",
+          "guidance": "Priorisiere jetzt Entlastung statt noch mehr Leistung aus der Spitze holen zu wollen."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_climate_microclimate_relief"
+        ],
+        "stabilized": [
+          "v2_climate_microclimate_relief"
+        ],
+        "worsened": [
+          "v2_climate_heat_stress"
+        ],
+        "escalated": [
+          "v2_climate_heat_stress"
+        ]
+      },
+      "learningNote": "Zu nahes Licht kostet oft zuerst nur Ruhe. Wartet man zu lange, wird daraus schnell echter Stress.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "heat_dry",
+        "conflictGroup": "climate_heat_dry",
+        "warningProfile": {
+          "cadence": "canopy_light_pressure"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_structure_stretch_surge",
+      "category": "environment",
+      "title": "Stretch stärker als erwartet",
+      "description": "Im Übergang schiebt die Pflanze mehr Länge als geplant. Die Struktur wird lockerer und die Lichtführung schwieriger.",
+      "warningText": "Der Stretch baut schneller Höhe auf, als die aktuelle Führung sauber tragen kann.",
+      "triggers": {
+        "all": [
+          {
+            "field": "plant.stageIndex",
+            "op": ">=",
+            "value": 6
+          },
+          {
+            "field": "plant.stageIndex",
+            "op": "<=",
+            "value": 8
+          },
+          {
+            "field": "plant.size",
+            "op": ">=",
+            "value": 48
+          },
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": true
+          }
+        ],
+        "stage": {
+          "min": 6,
+          "max": 8
+        }
+      },
+      "weight": 0.94,
+      "cooldownRealMinutes": 285,
+      "resolveTimeMinutes": 50,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "structure",
+        "stretch",
+        "transition",
+        "canopy"
+      ],
+      "options": [
+        {
+          "id": "guide_stretch_early",
+          "label": "Stretch früh führen",
+          "effects": {
+            "stress": -1,
+            "risk": -2,
+            "growth": 0.2
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "support_only_late",
+          "label": "Erst später reagieren",
+          "effects": {
+            "stress": 1,
+            "risk": 2,
+            "growth": 0.1
+          },
+          "intent": "delay_action",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "ignore_stretch_surge",
+          "label": "Stretch laufen lassen",
+          "effects": {
+            "risk": 3,
+            "stress": 2,
+            "health": -1
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "environment"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Struktur wurde früh genug geführt. Dadurch blieb der Stretch kontrollierbar statt chaotisch.",
+          "cause": "Der Übergang hatte mehr Längenwachstum als erwartet angeschoben.",
+          "result": "Canopy und Lichtführung bleiben besser nutzbar.",
+          "guidance": "Reagiere im Stretch lieber früh und moderat statt spät und hart."
+        },
+        "escalated": {
+          "explanation": "Die Pflanze konnte weiter ungebremst Länge schieben. Die Struktur wird jetzt instabiler.",
+          "cause": "Ungelenkter Stretch kostet später Stütze, Lichtabstand und Ruhe.",
+          "result": "Ein Folgeevent zur Stützung wird wahrscheinlicher.",
+          "guidance": "Führe die Struktur jetzt, bevor Gewicht und Höhe zusammen problematisch werden."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_structure_support_settled"
+        ],
+        "stabilized": [
+          "v2_structure_support_settled"
+        ],
+        "worsened": [
+          "v2_structure_support_needed"
+        ],
+        "escalated": [
+          "v2_structure_support_needed"
+        ]
+      },
+      "learningNote": "Stretch ist kein reiner Bonus. Ohne Führung wird aus schneller Höhe schnell strukturelle Unruhe.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "environment",
+        "conflictGroup": "structure_stretch",
+        "warningProfile": {
+          "cadence": "transition_surge"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_structure_canopy_density_warning",
+      "category": "environment",
+      "title": "Krone wird zu dicht",
+      "description": "Im Bestand staut sich Blattmasse. Licht und Luft kommen schlechter bis in die mittleren Zonen durch.",
+      "warningText": "Die Krone beginnt ein eigenes Mikroklima aufzubauen.",
+      "triggers": {
+        "all": [
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 61
+          },
+          {
+            "field": "env.airflowScore",
+            "op": "<=",
+            "value": 58
+          },
+          {
+            "field": "plant.size",
+            "op": ">=",
+            "value": 54
+          }
+        ],
+        "stage": {
+          "min": 6,
+          "max": 11
+        }
+      },
+      "weight": 1.01,
+      "cooldownRealMinutes": 270,
+      "resolveTimeMinutes": 50,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "canopy",
+        "airflow",
+        "humidity",
+        "structure"
+      ],
+      "options": [
+        {
+          "id": "open_canopy_carefully",
+          "label": "Krone gezielt öffnen",
+          "effects": {
+            "risk": -4,
+            "stress": -1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "light_cleanup_only",
+          "label": "Nur leicht entlasten",
+          "effects": {
+            "risk": -2,
+            "stress": 0
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "ignore_dense_canopy",
+          "label": "Dichte so stehen lassen",
+          "effects": {
+            "risk": 4,
+            "stress": 1,
+            "health": -1
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "environment"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Durch das Öffnen der Krone konnte Feuchtigkeit besser entweichen und Luft wieder durch den Bestand arbeiten.",
+          "cause": "Die Blatt- und Blütenmasse war bereits zu kompakt geworden.",
+          "result": "Das Mikroklima bleibt kontrollierbarer und weniger anfällig.",
+          "guidance": "Halte Eingriffe moderat und gezielt, statt die Pflanze auf einmal stark auszudünnen."
+        },
+        "escalated": {
+          "explanation": "Die dichte Krone blieb bestehen. Feuchte und stehende Luft sammeln sich weiter im Inneren.",
+          "cause": "Hohe Blattmasse plus begrenzter Luftweg verschlechtern das Mikroklima schleichend.",
+          "result": "Ein Feuchte- oder Stagnationsfolgeevent wird wahrscheinlicher.",
+          "guidance": "Öffne jetzt lieber gezielt kritische Taschen, bevor daraus echter Krankheitsdruck wird."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_climate_microclimate_relief"
+        ],
+        "stabilized": [
+          "v2_climate_microclimate_relief"
+        ],
+        "worsened": [
+          "v2_climate_stagnant_air_warning",
+          "v2_climate_flower_humidity_risk"
+        ],
+        "escalated": [
+          "v2_climate_flower_humidity_risk",
+          "v2_climate_stagnant_air_warning"
+        ]
+      },
+      "learningNote": "Dichte Kronen bestrafen nicht sofort. Das Problem wächst oft als Mikroklima im Inneren, bis Folgeprobleme entstehen.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "environment",
+        "conflictGroup": "structure_dense_canopy",
+        "warningProfile": {
+          "cadence": "microclimate_build"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible",
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_structure_support_needed",
+      "category": "environment",
+      "title": "Pflanze braucht Stützung",
+      "description": "Die tragenden Triebe kommen an ihre Grenze. Gewicht und Länge ziehen stärker an der Struktur als bisher.",
+      "warningText": "Ohne Stütze steigt das Risiko für knickende oder schlecht geführte Triebe.",
+      "triggers": {
+        "all": [
+          {
+            "field": "plant.size",
+            "op": ">=",
+            "value": 62
+          },
+          {
+            "field": "status.health",
+            "op": "<=",
+            "value": 82
+          },
+          {
+            "field": "plant.stageIndex",
+            "op": ">=",
+            "value": 8
+          }
+        ],
+        "stage": {
+          "min": 8,
+          "max": 11
+        }
+      },
+      "weight": 0.86,
+      "cooldownRealMinutes": 300,
+      "resolveTimeMinutes": 40,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "support",
+        "structure",
+        "flower",
+        "load"
+      ],
+      "options": [
+        {
+          "id": "support_now",
+          "label": "Triebe jetzt stützen",
+          "effects": {
+            "risk": -3,
+            "stress": -1,
+            "health": 1
+          },
+          "intent": "root_recovery",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "rebalance_weight",
+          "label": "Last etwas umverteilen",
+          "effects": {
+            "risk": -2,
+            "stress": 0
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "wait_on_support",
+          "label": "Noch ohne Stütze laufen lassen",
+          "effects": {
+            "risk": 3,
+            "stress": 1,
+            "health": -1
+          },
+          "intent": "delay_action",
+          "contextFit": [
+            "environment"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Struktur wurde rechtzeitig entlastet. Gewicht verteilt sich sauberer und die Pflanze bleibt ruhiger in Form.",
+          "cause": "Mit zunehmender Bl?tenlast reichte die bisherige Eigenstabilit?t nicht mehr ganz aus.",
+          "result": "Das Risiko f?r knickende oder schlecht gef?hrte Triebe sinkt.",
+          "guidance": "St?tzung ist in dieser Phase eher Vorsorge als Notfallma?nahme."
+        },
+        "stabilized": {
+          "explanation": "Die Hauptlast wurde abgefangen, aber einzelne Zonen arbeiten noch gegen Gewicht und Zug.",
+          "cause": "Die St?tzung hilft, doch die Struktur muss sich erst auf die neue Lastverteilung einstellen.",
+          "result": "Die Pflanze bleibt vorerst ruhiger, aber noch nicht ganz entspannt.",
+          "guidance": "Kontrolliere jetzt lieber die tragenden Punkte nach, statt die Pflanze wieder frei arbeiten zu lassen."
+        },
+        "worsened": {
+          "explanation": "Die Last blieb zu lange auf ungest?tzten Trieben. Die Struktur arbeitet weiter an ihrer Grenze.",
+          "cause": "Mehr L?nge und Gewicht treffen auf zu wenig F?hrung.",
+          "result": "Die Pflanze bleibt anf?lliger f?r instabile Partien.",
+          "guidance": "Entlaste zuerst die tragenden Bereiche, bevor du an Einzelspitzen optimierst."
+        }
+      },
+      "learningNote": "Späte Blüte braucht oft nicht mehr Druck, sondern mehr Halt. Gute Stützung schützt Struktur und Qualität zugleich.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "environment",
+        "conflictGroup": "structure_support",
+        "warningProfile": {
+          "cadence": "load_support"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_structure_support_settled"
+        ],
+        "stabilized": [
+          "v2_structure_support_settled"
+        ],
+        "worsened": [
+          "v2_structure_top_load_shift"
+        ],
+        "escalated": [
+          "v2_structure_top_load_shift"
+        ]
+      }
+    },
+    {
+      "id": "v2_water_borderline_irrigation",
+      "category": "water",
+      "title": "Wasserf?hrung zu nah am Limit",
+      "description": "Die Pflanze kommt noch durch, aber die Bew?sserung l?uft zu oft direkt an der Trockenheitskante entlang.",
+      "warningText": "Die Wasserf?hrung ist knapp genug geworden, um wiederholt kleine Stressspitzen aufzubauen.",
+      "triggers": {
+        "all": [
+          {
+            "field": "status.water",
+            "op": "<=",
+            "value": 46
+          },
+          {
+            "field": "status.water",
+            "op": ">=",
+            "value": 34
+          },
+          {
+            "field": "status.stress",
+            "op": ">=",
+            "value": 18
+          },
+          {
+            "field": "simulation.isDaytime",
+            "op": "==",
+            "value": true
+          }
+        ],
+        "stage": {
+          "min": 4,
+          "max": 8
+        }
+      },
+      "weight": 0.92,
+      "cooldownRealMinutes": 260,
+      "resolveTimeMinutes": 40,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "water",
+        "dry",
+        "cadence",
+        "root"
+      ],
+      "options": [
+        {
+          "id": "nudge_window_forward",
+          "label": "Etwas fr?her nachf?hren",
+          "effects": {
+            "water": 5,
+            "stress": -2,
+            "risk": -2,
+            "growth": 0.2
+          },
+          "intent": "gradual_rehydrate",
+          "contextFit": [
+            "dry"
+          ]
+        },
+        {
+          "id": "smaller_even_passes",
+          "label": "In ruhigeren Teilgaben arbeiten",
+          "effects": {
+            "water": 3,
+            "stress": -1,
+            "risk": -1,
+            "growth": 0.1
+          },
+          "intent": "gradual_rehydrate",
+          "contextFit": [
+            "dry"
+          ]
+        },
+        {
+          "id": "run_close_to_edge",
+          "label": "Weiter am Limit fahren",
+          "effects": {
+            "stress": 2,
+            "risk": 2,
+            "growth": -0.2,
+            "health": -1
+          },
+          "intent": "delay_action",
+          "contextFit": [
+            "dry"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Wasserf?hrung wurde rechtzeitig etwas vorgezogen. Dadurch musste die Pflanze seltener bis an die Trockenheitskante abfallen.",
+          "cause": "Der bisherige Rhythmus war noch nicht falsch, aber schon zu knapp f?r den aktuellen Verbrauch.",
+          "result": "Der Lauf wird ruhiger und die Wurzelzone arbeitet gleichm??iger.",
+          "guidance": "Halte das neue Fenster nun 1 bis 2 Zyklen konstant, statt weiter an Menge und Timing gleichzeitig zu drehen."
+        },
+        "stabilized": {
+          "explanation": "Die Spitze wurde abgefangen, der Rhythmus bleibt aber noch knapp.",
+          "cause": "Die Wasserf?hrung wurde nur leicht entlastet.",
+          "result": "Die Pflanze stabilisiert sich, bleibt aber etwas anf?llig f?r erneuten Trockendruck.",
+          "guidance": "Ziehe lieber noch etwas fr?her nach, statt wieder auf den letzten Moment zu warten."
+        },
+        "escalated": {
+          "explanation": "Die Pflanze lief weiter zu nah am Limit. Aus knapper Wasserf?hrung wird unruhiger Dryback.",
+          "cause": "Kleine Trockenheitsfenster summieren sich, wenn die Phase mehr Verbrauch aufbaut als der Plan hergibt.",
+          "result": "Ein Folgeereignis zur ungleichm??igen Trocknung wird plausibler.",
+          "guidance": "Korrigiere jetzt die Taktung, nicht nur die Menge."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "stabilized": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "worsened": [
+          "v2_water_uneven_dryback"
+        ],
+        "escalated": [
+          "v2_water_uneven_dryback"
+        ]
+      },
+      "learningNote": "Viele Wasserprobleme beginnen nicht mit echter D?rre, sondern mit einem Rhythmus, der dauerhaft zu knapp geplant ist.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "dry",
+        "conflictGroup": "water_dry",
+        "warningProfile": {
+          "cadence": "borderline_irrigation"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_water_uneven_dryback",
+      "category": "water",
+      "title": "Wurzelballen trocknet ungleichm??ig",
+      "description": "Ein Teil des Mediums zieht schon ab, w?hrend andere Zonen noch zu voll stehen. Die Wurzelzone arbeitet dadurch widerspr?chlich.",
+      "warningText": "Der Dryback verl?uft nicht mehr gleichm??ig durch den Wurzelraum.",
+      "triggers": {
+        "all": [
+          {
+            "field": "status.water",
+            "op": ">=",
+            "value": 48
+          },
+          {
+            "field": "status.water",
+            "op": "<=",
+            "value": 72
+          },
+          {
+            "field": "root.oxygenPercent",
+            "op": "<=",
+            "value": 68
+          },
+          {
+            "field": "status.stress",
+            "op": ">=",
+            "value": 22
+          }
+        ],
+        "stage": {
+          "min": 4,
+          "max": 10
+        }
+      },
+      "weight": 0.97,
+      "cooldownRealMinutes": 250,
+      "resolveTimeMinutes": 60,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "water",
+        "dryback",
+        "root",
+        "wet"
+      ],
+      "options": [
+        {
+          "id": "even_out_irrigation_passes",
+          "label": "Gaben gleichm??iger verteilen",
+          "effects": {
+            "water": -2,
+            "risk": -2,
+            "stress": -1
+          },
+          "intent": "oxygen_relief",
+          "contextFit": [
+            "wet"
+          ]
+        },
+        {
+          "id": "restore_full_dryback",
+          "label": "Dryback sauberer ausfahren",
+          "effects": {
+            "water": -5,
+            "risk": -3,
+            "stress": -1
+          },
+          "intent": "oxygen_relief",
+          "contextFit": [
+            "wet"
+          ]
+        },
+        {
+          "id": "ignore_uneven_rootzone",
+          "label": "So weiterlaufen lassen",
+          "effects": {
+            "health": -1,
+            "stress": 2,
+            "risk": 3
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "wet"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Wurzelzone trocknet wieder gleichm??iger ab und bekommt zwischen den Gaben sauberer Luft.",
+          "cause": "Vorher liefen einzelne Bereiche zu nass weiter, w?hrend andere schon leerzogen.",
+          "result": "Der Wurzelraum reagiert berechenbarer und verliert weniger Reserve an Gegenbewegungen.",
+          "guidance": "Ver?ndere jetzt lieber die Verteilung der Gaben als st?ndig nur die Gesamtmenge."
+        },
+        "stabilized": {
+          "explanation": "Die Verteilung wurde etwas beruhigt, aber der Wurzelraum ist noch nicht ganz einheitlich.",
+          "cause": "Der Dryback ist weniger schief, bleibt aber noch empfindlich.",
+          "result": "Die Lage stabilisiert sich, ohne schon voll gel?st zu sein.",
+          "guidance": "Beobachte besonders Topfgewicht und Nachlauf, nicht nur die Oberfl?che."
+        },
+        "escalated": {
+          "explanation": "Die Zonen laufen weiter gegeneinander. Dadurch bleibt Sauerstoff in Teilen des Wurzelraums knapp.",
+          "cause": "Ungleichm??ige Trocknung zieht den gesamten Root-Zyklus in eine instabile Richtung.",
+          "result": "Ein Folgeereignis zum Sauerstoffmangel im Wurzelbereich wird plausibler.",
+          "guidance": "Arbeite jetzt zuerst an ruhigem Dryback statt an mehr Input."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "stabilized": [
+          "v2_water_rootzone_recovery_check"
+        ],
+        "worsened": [
+          "v2_water_root_oxygen_debt"
+        ],
+        "escalated": [
+          "v2_water_root_oxygen_debt"
+        ]
+      },
+      "learningNote": "Nicht jeder nasse Topf ist gleich. Ungleichm??iger Dryback kostet oft Ruhe, bevor er wie ein klares Problem aussieht.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "water_wet_root",
+        "warningProfile": {
+          "cadence": "uneven_dryback"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "root_zone_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_water_rootzone_recovery_check",
+      "category": "positive",
+      "title": "Wurzelzone kommt wieder in Tritt",
+      "description": "Die Wurzelzone reagiert auf die letzte Korrektur. Jetzt entscheidet sich, ob daraus echte Stabilit?t oder neues Pendeln wird.",
+      "warningText": "Die Erholung wirkt gut, bleibt aber noch sensibel.",
+      "triggers": {
+        "stage": {
+          "min": 3,
+          "max": 10
+        }
+      },
+      "isFollowUp": true,
+      "weight": 0.84,
+      "cooldownRealMinutes": 220,
+      "resolveTimeMinutes": 35,
+      "polarity": "positive",
+      "tone": "positive",
+      "tags": [
+        "water",
+        "recovery",
+        "root"
+      ],
+      "options": [
+        {
+          "id": "stay_consistent",
+          "label": "Rhythmus jetzt ruhig halten",
+          "effects": {
+            "risk": -2,
+            "stress": -1,
+            "health": 1,
+            "growth": 0.2
+          },
+          "intent": "root_recovery",
+          "contextFit": [
+            "wet",
+            "dry"
+          ]
+        },
+        {
+          "id": "push_volume_back_up",
+          "label": "Direkt wieder mehr geben",
+          "effects": {
+            "water": 4,
+            "risk": 1,
+            "stress": 1
+          },
+          "intent": "heavy_water_push",
+          "contextFit": [
+            "wet"
+          ]
+        },
+        {
+          "id": "change_too_many_things",
+          "label": "Gleich mehrere Dinge ?ndern",
+          "effects": {
+            "stress": 2,
+            "risk": 2,
+            "health": -1
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "wet",
+            "dry"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Erholung wurde nicht gest?rt. Die Wurzelzone kann das ruhigere Muster jetzt wirklich ?bernehmen.",
+          "cause": "Nach der Korrektur brauchte das Medium vor allem Konstanz.",
+          "result": "Wasserhaushalt und Root-Tempo wirken wieder deutlich stabiler.",
+          "guidance": "Lass das System jetzt arbeiten, bevor du erneut an Menge oder Timing drehst."
+        },
+        "stabilized": {
+          "explanation": "Die Wurzelzone bleibt auf Kurs, ist aber noch nicht ganz aus dem sensiblen Fenster raus.",
+          "cause": "Die Erholung l?uft, braucht aber noch etwas Ruhe.",
+          "result": "Das Restrisiko sinkt, bleibt jedoch beobachtbar.",
+          "guidance": "Halte den Ablauf weiter schlicht und reproduzierbar."
+        },
+        "escalated": {
+          "explanation": "Die Erholungsphase wurde zu fr?h wieder unruhig gemacht.",
+          "cause": "Zu viele neue Eingriffe bringen den Wurzelraum leicht zur?ck ins Pendeln.",
+          "result": "Ein neues Dryback-Folgeereignis wird plausibel.",
+          "guidance": "Erst stabilisieren, dann wieder optimieren."
+        }
+      },
+      "followUpRules": {
+        "worsened": [
+          "v2_water_uneven_dryback"
+        ],
+        "escalated": [
+          "v2_water_uneven_dryback"
+        ]
+      },
+      "learningNote": "Nach einer guten Korrektur gewinnt oft nicht die n?chste Ma?nahme, sondern die sauber eingehaltene Ruhephase.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "wet",
+        "conflictGroup": "water_recovery",
+        "warningProfile": {
+          "cadence": "recovery_window"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_nutrition_post_correction_instability",
+      "category": "nutrition",
+      "title": "Aufnahme pendelt nach der Korrektur",
+      "description": "Die Ursache wurde angegangen, aber die Wurzelzone l?uft noch nicht wieder komplett ruhig. Aufnahme und Puffer pendeln nach.",
+      "warningText": "Nach der Korrektur bleibt das System noch anf?llig f?r ?berreaktionen.",
+      "triggers": {
+        "all": [
+          {
+            "field": "status.risk",
+            "op": ">=",
+            "value": 26
+          }
+        ],
+        "stage": {
+          "min": 4,
+          "max": 10
+        }
+      },
+      "isFollowUp": true,
+      "weight": 0.92,
+      "cooldownRealMinutes": 260,
+      "resolveTimeMinutes": 70,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "nutrition",
+        "uptake",
+        "rebound",
+        "rootzone"
+      ],
+      "options": [
+        {
+          "id": "let_rootzone_settle",
+          "label": "Aufnahme ruhig auspendeln lassen",
+          "effects": {
+            "stress": -1,
+            "risk": -2,
+            "nutrition": 1
+          },
+          "intent": "balanced_feed",
+          "contextFit": [
+            "lockout"
+          ]
+        },
+        {
+          "id": "correct_again_hard",
+          "label": "Noch einmal hart nachkorrigieren",
+          "effects": {
+            "nutrition": 3,
+            "stress": 2,
+            "risk": 3
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "lockout"
+          ]
+        },
+        {
+          "id": "feed_into_rebound",
+          "label": "Schon wieder Druck auf Futter geben",
+          "effects": {
+            "nutrition": 4,
+            "risk": 2,
+            "stress": 1
+          },
+          "intent": "heavy_feed_push",
+          "contextFit": [
+            "lockout"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Wurzelzone durfte sich nach der Korrektur sortieren. Dadurch findet die Aufnahme wieder eher in ein stabiles Fenster zur?ck.",
+          "cause": "Nach Eingriffen braucht das Medium oft mehr Ruhe als noch eine zweite Reaktion.",
+          "result": "Das Restrisiko sinkt und die Ern?hrung wird berechenbarer.",
+          "guidance": "Jetzt lieber in kleinen Schritten beobachten statt in der Gegenrichtung nachzulegen."
+        },
+        "stabilized": {
+          "explanation": "Das Pendeln wurde gebremst, aber noch nicht ganz beruhigt.",
+          "cause": "Die Korrektur hilft, doch die Aufnahme bleibt noch etwas empfindlich.",
+          "result": "Die Lage h?lt, braucht aber weiter saubere Nachkontrolle.",
+          "guidance": "Gib der Wurzelzone noch 1 bis 2 ruhige Zyklen."
+        },
+        "escalated": {
+          "explanation": "Die Gegenkorrektur hat neues Pendeln aufgebaut. Die Aufnahme wird wieder unruhig statt klarer.",
+          "cause": "Mehrere harte Eingriffe hintereinander verschieben pH, EC und Aufnahme oft erneut.",
+          "result": "Ein Lockout-Folgeereignis wird wahrscheinlicher.",
+          "guidance": "Nimm Druck aus dem System, bevor du weiter steuerst."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_nutrition_uptake_stabilizing"
+        ],
+        "stabilized": [
+          "v2_nutrition_uptake_stabilizing"
+        ],
+        "worsened": [
+          "v2_nutrition_lockout"
+        ],
+        "escalated": [
+          "v2_nutrition_lockout"
+        ]
+      },
+      "learningNote": "Die erste gute Korrektur ist oft nur der Anfang. Entscheidend ist, ob das System danach auspendeln darf.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "lockout",
+        "conflictGroup": "nutrition_lockout",
+        "warningProfile": {
+          "cadence": "correction_pendulum"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "instability_rebound_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_nutrition_uptake_stabilizing",
+      "category": "positive",
+      "title": "Aufnahme stabilisiert sich",
+      "description": "Das Medium reagiert wieder berechenbarer. Jetzt z?hlt, ob der ruhigere Lauf erhalten bleibt.",
+      "warningText": "Die Aufnahme wirkt besser, sollte aber nicht zu fr?h wieder gepusht werden.",
+      "triggers": {
+        "stage": {
+          "min": 4,
+          "max": 10
+        }
+      },
+      "isFollowUp": true,
+      "weight": 0.82,
+      "cooldownRealMinutes": 230,
+      "resolveTimeMinutes": 45,
+      "polarity": "positive",
+      "tone": "positive",
+      "tags": [
+        "nutrition",
+        "recovery",
+        "uptake"
+      ],
+      "options": [
+        {
+          "id": "hold_feed_steady",
+          "label": "Jetzt sauber stabil halten",
+          "effects": {
+            "risk": -2,
+            "stress": -1,
+            "nutrition": 1,
+            "growth": 0.2
+          },
+          "intent": "balanced_feed",
+          "contextFit": [
+            "lockout",
+            "deficit"
+          ]
+        },
+        {
+          "id": "push_for_speed",
+          "label": "Direkt wieder Leistung ziehen",
+          "effects": {
+            "nutrition": 3,
+            "risk": 2,
+            "stress": 1
+          },
+          "intent": "heavy_feed_push",
+          "contextFit": [
+            "deficit"
+          ]
+        },
+        {
+          "id": "cut_feed_too_far",
+          "label": "Zu vorsichtig zur?cknehmen",
+          "effects": {
+            "nutrition": -3,
+            "growth": -0.3,
+            "stress": 1
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "deficit"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die ruhigere Aufnahme wurde nicht wieder gest?rt. Das System arbeitet wieder klarer und berechenbarer.",
+          "cause": "Nach der Korrektur half vor allem ein stabiler, unspektakul?rer Verlauf.",
+          "result": "Die Pflanze kann die Phase wieder gleichm??iger versorgen.",
+          "guidance": "Bleibe bei kleinen, sauberen Anpassungen statt bei neuen Spr?ngen."
+        },
+        "stabilized": {
+          "explanation": "Die Aufnahme bleibt im gr?nen Bereich, ohne schon komplett belastbar zu wirken.",
+          "cause": "Das Medium f?ngt sich, braucht aber weiter Ruhe.",
+          "result": "Die Lage bleibt kontrollierbar.",
+          "guidance": "Weiter beobachten und nur bei echtem Signal nachsteuern."
+        },
+        "escalated": {
+          "explanation": "Die Stabilisierung wurde wieder zu fr?h verlassen. Das System kippt zur?ck ins Pendeln.",
+          "cause": "Neue Futter- oder Gegenbewegungen kamen, bevor die Aufnahme wirklich gesetzt war.",
+          "result": "Ein neues Instabilit?tsfolgeereignis wird plausibel.",
+          "guidance": "Halte die Linie l?nger, bevor du wieder Druck gibst."
+        }
+      },
+      "followUpRules": {
+        "worsened": [
+          "v2_nutrition_post_correction_instability"
+        ],
+        "escalated": [
+          "v2_nutrition_post_correction_instability"
+        ]
+      },
+      "learningNote": "Gute Aufnahme f?hlt sich oft unspektakul?r an. Genau das ist in dieser Phase ein gutes Zeichen.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "deficit",
+        "conflictGroup": "nutrition_recovery",
+        "warningProfile": {
+          "cadence": "uptake_settling"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "instability_rebound_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_climate_bud_microclimate_pocket",
+      "category": "environment",
+      "title": "Mikroklima kippt in Bl?tenn?he",
+      "description": "Zwischen Bl?tenn?he, Blattmasse und Luftweg bauen sich kleine Feuchtetaschen auf, obwohl der Raum insgesamt noch okay wirkt.",
+      "warningText": "Im Bestand entstehen lokale Taschen, die feuchter bleiben als der Rest des Runs.",
+      "triggers": {
+        "all": [
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 64
+          },
+          {
+            "field": "env.airflowScore",
+            "op": "<=",
+            "value": 52
+          },
+          {
+            "field": "plant.size",
+            "op": ">=",
+            "value": 60
+          }
+        ],
+        "stage": {
+          "min": 7,
+          "max": 11
+        }
+      },
+      "weight": 1,
+      "cooldownRealMinutes": 270,
+      "resolveTimeMinutes": 55,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "climate",
+        "humidity",
+        "airflow",
+        "flower"
+      ],
+      "options": [
+        {
+          "id": "open_bud_zone_carefully",
+          "label": "Kritische Zonen gezielt ?ffnen",
+          "effects": {
+            "risk": -4,
+            "stress": -1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
+        },
+        {
+          "id": "redirect_air_through_pockets",
+          "label": "Luft gezielt durch Taschen f?hren",
+          "effects": {
+            "risk": -3,
+            "stress": 0
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
+        },
+        {
+          "id": "trust_room_average",
+          "label": "Auf den Raum-Mittelwert vertrauen",
+          "effects": {
+            "risk": 4,
+            "stress": 1,
+            "health": -1
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "mold_surface"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die lokalen Feuchtetaschen wurden aufgel?st. Luft und Oberfl?che gleichen sich wieder besser an.",
+          "cause": "Vorher blieb im dichten Bl?tenraum mehr Feuchte stehen als der Raumwert vermuten lie?.",
+          "result": "Der Bestand ist weniger anf?llig f?r stillen Pilzdruck.",
+          "guidance": "Beobachte weiterhin kritische Zonen im Bestand, nicht nur den Sensorwert des Raums."
+        },
+        "stabilized": {
+          "explanation": "Die Taschen wurden kleiner, sind aber noch nicht komplett verschwunden.",
+          "cause": "Das Mikroklima wurde entlastet, bleibt jedoch sensibel.",
+          "result": "Der unmittelbare Druck sinkt, das Restrisiko bleibt aber sichtbar.",
+          "guidance": "Halte Luftweg und Blattdichte jetzt konstant, statt die Krone wieder schlie?en zu lassen."
+        },
+        "escalated": {
+          "explanation": "Die Taschen blieben bestehen und ziehen weiter Feuchte in die Bl?tenn?he.",
+          "cause": "Lokale Feuchte baut sich oft leise auf, bis die Oberfl?che zu lange nass bleibt.",
+          "result": "Ein Feuchte- oder Krankheitsfolgeevent wird wahrscheinlicher.",
+          "guidance": "Arbeite jetzt direkt am Mikroklima der problematischen Zonen."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_climate_microclimate_relief"
+        ],
+        "stabilized": [
+          "v2_climate_microclimate_relief"
+        ],
+        "worsened": [
+          "v2_climate_flower_humidity_risk"
+        ],
+        "escalated": [
+          "v2_climate_flower_humidity_risk"
+        ]
+      },
+      "learningNote": "Der Raum kann okay aussehen und trotzdem problematische Taschen im Bestand aufbauen.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "mold_surface",
+        "conflictGroup": "disease_mold",
+        "warningProfile": {
+          "cadence": "bud_microclimate"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "disease_spread_followup_possible",
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_climate_microclimate_relief",
+      "category": "positive",
+      "title": "Mikroklima entspannt sich",
+      "description": "Die letzten Anpassungen greifen. Luft und Feuchte verteilen sich wieder gleichm??iger durch den Bestand.",
+      "warningText": "Die Entlastung wirkt, bleibt aber noch abh?ngig von ruhiger Weiterf?hrung.",
+      "triggers": {
+        "stage": {
+          "min": 6,
+          "max": 11
+        }
+      },
+      "isFollowUp": true,
+      "weight": 0.84,
+      "cooldownRealMinutes": 240,
+      "resolveTimeMinutes": 40,
+      "polarity": "positive",
+      "tone": "positive",
+      "tags": [
+        "climate",
+        "recovery",
+        "airflow",
+        "humidity"
+      ],
+      "options": [
+        {
+          "id": "keep_air_lanes_open",
+          "label": "Luftwege jetzt stabil halten",
+          "effects": {
+            "risk": -2,
+            "stress": -1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "mold_surface"
+          ]
+        },
+        {
+          "id": "overthin_after_relief",
+          "label": "Nach der Entlastung zu hart eingreifen",
+          "effects": {
+            "stress": 2,
+            "risk": 1,
+            "health": -1
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "stop_monitoring_now",
+          "label": "Kontrolle sofort wieder locker lassen",
+          "effects": {
+            "risk": 2,
+            "stress": 1
+          },
+          "intent": "observe_only",
+          "contextFit": [
+            "environment"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die Entlastung blieb konsistent. Feuchte kann aus dem Bestand besser raus, ohne neue Unruhe zu erzeugen.",
+          "cause": "Die letzten Korrekturen hatten genug Wirkung, brauchten aber noch Stabilit?t im Nachlauf.",
+          "result": "Der Run wirkt im Klima ruhiger und weniger anf?llig f?r R?ckschl?ge.",
+          "guidance": "Halte das Muster jetzt schlicht und wiederholbar."
+        },
+        "stabilized": {
+          "explanation": "Das Mikroklima bleibt verbessert, ist aber noch nicht komplett gesetzt.",
+          "cause": "Die Entlastung greift, braucht aber weitere saubere F?hrung.",
+          "result": "Die Lage bleibt gut kontrollierbar.",
+          "guidance": "Weiter beobachten, aber nicht hektisch nachoptimieren."
+        },
+        "escalated": {
+          "explanation": "Die Entlastung wurde zu fr?h wieder aufgeweicht. Das Mikroklima driftet zur?ck in alte Muster.",
+          "cause": "Lokale Zonen reagieren empfindlich, wenn Luftweg oder Dichte sofort wieder unruhig werden.",
+          "result": "Ein erneutes Mikroklima-Folgeevent wird plausibel.",
+          "guidance": "Best?tige die Erholung erst, bevor du neue Eingriffe setzt."
+        }
+      },
+      "followUpRules": {
+        "worsened": [
+          "v2_climate_bud_microclimate_pocket"
+        ],
+        "escalated": [
+          "v2_climate_bud_microclimate_pocket"
+        ]
+      },
+      "learningNote": "Gutes Mikroklima ist oft die Summe vieler kleiner, sauber gehaltener Entscheidungen.",
+      "allowedPhases": [
+        "vegetative",
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "environment",
+        "conflictGroup": "climate_recovery",
+        "warningProfile": {
+          "cadence": "microclimate_relief"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_structure_defoliation_window",
+      "category": "environment",
+      "title": "Fenster f?r gezielte Entlaubung",
+      "description": "Die Krone ist an einem Punkt, an dem moderates Auslichten hilft. Zu hart oder zu sp?t kippt der Vorteil aber schnell.",
+      "warningText": "Jetzt w?re ein kleines, gezieltes ?ffnen sinnvoller als sp?ter ein gro?er Eingriff.",
+      "triggers": {
+        "all": [
+          {
+            "field": "plant.size",
+            "op": ">=",
+            "value": 52
+          },
+          {
+            "field": "env.humidityPercent",
+            "op": ">=",
+            "value": 60
+          },
+          {
+            "field": "env.airflowScore",
+            "op": "<=",
+            "value": 56
+          }
+        ],
+        "stage": {
+          "min": 6,
+          "max": 9
+        }
+      },
+      "weight": 0.93,
+      "cooldownRealMinutes": 260,
+      "resolveTimeMinutes": 50,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "structure",
+        "canopy",
+        "airflow",
+        "humidity"
+      ],
+      "options": [
+        {
+          "id": "defoliate_targeted",
+          "label": "Gezielt und moderat auslichten",
+          "effects": {
+            "risk": -3,
+            "stress": 1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "cleanup_only_edges",
+          "label": "Nur die Kanten leicht ?ffnen",
+          "effects": {
+            "risk": -1,
+            "stress": 0
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "strip_too_hard",
+          "label": "Zu hart eingreifen",
+          "effects": {
+            "stress": 3,
+            "risk": 2,
+            "health": -2,
+            "growth": -0.6
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "environment"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Das Auslichten traf das richtige Fenster. Luft und Licht kommen wieder sauberer an die kritischen Zonen.",
+          "cause": "Die Krone war dicht genug, dass ein gezielter Eingriff jetzt Wirkung bringt.",
+          "result": "Das Mikroklima wird ruhiger, ohne dass die Pflanze unn?tig gestresst wird.",
+          "guidance": "Lass die Krone jetzt erst wieder arbeiten, statt direkt weiter auszud?nnen."
+        },
+        "stabilized": {
+          "explanation": "Der Eingriff half, bleibt aber eher eine Teilentlastung.",
+          "cause": "Die Krone wurde etwas ge?ffnet, jedoch noch nicht vollst?ndig in einen ruhigen Luftfluss gebracht.",
+          "result": "Die Lage verbessert sich, bleibt aber beobachtungsw?rdig.",
+          "guidance": "Kontrolliere gezielt die dichtesten Zonen, nicht die gesamte Pflanze auf einmal."
+        },
+        "escalated": {
+          "explanation": "Der Eingriff war zu sp?t oder zu hart. Statt ruhiger Struktur bleibt eine unruhige Mischung aus Dichte und Stress zur?ck.",
+          "cause": "Zu gro?e Korrekturen in einer sp?ten Phase kosten schnell mehr Ruhe, als sie sofort bringen.",
+          "result": "Ein Folgeereignis im Mikroklima oder in der Struktur wird wahrscheinlicher.",
+          "guidance": "Arbeite k?nftig kleiner und fr?her, nicht gr??er und hektischer."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_climate_microclimate_relief"
+        ],
+        "stabilized": [
+          "v2_climate_microclimate_relief"
+        ],
+        "worsened": [
+          "v2_climate_bud_microclimate_pocket"
+        ],
+        "escalated": [
+          "v2_climate_bud_microclimate_pocket"
+        ]
+      },
+      "learningNote": "Gute Entlaubung ist oft Timing statt H?rte.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "environment",
+        "conflictGroup": "structure_dense_canopy",
+        "warningProfile": {
+          "cadence": "defoliation_window"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible",
+            "disease_spread_followup_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_structure_top_load_shift",
+      "category": "environment",
+      "title": "Top-Last zieht die Struktur schief",
+      "description": "Einzelne schwere Tops belasten die Struktur ungleichm??ig. Das kostet F?hrung und kann die Krone aus dem Gleichgewicht ziehen.",
+      "warningText": "Gewicht und Hebel wirken nicht mehr gleichm??ig durch die Struktur.",
+      "triggers": {
+        "all": [
+          {
+            "field": "plant.size",
+            "op": ">=",
+            "value": 68
+          },
+          {
+            "field": "status.health",
+            "op": "<=",
+            "value": 80
+          },
+          {
+            "field": "status.risk",
+            "op": ">=",
+            "value": 30
+          }
+        ],
+        "stage": {
+          "min": 8,
+          "max": 11
+        }
+      },
+      "weight": 0.95,
+      "cooldownRealMinutes": 300,
+      "resolveTimeMinutes": 55,
+      "polarity": "negative",
+      "tone": "warning",
+      "tags": [
+        "structure",
+        "support",
+        "load",
+        "flower"
+      ],
+      "options": [
+        {
+          "id": "secure_heavy_tops_now",
+          "label": "Schwere Tops direkt sichern",
+          "effects": {
+            "risk": -3,
+            "stress": -1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "rebalance_one_side_only",
+          "label": "Nur teilweise umverteilen",
+          "effects": {
+            "risk": -1,
+            "stress": 1
+          },
+          "intent": "delay_action",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "leave_weight_hanging",
+          "label": "Last h?ngen lassen",
+          "effects": {
+            "risk": 4,
+            "stress": 2,
+            "health": -2
+          },
+          "intent": "ignore",
+          "contextFit": [
+            "environment"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die kritischen Gewichte wurden rechtzeitig abgefangen. Die Struktur kann wieder sauberer tragen.",
+          "cause": "Einzelne Tops hatten mehr Zug aufgebaut, als die bisherige F?hrung noch gut verteilen konnte.",
+          "result": "Die Krone bleibt ruhiger und weniger anf?llig f?r versp?tete Strukturprobleme.",
+          "guidance": "Halte die Lastverteilung jetzt gleichm??ig statt punktuell nachzuarbeiten."
+        },
+        "stabilized": {
+          "explanation": "Die gr??te Last wurde abgefangen, aber nicht jede Zone ist schon wirklich entspannt.",
+          "cause": "Die Struktur wurde verbessert, tr?gt aber noch Restzug in einzelnen Bereichen.",
+          "result": "Der akute Druck sinkt, bleibt aber im Hintergrund beobachtbar.",
+          "guidance": "Kontrolliere die schwersten Punkte ?ber die n?chsten Zyklen nach."
+        },
+        "escalated": {
+          "explanation": "Die Last blieb ungleichm??ig. Gewicht und Hebel arbeiten weiter gegen die Struktur.",
+          "cause": "Schwere Tops bestrafen versp?tete oder halbe Korrekturen meist erst im Nachlauf.",
+          "result": "Ein Folgeereignis zur St?tzung wird wieder wahrscheinlicher.",
+          "guidance": "Sichere zuerst die tragenden Zonen, bevor du an Details optimierst."
+        }
+      },
+      "followUpRules": {
+        "improved": [
+          "v2_structure_support_settled"
+        ],
+        "stabilized": [
+          "v2_structure_support_settled"
+        ],
+        "worsened": [
+          "v2_structure_support_needed"
+        ],
+        "escalated": [
+          "v2_structure_support_needed"
+        ]
+      },
+      "learningNote": "Sp?te Strukturprobleme kommen oft nicht von zu wenig Wachstum, sondern von zu sp?t verteilter Last.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "environment",
+        "conflictGroup": "structure_support",
+        "warningProfile": {
+          "cadence": "top_load_shift"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "medium",
+          "executionRelevant": true
+        }
+      }
+    },
+    {
+      "id": "v2_structure_support_settled",
+      "category": "positive",
+      "title": "St?tzstruktur greift sauber",
+      "description": "Die Tragstruktur hat sich gefangen. Jetzt entscheidet sich, ob daraus wirklich Ruhe oder nur ein kurzer Zwischenzustand wird.",
+      "warningText": "Die St?tzung wirkt, sollte aber noch sauber nachgef?hrt werden.",
+      "triggers": {
+        "stage": {
+          "min": 7,
+          "max": 11
+        }
+      },
+      "isFollowUp": true,
+      "weight": 0.82,
+      "cooldownRealMinutes": 260,
+      "resolveTimeMinutes": 40,
+      "polarity": "positive",
+      "tone": "positive",
+      "tags": [
+        "structure",
+        "support",
+        "recovery",
+        "flower"
+      ],
+      "options": [
+        {
+          "id": "keep_support_map",
+          "label": "St?tzung ruhig nachpflegen",
+          "effects": {
+            "risk": -2,
+            "stress": -1,
+            "health": 1
+          },
+          "intent": "climate_stabilize",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "tighten_too_hard",
+          "label": "Zu hart nachziehen",
+          "effects": {
+            "stress": 2,
+            "risk": 1,
+            "health": -1
+          },
+          "intent": "stressful_shortcut",
+          "contextFit": [
+            "environment"
+          ]
+        },
+        {
+          "id": "stop_checking_support",
+          "label": "Danach nicht mehr kontrollieren",
+          "effects": {
+            "risk": 2,
+            "stress": 1
+          },
+          "intent": "observe_only",
+          "contextFit": [
+            "environment"
+          ]
+        }
+      ],
+      "outcomeTexts": {
+        "improved": {
+          "explanation": "Die St?tzstruktur wurde nicht ?berarbeitet, sondern sauber gehalten. Das gibt der Pflanze echte Ruhe zur?ck.",
+          "cause": "Nach der Entlastung war vor allem gleichm??ige Kontrolle wichtig.",
+          "result": "Die Struktur tr?gt wieder zuverl?ssiger durch die Phase.",
+          "guidance": "Kleine Nachkontrollen schlagen hier gro?e sp?tere Korrekturen."
+        },
+        "stabilized": {
+          "explanation": "Die St?tzung h?lt, bleibt aber noch ein sensibles Ger?st.",
+          "cause": "Die Hauptlast wurde abgefangen, doch einzelne Punkte arbeiten weiter.",
+          "result": "Die Lage bleibt beherrschbar.",
+          "guidance": "Behalte die schwersten Punkte weiter im Blick."
+        },
+        "escalated": {
+          "explanation": "Die St?tzstruktur wurde zu fr?h als erledigt behandelt. Einzelne Lasten ziehen wieder in die falsche Richtung.",
+          "cause": "Auch gute St?tzung braucht kurze Nachkontrolle, wenn Gewicht weiter zunimmt.",
+          "result": "Ein erneutes Top-Load-Folgeereignis wird plausibel.",
+          "guidance": "Erst sichern, dann loslassen."
+        }
+      },
+      "followUpRules": {
+        "worsened": [
+          "v2_structure_top_load_shift"
+        ],
+        "escalated": [
+          "v2_structure_top_load_shift"
+        ]
+      },
+      "learningNote": "St?tzung ist keine einmalige Aktion, sondern ein kurzer Stabilit?tsprozess.",
+      "allowedPhases": [
+        "flowering"
+      ],
+      "shadowModel": {
+        "problemPolarity": "environment",
+        "conflictGroup": "structure_recovery",
+        "warningProfile": {
+          "cadence": "support_settling"
+        },
+        "escalationProfile": {
+          "poorOutcomeHooks": [
+            "pressure_retention_possible"
+          ],
+          "unresolvedHooks": [
+            "pressure_retention_possible"
+          ]
+        },
+        "rewardProfile": {
+          "recoverySignificance": "high",
+          "executionRelevant": true
+        }
+      }
     }
   ]
 }

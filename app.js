@@ -449,6 +449,7 @@ const state = {
     activeOptions: [],
     activeSeverity: 1,
     activeCooldownRealMinutes: 120,
+    activeResolveTimeMinutes: 60,
     activeCategory: 'generic',
     activeTags: [],
     activeImagePath: '',
@@ -456,6 +457,7 @@ const state = {
     resolvingUntilSimTimeMs: 0,
     pendingOutcome: null,
     resolvedOutcome: null,
+    pendingResolution: null,
     lastEventAtMs: 0,
     cooldownUntilMs: 0,
     cooldownUntilSimTimeMs: 0,
@@ -13157,9 +13159,12 @@ function deriveEventPresentationTone(viewModel, machineState, options = {}) {
   const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
   const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
   const mode = String(options.mode || '').trim();
+  const resolvedTone = toneFromOutcome(getResolvedOutcomeView());
 
   if (mode === 'history') return 'history';
   if (mode === 'resolved') return 'resolved';
+  if (machineState === 'resolved' && resolvedTone) return resolvedTone;
+  if (machineState === 'resolving') return 'active';
   if (shadow.primaryState) return String(shadow.primaryState);
   if (shadow.rewardClass || shadow.rewardSummary) return 'reward';
   if (shadow.topFollowUpId || shadow.chainSummary) return 'followup';
@@ -13183,13 +13188,369 @@ function eventToneLabel(tone) {
   return map[String(tone || 'idle')] || 'Event';
 }
 
+function getPendingOutcomeView() {
+  return state.events && state.events.pendingOutcome && typeof state.events.pendingOutcome === 'object'
+    ? state.events.pendingOutcome
+    : null;
+}
+
+function getResolvedOutcomeView() {
+  return state.events && state.events.resolvedOutcome && typeof state.events.resolvedOutcome === 'object'
+    ? state.events.resolvedOutcome
+    : null;
+}
+
+function toneFromOutcome(outcome) {
+  const safeOutcome = outcome && typeof outcome === 'object' ? outcome : {};
+  const outcomeStatus = String(safeOutcome.outcomeStatus || '').trim().toLowerCase();
+  const summary = String(safeOutcome.summary || safeOutcome.quality || '').trim().toLowerCase();
+
+  if (outcomeStatus === 'improved' || summary === 'good') return 'reward';
+  if (outcomeStatus === 'escalated') return 'escalating';
+  if (outcomeStatus === 'worsened') return 'followup';
+  if (outcomeStatus === 'stabilized') return 'resolved';
+  return '';
+}
+
+function formatOutcomeStatusLabel(outcomeStatus) {
+  const map = {
+    improved: 'Verbessert',
+    stabilized: 'Stabilisiert',
+    worsened: 'Anfällig',
+    escalated: 'Eskaliert',
+    unresolved: 'Offen'
+  };
+  return map[String(outcomeStatus || '').trim().toLowerCase()] || '';
+}
+
+function formatOutcomeFollowUpLabel(followUpIds, prefix = 'Folgepfad vorgemerkt') {
+  const ids = Array.isArray(followUpIds)
+    ? followUpIds.map((id) => String(id || '').trim()).filter(Boolean)
+    : [];
+  if (!ids.length) {
+    return '';
+  }
+  const humanized = ids.slice(0, 2).map((id) => humanizeEventIdentifier(id));
+  const suffix = ids.length > 2 ? ' +' : '';
+  return `${prefix}: ${humanized.join(' · ')}${suffix}`;
+}
+
+function buildHistoryNarrative(entry) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const analysis = safeEntry.analysis && typeof safeEntry.analysis === 'object' ? safeEntry.analysis : {};
+  return {
+    title: String(safeEntry.eventTitle || humanizeEventIdentifier(safeEntry.eventId)),
+    explanationText: String(safeEntry.explanationText || ''),
+    resultText: String(safeEntry.resultText || analysis.resultText || ''),
+    causeText: String(safeEntry.causeText || analysis.causeText || ''),
+    guidanceText: String(safeEntry.guidanceText || analysis.guidanceText || ''),
+    learningNote: String(safeEntry.learningNote || ''),
+    followUpText: formatOutcomeFollowUpLabel(safeEntry.followUpIds, 'Folgepfad'),
+    tone: String(analysis.tone || ''),
+    outcomeStatus: String(safeEntry.outcomeStatus || '')
+  };
+}
+
+function formatEventAuditGap(value) {
+  const safeValue = Math.max(0, Number(value) || 0);
+  if (!safeValue) {
+    return '';
+  }
+  const minutes = Math.round(safeValue / 60000);
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const restMinutes = minutes % 60;
+  return restMinutes ? `${hours}h ${restMinutes}m` : `${hours}h`;
+}
+
+function getEventAuditSnapshotView() {
+  const eventApi = window.GrowSimEvents;
+  if (eventApi && typeof eventApi.getEventAuditSnapshot === 'function') {
+    return eventApi.getEventAuditSnapshot();
+  }
+  const audit = state.events && state.events.audit && typeof state.events.audit === 'object'
+    ? state.events.audit
+    : null;
+  if (!audit) {
+    return null;
+  }
+  return audit;
+}
+
+function getEventAuditInterpretationView(auditSnapshot = null) {
+  const audit = auditSnapshot && typeof auditSnapshot === 'object'
+    ? auditSnapshot
+    : getEventAuditSnapshotView();
+  if (!audit || typeof audit !== 'object') {
+    return null;
+  }
+  const eventApi = window.GrowSimEvents;
+  if (eventApi && typeof eventApi.getEventAuditInterpretation === 'function') {
+    return eventApi.getEventAuditInterpretation(audit);
+  }
+  return null;
+}
+
+function describeEventAuditPhaseTone(interpretation) {
+  const safeInterpretation = interpretation && typeof interpretation === 'object' ? interpretation : {};
+  const metrics = safeInterpretation.metrics && typeof safeInterpretation.metrics === 'object'
+    ? safeInterpretation.metrics
+    : {};
+  switch (String(metrics.phaseBand || metrics.currentPhase || '')) {
+    case 'vegetative':
+      return 'in der Vegetation';
+    case 'stretch':
+      return 'in der Stretch-Phase';
+    case 'flower':
+      return 'in der Bluete';
+    case 'late_flower':
+      return 'in der spaeten Bluete';
+    case 'harvest':
+      return 'zum Run-Ende';
+    default:
+      return '';
+  }
+}
+
+function formatEventAuditStateSummary(primaryState, interpretation = null) {
+  const safeInterpretation = interpretation && typeof interpretation === 'object' ? interpretation : {};
+  const phaseTone = describeEventAuditPhaseTone(safeInterpretation);
+  const confidence = String(safeInterpretation.confidence || 'low');
+  switch (String(primaryState || '')) {
+    case 'stabilizing':
+      if (String(safeInterpretation.metrics && safeInterpretation.metrics.phaseBand || '') === 'late_flower') {
+        return 'Die juengsten Entscheidungen halten den Run derzeit kontrollierbar. Die Lage beruhigt sich schrittweise.';
+      }
+      return phaseTone
+        ? `Die juengsten Entscheidungen beruhigen den Verlauf ${phaseTone} bereits spuerbar.`
+        : 'Die juengsten Entscheidungen beruhigen den Verlauf bereits spuerbar.';
+    case 'escalating':
+      return phaseTone
+        ? `Der Druck zieht ${phaseTone} weiter an. Eskalationen und offene Folgepfade praegen den Verlauf.`
+        : 'Der Druck baut sich weiter auf. Eskalationen und offene Folgepfade praegen den Verlauf.';
+    case 'vulnerable':
+      return phaseTone
+        ? `Der Run bleibt ${phaseTone} noch anfaellig. Negative Nachwirkungen klingen noch nicht sauber ab.`
+        : 'Der Run bleibt noch anfaellig. Negative Nachwirkungen klingen noch nicht sauber ab.';
+    case 'dense':
+      return phaseTone
+        ? `Mehrere Eventfenster liegen ${phaseTone} enger zusammen. Der Run fuehlt sich derzeit deutlich dichter an.`
+        : 'Mehrere Eventfenster liegen enger zusammen. Der Run fuehlt sich derzeit deutlich dichter an.';
+    case 'reactive':
+      return phaseTone
+        ? `Der Run reagiert ${phaseTone} spuerbar, bleibt aber noch kontrollierbar.`
+        : 'Der Run reagiert spuerbar, bleibt aber noch kontrollierbar.';
+    case 'quiet':
+      if (confidence === 'low') {
+        return 'Der Run bleibt bislang noch ruhig. Fuer eine harte Tendenz sind erst wenige Eventdaten vorhanden.';
+      }
+      return phaseTone
+        ? `Der Run wirkt ${phaseTone} ruhig gefuehrt. Zwischen den Ereignissen liegen genug entspannte Fenster.`
+        : 'Der Run wirkt ruhig gefuehrt. Zwischen den Ereignissen liegen genug entspannte Fenster.';
+    case 'balanced':
+    default:
+      return phaseTone
+        ? `Der Run bleibt ${phaseTone} bislang ausgewogen. Druck und Entlastung halten sich weitgehend die Waage.`
+        : 'Der Run bleibt bislang ausgewogen. Druck und Entlastung halten sich weitgehend die Waage.';
+  }
+}
+
+function buildEventAuditSupportText(interpretation) {
+  const safeInterpretation = interpretation && typeof interpretation === 'object' ? interpretation : {};
+  const metrics = safeInterpretation.metrics && typeof safeInterpretation.metrics === 'object'
+    ? safeInterpretation.metrics
+    : {};
+  const phaseTone = describeEventAuditPhaseTone(safeInterpretation);
+  const parts = [];
+  if (safeInterpretation.confidence === 'low') {
+    parts.push('Noch wenige Eventdaten');
+  } else {
+    parts.push(`${Math.max(0, Math.trunc(Number(metrics.activated) || 0))} Events im Run`);
+  }
+  if (phaseTone) {
+    parts.push(phaseTone);
+  }
+  if (metrics.dominantCategory && Number(metrics.dominantCategoryShare || 0) >= 0.5) {
+    parts.push(`Fokus: ${categoryLabel(metrics.dominantCategory)}`);
+  }
+  if (Number(metrics.meanGapSimMs || 0) > 0) {
+    parts.push(`Ø Abstand ${formatEventAuditGap(metrics.meanGapSimMs)}`);
+  }
+  if (safeInterpretation.followUpState === 'constructive') {
+    parts.push('Folgepfade greifen sauber');
+  } else if (safeInterpretation.followUpState === 'building') {
+    parts.push(String(metrics.phaseBand || '') === 'flower' || String(metrics.phaseBand || '') === 'late_flower'
+      ? 'Folgepfade bleiben aktiv'
+      : 'Folgepfade bauen sich auf');
+  } else if (safeInterpretation.followUpState === 'fading') {
+    parts.push('Folgepfade versanden haeufig');
+  } else if (Number(metrics.pendingFollowUps || 0) > 0) {
+    parts.push(`${Math.max(0, Math.trunc(Number(metrics.pendingFollowUps) || 0))} Folgepfade offen`);
+  }
+  if (safeInterpretation.confidence === 'low' && !parts.includes('Noch wenige Eventdaten')) {
+    parts.unshift('Noch wenige Eventdaten');
+  }
+  return parts.filter(Boolean).slice(0, 3).join(' · ');
+}
+
+function buildEventAuditMarkers(interpretation) {
+  const safeInterpretation = interpretation && typeof interpretation === 'object' ? interpretation : {};
+  const metrics = safeInterpretation.metrics && typeof safeInterpretation.metrics === 'object'
+    ? safeInterpretation.metrics
+    : {};
+  const tuningFlags = Array.isArray(safeInterpretation.tuningFlags) ? safeInterpretation.tuningFlags : [];
+  const markers = [];
+  if (safeInterpretation.balanceState === 'stabilizing') {
+    markers.push('Stabilisierung sichtbar');
+  } else if (safeInterpretation.balanceState === 'escalating') {
+    markers.push('Druck bleibt aktiv');
+  } else if (safeInterpretation.balanceState === 'vulnerable') {
+    markers.push('Run bleibt anfaellig');
+  }
+  if (safeInterpretation.densityState === 'dense') {
+    markers.push('Hohe Eventdichte');
+  } else if (safeInterpretation.densityState === 'reactive') {
+    markers.push('Leicht reaktiv');
+  } else if (safeInterpretation.densityState === 'quiet' && Number(metrics.activated || 0) <= 2) {
+    markers.push('Ruhiger Verlauf');
+  }
+  if (safeInterpretation.followUpState === 'constructive') {
+    markers.push('Folgepfade greifen');
+  } else if (safeInterpretation.followUpState === 'building') {
+    markers.push('Folgepfade offen');
+  } else if (safeInterpretation.followUpState === 'fading') {
+    markers.push('Folgepfade laufen aus');
+  }
+  if (markers.length < 3 && tuningFlags.includes('category_dominance') && metrics.dominantCategory) {
+    markers.push(`${categoryLabel(metrics.dominantCategory)} dominiert`);
+  }
+  if (markers.length < 3 && tuningFlags.includes('repeat_pressure_high')) {
+    markers.push('Wiederholungen spuerbar');
+  }
+  return markers.filter(Boolean).slice(0, 3);
+}
+
+function getEventAuditViewModel() {
+  const audit = getEventAuditSnapshotView();
+  if (!audit || typeof audit !== 'object') {
+    return null;
+  }
+
+  const interpretation = getEventAuditInterpretationView(audit);
+  const metrics = interpretation && interpretation.metrics && typeof interpretation.metrics === 'object'
+    ? interpretation.metrics
+    : {};
+  const activated = Math.max(0, Math.trunc(Number(metrics.activated || audit.totalActivated || (audit.totals && audit.totals.activated)) || 0));
+  const resolved = Math.max(0, Math.trunc(Number(metrics.resolved || audit.totalResolved || (audit.totals && audit.totals.resolved)) || 0));
+  const queuedFollowUps = Math.max(0, Math.trunc(Number(metrics.queuedFollowUps || (audit.totals && audit.totals.queuedFollowUps)) || 0));
+  if (!activated && !resolved && !queuedFollowUps) {
+    return null;
+  }
+  const summary = formatEventAuditStateSummary(interpretation && interpretation.primaryState, interpretation);
+  const support = buildEventAuditSupportText(interpretation);
+  const markers = buildEventAuditMarkers(interpretation);
+
+  return {
+    summary,
+    support,
+    markers
+  };
+}
+
 function buildEventPresentationSections(viewModel, machineState) {
   const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
   const detail = viewModel && viewModel.detail && typeof viewModel.detail === 'object' ? viewModel.detail : {};
   const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
+  const pendingOutcome = getPendingOutcomeView();
+  const resolvedOutcome = getResolvedOutcomeView();
   const inspect = isEventAssetInspectionEnabled();
   const sections = [];
   const tone = deriveEventPresentationTone(viewModel, machineState);
+
+  if (machineState === 'resolving' && pendingOutcome) {
+    const actionBody = pendingOutcome.optionLabel
+      ? `Ausgewählte Maßnahme: ${pendingOutcome.optionLabel}.`
+      : 'Die zuletzt gewählte Maßnahme wird jetzt beobachtet.';
+    sections.push({
+      key: 'action',
+      title: 'Maßnahme / Beobachtung',
+      body: `${actionBody} ${String(pendingOutcome.observationText || 'Die Folgen werden jetzt über einen kurzen Ingame-Zeitraum beobachtet.')}`.trim(),
+      tone
+    });
+
+    if (pendingOutcome.learningNote) {
+      sections.push({
+        key: 'analysis',
+        title: 'Analyse / Bedeutung',
+        body: String(pendingOutcome.learningNote),
+        tone: 'history'
+      });
+    }
+
+    return sections;
+  }
+
+  if (machineState === 'resolved' && resolvedOutcome) {
+    const explanationBody = resolvedOutcome.explanationText || resolvedOutcome.resultText || 'Das Ergebnis liegt jetzt vor.';
+    if (explanationBody) {
+      sections.push({
+        key: 'outcome',
+        title: 'Was passiert ist',
+        body: String(explanationBody),
+        tone
+      });
+    }
+
+    if (resolvedOutcome.causeText) {
+      sections.push({
+        key: 'cause',
+        title: 'Warum es passiert ist',
+        body: String(resolvedOutcome.causeText),
+        tone
+      });
+    }
+
+    if (resolvedOutcome.resultText && resolvedOutcome.resultText !== explanationBody) {
+      sections.push({
+        key: 'result',
+        title: 'Folge / Wirkung',
+        body: String(resolvedOutcome.resultText),
+        tone
+      });
+    }
+
+    if (resolvedOutcome.guidanceText) {
+      sections.push({
+        key: 'guidance',
+        title: 'Empfehlung / Nächster Schritt',
+        body: String(resolvedOutcome.guidanceText),
+        tone: 'history'
+      });
+    }
+
+    const followUpBody = formatOutcomeFollowUpLabel(resolvedOutcome.followUpIds);
+    if (followUpBody) {
+      sections.push({
+        key: 'followup',
+        title: 'Folgepfad / Plausibilität',
+        body: followUpBody,
+        tone: 'followup'
+      });
+    }
+
+    if (resolvedOutcome.learningNote) {
+      sections.push({
+        key: 'analysis',
+        title: 'Analyse / Bedeutung',
+        body: String(resolvedOutcome.learningNote),
+        tone: 'history'
+      });
+    }
+
+    return sections;
+  }
 
   const situationBody = shadow.causeSummary || popup.description || categoryLabel(String(popup.category || 'generic'));
   if (situationBody) {
@@ -13266,26 +13627,27 @@ function buildEventHistorySnapshotViewModel() {
     return null;
   }
 
-  const analysis = latest.analysis && typeof latest.analysis === 'object' ? latest.analysis : {};
-  const tone = analysis.tone === 'good'
-    ? 'reward'
-    : (analysis.tone === 'bad' ? 'followup' : 'history');
+  const narrative = buildHistoryNarrative(latest);
+  const tone = deriveHistoryEntryTone(latest);
   const media = resolveSharedEventMediaModel({
     eventId: latest.eventId,
     category: latest.category || 'generic',
-    title: humanizeEventIdentifier(latest.eventId),
+    title: narrative.title,
     stateTone: tone
   });
 
   return {
-    title: humanizeEventIdentifier(latest.eventId),
+    title: narrative.title,
     media,
     tone,
     optionLabel: latest.optionLabel ? String(latest.optionLabel) : '',
-    learningNote: latest.learningNote ? String(latest.learningNote) : '',
-    resultText: analysis.resultText ? String(analysis.resultText) : '',
-    guidanceText: analysis.guidanceText ? String(analysis.guidanceText) : '',
-    causeText: analysis.causeText ? String(analysis.causeText) : '',
+    learningNote: narrative.learningNote,
+    explanationText: narrative.explanationText,
+    resultText: narrative.resultText,
+    guidanceText: narrative.guidanceText,
+    causeText: narrative.causeText,
+    followUpText: narrative.followUpText,
+    outcomeStatus: narrative.outcomeStatus,
     atSimTimeMs: Number(latest.atSimTimeMs || 0)
   };
 }
@@ -13309,10 +13671,11 @@ function buildEventHistorySnapshotMarkup() {
   const mediaInner = media.kind === 'placeholder'
     ? `<div class="event-history-card__placeholder"><span>${escapeHtml(String((media.badge || 'A')).slice(0, 1).toUpperCase())}</span></div>`
     : `<img class="event-history-card__image${media.kind === 'icon' ? ' event-history-card__image--icon' : ''}" src="${escapeHtml(String(media.src || ''))}" alt="${escapeHtml(String(media.alt || ''))}">`;
-  const summary = snapshot.resultText || snapshot.guidanceText || snapshot.learningNote || 'Letzte Entscheidung ohne zusätzliche Analyse.';
+  const summary = snapshot.resultText || snapshot.explanationText || snapshot.guidanceText || snapshot.learningNote || 'Letzte Entscheidung ohne zusätzliche Analyse.';
   const metaParts = [];
   if (snapshot.optionLabel) metaParts.push(`Aktion: ${snapshot.optionLabel}`);
   if (snapshot.causeText) metaParts.push(snapshot.causeText);
+  if (snapshot.followUpText) metaParts.push(snapshot.followUpText);
 
   return `
     <section class="event-history-card" data-tone="${escapeHtml(String(snapshot.tone || 'history'))}">
@@ -13339,10 +13702,18 @@ function deriveHistoryEntryTone(entry) {
   const eventId = String(safeEntry.eventId || '').toLowerCase();
   const category = String(safeEntry.category || '').toLowerCase();
   const tone = String(analysis.tone || '').toLowerCase();
+  const outcomeStatus = String(safeEntry.outcomeStatus || '').toLowerCase();
+  const queuedFollowUps = Array.isArray(safeEntry.followUpIds) ? safeEntry.followUpIds.filter(Boolean) : [];
 
   if (category === 'positive' || eventId.includes('reward')) return 'reward';
+  if (outcomeStatus === 'improved') return 'reward';
+  if (outcomeStatus === 'escalated') return 'escalating';
+  if (outcomeStatus === 'worsened') return 'followup';
+  if (queuedFollowUps.length) return 'followup';
   if (eventId.includes('followup') || eventId.includes('chain')) return 'followup';
   if (tone === 'bad') return 'escalating';
+  if (tone === 'warning') return 'followup';
+  if (tone === 'positive' || tone === 'recovery') return category === 'positive' ? 'reward' : 'resolved';
   if (tone === 'good') return category === 'positive' ? 'reward' : 'resolved';
   if (tone === 'mixed') return 'history';
   return 'resolved';
@@ -13351,12 +13722,16 @@ function deriveHistoryEntryTone(entry) {
 function buildHistoryEntryMarkers(entry, tone) {
   const safeEntry = entry && typeof entry === 'object' ? entry : {};
   const analysis = safeEntry.analysis && typeof safeEntry.analysis === 'object' ? safeEntry.analysis : {};
+  const outcomeLabel = formatOutcomeStatusLabel(safeEntry.outcomeStatus);
   const markers = [
     eventToneLabel(tone),
     safeEntry.optionLabel ? `Aktion: ${safeEntry.optionLabel}` : '',
+    outcomeLabel,
     analysis.tone === 'good' ? 'Gute Ausführung' : '',
     analysis.tone === 'bad' ? 'Instabil geblieben' : '',
-    (String(safeEntry.eventId || '').includes('followup') || String(safeEntry.eventId || '').includes('chain')) ? 'Folgepfad' : ''
+    (Array.isArray(safeEntry.followUpIds) && safeEntry.followUpIds.length) || String(safeEntry.eventId || '').includes('followup') || String(safeEntry.eventId || '').includes('chain')
+      ? 'Folgepfad'
+      : ''
   ].filter(Boolean);
 
   return markers.slice(0, 3);
@@ -13376,23 +13751,23 @@ function buildRecentEventHistoryItems(limit = 5) {
   const history = Array.isArray(state.events && state.events.history) ? state.events.history.slice(-limit).reverse() : [];
   return history.map((entry, index) => {
     const tone = deriveHistoryEntryTone(entry);
-    const analysis = entry && entry.analysis && typeof entry.analysis === 'object' ? entry.analysis : {};
+    const narrative = buildHistoryNarrative(entry);
     const media = resolveSharedEventMediaModel({
       eventId: entry && entry.eventId,
       category: entry && entry.category,
-      title: humanizeEventIdentifier(entry && entry.eventId),
+      title: narrative.title,
       stateTone: tone
     });
 
     return {
       id: String(entry && entry.eventId || `history-${index}`),
-      title: humanizeEventIdentifier(entry && entry.eventId),
+      title: narrative.title,
       tone,
       media,
       orderLabel: formatHistoryOrderLabel(entry, index),
-      summary: String(analysis.resultText || analysis.guidanceText || entry && entry.learningNote || 'Letzte Event-Entscheidung ohne zusätzlichen Hinweis.'),
-      meaning: String(analysis.causeText || entry && entry.learningNote || categoryLabel(String(entry && entry.category || 'generic'))),
-      quality: analysis.tone ? String(analysis.tone) : '',
+      summary: String(narrative.resultText || narrative.explanationText || narrative.guidanceText || narrative.learningNote || 'Letzte Event-Entscheidung ohne zusätzlichen Hinweis.'),
+      meaning: String(narrative.causeText || narrative.followUpText || narrative.learningNote || categoryLabel(String(entry && entry.category || 'generic'))),
+      quality: narrative.outcomeStatus || narrative.tone,
       markers: buildHistoryEntryMarkers(entry, tone)
     };
   });
@@ -13556,12 +13931,19 @@ function buildEventInsightHtml(viewModel, machineState) {
   const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
   const tone = deriveEventPresentationTone(viewModel, machineState);
   const sections = buildEventPresentationSections(viewModel, machineState);
+  const pendingOutcome = getPendingOutcomeView();
+  const resolvedOutcome = getResolvedOutcomeView();
+  const insightLabel = machineState === 'resolving'
+    ? 'Beobachtung läuft'
+    : (machineState === 'resolved'
+      ? (formatOutcomeStatusLabel(resolvedOutcome && resolvedOutcome.outcomeStatus) || eventToneLabel(tone))
+      : String(shadow.qualitySummary || eventToneLabel(tone)));
 
   return `
     <div class="event-shadow-insight event-shadow-insight--${escapeHtml(String(tone || 'idle'))}${machineState === 'activeEvent' ? ' event-shadow-insight--live' : ''}" data-tone="${escapeHtml(String(tone || 'idle'))}">
       <div class="event-shadow-insight__head">
         <span class="event-shadow-insight__eyebrow">Event Insight</span>
-        <span class="event-shadow-insight__pill">${escapeHtml(String(shadow.qualitySummary || eventToneLabel(tone)))}</span>
+        <span class="event-shadow-insight__pill">${escapeHtml(String(insightLabel || eventToneLabel(tone)))}</span>
       </div>
       <div class="event-detail-sections">
         ${buildEventPresentationSectionsHtml(sections)}
@@ -13572,23 +13954,48 @@ function buildEventInsightHtml(viewModel, machineState) {
 
 function buildEventCenterMarkup(viewModel) {
   const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
-  const media = viewModel && viewModel.media && typeof viewModel.media === 'object' ? viewModel.media : {};
   const shadow = popup.shadowSummary && typeof popup.shadowSummary === 'object' ? popup.shadowSummary : {};
   const tone = deriveEventPresentationTone(viewModel, popup.machineState || 'idle');
+  const pendingOutcome = getPendingOutcomeView();
+  const resolvedOutcome = getResolvedOutcomeView();
+  const auditView = getEventAuditViewModel();
+  const followUpText = formatOutcomeFollowUpLabel(
+    popup.machineState === 'resolved' && resolvedOutcome ? resolvedOutcome.followUpIds : [],
+    'Folgepfad'
+  );
+  const media = resolveSharedEventMediaModel({
+    eventId: (resolvedOutcome && resolvedOutcome.eventId) || (pendingOutcome && pendingOutcome.eventId) || state.events.activeEventId,
+    category: state.events.activeCategory || popup.category || 'generic',
+    title: (resolvedOutcome && resolvedOutcome.eventTitle) || (pendingOutcome && pendingOutcome.eventTitle) || popup.title || 'Event Snapshot',
+    activeImagePath: state.events.activeImagePath,
+    stateTone: tone
+  });
   const stateLabel = media.badge ? String(media.badge) : eventToneLabel(tone);
   const inspect = isEventAssetInspectionEnabled();
   const mediaInner = media.kind === 'placeholder'
     ? `<div class="event-center-card__placeholder"><span>${escapeHtml(String((media.badge || 'E')).slice(0, 1).toUpperCase())}</span></div>`
     : `<img class="event-center-card__image${media.kind === 'icon' ? ' event-center-card__image--icon' : ''}" src="${escapeHtml(String(media.src || ''))}" alt="${escapeHtml(String(media.alt || ''))}">`;
 
-  const summary = shadow.causeSummary || shadow.outcomeSummary || 'Kein aktiver Schattenhinweis verfügbar.';
-  const support = shadow.chainSummary || shadow.rewardSummary || 'Legacy bleibt autoritativ, die Vorschau dient nur der Einordnung.';
+  const summary = popup.machineState === 'resolved' && resolvedOutcome
+    ? (resolvedOutcome.resultText || resolvedOutcome.explanationText || 'Das letzte Ereignis wurde ausgewertet.')
+    : (popup.machineState === 'resolving' && pendingOutcome
+      ? (pendingOutcome.observationText || 'Die Folgen der gewählten Maßnahme werden gerade beobachtet.')
+      : (shadow.causeSummary || shadow.outcomeSummary || 'Kein aktiver Schattenhinweis verfügbar.'));
+  const support = popup.machineState === 'resolved' && resolvedOutcome
+    ? (followUpText || resolvedOutcome.guidanceText || resolvedOutcome.causeText || 'Das letzte Ergebnis bleibt als Verlauf sichtbar.')
+    : (popup.machineState === 'resolving' && pendingOutcome
+      ? (pendingOutcome.optionLabel ? `Ausgewählte Maßnahme: ${pendingOutcome.optionLabel}.` : 'Die gewählte Maßnahme bleibt noch in Beobachtung.')
+      : (shadow.chainSummary || shadow.rewardSummary || 'Legacy bleibt autoritativ, die Vorschau dient nur der Einordnung.'));
   const markers = [
     tone !== 'idle' ? eventToneLabel(tone) : '',
+    popup.machineState === 'resolved' && resolvedOutcome ? formatOutcomeStatusLabel(resolvedOutcome.outcomeStatus) : '',
     shadow.rewardSummary ? 'Recovery / Reward' : '',
-    shadow.chainSummary ? 'Folgerisiko' : '',
+    popup.machineState === 'resolved' && followUpText ? 'Folgepfad' : (shadow.chainSummary ? 'Folgerisiko' : ''),
     popup.machineState === 'resolved' ? 'Zuletzt ausgewertet' : ''
-  ].filter(Boolean).slice(0, 3);
+  ].filter(Boolean);
+  if (auditView && Array.isArray(auditView.markers)) {
+    markers.push(...auditView.markers);
+  }
 
   return `
     <section class="gs-analysis-overview-section event-center-card" data-tone="${escapeHtml(String(tone || 'idle'))}">
@@ -13603,7 +14010,9 @@ function buildEventCenterMarkup(viewModel) {
         <strong class="event-center-card__title">${escapeHtml(String(popup.title || 'Event Snapshot'))}</strong>
         <p class="event-center-card__summary">${escapeHtml(String(summary))}</p>
         <p class="event-center-card__meta">${escapeHtml(String(support))}</p>
-        ${markers.length ? `<div class="event-center-card__markers">${markers.map((marker) => `<span class="event-center-card__marker">${escapeHtml(String(marker))}</span>`).join('')}</div>` : ''}
+        ${auditView && auditView.summary ? `<p class="event-center-card__meta">${escapeHtml(String(auditView.summary))}</p>` : ''}
+        ${auditView && auditView.support ? `<p class="event-center-card__meta">${escapeHtml(String(auditView.support))}</p>` : ''}
+        ${markers.length ? `<div class="event-center-card__markers">${markers.slice(0, 4).map((marker) => `<span class="event-center-card__marker">${escapeHtml(String(marker))}</span>`).join('')}</div>` : ''}
         ${inspect ? `<span class="event-center-card__origin">Asset: ${escapeHtml(String(media.fallbackOrigin || 'generic_placeholder'))}</span>` : ''}
       </div>
     </section>
@@ -13641,10 +14050,17 @@ function getModernEventSheetContentState(viewModel, machineState) {
 
   if (machineState === 'resolving') {
     const leftMs = Number(state.events.resolvingUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
+    const pendingOutcome = getPendingOutcomeView();
+    const actionLabel = pendingOutcome && pendingOutcome.optionLabel
+      ? `Ausgewählte Maßnahme: ${pendingOutcome.optionLabel}.`
+      : 'Die gewählte Maßnahme wird jetzt ausgewertet.';
     return {
-      title: String(state.events.activeEventTitle || popup.title || 'Ereignis wird ausgewertet'),
-      description: 'Deine Entscheidung wird jetzt ausgewertet. Das Ergebnis erscheint nach Ablauf des Timers.',
-      meta: `Ergebnis in: ${formatCountdown(leftMs)}`,
+      title: String((pendingOutcome && pendingOutcome.eventTitle) || state.events.activeEventTitle || popup.title || 'Ereignis wird ausgewertet'),
+      description: `${actionLabel} ${String(pendingOutcome && pendingOutcome.observationText || 'Das Ergebnis erscheint nach Ablauf des Timers.')}`.trim(),
+      meta: [
+        `Ergebnis in: ${formatCountdown(leftMs)}`,
+        pendingOutcome && pendingOutcome.learningNote ? `Hinweis: ${pendingOutcome.learningNote}` : ''
+      ].filter(Boolean).join(' | '),
       options: [],
       rewardAction: !fastForwardPresentation.disabled
         ? {
@@ -13658,11 +14074,15 @@ function getModernEventSheetContentState(viewModel, machineState) {
   }
 
   if (machineState === 'resolved') {
-    const outcome = state.events.resolvedOutcome;
+    const outcome = getResolvedOutcomeView();
     return {
       title: String(outcome && outcome.eventTitle ? outcome.eventTitle : 'Ergebnis bereit'),
       description: String(formatResolvedOutcome(outcome)),
-      meta: 'Ergebnis bereit – schließe das Ereignis, um fortzufahren.',
+      meta: [
+        formatOutcomeStatusLabel(outcome && outcome.outcomeStatus),
+        outcome && outcome.optionLabel ? `Aktion: ${outcome.optionLabel}` : '',
+        'Schließe das Ereignis, um fortzufahren.'
+      ].filter(Boolean).join(' | '),
       options: []
     };
   }
@@ -13763,6 +14183,15 @@ function renderModernEventSheetContent(viewModel, machineState) {
     ? viewModel.popup.shadowSummary
     : {};
   const contentState = getModernEventSheetContentState(viewModel, machineState);
+  const pendingOutcome = getPendingOutcomeView();
+  const resolvedOutcome = getResolvedOutcomeView();
+  const mediaModel = resolveSharedEventMediaModel({
+    eventId: (resolvedOutcome && resolvedOutcome.eventId) || (pendingOutcome && pendingOutcome.eventId) || state.events.activeEventId,
+    category: state.events.activeCategory || (viewModel && viewModel.popup && viewModel.popup.category) || 'generic',
+    title: String(contentState.title || (viewModel && viewModel.popup && viewModel.popup.title) || 'Event'),
+    activeImagePath: state.events.activeImagePath,
+    stateTone: tone
+  });
   const inspect = isEventAssetInspectionEnabled();
   const template = document.createElement('template');
   template.innerHTML = `
@@ -13773,7 +14202,7 @@ function renderModernEventSheetContent(viewModel, machineState) {
     <section class="figma-section-card figma-section-card--event event-sheet-modern-card" data-tone="${escapeHtml(String(tone || 'idle'))}">
       <h3 class="figma-section-head">Event Focus</h3>
       <p class="sheet-badge" data-shadow="${escapeHtml(String(shadowSummary.primaryState || ''))}">Status: ${escapeHtml(translateEventState(machineState))}</p>
-      ${buildEventMediaMarkup(viewModel && viewModel.media ? viewModel.media : null, tone)}
+      ${buildEventMediaMarkup(mediaModel, tone)}
       <h3 class="event-sheet-modern__title">${escapeHtml(String(contentState.title || 'Event'))}</h3>
       <p class="event-sheet-modern__text">${escapeHtml(String(contentState.description || ''))}</p>
       <p class="sheet-note event-sheet-modern__meta">${escapeHtml(String(contentState.meta || ''))}</p>
@@ -14815,8 +15244,17 @@ function renderAnalysisTimeline() {
       const d = row.data || {};
       node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Aktion</div><strong>${escapeHtml(String(d.label || d.id || 'Aktion'))}</strong><br>${formatDeltaSummary(d.deltaSummary || {})}`;
     } else if (row.kind === 'event') {
-      const d = row.data || {}; const note = d.learningNote ? `<details><summary>Lernhinweis</summary>${escapeHtml(String(d.learningNote))}</details>` : '';
-      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Ereignis (${escapeHtml(categoryLabel(String(d.category || 'generic')))})</div><strong>${escapeHtml(String(d.optionLabel || d.optionId || d.eventId || 'Ereignis'))}</strong><br>${formatDeltaSummary(d.effectsApplied || d.deltaSummary || {})}${note}`;
+      const d = row.data || {};
+      const narrative = buildHistoryNarrative(d);
+      const summary = narrative.resultText || narrative.explanationText || formatDeltaSummary(d.effectsApplied || d.deltaSummary || {});
+      const detailParts = [
+        narrative.causeText,
+        narrative.guidanceText,
+        narrative.followUpText
+      ].filter(Boolean);
+      const note = narrative.learningNote ? `<details><summary>Lernhinweis</summary>${escapeHtml(String(narrative.learningNote))}</details>` : '';
+      const detail = detailParts.length ? `<br>${escapeHtml(detailParts.join(' · '))}` : '';
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Ereignis (${escapeHtml(categoryLabel(String(d.category || 'generic')))})</div><strong>${escapeHtml(String(d.eventTitle || d.optionLabel || d.optionId || d.eventId || 'Ereignis'))}</strong><br>${escapeHtml(String(summary || 'Keine Nettoänderung'))}${detail}${note}`;
     } else if (row.kind === 'forecast') {
       const d = row.data || {};
       node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Forecast</div><strong>Harvest ${escapeHtml(String(Math.round(Number(d.harvestScore) || 0)))}</strong><br>Qualität ${escapeHtml(String(Math.round(Number(d.qualityScore) || 0)))} · ${escapeHtml(String(d.reason || 'Lokale Prognose aktualisiert.'))}`;
@@ -16966,29 +17404,44 @@ function dismissActiveEvent() {
   if (state.events.machineState !== 'activeEvent') {
     return;
   }
-
-  const penalty = { health: -1, stress: 2, risk: 2 };
   const eventId = state.events.activeEventId;
-
-  applyChoiceEffects(penalty);
+  const resolveTimeMinutes = clamp(Number(state.events.activeResolveTimeMinutes || 60), 30, 120);
+  const resolveTimeMs = resolveTimeMinutes * 60 * 1000;
   state.events.lastChoiceId = '__dismiss__';
   state.events.scheduler.lastChoiceId = '__dismiss__';
   state.events.machineState = 'resolving';
-  state.events.resolvingUntilMs = state.simulation.nowMs + EVENT_RESOLUTION_MS;
+  state.events.resolvingUntilSimTimeMs = Number(state.simulation.simTimeMs || 0) + resolveTimeMs;
+  state.events.resolvingUntilMs = state.simulation.nowMs + resolveTimeMs;
+  state.events.pendingResolution = {
+    eventId,
+    eventTitle: state.events.activeEventTitle,
+    eventCategory: state.events.activeCategory || 'generic',
+    optionId: '__dismiss__',
+    optionLabel: 'Ignoriert',
+    learningNote: state.events.activeLearningNote || '',
+    chosenAtRealTimeMs: Date.now(),
+    chosenAtSimTimeMs: Number(state.simulation.simTimeMs || 0),
+    resolveTimeMinutes,
+    resolveTimeRealMs: resolveTimeMs,
+    resolveAtSimTimeMs: Number(state.simulation.simTimeMs || 0) + resolveTimeMs,
+    rawChoiceEffects: {},
+    triggerSnapshot: null
+  };
   state.events.pendingOutcome = {
     eventId,
     eventTitle: state.events.activeEventTitle,
     optionId: '__dismiss__',
     optionLabel: 'Ignoriert',
-    summary: 'bad',
+    summary: 'pending',
     learningNote: 'Ignorierte Ereignisse erhöhen meist das Risiko.',
-    resolvedAfterMs: EVENT_RESOLUTION_MS
+    resolvedAfterMs: resolveTimeMs,
+    observationText: 'Die Folgen des Nichtstuns werden jetzt über einen kurzen Zeitraum beobachtet.'
   };
   state.events.resolvedOutcome = null;
 
   addLog('choice', `Ereignis geschlossen ohne Auswahl: ${eventId}`, {
     choiceId: '__dismiss__',
-    effects: penalty
+    resolveTimeMinutes
   });
 
   runEventStateMachine(state.simulation.nowMs);
@@ -17149,10 +17602,16 @@ function formatResolvedOutcome(outcome) {
   if (!outcome) {
     return 'Die Auswertung wurde abgeschlossen.';
   }
-  const tone = outcome.summary === 'good' ? 'Gute Entscheidung.' : (outcome.summary === 'bad' ? 'Eher schlechte Entscheidung.' : 'Gemischtes Ergebnis.');
-  const choice = outcome.optionLabel ? `Gewählt: ${outcome.optionLabel}.` : '';
-  const note = outcome.learningNote ? ` ${outcome.learningNote}` : '';
-  return `${tone} ${choice}${note}`.trim();
+  const lines = [];
+  if (outcome.explanationText) lines.push(String(outcome.explanationText));
+  else {
+    const tone = outcome.summary === 'good' ? 'Gute Entscheidung.' : (outcome.summary === 'bad' ? 'Eher schlechte Entscheidung.' : 'Gemischtes Ergebnis.');
+    if (tone) lines.push(tone);
+  }
+  if (outcome.resultText && outcome.resultText !== outcome.explanationText) lines.push(String(outcome.resultText));
+  if (outcome.followUpIds && outcome.followUpIds.length) lines.push(formatOutcomeFollowUpLabel(outcome.followUpIds));
+  if (outcome.learningNote) lines.push(String(outcome.learningNote));
+  return lines.join(' ');
 }
 
 function eventStatusDisplay(sourceState = state) { const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
@@ -17167,7 +17626,10 @@ function eventStatusDisplay(sourceState = state) { const activeState = sourceSta
 return { label: 'Ergebnis in', value: formatCountdown(Number(eventsState.resolvingUntilSimTimeMs || 0) - Number(simulation.simTimeMs || 0)) };
   }
   if (eventsState.machineState === 'resolved') {
-    return { label: 'Ereignisstatus', value: 'Ergebnis bereit' };
+    return {
+      label: 'Ereignisstatus',
+      value: formatOutcomeStatusLabel(eventsState.resolvedOutcome && eventsState.resolvedOutcome.outcomeStatus) || 'Ergebnis bereit'
+    };
   }
 return { label: 'Nächstes Ereignis', value: formatCountdown(Number(scheduler.nextEventSimTimeMs || 0) - Number(simulation.simTimeMs || 0)) };
 }
@@ -18260,6 +18722,63 @@ function normalizeAction(rawAction) {
   return base;
 }
 
+function normalizeEventStringList(values) {
+  return Array.isArray(values) ? values.map((value) => String(value || '').trim()).filter(Boolean) : [];
+}
+
+function normalizeEventPlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
+}
+
+function normalizeEventOutcomeTexts(rawOutcomeTexts) {
+  const source = normalizeEventPlainObject(rawOutcomeTexts);
+  const keys = ['improved', 'stabilized', 'unresolved', 'worsened', 'escalated'];
+  const normalized = {};
+  keys.forEach((key) => {
+    const entry = source[key];
+    if (typeof entry === 'string') {
+      normalized[key] = { explanation: String(entry) };
+    } else if (entry && typeof entry === 'object') {
+      normalized[key] = {
+        explanation: typeof entry.explanation === 'string' ? entry.explanation : '',
+        cause: typeof entry.cause === 'string' ? entry.cause : '',
+        result: typeof entry.result === 'string' ? entry.result : '',
+        guidance: typeof entry.guidance === 'string' ? entry.guidance : ''
+      };
+    }
+  });
+  return normalized;
+}
+
+function normalizeEventFollowUpRules(rawFollowUpRules) {
+  const source = normalizeEventPlainObject(rawFollowUpRules);
+  const normalizeValue = (value) => {
+    if (typeof value === 'string') return value.trim() ? [value.trim()] : [];
+    if (Array.isArray(value)) return value.map((entry) => String(entry || '').trim()).filter(Boolean);
+    return [];
+  };
+  return {
+    improved: normalizeValue(source.improved),
+    stabilized: normalizeValue(source.stabilized),
+    unresolved: normalizeValue(source.unresolved),
+    worsened: normalizeValue(source.worsened),
+    escalated: normalizeValue(source.escalated)
+  };
+}
+
+function defaultResolveTimeMinutesForNormalizedEvent(category, severity, tags = []) {
+  const safeCategory = String(category || 'generic').toLowerCase();
+  const safeSeverity = clamp(Number(severity) || 3, 1, 5);
+  const safeTags = Array.isArray(tags) ? tags.map((tag) => String(tag).toLowerCase()) : [];
+  if (safeTags.includes('urgent') || safeTags.includes('heat') || safeTags.includes('light')) return 35;
+  if (safeCategory === 'environment') return safeSeverity >= 4 ? 40 : 50;
+  if (safeCategory === 'water') return safeTags.includes('root') || safeTags.includes('oxygen') ? 60 : 45;
+  if (safeCategory === 'nutrition') return safeTags.includes('ph') || safeTags.includes('ec') ? 90 : 75;
+  if (safeCategory === 'disease' || safeCategory === 'pest') return safeSeverity >= 4 ? 90 : 75;
+  if (safeCategory === 'positive') return 30;
+  return 60;
+}
+
 function normalizeEvent(rawEvent, sourceVersion = 'v1') {
   if (!rawEvent || typeof rawEvent !== 'object') {
     return null;
@@ -18278,7 +18797,9 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
       effects: option.effects && typeof option.effects === 'object' ? option.effects : {},
       sideEffects: Array.isArray(option.sideEffects) ? option.sideEffects : [],
       followUps: Array.isArray(option.followUps) ? option.followUps.map(String) : (option.followUp ? [String(option.followUp)] : []),
-      uiCopy: option.uiCopy && typeof option.uiCopy === 'object' ? option.uiCopy : {}
+      uiCopy: option.uiCopy && typeof option.uiCopy === 'object' ? option.uiCopy : {},
+      intent: typeof option.intent === 'string' ? String(option.intent) : '',
+      contextFit: normalizeEventStringList(option.contextFit)
     }))
     .filter((option) => Boolean(option.id));
 
@@ -18301,17 +18822,23 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     description: String(rawEvent.description),
     triggers: rawEvent.triggers && typeof rawEvent.triggers === 'object' ? rawEvent.triggers : {},
     constraints: inferEventConstraints(rawEvent, category),
-    allowedPhases: Array.isArray(rawEvent.allowedPhases) ? rawEvent.allowedPhases.map((phase) => String(phase)).filter(Boolean) : [],
+    allowedPhases: Array.isArray(rawEvent.allowedPhases) ? rawEvent.allowedPhases.map((phase) => String(phase)).filter(Boolean) : normalizeEventStringList(rawEvent.phases),
     weight: Math.max(0.01, Number(rawEvent.weight) || normalizeSeverity(rawEvent.severity) || 1),
     cooldownRealMinutes: clamp(Number(rawEvent.cooldownRealMinutes) || 120, 10, 24 * 60),
+    resolveTimeMinutes: clamp(Number(rawEvent.resolveTimeMinutes) || defaultResolveTimeMinutesForNormalizedEvent(category, rawEvent.severity, rawEvent.tags), 30, 120),
     learningNote: String(rawEvent.learningNote || ''),
     severity: normalizeSeverity(rawEvent.severity),
     polarity: normalizedSeed.polarity,
     environment: inferEnvironmentScope(rawEvent),
     tags: Array.isArray(rawEvent.tags) ? rawEvent.tags.map(String) : [],
     tone: String(rawEvent.tone || ''),
+    pool: typeof rawEvent.pool === 'string' ? String(rawEvent.pool) : '',
     isFollowUp: rawEvent.isFollowUp === true,
     imagePath,
+    warningText: typeof rawEvent.warningText === 'string' ? String(rawEvent.warningText) : '',
+    shadowModel: normalizeEventPlainObject(rawEvent.shadowModel),
+    outcomeTexts: normalizeEventOutcomeTexts(rawEvent.outcomeTexts),
+    followUpRules: normalizeEventFollowUpRules(rawEvent.followUpRules),
     options,
     sourceVersion
   };

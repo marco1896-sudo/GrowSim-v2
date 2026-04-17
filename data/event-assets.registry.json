@@ -7,9 +7,9 @@
     "Placeholders remain only for genuinely uncovered states still tracked in the gap list."
   ],
   "inventorySummary": {
-    "totalAssets": 29,
+    "totalAssets": 32,
     "byDimension": {
-      "2048x2048": 15,
+      "2048x2048": 18,
       "512x512": 8,
       "1024x1024": 6
     },
@@ -118,6 +118,55 @@
         "positive",
         "stable",
         "environment"
+      ]
+    },
+    "event-light-burn": {
+      "path": "assets/events/event-light-burn.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "light",
+        "burn"
+      ],
+      "tags": [
+        "environment",
+        "light",
+        "stress"
+      ]
+    },
+    "event-nutrient-lockout": {
+      "path": "assets/events/event-nutrient-lockout.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "nutrient",
+        "lockout"
+      ],
+      "tags": [
+        "nutrition",
+        "lockout",
+        "warning"
+      ]
+    },
+    "event-rapid-growth-surge": {
+      "path": "assets/events/event-rapid-growth-surge.png",
+      "assetKind": "image",
+      "width": 2048,
+      "height": 2048,
+      "tokens": [
+        "event",
+        "rapid",
+        "growth",
+        "surge"
+      ],
+      "tags": [
+        "structure",
+        "stretch",
+        "growth"
       ]
     },
     "event-slow-growth-period": {
@@ -537,6 +586,74 @@
       "primaryIcon": "dry_pocket",
       "fallbackCategory": "water"
     },
+    "v2_water_late_watering_pattern": {
+      "primaryImage": "event-drought-stress",
+      "primaryIcon": "dry_pocket",
+      "fallbackCategory": "water"
+    },
+    "v2_water_poor_dryback": {
+      "primaryImage": "event-overwatering",
+      "primaryIcon": "too_wet_soil",
+      "fallbackCategory": "water"
+    },
+    "v2_water_root_oxygen_debt": {
+      "primaryImage": "event-root-explosion",
+      "primaryIcon": "root_bound_warning",
+      "fallbackCategory": "water"
+    },
+    "v2_root_zone_cold_warning": {
+      "primaryImage": "event-cold-night",
+      "primaryIcon": "cold_root_zone",
+      "fallbackCategory": "environment"
+    },
+    "v2_nutrition_ph_drift_slow": {
+      "primaryImage": "event-nutrient-lockout",
+      "primaryIcon": "ph_drift_high",
+      "fallbackCategory": "nutrition"
+    },
+    "v2_nutrition_salt_buildup": {
+      "primaryImage": "event-nutrient-lockout",
+      "primaryIcon": "nutrient_lockout",
+      "fallbackCategory": "nutrition"
+    },
+    "v2_nutrition_n_excess_transition": {
+      "primaryImage": "event-nutrient-lockout",
+      "primaryIcon": "nutrient_lockout",
+      "fallbackCategory": "nutrition"
+    },
+    "v2_nutrition_k_demand_early_flower": {
+      "primaryImage": "event-nutrient-deficiency",
+      "primaryIcon": "nutrient_lockout",
+      "fallbackCategory": "nutrition"
+    },
+    "v2_climate_rh_night_high": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "late_flower_humidity",
+      "fallbackCategory": "disease"
+    },
+    "v2_climate_weak_air_movement": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "topsoil_mold",
+      "fallbackCategory": "disease"
+    },
+    "v2_light_lamp_too_close": {
+      "primaryImage": "event-light-burn",
+      "primaryIcon": "heat_wave",
+      "fallbackCategory": "environment"
+    },
+    "v2_structure_stretch_surge": {
+      "primaryImage": "event-rapid-growth-surge",
+      "fallbackCategory": "environment"
+    },
+    "v2_structure_canopy_density_warning": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "topsoil_mold",
+      "fallbackCategory": "disease"
+    },
+    "v2_structure_support_needed": {
+      "primaryImage": "event-rapid-growth-surge",
+      "fallbackCategory": "generic"
+    },
     "v2_environment_cold_night": {
       "primaryImage": "event-cold-night",
       "primaryIcon": "cold_root_zone",
@@ -621,6 +738,54 @@
       "primaryImage": "event-cold-night",
       "primaryIcon": "cold_root_zone",
       "fallbackCategory": "environment"
+    },
+    "v2_water_borderline_irrigation": {
+      "primaryImage": "event-drought-stress",
+      "primaryIcon": "dry_pocket",
+      "fallbackCategory": "water"
+    },
+    "v2_water_uneven_dryback": {
+      "primaryImage": "event-overwatering",
+      "primaryIcon": "too_wet_soil",
+      "fallbackCategory": "water"
+    },
+    "v2_water_rootzone_recovery_check": {
+      "primaryImage": "event-stress-recovery",
+      "primaryIcon": "beneficial_fungi_colonized",
+      "fallbackCategory": "positive"
+    },
+    "v2_nutrition_post_correction_instability": {
+      "primaryImage": "event-nutrient-lockout",
+      "primaryIcon": "ph_drift_high",
+      "fallbackCategory": "nutrition"
+    },
+    "v2_nutrition_uptake_stabilizing": {
+      "primaryImage": "event-stress-recovery",
+      "primaryIcon": "beneficial_fungi_colonized",
+      "fallbackCategory": "positive"
+    },
+    "v2_climate_bud_microclimate_pocket": {
+      "primaryImage": "event-fungus-infection",
+      "primaryIcon": "topsoil_mold",
+      "fallbackCategory": "disease"
+    },
+    "v2_climate_microclimate_relief": {
+      "primaryImage": "event-stress-recovery",
+      "primaryIcon": "beneficial_fungi_colonized",
+      "fallbackCategory": "positive"
+    },
+    "v2_structure_defoliation_window": {
+      "primaryImage": "event-rapid-growth-surge",
+      "fallbackCategory": "environment"
+    },
+    "v2_structure_top_load_shift": {
+      "primaryImage": "event-rapid-growth-surge",
+      "fallbackCategory": "environment"
+    },
+    "v2_structure_support_settled": {
+      "primaryImage": "event-stress-recovery",
+      "primaryIcon": "beneficial_fungi_colonized",
+      "fallbackCategory": "positive"
     }
   },
   "categoryFallbacks": {

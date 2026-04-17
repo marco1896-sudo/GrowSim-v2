@@ -205,17 +205,30 @@ function createRuntimeContext(initialState, persistedRaw = null) {
 
   eventsApi.onEventOptionClick('ignore_signals');
 
-  const pendingBeforeSave = memoryApi.getPendingChain(runtime.state.events, 'root_stress_followup');
-  assert(pendingBeforeSave, 'decision should create pending chain before save');
+  assert.strictEqual(runtime.state.events.machineState, 'resolving', 'decision should persist as resolving before save');
+  assert(runtime.state.events.pendingResolution, 'pending resolution metadata should exist before save');
+  assert.strictEqual(
+    Number(runtime.state.events.audit && runtime.state.events.audit.totals && runtime.state.events.audit.totals.resolvingStarted || 0),
+    1,
+    'audit should begin tracking the resolving choice before save'
+  );
+  assert.strictEqual(
+    memoryApi.getPendingChain(runtime.state.events, 'root_stress_followup'),
+    null,
+    'follow-up chain should not exist before the delayed resolution finishes'
+  );
 
   const decisionBeforeSave = memoryApi.getLastDecision(runtime.state.events);
   assert(decisionBeforeSave, 'decision should be persisted before save');
   assert.strictEqual(decisionBeforeSave.eventId, 'drooping_leaves_warning');
   assert.strictEqual(decisionBeforeSave.optionId, 'ignore_signals');
+  assert.strictEqual(decisionBeforeSave.analysisId, undefined, 'analysis should not exist before delayed resolution');
 
-  const analysisBeforeSave = analysisApi.getLatestAnalysis(runtime.state.events);
-  assert(analysisBeforeSave, 'analysis should exist before save');
-  assert.strictEqual(analysisBeforeSave.relatedChainId, 'root_stress_followup');
+  assert.strictEqual(
+    analysisApi.getLatestAnalysis(runtime.state.events),
+    null,
+    'analysis should not be generated before the resolve timer completes'
+  );
 
   storageApi.syncCanonicalStateShape();
   await storageApi.persistState();
@@ -225,11 +238,16 @@ function createRuntimeContext(initialState, persistedRaw = null) {
 
   const persistedSnapshot = JSON.parse(persistedRaw);
   const canonicalPersistedEvents = storageApi.getCanonicalEvents({ events: persistedSnapshot.events });
-  assert(canonicalPersistedEvents.foundation.memory.pendingChains.root_stress_followup, 'canonicalized snapshot should preserve pending chain');
+  assert(canonicalPersistedEvents.pendingResolution, 'canonicalized snapshot should preserve the resolving event payload');
   assert.strictEqual(
-    canonicalPersistedEvents.foundation.memory.pendingChains.root_stress_followup.sourceEventId,
+    canonicalPersistedEvents.pendingResolution.eventId,
     'drooping_leaves_warning',
-    'canonicalized pending chain should preserve causal source'
+    'canonicalized pending resolution should preserve causal source event'
+  );
+  assert.strictEqual(
+    Number(canonicalPersistedEvents.audit && canonicalPersistedEvents.audit.totals && canonicalPersistedEvents.audit.totals.resolvingStarted || 0),
+    1,
+    'canonicalized snapshot should keep the audit counters during resolving'
   );
 
   const reloaded = createRuntimeContext(buildBaseState(), persistedRaw);
@@ -237,24 +255,58 @@ function createRuntimeContext(initialState, persistedRaw = null) {
   await reloadedStorageApi.restoreState();
   reloadedStorageApi.syncCanonicalStateShape();
 
-  const restoredPending = memoryApi.getPendingChain(reloaded.state.events, 'root_stress_followup');
-  assert(restoredPending, 'restored state should keep pending chain');
-  assert.strictEqual(restoredPending.sourceOptionId, 'ignore_signals');
+  assert.strictEqual(reloaded.state.events.machineState, 'resolving', 'restored state should stay in resolving state');
+  assert(reloaded.state.events.pendingResolution, 'restored state should keep pending resolution metadata');
+  assert.strictEqual(reloaded.state.events.pendingResolution.optionId, 'ignore_signals');
 
   const restoredDecision = memoryApi.getLastDecision(reloaded.state.events);
   assert(restoredDecision, 'restored state should keep decision memory');
-  assert(restoredDecision.analysisId, 'restored decision should still reference analysis');
+  assert.strictEqual(restoredDecision.analysisId, undefined, 'analysis should still be pending after reload');
+  assert.strictEqual(analysisApi.getLatestAnalysis(reloaded.state.events), null, 'analysis should still be absent before resolve on reload');
+
+  reloaded.state.simulation.simTimeMs = Number(reloaded.state.events.resolvingUntilSimTimeMs || 0) + 1;
+  reloaded.state.simulation.nowMs += Number(reloaded.state.events.pendingResolution.resolveTimeRealMs || 0) + 1;
+
+  const reloadedEventsApi = reloaded.window.GrowSimEvents;
+  reloadedEventsApi.runEventStateMachine(reloaded.state.simulation.nowMs);
+
+  assert.strictEqual(reloaded.state.events.machineState, 'resolved', 'reloaded resolving event should finish after timer expiry');
+  assert(reloaded.state.events.resolvedOutcome, 'reloaded resolution should store explained outcome data');
+  assert(reloaded.state.events.resolvedOutcome.explanationText, 'resolved outcome should include explanation text');
+
+  const restoredPending = memoryApi.getPendingChain(reloaded.state.events, 'root_stress_followup');
+  assert(restoredPending, 'resolved reload should queue pending follow-up chain');
+  assert.strictEqual(restoredPending.sourceOptionId, 'ignore_signals');
 
   const restoredAnalysis = analysisApi.getLatestAnalysis(reloaded.state.events);
-  assert(restoredAnalysis, 'restored state should keep analysis history');
+  assert(restoredAnalysis, 'resolved reload should generate analysis history');
   assert.strictEqual(restoredAnalysis.eventId, 'drooping_leaves_warning');
   assert.strictEqual(restoredAnalysis.relatedChainId, 'root_stress_followup');
+  assert.strictEqual(
+    restoredAnalysis.guidanceText,
+    reloaded.state.events.resolvedOutcome.guidanceText,
+    'analysis should preserve the same guidance narrative after reload'
+  );
+
+  const resolvedDecision = memoryApi.getLastDecision(reloaded.state.events);
+  assert(resolvedDecision.analysisId, 'resolved decision should reference generated analysis after reload');
+  const restoredHistoryEntry = reloaded.state.events.history[reloaded.state.events.history.length - 1];
+  assert(restoredHistoryEntry.resultText, 'restored event history should keep resolved result text');
+  assert.deepStrictEqual(
+    Array.from(restoredHistoryEntry.followUpIds || []),
+    ['root_stress_followup'],
+    'restored event history should keep queued follow-up ids'
+  );
+  assert.strictEqual(
+    Number(reloaded.state.events.audit && reloaded.state.events.audit.totals && reloaded.state.events.audit.totals.queuedFollowUps || 0),
+    1,
+    'restored state should continue counting queued follow-ups after delayed resolution'
+  );
 
   reloaded.state.events.machineState = 'idle';
   reloaded.state.simulation.nowMs += 1;
   reloaded.state.events.scheduler.nextEventRealTimeMs = 0;
 
-  const reloadedEventsApi = reloaded.window.GrowSimEvents;
   const activated = reloadedEventsApi.activateEvent(reloaded.state.simulation.nowMs);
   assert.strictEqual(activated, true, 'follow-up should still activate after reload');
   assert.strictEqual(reloaded.state.events.activeEventId, 'root_stress_followup');
@@ -270,6 +322,11 @@ function createRuntimeContext(initialState, persistedRaw = null) {
   assert.strictEqual(postReloadEvent.eventId, 'root_stress_followup');
   assert.strictEqual(postReloadEvent.meta.consumedChainId, 'root_stress_followup');
   assert.strictEqual(postReloadEvent.meta.sourceEventId, 'drooping_leaves_warning');
+  assert.strictEqual(
+    Number(reloaded.state.events.audit && reloaded.state.events.audit.totals && reloaded.state.events.audit.totals.activatedFollowUps || 0),
+    1,
+    'post-reload follow-up activation should be reflected in persisted audit counters'
+  );
 
   const pendingChainsAfterConsume = memoryApi.getPendingChains(reloaded.state.events);
   assert.deepStrictEqual(

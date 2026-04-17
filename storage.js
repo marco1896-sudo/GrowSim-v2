@@ -238,6 +238,10 @@ function getRemoteApiFetch() {
     return window.GrowSimApi.apiFetch;
   }
 
+  if (typeof fetch !== 'function') {
+    return null;
+  }
+
   return async function fallbackApiFetch(path, options = {}) {
     const baseUrl = 'https://api.growsimulator.tech';
     const prefix = '/api';
@@ -321,6 +325,10 @@ async function loadRemoteSave(options = {}) {
 
   try {
     const apiFetch = getRemoteApiFetch();
+    if (typeof apiFetch !== 'function') {
+      console.info('[remote-load] fallback (fetch unavailable)');
+      return null;
+    }
     const response = await apiFetch(REMOTE_SAVE_PATH, {
       method: 'GET',
       headers: {
@@ -396,6 +404,10 @@ async function saveRemoteState(snapshot) {
   const request = (async () => {
     try {
       const apiFetch = getRemoteApiFetch();
+      if (typeof apiFetch !== 'function') {
+        console.info('[remote-save] fallback (fetch unavailable)');
+        return false;
+      }
       const response = await apiFetch(REMOTE_SAVE_PATH, {
         method: 'POST',
         headers: {
@@ -633,12 +645,17 @@ function getCanonicalEvents(snapshot) {
   if (!Array.isArray(s.events.activeOptions)) s.events.activeOptions = [];
   if (!Number.isFinite(s.events.activeSeverity)) s.events.activeSeverity = 1;
   if (!Number.isFinite(s.events.activeCooldownRealMinutes)) s.events.activeCooldownRealMinutes = 120;
+  if (!Number.isFinite(s.events.activeResolveTimeMinutes)) s.events.activeResolveTimeMinutes = 60;
   if (typeof s.events.activeCategory !== 'string') s.events.activeCategory = 'generic';
   if (!Array.isArray(s.events.activeTags)) s.events.activeTags = [];
+  if (!Number.isFinite(s.events.resolvingUntilMs)) s.events.resolvingUntilMs = 0;
   if (!Number.isFinite(s.events.lastEventAtMs)) s.events.lastEventAtMs = 0;
   if (!Number.isFinite(s.events.resolvingUntilSimTimeMs)) s.events.resolvingUntilSimTimeMs = 0;
   if (!Number.isFinite(s.events.cooldownUntilMs)) s.events.cooldownUntilMs = 0;
   if (!Number.isFinite(s.events.cooldownUntilSimTimeMs)) s.events.cooldownUntilSimTimeMs = 0;
+  if (s.events.pendingOutcome != null && typeof s.events.pendingOutcome !== 'object') s.events.pendingOutcome = null;
+  if (s.events.resolvedOutcome != null && typeof s.events.resolvedOutcome !== 'object') s.events.resolvedOutcome = null;
+  if (s.events.pendingResolution != null && typeof s.events.pendingResolution !== 'object') s.events.pendingResolution = null;
   if (!Array.isArray(s.events.catalog)) s.events.catalog = [];
   if (!s.events.foundation || typeof s.events.foundation !== 'object') s.events.foundation = {};
   if (!s.events.foundation.flags || typeof s.events.foundation.flags !== 'object') s.events.foundation.flags = {};
@@ -648,6 +665,35 @@ function getCanonicalEvents(snapshot) {
   if (!s.events.foundation.memory.pendingChains || typeof s.events.foundation.memory.pendingChains !== 'object') s.events.foundation.memory.pendingChains = {};
   s.events.foundation.memory.pendingChains = normalizePendingChainsForStorage(s.events.foundation.memory.pendingChains);
   if (!Array.isArray(s.events.foundation.analysis)) s.events.foundation.analysis = [];
+  if (!s.events.audit || typeof s.events.audit !== 'object') {
+    s.events.audit = {};
+  }
+  if (!s.events.audit.totals || typeof s.events.audit.totals !== 'object') {
+    s.events.audit.totals = {};
+  }
+  if (!s.events.audit.byCategory || typeof s.events.audit.byCategory !== 'object') s.events.audit.byCategory = {};
+  if (!s.events.audit.byPhase || typeof s.events.audit.byPhase !== 'object') s.events.audit.byPhase = {};
+  if (!s.events.audit.byStage || typeof s.events.audit.byStage !== 'object') s.events.audit.byStage = {};
+  if (!s.events.audit.byEventId || typeof s.events.audit.byEventId !== 'object') s.events.audit.byEventId = {};
+  if (!s.events.audit.bySimDay || typeof s.events.audit.bySimDay !== 'object') s.events.audit.bySimDay = {};
+  if (!s.events.audit.outcomes || typeof s.events.audit.outcomes !== 'object') s.events.audit.outcomes = {};
+  if (!s.events.audit.followUps || typeof s.events.audit.followUps !== 'object') s.events.audit.followUps = {};
+  if (!s.events.audit.followUps.byTargetId || typeof s.events.audit.followUps.byTargetId !== 'object') s.events.audit.followUps.byTargetId = {};
+  if (!s.events.audit.followUps.bySourceId || typeof s.events.audit.followUps.bySourceId !== 'object') s.events.audit.followUps.bySourceId = {};
+  if (!s.events.audit.guardInterventions || typeof s.events.audit.guardInterventions !== 'object') s.events.audit.guardInterventions = {};
+  if (!s.events.audit.gaps || typeof s.events.audit.gaps !== 'object') s.events.audit.gaps = {};
+  if (!Array.isArray(s.events.audit.gaps.recentSimMs)) s.events.audit.gaps.recentSimMs = [];
+  if (!Number.isFinite(s.events.audit.gaps.lastActivatedAtSimTimeMs)) s.events.audit.gaps.lastActivatedAtSimTimeMs = 0;
+  if (!Number.isFinite(s.events.audit.gaps.meanSimMs)) s.events.audit.gaps.meanSimMs = 0;
+  if (!Number.isFinite(s.events.audit.gaps.maxSimMs)) s.events.audit.gaps.maxSimMs = 0;
+  if (!Number.isFinite(s.events.audit.gaps.shortGapClusterCount)) s.events.audit.gaps.shortGapClusterCount = 0;
+  if (!Number.isFinite(s.events.audit.gaps.longGapCount)) s.events.audit.gaps.longGapCount = 0;
+  if (!s.events.audit.recent || typeof s.events.audit.recent !== 'object') s.events.audit.recent = {};
+  if (!Array.isArray(s.events.audit.recent.eventIds)) s.events.audit.recent.eventIds = [];
+  if (!Array.isArray(s.events.audit.recent.categories)) s.events.audit.recent.categories = [];
+  if (!Array.isArray(s.events.audit.recent.outcomes)) s.events.audit.recent.outcomes = [];
+  if (!Array.isArray(s.events.audit.recent.followUps)) s.events.audit.recent.followUps = [];
+  if (!Number.isFinite(s.events.audit.version)) s.events.audit.version = 1;
   if (s.events.shadowRuntime != null && typeof s.events.shadowRuntime !== 'object') s.events.shadowRuntime = null;
 
   return s.events;
@@ -1247,12 +1293,17 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
         activeOptions: Array.isArray(saved.event.activeOptions) ? saved.event.activeOptions : [],
         activeSeverity: Number(saved.event.activeSeverity || 1),
         activeCooldownRealMinutes: Number(saved.event.activeCooldownRealMinutes || 120),
+        activeResolveTimeMinutes: Number(saved.event.activeResolveTimeMinutes || events.activeResolveTimeMinutes || 60),
         activeCategory: String(saved.event.activeCategory || 'generic'),
         activeTags: Array.isArray(saved.event.activeTags) ? saved.event.activeTags : [],
         lastEventAtMs: Number(saved.event.lastEventAtMs || 0),
+        resolvingUntilMs: Number(saved.event.resolvingUntilMs || 0),
         cooldownUntilMs: Number(saved.event.cooldownUntilMs || 0),
         cooldownUntilSimTimeMs: Number(saved.event.cooldownUntilSimTimeMs || 0),
         resolvingUntilSimTimeMs: Number(saved.event.resolvingUntilSimTimeMs || 0),
+        pendingOutcome: saved.event.pendingOutcome && typeof saved.event.pendingOutcome === 'object' ? saved.event.pendingOutcome : null,
+        resolvedOutcome: saved.event.resolvedOutcome && typeof saved.event.resolvedOutcome === 'object' ? saved.event.resolvedOutcome : null,
+        pendingResolution: saved.event.pendingResolution && typeof saved.event.pendingResolution === 'object' ? saved.event.pendingResolution : null,
         catalog: Array.isArray(saved.event.catalog) ? saved.event.catalog : events.catalog,
         scheduler: {
           ...events.scheduler,
@@ -1766,8 +1817,14 @@ function ensureStateIntegrity(nowMs) {
   if (!Number.isFinite(state.events.cooldownUntilSimTimeMs)) {
     state.events.cooldownUntilSimTimeMs = 0;
   }
+  if (!Number.isFinite(state.events.resolvingUntilMs)) {
+    state.events.resolvingUntilMs = 0;
+  }
   if (!Number.isFinite(state.events.resolvingUntilSimTimeMs)) {
     state.events.resolvingUntilSimTimeMs = 0;
+  }
+  if (!Number.isFinite(state.events.activeResolveTimeMinutes)) {
+    state.events.activeResolveTimeMinutes = 60;
   }
   if (!Array.isArray(state.events.activeOptions)) {
     state.events.activeOptions = [];
@@ -1777,6 +1834,15 @@ function ensureStateIntegrity(nowMs) {
   }
   if (!Array.isArray(state.events.catalog)) {
     state.events.catalog = [];
+  }
+  if (state.events.pendingOutcome != null && typeof state.events.pendingOutcome !== 'object') {
+    state.events.pendingOutcome = null;
+  }
+  if (state.events.resolvedOutcome != null && typeof state.events.resolvedOutcome !== 'object') {
+    state.events.resolvedOutcome = null;
+  }
+  if (state.events.pendingResolution != null && typeof state.events.pendingResolution !== 'object') {
+    state.events.pendingResolution = null;
   }
 
   if (!Array.isArray(state.actions.catalog)) {

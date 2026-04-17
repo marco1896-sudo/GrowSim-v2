@@ -41,6 +41,12 @@ function round2(value) {
   return Math.round(Number(value || 0) * 100) / 100;
 }
 
+function safeRatio(numerator, denominator) {
+  const total = Number(denominator || 0);
+  if (total <= 0) return 0;
+  return Number(numerator || 0) / total;
+}
+
 function hashString(input) {
   let h = 2166136261;
   const str = String(input || '');
@@ -822,6 +828,11 @@ function simulateSeed(seed, catalog) {
   stats.averageMinutesBetweenEvents = gapCount ? round2((totalGapMs / gapCount) / 60_000) : 0;
   stats.pendingChainsRemaining = Object.keys(memoryApi.getPendingChains(eventsState) || {}).length;
   stats.activeFlags = flagsApi.getActiveFlags(eventsState);
+  const categoryEntries = Object.entries(stats.eventFrequencyByCategory || {}).sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
+  const [topCategory = 'none', topCategoryCount = 0] = categoryEntries[0] || [];
+  stats.dominantCategory = topCategory;
+  stats.dominantCategorySharePercent = round2(safeRatio(topCategoryCount, stats.totalEventsTriggered) * 100);
+  stats.followUpActivationGap = Math.max(0, Number(stats.followUpChainsTriggered || 0) - Number(stats.followUpChainsConsumed || 0));
   const resolverDrivenTotal = Number(stats.eventsSelectedByResolver.total || 0)
     + Number(stats.eventsSelectedByResolver.selectedFromResolverShapedPool || 0);
   stats.resolverInfluence = {
@@ -844,6 +855,9 @@ function aggregate(allStats) {
     repeatedEvents: 0,
     followUpChainsTriggered: 0,
     followUpChainsConsumed: 0,
+    pendingChainsRemainingMax: 0,
+    pendingChainsRemainingAvg: 0,
+    dominantCategorySharePercentMax: 0,
     eventsSelectedByResolver: {
       total: 0,
       forcedByPendingChainOrFlag: 0,
@@ -865,6 +879,8 @@ function aggregate(allStats) {
     summary.repeatedEvents += stats.repeatedEvents;
     summary.followUpChainsTriggered += stats.followUpChainsTriggered;
     summary.followUpChainsConsumed += stats.followUpChainsConsumed;
+    summary.pendingChainsRemainingMax = Math.max(summary.pendingChainsRemainingMax, Number(stats.pendingChainsRemaining || 0));
+    summary.dominantCategorySharePercentMax = Math.max(summary.dominantCategorySharePercentMax, Number(stats.dominantCategorySharePercent || 0));
     for (const [pool, count] of Object.entries(stats.eventPoolDistribution || {})) {
       addCount(summary.eventPoolDistribution, pool, count);
     }
@@ -877,6 +893,11 @@ function aggregate(allStats) {
     ? allStats.reduce((sum, row) => sum + Number(row.averageMinutesBetweenEvents || 0), 0) / allStats.length
     : 0;
   summary.averageMinutesBetweenEvents = round2(avg);
+  summary.pendingChainsRemainingAvg = round2(
+    allStats.length
+      ? allStats.reduce((sum, row) => sum + Number(row.pendingChainsRemaining || 0), 0) / allStats.length
+      : 0
+  );
   const resolverDrivenTotal = Number(summary.eventsSelectedByResolver.total || 0)
     + Number(summary.eventsSelectedByResolver.selectedFromResolverShapedPool || 0);
   summary.resolverInfluence = {
@@ -888,14 +909,15 @@ function aggregate(allStats) {
   return summary;
 }
 
-function main() {
+function buildSimulationReport(options = {}) {
   const catalog = loadCatalog();
-  const perSeed = SEEDS.map((seed) => simulateSeed(seed, catalog));
-  const report = {
+  const seeds = Array.isArray(options.seeds) && options.seeds.length ? options.seeds.map(Number) : SEEDS;
+  const perSeed = seeds.map((seed) => simulateSeed(seed, catalog));
+  return {
     generatedAt: new Date().toISOString(),
     simulationSpec: {
       ticksPerSeed: TICKS_PER_SEED,
-      seeds: SEEDS,
+      seeds,
       eventRollWindowMinutes: [30, 90],
       noEligibleRetrySeconds: [20, 90]
     },
@@ -907,11 +929,28 @@ function main() {
     perSeed,
     aggregate: aggregate(perSeed)
   };
+}
 
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(report, null, 2), 'utf8');
+function writeSimulationReport(report, outputPath = OUTPUT_PATH) {
+  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2), 'utf8');
+  return outputPath;
+}
+
+function main() {
+  const report = buildSimulationReport();
+
+  writeSimulationReport(report, OUTPUT_PATH);
   console.log(`Wrote ${path.relative(ROOT, OUTPUT_PATH)}`);
 }
 
 if (require.main === module) {
   main();
 }
+
+module.exports = {
+  buildSimulationReport,
+  writeSimulationReport,
+  simulateSeed,
+  aggregate,
+  loadCatalog
+};

@@ -10,6 +10,9 @@
 
     const targetEventId = record.targetEventId ? String(record.targetEventId) : String(chainId);
     const createdAtRealTimeMs = Number(record.createdAtRealTimeMs ?? record.atRealTimeMs ?? Date.now());
+    const activatesAtRealTimeMs = record.activatesAtRealTimeMs == null
+      ? null
+      : Number(record.activatesAtRealTimeMs);
     const expiresAtRealTimeMs = record.expiresAtRealTimeMs == null
       ? null
       : Number(record.expiresAtRealTimeMs);
@@ -21,6 +24,7 @@
       sourceOptionId: record.sourceOptionId ? String(record.sourceOptionId) : null,
       sourceFlagId: record.sourceFlagId ? String(record.sourceFlagId) : null,
       createdAtRealTimeMs: Number.isFinite(createdAtRealTimeMs) ? createdAtRealTimeMs : Date.now(),
+      activatesAtRealTimeMs: Number.isFinite(activatesAtRealTimeMs) ? activatesAtRealTimeMs : null,
       expiresAtRealTimeMs: Number.isFinite(expiresAtRealTimeMs) ? expiresAtRealTimeMs : null,
       meta: record.meta && typeof record.meta === 'object' ? { ...record.meta } : {}
     };
@@ -28,17 +32,24 @@
     return normalized;
   }
 
-  function normalizePendingChainsStore(store) {
+  function normalizePendingChainsStore(store, options = {}) {
     if (!store || typeof store !== 'object') {
       return {};
     }
 
     const normalized = {};
-    const now = Date.now();
+    const now = Number.isFinite(Number(options.nowMs)) ? Number(options.nowMs) : Date.now();
+    const onExpired = typeof options.onExpired === 'function' ? options.onExpired : null;
     const entries = Object.entries(store)
       .map(([chainId, record]) => normalizePendingChain(chainId, record))
       .filter(Boolean)
-      .filter((record) => record.expiresAtRealTimeMs == null || record.expiresAtRealTimeMs > now)
+      .filter((record) => {
+        const expired = record.expiresAtRealTimeMs != null && record.expiresAtRealTimeMs <= now;
+        if (expired && onExpired) {
+          onExpired({ ...record });
+        }
+        return !expired;
+      })
       .sort((a, b) => a.createdAtRealTimeMs - b.createdAtRealTimeMs);
 
     const trimmed = entries.slice(Math.max(0, entries.length - MAX_PENDING_CHAINS));
@@ -123,6 +134,28 @@
     return { ...memory.pendingChains };
   }
 
+  function pruneExpiredPendingChains(eventsState, nowMs = Date.now()) {
+    const events = eventsState && typeof eventsState === 'object' ? eventsState : {};
+    if (!events.foundation || typeof events.foundation !== 'object') {
+      events.foundation = {};
+    }
+    if (!events.foundation.memory || typeof events.foundation.memory !== 'object') {
+      events.foundation.memory = {};
+    }
+    const memory = events.foundation.memory;
+    if (!memory.pendingChains || typeof memory.pendingChains !== 'object') {
+      memory.pendingChains = {};
+    }
+    const expired = [];
+    memory.pendingChains = normalizePendingChainsStore(memory.pendingChains, {
+      nowMs,
+      onExpired(record) {
+        expired.push(record);
+      }
+    });
+    return expired;
+  }
+
   function consumePendingChain(eventsState, chainId) {
     const chain = getPendingChain(eventsState, chainId);
     if (!chain) return null;
@@ -144,6 +177,7 @@
     setPendingChain,
     getPendingChain,
     getPendingChains,
+    pruneExpiredPendingChains,
     consumePendingChain,
     clearPendingChain,
     clearAllPendingChains,

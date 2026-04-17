@@ -73,9 +73,14 @@
     if (!memory || typeof memory.getPendingChains !== 'function') return null;
     const pending = memory.getPendingChains();
     if (!pending || typeof pending !== 'object') return null;
+    const now = Date.now();
 
     return Object.values(pending)
       .filter((entry) => entry && typeof entry === 'object' && entry.targetEventId)
+      .filter((entry) => {
+        const activatesAtRealTimeMs = Number(entry.activatesAtRealTimeMs || 0);
+        return !Number.isFinite(activatesAtRealTimeMs) || activatesAtRealTimeMs <= now;
+      })
       .sort((a, b) => Number(b.createdAtRealTimeMs || 0) - Number(a.createdAtRealTimeMs || 0))[0] || null;
   }
 
@@ -374,7 +379,13 @@
     }
 
     const forcedFlagTargetAllowed = !sourceCandidateIds.size || sourceCandidateIds.has('root_stress_followup');
-    if (flagSet.has('root_stress_pending') && forcedFlagTargetAllowed) {
+    const rootStressPendingChain = memory && typeof memory.getPendingChains === 'function'
+      ? (memory.getPendingChains() || {}).root_stress_followup
+      : null;
+    const rootStressFutureLocked = rootStressPendingChain
+      && Number.isFinite(Number(rootStressPendingChain.activatesAtRealTimeMs))
+      && Number(rootStressPendingChain.activatesAtRealTimeMs) > Date.now();
+    if (flagSet.has('root_stress_pending') && forcedFlagTargetAllowed && !rootStressFutureLocked) {
       const decision = finalizeCandidate({
         eventId: 'root_stress_followup',
         reason: 'flag:root_stress_pending',

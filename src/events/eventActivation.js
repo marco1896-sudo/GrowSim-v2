@@ -69,6 +69,18 @@
     if (category === 'environment') {
       if (explicitPolarity === 'cold') return Math.max(components.tempMismatch || 0, components.instability || 0);
       if (explicitPolarity === 'heat_dry') return Math.max(components.tempMismatch || 0, components.vpdMismatch || 0, components.instability || 0);
+      const isStructurePressure = tags.includes('structure')
+        || tags.includes('stretch')
+        || tags.includes('support')
+        || tags.includes('canopy')
+        || tags.includes('airflow')
+        || tags.includes('humidity')
+        || id.includes('stretch')
+        || id.includes('support')
+        || id.includes('canopy');
+      if (isStructurePressure) {
+        return Math.max(components.diseaseHumidity || 0, components.instability || 0);
+      }
       if (id.includes('cold') || id.includes('night')) return Math.max(components.tempMismatch || 0, components.instability || 0);
       return Math.max(components.tempMismatch || 0, components.vpdMismatch || 0, components.instability || 0);
     }

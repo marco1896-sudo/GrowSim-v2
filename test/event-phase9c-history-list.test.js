@@ -37,9 +37,11 @@ function createHistoryMedia(stateTone, eventId = 'root_stress_followup', categor
   const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
 
   assert.ok(appJs.includes('function deriveHistoryEntryTone('));
+  assert.ok(appJs.includes('function buildHistoryNarrative('));
   assert.ok(appJs.includes('function buildRecentEventHistoryItems('));
   assert.ok(appJs.includes('function buildRecentEventHistoryMarkup('));
   assert.ok(appJs.includes('${buildRecentEventHistoryMarkup()}'));
+  assert.ok(appJs.includes('formatOutcomeFollowUpLabel('));
 })();
 
 (function testStylesContainHistoryListHooks() {

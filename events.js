@@ -6,8 +6,1305 @@ function getEventFoundationApis() {
     flags: (typeof window !== 'undefined' && window.GrowSimEventFlags) ? window.GrowSimEventFlags : null,
     memory: (typeof window !== 'undefined' && window.GrowSimEventMemory) ? window.GrowSimEventMemory : null,
     analysis: (typeof window !== 'undefined' && window.GrowSimEventAnalysis) ? window.GrowSimEventAnalysis : null,
-    resolver: (typeof window !== 'undefined' && window.GrowSimEventResolver) ? window.GrowSimEventResolver : null
+    analysisRuntime: (typeof window !== 'undefined' && window.GrowSimEventAnalysisRuntime) ? window.GrowSimEventAnalysisRuntime : null,
+    resolver: (typeof window !== 'undefined' && window.GrowSimEventResolver) ? window.GrowSimEventResolver : null,
+    resolution: (typeof window !== 'undefined' && window.GrowSimEventResolution) ? window.GrowSimEventResolution : null,
+    chains: (typeof window !== 'undefined' && window.GrowSimEventChains) ? window.GrowSimEventChains : null,
+    shared: (typeof window !== 'undefined' && window.GrowSimEventShared) ? window.GrowSimEventShared : null,
+    engine: (typeof window !== 'undefined' && window.GrowSimEventEngine) ? window.GrowSimEventEngine : null
   };
+}
+
+function sanitizePlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? { ...value }
+    : {};
+}
+
+function normalizeStringList(values) {
+  return Array.isArray(values)
+    ? values.map((value) => String(value || '').trim()).filter(Boolean)
+    : [];
+}
+
+function normalizeFollowUpRuleValue(value) {
+  if (typeof value === 'string') {
+    const safe = String(value || '').trim();
+    return safe ? [safe] : [];
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry || '').trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function normalizeOutcomeTexts(rawOutcomeTexts) {
+  const source = sanitizePlainObject(rawOutcomeTexts);
+  const keys = ['improved', 'stabilized', 'unresolved', 'worsened', 'escalated'];
+  const normalized = {};
+  for (const key of keys) {
+    const entry = source[key];
+    if (typeof entry === 'string') {
+      normalized[key] = { explanation: String(entry) };
+      continue;
+    }
+    if (entry && typeof entry === 'object') {
+      normalized[key] = {
+        explanation: typeof entry.explanation === 'string' ? entry.explanation : '',
+        cause: typeof entry.cause === 'string' ? entry.cause : '',
+        result: typeof entry.result === 'string' ? entry.result : '',
+        guidance: typeof entry.guidance === 'string' ? entry.guidance : ''
+      };
+    }
+  }
+  return normalized;
+}
+
+function normalizeFollowUpRules(rawFollowUpRules) {
+  const source = sanitizePlainObject(rawFollowUpRules);
+  return {
+    improved: normalizeFollowUpRuleValue(source.improved),
+    stabilized: normalizeFollowUpRuleValue(source.stabilized),
+    unresolved: normalizeFollowUpRuleValue(source.unresolved),
+    worsened: normalizeFollowUpRuleValue(source.worsened),
+    escalated: normalizeFollowUpRuleValue(source.escalated)
+  };
+}
+
+function defaultResolveTimeMinutesForEvent(category, severity, tags = []) {
+  const safeCategory = String(category || 'generic').toLowerCase();
+  const safeSeverity = clamp(Number(severity) || 3, 1, 5);
+  const safeTags = Array.isArray(tags) ? tags.map((tag) => String(tag).toLowerCase()) : [];
+
+  if (safeTags.includes('urgent') || safeTags.includes('heat') || safeTags.includes('light')) {
+    return 35;
+  }
+  if (safeCategory === 'environment') {
+    return safeSeverity >= 4 ? 40 : 50;
+  }
+  if (safeCategory === 'water') {
+    return safeTags.includes('root') || safeTags.includes('oxygen') ? 60 : 45;
+  }
+  if (safeCategory === 'nutrition') {
+    return safeTags.includes('ph') || safeTags.includes('ec') ? 90 : 75;
+  }
+  if (safeCategory === 'disease' || safeCategory === 'pest') {
+    return safeSeverity >= 4 ? 90 : 75;
+  }
+  if (safeCategory === 'positive') {
+    return 30;
+  }
+  return 60;
+}
+
+function outcomeSummaryFromResolution(resolutionModel) {
+  if (!resolutionModel || typeof resolutionModel !== 'object') {
+    return 'mixed';
+  }
+  if (resolutionModel.quality === 'good' || resolutionModel.outcomeStatus === 'improved' || resolutionModel.outcomeStatus === 'stabilized') {
+    return 'good';
+  }
+  if (resolutionModel.quality === 'poor' || resolutionModel.outcomeStatus === 'worsened' || resolutionModel.outcomeStatus === 'escalated') {
+    return 'bad';
+  }
+  return 'mixed';
+}
+
+function classifyOutcome(deltaSummary) {
+  const d = deltaSummary || {};
+  const score = (Number(d.health) || 0) + (Number(d.growth) || 0) - (Number(d.stress) || 0) - (Number(d.risk) || 0);
+  if (score >= 1) return 'good';
+  if (score <= -1) return 'bad';
+  return 'mixed';
+}
+
+function getCatalogEventById(eventId) {
+  if (!eventId || !state.events || !Array.isArray(state.events.catalog)) {
+    return null;
+  }
+  return state.events.catalog.find((eventDef) => eventDef && eventDef.id === String(eventId)) || null;
+}
+
+function getEventOptionById(eventDef, optionId) {
+  const options = eventDef && Array.isArray(eventDef.options) ? eventDef.options : [];
+  return options.find((option) => option && option.id === String(optionId)) || null;
+}
+
+function buildPendingResolutionPreview(eventDef, choice, resolveTimeRealMs) {
+  return {
+    eventId: eventDef && eventDef.id ? String(eventDef.id) : '',
+    eventTitle: eventDef && eventDef.title ? String(eventDef.title) : '',
+    optionId: choice && choice.id ? String(choice.id) : '',
+    optionLabel: choice && choice.label ? String(choice.label) : '',
+    summary: 'pending',
+    learningNote: eventDef && eventDef.learningNote ? String(eventDef.learningNote) : '',
+    resolvedAfterMs: Math.max(0, Number(resolveTimeRealMs) || 0),
+    observationText: 'Die Maßnahme wird jetzt über einen kurzen Ingame-Zeitraum beobachtet.'
+  };
+}
+
+function buildResolutionShadowEvent(eventDef, diagnostics) {
+  const safeEventDef = eventDef && typeof eventDef === 'object' ? eventDef : null;
+  const activation = diagnostics && diagnostics.activation && Array.isArray(diagnostics.activation.ranked)
+    ? diagnostics.activation.ranked
+    : [];
+  const tracked = diagnostics && diagnostics.escalation && diagnostics.escalation.tracked && typeof diagnostics.escalation.tracked === 'object'
+    ? diagnostics.escalation.tracked
+    : {};
+  const activationEntry = safeEventDef
+    ? activation.find((entry) => entry && entry.eventId === safeEventDef.id)
+    : null;
+  const trackedEntry = safeEventDef && tracked[safeEventDef.id] ? tracked[safeEventDef.id] : null;
+  const categoryKey = String(safeEventDef && safeEventDef.category || 'generic').toLowerCase();
+  const latentPressures = diagnostics && diagnostics.pressure && diagnostics.pressure.latentPressures && typeof diagnostics.pressure.latentPressures === 'object'
+    ? diagnostics.pressure.latentPressures
+    : {};
+
+  return {
+    eventDef: safeEventDef,
+    eventId: safeEventDef && safeEventDef.id ? safeEventDef.id : null,
+    category: safeEventDef && safeEventDef.category ? safeEventDef.category : 'generic',
+    activationState: activationEntry && activationEntry.activationState ? activationEntry.activationState : 'active',
+    shadowStage: trackedEntry && trackedEntry.stage ? trackedEntry.stage : (activationEntry && activationEntry.activationState ? activationEntry.activationState : 'active'),
+    categoryPressure: activationEntry && Number.isFinite(Number(activationEntry.categoryPressure))
+      ? Number(activationEntry.categoryPressure)
+      : Number(latentPressures[categoryKey] || 0),
+    specificPressure: activationEntry && Number.isFinite(Number(activationEntry.specificPressure))
+      ? Number(activationEntry.specificPressure)
+      : Number(latentPressures[categoryKey] || 0)
+  };
+}
+
+function buildFallbackResolutionModel(eventDef, choice, pathKind) {
+  const safeChoice = choice && typeof choice === 'object' ? choice : null;
+  const directDeltas = safeChoice && safeChoice.effects && typeof safeChoice.effects === 'object'
+    ? { ...safeChoice.effects }
+    : {};
+  const deltaSummary = directDeltas || {};
+  const summary = classifyOutcome(deltaSummary);
+  const outcomeStatus = summary === 'good' ? 'improved' : (summary === 'bad' ? 'worsened' : 'unresolved');
+  return {
+    resolved: true,
+    eventId: eventDef && eventDef.id ? String(eventDef.id) : '',
+    category: eventDef && eventDef.category ? String(eventDef.category) : 'generic',
+    optionId: safeChoice && safeChoice.id ? String(safeChoice.id) : null,
+    pathKind,
+    shadowStage: 'active',
+    outcomeStatus,
+    quality: summary === 'good' ? 'good' : (summary === 'bad' ? 'poor' : 'neutral'),
+    fitScore: summary === 'good' ? 18 : (summary === 'bad' ? -18 : 0),
+    primaryReasons: [],
+    sideEffectNotes: [],
+    directDeltas,
+    categoryPressureDelta: 0,
+    escalationRiskShift: 0,
+    followUpHooks: [],
+    plausibleFollowUp: false,
+    contradictionPenalty: 0,
+    rewardMetadata: {
+      recoverySignificance: 'default',
+      executionRelevant: true
+    }
+  };
+}
+
+function collectResolutionEffects(resolutionModel) {
+  const directDeltas = resolutionModel && resolutionModel.directDeltas && typeof resolutionModel.directDeltas === 'object'
+    ? resolutionModel.directDeltas
+    : {};
+  const effects = {};
+  for (const [key, value] of Object.entries(directDeltas)) {
+    if (key === 'futureEscalationTendency') {
+      continue;
+    }
+    if (!Number.isFinite(Number(value))) {
+      continue;
+    }
+    effects[key] = Number(value);
+  }
+  const outcomeStatus = String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved').toLowerCase();
+  const recoverySignificance = String(
+    resolutionModel
+    && resolutionModel.rewardMetadata
+    && resolutionModel.rewardMetadata.recoverySignificance
+    || 'default'
+  ).toLowerCase();
+  const category = String(resolutionModel && resolutionModel.category || 'generic').toLowerCase();
+  const intensityMap = {
+    low: 0.7,
+    medium: 1,
+    high: 1.25,
+    default: 0.9
+  };
+  const intensity = Number(intensityMap[recoverySignificance] || intensityMap.default);
+  const addEffect = (metric, delta) => {
+    if (!Number.isFinite(Number(delta)) || !metric) {
+      return;
+    }
+    if (
+      metric === 'growth'
+      && (
+        typeof computeGrowthPercent !== 'function'
+        || typeof setGrowthFromPercent !== 'function'
+        || typeof REAL_RUN_DURATION_MS === 'undefined'
+      )
+    ) {
+      return;
+    }
+    effects[metric] = round2(Number(effects[metric] || 0) + Number(delta));
+  };
+
+  if (outcomeStatus === 'improved') {
+    addEffect('risk', -1.8 * intensity);
+    addEffect('stress', -1.2 * intensity);
+    addEffect('growth', 0.25 * intensity);
+    if (category === 'water' || category === 'nutrition') {
+      addEffect('health', 0.6 * intensity);
+    }
+  } else if (outcomeStatus === 'stabilized') {
+    addEffect('risk', -1.1 * intensity);
+    addEffect('stress', -0.7 * intensity);
+    addEffect('growth', 0.08 * intensity);
+  } else if (outcomeStatus === 'worsened') {
+    addEffect('risk', 1.25);
+    addEffect('stress', 0.9);
+    if (category === 'water' || category === 'nutrition' || category === 'environment') {
+      addEffect('growth', -0.18);
+    }
+  } else if (outcomeStatus === 'escalated') {
+    addEffect('risk', 2.4);
+    addEffect('stress', 1.7);
+    addEffect('growth', -0.35);
+    if (category === 'water' || category === 'nutrition' || category === 'disease') {
+      addEffect('health', -0.8);
+    }
+  }
+  return effects;
+}
+
+function getPendingChainTimingProfile(followUpId, resolutionModel = null) {
+  const safeId = String(followUpId || '').toLowerCase();
+  const outcomeStatus = String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved').toLowerCase();
+  if (!safeId.startsWith('v2_')) {
+    return { delayMinutes: 0, expiryMinutes: 0 };
+  }
+
+  if (safeId.includes('recovery') || safeId.includes('stabil') || safeId.includes('relief') || safeId.includes('settled')) {
+    return { delayMinutes: 50, expiryMinutes: 6 * 60 };
+  }
+  if (safeId.includes('microclimate') || safeId.includes('humidity') || safeId.includes('stagnant') || safeId.includes('mold')) {
+    return { delayMinutes: 90, expiryMinutes: 10 * 60 };
+  }
+  if (safeId.includes('root') || safeId.includes('lockout') || safeId.includes('uptake') || safeId.includes('nutrition')) {
+    return { delayMinutes: 75, expiryMinutes: 10 * 60 };
+  }
+  if (safeId.includes('support') || safeId.includes('stretch') || safeId.includes('load')) {
+    return { delayMinutes: 80, expiryMinutes: 8 * 60 };
+  }
+  if (outcomeStatus === 'improved' || outcomeStatus === 'stabilized') {
+    return { delayMinutes: 45, expiryMinutes: 6 * 60 };
+  }
+  if (outcomeStatus === 'escalated') {
+    return { delayMinutes: 110, expiryMinutes: 12 * 60 };
+  }
+  return { delayMinutes: 70, expiryMinutes: 9 * 60 };
+}
+
+function describeProblemSource(eventDef) {
+  const shadowModel = eventDef && eventDef.shadowModel && typeof eventDef.shadowModel === 'object'
+    ? eventDef.shadowModel
+    : {};
+  const polarity = String(shadowModel.problemPolarity || '').toLowerCase();
+  const category = String(eventDef && eventDef.category || 'generic').toLowerCase();
+
+  if (category === 'water' && polarity === 'wet') {
+    return 'Das Medium blieb zu lange nass. Dadurch bekam die Wurzelzone weniger Sauerstoff.';
+  }
+  if (category === 'water' && polarity === 'dry') {
+    return 'Der Wurzelballen lief zu weit trocken und die Pflanze musste Wasserstress ausgleichen.';
+  }
+  if (category === 'nutrition' && polarity === 'lockout') {
+    return 'Die Aufnahme war instabil. Hohe EC- oder pH-Abweichungen haben die Nährstoffverfügbarkeit verschoben.';
+  }
+  if (category === 'nutrition' && polarity === 'deficit') {
+    return 'Der aktuelle Nährstoffpuffer reichte für die Entwicklungsphase nicht mehr sauber aus.';
+  }
+  if (category === 'disease' || polarity === 'mold_surface') {
+    return 'Feuchte, geringe Luftbewegung oder dichter Wuchs haben das Mikroklima belastet.';
+  }
+  if (category === 'environment' && polarity === 'heat_dry') {
+    return 'Hitze und ein zu trockener Luftzug haben den Verdunstungsdruck erhöht.';
+  }
+  if (category === 'environment' && polarity === 'cold') {
+    return 'Das Klima wich zu stark nach unten ab und bremste Stoffwechsel sowie Wasseraufnahme.';
+  }
+  if (category === 'environment' && polarity === 'light_stress') {
+    return 'Lichtintensität und Blattabstand waren für den aktuellen Zustand zu aggressiv.';
+  }
+  return 'Mehrere Stressfaktoren haben sich über Zeit aufgebaut und den aktuellen Druck ausgelöst.';
+}
+
+function buildOutcomeGuidanceText(resolutionModel) {
+  const status = String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved');
+  if (status === 'improved') return 'Halte die Korrektur jetzt ruhig und beobachte, ob die Werte stabil bleiben.';
+  if (status === 'stabilized') return 'Die Lage wurde abgefangen, braucht aber noch 1 bis 2 Zyklen saubere Nachkontrolle.';
+  if (status === 'worsened') return 'Der Druck ist noch nicht sauber gelöst. Kleine, gezielte Gegenmaßnahmen sind jetzt sinnvoller als Hektik.';
+  if (status === 'escalated') return 'Die Situation kippt weiter. Priorität hat jetzt Schadensbegrenzung statt Wachstumspush.';
+  return 'Beobachte die nächsten Zyklen und korrigiere nur das, was den eigentlichen Auslöser trifft.';
+}
+
+function buildGenericOutcomeNarrative(eventDef, choice, resolutionModel, followUpIds = []) {
+  const status = String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved');
+  const good = status === 'improved' || status === 'stabilized';
+  const followUpHint = followUpIds.length
+    ? ` Ein Folgehinweis zu ${followUpIds[0]} wurde vorgemerkt.`
+    : '';
+  const choiceText = choice && choice.label ? `Deine Entscheidung "${choice.label}"` : 'Deine Entscheidung';
+
+  if (status === 'improved') {
+    return {
+      explanation: `${choiceText} hat den Druck spürbar reduziert.${followUpHint}`.trim(),
+      cause: describeProblemSource(eventDef),
+      result: 'Die Pflanze kann sich stabilisieren und verlorene Reserve langsam zurückholen.',
+      guidance: buildOutcomeGuidanceText(resolutionModel)
+    };
+  }
+  if (status === 'stabilized') {
+    return {
+      explanation: `${choiceText} war hilfreich, aber die Lage ist noch nicht vollständig bereinigt.${followUpHint}`.trim(),
+      cause: describeProblemSource(eventDef),
+      result: 'Der akute Druck wurde gebremst, bleibt jedoch im Hintergrund weiter relevant.',
+      guidance: buildOutcomeGuidanceText(resolutionModel)
+    };
+  }
+  if (status === 'worsened') {
+    return {
+      explanation: `${choiceText} hat das Problem nicht sauber getroffen.${followUpHint}`.trim(),
+      cause: describeProblemSource(eventDef),
+      result: 'Der Stress blieb aktiv und hat das Wachstum oder die Stabilität weiter belastet.',
+      guidance: buildOutcomeGuidanceText(resolutionModel)
+    };
+  }
+  if (status === 'escalated') {
+    return {
+      explanation: `${choiceText} kam für die aktuelle Drucklage zu spät oder war zu unpassend.${followUpHint}`.trim(),
+      cause: describeProblemSource(eventDef),
+      result: 'Der Druck hat sich in ein deutlicheres Folgeproblem weiterentwickelt.',
+      guidance: buildOutcomeGuidanceText(resolutionModel)
+    };
+  }
+  return {
+    explanation: `${choiceText} hat die Situation nur teilweise verändert.${followUpHint}`.trim(),
+    cause: describeProblemSource(eventDef),
+    result: 'Die Pflanze bleibt vorerst anfällig, obwohl keine harte Eskalation eingetreten ist.',
+    guidance: buildOutcomeGuidanceText(resolutionModel)
+  };
+}
+
+function buildResolvedOutcomeNarrative(eventDef, choice, resolutionModel, followUpIds = []) {
+  const outcomeTexts = eventDef && eventDef.outcomeTexts && typeof eventDef.outcomeTexts === 'object'
+    ? eventDef.outcomeTexts
+    : {};
+  const explicitNarrative = outcomeTexts[String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved')];
+  const genericNarrative = buildGenericOutcomeNarrative(eventDef, choice, resolutionModel, followUpIds);
+  return explicitNarrative && typeof explicitNarrative === 'object'
+    ? {
+      explanation: explicitNarrative.explanation || genericNarrative.explanation,
+      cause: explicitNarrative.cause || genericNarrative.cause,
+      result: explicitNarrative.result || genericNarrative.result,
+      guidance: explicitNarrative.guidance || genericNarrative.guidance
+    }
+    : genericNarrative;
+}
+
+function buildResolvedOutcomeRecord(eventDef, choice, pendingResolution, resolutionModel, analysisEntry, deltaSummary, followUpIds = []) {
+  const narrative = buildResolvedOutcomeNarrative(eventDef, choice, resolutionModel, followUpIds);
+
+  return {
+    eventId: eventDef && eventDef.id ? String(eventDef.id) : '',
+    eventTitle: eventDef && eventDef.title ? String(eventDef.title) : '',
+    optionId: choice && choice.id ? String(choice.id) : '',
+    optionLabel: choice && choice.label ? String(choice.label) : '',
+    summary: outcomeSummaryFromResolution(resolutionModel),
+    quality: resolutionModel && resolutionModel.quality ? String(resolutionModel.quality) : 'neutral',
+    outcomeStatus: resolutionModel && resolutionModel.outcomeStatus ? String(resolutionModel.outcomeStatus) : 'unresolved',
+    learningNote: eventDef && eventDef.learningNote ? String(eventDef.learningNote) : '',
+    explanationText: narrative.explanation,
+    causeText: narrative.cause,
+    resultText: narrative.result,
+    guidanceText: narrative.guidance,
+    followUpIds: Array.isArray(followUpIds) ? followUpIds.slice() : [],
+    shadowStage: resolutionModel && resolutionModel.shadowStage ? String(resolutionModel.shadowStage) : 'active',
+    fitScore: Number(resolutionModel && resolutionModel.fitScore || 0),
+    escalationRiskShift: Number(resolutionModel && resolutionModel.escalationRiskShift || 0),
+    effectsApplied: deltaSummary && typeof deltaSummary === 'object' ? { ...deltaSummary } : {},
+    resolvedAfterMs: Number(pendingResolution && pendingResolution.resolveTimeRealMs || 0),
+    chosenAtSimTimeMs: Number(pendingResolution && pendingResolution.chosenAtSimTimeMs || 0),
+    resolvedAtSimTimeMs: Number(state.simulation && state.simulation.simTimeMs || 0),
+    analysis: analysisEntry || null
+  };
+}
+
+function incrementAuditMap(map, key, amount = 1) {
+  if (!map || typeof map !== 'object') {
+    return;
+  }
+  const safeKey = String(key || '').trim();
+  if (!safeKey) {
+    return;
+  }
+  map[safeKey] = Number(map[safeKey] || 0) + Number(amount || 0);
+}
+
+function pushAuditRecent(list, value, limit = 12) {
+  if (!Array.isArray(list)) {
+    return;
+  }
+  list.push(value);
+  if (list.length > limit) {
+    list.splice(0, list.length - limit);
+  }
+}
+
+function ensureEventAuditState(eventsState = state.events) {
+  const events = eventsState && typeof eventsState === 'object' ? eventsState : state.events;
+  if (!events.audit || typeof events.audit !== 'object') {
+    events.audit = {};
+  }
+  const audit = events.audit;
+  if (!audit.totals || typeof audit.totals !== 'object') {
+    audit.totals = {};
+  }
+  if (!audit.byCategory || typeof audit.byCategory !== 'object') audit.byCategory = {};
+  if (!audit.byPhase || typeof audit.byPhase !== 'object') audit.byPhase = {};
+  if (!audit.byStage || typeof audit.byStage !== 'object') audit.byStage = {};
+  if (!audit.byEventId || typeof audit.byEventId !== 'object') audit.byEventId = {};
+  if (!audit.bySimDay || typeof audit.bySimDay !== 'object') audit.bySimDay = {};
+  if (!audit.outcomes || typeof audit.outcomes !== 'object') audit.outcomes = {};
+  if (!audit.followUps || typeof audit.followUps !== 'object') audit.followUps = {};
+  if (!audit.followUps.byTargetId || typeof audit.followUps.byTargetId !== 'object') audit.followUps.byTargetId = {};
+  if (!audit.followUps.bySourceId || typeof audit.followUps.bySourceId !== 'object') audit.followUps.bySourceId = {};
+  if (!audit.guardInterventions || typeof audit.guardInterventions !== 'object') audit.guardInterventions = {};
+  if (!audit.gaps || typeof audit.gaps !== 'object') audit.gaps = {};
+  if (!Array.isArray(audit.gaps.recentSimMs)) audit.gaps.recentSimMs = [];
+  if (!Number.isFinite(audit.gaps.lastActivatedAtSimTimeMs)) audit.gaps.lastActivatedAtSimTimeMs = 0;
+  if (!Number.isFinite(audit.gaps.meanSimMs)) audit.gaps.meanSimMs = 0;
+  if (!Number.isFinite(audit.gaps.maxSimMs)) audit.gaps.maxSimMs = 0;
+  if (!Number.isFinite(audit.gaps.shortGapClusterCount)) audit.gaps.shortGapClusterCount = 0;
+  if (!Number.isFinite(audit.gaps.longGapCount)) audit.gaps.longGapCount = 0;
+  if (!audit.recent || typeof audit.recent !== 'object') audit.recent = {};
+  if (!Array.isArray(audit.recent.eventIds)) audit.recent.eventIds = [];
+  if (!Array.isArray(audit.recent.categories)) audit.recent.categories = [];
+  if (!Array.isArray(audit.recent.outcomes)) audit.recent.outcomes = [];
+  if (!Array.isArray(audit.recent.followUps)) audit.recent.followUps = [];
+  if (!Array.isArray(audit.recent.phases)) audit.recent.phases = [];
+  if (!Number.isFinite(audit.version)) audit.version = 1;
+  return audit;
+}
+
+function getAuditPhaseKey() {
+  return String(state.plant && state.plant.phase || 'unknown').trim().toLowerCase() || 'unknown';
+}
+
+function getAuditStageKey() {
+  return String(state.plant && state.plant.stageKey || '').trim().toLowerCase()
+    || `stage_${Math.max(0, Math.trunc(Number(state.plant && state.plant.stageIndex) || 0))}`;
+}
+
+function updateAuditGapMetrics(audit, nowSimMs) {
+  if (!audit || !audit.gaps || !Number.isFinite(Number(nowSimMs))) {
+    return;
+  }
+  const previous = Number(audit.gaps.lastActivatedAtSimTimeMs || 0);
+  if (previous > 0 && nowSimMs > previous) {
+    const gapSimMs = Number(nowSimMs) - previous;
+    pushAuditRecent(audit.gaps.recentSimMs, gapSimMs, 10);
+    const recent = audit.gaps.recentSimMs;
+    const total = recent.reduce((sum, value) => sum + Number(value || 0), 0);
+    audit.gaps.meanSimMs = recent.length ? Math.round(total / recent.length) : 0;
+    audit.gaps.maxSimMs = Math.max(Number(audit.gaps.maxSimMs || 0), gapSimMs);
+    if (gapSimMs <= (75 * 60 * 1000)) {
+      audit.gaps.shortGapClusterCount = Number(audit.gaps.shortGapClusterCount || 0) + 1;
+    }
+    if (gapSimMs >= (4 * 60 * 60 * 1000)) {
+      audit.gaps.longGapCount = Number(audit.gaps.longGapCount || 0) + 1;
+    }
+  }
+  audit.gaps.lastActivatedAtSimTimeMs = Number(nowSimMs);
+}
+
+function recordEventAuditActivation(eventDef, meta = {}) {
+  const audit = ensureEventAuditState();
+  const category = String(eventDef && eventDef.category || 'generic').toLowerCase();
+  const eventId = String(eventDef && eventDef.id || meta.eventId || '').trim();
+  const phase = String(meta.phase || getAuditPhaseKey());
+  const stage = String(meta.stage || getAuditStageKey());
+  const simDay = String(Math.max(0, Math.floor(Number(meta.simDay != null ? meta.simDay : state.simulation && state.simulation.simDay) || 0)));
+  const nowSimMs = Number(meta.atSimTimeMs != null ? meta.atSimTimeMs : state.simulation && state.simulation.simTimeMs || 0);
+
+  incrementAuditMap(audit.totals, 'activated');
+  incrementAuditMap(audit.byCategory, category);
+  incrementAuditMap(audit.byPhase, phase);
+  incrementAuditMap(audit.byStage, stage);
+  incrementAuditMap(audit.byEventId, eventId);
+  incrementAuditMap(audit.bySimDay, simDay);
+  updateAuditGapMetrics(audit, nowSimMs);
+  pushAuditRecent(audit.recent.eventIds, eventId);
+  pushAuditRecent(audit.recent.categories, category);
+  pushAuditRecent(audit.recent.phases, phase);
+
+  if (meta.isFollowUp === true) {
+    incrementAuditMap(audit.totals, 'activatedFollowUps');
+  }
+  if (meta.consumedChainId) {
+    incrementAuditMap(audit.followUps.byTargetId, String(meta.consumedChainId));
+  }
+}
+
+function recordEventAuditResolution(eventDef, pendingResolution, resolutionModel, followUpIds = []) {
+  const audit = ensureEventAuditState();
+  const eventId = String(eventDef && eventDef.id || pendingResolution && pendingResolution.eventId || '').trim();
+  const outcomeStatus = String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved').trim().toLowerCase() || 'unresolved';
+  const category = String(eventDef && eventDef.category || pendingResolution && pendingResolution.eventCategory || 'generic').toLowerCase();
+  const phase = getAuditPhaseKey();
+
+  incrementAuditMap(audit.totals, 'resolved');
+  incrementAuditMap(audit.outcomes, outcomeStatus);
+  incrementAuditMap(audit.byCategory, category, 0);
+  incrementAuditMap(audit.byPhase, phase, 0);
+  pushAuditRecent(audit.recent.outcomes, outcomeStatus);
+
+  if (String(pendingResolution && pendingResolution.optionId || '') === '__dismiss__') {
+    incrementAuditMap(audit.totals, 'dismissed');
+  }
+  if (outcomeStatus === 'improved' || outcomeStatus === 'stabilized' || outcomeStatus === 'worsened' || outcomeStatus === 'escalated') {
+    incrementAuditMap(audit.totals, outcomeStatus);
+  }
+  for (const followUpId of Array.isArray(followUpIds) ? followUpIds : []) {
+    incrementAuditMap(audit.followUps.bySourceId, eventId);
+    pushAuditRecent(audit.recent.followUps, String(followUpId));
+  }
+}
+
+function recordEventAuditQueuedFollowUps(eventId, followUpIds = []) {
+  const audit = ensureEventAuditState();
+  const safeEventId = String(eventId || '').trim();
+  const ids = Array.isArray(followUpIds) ? followUpIds.map((entry) => String(entry || '').trim()).filter(Boolean) : [];
+  if (!ids.length) {
+    return;
+  }
+  incrementAuditMap(audit.totals, 'queuedFollowUps', ids.length);
+  for (const followUpId of ids) {
+    incrementAuditMap(audit.followUps.byTargetId, followUpId);
+    if (safeEventId) {
+      incrementAuditMap(audit.followUps.bySourceId, safeEventId);
+    }
+    pushAuditRecent(audit.recent.followUps, followUpId);
+  }
+}
+
+function recordEventAuditExpiredChains(expiredChains = []) {
+  const audit = ensureEventAuditState();
+  for (const chain of Array.isArray(expiredChains) ? expiredChains : []) {
+    const targetEventId = String(chain && chain.targetEventId || chain && chain.chainId || '').trim();
+    if (!targetEventId) {
+      continue;
+    }
+    incrementAuditMap(audit.totals, 'expiredFollowUps');
+    incrementAuditMap(audit.followUps.byTargetId, targetEventId, 0);
+  }
+}
+
+function recordEventAuditResolverTrace(trace) {
+  const safeTrace = trace && typeof trace === 'object' ? trace : null;
+  if (!safeTrace) {
+    return;
+  }
+  const audit = ensureEventAuditState();
+  if (safeTrace.pendingChainOverride === true) {
+    incrementAuditMap(audit.guardInterventions, 'pendingChainOverride');
+  }
+  if (safeTrace.forcedByFlag) {
+    incrementAuditMap(audit.guardInterventions, 'forcedFlagOverride');
+  }
+  const originalCount = Array.isArray(safeTrace.candidates) ? safeTrace.candidates.length : 0;
+  const phaseCount = Array.isArray(safeTrace.afterPhaseGuard) ? safeTrace.afterPhaseGuard.length : originalCount;
+  const repeatCount = Array.isArray(safeTrace.afterRepeatGuard) ? safeTrace.afterRepeatGuard.length : phaseCount;
+  const frustrationCount = Array.isArray(safeTrace.afterFrustrationGuard) ? safeTrace.afterFrustrationGuard.length : repeatCount;
+  if (repeatCount < phaseCount) {
+    incrementAuditMap(audit.guardInterventions, 'repeatGuard');
+  }
+  if (frustrationCount < repeatCount) {
+    incrementAuditMap(audit.guardInterventions, 'frustrationGuard');
+  }
+  if (safeTrace.fellBackToOriginal === true) {
+    incrementAuditMap(audit.guardInterventions, 'guardFallback');
+  }
+}
+
+  function buildEventAuditSnapshot(eventsState = state.events) {
+    const audit = ensureEventAuditState(eventsState);
+    const totals = audit.totals || {};
+  const categoryEntries = Object.entries(audit.byCategory || {}).sort((left, right) => Number(right[1] || 0) - Number(left[1] || 0));
+  const outcomeEntries = Object.entries(audit.outcomes || {}).sort((left, right) => Number(right[1] || 0) - Number(left[1] || 0));
+  const totalActivated = Number(totals.activated || 0);
+  const totalResolved = Number(totals.resolved || 0);
+  const totalPositive = Number(audit.outcomes.improved || 0) + Number(audit.outcomes.stabilized || 0);
+  const totalNegative = Number(audit.outcomes.worsened || 0) + Number(audit.outcomes.escalated || 0);
+  return {
+    totals: { ...totals },
+    byCategory: { ...(audit.byCategory || {}) },
+    byPhase: { ...(audit.byPhase || {}) },
+    byStage: { ...(audit.byStage || {}) },
+    byEventId: { ...(audit.byEventId || {}) },
+    bySimDay: { ...(audit.bySimDay || {}) },
+    outcomes: { ...(audit.outcomes || {}) },
+    followUps: {
+      ...(audit.followUps || {}),
+      byTargetId: { ...((audit.followUps && audit.followUps.byTargetId) || {}) },
+      bySourceId: { ...((audit.followUps && audit.followUps.bySourceId) || {}) }
+    },
+    guardInterventions: { ...(audit.guardInterventions || {}) },
+    gaps: {
+      ...(audit.gaps || {}),
+      recentSimMs: Array.isArray(audit.gaps && audit.gaps.recentSimMs) ? audit.gaps.recentSimMs.slice() : []
+    },
+    recent: {
+      eventIds: Array.isArray(audit.recent && audit.recent.eventIds) ? audit.recent.eventIds.slice() : [],
+      categories: Array.isArray(audit.recent && audit.recent.categories) ? audit.recent.categories.slice() : [],
+      outcomes: Array.isArray(audit.recent && audit.recent.outcomes) ? audit.recent.outcomes.slice() : [],
+      followUps: Array.isArray(audit.recent && audit.recent.followUps) ? audit.recent.followUps.slice() : [],
+      phases: Array.isArray(audit.recent && audit.recent.phases) ? audit.recent.phases.slice() : []
+    },
+    dominantCategory: categoryEntries.length ? categoryEntries[0][0] : '',
+    dominantCategoryCount: categoryEntries.length ? Number(categoryEntries[0][1] || 0) : 0,
+      leadingOutcome: outcomeEntries.length ? outcomeEntries[0][0] : '',
+      totalActivated,
+      totalResolved,
+      currentPhase: String(state.plant && state.plant.phase || 'unknown').trim().toLowerCase() || 'unknown',
+      currentStageIndex: Math.max(0, Math.trunc(Number(state.plant && state.plant.stageIndex) || 0)),
+      currentStageProgress: round2(clamp(Number(state.plant && state.plant.stageProgress) || 0, 0, 1)),
+      stabilizationRatio: totalNegative > 0 ? round2(totalPositive / totalNegative) : (totalPositive > 0 ? totalPositive : 0),
+      shortGapClusterCount: Number(audit.gaps && audit.gaps.shortGapClusterCount || 0),
+      longGapCount: Number(audit.gaps && audit.gaps.longGapCount || 0),
+      meanGapSimMs: Number(audit.gaps && audit.gaps.meanSimMs || 0)
+    };
+  }
+
+  function getAuditMapTopEntry(map) {
+    const entries = Object.entries(map && typeof map === 'object' ? map : {})
+      .sort((left, right) => Number(right[1] || 0) - Number(left[1] || 0));
+    return entries.length ? { key: String(entries[0][0]), count: Math.max(0, Math.trunc(Number(entries[0][1]) || 0)) } : null;
+  }
+
+  function sumAuditMapValues(map) {
+    return Object.values(map && typeof map === 'object' ? map : {}).reduce((sum, value) => {
+      return sum + Math.max(0, Math.trunc(Number(value) || 0));
+    }, 0);
+  }
+
+  function safeAuditRate(numerator, denominator) {
+    const top = Math.max(0, Number(numerator) || 0);
+    const base = Math.max(0, Number(denominator) || 0);
+    if (base <= 0) {
+      return 0;
+    }
+    return round2(top / base);
+  }
+
+  function deriveAuditPhaseBand(snapshotInput = null) {
+    const snapshot = snapshotInput && typeof snapshotInput === 'object' ? snapshotInput : {};
+    const recent = snapshot.recent && typeof snapshot.recent === 'object' ? snapshot.recent : {};
+    const recentPhases = Array.isArray(recent.phases) ? recent.phases : [];
+    const currentPhase = String(
+      snapshot.currentPhase
+      || recentPhases[recentPhases.length - 1]
+      || (state.plant && state.plant.phase)
+      || 'unknown'
+    ).trim().toLowerCase() || 'unknown';
+    const stageIndex = Math.max(
+      0,
+      Math.trunc(Number(snapshot.currentStageIndex != null ? snapshot.currentStageIndex : state.plant && state.plant.stageIndex) || 0)
+    );
+
+    if (currentPhase === 'seedling') return 'seedling';
+    if (currentPhase === 'harvest') return 'harvest';
+    if (currentPhase === 'flowering') {
+      return stageIndex >= 10 ? 'late_flower' : 'flower';
+    }
+    if (currentPhase === 'vegetative') {
+      return stageIndex >= 6 ? 'stretch' : 'vegetative';
+    }
+    return currentPhase;
+  }
+
+  function countTrailingOutcomeStreak(outcomes = [], allowed = []) {
+    const values = Array.isArray(outcomes) ? outcomes : [];
+    const accepted = new Set(Array.isArray(allowed) ? allowed.map((value) => String(value || '').trim().toLowerCase()).filter(Boolean) : []);
+    let count = 0;
+    for (let index = values.length - 1; index >= 0; index -= 1) {
+      const value = String(values[index] || '').trim().toLowerCase();
+      if (!accepted.has(value)) {
+        break;
+      }
+      count += 1;
+    }
+    return count;
+  }
+
+  function getPhaseDensityTolerance(phaseBand) {
+    switch (String(phaseBand || '')) {
+      case 'vegetative':
+        return 1;
+      case 'stretch':
+        return 1;
+      case 'flower':
+        return 0;
+      case 'late_flower':
+        return 0;
+      default:
+        return 0;
+    }
+  }
+
+  function buildEventAuditDerivedMetrics(snapshotInput = null) {
+    const snapshot = snapshotInput && typeof snapshotInput === 'object'
+      ? snapshotInput
+      : buildEventAuditSnapshot(state.events);
+    const totals = snapshot.totals && typeof snapshot.totals === 'object' ? snapshot.totals : {};
+    const outcomes = snapshot.outcomes && typeof snapshot.outcomes === 'object' ? snapshot.outcomes : {};
+    const byCategory = snapshot.byCategory && typeof snapshot.byCategory === 'object' ? snapshot.byCategory : {};
+    const byEventId = snapshot.byEventId && typeof snapshot.byEventId === 'object' ? snapshot.byEventId : {};
+    const guardInterventions = snapshot.guardInterventions && typeof snapshot.guardInterventions === 'object'
+      ? snapshot.guardInterventions
+      : {};
+    const gaps = snapshot.gaps && typeof snapshot.gaps === 'object' ? snapshot.gaps : {};
+    const activated = Math.max(0, Math.trunc(Number(snapshot.totalActivated != null ? snapshot.totalActivated : totals.activated) || 0));
+    const resolved = Math.max(0, Math.trunc(Number(snapshot.totalResolved != null ? snapshot.totalResolved : totals.resolved) || 0));
+    const queuedFollowUps = Math.max(0, Math.trunc(Number(totals.queuedFollowUps) || 0));
+    const activatedFollowUps = Math.max(0, Math.trunc(Number(totals.activatedFollowUps) || 0));
+    const expiredFollowUps = Math.max(0, Math.trunc(Number(totals.expiredFollowUps) || 0));
+    const pendingFollowUps = Math.max(0, queuedFollowUps - activatedFollowUps - expiredFollowUps);
+    const improved = Math.max(0, Math.trunc(Number(outcomes.improved) || 0));
+    const stabilized = Math.max(0, Math.trunc(Number(outcomes.stabilized) || 0));
+    const worsened = Math.max(0, Math.trunc(Number(outcomes.worsened) || 0));
+    const escalated = Math.max(0, Math.trunc(Number(outcomes.escalated) || 0));
+    const positiveResolved = improved + stabilized;
+    const negativeResolved = worsened + escalated;
+    const dominantCategory = String(snapshot.dominantCategory || '');
+    const dominantCategoryCount = Math.max(0, Math.trunc(Number(snapshot.dominantCategoryCount) || 0));
+    const dominantCategoryShare = safeAuditRate(dominantCategoryCount, activated);
+    const repeatLeader = getAuditMapTopEntry(byEventId);
+    const repeatLeaderEventId = repeatLeader ? repeatLeader.key : '';
+    const repeatLeaderCount = repeatLeader ? repeatLeader.count : 0;
+    const repeatLeaderShare = safeAuditRate(repeatLeaderCount, activated);
+    const totalGuardHits = sumAuditMapValues(guardInterventions);
+    const guardPressureRate = safeAuditRate(totalGuardHits, Math.max(activated, resolved));
+    const followUpActivationRate = safeAuditRate(activatedFollowUps, queuedFollowUps);
+    const followUpExpiryRate = safeAuditRate(expiredFollowUps, queuedFollowUps);
+    const shortGapClusterCount = Math.max(0, Math.trunc(Number(snapshot.shortGapClusterCount != null ? snapshot.shortGapClusterCount : gaps.shortGapClusterCount) || 0));
+    const longGapCount = Math.max(0, Math.trunc(Number(snapshot.longGapCount != null ? snapshot.longGapCount : gaps.longGapCount) || 0));
+    const meanGapSimMs = Math.max(0, Math.trunc(Number(snapshot.meanGapSimMs != null ? snapshot.meanGapSimMs : gaps.meanSimMs) || 0));
+    const recent = snapshot.recent && typeof snapshot.recent === 'object' ? snapshot.recent : {};
+    const recentEventIds = Array.isArray(recent.eventIds) ? recent.eventIds.slice() : [];
+    const recentOutcomes = Array.isArray(recent.outcomes) ? recent.outcomes.slice() : [];
+    const phaseBand = deriveAuditPhaseBand(snapshot);
+    const currentPhase = String(snapshot.currentPhase || (state.plant && state.plant.phase) || 'unknown').trim().toLowerCase() || 'unknown';
+    const currentStageIndex = Math.max(0, Math.trunc(Number(snapshot.currentStageIndex != null ? snapshot.currentStageIndex : state.plant && state.plant.stageIndex) || 0));
+    const recentNegativeStreak = countTrailingOutcomeStreak(recentOutcomes, ['worsened', 'escalated']);
+    const recentPositiveStreak = countTrailingOutcomeStreak(recentOutcomes, ['improved', 'stabilized']);
+
+    return {
+      activated,
+      resolved,
+      queuedFollowUps,
+      activatedFollowUps,
+      expiredFollowUps,
+      pendingFollowUps,
+      positiveResolved,
+      negativeResolved,
+      improved,
+      stabilized,
+      worsened,
+      escalated,
+      dominantCategory,
+      dominantCategoryCount,
+      dominantCategoryShare,
+      repeatLeaderEventId,
+      repeatLeaderCount,
+      repeatLeaderShare,
+      totalGuardHits,
+      guardPressureRate,
+      followUpActivationRate,
+      followUpExpiryRate,
+      shortGapClusterCount,
+      longGapCount,
+      meanGapSimMs,
+      stabilizationRatio: Number(snapshot.stabilizationRatio || 0),
+      currentPhase,
+      currentStageIndex,
+      phaseBand,
+      recentNegativeStreak,
+      recentPositiveStreak,
+      meaningfulActivationSample: activated >= 2,
+      strongActivationSample: activated >= 5,
+      meaningfulResolutionSample: resolved >= 2,
+      strongResolutionSample: resolved >= 3,
+      meaningfulFollowUpSample: queuedFollowUps >= 2,
+      meaningfulGuardSample: Math.max(activated, resolved) >= 3,
+      recentEventIds,
+      recentOutcomes
+    };
+  }
+
+  function classifyEventRunDensity(metrics) {
+    const safeMetrics = metrics && typeof metrics === 'object' ? metrics : {};
+    const phaseTolerance = getPhaseDensityTolerance(safeMetrics.phaseBand);
+    const denseClusterThreshold = safeMetrics.strongActivationSample ? Math.max(2, 2 + phaseTolerance) : Math.max(3, 3 + phaseTolerance);
+    const reactiveClusterThreshold = safeMetrics.strongActivationSample ? Math.max(1, 1 + (phaseTolerance >= 1 ? 0 : 0)) : Math.max(2, 1 + phaseTolerance);
+    const strongDenseGapLimit = safeMetrics.phaseBand === 'vegetative' ? (60 * 60 * 1000) : (75 * 60 * 1000);
+    const reactiveGapLimit = safeMetrics.phaseBand === 'vegetative' ? (90 * 60 * 1000) : (2 * 60 * 60 * 1000);
+    if (!safeMetrics.meaningfulActivationSample) {
+      return (safeMetrics.longGapCount >= 1 || safeMetrics.activated <= 1) ? 'quiet' : 'undetermined';
+    }
+    if (safeMetrics.activated <= 4) {
+      if (
+        safeMetrics.shortGapClusterCount >= Math.max(3, denseClusterThreshold)
+        && safeMetrics.meanGapSimMs > 0
+        && safeMetrics.meanGapSimMs <= strongDenseGapLimit
+      ) {
+        return 'dense';
+      }
+      if (
+        safeMetrics.shortGapClusterCount >= Math.max(reactiveClusterThreshold, 2)
+        || (safeMetrics.activated >= 4 && safeMetrics.meanGapSimMs > 0 && safeMetrics.meanGapSimMs <= reactiveGapLimit)
+      ) {
+        return 'reactive';
+      }
+      if (
+        (safeMetrics.longGapCount >= 1 && safeMetrics.activated <= 2)
+        || (safeMetrics.meanGapSimMs >= (4 * 60 * 60 * 1000) && safeMetrics.activated <= 3)
+      ) {
+        return 'quiet';
+      }
+      return 'balanced';
+    }
+    if (
+      safeMetrics.shortGapClusterCount >= denseClusterThreshold
+      || (safeMetrics.strongActivationSample && safeMetrics.meanGapSimMs > 0 && safeMetrics.meanGapSimMs <= strongDenseGapLimit)
+    ) {
+      return 'dense';
+    }
+    if (
+      safeMetrics.shortGapClusterCount >= reactiveClusterThreshold
+      || (safeMetrics.activated >= 4 && safeMetrics.meanGapSimMs > 0 && safeMetrics.meanGapSimMs <= reactiveGapLimit)
+    ) {
+      return 'reactive';
+    }
+    if (
+      (safeMetrics.longGapCount >= 2 && safeMetrics.activated <= 3)
+      || (safeMetrics.meanGapSimMs >= (4 * 60 * 60 * 1000) && safeMetrics.activated <= 3)
+    ) {
+      return 'quiet';
+    }
+    return 'balanced';
+  }
+
+  function classifyEventRunBalance(metrics, followUpState = 'low_signal') {
+    const safeMetrics = metrics && typeof metrics === 'object' ? metrics : {};
+    if (!safeMetrics.meaningfulResolutionSample) {
+      return 'undetermined';
+    }
+    const phaseBand = String(safeMetrics.phaseBand || '');
+    const negativeLead = Math.max(0, safeMetrics.negativeResolved - safeMetrics.positiveResolved);
+    const positiveLead = Math.max(0, safeMetrics.positiveResolved - safeMetrics.negativeResolved);
+    const negativeMomentum = safeMetrics.recentNegativeStreak >= 2;
+    const positiveMomentum = safeMetrics.recentPositiveStreak >= 2;
+    const negativeFollowUpPressure = followUpState === 'building';
+    const vulnerableNeedsSupport = phaseBand === 'vegetative' || phaseBand === 'stretch';
+    const escalatingThreshold = phaseBand === 'late_flower' ? 1 : 2;
+
+    if (
+      positiveMomentum
+      && safeMetrics.positiveResolved >= safeMetrics.negativeResolved
+      && followUpState !== 'building'
+    ) {
+      return 'stabilizing';
+    }
+    if (
+      (negativeLead >= Math.max(2, escalatingThreshold) && (negativeMomentum || negativeFollowUpPressure))
+      || (phaseBand === 'late_flower' && negativeLead >= 1 && negativeMomentum && negativeFollowUpPressure)
+    ) {
+      return 'escalating';
+    }
+    if (
+      negativeLead >= 1
+      && (
+        negativeFollowUpPressure
+        || negativeMomentum
+        || (!vulnerableNeedsSupport && safeMetrics.strongResolutionSample && negativeLead >= 2)
+      )
+    ) {
+      return 'vulnerable';
+    }
+    if (
+      positiveLead >= 2
+      || (
+        safeMetrics.strongResolutionSample
+        && safeMetrics.positiveResolved > safeMetrics.negativeResolved
+        && safeMetrics.stabilizationRatio >= 1.25
+        && followUpState !== 'building'
+      )
+    ) {
+      return 'stabilizing';
+    }
+    return 'balanced';
+  }
+
+  function classifyFollowUpPressure(metrics) {
+    const safeMetrics = metrics && typeof metrics === 'object' ? metrics : {};
+    const floweringTolerance = String(safeMetrics.phaseBand || '') === 'flower' || String(safeMetrics.phaseBand || '') === 'late_flower';
+    if (!safeMetrics.meaningfulFollowUpSample) {
+      return 'low_signal';
+    }
+    if (
+      safeMetrics.followUpExpiryRate >= 0.5
+      && safeMetrics.expiredFollowUps >= safeMetrics.activatedFollowUps
+    ) {
+      return 'fading';
+    }
+    if (
+      safeMetrics.pendingFollowUps > 0
+      && safeMetrics.negativeResolved >= safeMetrics.positiveResolved
+      && (
+        safeMetrics.followUpActivationRate < 0.5
+        || safeMetrics.pendingFollowUps >= (floweringTolerance ? 2 : 1)
+        || safeMetrics.recentNegativeStreak >= 2
+      )
+    ) {
+      return 'building';
+    }
+    if (
+      safeMetrics.followUpActivationRate >= 0.6
+      && safeMetrics.activatedFollowUps > safeMetrics.expiredFollowUps
+    ) {
+      return 'constructive';
+    }
+    if (safeMetrics.pendingFollowUps > 0) {
+      return 'open';
+    }
+    return 'settled';
+  }
+
+  function classifyGuardPressure(metrics) {
+    const safeMetrics = metrics && typeof metrics === 'object' ? metrics : {};
+    if (!safeMetrics.meaningfulGuardSample) {
+      return 'low_signal';
+    }
+    if (safeMetrics.totalGuardHits >= 3 && safeMetrics.guardPressureRate >= 0.75) {
+      return 'high';
+    }
+    if (safeMetrics.totalGuardHits >= 2 && safeMetrics.guardPressureRate >= 0.4) {
+      return 'moderate';
+    }
+    return 'low';
+  }
+
+  function classifyEventRunState(metrics, densityState, balanceState, followUpState) {
+    const safeMetrics = metrics && typeof metrics === 'object' ? metrics : {};
+    if (!safeMetrics.meaningfulActivationSample && !safeMetrics.meaningfulResolutionSample) {
+      return 'quiet';
+    }
+    if (balanceState === 'escalating') {
+      return 'escalating';
+    }
+    if (balanceState === 'stabilizing' && followUpState !== 'building') {
+      return 'stabilizing';
+    }
+    if (balanceState === 'vulnerable') {
+      return 'vulnerable';
+    }
+    if (densityState === 'dense') {
+      return 'dense';
+    }
+    if (densityState === 'reactive') {
+      return 'reactive';
+    }
+    if (densityState === 'quiet') {
+      return 'quiet';
+    }
+    return 'balanced';
+  }
+
+  function buildEventAuditInterpretation(snapshotInput = null) {
+    const snapshot = snapshotInput && typeof snapshotInput === 'object'
+      ? snapshotInput
+      : buildEventAuditSnapshot(state.events);
+    const metrics = buildEventAuditDerivedMetrics(snapshot);
+    const densityState = classifyEventRunDensity(metrics);
+    const followUpState = classifyFollowUpPressure(metrics);
+    const balanceState = classifyEventRunBalance(metrics, followUpState);
+    const guardState = classifyGuardPressure(metrics);
+    const primaryState = classifyEventRunState(metrics, densityState, balanceState, followUpState);
+    const confidence = metrics.strongActivationSample || metrics.strongResolutionSample
+      ? 'high'
+      : ((metrics.meaningfulActivationSample || metrics.meaningfulResolutionSample) ? 'medium' : 'low');
+    const tuningFlags = [];
+
+    if (metrics.activated >= 4 && metrics.dominantCategoryShare >= 0.6 && metrics.dominantCategory) {
+      tuningFlags.push('category_dominance');
+    }
+    if (metrics.meaningfulFollowUpSample && followUpState === 'fading') {
+      tuningFlags.push('followup_expiry_high');
+    }
+    if (metrics.meaningfulFollowUpSample && followUpState === 'constructive') {
+      tuningFlags.push('followup_activation_strong');
+    }
+    if (metrics.meaningfulGuardSample && guardState === 'high') {
+      tuningFlags.push('guard_pressure_high');
+    }
+    if (metrics.activated >= 4 && metrics.repeatLeaderShare >= 0.45 && metrics.repeatLeaderEventId) {
+      tuningFlags.push('repeat_pressure_high');
+    }
+    if (balanceState === 'stabilizing') {
+      tuningFlags.push('stabilization_visible');
+    }
+    if (balanceState === 'escalating') {
+      tuningFlags.push('escalation_visible');
+    }
+
+    return {
+      primaryState,
+      densityState,
+      balanceState,
+      followUpState,
+      guardState,
+      confidence,
+      tuningFlags,
+      metrics
+    };
+  }
+
+function pickOutcomeFollowUpIds(eventDef, resolutionModel, diagnostics) {
+  const followUpRules = eventDef && eventDef.followUpRules && typeof eventDef.followUpRules === 'object'
+    ? eventDef.followUpRules
+    : null;
+  const outcomeStatus = String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved');
+  const explicitIds = followUpRules && Array.isArray(followUpRules[outcomeStatus])
+    ? followUpRules[outcomeStatus].slice()
+    : [];
+  const diagnosticsFollowUp = diagnostics && diagnostics.chains && diagnostics.chains.topFollowUp && diagnostics.chains.topFollowUp.followUpId
+    ? [String(diagnostics.chains.topFollowUp.followUpId)]
+    : [];
+  const requested = explicitIds.length ? explicitIds : diagnosticsFollowUp;
+
+  return requested
+    .map((eventId) => String(eventId || '').trim())
+    .filter(Boolean)
+    .filter((eventId) => eventId !== String(eventDef && eventDef.id || ''))
+    .filter((eventId, index, list) => list.indexOf(eventId) === index)
+    .filter((eventId) => {
+      const candidate = getCatalogEventById(eventId);
+      if (!candidate) {
+        return false;
+      }
+      if (candidate.isFollowUp === true) {
+        return true;
+      }
+      if (!isEventPhaseAllowed(candidate)) {
+        return false;
+      }
+      if (!evaluateEventConstraints(candidate)) {
+        return false;
+      }
+      return true;
+    });
+}
+
+function queueOutcomeFollowUps(eventId, optionId, followUpIds, nowRealMs, resolutionModel = null) {
+  const foundationApi = getEventFoundationApis();
+  if (!foundationApi.memory || typeof foundationApi.memory.setPendingChain !== 'function') {
+    return [];
+  }
+
+  const queued = [];
+  for (const followUpId of Array.isArray(followUpIds) ? followUpIds : []) {
+    const timing = getPendingChainTimingProfile(followUpId, resolutionModel);
+    const activatesAtRealTimeMs = Number(timing.delayMinutes || 0) > 0
+      ? nowRealMs + (Number(timing.delayMinutes || 0) * 60 * 1000)
+      : null;
+    const expiresAtRealTimeMs = Number(timing.expiryMinutes || 0) > 0
+      ? nowRealMs + (Number(timing.expiryMinutes || 0) * 60 * 1000)
+      : null;
+    foundationApi.memory.setPendingChain(state.events, followUpId, {
+      targetEventId: followUpId,
+      sourceEventId: eventId ? String(eventId) : null,
+      sourceOptionId: optionId ? String(optionId) : null,
+      createdAtRealTimeMs: nowRealMs,
+      activatesAtRealTimeMs,
+      expiresAtRealTimeMs,
+      meta: {
+        createdBy: 'resolved_outcome',
+        queuedFromOutcomeStatus: String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved')
+      }
+    });
+    queued.push(String(followUpId));
+  }
+  return queued;
+}
+
+function resolvePendingEventOutcome(nowMs) {
+  const { nowRealMs, nowSimMs } = normalizeEventTimingState(nowMs);
+  const pendingResolution = state.events.pendingResolution && typeof state.events.pendingResolution === 'object'
+    ? state.events.pendingResolution
+    : null;
+  if (!pendingResolution) {
+    state.events.machineState = 'resolved';
+    state.events.pendingOutcome = null;
+    state.events.resolvedOutcome = state.events.resolvedOutcome && typeof state.events.resolvedOutcome === 'object'
+      ? state.events.resolvedOutcome
+      : null;
+    return;
+  }
+
+  const eventDef = getCatalogEventById(pendingResolution.eventId) || {
+    id: pendingResolution.eventId,
+    title: pendingResolution.eventTitle,
+    category: pendingResolution.eventCategory || 'generic',
+    learningNote: pendingResolution.learningNote || '',
+    options: []
+  };
+  const choice = getEventOptionById(eventDef, pendingResolution.optionId) || {
+    id: pendingResolution.optionId,
+    label: pendingResolution.optionLabel,
+    effects: pendingResolution.rawChoiceEffects || {}
+  };
+
+  const foundationApi = getEventFoundationApis();
+  const diagnostics = foundationApi.engine && typeof foundationApi.engine.computeShadowState === 'function'
+    ? foundationApi.engine.computeShadowState(state, { catalog: state.events.catalog })
+    : null;
+  const shadowEvent = buildResolutionShadowEvent(eventDef, diagnostics);
+  const pathKind = pendingResolution.optionId === '__dismiss__' ? 'no_action' : 'choice';
+  const resolutionModel = foundationApi.resolution && typeof foundationApi.resolution.resolveChoice === 'function'
+    ? foundationApi.resolution.resolveChoice({
+      shadowEvent,
+      optionId: pendingResolution.optionId,
+      pathKind
+    })
+    : buildFallbackResolutionModel(eventDef, choice, pathKind);
+
+  const outcomeEffects = collectResolutionEffects(resolutionModel);
+  const before = snapshotStatus();
+  applyChoiceEffects(outcomeEffects);
+  applyFoundationFollowUps(choice, eventDef.id);
+  const after = snapshotStatus();
+  const deltaSummary = summarizeDelta(before, after);
+  const followUpIds = pickOutcomeFollowUpIds(eventDef, resolutionModel, diagnostics);
+  const queuedFollowUpIds = queueOutcomeFollowUps(eventDef.id, pendingResolution.optionId, followUpIds, nowRealMs, resolutionModel);
+  const bridgedFollowUpIds = foundationApi.memory && typeof foundationApi.memory.getPendingChains === 'function'
+    ? Object.entries(foundationApi.memory.getPendingChains(state.events) || {})
+      .filter(([, chain]) => {
+        const safeChain = chain && typeof chain === 'object' ? chain : {};
+        return String(safeChain.sourceEventId || '') === String(eventDef.id)
+          && String(safeChain.sourceOptionId || '') === String(pendingResolution.optionId);
+      })
+      .map(([chainId, chain]) => String(chain && chain.targetEventId || chainId || '').trim())
+      .filter(Boolean)
+    : [];
+  const visibleFollowUpIds = [...new Set([...queuedFollowUpIds, ...bridgedFollowUpIds])];
+  recordEventAuditQueuedFollowUps(eventDef.id, visibleFollowUpIds);
+  const outcomeNarrative = buildResolvedOutcomeNarrative(eventDef, choice, resolutionModel, visibleFollowUpIds);
+
+  const analysisEntry = foundationApi.analysis && typeof foundationApi.analysis.generateAndStoreAnalysis === 'function'
+    ? foundationApi.analysis.generateAndStoreAnalysis(state.events, {
+      eventId: eventDef.id,
+      optionId: pendingResolution.optionId,
+      eventTitle: eventDef.title,
+      choiceLabel: pendingResolution.optionLabel,
+      atRealTimeMs: nowRealMs,
+      atSimTimeMs: nowSimMs,
+      tick: state.simulation.tickCount,
+      tone: resolutionModel && resolutionModel.quality === 'good'
+        ? 'recovery'
+        : (resolutionModel && resolutionModel.quality === 'poor' ? 'warning' : 'neutral'),
+      outcomeStatus: resolutionModel.outcomeStatus,
+      actionText: pendingResolution.optionLabel
+        ? `Ausgewählte Maßnahme: ${pendingResolution.optionLabel}.`
+        : '',
+      causeText: outcomeNarrative.cause,
+      resultText: outcomeNarrative.result,
+      guidanceText: outcomeNarrative.guidance,
+      relatedFlags: foundationApi.flags && typeof foundationApi.flags.getActiveFlags === 'function'
+        ? foundationApi.flags.getActiveFlags(state.events)
+        : [],
+      normalizedState: foundationApi.plantState && typeof foundationApi.plantState.buildNormalizedPlantState === 'function'
+        ? foundationApi.plantState.buildNormalizedPlantState(state)
+        : null,
+      relatedChainId: visibleFollowUpIds.length ? visibleFollowUpIds[0] : null
+    })
+    : null;
+
+  if (analysisEntry && foundationApi.memory && typeof foundationApi.memory.getLastDecision === 'function') {
+    const lastDecision = foundationApi.memory.getLastDecision(state.events);
+    if (
+      lastDecision
+      && lastDecision.eventId === String(eventDef.id)
+      && lastDecision.optionId === String(pendingResolution.optionId)
+    ) {
+      lastDecision.analysisId = analysisEntry.analysisId;
+      lastDecision.analysisTone = analysisEntry.tone;
+    }
+  }
+
+  const historyEntry = {
+    type: 'event',
+    eventId: eventDef.id,
+    eventTitle: eventDef.title || '',
+    category: eventDef.category || 'generic',
+    optionId: pendingResolution.optionId,
+    optionLabel: pendingResolution.optionLabel,
+    learningNote: eventDef.learningNote || '',
+    triggerSnapshot: pendingResolution.triggerSnapshot && typeof pendingResolution.triggerSnapshot === 'object'
+      ? { ...pendingResolution.triggerSnapshot }
+      : null,
+    effectsApplied: deltaSummary,
+    sideEffectsTriggered: [],
+    analysis: analysisEntry,
+    outcomeStatus: resolutionModel.outcomeStatus || 'unresolved',
+    quality: resolutionModel.quality || 'neutral',
+    explanationText: outcomeNarrative.explanation,
+    causeText: outcomeNarrative.cause,
+    resultText: outcomeNarrative.result,
+    guidanceText: outcomeNarrative.guidance,
+    followUpIds: visibleFollowUpIds.slice(),
+    atSimTimeMs: nowSimMs,
+    atRealTimeMs: nowRealMs
+  };
+
+  state.history.events.push(historyEntry);
+  state.events.history.push(historyEntry);
+  state.events.resolvedOutcome = buildResolvedOutcomeRecord(
+    eventDef,
+    choice,
+    pendingResolution,
+    resolutionModel,
+    analysisEntry,
+    deltaSummary,
+    visibleFollowUpIds
+  );
+  recordEventAuditResolution(eventDef, pendingResolution, resolutionModel, visibleFollowUpIds);
+  state.events.pendingResolution = null;
+  state.events.pendingOutcome = null;
+  state.events.machineState = 'resolved';
+
+  addLog('choice', `Ereignis ausgewertet: ${eventDef.id}/${pendingResolution.optionId}`, {
+    outcomeStatus: resolutionModel.outcomeStatus,
+    quality: resolutionModel.quality,
+    effectsApplied: deltaSummary,
+    queuedFollowUps: visibleFollowUpIds,
+    explanationText: state.events.resolvedOutcome.explanationText
+  });
 }
 
 const EVENT_ASSET_MANIFEST = Object.freeze([
@@ -437,9 +1734,25 @@ function applyFoundationFollowUps(choice, eventId) {
     return;
   }
 
-  api.memory.addDecision(state.events, eventId, choice.id, {
-    followUps: Array.isArray(choice.followUps) ? choice.followUps.slice() : []
-  });
+  let decisionRecord = typeof api.memory.getLastDecision === 'function'
+    ? api.memory.getLastDecision(state.events)
+    : null;
+  if (!decisionRecord || decisionRecord.eventId !== String(eventId) || decisionRecord.optionId !== String(choice.id)) {
+    api.memory.addDecision(state.events, eventId, choice.id, {
+      followUps: Array.isArray(choice.followUps) ? choice.followUps.slice() : []
+    });
+    decisionRecord = typeof api.memory.getLastDecision === 'function'
+      ? api.memory.getLastDecision(state.events)
+      : null;
+  } else {
+    const existingMeta = decisionRecord.meta && typeof decisionRecord.meta === 'object'
+      ? decisionRecord.meta
+      : {};
+    decisionRecord.meta = {
+      ...existingMeta,
+      followUps: Array.isArray(choice.followUps) ? choice.followUps.slice() : []
+    };
+  }
 
   const followUps = Array.isArray(choice.followUps) ? choice.followUps : [];
   for (const followUp of followUps) {
@@ -469,11 +1782,19 @@ function applyFoundationFollowUps(choice, eventId) {
     }
     if (token.startsWith('set_chain:')) {
       const chainId = token.slice('set_chain:'.length);
+      const createdAtRealTimeMs = Date.now();
+      const timing = getPendingChainTimingProfile(chainId, null);
       api.memory.setPendingChain(state.events, chainId, {
         targetEventId: chainId,
         sourceEventId: eventId,
         sourceOptionId: choice.id,
-        createdAtRealTimeMs: Date.now(),
+        createdAtRealTimeMs,
+        activatesAtRealTimeMs: Number(timing.delayMinutes || 0) > 0
+          ? createdAtRealTimeMs + (Number(timing.delayMinutes || 0) * 60 * 1000)
+          : null,
+        expiresAtRealTimeMs: Number(timing.expiryMinutes || 0) > 0
+          ? createdAtRealTimeMs + (Number(timing.expiryMinutes || 0) * 60 * 1000)
+          : null,
         meta: { createdBy: 'followup_token' }
       });
       continue;
@@ -676,15 +1997,18 @@ function normalizeEventTimingState(nowRealMs) {
 
 function runEventStateMachine(nowMs, isCatchUp = false) {
   const { nowRealMs, nowSimMs } = normalizeEventTimingState(nowMs);
+  const foundationApi = getEventFoundationApis();
+  if (foundationApi.memory && typeof foundationApi.memory.pruneExpiredPendingChains === 'function') {
+    const expiredChains = foundationApi.memory.pruneExpiredPendingChains(state.events, nowRealMs);
+    if (expiredChains && expiredChains.length) {
+      recordEventAuditExpiredChains(expiredChains);
+    }
+  }
   if (state.events.machineState === 'resolving') {
     const resolvingUntilSimTimeMs = Number(state.events.resolvingUntilSimTimeMs || 0);
     if (nowSimMs >= resolvingUntilSimTimeMs) {
-      state.events.machineState = 'resolved';
-      if (!state.events.resolvedOutcome && state.events.pendingOutcome && typeof state.events.pendingOutcome === 'object') {
-        state.events.resolvedOutcome = { ...state.events.pendingOutcome };
-      }
-      state.events.pendingOutcome = null;
-      addLog('system', 'Ereignisausgang aus Legacy-Status übernommen', {
+      resolvePendingEventOutcome(nowRealMs);
+      addLog('system', 'Ereignis-Auswertung abgeschlossen', {
         eventId: state.events.activeEventId,
         chosenOptionId: state.events.lastChoiceId,
         resolvedAtMs: nowRealMs,
@@ -696,7 +2020,7 @@ function runEventStateMachine(nowMs, isCatchUp = false) {
     }
   }
 
-  if (state.events.machineState === 'resolved') {
+  if (state.events.machineState === 'resolved' && state.events.pendingResolution) {
     enterEventCooldown(nowRealMs);
   }
 
@@ -762,8 +2086,8 @@ function runEventStateMachine(nowMs, isCatchUp = false) {
       atSimTimeMs: nowSimMs,
       phase: state.plant.phase
     });
-    const retryDelayRealMs = 20_000 + Math.floor(
-      deterministicUnitFloat(`event_retry:${Math.floor(nowSimMs / 1000)}:${state.simulation.tickCount}`) * 70_000
+    const retryDelayRealMs = 45_000 + Math.floor(
+      deterministicUnitFloat(`event_retry:${Math.floor(nowSimMs / 1000)}:${state.simulation.tickCount}`) * 135_000
     );
     state.events.scheduler.nextEventSimTimeMs = nowSimMs + projectEventRealDurationToSimMs(retryDelayRealMs, nowRealMs);
     normalizeEventTimingState(nowRealMs);
@@ -802,6 +2126,7 @@ function activateEvent(nowMs) {
     ? foundationOutcome.decision
     : resolveFoundationCandidateEvent();
   const foundationTrace = foundationOutcome && foundationOutcome.trace ? foundationOutcome.trace : null;
+  recordEventAuditResolverTrace(foundationTrace);
   const isHardResolverOverride = Boolean(
     foundationTrace && (foundationTrace.pendingChainOverride === true || foundationTrace.forcedByFlag)
   );
@@ -844,6 +2169,11 @@ function activateEvent(nowMs) {
   state.events.activeOptions = options;
   state.events.activeSeverity = eventDef.severity || 3;
   state.events.activeCooldownRealMinutes = clamp(Number(eventDef.cooldownRealMinutes) || 120, 10, 24 * 60);
+  state.events.activeResolveTimeMinutes = clamp(
+    Number(eventDef.resolveTimeMinutes) || defaultResolveTimeMinutesForEvent(eventDef.category, eventDef.severity, eventDef.tags),
+    30,
+    120
+  );
   state.events.activeCategory = eventDef.category || 'generic';
   state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
   state.events.activeImagePath = String(eventDef.imagePath || '');
@@ -879,6 +2209,14 @@ function activateEvent(nowMs) {
       sourceOptionId: consumedPendingChain ? consumedPendingChain.sourceOptionId : null
     });
   }
+  recordEventAuditActivation(eventDef, {
+    atSimTimeMs: nowSimMs,
+    simDay: state.simulation.simDay,
+    phase: state.plant.phase,
+    stage: getAuditStageKey(),
+    isFollowUp: Boolean(eventDef.isFollowUp || consumedPendingChain),
+    consumedChainId: consumedPendingChain ? consumedPendingChain.chainId : null
+  });
 
   notifyPlantNeedsCare('Deine Pflanze braucht Pflege.');
   return true;
@@ -1288,115 +2626,7 @@ function onEventOptionClick(optionId) {
     return;
   }
 
-  const before = snapshotStatus();
-  applyChoiceEffects(choice.effects || {});
-
-  const triggeredSideEffects = [];
-  for (const side of Array.isArray(choice.sideEffects) ? choice.sideEffects : []) {
-    if (!evaluateCondition(side.when || 'true')) {
-      continue;
-    }
-    const chance = clamp(Number(side.chance), 0, 1);
-    const roll = deterministicUnitFloat(`event_side:${state.events.activeEventId}:${choice.id}:${side.id || 'side'}:${state.simulation.tickCount}`);
-    if (roll <= chance) {
-      applyChoiceEffects(side.effects || {});
-      triggeredSideEffects.push(side.id || 'side');
-    }
-  }
-
-  const after = snapshotStatus();
-  const deltaSummary = summarizeDelta(before, after);
-
-  state.events.lastChoiceId = choice.id;
-  state.events.scheduler.lastChoiceId = choice.id;
-  state.events.machineState = 'resolved';
-
-  applyFoundationFollowUps(choice, state.events.activeEventId);
-
-  const foundationApi = getEventFoundationApis();
-  const recentFoundationEvent = foundationApi.memory
-    ? foundationApi.memory.getLastEvents(state.events, 1)[0]
-    : null;
-  const relatedChainId = recentFoundationEvent && recentFoundationEvent.meta
-    ? (recentFoundationEvent.meta.consumedChainId || null)
-    : null;
-
-  let analysisEntry = null;
-  if (foundationApi.analysis && foundationApi.plantState && foundationApi.flags) {
-    analysisEntry = foundationApi.analysis.generateAndStoreAnalysis(state.events, {
-      eventId: state.events.activeEventId,
-      optionId: choice.id,
-      atRealTimeMs: Date.now(),
-      atSimTimeMs: state.simulation.simTimeMs,
-      tick: state.simulation.tickCount,
-      relatedFlags: foundationApi.flags.getActiveFlags(state.events),
-      normalizedState: foundationApi.plantState.buildNormalizedPlantState(state),
-      relatedChainId
-    });
-  }
-
-  if (analysisEntry && foundationApi.memory) {
-    const lastDecision = foundationApi.memory.getLastDecision(state.events);
-    if (lastDecision && lastDecision.eventId === String(state.events.activeEventId) && lastDecision.optionId === String(choice.id)) {
-      lastDecision.analysisId = analysisEntry.analysisId;
-      lastDecision.analysisTone = analysisEntry.tone;
-    }
-  }
-
-  const triggerSnapshot = {
-    simDay: Math.floor(simDayFloat()),
-    stageIndex: state.plant.stageIndex + 1,
-    water: round2(state.status.water),
-    nutrition: round2(state.status.nutrition),
-    health: round2(state.status.health),
-    stress: round2(state.status.stress),
-    risk: round2(state.status.risk),
-    growth: round2(state.status.growth),
-    setup: {
-      mode: state.setup && state.setup.mode ? state.setup.mode : null,
-      medium: state.setup && state.setup.medium ? state.setup.medium : null,
-      light: state.setup && state.setup.light ? state.setup.light : null
-    }
-  };
-
-  const historyEntry = {
-    type: 'event',
-    eventId: state.events.activeEventId,
-    category: state.events.activeCategory || 'generic',
-    optionId: choice.id,
-    optionLabel: choice.label,
-    learningNote: state.events.activeLearningNote || '',
-    triggerSnapshot,
-    effectsApplied: deltaSummary,
-    sideEffectsTriggered: triggeredSideEffects,
-    analysis: analysisEntry,
-    atSimTimeMs: state.simulation.simTimeMs,
-    atRealTimeMs: Date.now()
-  };
-
-  state.history.events.push(historyEntry);
-  state.events.history.push(historyEntry);
-
-  addLog('choice', `Option gewählt: ${state.events.activeEventId}/${choice.id}`, {
-    effects: choice.effects || {},
-    sideEffects: triggeredSideEffects,
-    effectsApplied: deltaSummary,
-    followUps: choice.followUps || [],
-    outcomeAnalysis: analysisEntry
-      ? {
-        tone: analysisEntry.tone,
-        actionText: analysisEntry.actionText,
-        causeText: analysisEntry.causeText,
-        resultText: analysisEntry.resultText,
-        guidanceText: analysisEntry.guidanceText
-      }
-      : null
-  });
-
-  runEventStateMachine(state.simulation.nowMs);
-  syncCanonicalStateShape();
-  renderAll();
-  schedulePersistState(true);
+  return startEventResolution(choice);
 }
 
 function applyChoiceEffects(effects) {
@@ -1461,9 +2691,11 @@ function enterEventCooldown(nowMs) {
   state.events.activeOptions = [];
   state.events.activeSeverity = 1;
   state.events.activeCooldownRealMinutes = 120;
+  state.events.activeResolveTimeMinutes = 60;
   state.events.activeCategory = 'generic';
   state.events.activeTags = [];
   state.events.activeImagePath = '';
+  state.events.pendingResolution = null;
 
   if (activeEventId) {
     state.events.scheduler.eventCooldownsSim[activeEventId] = nowSimMs + perEventCooldownSimMs;
@@ -1535,9 +2767,9 @@ function computeEnvironmentEventPressure() {
 }
 
 function eventThreshold() {
-  const base = 0.28;
+  const base = 0.27;
   const riskInfluence = state.status.risk / 400;
-  const envInfluence = computeEnvironmentEventPressure() * 0.15;
+  const envInfluence = computeEnvironmentEventPressure() * 0.12;
   return clamp(base + riskInfluence + envInfluence, 0.12, 0.85);
 }
 
@@ -1575,6 +2807,86 @@ function deterministicEventDelayMs(nowMs) {
 function cooldownMs(nowMs = state.simulation.nowMs) {
   const { nowRealMs } = normalizeEventTimingState(nowMs);
   return projectEventRealDurationToSimMs(EVENT_COOLDOWN_MS, nowRealMs);
+}
+
+function startEventResolution(choice) {
+  const eventDef = getCatalogEventById(state.events.activeEventId) || {
+    id: state.events.activeEventId,
+    title: state.events.activeEventTitle,
+    category: state.events.activeCategory || 'generic',
+    learningNote: state.events.activeLearningNote || '',
+    options: Array.isArray(state.events.activeOptions) ? state.events.activeOptions.slice() : []
+  };
+  const nowRealMs = Date.now();
+  const nowSimMs = Number(state.simulation.simTimeMs || 0);
+  const resolveTimeMinutes = clamp(
+    Number(eventDef.resolveTimeMinutes || state.events.activeResolveTimeMinutes || defaultResolveTimeMinutesForEvent(eventDef.category, eventDef.severity, eventDef.tags)),
+    30,
+    120
+  );
+  const resolveTimeRealMs = resolveTimeMinutes * 60 * 1000;
+  const resolveTimeSimMs = projectEventRealDurationToSimMs(resolveTimeRealMs, nowRealMs);
+  const triggerSnapshot = {
+    simDay: Math.floor(simDayFloat()),
+    stageIndex: state.plant.stageIndex + 1,
+    water: round2(state.status.water),
+    nutrition: round2(state.status.nutrition),
+    health: round2(state.status.health),
+    stress: round2(state.status.stress),
+    risk: round2(state.status.risk),
+    growth: round2(state.status.growth),
+    setup: {
+      mode: state.setup && state.setup.mode ? state.setup.mode : null,
+      medium: state.setup && state.setup.medium ? state.setup.medium : null,
+      light: state.setup && state.setup.light ? state.setup.light : null
+    }
+  };
+
+  state.events.lastChoiceId = choice.id;
+  state.events.scheduler.lastChoiceId = choice.id;
+  state.events.machineState = 'resolving';
+  state.events.resolvingUntilSimTimeMs = nowSimMs + resolveTimeSimMs;
+  state.events.resolvingUntilMs = projectEventSimDeadlineToRealMs(state.events.resolvingUntilSimTimeMs, nowRealMs, nowSimMs);
+  state.events.pendingResolution = {
+    eventId: state.events.activeEventId,
+    eventTitle: state.events.activeEventTitle,
+    eventCategory: state.events.activeCategory || 'generic',
+    optionId: choice.id,
+    optionLabel: choice.label,
+    learningNote: state.events.activeLearningNote || '',
+    chosenAtRealTimeMs: nowRealMs,
+    chosenAtSimTimeMs: nowSimMs,
+    resolveTimeMinutes,
+    resolveTimeRealMs,
+    resolveAtSimTimeMs: state.events.resolvingUntilSimTimeMs,
+    rawChoiceEffects: choice.effects && typeof choice.effects === 'object' ? { ...choice.effects } : {},
+    triggerSnapshot
+  };
+  state.events.pendingOutcome = buildPendingResolutionPreview(eventDef, choice, resolveTimeRealMs);
+  state.events.resolvedOutcome = null;
+  incrementAuditMap(ensureEventAuditState().totals, 'resolvingStarted');
+  if (choice && choice.id === '__dismiss__') {
+    incrementAuditMap(ensureEventAuditState().totals, 'ignored');
+  }
+
+  const foundationApi = getEventFoundationApis();
+  if (foundationApi.memory && typeof foundationApi.memory.addDecision === 'function') {
+    foundationApi.memory.addDecision(state.events, state.events.activeEventId, choice.id, {
+      resolveTimeMinutes,
+      resolveAtSimTimeMs: state.events.resolvingUntilSimTimeMs
+    });
+  }
+
+  addLog('choice', `Option gewählt, Auswertung läuft: ${state.events.activeEventId}/${choice.id}`, {
+    resolveTimeMinutes,
+    resolveAtSimTimeMs: state.events.resolvingUntilSimTimeMs,
+    followUps: choice.followUps || []
+  });
+
+  runEventStateMachine(state.simulation.nowMs);
+  syncCanonicalStateShape();
+  renderAll();
+  schedulePersistState(true);
 }
 
 function onCareApply() {
@@ -1891,7 +3203,9 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
       followUps: Array.isArray(option.followUps)
         ? option.followUps.map(String)
         : (option.followUp ? [String(option.followUp)] : []),
-      uiCopy: option.uiCopy && typeof option.uiCopy === 'object' ? option.uiCopy : {}
+      uiCopy: option.uiCopy && typeof option.uiCopy === 'object' ? option.uiCopy : {},
+      intent: typeof option.intent === 'string' ? String(option.intent) : '',
+      contextFit: normalizeStringList(option.contextFit)
     }))
     .filter((option) => Boolean(option.id));
 
@@ -1910,14 +3224,23 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     constraints: inferEventConstraints(rawEvent, category),
     allowedPhases: Array.isArray(rawEvent.allowedPhases)
       ? rawEvent.allowedPhases.map((phase) => String(phase)).filter(Boolean)
-      : [],
+      : normalizeStringList(rawEvent.phases),
     weight: Math.max(0.01, Number(rawEvent.weight) || normalizeSeverity(rawEvent.severity) || 1),
     cooldownRealMinutes: clamp(Number(rawEvent.cooldownRealMinutes) || 120, 10, 24 * 60),
+    resolveTimeMinutes: clamp(Number(rawEvent.resolveTimeMinutes) || defaultResolveTimeMinutesForEvent(category, rawEvent.severity, rawEvent.tags), 30, 120),
     learningNote: String(rawEvent.learningNote || ''),
     severity: normalizeSeverity(rawEvent.severity),
     polarity: inferEventPolarity(rawEvent, category),
     environment: inferEnvironmentScope(rawEvent),
     tags: Array.isArray(rawEvent.tags) ? rawEvent.tags.map(String) : [],
+    tone: typeof rawEvent.tone === 'string' ? String(rawEvent.tone) : '',
+    pool: typeof rawEvent.pool === 'string' ? String(rawEvent.pool) : '',
+    isFollowUp: rawEvent.isFollowUp === true,
+    imagePath: typeof rawEvent.imagePath === 'string' ? String(rawEvent.imagePath) : '',
+    warningText: typeof rawEvent.warningText === 'string' ? String(rawEvent.warningText) : '',
+    shadowModel: sanitizePlainObject(rawEvent.shadowModel),
+    outcomeTexts: normalizeOutcomeTexts(rawEvent.outcomeTexts),
+    followUpRules: normalizeFollowUpRules(rawEvent.followUpRules),
     options,
     sourceVersion
   };
@@ -2040,6 +3363,7 @@ function syncActiveEventFromCatalog() {
   state.events.activeLearningNote = eventDef.learningNote || '';
   state.events.activeSeverity = eventDef.severity;
   state.events.activeCooldownRealMinutes = eventDef.cooldownRealMinutes || 120;
+  state.events.activeResolveTimeMinutes = eventDef.resolveTimeMinutes || defaultResolveTimeMinutesForEvent(eventDef.category, eventDef.severity, eventDef.tags);
   state.events.activeCategory = eventDef.category || 'generic';
   state.events.activeTags = Array.isArray(eventDef.tags) ? eventDef.tags.slice(0, 5) : [];
   state.events.activeImagePath = String(eventDef.imagePath || '');
@@ -2058,7 +3382,9 @@ function syncActiveEventFromCatalog() {
         label: localizedOption.label,
         effects: { ...(localizedOption.effects || {}) },
         sideEffects: Array.isArray(localizedOption.sideEffects) ? localizedOption.sideEffects : [],
-        followUps: Array.isArray(localizedOption.followUps) ? localizedOption.followUps : []
+        followUps: Array.isArray(localizedOption.followUps) ? localizedOption.followUps : [],
+        intent: typeof localizedOption.intent === 'string' ? localizedOption.intent : '',
+        contextFit: Array.isArray(localizedOption.contextFit) ? localizedOption.contextFit.slice() : []
       });
     }
   }
@@ -2070,7 +3396,9 @@ function syncActiveEventFromCatalog() {
         label: option.label,
         effects: { ...(option.effects || {}) },
         sideEffects: Array.isArray(option.sideEffects) ? option.sideEffects : [],
-        followUps: Array.isArray(option.followUps) ? option.followUps : []
+        followUps: Array.isArray(option.followUps) ? option.followUps : [],
+        intent: typeof option.intent === 'string' ? option.intent : '',
+        contextFit: Array.isArray(option.contextFit) ? option.contextFit.slice() : []
       });
     }
   }
@@ -2478,11 +3806,11 @@ async function registerServiceWorker() {
   }
 }
 
-window.GrowSimEvents = Object.freeze({
-  runEventStateMachine,
-  activateEvent,
-  eligibleEventsForNow,
-  isEventEligible,
+  window.GrowSimEvents = Object.freeze({
+    runEventStateMachine,
+    activateEvent,
+    eligibleEventsForNow,
+    isEventEligible,
   evaluateEventTriggers,
   evaluateSetupConstraints,
   evaluateTriggerCondition,
@@ -2494,12 +3822,22 @@ window.GrowSimEvents = Object.freeze({
   shouldTriggerEvent,
   deterministicEventDelayMs,
   cooldownMs,
-  computeEventDynamicWeight,
-  selectEventDeterministically,
-  scheduleNextEventRoll,
-  registerServiceWorker,
-  resolveFoundationCandidateEvent
-});
+    computeEventDynamicWeight,
+    selectEventDeterministically,
+    scheduleNextEventRoll,
+    getEventAuditSnapshot: () => buildEventAuditSnapshot(state.events),
+    buildEventAuditDerivedMetrics,
+    buildEventAuditInterpretation,
+    classifyEventRunDensity,
+    classifyEventRunBalance,
+    classifyFollowUpPressure,
+    classifyGuardPressure,
+    getEventAuditInterpretation: (snapshot) => buildEventAuditInterpretation(snapshot && typeof snapshot === 'object' ? snapshot : buildEventAuditSnapshot(state.events)),
+    registerServiceWorker,
+    resolveFoundationCandidateEvent
+  });
+
+window.__gsGetEventAuditSnapshot = () => buildEventAuditSnapshot(state.events);
 
 if (window.GrowSimEventEngine && typeof window.GrowSimEventEngine.registerLegacyRuntime === 'function') {
   window.GrowSimEventEngine.registerLegacyRuntime(window.GrowSimEvents);

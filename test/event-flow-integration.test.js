@@ -111,21 +111,83 @@ function loadEventsContext() {
 
   eventsApi.onEventOptionClick('ignore_signals');
 
-  const pendingAfterDecision = memoryApi.getPendingChain(ctx.state.events, 'root_stress_followup');
-  assert(pendingAfterDecision, 'decision should create root_stress_followup pending chain');
-  assert.strictEqual(flagsApi.hasFlag(ctx.state.events, 'root_stress_pending'), true, 'decision should set root_stress_pending flag');
-
+  assert.strictEqual(ctx.state.events.machineState, 'resolving', 'decision should enter resolving state first');
+  assert(ctx.state.events.pendingResolution, 'decision should persist pending resolution metadata');
+  assert.strictEqual(
+    Number(ctx.state.events.audit && ctx.state.events.audit.totals && ctx.state.events.audit.totals.resolvingStarted || 0),
+    1,
+    'audit should count resolving decisions as soon as the timer starts'
+  );
+  assert.strictEqual(
+    memoryApi.getPendingChain(ctx.state.events, 'root_stress_followup'),
+    null,
+    'follow-up chain should not exist before timer-based resolution completes'
+  );
   const lastDecision = memoryApi.getLastDecision(ctx.state.events);
   assert(lastDecision, 'decision should be stored in foundation memory');
   assert.strictEqual(lastDecision.eventId, 'drooping_leaves_warning');
   assert.strictEqual(lastDecision.optionId, 'ignore_signals');
-  assert(lastDecision.analysisId, 'decision should be linked to generated analysis');
+  assert.strictEqual(lastDecision.analysisId, undefined, 'analysis should not exist before delayed resolution');
+
+  assert.strictEqual(
+    analysisApi.getLatestAnalysis(ctx.state.events),
+    null,
+    'analysis should only be generated after the resolve timer'
+  );
+
+  ctx.state.simulation.simTimeMs = Number(ctx.state.events.resolvingUntilSimTimeMs || 0) + 1;
+  ctx.state.simulation.nowMs += Number(ctx.state.events.pendingResolution.resolveTimeRealMs || 0) + 1;
+  eventsApi.runEventStateMachine(ctx.state.simulation.nowMs);
+
+  assert.strictEqual(ctx.state.events.machineState, 'resolved', 'outcome should resolve only after the timer expires');
+  assert(ctx.state.events.resolvedOutcome, 'resolved outcome should be stored after delayed resolution');
+  assert(ctx.state.events.resolvedOutcome.explanationText, 'resolved outcome should include explanation text');
+  assert(ctx.state.events.resolvedOutcome.causeText, 'resolved outcome should explain the cause');
+  assert(ctx.state.events.resolvedOutcome.resultText, 'resolved outcome should explain the result');
+
+  const pendingAfterResolution = memoryApi.getPendingChain(ctx.state.events, 'root_stress_followup');
+  assert(pendingAfterResolution, 'resolution should queue the logical follow-up chain');
+  assert.strictEqual(flagsApi.hasFlag(ctx.state.events, 'root_stress_pending'), true, 'resolution should still set the root stress flag');
 
   const latestAnalysis = analysisApi.getLatestAnalysis(ctx.state.events);
   assert(latestAnalysis, 'analysis should be generated and stored');
   assert.strictEqual(latestAnalysis.eventId, 'drooping_leaves_warning');
   assert.strictEqual(latestAnalysis.optionId, 'ignore_signals');
-  assert.strictEqual(latestAnalysis.relatedChainId, 'root_stress_followup', 'analysis should keep pending chain causal context');
+  assert.strictEqual(latestAnalysis.relatedChainId, 'root_stress_followup', 'analysis should keep queued follow-up causal context');
+  assert.strictEqual(
+    latestAnalysis.resultText,
+    ctx.state.events.resolvedOutcome.resultText,
+    'analysis should reuse the resolved outcome result narrative'
+  );
+  assert.strictEqual(
+    latestAnalysis.causeText,
+    ctx.state.events.resolvedOutcome.causeText,
+    'analysis should reuse the resolved outcome cause narrative'
+  );
+
+  const resolvedDecision = memoryApi.getLastDecision(ctx.state.events);
+  assert(resolvedDecision.analysisId, 'resolved decision should be linked to generated analysis');
+  const latestHistory = ctx.state.events.history[ctx.state.events.history.length - 1];
+  assert(latestHistory.explanationText, 'history entry should persist resolved explanation text');
+  assert.deepStrictEqual(
+    Array.from(latestHistory.followUpIds || []),
+    ['root_stress_followup'],
+    'history entry should persist queued follow-up ids for UI rendering'
+  );
+  assert.strictEqual(
+    Number(ctx.state.events.audit && ctx.state.events.audit.totals && ctx.state.events.audit.totals.queuedFollowUps || 0),
+    1,
+    'audit should count queued follow-ups after delayed resolution'
+  );
+  assert.strictEqual(
+    Number(ctx.state.events.audit && ctx.state.events.audit.outcomes && ctx.state.events.audit.outcomes.worsened || 0)
+      + Number(ctx.state.events.audit && ctx.state.events.audit.outcomes && ctx.state.events.audit.outcomes.escalated || 0),
+    1,
+    'audit should track resolved negative outcome distribution'
+  );
+
+  eventsApi.runEventStateMachine(ctx.state.simulation.nowMs + 1);
+  assert.strictEqual(ctx.state.events.machineState, 'resolved', 'resolved state should remain visible until the user closes it');
 
   ctx.state.events.machineState = 'idle';
   ctx.state.simulation.nowMs += 1;
@@ -143,6 +205,11 @@ function loadEventsContext() {
   assert.strictEqual(lastEvent.eventId, 'root_stress_followup');
   assert.strictEqual(lastEvent.meta.consumedChainId, 'root_stress_followup', 'event memory should keep consumed chain id');
   assert.strictEqual(lastEvent.meta.sourceEventId, 'drooping_leaves_warning', 'event memory should keep source event causal link');
+  const auditSnapshot = eventsApi.getEventAuditSnapshot();
+  assert.strictEqual(auditSnapshot.totals.activated, 1, 'audit should count follow-up activation when the base event was preloaded');
+  assert.strictEqual(auditSnapshot.totals.activatedFollowUps, 1, 'audit should count consumed follow-up activations');
+  assert.strictEqual(auditSnapshot.byCategory.disease, 1, 'audit should include follow-up category distribution');
+  assert.strictEqual(auditSnapshot.byPhase.vegetative, 1, 'audit should retain phase counts for real activations');
 
   const resolverCandidateAfterConsume = eventsApi.resolveFoundationCandidateEvent();
   assert.notStrictEqual(

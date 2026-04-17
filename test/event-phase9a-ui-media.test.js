@@ -172,6 +172,27 @@ function createStateLike(overrides = {}) {
   assert.ok(media.devNotes.length >= 1);
 })();
 
+(function testPhase2CoreEventMappingsPreferExplicitVisuals() {
+  const explicitCases = [
+    ['v2_water_late_watering_pattern', 'event-drought-stress'],
+    ['v2_nutrition_ph_drift_slow', 'event-nutrient-lockout'],
+    ['v2_climate_rh_night_high', 'event-fungus-infection'],
+    ['v2_light_lamp_too_close', 'event-light-burn']
+  ];
+
+  explicitCases.forEach(([eventId, expectedAssetId]) => {
+    const media = eventAssets.buildMediaModel({
+      eventId,
+      category: 'generic',
+      title: eventId,
+      stateTone: 'resolved'
+    });
+
+    assert.strictEqual(media.fallbackOrigin, 'explicit_event_mapping', `${eventId} should use explicit mapping`);
+    assert.strictEqual(media.assetId, expectedAssetId, `${eventId} should resolve to ${expectedAssetId}`);
+  });
+})();
+
 (function testEngineUiModelPackagesMediaAndShadowSummary() {
   featureFlag.setModeForTesting('shadow');
   const state = createStateLike();

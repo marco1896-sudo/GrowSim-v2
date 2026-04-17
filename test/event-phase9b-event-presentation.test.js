@@ -156,10 +156,18 @@ function createStateLike(overrides = {}) {
 
   assert.ok(appJs.includes('function resolveSharedEventMediaModel('));
   assert.ok(appJs.includes('function buildEventPresentationSections('));
+  assert.ok(appJs.includes('function formatOutcomeFollowUpLabel('));
+  assert.ok(appJs.includes('function formatOutcomeStatusLabel('));
+  assert.ok(appJs.includes('function getEventAuditViewModel('));
+  assert.ok(appJs.includes('function getEventAuditInterpretationView('));
   assert.ok(appJs.includes('function buildEventHistorySnapshotMarkup('));
   assert.ok(appJs.includes('gs_event_asset_inspect'));
+  assert.ok(appJs.includes('auditView.summary'));
   assert.ok(appJs.includes('const inspect = isEventAssetInspectionEnabled();'));
   assert.ok(appJs.includes("if (inspect && Array.isArray(shadow.comparisonSummary) && shadow.comparisonSummary.length)"));
+  assert.ok(appJs.includes('Beobachtung läuft'));
+  assert.ok(appJs.includes('Was passiert ist'));
+  assert.ok(appJs.includes('Empfehlung / Nächster Schritt'));
 })();
 
 (function testIndexContainsHistoryPresentationHook() {

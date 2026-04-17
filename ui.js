@@ -1629,7 +1629,7 @@ function renderEventSheet() {
     ui.eventSheet.removeAttribute('data-legacy-render-suppressed');
   }
 
-  if (state.ui.openSheet !== 'event' && state.events.machineState !== 'activeEvent') {
+  if (state.ui.openSheet !== 'event' && !['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState)) {
     return;
   }
 
@@ -1671,7 +1671,34 @@ function renderEventSheet() {
     return;
   }
 
-  if (state.events.machineState === 'cooldown') {
+  if (state.events.machineState === 'resolving') {
+    const leftMs = Number(state.events.resolvingUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
+    const pendingOutcome = state.events.pendingOutcome && typeof state.events.pendingOutcome === 'object'
+      ? state.events.pendingOutcome
+      : null;
+    ui.eventTitle.textContent = (pendingOutcome && pendingOutcome.eventTitle) || state.events.activeEventTitle || 'Ereignis wird beobachtet';
+    ui.eventText.textContent = pendingOutcome && pendingOutcome.observationText
+      ? String(pendingOutcome.observationText)
+      : 'Deine Entscheidung wird jetzt über einen kurzen Zeitraum ausgewertet.';
+    ui.eventMeta.textContent = [
+      pendingOutcome && pendingOutcome.optionLabel ? `Aktion: ${pendingOutcome.optionLabel}` : '',
+      `Ergebnis in: ${formatCountdown(leftMs)}`
+    ].filter(Boolean).join(' | ');
+  } else if (state.events.machineState === 'resolved') {
+    const outcome = state.events.resolvedOutcome && typeof state.events.resolvedOutcome === 'object'
+      ? state.events.resolvedOutcome
+      : null;
+    ui.eventTitle.textContent = outcome && outcome.eventTitle ? outcome.eventTitle : 'Ergebnis bereit';
+    ui.eventText.textContent = outcome && outcome.explanationText
+      ? outcome.explanationText
+      : (outcome && outcome.resultText ? outcome.resultText : 'Die Auswertung ist abgeschlossen.');
+    ui.eventMeta.textContent = [
+      outcome && outcome.causeText ? `Ursache: ${outcome.causeText}` : '',
+      outcome && outcome.resultText ? `Folge: ${outcome.resultText}` : '',
+      outcome && outcome.guidanceText ? `Hinweis: ${outcome.guidanceText}` : '',
+      'Schließe das Ereignis, um fortzufahren.'
+    ].filter(Boolean).join(' | ');
+  } else if (state.events.machineState === 'cooldown') {
     const cooldownLeft = Number(state.events.cooldownUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
     ui.eventTitle.textContent = 'Abklingzeit aktiv';
     ui.eventText.textContent = 'Das Ereignissystem befindet sich in der Abklingzeit.';
@@ -2468,18 +2495,42 @@ function dismissActiveEvent() {
   if (state.events.machineState !== 'activeEvent') {
     return;
   }
-
-  const penalty = { health: -1, stress: 2, risk: 2 };
   const eventId = state.events.activeEventId;
-
-  applyChoiceEffects(penalty);
+  const resolveTimeMinutes = Math.max(30, Math.min(120, Number(state.events.activeResolveTimeMinutes || 60)));
+  const resolveTimeMs = resolveTimeMinutes * 60 * 1000;
   state.events.lastChoiceId = '__dismiss__';
   state.events.scheduler.lastChoiceId = '__dismiss__';
-  state.events.machineState = 'resolved';
+  state.events.machineState = 'resolving';
+  state.events.resolvingUntilSimTimeMs = Number(state.simulation.simTimeMs || 0) + resolveTimeMs;
+  state.events.resolvingUntilMs = Number(state.simulation.nowMs || 0) + resolveTimeMs;
+  state.events.pendingResolution = {
+    eventId,
+    eventTitle: state.events.activeEventTitle,
+    eventCategory: state.events.activeCategory || 'generic',
+    optionId: '__dismiss__',
+    optionLabel: 'Ignoriert',
+    learningNote: state.events.activeLearningNote || '',
+    chosenAtRealTimeMs: Date.now(),
+    chosenAtSimTimeMs: Number(state.simulation.simTimeMs || 0),
+    resolveTimeMinutes,
+    resolveTimeRealMs: resolveTimeMs,
+    resolveAtSimTimeMs: Number(state.simulation.simTimeMs || 0) + resolveTimeMs,
+    rawChoiceEffects: {},
+    triggerSnapshot: null
+  };
+  state.events.pendingOutcome = {
+    eventId,
+    eventTitle: state.events.activeEventTitle,
+    optionId: '__dismiss__',
+    optionLabel: 'Ignoriert',
+    summary: 'pending',
+    learningNote: 'Ignorierte Ereignisse erhöhen meist das Risiko.',
+    resolvedAfterMs: resolveTimeMs
+  };
+  state.events.resolvedOutcome = null;
 
   addLog('choice', `Ereignis geschlossen ohne Auswahl: ${eventId}`, {
-    choiceId: '__dismiss__',
-    effects: penalty
+    choiceId: '__dismiss__'
   });
 
   runEventStateMachine(state.simulation.nowMs);

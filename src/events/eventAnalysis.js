@@ -73,12 +73,37 @@
     };
   }
 
+  function toneFromOutcomeStatus(outcomeStatus, fallbackTone = DEFAULT_TONE) {
+    const status = String(outcomeStatus || '').trim().toLowerCase();
+    if (status === 'improved') return 'recovery';
+    if (status === 'stabilized') return 'neutral';
+    if (status === 'worsened' || status === 'escalated') return 'warning';
+    return fallbackTone;
+  }
+
   function generateOutcomeAnalysis(context) {
     const c = context && typeof context === 'object' ? context : {};
     const eventId = String(c.eventId || 'unknown_event');
     const optionId = String(c.optionId || 'unknown_option');
     const template = templatesFor(eventId, optionId);
     const relatedFlags = Array.isArray(c.relatedFlags) ? c.relatedFlags.slice() : [];
+    const explicitTone = typeof c.tone === 'string' && c.tone.trim()
+      ? c.tone.trim()
+      : toneFromOutcomeStatus(c.outcomeStatus, template.tone);
+    const actionText = typeof c.actionText === 'string' && c.actionText.trim()
+      ? c.actionText.trim()
+      : (typeof c.choiceLabel === 'string' && c.choiceLabel.trim()
+        ? `Ausgewählte Maßnahme: ${c.choiceLabel.trim()}.`
+        : template.actionText);
+    const causeText = typeof c.causeText === 'string' && c.causeText.trim()
+      ? c.causeText.trim()
+      : template.causeText;
+    const resultText = typeof c.resultText === 'string' && c.resultText.trim()
+      ? c.resultText.trim()
+      : template.resultText;
+    const guidanceText = typeof c.guidanceText === 'string' && c.guidanceText.trim()
+      ? c.guidanceText.trim()
+      : template.guidanceText;
 
     return {
       analysisId: `analysis:${eventId}:${optionId}:${Number(c.atRealTimeMs || Date.now())}`,
@@ -87,11 +112,11 @@
       atRealTimeMs: Number(c.atRealTimeMs || Date.now()),
       atSimTimeMs: Number(c.atSimTimeMs || 0),
       tick: Number(c.tick || 0),
-      tone: template.tone,
-      actionText: template.actionText,
-      causeText: template.causeText,
-      resultText: template.resultText,
-      guidanceText: template.guidanceText,
+      tone: explicitTone,
+      actionText,
+      causeText,
+      resultText,
+      guidanceText,
       relatedFlags,
       relatedChainId: c.relatedChainId ? String(c.relatedChainId) : null,
       normalizedState: c.normalizedState && typeof c.normalizedState === 'object'
