@@ -545,11 +545,92 @@ function computePlantTranspirationGph(statusLike, simulationLike, plantLike, cli
   return clamp(3.2 * stageFactor * waterFactor * lightFactor * vpdFactor * stressPenalty, 0.05, 20);
 }
 
+function syncClimateRuntimeTargets(sourceState = state, statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = normalizeEnvironmentControls(activeState);
+  const climate = ensureClimateState(activeState, statusLike, simulationLike, plantLike);
+  if (!climate || !climate.tent || !climate.runtime) {
+    return climate;
+  }
+
+  if (!isIndoorClimateMode(activeState)) {
+    syncClimateStateToLegacyReadout(climate, controls, simulationLike, activeState);
+    return climate;
+  }
+
+  const currentPeriod = Boolean(simulationLike && simulationLike.isDaytime) ? 'day' : 'night';
+  const currentTargetProfile = controls.targets[currentPeriod];
+  const previousTargetProfile = controls.targets[climate.runtime.transitionFromPeriod || currentPeriod] || currentTargetProfile;
+  const targetTemperatureC = lerp(previousTargetProfile.temperatureC, currentTargetProfile.temperatureC, climate.runtime.targetBlend);
+  const targetHumidityPercent = lerp(previousTargetProfile.humidityPercent, currentTargetProfile.humidityPercent, climate.runtime.targetBlend);
+  const targetVpdKpa = lerp(previousTargetProfile.vpdKpa, currentTargetProfile.vpdKpa, climate.runtime.targetBlend);
+
+  climate.tent.humidityPercent = clampInt(relativeHumidityFromAbsoluteHumidity(climate.tent.temperatureC, climate.tent.absoluteHumidityGm3), 0, 100);
+  climate.tent.vpdKpa = round2(computeVpdKpa(climate.tent.temperatureC, climate.tent.humidityPercent));
+
+  const temperatureError = climate.tent.temperatureC - targetTemperatureC;
+  const humidityError = climate.tent.humidityPercent - targetHumidityPercent;
+  const vpdError = climate.tent.vpdKpa - targetVpdKpa;
+
+  let exhaustTarget = controls.fan.minPercent;
+  let heaterTarget = 0;
+  let humidifierTarget = 0;
+  let dehumidifierTarget = 0;
+
+  if (temperatureError > controls.buffers.temperatureC) {
+    exhaustTarget += clamp(temperatureError * 22, 0, controls.fan.maxPercent - controls.fan.minPercent);
+  } else if (temperatureError < -controls.buffers.temperatureC) {
+    heaterTarget = clamp(Math.abs(temperatureError) * 37, 0, 100);
+  }
+
+  if (humidityError > controls.buffers.humidityPercent) {
+    exhaustTarget += clamp((humidityError - controls.buffers.humidityPercent) * 3.6, 0, controls.fan.maxPercent - controls.fan.minPercent);
+    dehumidifierTarget = clamp((humidityError - controls.buffers.humidityPercent) * 7, 0, 100);
+  } else if (humidityError < -controls.buffers.humidityPercent) {
+    humidifierTarget = clamp((Math.abs(humidityError) - controls.buffers.humidityPercent) * 7.5, 0, 100);
+  }
+
+  if (controls.vpdTargetEnabled) {
+    if (vpdError > controls.buffers.vpdKpa) {
+      humidifierTarget = Math.max(humidifierTarget, clamp((vpdError - controls.buffers.vpdKpa) * 65, 0, 100));
+      exhaustTarget = Math.max(controls.fan.minPercent, exhaustTarget - clamp((vpdError - controls.buffers.vpdKpa) * 18, 0, exhaustTarget));
+    } else if (vpdError < -controls.buffers.vpdKpa) {
+      dehumidifierTarget = Math.max(dehumidifierTarget, clamp((Math.abs(vpdError) - controls.buffers.vpdKpa) * 72, 0, 100));
+      exhaustTarget += clamp((Math.abs(vpdError) - controls.buffers.vpdKpa) * 20, 0, controls.fan.maxPercent - controls.fan.minPercent);
+    }
+  }
+
+  exhaustTarget = clamp(exhaustTarget, controls.fan.minPercent, controls.fan.maxPercent);
+  const circulationTarget = clamp(Math.max(controls.fan.minPercent, controls.airflowPercent), 0, 100);
+  const lightTarget = resolveLightOutputPercent(activeState, simulationLike);
+
+  climate.devices.light.targetPercent = lightTarget;
+  climate.devices.exhaust.targetPercent = exhaustTarget;
+  climate.devices.circulation.targetPercent = circulationTarget;
+  climate.devices.heater.targetPercent = heaterTarget;
+  climate.devices.humidifier.targetPercent = humidifierTarget;
+  climate.devices.dehumidifier.targetPercent = dehumidifierTarget;
+
+  climate.tent.airflowScore = computeClimateAirflowScore(climate, controls, statusLike);
+  climate.tent.airflowLabel = deriveAirflowLabelFromScore(climate.tent.airflowScore);
+  climate.runtime.controlDemand = {
+    temperatureError: round2(temperatureError),
+    humidityError: round2(humidityError),
+    vpdError: round2(vpdError),
+    targetTemperatureC: round2(targetTemperatureC),
+    targetHumidityPercent: round2(targetHumidityPercent),
+    targetVpdKpa: round2(targetVpdKpa)
+  };
+
+  return climate;
+}
+
 function updateClimateState(minutes, sourceState = state, statusLike = state.status, simulationLike = state.simulation, plantLike = state.plant) {
   const safeMinutes = Math.max(0, Number(minutes) || 0);
   const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
   const controls = normalizeEnvironmentControls(activeState);
   const climate = ensureClimateState(activeState, statusLike, simulationLike, plantLike);
+  syncClimateRuntimeTargets(activeState, statusLike, simulationLike, plantLike);
   if (safeMinutes <= 0 || !isIndoorClimateMode(activeState)) {
     return climate;
   }
@@ -567,52 +648,7 @@ function updateClimateState(minutes, sourceState = state, statusLike = state.sta
     climate.room.current.absoluteHumidityGm3 = lerp(climate.room.current.absoluteHumidityGm3, roomAbsTarget, clamp(0.26 * stepMinutes, 0, 1));
 
     climate.runtime.targetBlend = clamp(climate.runtime.targetBlend + (stepMinutes / Math.max(1, controls.transitionMinutes)), 0, 1);
-    const targetTemperatureC = lerp(previousTargetProfile.temperatureC, currentTargetProfile.temperatureC, climate.runtime.targetBlend);
-    const targetHumidityPercent = lerp(previousTargetProfile.humidityPercent, currentTargetProfile.humidityPercent, climate.runtime.targetBlend);
-    const targetVpdKpa = lerp(previousTargetProfile.vpdKpa, currentTargetProfile.vpdKpa, climate.runtime.targetBlend);
-
-    const temperatureError = climate.tent.temperatureC - targetTemperatureC;
-    const humidityError = climate.tent.humidityPercent - targetHumidityPercent;
-    const vpdError = climate.tent.vpdKpa - targetVpdKpa;
-
-    let exhaustTarget = controls.fan.minPercent;
-    let heaterTarget = 0;
-    let humidifierTarget = 0;
-    let dehumidifierTarget = 0;
-
-    if (temperatureError > controls.buffers.temperatureC) {
-      exhaustTarget += clamp(temperatureError * 22, 0, controls.fan.maxPercent - controls.fan.minPercent);
-    } else if (temperatureError < -controls.buffers.temperatureC) {
-      heaterTarget = clamp(Math.abs(temperatureError) * 37, 0, 100);
-    }
-
-    if (humidityError > controls.buffers.humidityPercent) {
-      exhaustTarget += clamp((humidityError - controls.buffers.humidityPercent) * 3.6, 0, controls.fan.maxPercent - controls.fan.minPercent);
-      dehumidifierTarget = clamp((humidityError - controls.buffers.humidityPercent) * 7, 0, 100);
-    } else if (humidityError < -controls.buffers.humidityPercent) {
-      humidifierTarget = clamp((Math.abs(humidityError) - controls.buffers.humidityPercent) * 7.5, 0, 100);
-    }
-
-    if (controls.vpdTargetEnabled) {
-      if (vpdError > controls.buffers.vpdKpa) {
-        humidifierTarget = Math.max(humidifierTarget, clamp((vpdError - controls.buffers.vpdKpa) * 65, 0, 100));
-        exhaustTarget = Math.max(controls.fan.minPercent, exhaustTarget - clamp((vpdError - controls.buffers.vpdKpa) * 18, 0, exhaustTarget));
-      } else if (vpdError < -controls.buffers.vpdKpa) {
-        dehumidifierTarget = Math.max(dehumidifierTarget, clamp((Math.abs(vpdError) - controls.buffers.vpdKpa) * 72, 0, 100));
-        exhaustTarget += clamp((Math.abs(vpdError) - controls.buffers.vpdKpa) * 20, 0, controls.fan.maxPercent - controls.fan.minPercent);
-      }
-    }
-
-    exhaustTarget = clamp(exhaustTarget, controls.fan.minPercent, controls.fan.maxPercent);
-    const circulationTarget = clamp(Math.max(controls.fan.minPercent, controls.airflowPercent), 0, 100);
-    const lightTarget = resolveLightOutputPercent(activeState, simulationLike);
-
-    climate.devices.light.targetPercent = lightTarget;
-    climate.devices.exhaust.targetPercent = exhaustTarget;
-    climate.devices.circulation.targetPercent = circulationTarget;
-    climate.devices.heater.targetPercent = heaterTarget;
-    climate.devices.humidifier.targetPercent = humidifierTarget;
-    climate.devices.dehumidifier.targetPercent = dehumidifierTarget;
+    syncClimateRuntimeTargets(activeState, statusLike, simulationLike, plantLike);
 
     const rampRate = controls.ramp.percentPerMinute;
     climate.devices.light.outputPercent = rampPercentToward(climate.devices.light.outputPercent, climate.devices.light.targetPercent, rampRate * 1.2, stepMinutes);
@@ -670,14 +706,7 @@ function updateClimateState(minutes, sourceState = state, statusLike = state.sta
       100
     );
 
-    climate.runtime.controlDemand = {
-      temperatureError: round2(temperatureError),
-      humidityError: round2(humidityError),
-      vpdError: round2(vpdError),
-      targetTemperatureC: round2(targetTemperatureC),
-      targetHumidityPercent: round2(targetHumidityPercent),
-      targetVpdKpa: round2(targetVpdKpa)
-    };
+    syncClimateRuntimeTargets(activeState, statusLike, simulationLike, plantLike);
   }
 
   return climate;
@@ -692,6 +721,7 @@ __gsGlobal.GrowSimEnvModel = __gsGlobal.GrowSimEnvModel || Object.freeze({
   getEnvironmentControlDefaults,
   normalizeEnvironmentControls,
   ensureClimateState,
+  syncClimateRuntimeTargets,
   buildEnvironmentReadoutFromState,
   updateClimateState,
   computeVpdKpa,
@@ -1123,6 +1153,119 @@ function applyFairnessSurvivalGuard(nowMs) {
   clampStatus();
 }
 
+function getResumeEventReconciliationSignature() {
+  const events = state && state.events && typeof state.events === 'object' ? state.events : {};
+  const scheduler = events.scheduler && typeof events.scheduler === 'object' ? events.scheduler : {};
+  return [
+    String(events.machineState || ''),
+    String(events.activeEventId || ''),
+    Number(events.resolvingUntilSimTimeMs || 0),
+    Number(events.cooldownUntilSimTimeMs || 0),
+    Number(scheduler.nextEventSimTimeMs || 0),
+    Number(scheduler.lastEventSimTimeMs || 0)
+  ].join('|');
+}
+
+function isEventResumeReconciliationDue() {
+  const events = state && state.events && typeof state.events === 'object' ? state.events : {};
+  const scheduler = events.scheduler && typeof events.scheduler === 'object' ? events.scheduler : {};
+  const nowSimMs = Number(state && state.simulation && state.simulation.simTimeMs || 0);
+  const machineState = String(events.machineState || '');
+
+  if (machineState === 'resolving' && nowSimMs >= Number(events.resolvingUntilSimTimeMs || 0)) {
+    return true;
+  }
+  if (machineState === 'resolved' && (!state.ui || state.ui.openSheet !== 'event')) {
+    return true;
+  }
+  if (machineState === 'resolved' && events.pendingResolution) {
+    return true;
+  }
+  if (machineState === 'cooldown' && nowSimMs >= Number(events.cooldownUntilSimTimeMs || 0)) {
+    return true;
+  }
+  if (machineState === 'idle' && nowSimMs >= Number(scheduler.nextEventSimTimeMs || 0)) {
+    return true;
+  }
+  return false;
+}
+
+function getResumeEventReconciliationApi() {
+  const exportedApi = (typeof window !== 'undefined' && window && window.GrowSimEvents && typeof window.GrowSimEvents === 'object')
+    ? window.GrowSimEvents
+    : {};
+  return {
+    runEventStateMachine: typeof exportedApi.runEventStateMachine === 'function'
+      ? exportedApi.runEventStateMachine.bind(exportedApi)
+      : (typeof runEventStateMachine === 'function' ? runEventStateMachine : null),
+    activateEvent: typeof exportedApi.activateEvent === 'function'
+      ? exportedApi.activateEvent.bind(exportedApi)
+      : (typeof activateEvent === 'function' ? activateEvent : null),
+    enterEventCooldown: typeof exportedApi.enterEventCooldown === 'function'
+      ? exportedApi.enterEventCooldown.bind(exportedApi)
+      : (typeof enterEventCooldown === 'function' ? enterEventCooldown : null)
+  };
+}
+
+function reconcileEventStateAfterResume(nowMs, options = {}) {
+  const eventApi = getResumeEventReconciliationApi();
+  if (typeof eventApi.runEventStateMachine !== 'function') {
+    return { attempted: false, passes: 0, reason: 'event_runtime_unavailable' };
+  }
+
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
+  const maxPasses = clampInt(Number(options.maxPasses) || 5, 1, 6);
+  const trace = [];
+  let passes = 0;
+
+  while (passes < maxPasses && isEventResumeReconciliationDue()) {
+    const beforeSignature = getResumeEventReconciliationSignature();
+    const nowSimMs = Number(state && state.simulation && state.simulation.simTimeMs || 0);
+    if (
+      state.events
+      && state.events.machineState === 'resolved'
+      && state.ui
+      && state.ui.openSheet !== 'event'
+      && typeof eventApi.enterEventCooldown === 'function'
+    ) {
+      eventApi.enterEventCooldown(safeNowMs);
+    } else if (
+      state.events
+      && state.events.machineState === 'idle'
+      && nowSimMs >= Number(state.events.scheduler && state.events.scheduler.nextEventSimTimeMs || 0)
+      && state.simulation
+      && state.simulation.isDaytime === true
+      && typeof eventApi.activateEvent === 'function'
+    ) {
+      const activated = eventApi.activateEvent(safeNowMs);
+      if (activated && state.ui && typeof state.ui === 'object') {
+        state.ui.openSheet = 'event';
+      }
+      if (!activated) {
+        eventApi.runEventStateMachine(safeNowMs);
+      }
+    } else {
+      eventApi.runEventStateMachine(safeNowMs);
+    }
+    passes += 1;
+    const afterSignature = getResumeEventReconciliationSignature();
+    trace.push({
+      pass: passes,
+      beforeSignature,
+      afterSignature
+    });
+    if (afterSignature === beforeSignature) {
+      break;
+    }
+  }
+
+  return {
+    attempted: trace.length > 0,
+    passes,
+    stabilized: trace.length ? trace[trace.length - 1].beforeSignature === trace[trace.length - 1].afterSignature : true
+  };
+}
+
 function syncSimulationFromElapsedTime(nowMs) {
   const requestedNowMs = Number(nowMs);
   const safeNowMs = Number.isFinite(requestedNowMs) ? requestedNowMs : Date.now();
@@ -1163,6 +1306,7 @@ function syncSimulationFromElapsedTime(nowMs) {
       reason: 'resume',
       suppressEvents: suppressResumeEvents
     });
+    reconcileEventStateAfterResume(safeNowMs);
     if (elapsedSinceLastTickMs > SIM_RUNTIME_MAX_ELAPSED_PER_TICK_MS) {
       applyOfflineFairnessFloor();
       if (shouldProtectOfflineNightDeath(previousTickMs, safeNowMs)

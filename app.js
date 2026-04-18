@@ -1413,8 +1413,10 @@ window.GrowSimAppUiRuntime = Object.freeze({
   renderGameMenu: () => renderGameMenu(),
   renderPushToggle: () => renderPushToggle(),
   openSheet: (name) => openSheet(name),
+  closeSheet: () => closeSheet(),
   openMenu: () => openMenu(),
   closeMenu: () => closeMenu(),
+  dismissActiveEvent: () => dismissActiveEvent(),
   openMenuDialog: (options) => openMenuDialog(options || {}),
   closeMenuDialog: () => closeMenuDialog(),
   onPushToggleClick: () => onPushToggleClick()
@@ -2664,6 +2666,48 @@ function resolveNextStreakRewardPreview(streakCount) {
   return resolveStreakRewardAmount(Math.max(1, Math.trunc(Number(streakCount) || 0) + 1));
 }
 
+function reconcilePendingStreakRecovery(snapshot = state, nowMs = Date.now()) {
+  const retention = ensureRetentionState(snapshot);
+  const streak = retention.streak || {};
+  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const todayKey = getLocalDayKey(now);
+  const existingOfferDayKey = String(streak.pendingRecoveryDayKey || '').trim();
+  if (existingOfferDayKey && existingOfferDayKey !== todayKey) {
+    streak.pendingRecoveryOffer = false;
+    streak.pendingRecoveryDayKey = '';
+    streak.pendingRecoveryStreakCount = 0;
+  }
+
+  const previousDayKey = String(streak.lastQualifiedDayKey || streak.lastCheckinDayKey || '').trim();
+  if (!previousDayKey) {
+    return { changed: existingOfferDayKey !== String(streak.pendingRecoveryDayKey || '').trim(), gap: 0, previousCount: 0, openedOffer: false };
+  }
+
+  const gap = getDayKeyDistance(previousDayKey, todayKey);
+  const previousCount = Math.max(0, Math.trunc(Number(streak.currentCount) || 0));
+  let changed = existingOfferDayKey !== String(streak.pendingRecoveryDayKey || '').trim();
+  let openedOffer = false;
+
+  if (gap > 1 && previousCount > 0) {
+    if (!Array.isArray(streak.recoveryClaimedDayKeys) || !streak.recoveryClaimedDayKeys.includes(todayKey)) {
+      const nextPendingCount = Math.max(previousCount, Math.trunc(Number(streak.pendingRecoveryStreakCount) || 0));
+      if (!streak.pendingRecoveryOffer || streak.pendingRecoveryDayKey !== todayKey || Number(streak.pendingRecoveryStreakCount || 0) !== nextPendingCount) {
+        streak.pendingRecoveryOffer = true;
+        streak.pendingRecoveryDayKey = todayKey;
+        streak.pendingRecoveryStreakCount = nextPendingCount;
+        changed = true;
+        openedOffer = true;
+      }
+    }
+    if (previousCount !== 0) {
+      streak.currentCount = 0;
+      changed = true;
+    }
+  }
+
+  return { changed, gap, previousCount, openedOffer };
+}
+
 function qualifyRetentionStreak(nowMs = Date.now(), context = {}) {
   const retention = ensureRetentionState(state);
   const streak = retention.streak || {};
@@ -2785,7 +2829,10 @@ function claimDailyTask(taskId, nowMs = Date.now(), options = {}) {
 
 function claimDailyCheckin(nowMs = Date.now(), options = {}) {
   const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
-  const streakResult = qualifyRetentionStreak(now, { source: 'daily_checkin' });
+  const streakResult = qualifyRetentionStreak(now, {
+    source: 'daily_checkin',
+    previousCount: Math.max(0, Math.trunc(Number(options.previousCount) || 0))
+  });
   if (!streakResult.ok) {
     return streakResult;
   }
@@ -2862,17 +2909,17 @@ function evaluateDailyRetention(snapshot = state, nowMs = Date.now(), options = 
   }
 
   const streak = retention.streak;
-  if (String(streak.lastQualifiedDayKey || '').trim()) {
-    const gap = getDayKeyDistance(String(streak.lastQualifiedDayKey || '').trim(), todayKey);
-    if (gap > 1 && Number(streak.currentCount || 0) > 0) {
-      streak.currentCount = 0;
-      changed = true;
-    }
+  const streakRecovery = reconcilePendingStreakRecovery(snapshot, now);
+  if (streakRecovery.changed) {
+    changed = true;
   }
   streak.lastEvaluatedDayKey = todayKey;
   syncDailyTaskDerivedState(retention, now);
   if (options.forceCheckin === true) {
-    const checkin = claimDailyCheckin(now, { skipPersist: true });
+    const checkin = claimDailyCheckin(now, {
+      skipPersist: true,
+      previousCount: streakRecovery.previousCount
+    });
     if (checkin && checkin.ok) {
       changed = true;
     }
@@ -10151,23 +10198,156 @@ function getEventStartRewardAvailability(sourceState = state) {
   };
 }
 
+function cloneEventShopRuntimeValue(value) {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+function captureEventShopTransitionSnapshot() {
+  return {
+    events: cloneEventShopRuntimeValue(state.events),
+    openSheet: state.ui && typeof state.ui === 'object' ? state.ui.openSheet : null
+  };
+}
+
+function restoreEventShopTransitionSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return;
+  }
+  if (snapshot.events && typeof snapshot.events === 'object') {
+    state.events = cloneEventShopRuntimeValue(snapshot.events);
+  }
+  if (state.ui && typeof state.ui === 'object') {
+    state.ui.openSheet = snapshot.openSheet || null;
+  }
+}
+
+function clearEventStateForAuthoritativeActivation(nowMs) {
+  const scheduler = state.events.scheduler && typeof state.events.scheduler === 'object'
+    ? state.events.scheduler
+    : (state.events.scheduler = {});
+  const safeNowMs = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const nowSimMs = Number(state.simulation.simTimeMs || 0);
+
+  state.events.machineState = 'idle';
+  state.events.active = null;
+  state.events.activeEventId = null;
+  state.events.activeEventTitle = '';
+  state.events.activeEventText = '';
+  state.events.activeLearningNote = '';
+  state.events.activeOptions = [];
+  state.events.activeSeverity = 1;
+  state.events.activeCooldownRealMinutes = 120;
+  state.events.activeResolveTimeMinutes = 60;
+  state.events.activeCategory = 'generic';
+  state.events.activeTags = [];
+  state.events.activeImagePath = '';
+  state.events.pendingOutcome = null;
+  state.events.resolvedOutcome = null;
+  state.events.pendingResolution = null;
+  state.events.resolvingUntilMs = 0;
+  state.events.resolvingUntilSimTimeMs = 0;
+  state.events.cooldownUntilMs = 0;
+  state.events.cooldownUntilSimTimeMs = 0;
+
+  scheduler.nextEventSimTimeMs = nowSimMs;
+  scheduler.nextEventRealTimeMs = safeNowMs;
+}
+
+function buildAuthoritativeEventShopFailureResult(reason, extra = {}) {
+  return {
+    ok: false,
+    reason: String(reason || 'event_shop_transition_failed'),
+    ...extra
+  };
+}
+
+function executeAuthoritativeEventShopTransition(options = {}) {
+  const nowMs = Number.isFinite(Number(options.nowMs)) ? Number(options.nowMs) : Date.now();
+  const snapshot = captureEventShopTransitionSnapshot();
+  let executionResult = null;
+
+  try {
+    executionResult = typeof options.execute === 'function'
+      ? options.execute({ nowMs, snapshot })
+      : buildAuthoritativeEventShopFailureResult('missing_transition_executor');
+  } catch (error) {
+    executionResult = buildAuthoritativeEventShopFailureResult('event_shop_transition_exception', {
+      message: error && error.message ? error.message : String(error)
+    });
+  }
+
+  syncCanonicalStateShape();
+
+  if (executionResult && executionResult.ok === false) {
+    restoreEventShopTransitionSnapshot(snapshot);
+    syncCanonicalStateShape();
+    return executionResult;
+  }
+
+  const postcondition = typeof options.postcondition === 'function'
+    ? options.postcondition({ nowMs, snapshot, executionResult })
+    : { ok: false, reason: 'missing_transition_postcondition' };
+
+  if (!postcondition || postcondition.ok !== true) {
+    restoreEventShopTransitionSnapshot(snapshot);
+    syncCanonicalStateShape();
+    return buildAuthoritativeEventShopFailureResult(
+      postcondition && postcondition.reason ? postcondition.reason : 'event_shop_postcondition_failed',
+      postcondition && typeof postcondition === 'object' ? postcondition : {}
+    );
+  }
+
+  return {
+    ok: true,
+    ...(executionResult && typeof executionResult === 'object' ? executionResult : {})
+  };
+}
+
 function executeEventStartRewardAction(context = {}) {
   const availability = getEventStartRewardAvailability(state);
   if (!availability.ok) {
     return { ok: false, reason: availability.reason || 'not_available' };
   }
-  const nowMs = Date.now();
-  state.events.cooldownUntilMs = 0;
-  state.events.cooldownUntilSimTimeMs = 0;
-  state.events.scheduler.nextEventSimTimeMs = Number(state.simulation.simTimeMs || 0);
-  state.events.scheduler.nextEventRealTimeMs = nowMs;
-  runEventStateMachine(nowMs);
-  syncCanonicalStateShape();
-  return {
-    ok: true,
-    reason: 'event_started',
-    provider: String(context.provider || 'direct')
-  };
+  return executeAuthoritativeEventShopTransition({
+    nowMs: Date.now(),
+    execute: ({ nowMs }) => {
+      const originalEventCooldowns = cloneEventShopRuntimeValue(state.events.scheduler && state.events.scheduler.eventCooldownsSim || {});
+      const originalCategoryCooldowns = cloneEventShopRuntimeValue(state.events.scheduler && state.events.scheduler.categoryCooldownsSim || {});
+      clearEventStateForAuthoritativeActivation(nowMs);
+      state.events.scheduler.eventCooldownsSim = {};
+      state.events.scheduler.categoryCooldownsSim = {};
+
+      const activated = typeof activateEvent === 'function' ? activateEvent(nowMs) : false;
+      if (!activated) {
+        return buildAuthoritativeEventShopFailureResult('event_start_activation_failed');
+      }
+
+      state.events.scheduler.eventCooldownsSim = originalEventCooldowns;
+      state.events.scheduler.categoryCooldownsSim = originalCategoryCooldowns;
+      state.ui.openSheet = 'event';
+
+      return {
+        reason: 'event_started',
+        provider: String(context.provider || 'direct')
+      };
+    },
+    postcondition: () => {
+      const activeEventId = String(state.events.activeEventId || '').trim();
+      if (state.events.machineState !== 'activeEvent' || !activeEventId) {
+        return {
+          ok: false,
+          reason: 'event_start_postcondition_failed'
+        };
+      }
+      return {
+        ok: true,
+        activeEventId
+      };
+    }
+  });
 }
 
 function getEventRerollRewardAvailability(sourceState = state) {
@@ -10189,33 +10369,64 @@ function executeEventRerollRewardAction(context = {}) {
     return { ok: false, reason: availability.reason || 'not_available' };
   }
   const currentEventId = String(state.events.activeEventId || '').trim();
-  const nowMs = Date.now();
-  const cooldownUntilSimMs = Number(state.simulation.simTimeMs || 0) + (6 * 60 * 60 * 1000);
-  state.events.scheduler.eventCooldownsSim = state.events.scheduler.eventCooldownsSim && typeof state.events.scheduler.eventCooldownsSim === 'object'
-    ? state.events.scheduler.eventCooldownsSim
-    : {};
-  state.events.scheduler.eventCooldownsSim[currentEventId] = cooldownUntilSimMs;
-  state.events.machineState = 'idle';
-  state.events.active = null;
-  state.events.activeEventId = null;
-  state.events.activeEventTitle = '';
-  state.events.activeEventText = '';
-  state.events.activeLearningNote = '';
-  state.events.activeOptions = [];
-  state.events.pendingOutcome = null;
-  state.events.resolvedOutcome = null;
-  state.events.cooldownUntilMs = 0;
-  state.events.cooldownUntilSimTimeMs = 0;
-  state.events.scheduler.nextEventSimTimeMs = Number(state.simulation.simTimeMs || 0);
-  state.events.scheduler.nextEventRealTimeMs = nowMs;
-  runEventStateMachine(nowMs);
-  syncCanonicalStateShape();
-  return {
-    ok: true,
-    reason: 'event_rerolled',
-    provider: String(context.provider || 'direct'),
-    previousEventId: currentEventId
-  };
+  return executeAuthoritativeEventShopTransition({
+    nowMs: Date.now(),
+    execute: ({ nowMs }) => {
+      const scheduler = state.events.scheduler && typeof state.events.scheduler === 'object'
+        ? state.events.scheduler
+        : (state.events.scheduler = {});
+      const originalEventCooldowns = cloneEventShopRuntimeValue(scheduler.eventCooldownsSim || {});
+      const originalCategoryCooldowns = cloneEventShopRuntimeValue(scheduler.categoryCooldownsSim || {});
+      const cooldownUntilSimMs = Number(state.simulation.simTimeMs || 0) + (6 * 60 * 60 * 1000);
+
+      clearEventStateForAuthoritativeActivation(nowMs);
+      scheduler.eventCooldownsSim = {
+        ...originalEventCooldowns,
+        [currentEventId]: cooldownUntilSimMs
+      };
+      scheduler.categoryCooldownsSim = {};
+
+      const activated = typeof activateEvent === 'function' ? activateEvent(nowMs) : false;
+      if (!activated) {
+        return buildAuthoritativeEventShopFailureResult('event_reroll_activation_failed', {
+          previousEventId: currentEventId
+        });
+      }
+
+      scheduler.eventCooldownsSim = {
+        ...originalEventCooldowns,
+        [currentEventId]: cooldownUntilSimMs
+      };
+      scheduler.categoryCooldownsSim = originalCategoryCooldowns;
+      state.ui.openSheet = 'event';
+
+      return {
+        reason: 'event_rerolled',
+        provider: String(context.provider || 'direct'),
+        previousEventId: currentEventId,
+        nextEventId: String(state.events.activeEventId || '').trim()
+      };
+    },
+    postcondition: () => {
+      const activeEventId = String(state.events.activeEventId || '').trim();
+      if (state.events.machineState !== 'activeEvent' || !activeEventId) {
+        return {
+          ok: false,
+          reason: 'event_reroll_postcondition_failed'
+        };
+      }
+      if (activeEventId === currentEventId) {
+        return {
+          ok: false,
+          reason: 'event_reroll_same_event'
+        };
+      }
+      return {
+        ok: true,
+        activeEventId
+      };
+    }
+  });
 }
 
 function getAutoCareRewardAvailability(sourceState = state) {
@@ -11808,8 +12019,15 @@ function deriveAirflowLabel(airflowPercent) {
 
 function onEnvironmentControlInput(controlKey, rawValue) {
   const controls = ensureEnvironmentControls(state);
+  const envApi = window.GrowSimEnvModel;
+  const syncClimateRuntime = () => {
+    if (envApi && typeof envApi.syncClimateRuntimeTargets === 'function') {
+      envApi.syncClimateRuntimeTargets(state, state.status, state.simulation, state.plant);
+    }
+  };
   if (controlKey === 'vpdTargetEnabled') {
     controls.vpdTargetEnabled = Boolean(rawValue);
+    syncClimateRuntime();
     renderHud();
     schedulePersistState();
     return;
@@ -11847,6 +12065,7 @@ function onEnvironmentControlInput(controlKey, rawValue) {
     addLog('action', 'EC ist nicht direkt regelbar. Nutze mineralische Düngung.', { attemptedValue: value });
     return;
   }
+  syncClimateRuntime();
   renderHud();
   schedulePersistState();
 }
@@ -19556,6 +19775,7 @@ function setAuthGateActive(active) {
     }
   } else {
     const pausedDurationMs = authGatePausedAtMs > 0 ? Math.max(0, nowMs - authGatePausedAtMs) : 0;
+    const shouldResumeSimulationClock = bootCompleted || authGatePausedAtMs > 0;
     authGatePausedAtMs = 0;
     if (pausedDurationMs > 0) {
       const boostEndsAtMs = Number(state.boost && state.boost.boostEndsAtMs);
@@ -19567,9 +19787,11 @@ function setAuthGateActive(active) {
         state.simulation.fairnessGraceEndsAtRealMs = fairnessEndsAtMs + pausedDurationMs;
       }
     }
-    state.simulation.nowMs = nowMs;
-    state.simulation.lastTickRealTimeMs = nowMs;
-    if (state.ui && typeof state.ui === 'object') {
+    if (shouldResumeSimulationClock) {
+      state.simulation.nowMs = nowMs;
+      state.simulation.lastTickRealTimeMs = nowMs;
+    }
+    if (state.ui && typeof state.ui === 'object' && shouldResumeSimulationClock) {
       state.ui.lastRenderRealMs = nowMs;
     }
     if (bootCompleted && document.visibilityState === 'visible') {

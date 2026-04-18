@@ -510,6 +510,7 @@ async function scenarioSkipNight(page) {
       return `${y}-${m}-${day}`;
     };
     const nowMs = Date.now();
+    grantCoins(100, 'test_skip_night_setup', 'test:skip-night-coins');
     setBaseSimulationSpeed(8, nowMs);
     const beforeLastTickRealTimeMs = Number(window.__gsState.simulation.lastTickRealTimeMs);
     const currentSimTimeMs = Number(window.__gsState.simulation.simEpochMs) + (15 * 60 * 60 * 1000);
@@ -726,11 +727,20 @@ async function scenarioMicroRegistryMapping(page) {
 async function scenarioStreakRecoveryFlow(page) {
   await startFreshRun(page);
   const result = await page.evaluate(() => {
+    const dayKey = (ts) => {
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
     const nowMs = Date.now();
     const oneDay = 24 * 60 * 60 * 1000;
+    const previousDayKey = dayKey(nowMs - (2 * oneDay));
     window.__gsState.retention.streak.currentCount = 6;
     window.__gsState.retention.streak.bestCount = 6;
-    window.__gsState.retention.streak.lastCheckinDayKey = window.__gsGetMicroAchievementDefinition ? (new Date(nowMs - (2 * oneDay))).toISOString().slice(0, 10) : '';
+    window.__gsState.retention.streak.lastQualifiedDayKey = previousDayKey;
+    window.__gsState.retention.streak.lastCheckinDayKey = previousDayKey;
     window.__gsState.retention.streak.lastEvaluatedDayKey = window.__gsState.retention.streak.lastCheckinDayKey;
     window.__gsState.retention.streak.freezeCredits = 0;
     window.__gsEvaluateDailyRetention(nowMs, { forceCheckin: true, skipPersist: true });
@@ -756,6 +766,46 @@ async function scenarioStreakRecoveryFlow(page) {
   assert.strictEqual(result.withCredit.ok, true, 'recovery should succeed with credit');
   assert.strictEqual(result.after.offer, false, 'recovery offer should close after successful recovery');
   assert.strictEqual(result.after.freezeCredits, 0, 'recovery should consume one credit');
+}
+
+async function scenarioStreakRecoveryOfferDedupe(page) {
+  await startFreshRun(page);
+  const result = await page.evaluate(() => {
+    const dayKey = (ts) => {
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const nowMs = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const previousDayKey = dayKey(nowMs - (2 * oneDay));
+    window.__gsState.retention.streak.currentCount = 4;
+    window.__gsState.retention.streak.bestCount = 4;
+    window.__gsState.retention.streak.lastQualifiedDayKey = previousDayKey;
+    window.__gsState.retention.streak.lastCheckinDayKey = previousDayKey;
+    window.__gsState.retention.streak.lastEvaluatedDayKey = previousDayKey;
+    window.__gsEvaluateDailyRetention(nowMs, { forceCheckin: false, skipPersist: true });
+    const first = {
+      offer: Boolean(window.__gsState.retention.streak.pendingRecoveryOffer),
+      pendingCount: Number(window.__gsState.retention.streak.pendingRecoveryStreakCount || 0),
+      currentCount: Number(window.__gsState.retention.streak.currentCount || 0)
+    };
+    window.__gsEvaluateDailyRetention(nowMs + 1500, { forceCheckin: false, skipPersist: true });
+    const second = {
+      offer: Boolean(window.__gsState.retention.streak.pendingRecoveryOffer),
+      pendingCount: Number(window.__gsState.retention.streak.pendingRecoveryStreakCount || 0),
+      currentCount: Number(window.__gsState.retention.streak.currentCount || 0)
+    };
+    return { first, second };
+  });
+
+  assert.strictEqual(result.first.offer, true, 'recovery offer should open on first broken-streak evaluation');
+  assert.strictEqual(result.second.offer, true, 'recovery offer should remain open on repeat evaluation');
+  assert.strictEqual(result.second.pendingCount, result.first.pendingCount, 'recovery offer should not duplicate or inflate pending streak count');
+  assert.strictEqual(result.first.currentCount, 0, 'broken streak should reset current count before recovery');
+  assert.strictEqual(result.second.currentCount, 0, 'repeat evaluation should not resurrect streak without explicit recovery');
 }
 
 async function scenarioRetentionAnalyticsDedupe(page) {
@@ -826,7 +876,8 @@ async function scenarioRewardedBonusHooks(page) {
     const nowMs = Date.now();
     const oneDay = 24 * 60 * 60 * 1000;
     window.__gsState.retention.streak.currentCount = 5;
-    window.__gsState.retention.streak.lastCheckinDayKey = dayKey(nowMs - (2 * oneDay));
+    window.__gsState.retention.streak.lastQualifiedDayKey = dayKey(nowMs - (2 * oneDay));
+    window.__gsState.retention.streak.lastCheckinDayKey = window.__gsState.retention.streak.lastQualifiedDayKey;
     window.__gsState.retention.streak.lastEvaluatedDayKey = window.__gsState.retention.streak.lastCheckinDayKey;
     window.__gsState.retention.streak.freezeCredits = 0;
     window.__gsEvaluateDailyRetention(nowMs, { forceCheckin: true, skipPersist: true });
@@ -901,6 +952,7 @@ async function main() {
     await scenarioRetentionAllCompleteDedupeAndPersist(page);
     await scenarioMicroRegistryMapping(page);
     await scenarioStreakRecoveryFlow(page);
+    await scenarioStreakRecoveryOfferDedupe(page);
     await scenarioRetentionAnalyticsDedupe(page);
     await scenarioRetentionAggregationHelpers(page);
     await scenarioRewardedBonusHooks(page);

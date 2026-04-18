@@ -69,6 +69,8 @@ function assertDelegatesToRuntime(source, functionName, runtimeMethodName) {
 assertDelegatesToRuntime(uiSource, 'renderGameMenu', 'renderGameMenu');
 assertDelegatesToRuntime(uiSource, 'renderDeathOverlay', 'renderDeathOverlay');
 assertDelegatesToRuntime(uiSource, 'openSheet', 'openSheet');
+assertDelegatesToRuntime(uiSource, 'closeSheet', 'closeSheet');
+assertDelegatesToRuntime(uiSource, 'dismissActiveEvent', 'dismissActiveEvent');
 assertDelegatesToRuntime(uiSource, 'openMenu', 'openMenu');
 assertDelegatesToRuntime(uiSource, 'closeMenu', 'closeMenu');
 assertDelegatesToRuntime(uiSource, 'openMenuDialog', 'openMenuDialog');
@@ -88,8 +90,10 @@ for (const methodName of [
   'renderGameMenu',
   'renderDeathOverlay',
   'openSheet',
+  'closeSheet',
   'openMenu',
   'closeMenu',
+  'dismissActiveEvent',
   'openMenuDialog',
   'closeMenuDialog'
 ]) {

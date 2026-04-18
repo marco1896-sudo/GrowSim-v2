@@ -2483,6 +2483,10 @@ function withDebouncedAction(actionKey, buttonNode, callback) {
 }
 
 function closeSheet() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.closeSheet === 'function') {
+    return appUiRuntime.closeSheet();
+  }
   if (state.events.machineState === 'activeEvent') {
     dismissActiveEvent();
     return;
@@ -2492,6 +2496,10 @@ function closeSheet() {
 }
 
 function dismissActiveEvent() {
+  const appUiRuntime = window.GrowSimAppUiRuntime;
+  if (appUiRuntime && typeof appUiRuntime.dismissActiveEvent === 'function') {
+    return appUiRuntime.dismissActiveEvent();
+  }
   if (state.events.machineState !== 'activeEvent') {
     return;
   }
