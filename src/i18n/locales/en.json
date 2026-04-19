@@ -1,0 +1,803 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "continue": "Continue",
+    "back": "Back",
+    "start": "Start"
+  },
+  "status": {
+    "loading": "Loading...",
+    "saved": "Saved",
+    "ready": "Ready",
+    "retry": "Try again",
+    "preparing": "Preparing...",
+    "boot_failed": "Startup could not be completed.",
+    "boot_timeout": "You can wait or retry startup.",
+    "unavailable_now": "Currently unavailable"
+  },
+  "errors": {
+    "generic": "Something went wrong.",
+    "network": "Network error. Please try again later.",
+    "auth_unavailable": "Auth API is not available.",
+    "auth_failed": "Authentication failed"
+  },
+  "auth": {
+    "title": "Account",
+    "required_title": "Sign-in required",
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "display_name": "Display name",
+    "logout": "Logout",
+    "connected": "Connected",
+    "cancel": "Cancel",
+    "missing_credentials": "Please enter email and password.",
+    "missing_display_name": "Please enter a display name."
+  },
+  "menu": {
+    "title": "Menu",
+    "analysis": "Analysis",
+    "leaderboard": "Leaderboard",
+    "rescue": "Emergency rescue",
+    "coin_shop": "Coin shop",
+    "support": "Support GrowSim",
+    "missions": "Missions",
+    "about": "Project info",
+    "imprint": "Imprint",
+    "privacy": "Privacy",
+    "settings": "Settings",
+    "new_run": "Save and Exit",
+    "close": "Close"
+  },
+  "home": {
+    "water": "Water",
+    "feed": "Nutrients",
+    "health": "Health",
+    "grow": "Growth",
+    "risk": "Risk",
+    "stress": "Stress",
+    "boost": "Boost",
+    "care_boost": "Care Boost",
+    "climate_stabilize": "Climate Stabilize",
+    "night_shift": "Night Shift",
+    "events": "Events",
+    "analyze": "Analyze",
+    "care": "Care",
+    "event": "Event"
+  },
+  "shop": {
+    "title": "Coin shop",
+    "buy": "Buy",
+    "status_default": "All effects are applied instantly without inventory.",
+    "balance_available": "{amount} coins available",
+    "status_apply_purchase": "Applying purchase...",
+    "status_prepare_purchase": "Preparing purchase...",
+    "status_not_available": "Action is not available.",
+    "status_action_running": "Please wait, action is already running.",
+    "status_not_enough": "Not enough coins. You can pick matching coin packs below.",
+    "status_action_failed": "Action could not be executed.",
+    "status_action_success": "Action applied successfully.",
+    "status_pack_missing": "Selected coin pack was not found.",
+    "status_pack_unavailable": "Coin pack is not available.",
+    "status_pack_processing": "Purchase is already being processed.",
+    "status_pack_purchase_unavailable": "Coin purchase is currently unavailable.",
+    "status_pack_purchase_unavailable_now": "Coin purchase is currently unavailable.",
+    "insufficient_title": "Not enough coins",
+    "insufficient_hint": "You still need coins for this action.",
+    "open_shop": "Get coins",
+    "watch_ad": "Watch ad",
+    "watch_ad_running": "Reward running…",
+    "insufficient_cancel": "Cancel",
+    "metric_current": "Current",
+    "metric_required": "Required",
+    "metric_missing": "Missing",
+    "direct_apply": "Apply instantly",
+    "too_few_coins": "Not enough coins"
+  },
+  "daily": {
+    "title": "Missions & Achievements",
+    "claim": "Claim",
+    "completed": "Completed",
+    "claimable": "Claimable",
+    "open": "Open",
+    "in_progress": "In progress",
+    "collected": "Collected",
+    "empty_daily": "Daily care is being prepared.",
+    "empty_micro": "Your first micro achievement is still waiting today.",
+    "claim_not_possible": "Claim is not possible right now",
+    "already_claimed": "Already claimed",
+    "claim_success": "Daily collected · +{coins} coins",
+    "claim_success_with_streak": "Daily collected · +{coins} coins · Streak +{streak}",
+    "all_collected": "Everything collected for today",
+    "today_open": "Open today",
+    "today_secured": "Secured today",
+    "one_task_left_round": "Only 1 task left for today's round",
+    "streak_recovery_available": "Streak recovery available ? {days} days can be restored.",
+    "streak_recovery_no_credit": "Streak recovery detected. Hook is ready, but there is no recovery credit right now.",
+    "recover_streak": "Recover streak",
+    "no_credit": "No credit",
+    "recovery_not_possible": "Recovery is not possible right now",
+    "recovery_success_days": "Streak recovered ? {days} days",
+    "task_fallback": "Task",
+    "task": {
+      "water_once": {
+        "title": "Water once",
+        "description": "Complete one watering action today."
+      },
+      "resolve_one_event": {
+        "title": "Resolve one event cleanly",
+        "description": "Handle one event and close it out."
+      },
+      "open_app_twice": {
+        "title": "Two sessions today",
+        "description": "Open the app in two separate sessions today."
+      },
+      "stable_climate_window": {
+        "title": "Hold climate steady briefly",
+        "description": "Keep climate values in the green for a short window."
+      }
+    },
+    "toast": {
+      "task_done": "Daily complete: {task}",
+      "strong_streak": "Strong daily streak.",
+      "all_done": "All daily goals completed for today.",
+      "first_done": "First daily task completed.",
+      "claim_now": "{text} Claim it now.",
+      "multi_done": "Daily boost: {count} tasks completed."
+    },
+    "retention": {
+      "streak_secured": "Today secured. Next streak bonus +{coins} coins.",
+      "streak_push_milestone": "Qualify today and push toward {target}.",
+      "streak_push_next": "Qualify today and reach streak {streak}.",
+      "next_streak_bonus": "Next streak bonus: +{coins} coins",
+      "claim_ready_single": "1 task is ready to claim.",
+      "claim_ready_multi": "{count} tasks are ready to claim.",
+      "all_collected_today": "Everything collected for today.",
+      "one_step_left": "Just 1 step left to close today.",
+      "progress_keep_going": "{done}/{total} done. Keep it going.",
+      "today_three_goals": "Today starts with 3 clear goals.",
+      "headline": "Today {done}/{total} tasks",
+      "claim_waiting_single": "1 claim is waiting.",
+      "claim_waiting_multi": "{count} claims are waiting.",
+      "day_complete": "Daily round complete.",
+      "prepare_bonus": "Qualify today and set up +{coins} coins.",
+      "milestone_with_reward": "Next milestone: {milestone} | Next streak reward: {coins} C",
+      "next_reward_compact": "Next streak reward: {coins} C",
+      "streak_title": "Daily streak {count}",
+      "best_streak_line": "Best streak: {best}",
+      "progress_almost": "{progress}/{target} progress. Almost there.",
+      "start_task": "Start with {task}",
+      "reward_collected": "Reward collected.",
+      "ready_for_coins": "Ready for +{coins} coins",
+      "claim_note_single": "1 task is claim-ready. Grab it and lock your streak.",
+      "claim_note_multi": "{count} tasks are claim-ready. Collect now and secure your streak.",
+      "progress_day_status": "{done}/{total} done | {status}",
+      "optional_bonus_unavailable": "Optional bonus is currently unavailable.",
+      "recovery_bonus_activated": "Bonus activated. 1 recovery credit.",
+      "streak_line": "Streak {streak} | {status}"
+    }
+  },
+  "events": {
+    "title": "Event",
+    "focus": "Event Focus",
+    "status": "Status: {state}",
+    "state_idle": "idle",
+    "state_active": "active event",
+    "state_resolving": "resolving",
+    "state_resolved": "resolved",
+    "state_cooldown": "cooldown",
+    "meta_severity_tags": "Severity: {severity} | Tags: {tags}",
+    "meta_action_result_in": "Action: {action} | Result in: {time}",
+    "meta_result": "Cause: {cause} | Result: {result} | Guidance: {guidance}",
+    "close_to_continue": "Close the event to continue.",
+    "observing_title": "Event under observation",
+    "observing_text": "Your decision is being evaluated over a short period.",
+    "resolved_title": "Result ready",
+    "resolved_text": "Evaluation completed.",
+    "cooldown_title": "Cooldown active",
+    "cooldown_text": "The event system is in cooldown.",
+    "no_active_title": "No active event",
+    "no_active_text": "Event details will appear once an event is active.",
+    "choose_option": "Option",
+    "soil_compaction": {
+      "title": "Soil compaction detected",
+      "description": "The top layer crusted after repeated watering, reducing root aeration.",
+      "choice": {
+        "loosen_top_layer": "Loosen the top 2 cm carefully",
+        "full_flush": "Flush and hope for better drainage",
+        "ignore_compaction": "Do nothing for now"
+      }
+    },
+    "fungus_gnat_wave": {
+      "title": "Fungus gnats around the pot",
+      "description": "Adult gnats circling over moist soil suggest larval pressure.",
+      "choice": {
+        "dry_back_cycle": "Run a dry-back cycle and place yellow traps",
+        "overwater_panic": "Panic and overwater",
+        "biological_treatment": "Use nematodes for biological control"
+      },
+      "followup": {
+        "biological_treatment": "Recheck population pressure in 48h"
+      }
+    },
+    "nitrogen_lockout": {
+      "title": "Signs of nitrogen lockout",
+      "description": "Lower leaves yellow despite feeding; pH drift may block uptake.",
+      "choice": {
+        "ph_corrected_feed": "Correct pH and feed lightly",
+        "strong_feed": "Increase nutrient concentration",
+        "plain_water_only": "Use plain water this cycle"
+      }
+    },
+    "magnesium_deficit": {
+      "title": "Interveinal chlorosis visible",
+      "description": "A magnesium deficiency pattern appears on older leaves in the mid canopy.",
+      "choice": {
+        "epsom_foliar": "Apply a mild magnesium foliar spray",
+        "add_calmag_soil": "Add balanced CalMag to feed solution",
+        "delay_action": "Wait and observe"
+      }
+    },
+    "salt_buildup": {
+      "title": "Salt crust at the pot rim",
+      "description": "Evaporation left nutrient salts along the container edge.",
+      "choice": {
+        "gentle_flush": "Flush with pH-balanced water",
+        "topdress_compost": "Top-dress with compost and mulch",
+        "ignore_salt": "Ignore until next cycle"
+      }
+    },
+    "soil_too_wet": {
+      "title": "Root zone stays wet too long",
+      "description": "Pot weight stays high after 48h; oxygen in the root zone drops.",
+      "choice": {
+        "increase_airflow": "Increase airflow and pause watering",
+        "transplant_aerated_mix": "Transplant into a more aerated mix",
+        "water_again": "Keep watering on schedule"
+      }
+    },
+    "dry_pocket": {
+      "title": "Hydrophobic dry pocket",
+      "description": "Part of the substrate repels water, causing uneven root hydration.",
+      "choice": {
+        "slow_even_water": "Rehydrate slowly in two passes",
+        "wetting_agent": "Use a mild wetting agent",
+        "force_heavy_watering": "Force it with heavy top watering"
+      }
+    },
+    "ph_drift_high": {
+      "title": "Soil pH drifting upward",
+      "description": "Drain runoff shows alkaline drift; micronutrient uptake declines.",
+      "choice": {
+        "acidify_feed": "Lower nutrient solution pH",
+        "flush_and_reset": "Flush medium and restart schedule",
+        "no_action_ph": "Leave routine unchanged"
+      }
+    },
+    "topsoil_mold": {
+      "title": "Surface mold on topsoil",
+      "description": "White fuzz appears due to high moisture and low airflow.",
+      "choice": {
+        "scrape_and_dry": "Remove top layer and let it dry",
+        "add_mulch": "Add breathable mulch",
+        "ignore_mold": "Ignore for now"
+      }
+    },
+    "root_bound_warning": {
+      "title": "Roots circling in the container",
+      "description": "Dense root tips are visible at drainage holes; rootbound stress is starting.",
+      "choice": {
+        "up_pot_now": "Up-pot now into a larger container",
+        "root_prune_light": "Light root prune and refresh medium",
+        "delay_transplant": "Delay transplant by one week"
+      }
+    },
+    "calcium_spotting": {
+      "title": "Spotting on new growth tips",
+      "description": "Calcium transport seems limited in fast-growing tissue.",
+      "choice": {
+        "add_calcium": "Add low-dose calcium",
+        "stabilize_watering": "Stabilize moisture swings",
+        "high_ec_fix": "Use a high-EC quick fix"
+      }
+    },
+    "thrips_early": {
+      "title": "Early thrips signs",
+      "description": "Silvery streaks on leaves indicate early thrips pressure.",
+      "choice": {
+        "ipm_rotation": "Start an IPM rotation",
+        "single_spray": "Use only one spray",
+        "postpone_treatment": "Postpone treatment"
+      }
+    },
+    "mite_hotspot": {
+      "title": "Mite hotspot at canopy edge",
+      "description": "A dry edge zone created favorable conditions for mites.",
+      "choice": {
+        "raise_humidity_control": "Raise humidity and treat",
+        "predatory_mites": "Release predatory mites",
+        "ignore_mites": "Ignore mild signs"
+      },
+      "followup": {
+        "predatory_mites": "Observe beneficial mite establishment"
+      }
+    },
+    "cold_root_zone": {
+      "title": "Cold root zone at night",
+      "description": "Night pot temperatures dropped and slowed nutrient uptake.",
+      "choice": {
+        "insulate_pot": "Insulate pot and warm intake air",
+        "increase_feed_strength": "Increase nutrient strength instead",
+        "wait_for_weather": "Wait for warmer nights"
+      }
+    },
+    "hot_dry_day": {
+      "title": "Hot, dry day",
+      "description": "Heat and low humidity dried the medium quickly.",
+      "choice": {
+        "split_watering": "Split watering across the day",
+        "single_heavy_watering": "One heavy watering",
+        "mulch_surface": "Mulch the surface to cut evaporation"
+      }
+    },
+    "overfeeding_warning": {
+      "title": "Leaf tip burn warning",
+      "description": "Early tip burn points to excessive nutrient concentration.",
+      "choice": {
+        "reduce_ec": "Lower EC for two feedings",
+        "flush_medium": "Flush the medium immediately",
+        "keep_schedule": "Keep current schedule"
+      }
+    },
+    "beneficial_fungi_colonized": {
+      "title": "Mycorrhiza established successfully",
+      "description": "Root checks show strong beneficial fungal activity in the rhizosphere.",
+      "choice": {
+        "maintain_program": "Keep current program",
+        "add_extra_biology": "Add an extra soil biology booster",
+        "disrupt_with_flush": "Flush aggressively"
+      }
+    },
+    "watering_gap": {
+      "title": "Unexpected watering gap",
+      "description": "Planned irrigation slipped and the medium dried more than expected.",
+      "choice": {
+        "recover_gradually": "Restore moisture gradually",
+        "instant_full_rewater": "Rewater fully at once",
+        "skip_until_tomorrow": "Skip until tomorrow"
+      }
+    },
+    "soil_life_decline": {
+      "title": "Soil life is declining",
+      "description": "Smell and structure suggest reduced microbial activity.",
+      "choice": {
+        "add_compost_extract": "Apply compost extract",
+        "topdress_worm_castings": "Top-dress with worm castings",
+        "continue_synthetic_only": "Continue with mineral feed only"
+      }
+    },
+    "late_flower_humidity": {
+      "title": "Humidity pressure in late flower",
+      "description": "Dense canopy and wet medium raise mold risk late in the run.",
+      "choice": {
+        "defoliate_lightly": "Light defoliation and lower humidity",
+        "dehumidify_and_hold_feed": "Dehumidify and pause heavy feeding",
+        "ignore_humidity": "Ignore it this cycle"
+      }
+    },
+    "outcome": {
+      "observing_text": "The action is now being observed over a short in-game window.",
+      "choice_prefix": "Your decision \"{label}\"",
+      "choice_prefix_generic": "Your decision",
+      "followup_hint": " A follow-up hint for {id} has been queued.",
+      "explanation": {
+        "improved": "{choice} noticeably reduced the pressure.{hint}",
+        "stabilized": "{choice} helped, but the situation is not fully cleared yet.{hint}",
+        "worsened": "{choice} did not address the core issue cleanly.{hint}",
+        "escalated": "{choice} came too late or did not fit the current pressure pattern.{hint}",
+        "unresolved": "{choice} changed the situation only partially.{hint}"
+      },
+      "result": {
+        "improved": "The plant can stabilize and slowly recover lost reserves.",
+        "stabilized": "Acute pressure was contained, but still matters in the background.",
+        "worsened": "Stress remained active and kept weighing on growth or stability.",
+        "escalated": "Pressure developed into a clearer follow-up problem.",
+        "unresolved": "The plant remains vulnerable for now, even without hard escalation."
+      },
+      "guidance": {
+        "improved": "Keep the correction steady and watch for stable values.",
+        "stabilized": "The situation is contained, but still needs one to two clean follow-up cycles.",
+        "worsened": "Pressure is not resolved yet. Small targeted corrections beat rushed reactions.",
+        "escalated": "The situation keeps escalating. Prioritize containment over growth pushes.",
+        "unresolved": "Watch the next cycles and only correct the real trigger."
+      }
+    },
+    "problem_source": {
+      "water_wet": "The medium stayed wet too long, reducing oxygen in the root zone.",
+      "water_dry": "The root ball dried out too far and the plant had to compensate for water stress.",
+      "nutrition_lockout": "Uptake was unstable. EC or pH drift shifted nutrient availability.",
+      "nutrition_deficit": "The current nutrient buffer no longer matched this growth phase.",
+      "disease_mold": "Humidity, low airflow, or dense canopy pushed the microclimate out of balance.",
+      "environment_heat_dry": "Heat and dry airflow increased transpiration pressure.",
+      "environment_cold": "Temperatures dropped too far and slowed metabolism and water uptake.",
+      "environment_light": "Light intensity and canopy distance were too aggressive for the current condition.",
+      "generic": "Multiple stressors built up over time and created the current pressure."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "language_hint": "Changes apply instantly.",
+    "not_active": "Not active",
+    "language_de": "Deutsch",
+    "language_en": "English",
+    "language_es": "Español",
+    "gameplay": "GAMEPLAY",
+    "event_frequency": "Event frequency",
+    "tutorial_hints": "Tutorial hints",
+    "autosave": "Auto save",
+    "audio_graphics": "AUDIO & GRAPHICS",
+    "master_volume": "Master volume",
+    "effects": "Effects",
+    "battery_mode": "Battery mode",
+    "haptic": "Haptics",
+    "account": "ACCOUNT",
+    "cloud_sync": "Cloud sync",
+    "not_connected": "Not connected",
+    "push_supported": "Push supported",
+    "push_permission": "Permission",
+    "push_status": "Status",
+    "push_enable": "Enable push",
+    "push_disable": "Disable push",
+    "push_test": "Send test notification",
+    "reset": "RESET",
+    "default": "DEFAULT",
+    "save": "SAVE"
+  },
+  "boot": {
+    "init": "Starting system...",
+    "restore_session": "Restoring session...",
+    "load_data": "Loading game data...",
+    "init_simulation": "Initializing simulation...",
+    "render_ui": "Building interface...",
+    "ready": "Ready"
+  },
+  "support": {
+    "paypal_cta": "Support with PayPal",
+    "voluntary_hint": "Optional. Every contribution directly supports development.",
+    "title": "Support GrowSim"
+  },
+  "rewards": {
+    "status_claimed": "Already claimed",
+    "status_claimable": "Claimable",
+    "status_not_claimable": "Not claimable",
+    "claim_loading": "Claiming?",
+    "claim_now": "Claim now",
+    "verified_weekly_reward": "Verified weekly reward.",
+    "weekly_value": "Weekly",
+    "login_required": "Login required",
+    "claimable_count": "{count} claimable",
+    "no_open_claim": "No open claim",
+    "login_to_see_verified": "Sign in to see verified weekly rewards here.",
+    "loading_rewards": "Loading rewards?",
+    "none_for_period": "No weekly rewards for this period yet.",
+    "claimable_verified_waiting": "{count} verified weekly reward(s) are waiting for you.",
+    "already_claimed_count": "{count} weekly reward(s) already claimed.",
+    "none_claimable_now": "No claimable weekly rewards right now.",
+    "not_visible_without_login": "Weekly rewards are hidden without login.",
+    "verified_ready_to_claim": "Verified weekly reward ready to claim.",
+    "none_open_weekly": "No open weekly reward right now."
+  },
+  "leaderboard": {
+    "only_verified": "Only verified results appear here.",
+    "loading": "Loading leaderboard?",
+    "period": "Period {period}",
+    "weekly_snapshot": "Weekly Snapshot",
+    "your_weekly_rank": "Your weekly rank",
+    "metric_quality": "Quality",
+    "metric_score": "Score",
+    "current_score_line": "Current {score} {metric}{best}",
+    "best_rank_suffix": " ? Best weekly #{rank}",
+    "login_to_see_rank": "Sign in to see your weekly rank and your field position.",
+    "no_verified_entry_profile": "No verified weekly entry for this profile yet.",
+    "no_verified_entries_week": "No verified entries here this week yet.",
+    "around_me_after_verified": "Once you have a verified weekly entry, your nearby ranks appear here.",
+    "login_to_see_position": "Sign in to see your nearby position here."
+  },
+  "harvest": {
+    "next_improvement": "next improvement",
+    "clearest_lever_here": "This is the clearest next lever.",
+    "brake_factor": "drag factor",
+    "play_calmer_next_run": "Play {label} a little cleaner next run and there is more upside.",
+    "close_to_stronger_harvest": "You are close to a stronger harvest. One clean next step is often enough.",
+    "metric_yield": "Yield",
+    "metric_quality": "Quality",
+    "metric_stability": "Stability",
+    "metric_efficiency": "Efficiency",
+    "metric_challenge": "Challenge",
+    "strong_factor": "Strong factor",
+    "reason_supported_forecast": "Clearly supported the forecast.",
+    "reason_slowed_forecast": "Slowed the forecast down.",
+    "no_dominant_factor": "No single factor dominated this run.",
+    "strongest_moment_prefix": "Strongest moment",
+    "good_phase": "Good phase",
+    "phase_supported_run": "This phase clearly carried the run.",
+    "biggest_loss_prefix": "Biggest loss",
+    "part_dragged_finish": "This part noticeably dragged down the finish.",
+    "run_balanced_no_spike": "The run stayed balanced without one dominant spike.",
+    "verification_status": {
+      "verified": "This result was verified by the server.",
+      "provisional": "A provisional review is available. The final result may still adjust.",
+      "under_review": "Your result is still under review.",
+      "rejected": "This result could not be verified. The local evaluation remains.",
+      "submitting": "Submitting local evaluation to the server.",
+      "polling": "Your result is being reviewed.",
+      "local_only": "No backend check available. This evaluation stays local."
+    },
+    "hero": {
+      "verified_strong_title": "Verified strong",
+      "verified_strong_subtitle": "The server confirms a very clean finish.",
+      "verified_solid_title": "Verified solid",
+      "verified_solid_subtitle": "The result is verified and sits on a stable line.",
+      "verified_difficult_title": "Verified difficult",
+      "verified_difficult_subtitle": "The server verified the result, but the run stayed under pressure.",
+      "provisional_title": "Provisionally reviewed",
+      "provisional_subtitle": "An initial server review is available. Final check is still running."
+    },
+    "badge": {
+      "verified": "Verified",
+      "provisional": "Provisional",
+      "under_review": "Under review",
+      "rejected": "Not verifiable",
+      "forecast": "Forecast"
+    },
+    "local_title": "Local harvest evaluation",
+    "finish_ready": "The finish is ready.",
+    "verified_result_title": "Verified harvest result",
+    "verified_result_badge": "Verified result",
+    "local_badge": "Local evaluation",
+    "verified_required_for_rankings": "Rankings use the verified server rating.",
+    "local_ready": "Local harvest evaluation ready.",
+    "motivation": {
+      "verified": "The result is verified. A cleaner next run can push this benchmark higher.",
+      "rejected": "The local evaluation still matters. A cleaner next run raises your chance of a verified result.",
+      "under_review": "Your result is still under review. It is already worth planning the next clean run."
+    },
+    "best": {
+      "new_harvest_score": "New personal best: Harvest score",
+      "best_quality": "Best quality so far",
+      "best_stability": "Most stable run so far",
+      "none_new": "No new personal harvest best in this run yet.",
+      "new_personal_mark": "Great play. This run sets a new personal benchmark."
+    }
+  },
+  "run_summary": {
+    "unlocks_none": "Nothing new was unlocked in this run yet.",
+    "unlock_default_title": "Unlock",
+    "unlock_default_effect": "New start option unlocked.",
+    "complete_and_new_run": "Finalize & start new run",
+    "start_new_run": "Start new run",
+    "finalize": "Finalize"
+  },
+  "analysis": {
+    "no_activity_yet": "No activity yet",
+    "open_analysis": "Open analysis",
+    "no_actions_or_events": "No actions or events recorded.",
+    "action": "Action",
+    "emergency_rescue": "Emergency rescue",
+    "learning_note": "Learning note",
+    "local_forecast_updated": "Local forecast updated.",
+    "no_net_change": "No net change",
+    "reanimation": "Reanimation",
+    "sim_stamp": "Day {day} ? {hour}:00",
+    "stabilization": "Stabilization",
+    "system": "System"
+  },
+  "notifications": {
+    "plant_needs_water": "Your plant needs care."
+  },
+  "care": {
+    "feed": "Feed",
+    "open": "Open care",
+    "water": "Water"
+  },
+  "death": {
+    "discard_and_restart": "Discard run & restart",
+    "use_emergency_rescue": "Use emergency rescue"
+  },
+  "diagnosis": {
+    "stable_state": "Stable state"
+  },
+  "legal": {
+    "de_only_notice": "The following legal text is currently available in German only.",
+    "imprint_title": "Imprint",
+    "privacy_title": "Privacy"
+  },
+  "popup": {
+    "nutrition": {
+      "primary": {
+        "demand_up": "Nutrient demand is rising.",
+        "low": "Supply is running low.",
+        "stable": "Supply is currently stable."
+      },
+      "secondary": {
+        "intake_calm": "Uptake remains calm.",
+        "slowly_up": "Demand is slowly increasing.",
+        "watch": "Values should be monitored."
+      },
+      "title": "Nutrient balance"
+    },
+    "risk": {
+      "primary": {
+        "no_acute": "No acute risk detected.",
+        "up": "Risk is increasing.",
+        "watch_values": "Some values should be monitored."
+      },
+      "secondary": {
+        "no_action": "No direct action needed.",
+        "trend_stable": "Trend is currently stable.",
+        "watch": "Monitoring recommended."
+      },
+      "title": "Risk analysis"
+    },
+    "stress": {
+      "primary": {
+        "light": "Light strain is visible.",
+        "ok": "Stress is currently low.",
+        "up": "Stress is increasing."
+      },
+      "secondary": {
+        "no_action": "No direct action needed.",
+        "watch": "Monitoring recommended."
+      },
+      "title": "Stress level"
+    },
+    "water": {
+      "primary": {
+        "low": "Water is getting low.",
+        "reserve_down": "Water reserve is dropping.",
+        "stable": "Water balance is stable."
+      },
+      "secondary": {
+        "consumption_up": "Consumption is slightly higher.",
+        "demand_up": "Demand is rising.",
+        "intake_calm": "Uptake is calm right now."
+      },
+      "title": "Water balance"
+    }
+  },
+  "stat": {
+    "growth": {
+      "expl": {
+        "good": "Growth is stable. Current impulse: {impulse}.",
+        "slowed": "Growth is currently slowed. Impulse: {impulse}.",
+        "solid": "Growth is progressing solidly. Impulse: {impulse}."
+      },
+      "rec": {
+        "low": "Recommendation: open analysis and check water/nutrient drivers.",
+        "ok": "Recommendation: stay the course and watch limits via analysis."
+      },
+      "status": {
+        "good": "Good progress",
+        "no_active": "No active growth progress",
+        "slowed": "Slowed",
+        "solid": "Solid development"
+      }
+    },
+    "nutrition": {
+      "expl": {
+        "low": "Nutrient shortage limits development and increases stress risk.",
+        "ok": "Nutrients still support growth sufficiently right now.",
+        "watch": "Falling nutrients may soon slow growth."
+      },
+      "rec": {
+        "low": "Recommendation: open care and check a fitting feeding action.",
+        "ok": "Recommendation: keep nutrient levels stable and monitor regularly."
+      }
+    },
+    "recommendation_prefix": "Recommendation: {text}",
+    "risk": {
+      "expl": {
+        "driver": "Main driver: {label}. {reason}",
+        "low": "Risk is currently low."
+      },
+      "rec": {
+        "high": "Recommendation: open analysis and prioritize countermeasures.",
+        "low": "Recommendation: monitor development and check risk sources early."
+      }
+    },
+    "status": {
+      "critical": "Critical",
+      "deficit_risk": "Deficit risk",
+      "elevated": "Elevated",
+      "high": "High",
+      "low": "Low",
+      "optimal": "Optimal",
+      "slightly_weak": "Slightly weak",
+      "solid": "Solid",
+      "stable": "Stable",
+      "very_good": "Very good",
+      "watch": "Watch"
+    },
+    "status_line": "Status: {status}",
+    "water": {
+      "expl": {
+        "critical": "Water is low and drought stress can rise quickly.",
+        "optimal": "Water is optimal right now. The plant stays well supplied.",
+        "stable": "Water is stable right now and safe for the next cycles.",
+        "watch": "Water is getting tighter and should be watched."
+      },
+      "rec": {
+        "low": "Recommendation: open care and water soon.",
+        "stable": "Recommendation: keep moisture steady and monitor the trend."
+      }
+    }
+  },
+  "onboarding": {
+    "hook": {
+      "1": "Grow your first plant. Every session matters.",
+      "2": "Every decision reshapes your grow.",
+      "3": "Can you finish a perfect run without a crisis?"
+    }
+  },
+  "push": {
+    "title": "GrowSim",
+    "generic": "A fresh GrowSim update is waiting for you.",
+    "water": {
+      "1": "Your plant is getting thirsty. Quick care session?",
+      "2": "Don't let her dry out. Time to water."
+    },
+    "event": {
+      "occurred": "A new event is waiting for your decision."
+    },
+    "harvest": {
+      "ready": "Your plant is ready for harvest."
+    },
+    "daily": {
+      "reminder": "Claim your daily reward now.",
+      "tasks_pending": "You still have daily tasks waiting today."
+    },
+    "streak": {
+      "risk": "Your streak is still open today. One quick check is enough."
+    },
+    "critical": {
+      "health": "Critical state: health is very low.",
+      "risk": "Critical state: risk is very high.",
+      "stress": "Critical state: stress is extremely high."
+    },
+    "reminder": {
+      "care": "Your plant needs care. One quick action can stabilize the run."
+    }
+  },
+  "store": {
+    "short_description": "The grow game where every decision matters.",
+    "long_description": "Plan your run, react to live events, and guide your plant to a stable harvest. In GrowSim, water, nutrients, timing, and risk all shape your result in real time.",
+    "features": {
+      "1": "Dynamic events with meaningful trade-offs",
+      "2": "Run-based progression with high-impact choices",
+      "3": "Daily missions, streaks, and retention rewards",
+      "4": "Analysis tools that help you improve the next run"
+    },
+    "hook": {
+      "1": "Every decision reshapes your grow.",
+      "2": "Play safe or go all-in?",
+      "3": "Can you build a perfect run?"
+    }
+  },
+  "social": {
+    "feedback": {
+      "ask": "What is still missing for your perfect GrowSim run?",
+      "feature": "Which feature should we build next?"
+    },
+    "test": {
+      "invite": "Test the new build now and share your feedback."
+    },
+    "update": {
+      "announce": "New update is live. Time for your next grow."
+    }
+  }
+}

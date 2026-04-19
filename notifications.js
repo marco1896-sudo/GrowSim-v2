@@ -47,6 +47,24 @@ function showServiceWorkerHint() {
   document.body.appendChild(banner);
 }
 
+function notificationsI18nT(key, vars = null, fallback = '') {
+  const api = window.GrowSimI18n;
+  if (api && typeof api.t === 'function') {
+    const translated = api.t(key, vars || undefined);
+    if (translated && translated !== key) {
+      return String(translated);
+    }
+  }
+  return String(fallback || key || '');
+}
+
+function pickPushVariant(baseKey, count = 1, seed = Date.now()) {
+  const total = Math.max(1, Math.trunc(Number(count) || 1));
+  const safeSeed = Math.max(0, Math.trunc(Number(seed) || 0));
+  const index = (safeSeed % total) + 1;
+  return `${String(baseKey || '').trim()}.${index}`;
+}
+
 const CLIENT_GAMEPLAY_PUSH_DEBUG_FLAG_KEY = 'growsim:debug-client-gameplay-push-dispatch';
 
 function isClientGameplayPushDispatchEnabled() {
@@ -184,7 +202,7 @@ const GAMEPLAY_PUSH_CONFIG = Object.freeze({
       minDurationMs: 20 * 60 * 1000,
       threshold: 35,
       title: 'GrowSim',
-      body: 'Deine Pflanze braucht Wasser. Zeit für eine kurze Pflege-Session.',
+      body: '',
       tag: 'water_warning',
       url: '/?screen=care'
     }),
@@ -192,7 +210,7 @@ const GAMEPLAY_PUSH_CONFIG = Object.freeze({
       cooldownMs: 30 * 60 * 1000,
       minDurationMs: 0,
       title: 'GrowSim',
-      body: 'Ein neues Ereignis ist aufgetreten. Triff jetzt deine Entscheidung.',
+      body: '',
       tag: 'event_alert',
       url: '/?screen=event'
     }),
@@ -200,7 +218,7 @@ const GAMEPLAY_PUSH_CONFIG = Object.freeze({
       cooldownMs: 24 * 60 * 60 * 1000,
       minDurationMs: 5 * 60 * 1000,
       title: 'GrowSim',
-      body: 'Deine Pflanze ist erntereif. Schau in die App für den nächsten Schritt.',
+      body: '',
       tag: 'harvest_ready',
       url: '/?screen=harvest'
     }),
@@ -208,7 +226,7 @@ const GAMEPLAY_PUSH_CONFIG = Object.freeze({
       cooldownMs: 12 * 60 * 60 * 1000,
       minDurationMs: 0,
       title: 'GrowSim',
-      body: 'Deine tägliche Belohnung ist verfügbar.',
+      body: '',
       tag: 'daily_reward',
       url: '/?screen=reward'
     }),
@@ -216,7 +234,7 @@ const GAMEPLAY_PUSH_CONFIG = Object.freeze({
       cooldownMs: 12 * 60 * 60 * 1000,
       minDurationMs: 0,
       title: 'GrowSim',
-      body: 'Dein Streak ist heute noch offen. Ein kurzer Check reicht.',
+      body: '',
       tag: 'streak_risk',
       url: '/?screen=missions'
     }),
@@ -224,7 +242,7 @@ const GAMEPLAY_PUSH_CONFIG = Object.freeze({
       cooldownMs: 8 * 60 * 60 * 1000,
       minDurationMs: 0,
       title: 'GrowSim',
-      body: 'Heute fehlen noch Daily-Care-Aufgaben.',
+      body: '',
       tag: 'daily_tasks_pending',
       url: '/?screen=missions'
     })
@@ -427,10 +445,24 @@ function buildGameplayPushPayload(candidate) {
     return null;
   }
 
+  const nowMs = Date.now();
+  const bodyByType = {
+    [GAMEPLAY_PUSH_TYPES.PLANT_NEEDS_WATER]: notificationsI18nT(
+      pickPushVariant('push.water', 2, nowMs),
+      null,
+      'Your plant needs water.'
+    ),
+    [GAMEPLAY_PUSH_TYPES.EVENT_OCCURRED]: notificationsI18nT('push.event.occurred', null, 'An event is waiting for your decision.'),
+    [GAMEPLAY_PUSH_TYPES.HARVEST_READY]: notificationsI18nT('push.harvest.ready', null, 'Harvest is ready. Jump back in.'),
+    [GAMEPLAY_PUSH_TYPES.DAILY_REWARD_AVAILABLE]: notificationsI18nT('push.daily.reminder', null, 'Your daily reward is ready.'),
+    [GAMEPLAY_PUSH_TYPES.STREAK_AT_RISK]: notificationsI18nT('push.streak.risk', null, 'Your streak is open. A quick check keeps it alive.'),
+    [GAMEPLAY_PUSH_TYPES.DAILY_TASKS_PENDING]: notificationsI18nT('push.daily.tasks_pending', null, 'You still have daily tasks waiting.')
+  };
+
   const basePayload = {
     type: candidate.type,
-    title: config.title,
-    body: config.body,
+    title: notificationsI18nT('push.title', null, config.title || 'GrowSim'),
+    body: String(bodyByType[candidate.type] || notificationsI18nT('push.generic', null, config.body || 'GrowSim update available.')),
     tag: config.tag,
     url: String(config.url || '/')
   };
@@ -590,7 +622,11 @@ function notifyEventAvailability() {
     return;
   }
 
-  notify('events', 'Grow Simulator', 'Ein Ereignis ist verfügbar. Tippe, um zu reagieren.');
+  notify(
+    'events',
+    notificationsI18nT('push.title', null, 'GrowSim'),
+    notificationsI18nT('push.event.occurred', null, 'An event is waiting for your decision.')
+  );
   notifications.runtime.lastNotifiedEventId = eventId;
 }
 
@@ -614,14 +650,14 @@ function notifyCriticalState(nowMs) {
     { key: 'stress', score: Math.max(0, Number(s.stress || 0) - 80) }
   ].sort((a, b) => b.score - a.score || String(a.key).localeCompare(String(b.key)));
 
-  let body = 'Kritischer Zustand: Gesundheit sehr niedrig.';
+  let body = notificationsI18nT('push.critical.health', null, 'Critical state: health is very low.');
   if (scores[0].key === 'risk') {
-    body = 'Kritischer Zustand: Risiko ist sehr hoch.';
+    body = notificationsI18nT('push.critical.risk', null, 'Critical state: risk is very high.');
   } else if (scores[0].key === 'stress') {
-    body = 'Kritischer Zustand: Stress ist extrem hoch.';
+    body = notificationsI18nT('push.critical.stress', null, 'Critical state: stress is very high.');
   }
 
-  notify('critical', 'Grow Simulator', body);
+  notify('critical', notificationsI18nT('push.title', null, 'GrowSim'), body);
   notifications.runtime.lastCriticalAtRealMs = currentNowMs;
 }
 
@@ -648,7 +684,11 @@ function notifyReminder(nowMs) {
     return;
   }
 
-  notify('reminder', 'Grow Simulator', 'Deine Pflanze braucht Pflege. Öffne die App für eine Maßnahme.');
+  notify(
+    'reminder',
+    notificationsI18nT('push.title', null, 'GrowSim'),
+    notificationsI18nT('push.reminder.care', null, 'Your plant needs care. Open the app for a quick action.')
+  );
   notifications.runtime.lastReminderAtRealMs = nowMs;
 }
 
@@ -667,9 +707,9 @@ function notifyPlantNeedsCare(bodyText) {
 
   const payload = {
     type: 'SHOW_NOTIFICATION',
-    title: 'GrowSim',
+    title: notificationsI18nT('push.title', null, 'GrowSim'),
     options: {
-      body: String(bodyText || 'Deine Pflanze braucht Pflege.'),
+      body: String(bodyText || notificationsI18nT('push.reminder.care', null, 'Your plant needs care.')),
       icon: new URL('icons/icon-192.png', self.location).href
     }
   };

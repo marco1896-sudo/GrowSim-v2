@@ -15,6 +15,25 @@ function getEventFoundationApis() {
   };
 }
 
+function getI18nApi() {
+  const api = (typeof window !== 'undefined' && window.GrowSimI18n) ? window.GrowSimI18n : null;
+  return api && typeof api.t === 'function' ? api : null;
+}
+
+function resolveI18nText(key, fallbackText, vars = null) {
+  const api = getI18nApi();
+  if (!api || !key) {
+    return String(fallbackText || '');
+  }
+  const translated = api.tOrNull && typeof api.tOrNull === 'function'
+    ? api.tOrNull(String(key), vars && typeof vars === 'object' ? vars : undefined)
+    : null;
+  if (translated === null || translated === undefined || translated === '') {
+    return String(fallbackText || '');
+  }
+  return String(translated);
+}
+
 function sanitizePlainObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? { ...value }
@@ -139,9 +158,13 @@ function buildPendingResolutionPreview(eventDef, choice, resolveTimeRealMs) {
     summary: 'pending',
     learningNote: eventDef && eventDef.learningNote ? String(eventDef.learningNote) : '',
     resolvedAfterMs: Math.max(0, Number(resolveTimeRealMs) || 0),
-    observationText: 'Die Maßnahme wird jetzt über einen kurzen Ingame-Zeitraum beobachtet.'
+    observationText: resolveI18nText(
+      'events.outcome.observing_text',
+      'The action is now being observed over a short in-game window.'
+    )
   };
 }
+
 
 function buildResolutionShadowEvent(eventDef, diagnostics) {
   const safeEventDef = eventDef && typeof eventDef === 'object' ? eventDef : null;
@@ -318,88 +341,112 @@ function describeProblemSource(eventDef) {
   const category = String(eventDef && eventDef.category || 'generic').toLowerCase();
 
   if (category === 'water' && polarity === 'wet') {
-    return 'Das Medium blieb zu lange nass. Dadurch bekam die Wurzelzone weniger Sauerstoff.';
+    return resolveI18nText('events.problem_source.water_wet', 'The medium stayed wet too long, reducing oxygen in the root zone.');
   }
   if (category === 'water' && polarity === 'dry') {
-    return 'Der Wurzelballen lief zu weit trocken und die Pflanze musste Wasserstress ausgleichen.';
+    return resolveI18nText('events.problem_source.water_dry', 'The root ball dried out too far and the plant had to compensate for water stress.');
   }
   if (category === 'nutrition' && polarity === 'lockout') {
-    return 'Die Aufnahme war instabil. Hohe EC- oder pH-Abweichungen haben die Nährstoffverfügbarkeit verschoben.';
+    return resolveI18nText('events.problem_source.nutrition_lockout', 'Uptake was unstable. EC or pH drift shifted nutrient availability.');
   }
   if (category === 'nutrition' && polarity === 'deficit') {
-    return 'Der aktuelle Nährstoffpuffer reichte für die Entwicklungsphase nicht mehr sauber aus.';
+    return resolveI18nText('events.problem_source.nutrition_deficit', 'The current nutrient buffer no longer matched this growth phase.');
   }
   if (category === 'disease' || polarity === 'mold_surface') {
-    return 'Feuchte, geringe Luftbewegung oder dichter Wuchs haben das Mikroklima belastet.';
+    return resolveI18nText('events.problem_source.disease_mold', 'Humidity, low airflow, or dense canopy pushed the microclimate out of balance.');
   }
   if (category === 'environment' && polarity === 'heat_dry') {
-    return 'Hitze und ein zu trockener Luftzug haben den Verdunstungsdruck erhöht.';
+    return resolveI18nText('events.problem_source.environment_heat_dry', 'Heat and dry airflow increased transpiration pressure.');
   }
   if (category === 'environment' && polarity === 'cold') {
-    return 'Das Klima wich zu stark nach unten ab und bremste Stoffwechsel sowie Wasseraufnahme.';
+    return resolveI18nText('events.problem_source.environment_cold', 'Temperatures dropped too far and slowed metabolism and water uptake.');
   }
   if (category === 'environment' && polarity === 'light_stress') {
-    return 'Lichtintensität und Blattabstand waren für den aktuellen Zustand zu aggressiv.';
+    return resolveI18nText('events.problem_source.environment_light', 'Light intensity and canopy distance were too aggressive for the current condition.');
   }
-  return 'Mehrere Stressfaktoren haben sich über Zeit aufgebaut und den aktuellen Druck ausgelöst.';
+  return resolveI18nText('events.problem_source.generic', 'Multiple stressors built up over time and created the current pressure.');
 }
+
 
 function buildOutcomeGuidanceText(resolutionModel) {
   const status = String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved');
-  if (status === 'improved') return 'Halte die Korrektur jetzt ruhig und beobachte, ob die Werte stabil bleiben.';
-  if (status === 'stabilized') return 'Die Lage wurde abgefangen, braucht aber noch 1 bis 2 Zyklen saubere Nachkontrolle.';
-  if (status === 'worsened') return 'Der Druck ist noch nicht sauber gelöst. Kleine, gezielte Gegenmaßnahmen sind jetzt sinnvoller als Hektik.';
-  if (status === 'escalated') return 'Die Situation kippt weiter. Priorität hat jetzt Schadensbegrenzung statt Wachstumspush.';
-  return 'Beobachte die nächsten Zyklen und korrigiere nur das, was den eigentlichen Auslöser trifft.';
+  if (status === 'improved') return resolveI18nText('events.outcome.guidance.improved', 'Keep the correction steady and watch for stable values.');
+  if (status === 'stabilized') return resolveI18nText('events.outcome.guidance.stabilized', 'The situation is contained, but it still needs one to two clean follow-up cycles.');
+  if (status === 'worsened') return resolveI18nText('events.outcome.guidance.worsened', 'Pressure is not resolved yet. Small targeted corrections beat rushed reactions.');
+  if (status === 'escalated') return resolveI18nText('events.outcome.guidance.escalated', 'The situation keeps escalating. Prioritize containment over growth pushes.');
+  return resolveI18nText('events.outcome.guidance.unresolved', 'Watch the next cycles and only correct the real trigger.');
 }
+
 
 function buildGenericOutcomeNarrative(eventDef, choice, resolutionModel, followUpIds = []) {
   const status = String(resolutionModel && resolutionModel.outcomeStatus || 'unresolved');
-  const good = status === 'improved' || status === 'stabilized';
   const followUpHint = followUpIds.length
-    ? ` Ein Folgehinweis zu ${followUpIds[0]} wurde vorgemerkt.`
+    ? resolveI18nText('events.outcome.followup_hint', ' A follow-up hint for {id} has been queued.', { id: followUpIds[0] })
     : '';
-  const choiceText = choice && choice.label ? `Deine Entscheidung "${choice.label}"` : 'Deine Entscheidung';
+  const choiceText = choice && choice.label
+    ? resolveI18nText('events.outcome.choice_prefix', 'Your decision "{label}"', { label: choice.label })
+    : resolveI18nText('events.outcome.choice_prefix_generic', 'Your decision');
 
   if (status === 'improved') {
     return {
-      explanation: `${choiceText} hat den Druck spürbar reduziert.${followUpHint}`.trim(),
+      explanation: resolveI18nText(
+        'events.outcome.explanation.improved',
+        '{choice} noticeably reduced the pressure.{hint}',
+        { choice: choiceText, hint: followUpHint }
+      ).trim(),
       cause: describeProblemSource(eventDef),
-      result: 'Die Pflanze kann sich stabilisieren und verlorene Reserve langsam zurückholen.',
+      result: resolveI18nText('events.outcome.result.improved', 'The plant can stabilize and slowly recover lost reserves.'),
       guidance: buildOutcomeGuidanceText(resolutionModel)
     };
   }
   if (status === 'stabilized') {
     return {
-      explanation: `${choiceText} war hilfreich, aber die Lage ist noch nicht vollständig bereinigt.${followUpHint}`.trim(),
+      explanation: resolveI18nText(
+        'events.outcome.explanation.stabilized',
+        '{choice} helped, but the situation is not fully cleared yet.{hint}',
+        { choice: choiceText, hint: followUpHint }
+      ).trim(),
       cause: describeProblemSource(eventDef),
-      result: 'Der akute Druck wurde gebremst, bleibt jedoch im Hintergrund weiter relevant.',
+      result: resolveI18nText('events.outcome.result.stabilized', 'Acute pressure was contained, but still matters in the background.'),
       guidance: buildOutcomeGuidanceText(resolutionModel)
     };
   }
   if (status === 'worsened') {
     return {
-      explanation: `${choiceText} hat das Problem nicht sauber getroffen.${followUpHint}`.trim(),
+      explanation: resolveI18nText(
+        'events.outcome.explanation.worsened',
+        '{choice} did not address the core issue cleanly.{hint}',
+        { choice: choiceText, hint: followUpHint }
+      ).trim(),
       cause: describeProblemSource(eventDef),
-      result: 'Der Stress blieb aktiv und hat das Wachstum oder die Stabilität weiter belastet.',
+      result: resolveI18nText('events.outcome.result.worsened', 'Stress remained active and kept weighing on growth or stability.'),
       guidance: buildOutcomeGuidanceText(resolutionModel)
     };
   }
   if (status === 'escalated') {
     return {
-      explanation: `${choiceText} kam für die aktuelle Drucklage zu spät oder war zu unpassend.${followUpHint}`.trim(),
+      explanation: resolveI18nText(
+        'events.outcome.explanation.escalated',
+        '{choice} came too late or did not fit the current pressure pattern.{hint}',
+        { choice: choiceText, hint: followUpHint }
+      ).trim(),
       cause: describeProblemSource(eventDef),
-      result: 'Der Druck hat sich in ein deutlicheres Folgeproblem weiterentwickelt.',
+      result: resolveI18nText('events.outcome.result.escalated', 'Pressure developed into a clearer follow-up problem.'),
       guidance: buildOutcomeGuidanceText(resolutionModel)
     };
   }
   return {
-    explanation: `${choiceText} hat die Situation nur teilweise verändert.${followUpHint}`.trim(),
+    explanation: resolveI18nText(
+      'events.outcome.explanation.unresolved',
+      '{choice} changed the situation only partially.{hint}',
+      { choice: choiceText, hint: followUpHint }
+    ).trim(),
     cause: describeProblemSource(eventDef),
-    result: 'Die Pflanze bleibt vorerst anfällig, obwohl keine harte Eskalation eingetreten ist.',
+    result: resolveI18nText('events.outcome.result.unresolved', 'The plant remains vulnerable for now, even without hard escalation.'),
     guidance: buildOutcomeGuidanceText(resolutionModel)
   };
 }
+
 
 function buildResolvedOutcomeNarrative(eventDef, choice, resolutionModel, followUpIds = []) {
   const outcomeTexts = eventDef && eventDef.outcomeTexts && typeof eventDef.outcomeTexts === 'object'
@@ -2158,13 +2205,17 @@ function activateEvent(nowMs) {
     foundationApi.memory.clearPendingChain(state.events, 'root_stress_followup');
   }
 
-  const options = eventDef.options.slice(0, 3);
+  const options = eventDef.options.slice(0, 3).map((option) => ({
+    ...option,
+    label: resolveI18nText(option.labelKey, option.label),
+    followUp: resolveI18nText(option.followUpKey, option.followUp || '')
+  }));
 
   state.events.machineState = 'activeEvent';
   state.events.activeEventId = eventDef.id;
   state.events.scheduler.lastEventId = eventDef.id;
-  state.events.activeEventTitle = eventDef.title;
-  state.events.activeEventText = eventDef.description;
+  state.events.activeEventTitle = resolveI18nText(eventDef.titleKey, eventDef.title);
+  state.events.activeEventText = resolveI18nText(eventDef.descriptionKey, eventDef.description);
   state.events.activeLearningNote = eventDef.learningNote || '';
   state.events.activeOptions = options;
   state.events.activeSeverity = eventDef.severity || 3;
@@ -2186,8 +2237,8 @@ function activateEvent(nowMs) {
   state.events.scheduler.lastEventCategory = eventDef.category || 'generic';
   state.events.active = {
     id: eventDef.id,
-    title: eventDef.title,
-    description: eventDef.description,
+    title: resolveI18nText(eventDef.titleKey, eventDef.title),
+    description: resolveI18nText(eventDef.descriptionKey, eventDef.description),
     category: eventDef.category || 'generic',
     learningNote: eventDef.learningNote || ''
   };
@@ -2218,7 +2269,7 @@ function activateEvent(nowMs) {
     consumedChainId: consumedPendingChain ? consumedPendingChain.chainId : null
   });
 
-  notifyPlantNeedsCare('Deine Pflanze braucht Pflege.');
+  notifyPlantNeedsCare(resolveI18nText('notifications.plant_needs_water', 'Your plant needs care.'));
   return true;
 }
 
@@ -3185,7 +3236,7 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
   if (!rawEvent || typeof rawEvent !== 'object') {
     return null;
   }
-  if (!rawEvent.id || !rawEvent.title || !rawEvent.description) {
+  if (!rawEvent.id || (!rawEvent.title && !rawEvent.titleKey) || (!rawEvent.description && !rawEvent.descriptionKey)) {
     return null;
   }
 
@@ -3198,11 +3249,14 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     .map((option) => ({
       id: String(option.id || ''),
       label: String(option.label || 'Option'),
+      labelKey: typeof option.labelKey === 'string' ? String(option.labelKey) : '',
       effects: option.effects && typeof option.effects === 'object' ? option.effects : {},
       sideEffects: Array.isArray(option.sideEffects) ? option.sideEffects : [],
       followUps: Array.isArray(option.followUps)
         ? option.followUps.map(String)
         : (option.followUp ? [String(option.followUp)] : []),
+      followUp: typeof option.followUp === 'string' ? String(option.followUp) : '',
+      followUpKey: typeof option.followUpKey === 'string' ? String(option.followUpKey) : '',
       uiCopy: option.uiCopy && typeof option.uiCopy === 'object' ? option.uiCopy : {},
       intent: typeof option.intent === 'string' ? String(option.intent) : '',
       contextFit: normalizeStringList(option.contextFit)
@@ -3218,8 +3272,10 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
   return {
     id: String(rawEvent.id),
     category,
-    title: String(rawEvent.title),
-    description: String(rawEvent.description),
+    title: String(rawEvent.title || ''),
+    titleKey: typeof rawEvent.titleKey === 'string' ? String(rawEvent.titleKey) : '',
+    description: String(rawEvent.description || ''),
+    descriptionKey: typeof rawEvent.descriptionKey === 'string' ? String(rawEvent.descriptionKey) : '',
     triggers: rawEvent.triggers && typeof rawEvent.triggers === 'object' ? rawEvent.triggers : {},
     constraints: inferEventConstraints(rawEvent, category),
     allowedPhases: Array.isArray(rawEvent.allowedPhases)
@@ -3245,6 +3301,7 @@ function normalizeEvent(rawEvent, sourceVersion = 'v1') {
     sourceVersion
   };
 }
+
 
 function inferEventConstraints(rawEvent, category) {
   const raw = rawEvent && rawEvent.constraints && typeof rawEvent.constraints === 'object'
@@ -3358,8 +3415,8 @@ function syncActiveEventFromCatalog() {
     return;
   }
 
-  state.events.activeEventTitle = eventDef.title;
-  state.events.activeEventText = eventDef.description;
+  state.events.activeEventTitle = resolveI18nText(eventDef.titleKey, eventDef.title);
+  state.events.activeEventText = resolveI18nText(eventDef.descriptionKey, eventDef.description);
   state.events.activeLearningNote = eventDef.learningNote || '';
   state.events.activeSeverity = eventDef.severity;
   state.events.activeCooldownRealMinutes = eventDef.cooldownRealMinutes || 120;
@@ -3379,10 +3436,11 @@ function syncActiveEventFromCatalog() {
     if (localizedOption) {
       localizedOptions.push({
         id: localizedOption.id,
-        label: localizedOption.label,
+        label: resolveI18nText(localizedOption.labelKey, localizedOption.label),
         effects: { ...(localizedOption.effects || {}) },
         sideEffects: Array.isArray(localizedOption.sideEffects) ? localizedOption.sideEffects : [],
         followUps: Array.isArray(localizedOption.followUps) ? localizedOption.followUps : [],
+        followUp: resolveI18nText(localizedOption.followUpKey, localizedOption.followUp || ''),
         intent: typeof localizedOption.intent === 'string' ? localizedOption.intent : '',
         contextFit: Array.isArray(localizedOption.contextFit) ? localizedOption.contextFit.slice() : []
       });
@@ -3393,10 +3451,11 @@ function syncActiveEventFromCatalog() {
     for (const option of eventDef.options.slice(0, 3)) {
       localizedOptions.push({
         id: option.id,
-        label: option.label,
+        label: resolveI18nText(option.labelKey, option.label),
         effects: { ...(option.effects || {}) },
         sideEffects: Array.isArray(option.sideEffects) ? option.sideEffects : [],
         followUps: Array.isArray(option.followUps) ? option.followUps : [],
+        followUp: resolveI18nText(option.followUpKey, option.followUp || ''),
         intent: typeof option.intent === 'string' ? option.intent : '',
         contextFit: Array.isArray(option.contextFit) ? option.contextFit.slice() : []
       });

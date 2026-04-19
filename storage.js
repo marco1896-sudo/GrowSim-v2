@@ -780,6 +780,9 @@ function getCanonicalSettings(snapshot) {
   if (!s.settings || typeof s.settings !== 'object') {
     s.settings = {};
   }
+  if (typeof s.settings.language !== 'string') {
+    s.settings.language = '';
+  }
   if (!s.settings.gameplay || typeof s.settings.gameplay !== 'object') {
     s.settings.gameplay = {};
   }
@@ -1436,6 +1439,7 @@ function resetStateToDefaults() {
     ? progressionApi.getDefaultRunState()
     : getCanonicalRun({});
   state.settings = {
+    language: '',
     notifications: {
       enabled: false,
       types: {

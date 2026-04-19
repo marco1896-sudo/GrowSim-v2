@@ -302,44 +302,44 @@
         </section>
 
         <aside id="homeStatPopup" class="home-stat-popup hidden" aria-hidden="true" role="dialog" aria-live="polite">
-          <strong id="homeStatPopupTitle" class="home-stat-popup__title">Wasserhaushalt</strong>
-          <p id="homeStatPopupText" class="home-stat-popup__copy">Wasserhaushalt stabil.</p>
+        <strong id="homeStatPopupTitle" class="home-stat-popup__title" data-i18n="popup.water.title">Wasserhaushalt</strong>
+        <p id="homeStatPopupText" class="home-stat-popup__copy" data-i18n="popup.water.primary.stable">Wasserhaushalt stabil.</p>
           <p id="homeStatPopupTrend" class="home-stat-popup__trend hidden" aria-hidden="true"></p>
-          <button id="homeStatPopupAction" class="home-stat-popup__action hidden" type="button" aria-hidden="true">Gießen</button>
+        <button id="homeStatPopupAction" class="home-stat-popup__action hidden" type="button" aria-hidden="true" data-i18n="care.water">Gießen</button>
         </aside>
 
         </div>
 
         <section class="home-action-panel" aria-label="Schnellaktionen">
-          <button id="boostActionBtn" class="home-action-btn" type="button" aria-label="Boost aktivieren">
+          <button id="boostActionBtn" class="home-action-btn" type="button" aria-label="Boost aktivieren" data-i18n-aria-label="home.boost">
             <span class="home-boost-tag">x24</span>
             <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/icon_boost_neu.png" width="56" height="56" alt="" aria-hidden="true">
-            <span class="home-action-title" aria-hidden="true">Boost</span>
+            <span class="home-action-title" aria-hidden="true" data-i18n="home.boost">Boost</span>
           </button>
-          <button id="careBoostActionBtn" class="home-action-btn hidden" type="button" aria-label="Care Boost aktivieren">
+          <button id="careBoostActionBtn" class="home-action-btn hidden" type="button" aria-label="Care Boost aktivieren" data-i18n-aria-label="home.care_boost">
             <img id="careBoostActionIcon" class="home-action-icon" src="assets/ui/icons/time_boost.png" width="56" height="56" alt="" aria-hidden="true">
-            <span class="home-action-title" aria-hidden="true">Care Boost</span>
+            <span class="home-action-title" aria-hidden="true" data-i18n="home.care_boost">Care Boost</span>
           </button>
-          <button id="climateStabilizeActionBtn" class="home-action-btn hidden" type="button" aria-label="Climate Stabilize aktivieren">
+          <button id="climateStabilizeActionBtn" class="home-action-btn hidden" type="button" aria-label="Climate Stabilize aktivieren" data-i18n-aria-label="home.climate_stabilize">
             <img id="climateStabilizeActionIcon" class="home-action-icon" src="assets/ui/icons/icon_vpd.svg" width="56" height="56" alt="" aria-hidden="true">
-            <span class="home-action-title" aria-hidden="true">Climate Stabilize</span>
+            <span class="home-action-title" aria-hidden="true" data-i18n="home.climate_stabilize">Climate Stabilize</span>
           </button>
-          <button id="skipNightActionBtn" class="home-action-btn" type="button" aria-label="Night Shift aktivieren">
+          <button id="skipNightActionBtn" class="home-action-btn" type="button" aria-label="Night Shift aktivieren" data-i18n-aria-label="home.night_shift">
             <span class="home-action-cost-tag" aria-hidden="true">25C</span>
             <img id="skipNightActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_nightshift.png" width="56" height="56" alt="" aria-hidden="true">
-            <span class="home-action-title" aria-hidden="true">Night Shift</span>
+            <span class="home-action-title" aria-hidden="true" data-i18n="home.night_shift">Night Shift</span>
           </button>
-          <button id="eventsActionBtn" class="home-action-btn" type="button" aria-label="Events öffnen">
+          <button id="eventsActionBtn" class="home-action-btn" type="button" aria-label="Events öffnen" data-i18n-aria-label="home.events">
             <img id="eventsActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_events_neu.png" width="56" height="56" alt="" aria-hidden="true">
-            <span class="home-action-title" aria-hidden="true">Events</span>
+            <span class="home-action-title" aria-hidden="true" data-i18n="home.events">Events</span>
           </button>
-          <button id="analyzeActionBtn" class="home-action-btn" type="button" aria-label="Analyse öffnen">
+          <button id="analyzeActionBtn" class="home-action-btn" type="button" aria-label="Analyse öffnen" data-i18n-aria-label="home.analyze">
             <img id="analyzeActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_analyse_neu.png" width="56" height="56" alt="" aria-hidden="true">
-            <span class="home-action-title" aria-hidden="true">Analyse</span>
+            <span class="home-action-title" aria-hidden="true" data-i18n="home.analyze">Analyse</span>
           </button>
-          <button id="careActionBtn" class="home-action-btn" type="button" aria-label="Pflege öffnen">
+          <button id="careActionBtn" class="home-action-btn" type="button" aria-label="Pflege öffnen" data-i18n-aria-label="home.care">
             <img id="careActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_pflege_neu.png" width="56" height="56" alt="" aria-hidden="true">
-            <span class="home-action-title" aria-hidden="true">Pflege</span>
+            <span class="home-action-title" aria-hidden="true" data-i18n="home.care">Pflege</span>
           </button>
         </section>
 
@@ -673,7 +673,7 @@
 
   <section id="eventSheet" class="bottom-sheet figma-sheet figma-sheet-event hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Ereignis-Popup</h2>
+      <h2 data-i18n="events.title">Ereignis-Popup</h2>
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
@@ -747,7 +747,7 @@
 
     <section id="diagnosisSheet" class="bottom-sheet figma-sheet figma-sheet-settings hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Settings</h2>
+      <h2 data-i18n="settings.title">Settings</h2>
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
@@ -757,7 +757,7 @@
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--gameplay">
-        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;">GAMEPLAY</h3>
+        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;" data-i18n="settings.gameplay">GAMEPLAY</h3>
         <div class="figma-static-row figma-static-row--stacked figma-static-row--sim-speed">
           <span class="settings-speed-label">Simulationstempo</span>
           <div id="settingsSimSpeedControl" class="settings-speed-control settings-speed-control--block">
@@ -771,45 +771,56 @@
             <small id="settingsSimSpeedHint" class="sheet-note settings-speed-hint hidden" aria-hidden="true"></small>
           </div>
         </div>
-        <div class="figma-static-row"><span>Event-Häufigkeit</span><span id="settingsEventFrequencyValue" class="subtitle">Normal</span></div>
-        <div class="figma-static-row"><span>Tutorial Hinweise</span><strong id="settingsTutorialValue" class="value_green">An</strong></div>
-        <div class="figma-static-row"><span>Auto Save</span><strong id="settingsAutosaveValue" class="value_green">Alle 5m</strong></div>
+        <div class="figma-static-row"><span data-i18n="settings.event_frequency">Event-Häufigkeit</span><span id="settingsEventFrequencyValue" class="subtitle">Normal</span></div>
+        <div class="figma-static-row"><span data-i18n="settings.tutorial_hints">Tutorial Hinweise</span><strong id="settingsTutorialValue" class="value_green">An</strong></div>
+        <div class="figma-static-row"><span data-i18n="settings.autosave">Auto Save</span><strong id="settingsAutosaveValue" class="value_green">Alle 5m</strong></div>
+        <div class="figma-static-row figma-static-row--stacked">
+          <span id="settingsLanguageLabel" data-i18n="settings.language">Sprache</span>
+          <div>
+            <select id="settingsLanguageSelect" class="settings-language-select" aria-label="Sprache auswählen">
+              <option value="de" data-i18n="settings.language_de">Deutsch</option>
+              <option value="en" data-i18n="settings.language_en">English</option>
+              <option value="es" data-i18n="settings.language_es">Español</option>
+            </select>
+            <small id="settingsLanguageHint" class="sheet-note" data-i18n="settings.language_hint">Änderungen wirken sofort.</small>
+          </div>
+        </div>
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--audio">
-        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;">AUDIO & GRAFIK</h3>
-        <div class="figma-static-row"><span>Master Lautstärke</span><strong id="settingsVolumeValue" class="value_gold">84%</strong></div>
-        <div class="figma-static-row"><span>Effekte</span><span id="settingsEffectsValue" class="subtitle">Hoch</span></div>
-        <div class="figma-static-row"><span>Batterie-Modus</span><span id="settingsBatteryValue" class="subtitle">Aus</span></div>
-        <div class="figma-static-row"><span>Haptik</span><strong id="settingsHapticValue" class="value_green">An</strong></div>
+        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;" data-i18n="settings.audio_graphics">AUDIO & GRAFIK</h3>
+        <div class="figma-static-row"><span data-i18n="settings.master_volume">Master Lautstärke</span><strong id="settingsVolumeValue" class="value_gold">84%</strong></div>
+        <div class="figma-static-row"><span data-i18n="settings.effects">Effekte</span><span id="settingsEffectsValue" class="subtitle">Hoch</span></div>
+        <div class="figma-static-row"><span data-i18n="settings.battery_mode">Batterie-Modus</span><span id="settingsBatteryValue" class="subtitle">Aus</span></div>
+        <div class="figma-static-row"><span data-i18n="settings.haptic">Haptik</span><strong id="settingsHapticValue" class="value_green">An</strong></div>
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--account">
-        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;">ACCOUNT</h3>
+        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;" data-i18n="settings.account">ACCOUNT</h3>
         <div id="settingsCloudSyncRow" class="figma-static-row settings-link-row" role="button" tabindex="0" aria-label="Cloud Sync öffnen">
-          <span>Cloud Sync</span>
+          <span data-i18n="settings.cloud_sync">Cloud Sync</span>
           <strong id="settingsCloudSyncValue" class="value_gold">Nicht verbunden</strong>
         </div>
         <div class="settings-push-block" aria-label="Push Einstellungen">
           <div class="settings-push-status-list">
-            <div class="figma-static-row settings-push-row"><span class="settings-push-label">Push unterstützt</span><strong id="settingsPushSupportValue" class="settings-push-value value_gold">-</strong></div>
-            <div class="figma-static-row settings-push-row"><span class="settings-push-label">Berechtigung</span><strong id="settingsPushPermissionValue" class="settings-push-value value_gold">-</strong></div>
-            <div class="figma-static-row settings-push-row"><span class="settings-push-label">Status</span><strong id="settingsPushStatusValue" class="settings-push-value value_gold">-</strong></div>
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_supported">Push unterstützt</span><strong id="settingsPushSupportValue" class="settings-push-value value_gold">-</strong></div>
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_permission">Berechtigung</span><strong id="settingsPushPermissionValue" class="settings-push-value value_gold">-</strong></div>
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_status">Status</span><strong id="settingsPushStatusValue" class="settings-push-value value_gold">-</strong></div>
           </div>
           <p id="settingsPushFeedback" class="sheet-note settings-push-feedback" aria-live="polite">Push ist noch nicht eingerichtet.</p>
         </div>
         <div class="menu-dialog-actions settings-push-actions">
-          <button id="settingsPushEnableBtn" class="action-btn action-primary" type="button">Push aktivieren</button>
-          <button id="settingsPushDisableBtn" class="ghost-btn" type="button">Push deaktivieren</button>
+          <button id="settingsPushEnableBtn" class="action-btn action-primary" type="button" data-i18n="settings.push_enable">Push aktivieren</button>
+          <button id="settingsPushDisableBtn" class="ghost-btn" type="button" data-i18n="settings.push_disable">Push deaktivieren</button>
         </div>
         <div class="menu-dialog-actions settings-push-actions settings-push-actions--secondary">
-          <button id="settingsPushTestBtn" class="ghost-btn" type="button">Test-Benachrichtigung senden</button>
+          <button id="settingsPushTestBtn" class="ghost-btn" type="button" data-i18n="settings.push_test">Test-Benachrichtigung senden</button>
         </div>
         
         <div class="figma-settings-actions" style="display: flex; justify-content: space-between; margin-top: 20px;">
-          <button id="analysisResetBtn" class="action-btn action-secondary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;">RESET</button>
-          <button id="settingsDefaultBtn" class="action-btn action-primary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;">DEFAULT</button>
-          <button id="settingsSaveBtn" class="action-btn action-primary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;">SAVE</button>
+          <button id="analysisResetBtn" class="action-btn action-secondary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;" data-i18n="settings.reset">RESET</button>
+          <button id="settingsDefaultBtn" class="action-btn action-primary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;" data-i18n="settings.default">DEFAULT</button>
+          <button id="settingsSaveBtn" class="action-btn action-primary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;" data-i18n="settings.save">SAVE</button>
         </div>
       </section>
     </div>
@@ -817,7 +828,7 @@
 
   <section id="missionsSheet" class="bottom-sheet figma-sheet figma-sheet-missions hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Missionen & Erfolge</h2>
+      <h2 data-i18n="daily.title">Missionen & Erfolge</h2>
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
@@ -857,7 +868,7 @@
 
   <section id="coinShopSheet" class="bottom-sheet figma-sheet figma-sheet-shop hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Coin-Shop</h2>
+      <h2 data-i18n="shop.title">Coin-Shop</h2>
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content shop-sheet-content">
@@ -884,33 +895,33 @@
 
   <section id="insufficientCoinsSheet" class="bottom-sheet figma-sheet figma-sheet-shop figma-sheet-insufficient-coins hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Nicht genug Coins</h2>
+      <h2 data-i18n="shop.insufficient_title">Nicht genug Coins</h2>
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content insufficient-coins-content">
       <section class="figma-section-card shop-sheet-panel">
         <div class="shop-sheet-head">
           <strong>Aktion blockiert</strong>
-          <small id="insufficientCoinsHintText" class="sheet-note">Für diese Aktion fehlen noch Coins.</small>
+          <small id="insufficientCoinsHintText" class="sheet-note" data-i18n="shop.insufficient_hint">Für diese Aktion fehlen noch Coins.</small>
         </div>
         <div class="insufficient-coins-metrics" aria-live="polite">
           <div class="insufficient-coins-metric">
-            <span>Aktuell</span>
+            <span data-i18n="shop.metric_current">Aktuell</span>
             <strong id="insufficientCoinsCurrentValue">0 C</strong>
           </div>
           <div class="insufficient-coins-metric">
-            <span>Benötigt</span>
+            <span data-i18n="shop.metric_required">Benötigt</span>
             <strong id="insufficientCoinsRequiredValue">0 C</strong>
           </div>
           <div class="insufficient-coins-metric insufficient-coins-metric--missing">
-            <span>Fehlen</span>
+            <span data-i18n="shop.metric_missing">Fehlen</span>
             <strong id="insufficientCoinsMissingValue">0 C</strong>
           </div>
         </div>
         <div class="insufficient-coins-actions">
-          <button id="insufficientCoinsOpenShopBtn" class="action-btn action-primary insufficient-coins-cta" type="button">Coins holen</button>
-          <button id="insufficientCoinsRewardedBtn" class="ghost-btn insufficient-coins-cta hidden" type="button" aria-hidden="true">Werbung ansehen</button>
-          <button id="insufficientCoinsCancelBtn" class="ghost-btn insufficient-coins-cta" type="button">Abbrechen</button>
+          <button id="insufficientCoinsOpenShopBtn" class="action-btn action-primary insufficient-coins-cta" type="button" data-i18n="shop.open_shop">Coins holen</button>
+          <button id="insufficientCoinsRewardedBtn" class="ghost-btn insufficient-coins-cta hidden" type="button" aria-hidden="true" data-i18n="shop.watch_ad">Werbung ansehen</button>
+          <button id="insufficientCoinsCancelBtn" class="ghost-btn insufficient-coins-cta" type="button" data-i18n="shop.insufficient_cancel">Abbrechen</button>
         </div>
       </section>
     </div>
@@ -957,18 +968,19 @@
             <span class="support-option-value">Flexible</span>
           </button>
         </div>
-        <button id="supportPrimaryCtaBtn" class="action-btn action-primary support-primary-cta" type="button">Mit PayPal unterstützen</button>
-        <p id="supportSecondaryHint" class="sheet-note support-secondary-hint">Freiwillig. Jeder Beitrag hilft direkt bei der Weiterentwicklung.</p>
+        <button id="supportPrimaryCtaBtn" class="action-btn action-primary support-primary-cta" type="button" data-i18n="support.paypal_cta">Mit PayPal unterstützen</button>
+        <p id="supportSecondaryHint" class="sheet-note support-secondary-hint" data-i18n="support.voluntary_hint">Freiwillig. Jeder Beitrag hilft direkt bei der Weiterentwicklung.</p>
       </section>
     </div>
   </section>
 
   <section id="imprint-sheet" class="bottom-sheet figma-sheet figma-sheet-legal hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Impressum</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <h2 data-i18n="legal.imprint_title">Impressum</h2>
+      <button class="sheet-close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content legal-sheet-content">
+      <p class="sheet-note legal-language-note" data-i18n="legal.de_only_notice">Der folgende Rechtstext ist derzeit nur auf Deutsch verfügbar.</p>
       <article class="legal-document" aria-label="Impressum Inhalt">
         <p><strong>Angaben gemäß § 5 DDG</strong></p>
         <p><strong>Name:</strong><br>Marco Tepaß</p>
@@ -984,10 +996,11 @@
 
   <section id="privacy-sheet" class="bottom-sheet figma-sheet figma-sheet-legal hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2>Datenschutz</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <h2 data-i18n="legal.privacy_title">Datenschutz</h2>
+      <button class="sheet-close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content legal-sheet-content">
+      <p class="sheet-note legal-language-note" data-i18n="legal.de_only_notice">Der folgende Rechtstext ist derzeit nur auf Deutsch verfügbar.</p>
       <article class="legal-document" aria-label="Datenschutz Inhalt">
         <h3>Datenschutzerklärung</h3>
 
@@ -1212,11 +1225,11 @@
       <p class="sheet-note">Letzte Aktionen / Events</p>
       <ol id="deathHistoryList" class="death-list"></ol>
       <div class="death-actions">
-        <button id="deathRescueBtn" class="action-btn action-primary" type="button" title="Startet die gleiche einmalige Notfallrettung wie der Menü-Eintrag.">Notfallrettung nutzen</button>
+      <button id="deathRescueBtn" class="action-btn action-primary" type="button" data-i18n="death.use_emergency_rescue" title="Startet die gleiche einmalige Notfallrettung wie der Menü-Eintrag.">Notfallrettung nutzen</button>
         <span id="deathRescueSubtext" class="sheet-note">1× pro Run bei kritischem Zustand</span>
         <span id="deathRescueFeedback" class="sheet-note"></span>
-        <button id="deathResetBtn" class="action-btn action-secondary" type="button" title="Verwirft den aktuellen Run und startet nach Bestätigung neu.">Run verwerfen &amp; neu starten</button>
-        <button id="deathAnalyzeBtn" class="action-btn action-ghost" type="button" title="Öffnet den Analyse-Report für den beendeten Run.">Analyse öffnen</button>
+      <button id="deathResetBtn" class="action-btn action-secondary" type="button" data-i18n="death.discard_and_restart" title="Verwirft den aktuellen Run und startet nach Bestätigung neu.">Run verwerfen &amp; neu starten</button>
+      <button id="deathAnalyzeBtn" class="action-btn action-ghost" type="button" data-i18n="analysis.open_analysis" title="Öffnet den Analyse-Report für den beendeten Run.">Analyse öffnen</button>
       </div>
     </div>
   </section>
@@ -1320,10 +1333,10 @@
       </section>
 
       <div class="death-actions">
-        <button id="runSummaryFinalizeBtn" class="action-btn action-primary" type="button">Abschließen</button>
-        <button id="runSummaryNewRunBtn" class="action-btn action-primary" type="button">Neuen Run starten</button>
-        <button id="runSummaryAnalyzeBtn" class="action-btn action-ghost" type="button">Analyse öffnen</button>
-        <button id="runSummarySupportBtn" class="action-btn action-ghost run-summary-support-btn" type="button">GrowSim unterstützen</button>
+    <button id="runSummaryFinalizeBtn" class="action-btn action-primary" type="button" data-i18n="run_summary.finalize">Abschließen</button>
+    <button id="runSummaryNewRunBtn" class="action-btn action-primary" type="button" data-i18n="run_summary.start_new_run">Neuen Run starten</button>
+    <button id="runSummaryAnalyzeBtn" class="action-btn action-ghost" type="button" data-i18n="analysis.open_analysis">Analyse öffnen</button>
+    <button id="runSummarySupportBtn" class="action-btn action-ghost run-summary-support-btn" type="button" data-i18n="support.title">GrowSim unterstützen</button>
       </div>
     </div>
   </section>
@@ -1331,7 +1344,7 @@
   <div id="menuBackdrop" class="menu-backdrop hidden" aria-hidden="true"></div>
   <section id="gameMenu" class="game-menu figma-menu-screen hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
     <header class="game-menu-header figma-sheet-header">
-      <h2 id="menuTitle">Menü</h2>
+      <h2 id="menuTitle" data-i18n="menu.title">Menü</h2>
       <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="Menü schließen">X</button>
     </header>
     <div class="game-menu-content figma-sheet-content">
@@ -1341,20 +1354,20 @@
       </section>
 
       <section class="figma-section-card figma-menu-list">
-        <button id="menuStatsBtn" class="menu-entry figma-menu-entry" type="button"><span>Analyse</span><small>Report &amp; Run-Statistik</small></button>
+        <button id="menuStatsBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.analysis">Analyse</span><small>Report &amp; Run-Statistik</small></button>
         <button id="menuLeaderboardBtn" class="menu-entry figma-menu-entry" type="button" aria-disabled="false" aria-hidden="false" title="Öffnet das Weekly-Leaderboard.">
           <span id="menuLeaderboardLabel" class="menu-entry-main">Leaderboard<span id="menuLeaderboardRewardHint" class="reward-hint-dot reward-hint-dot--entry hidden" aria-hidden="true"></span></span>
           <small id="menuLeaderboardSubtext">Nur verifizierte Ergebnisse</small>
         </button>
-        <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span id="menuRescueLabel">Notfallrettung</span><small id="menuRescueSubtext">1× pro Run bei kritischem Zustand.</small></button>
-        <button id="menuCoinShopBtn" class="menu-entry figma-menu-entry figma-menu-entry--shop" type="button"><span>Coin-Shop</span><small>Zeit, Komfort und Kontrolle direkt kaufen</small></button>
-        <button id="menuSupportBtn" class="menu-entry figma-menu-entry figma-menu-entry--support" type="button"><span>GrowSim unterstützen</span><small>Freiwilliger Support für neue Features</small></button>
-        <button id="menuMissionsBtn" class="menu-entry figma-menu-entry" type="button"><span>Missionen</span><small>Missionen &amp; Fortschritt</small></button>
-        <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span>Projektinfo</span><small>Status &amp; Hinweise</small></button>
-        <button id="menuImprintBtn" class="menu-entry figma-menu-entry" type="button"><span>Impressum</span><small>Anbieterkennzeichnung</small></button>
-        <button id="menuPrivacyBtn" class="menu-entry figma-menu-entry" type="button"><span>Datenschutz</span><small>Datenschutzerklärung</small></button>
-        <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span>Einstellungen</span><small>Einstellungen öffnen</small></button>
-        <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span>Speichern und Beenden</span><small>Neuen Run starten</small></button>
+        <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span id="menuRescueLabel" data-i18n="menu.rescue">Notfallrettung</span><small id="menuRescueSubtext">1× pro Run bei kritischem Zustand.</small></button>
+        <button id="menuCoinShopBtn" class="menu-entry figma-menu-entry figma-menu-entry--shop" type="button"><span data-i18n="menu.coin_shop">Coin-Shop</span><small>Zeit, Komfort und Kontrolle direkt kaufen</small></button>
+        <button id="menuSupportBtn" class="menu-entry figma-menu-entry figma-menu-entry--support" type="button"><span data-i18n="menu.support">GrowSim unterstützen</span><small>Freiwilliger Support für neue Features</small></button>
+        <button id="menuMissionsBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.missions">Missionen</span><small>Missionen &amp; Fortschritt</small></button>
+        <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.about">Projektinfo</span><small>Status &amp; Hinweise</small></button>
+        <button id="menuImprintBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.imprint">Impressum</span><small>Anbieterkennzeichnung</small></button>
+        <button id="menuPrivacyBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.privacy">Datenschutz</span><small>Datenschutzerklärung</small></button>
+        <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.settings">Einstellungen</span><small>Einstellungen öffnen</small></button>
+        <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.new_run">Speichern und Beenden</span><small>Neuen Run starten</small></button>
       </section>
 
       <section class="figma-section-card">
@@ -1365,7 +1378,7 @@
 
       <div class="menu-quick-actions">
         <button id="menuAchievementsBtn" class="ghost-btn hidden" type="button" disabled aria-disabled="true" aria-hidden="true" title="Im aktuellen Build noch nicht freigeschaltet.">Home</button>
-        <button id="menuCloseBtn" class="action-btn action-primary" type="button">Schließen</button>
+        <button id="menuCloseBtn" class="action-btn action-primary" type="button" data-i18n="menu.close">Schließen</button>
       </div>
     </div>
   </section>
@@ -1389,30 +1402,30 @@
   <section id="authModal" class="menu-dialog hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
     <div class="menu-dialog-card auth-modal-card">
       <p class="menu-dialog-kicker">Cloud Sync</p>
-      <h3 id="authModalTitle">Account</h3>
+      <h3 id="authModalTitle" data-i18n="auth.title">Account</h3>
       <div id="authModalLoggedOutView">
         <div class="auth-modal-tabs" role="tablist" aria-label="Auth Modus">
-          <button id="authTabLogin" class="auth-tab is-active" type="button">Login</button>
-          <button id="authTabRegister" class="auth-tab" type="button">Registrieren</button>
+          <button id="authTabLogin" class="auth-tab is-active" type="button" data-i18n="auth.login">Login</button>
+          <button id="authTabRegister" class="auth-tab" type="button" data-i18n="auth.register">Registrieren</button>
         </div>
         <div class="auth-modal-form-grid">
           <label id="authDisplayNameLabel" class="auth-field hidden">
-            <span>Anzeigename</span>
+            <span data-i18n="auth.display_name">Anzeigename</span>
             <input id="authDisplayNameInput" type="text" autocomplete="nickname" maxlength="64" />
           </label>
           <label class="auth-field">
-            <span>E-Mail</span>
+            <span data-i18n="auth.email">E-Mail</span>
             <input id="authEmailInput" type="email" autocomplete="email" />
           </label>
           <label class="auth-field">
-            <span>Passwort</span>
+            <span data-i18n="auth.password">Passwort</span>
             <input id="authPasswordInput" type="password" autocomplete="current-password" />
           </label>
         </div>
         <p id="authModalError" class="sheet-note auth-modal-error hidden" aria-live="polite"></p>
         <div class="menu-dialog-actions">
-          <button id="authModalCancelBtn" class="ghost-btn" type="button">Abbrechen</button>
-          <button id="authModalPrimaryBtn" class="action-btn action-primary" type="button">Login</button>
+          <button id="authModalCancelBtn" class="ghost-btn" type="button" data-i18n="auth.cancel">Abbrechen</button>
+          <button id="authModalPrimaryBtn" class="action-btn action-primary" type="button" data-i18n="auth.login">Login</button>
         </div>
       </div>
       <div id="authModalLoggedInView" class="hidden" aria-hidden="true">
@@ -1422,8 +1435,8 @@
           <div class="figma-static-row"><span>Anzeigename</span><strong id="authLoggedInNameValue" class="value_gold">-</strong></div>
         </div>
         <div class="menu-dialog-actions">
-          <button id="authModalCloseBtn" class="ghost-btn" type="button">Schließen</button>
-          <button id="authModalLogoutBtn" class="action-btn action-primary" type="button">Logout</button>
+          <button id="authModalCloseBtn" class="ghost-btn" type="button" data-i18n="common.close">Schließen</button>
+          <button id="authModalLogoutBtn" class="action-btn action-primary" type="button" data-i18n="auth.logout">Logout</button>
         </div>
       </div>
     </div>
@@ -1492,6 +1505,7 @@
       { src: 'src/config/api.js', type: 'module' },
       { src: 'src/config/simulation.js' },
       { src: 'src/utils/textEncoding.js' },
+      { src: 'src/i18n/index.js' },
       { src: 'sim.js' },
       { src: 'src/simulation/plantState.js' },
       { src: 'src/events/eventFlags.js' },

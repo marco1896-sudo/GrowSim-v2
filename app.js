@@ -262,6 +262,7 @@ const state = {
   plantId: SIM_PLANT_ID,
   setup: null,
   settings: {
+    language: '',
     notifications: {
       enabled: false,
       types: {
@@ -356,7 +357,8 @@ const state = {
       unlockedIds: [],
       unlockedHistory: [],
       lastShownAt: 0,
-      sessionShownCount: 0
+      sessionShownCount: 0,
+      onboardingHookShownAtMs: 0
     },
     claimLedger: [],
     analytics: {
@@ -753,12 +755,12 @@ const BOOT_PROGRESS_BY_STEP = Object.freeze({
   ready: 100
 });
 const BOOT_USER_MESSAGES = Object.freeze({
-  init: 'System wird gestartet...',
-  restore_session: 'Sitzung wird wiederhergestellt...',
-  load_data: 'Spieldaten werden geladen...',
-  init_simulation: 'Spielwelt wird vorbereitet...',
-  render_ui: 'Oberfläche wird aufgebaut...',
-  ready: 'Bereit'
+  init: 'boot.init',
+  restore_session: 'boot.restore_session',
+  load_data: 'boot.load_data',
+  init_simulation: 'boot.init_simulation',
+  render_ui: 'boot.render_ui',
+  ready: 'boot.ready'
 });
 const loadingScreenState = {
   startedAtMs: Date.now(),
@@ -789,7 +791,9 @@ const bootDiagnostics = {
 
 function getBootUserMessage(step) {
   const key = String(step || 'init');
-  return BOOT_USER_MESSAGES[key] || 'Start wird vorbereitet...';
+  const messageKey = BOOT_USER_MESSAGES[key] || 'boot.init';
+  const translated = i18nT(messageKey);
+  return translated === messageKey ? 'Starting system...' : translated;
 }
 
 function getBootTimeoutMessage(step) {
@@ -994,7 +998,7 @@ function ensureLoadingScreenUi() {
     retryBtn = document.createElement('button');
     retryBtn.id = 'appLoadingRetryBtn';
     retryBtn.type = 'button';
-    retryBtn.textContent = 'Erneut versuchen';
+    retryBtn.textContent = i18nT('status.retry');
     retryBtn.style.position = 'absolute';
     retryBtn.style.left = '50%';
     retryBtn.style.bottom = 'max(8px, env(safe-area-inset-bottom))';
@@ -1025,7 +1029,7 @@ function updateLoadingScreenFromBootState() {
   }
 
   const bootState = window.__gsBootState || { step: 'init', progress: 0, message: '' };
-  const message = String(bootState.message || '').trim() || 'Wird vorbereitet...';
+  const message = String(bootState.message || '').trim() || i18nT('status.preparing');
   const progress = Math.max(0, Math.min(100, Math.round(Number(bootState.progress) || 0)));
   ui.status.textContent = message;
   ui.progressFill.style.width = `${progress}%`;
@@ -1041,7 +1045,7 @@ function updateLoadingScreenFromBootState() {
     ui.progressFill.style.background = 'linear-gradient(90deg, rgba(230,140,140,0.9), rgba(248,176,176,0.98))';
     ui.note.style.display = 'block';
     ui.note.style.color = 'rgba(242, 210, 210, 0.78)';
-    ui.note.textContent = 'Der Start konnte nicht abgeschlossen werden.';
+    ui.note.textContent = i18nT('status.boot_failed');
     return;
   }
 
@@ -1054,7 +1058,7 @@ function updateLoadingScreenFromBootState() {
     ui.progressFill.style.background = 'linear-gradient(90deg, rgba(218,184,124,0.92), rgba(238,214,169,0.98))';
     ui.note.style.display = 'block';
     ui.note.style.color = 'rgba(233, 220, 194, 0.76)';
-    ui.note.textContent = 'Du kannst warten oder den Start neu versuchen.';
+    ui.note.textContent = i18nT('status.boot_timeout');
     return;
   }
 
@@ -1196,7 +1200,7 @@ function runGrowSimAppInit() {
     const failedPhase = (error && error.__gsBootMeta && error.__gsBootMeta.failedPhase)
       ? String(error.__gsBootMeta.failedPhase)
       : String((window.__gsBootState && window.__gsBootState.step) || 'init');
-    const failureMessage = `${getBootUserMessage(failedPhase).replace(/\.\.\.$/, '')} konnte nicht abgeschlossen werden. Bitte erneut versuchen.`;
+    const failureMessage = `${getBootUserMessage(failedPhase).replace(/\.\.\.$/, '')}. ${i18nT('errors.generic')}`;
     setBootStep(failedPhase, failureMessage);
     finalizeBootDiagnostics({ success: false, failedPhase, error });
     console.error('[boot][loader] failure state', {
@@ -1391,6 +1395,105 @@ function getPushUiTextBundle() {
   return api && api.TEXT ? api.TEXT : null;
 }
 
+let i18nRuntimeInitialized = false;
+
+function getI18nApi() {
+  const api = window.GrowSimI18n;
+  return api && typeof api === 'object' ? api : null;
+}
+
+function i18nT(key, vars = null) {
+  const api = getI18nApi();
+  if (api && typeof api.t === 'function') {
+    return api.t(key, vars || undefined);
+  }
+  return String(key || '');
+}
+
+function pickI18nVariant(baseKey, variantCount = 1, seed = 0) {
+  const total = Math.max(1, Math.trunc(Number(variantCount) || 1));
+  const safeSeed = Math.max(0, Math.trunc(Number(seed) || 0));
+  const index = (safeSeed % total) + 1;
+  return `${String(baseKey || '').trim()}.${index}`;
+}
+
+function applyI18nTranslations(root = document) {
+  const api = getI18nApi();
+  if (!api || typeof api.applyTranslationsToDOM !== 'function') {
+    return;
+  }
+  api.applyTranslationsToDOM(root);
+}
+
+function getIntlLocaleForCurrentLanguage() {
+  const api = getI18nApi();
+  const language = api && typeof api.getCurrentLanguage === 'function'
+    ? api.getCurrentLanguage()
+    : 'en';
+  if (language === 'de') {
+    return 'de-DE';
+  }
+  if (language === 'es') {
+    return 'es-ES';
+  }
+  return 'en-US';
+}
+
+async function initializeI18nRuntime() {
+  const api = getI18nApi();
+  if (!api || typeof api.init !== 'function') {
+    return 'en';
+  }
+
+  try {
+    await api.init();
+  } catch (error) {
+    console.warn('[i18n] init failed', error);
+  }
+
+  if (!i18nRuntimeInitialized) {
+    if (typeof api.registerLanguagePersistence === 'function') {
+      api.registerLanguagePersistence({
+        set: (language) => {
+          try {
+            const settings = getCanonicalSettings(state);
+            settings.language = String(language || '').trim();
+          } catch (_error) {
+          }
+        }
+      });
+    }
+
+    if (typeof api.onLanguageChange === 'function') {
+      api.onLanguageChange(({ language }) => {
+        try {
+          const settings = getCanonicalSettings(state);
+          settings.language = String(language || '').trim();
+        } catch (_error) {
+        }
+        applyI18nTranslations(document);
+        if (bootCompleted) {
+          renderAll();
+          schedulePersistState(true);
+        } else {
+          updateLoadingScreenFromBootState();
+        }
+      });
+    }
+    i18nRuntimeInitialized = true;
+  }
+
+  const settings = getCanonicalSettings(state);
+  const storedLanguage = typeof settings.language === 'string' ? settings.language.trim() : '';
+  const nextLanguage = storedLanguage
+    ? api.normalizeLanguage(storedLanguage)
+    : api.detectLanguage();
+  api.setLanguage(nextLanguage, { skipNotify: true });
+  settings.language = nextLanguage;
+  applyI18nTranslations(document);
+  return nextLanguage;
+}
+
 function resolvePushUiPresentation() {
   const api = getPushUiPresentationApi();
   if (!api || typeof api.resolvePushPresentation !== 'function') {
@@ -1579,6 +1682,9 @@ function ensureRetentionState(snapshot = state) {
     .slice(-60);
   retention.micro.lastShownAt = Number.isFinite(Number(retention.micro.lastShownAt)) ? Number(retention.micro.lastShownAt) : 0;
   retention.micro.sessionShownCount = Math.max(0, Math.trunc(Number(retention.micro.sessionShownCount) || 0));
+  retention.micro.onboardingHookShownAtMs = Number.isFinite(Number(retention.micro.onboardingHookShownAtMs))
+    ? Number(retention.micro.onboardingHookShownAtMs)
+    : 0;
   retention.claimLedger = Array.from(new Set(retention.claimLedger.map((entry) => String(entry || '').trim()).filter(Boolean)));
   retention.analytics.events = (Array.isArray(retention.analytics.events) ? retention.analytics.events : [])
     .filter((entry) => entry && typeof entry === 'object')
@@ -2074,11 +2180,11 @@ function renderSupportSheet(force = false) {
     button.classList.toggle('is-active', active);
     button.setAttribute('aria-pressed', String(active));
   }
-  ui.supportPrimaryCtaBtn.textContent = 'Mit PayPal unterstützen';
+  ui.supportPrimaryCtaBtn.textContent = i18nT('support.paypal_cta');
   ui.supportPrimaryCtaBtn.setAttribute('data-support-tier', selectedTier.id);
   ui.supportPrimaryCtaBtn.setAttribute('title', `${selectedTier.label} · ${selectedTier.displayAmount}`);
   if (ui.supportSecondaryHint) {
-    ui.supportSecondaryHint.textContent = 'Freiwillig. Jeder Beitrag hilft direkt bei der Weiterentwicklung.';
+    ui.supportSecondaryHint.textContent = i18nT('support.voluntary_hint');
   }
   primeSupportPaypalSdkButtons();
 }
@@ -2154,17 +2260,17 @@ function getCoinShopDefinitions() {
 async function onCoinShopActionClick(actionType) {
   const safeActionType = String(actionType || '').trim();
   if (!safeActionType) {
-    setCoinShopStatusMessage('Aktion nicht verfuegbar.', 'error');
+    setCoinShopStatusMessage(i18nT('shop.status_not_available'), 'error');
     renderCoinShopSheet(true);
     return;
   }
   if (coinUiRuntime.pendingActionId) {
-    setCoinShopStatusMessage('Bitte kurz warten, Aktion laeuft bereits.', 'info');
+    setCoinShopStatusMessage(i18nT('shop.status_action_running'), 'info');
     renderCoinShopSheet(true);
     return;
   }
   coinUiRuntime.pendingActionId = safeActionType;
-  setCoinShopStatusMessage('Kauf wird angewendet...', 'info');
+  setCoinShopStatusMessage(i18nT('shop.status_apply_purchase'), 'info');
   renderCoinShopSheet(true);
   try {
     const result = await triggerRewardAction(safeActionType, {
@@ -2173,15 +2279,15 @@ async function onCoinShopActionClick(actionType) {
     if (!result || !result.ok) {
       const reason = String(result && result.reason || 'action_failed');
       if (reason === 'insufficient_coins') {
-        setCoinShopStatusMessage('Nicht genug Coins. Unten findest du passende Coin-Packs.', 'error');
+        setCoinShopStatusMessage(i18nT('shop.status_not_enough'), 'error');
       } else if (reason === 'action_in_progress') {
-        setCoinShopStatusMessage('Aktion laeuft bereits.', 'info');
+        setCoinShopStatusMessage(i18nT('shop.status_action_running'), 'info');
       } else {
-        setCoinShopStatusMessage('Aktion konnte nicht ausgefuehrt werden.', 'error');
+        setCoinShopStatusMessage(i18nT('shop.status_action_failed'), 'error');
       }
       return;
     }
-    setCoinShopStatusMessage('Aktion erfolgreich angewendet.', 'success');
+    setCoinShopStatusMessage(i18nT('shop.status_action_success'), 'success');
   } finally {
     coinUiRuntime.pendingActionId = '';
     renderCoinShopSheet(true);
@@ -2191,19 +2297,19 @@ async function onCoinShopActionClick(actionType) {
 async function onCoinPackPurchaseClick(packId) {
   const safePackId = String(packId || '').trim();
   if (!safePackId) {
-    setCoinShopStatusMessage('Coin-Pack nicht verfuegbar.', 'error');
+    setCoinShopStatusMessage(i18nT('shop.status_pack_unavailable'), 'error');
     renderCoinShopSheet(true);
     return;
   }
   if (coinUiRuntime.pendingPackId) {
-    setCoinShopStatusMessage('Kauf wird bereits verarbeitet.', 'info');
+    setCoinShopStatusMessage(i18nT('shop.status_pack_processing'), 'info');
     renderCoinShopSheet(true);
     return;
   }
   const catalogApi = window.GrowSimCoinPackCatalog;
   const purchaseApi = window.GrowSimPurchaseService;
   if (!catalogApi || typeof catalogApi.getCoinPackById !== 'function' || !purchaseApi || typeof purchaseApi.purchaseCoinPack !== 'function') {
-    setCoinShopStatusMessage('Coin-Kauf derzeit nicht verfuegbar.', 'error');
+    setCoinShopStatusMessage(i18nT('shop.status_pack_purchase_unavailable'), 'error');
     if (typeof showRetentionToast === 'function') {
       showRetentionToast('Coin-Shop derzeit nicht verfuegbar');
     }
@@ -2212,13 +2318,13 @@ async function onCoinPackPurchaseClick(packId) {
   }
   const pack = catalogApi.getCoinPackById(safePackId);
   if (!pack) {
-    setCoinShopStatusMessage('Ausgewaehltes Coin-Pack wurde nicht gefunden.', 'error');
+    setCoinShopStatusMessage(i18nT('shop.status_pack_missing'), 'error');
     renderCoinShopSheet(true);
     return;
   }
 
   coinUiRuntime.pendingPackId = safePackId;
-  setCoinShopStatusMessage('Kauf wird vorbereitet...', 'info');
+  setCoinShopStatusMessage(i18nT('shop.status_prepare_purchase'), 'info');
   emitCoinTelemetry({
     type: 'coin_pack_attempt',
     payload: {
@@ -2233,7 +2339,7 @@ async function onCoinPackPurchaseClick(packId) {
       source: 'coin_shop'
     });
     if (!result || !result.ok) {
-      setCoinShopStatusMessage('Coin-Kauf aktuell nicht verfuegbar.', 'error');
+      setCoinShopStatusMessage(i18nT('shop.status_pack_purchase_unavailable_now'), 'error');
       if (typeof showRetentionToast === 'function') {
         showRetentionToast('Coin-Kauf aktuell nicht verfügbar');
       }
@@ -2251,7 +2357,7 @@ async function onCoinPackPurchaseClick(packId) {
     if (typeof showRetentionToast === 'function') {
       showRetentionToast(`${pack.title} · +${pack.coins} Coins`);
     }
-    setCoinShopStatusMessage(`${pack.title} erfolgreich gekauft.`, 'success');
+    setCoinShopStatusMessage(i18nT('shop.status_action_success'), 'success');
   } finally {
     coinUiRuntime.pendingPackId = '';
     renderCoinShopSheet(true);
@@ -2282,10 +2388,10 @@ function renderCoinShopSheet(force = false) {
   coinUiRuntime.renderRetryQueued = false;
 
   const coins = getCoins();
-  balanceNode.textContent = `${formatCompactNumber(coins)} Coins verfügbar`;
-  const defaultStatus = 'Alle Effekte greifen direkt ohne Inventar.';
+  balanceNode.textContent = i18nT('shop.balance_available', { amount: formatCompactNumber(coins) });
+  const defaultStatus = i18nT('shop.status_default');
   const statusText = coinUiRuntime.pendingActionId
-    ? 'Kauf wird angewendet...'
+    ? i18nT('shop.status_apply_purchase')
     : (coinUiRuntime.statusMessage || defaultStatus);
   statusNode.textContent = statusText;
   statusNode.dataset.tone = String(coinUiRuntime.statusTone || 'info');
@@ -2303,12 +2409,12 @@ function renderCoinShopSheet(force = false) {
     card.innerHTML = `
       <span class="coin-shop-card__icon">${escapeHtml(String(item.icon || 'C'))}</span>
       <span class="coin-shop-card__copy">
-        <strong>${escapeHtml(String(item.title || 'Coin-Aktion'))}</strong>
+        <strong>${escapeHtml(String(item.title || i18nT('menu.coin_shop')))}</strong>
         <small>${escapeHtml(String(presentation.hint || item.description || ''))}</small>
       </span>
       <span class="coin-shop-card__meta">
         <strong>${escapeHtml(String(formatCompactNumber(item.price)))} C</strong>
-        <small>${card.disabled && presentation.reason === 'insufficient_coins' ? 'Zu wenig Coins' : 'Direkt anwenden'}</small>
+        <small>${card.disabled && presentation.reason === 'insufficient_coins' ? i18nT('shop.too_few_coins') : i18nT('shop.direct_apply')}</small>
       </span>
     `;
     card.addEventListener('click', () => {
@@ -2471,8 +2577,8 @@ function getDailyCareTaskTemplates() {
     {
       id: 'water_once',
       type: 'water_once',
-      title: 'Einmal gießen',
-      description: 'Führe heute eine Gieß-Aktion aus.',
+      title: i18nT('daily.task.water_once.title'),
+      description: i18nT('daily.task.water_once.description'),
       trigger: 'water_once',
       target: 1,
       rewardCoins: getDefaultDailyTaskCoins('water_once')
@@ -2480,8 +2586,8 @@ function getDailyCareTaskTemplates() {
     {
       id: 'resolve_one_event',
       type: 'resolve_one_event',
-      title: 'Ein Event lösen',
-      description: 'Reagiere auf ein Event und schließe es sauber ab.',
+      title: i18nT('daily.task.resolve_one_event.title'),
+      description: i18nT('daily.task.resolve_one_event.description'),
       trigger: 'resolve_one_event',
       target: 1,
       rewardCoins: getDefaultDailyTaskCoins('resolve_one_event')
@@ -2489,8 +2595,8 @@ function getDailyCareTaskTemplates() {
     {
       id: 'open_app_twice',
       type: 'open_app_twice',
-      title: 'Zwei Sessions heute',
-      description: 'Öffne die App heute in zwei getrennten Sessions.',
+      title: i18nT('daily.task.open_app_twice.title'),
+      description: i18nT('daily.task.open_app_twice.description'),
       trigger: 'open_app_twice',
       target: 2,
       rewardCoins: getDefaultDailyTaskCoins('open_app_twice')
@@ -2498,8 +2604,8 @@ function getDailyCareTaskTemplates() {
     {
       id: 'stable_climate_window',
       type: 'stable_climate_window',
-      title: 'Klima stabil halten',
-      description: 'Halte Temperatur und Luftfeuchte kurz im grünen Bereich.',
+      title: i18nT('daily.task.stable_climate_window.title'),
+      description: i18nT('daily.task.stable_climate_window.description'),
       trigger: 'stable_climate_window',
       target: 1,
       rewardCoins: getDefaultDailyTaskCoins('stable_climate_window')
@@ -2873,6 +2979,12 @@ function recordRetentionSessionStart(nowMs = Date.now(), source = 'boot', option
     source: String(source || 'boot'),
     openCount: retention.session.openCount
   });
+  const onboardingAlreadyShown = Number(retention.micro && retention.micro.onboardingHookShownAtMs || 0) > 0;
+  if (!onboardingAlreadyShown && retention.session.openCount === 1) {
+    const hookKey = pickI18nVariant('onboarding.hook', 3, now);
+    showRetentionToast(i18nT(hookKey));
+    retention.micro.onboardingHookShownAtMs = now;
+  }
   if (options.skipPersist !== true) {
     schedulePersistState();
   }
@@ -3129,7 +3241,9 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
         nowMs,
         eventKey: `daily_task_completed:${retention.dailyCare.dayKey}:${task.taskId}`
       });
-      completionFeedback.push(`Daily geschafft: ${String(task.title || 'Aufgabe')}`);
+      completionFeedback.push(i18nT('daily.toast.task_done', {
+        task: String(task.title || i18nT('daily.task_fallback'))
+      }));
     }
   }
 
@@ -3137,7 +3251,7 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
   if (retention.dailyCare.completedCount >= 2) {
     unlockMicroAchievement('daily_pair_clean', {
       nowMs,
-      toastText: 'Starke Daily-Serie',
+      toastText: i18nT('daily.toast.strong_streak'),
       label: 'Daily Pair',
       rewardXp: 5
     });
@@ -3155,7 +3269,7 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
     changed = true;
     unlockMicroAchievement('daily_full_sweep', {
       nowMs,
-      toastText: 'Alle Daily-Ziele für heute erledigt',
+      toastText: i18nT('daily.toast.all_done'),
       label: 'Daily Full Sweep',
       rewardXp: 8
     });
@@ -3164,16 +3278,20 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
   if (newlyCompleted > 0 && retention.dailyCare.completedCount === 1) {
     unlockMicroAchievement('daily_first_task', {
       nowMs,
-      toastText: 'Erste Daily-Aufgabe erledigt',
+      toastText: i18nT('daily.toast.first_done'),
       label: 'First Daily Task',
       rewardXp: 4
     });
   }
 
   if (completionFeedback.length === 1) {
-    showRetentionToast(`${completionFeedback[0]} · jetzt claimen`);
+    showRetentionToast(i18nT('daily.toast.claim_now', {
+      text: completionFeedback[0]
+    }));
   } else if (completionFeedback.length > 1) {
-    showRetentionToast(`Daily-Schub: ${completionFeedback.length} Aufgaben geschafft`);
+    showRetentionToast(i18nT('daily.toast.multi_done', {
+      count: completionFeedback.length
+    }));
   }
 
   if (changed) {
@@ -4375,18 +4493,20 @@ function renderRewardCards(container, rewards, options = {}) {
     const card = document.createElement('article');
     card.className = `reward-entry-card${reward.claimed ? ' reward-entry-card--claimed' : ''}`;
     const isClaiming = Boolean(claimInFlightGrantId && reward.grantId === claimInFlightGrantId);
-    const statusLabel = reward.claimed ? 'Bereits eingelöst' : (reward.claimable ? 'Claimbar' : 'Nicht claimbar');
+    const statusLabel = reward.claimed
+      ? i18nT('rewards.status_claimed')
+      : (reward.claimable ? i18nT('rewards.status_claimable') : i18nT('rewards.status_not_claimable'));
     const buttonHtml = reward.claimable
-      ? `<button class="action-btn action-primary reward-claim-btn" type="button" data-reward-claim-grant="${escapeHtml(reward.grantId)}"${options.dialog ? ' data-reward-dialog="1"' : ''}${isClaiming ? ' disabled aria-disabled="true"' : ''}>${isClaiming ? 'Wird eingelöst …' : 'Jetzt freischalten'}</button>`
+      ? `<button class="action-btn action-primary reward-claim-btn" type="button" data-reward-claim-grant="${escapeHtml(reward.grantId)}"${options.dialog ? ' data-reward-dialog="1"' : ''}${isClaiming ? ' disabled aria-disabled="true"' : ''}>${isClaiming ? i18nT('rewards.claim_loading') : i18nT('rewards.claim_now')}</button>`
       : `<button class="ghost-btn reward-claim-btn" type="button" disabled aria-disabled="true">${escapeHtml(statusLabel)}</button>`;
     card.innerHTML = `
       <div class="reward-entry-card__head">
         <strong>${escapeHtml(getRewardDisplayTitle(reward))}</strong>
         <span>${escapeHtml(statusLabel)}</span>
       </div>
-      <p class="sheet-note">${escapeHtml(reward.subtitle || 'Verifizierte Weekly-Belohnung.')}</p>
+      <p class="sheet-note">${escapeHtml(reward.subtitle || i18nT('rewards.verified_weekly_reward'))}</p>
       <div class="reward-entry-card__foot">
-        <span class="reward-entry-card__value">${escapeHtml(reward.valueText || 'Weekly')}</span>
+        <span class="reward-entry-card__value">${escapeHtml(reward.valueText || i18nT('rewards.weekly_value'))}</span>
         ${buttonHtml}
       </div>
     `;
@@ -4403,15 +4523,17 @@ function renderRewardsSummaryBlock() {
 
   if (statusNode) {
     if (!authIdentity) {
-      statusNode.textContent = 'Login erforderlich';
+      statusNode.textContent = i18nT('rewards.login_required');
     } else if (rewardsState.rewardFetchState === 'loading') {
-      statusNode.textContent = 'Wird geladen';
+      statusNode.textContent = i18nT('status.loading');
     } else if (rewardsState.rewardError) {
-      statusNode.textContent = 'Aktuell nicht verfügbar';
+      statusNode.textContent = i18nT('status.unavailable_now');
     } else {
       const summary = rewardsState.rewardsSummary;
       const claimable = summary && Number.isFinite(Number(summary.claimableCount)) ? Number(summary.claimableCount) : 0;
-      statusNode.textContent = claimable > 0 ? `${claimable} claimbar` : 'Kein Claim offen';
+      statusNode.textContent = claimable > 0
+        ? i18nT('rewards.claimable_count', { count: claimable })
+        : i18nT('rewards.no_open_claim');
     }
   }
 
@@ -4420,12 +4542,12 @@ function renderRewardsSummaryBlock() {
     if (!authIdentity) {
       const hint = document.createElement('p');
       hint.className = 'sheet-note leaderboard-empty-note';
-      hint.textContent = 'Mit Login werden verifizierte Weekly-Belohnungen hier sichtbar.';
+      hint.textContent = i18nT('rewards.login_to_see_verified');
       summaryNode.appendChild(hint);
     } else if (rewardsState.rewardFetchState === 'loading') {
       const hint = document.createElement('p');
       hint.className = 'sheet-note leaderboard-empty-note';
-      hint.textContent = 'Belohnungen werden geladen …';
+      hint.textContent = i18nT('rewards.loading_rewards');
       summaryNode.appendChild(hint);
     } else if (rewardsState.rewardError) {
       const hint = document.createElement('p');
@@ -4437,13 +4559,13 @@ function renderRewardsSummaryBlock() {
       const line = document.createElement('p');
       line.className = 'sheet-note leaderboard-empty-note';
       if (!summary) {
-        line.textContent = 'Noch keine Weekly-Belohnungen für diesen Zeitraum.';
+        line.textContent = i18nT('rewards.none_for_period');
       } else {
         const claimable = Number(summary.claimableCount) || 0;
         const claimed = Number(summary.claimedCount) || 0;
         line.textContent = claimable > 0
-          ? `${claimable} verifizierte Weekly-Belohnung${claimable === 1 ? '' : 'en'} warten auf dich.`
-          : `${claimed} Weekly-Belohnung${claimed === 1 ? '' : 'en'} bereits eingelöst.`;
+          ? i18nT('rewards.claimable_verified_waiting', { count: claimable })
+          : i18nT('rewards.already_claimed_count', { count: claimed });
       }
       summaryNode.appendChild(line);
     }
@@ -4451,8 +4573,8 @@ function renderRewardsSummaryBlock() {
 
   renderRewardCards(listNode, rewardsState.rewardsList, {
     emptyText: authIdentity
-      ? 'Aktuell keine claimbaren Weekly-Belohnungen.'
-      : 'Ohne Login sind keine Weekly-Belohnungen sichtbar.',
+      ? i18nT('rewards.none_claimable_now')
+      : i18nT('rewards.not_visible_without_login'),
     dialog: true,
     claimInFlightGrantId: rewardsState.claimInFlightGrantId
   });
@@ -4477,19 +4599,19 @@ function renderRunSummaryRewardsBlock(harvestReadiness) {
   }
 
   if (rewardsState.rewardFetchState === 'loading') {
-    rewardsHintNode.textContent = 'Weekly-Belohnungen werden geladen …';
+    rewardsHintNode.textContent = i18nT('rewards.loading_rewards');
   } else if (rewardsState.rewardError) {
     rewardsHintNode.textContent = rewardsState.rewardError;
   } else {
     const summary = rewardsState.rewardsSummary;
     const claimable = summary && Number.isFinite(Number(summary.claimableCount)) ? Number(summary.claimableCount) : 0;
     rewardsHintNode.textContent = claimable > 0
-      ? 'Verifizierte Weekly-Belohnung bereit zum Einlösen.'
-      : 'Aktuell keine offene Weekly-Belohnung.';
+      ? i18nT('rewards.verified_ready_to_claim')
+      : i18nT('rewards.none_open_weekly');
   }
 
   renderRewardCards(rewardsListNode, rewardsState.rewardsList, {
-    emptyText: 'Aktuell keine claimbare Weekly-Belohnung.',
+    emptyText: i18nT('rewards.none_claimable_now'),
     dialog: false,
     claimInFlightGrantId: rewardsState.claimInFlightGrantId
   });
@@ -4515,12 +4637,12 @@ function renderLeaderboardSheet(force = false) {
     titleNode.textContent = `${formatLeaderboardScopeLabel(uiState.scope)} ${formatLeaderboardCategoryLabel(uiState.category)}`;
   }
   if (subtitleNode) {
-    subtitleNode.textContent = 'Nur verifizierte Ergebnisse erscheinen hier.';
+    subtitleNode.textContent = i18nT('leaderboard.only_verified');
   }
   if (statusNode) {
     statusNode.textContent = uiState.loading
-      ? 'Leaderboard wird geladen …'
-      : (uiState.error || (uiState.periodKey ? `Periode ${uiState.periodKey}` : 'Weekly Snapshot'));
+      ? i18nT('leaderboard.loading')
+      : (uiState.error || (uiState.periodKey ? i18nT('leaderboard.period', { period: uiState.periodKey }) : i18nT('leaderboard.weekly_snapshot')));
   }
   if (overallBtn) {
     overallBtn.classList.toggle('is-active', uiState.category === 'overall');
@@ -4539,35 +4661,41 @@ function renderLeaderboardSheet(force = false) {
       const me = uiState.meEntry;
       const card = document.createElement('article');
       card.className = 'leaderboard-me-card';
-      const bestRankText = Number.isFinite(Number(me.bestRank)) ? ` · Bestes Weekly #${Math.trunc(Number(me.bestRank))}` : '';
+      const bestRankText = Number.isFinite(Number(me.bestRank))
+        ? i18nT('leaderboard.best_rank_suffix', { rank: Math.trunc(Number(me.bestRank)) })
+        : '';
       card.innerHTML = `
-        <strong>Dein Weekly-Rang</strong>
+        <strong>${escapeHtml(i18nT('leaderboard.your_weekly_rank'))}</strong>
         <div class="leaderboard-me-card__score">#${escapeHtml(String(me.rank))}</div>
-        <p class="sheet-note">${escapeHtml(`Aktuell ${formatLeaderboardEntryScore(me.entry || me, uiState.category)} ${uiState.category === 'quality' ? 'Quality' : 'Score'}${bestRankText}`)}</p>
+        <p class="sheet-note">${escapeHtml(i18nT('leaderboard.current_score_line', {
+          score: formatLeaderboardEntryScore(me.entry || me, uiState.category),
+          metric: uiState.category === 'quality' ? i18nT('leaderboard.metric_quality') : i18nT('leaderboard.metric_score'),
+          best: bestRankText
+        }))}</p>
       `;
       meNode.appendChild(card);
     } else if (!authIdentity) {
       const hint = document.createElement('p');
       hint.className = 'sheet-note leaderboard-empty-note';
-      hint.textContent = 'Mit Login siehst du hier deinen Weekly-Rang und deine Position im Feld.';
+      hint.textContent = i18nT('leaderboard.login_to_see_rank');
       meNode.appendChild(hint);
     } else {
       const hint = document.createElement('p');
       hint.className = 'sheet-note leaderboard-empty-note';
-      hint.textContent = 'Noch kein verifizierter Weekly-Eintrag für dieses Profil.';
+      hint.textContent = i18nT('leaderboard.no_verified_entry_profile');
       meNode.appendChild(hint);
     }
   }
 
   renderLeaderboardEntryList(topNode, uiState.topEntries, {
     category: uiState.category,
-    emptyText: uiState.error || 'Diese Woche gibt es hier noch keine verifizierten Einträge.'
+    emptyText: uiState.error || i18nT('leaderboard.no_verified_entries_week')
   });
   renderLeaderboardEntryList(aroundNode, uiState.aroundMeEntries, {
     category: uiState.category,
     emptyText: authIdentity
-      ? 'Sobald ein verifizierter Weekly-Eintrag vorliegt, erscheint hier dein Umfeld.'
-      : 'Mit Login siehst du hier deine Position im direkten Umfeld.'
+      ? i18nT('leaderboard.around_me_after_verified')
+      : i18nT('leaderboard.login_to_see_position')
   });
   renderRewardsSummaryBlock();
 }
@@ -4852,18 +4980,18 @@ function buildRunSummaryHarvestMotivation(harvestSummary) {
     : [];
   if (opportunities.length) {
     const top = opportunities[0];
-    const label = normalizeHarvestUiLabel(top.label || 'nächste Verbesserung', 'opportunity');
-    const reason = normalizeHarvestUiText(top.reason || 'Hier liegt der klarste nächste Hebel.', 'opportunity');
+    const label = normalizeHarvestUiLabel(top.label || i18nT('harvest.next_improvement'), 'opportunity');
+    const reason = normalizeHarvestUiText(top.reason || i18nT('harvest.clearest_lever_here'), 'opportunity');
     return `${label}: ${reason}`;
   }
 
   const negative = Array.isArray(harvestSummary && harvestSummary.negativeDrivers) ? harvestSummary.negativeDrivers : [];
   if (negative.length) {
     const top = negative[0];
-    const label = normalizeHarvestUiLabel(top.label || 'Bremsfaktor');
-    return `${label} ruhiger spielen, dann ist im nächsten Run mehr drin.`;
+    const label = normalizeHarvestUiLabel(top.label || i18nT('harvest.brake_factor'));
+    return i18nT('harvest.play_calmer_next_run', { label });
   }
-  return 'Du bist nah an einer stärkeren Ernte. Ein sauberer nächster Schritt reicht oft schon aus.';
+  return i18nT('harvest.close_to_stronger_harvest');
 }
 
 function renderRunSummaryHarvestMetricRows(container, harvestSummary) {
@@ -4876,11 +5004,11 @@ function renderRunSummaryHarvestMetricRows(container, harvestSummary) {
   }
 
   const rows = [
-    { key: 'yield', label: 'Yield', value: harvestSummary.yieldScore, tier: 'primary' },
-    { key: 'quality', label: 'Quality', value: harvestSummary.qualityScore, tier: 'primary' },
-    { key: 'stability', label: 'Stability', value: harvestSummary.stabilityScore, tier: 'primary' },
-    { key: 'efficiency', label: 'Efficiency', value: harvestSummary.efficiencyScore, tier: 'secondary' },
-    { key: 'challenge', label: 'Challenge', value: harvestSummary.challengeScore, tier: 'muted' }
+    { key: 'yield', label: i18nT('harvest.metric_yield'), value: harvestSummary.yieldScore, tier: 'primary' },
+    { key: 'quality', label: i18nT('harvest.metric_quality'), value: harvestSummary.qualityScore, tier: 'primary' },
+    { key: 'stability', label: i18nT('harvest.metric_stability'), value: harvestSummary.stabilityScore, tier: 'primary' },
+    { key: 'efficiency', label: i18nT('harvest.metric_efficiency'), value: harvestSummary.efficiencyScore, tier: 'secondary' },
+    { key: 'challenge', label: i18nT('harvest.metric_challenge'), value: harvestSummary.challengeScore, tier: 'muted' }
   ];
 
   for (const item of rows) {
@@ -4908,22 +5036,22 @@ function renderRunSummaryHarvestImpact(container, harvestSummary) {
   for (const item of positives) {
     entries.push({
       tone: 'positive',
-      title: normalizeHarvestUiLabel(item.label || 'Starker Faktor'),
-      copy: normalizeHarvestUiText(item.reason || 'Hat die Prognose spürbar getragen.')
+      title: normalizeHarvestUiLabel(item.label || i18nT('harvest.strong_factor')),
+      copy: normalizeHarvestUiText(item.reason || i18nT('harvest.reason_supported_forecast'))
     });
   }
   for (const item of negatives) {
     entries.push({
       tone: 'negative',
-      title: normalizeHarvestUiLabel(item.label || 'Bremsfaktor'),
-      copy: normalizeHarvestUiText(item.reason || 'Hat die Prognose gebremst.')
+      title: normalizeHarvestUiLabel(item.label || i18nT('harvest.brake_factor')),
+      copy: normalizeHarvestUiText(item.reason || i18nT('harvest.reason_slowed_forecast'))
     });
   }
 
   if (!entries.length) {
     const empty = document.createElement('p');
     empty.className = 'sheet-note';
-    empty.textContent = 'Kein einzelner Faktor hat den Run dominant bestimmt.';
+    empty.textContent = i18nT('harvest.no_dominant_factor');
     container.appendChild(empty);
     return;
   }
@@ -4955,21 +5083,21 @@ function renderRunSummaryHarvestMoments(container, harvestSummary) {
   if (bestDriver) {
     const bestNode = document.createElement('article');
     bestNode.className = 'run-summary-impact-note run-summary-impact-note--positive';
-    bestNode.innerHTML = `<strong>Stärkster Moment: ${escapeHtml(normalizeHarvestUiLabel(bestDriver.label || 'Gute Phase'))}</strong><p class="sheet-note">${escapeHtml(normalizeHarvestUiText(bestDriver.reason || 'Diese Phase hat den Run spürbar getragen.'))}</p>`;
+    bestNode.innerHTML = `<strong>${escapeHtml(i18nT('harvest.strongest_moment_prefix'))}: ${escapeHtml(normalizeHarvestUiLabel(bestDriver.label || i18nT('harvest.good_phase')))}</strong><p class="sheet-note">${escapeHtml(normalizeHarvestUiText(bestDriver.reason || i18nT('harvest.phase_supported_run')))}</p>`;
     container.appendChild(bestNode);
   }
 
   if (biggestLoss) {
     const lossNode = document.createElement('article');
     lossNode.className = 'run-summary-impact-note run-summary-impact-note--negative';
-    lossNode.innerHTML = `<strong>Größter Verlust: ${escapeHtml(normalizeHarvestUiLabel(biggestLoss.label || 'Bremsfaktor'))}</strong><p class="sheet-note">${escapeHtml(normalizeHarvestUiText(biggestLoss.reason || 'Dieser Teil hat den Abschluss spürbar gedrückt.', 'loss'))}</p>`;
+    lossNode.innerHTML = `<strong>${escapeHtml(i18nT('harvest.biggest_loss_prefix'))}: ${escapeHtml(normalizeHarvestUiLabel(biggestLoss.label || i18nT('harvest.brake_factor')))}</strong><p class="sheet-note">${escapeHtml(normalizeHarvestUiText(biggestLoss.reason || i18nT('harvest.part_dragged_finish'), 'loss'))}</p>`;
     container.appendChild(lossNode);
   }
 
   if (!bestDriver && !biggestLoss) {
     const empty = document.createElement('p');
     empty.className = 'sheet-note';
-    empty.textContent = 'Der Run war ausgeglichen, ohne einzelnen dominanten Ausschlag.';
+    empty.textContent = i18nT('harvest.run_balanced_no_spike');
     container.appendChild(empty);
   }
 }
@@ -4977,23 +5105,23 @@ function renderRunSummaryHarvestMoments(container, harvestSummary) {
 function describeVerificationStatus(status, submissionState = 'idle') {
   const safeStatus = String(status || 'local_only').trim();
   if (safeStatus === 'verified') {
-    return 'Dieses Ergebnis wurde serverseitig bestätigt.';
+    return i18nT('harvest.verification_status.verified');
   }
   if (safeStatus === 'provisional') {
-    return 'Eine vorläufige Prüfung liegt vor. Das finale Ergebnis kann noch nachziehen.';
+    return i18nT('harvest.verification_status.provisional');
   }
   if (safeStatus === 'under_review') {
-    return 'Dein Ergebnis wird noch vertieft geprüft.';
+    return i18nT('harvest.verification_status.under_review');
   }
   if (safeStatus === 'rejected') {
-    return 'Dieses Ergebnis konnte nicht verifiziert werden. Die lokale Auswertung bleibt bestehen.';
+    return i18nT('harvest.verification_status.rejected');
   }
   if (safeStatus === 'submitted' || submissionState === 'submitting' || submissionState === 'polling') {
     return submissionState === 'submitting'
-      ? 'Die lokale Auswertung wird gerade an den Server übergeben.'
-      : 'Dein Ergebnis wird gerade geprüft.';
+      ? i18nT('harvest.verification_status.submitting')
+      : i18nT('harvest.verification_status.polling');
   }
-  return 'Kein Backend-Check vorhanden. Diese Auswertung bleibt lokal.';
+  return i18nT('harvest.verification_status.local_only');
 }
 
 function buildVerificationHeroTone(resultLike, verificationStatus, fallbackSummary = null) {
@@ -5003,28 +5131,28 @@ function buildVerificationHeroTone(resultLike, verificationStatus, fallbackSumma
 
   if (verificationStatus === 'verified') {
     if (score >= 84 && quality >= 80) {
-      return { title: 'Verifiziert stark', subtitle: 'Der Server bestätigt einen sehr sauberen Abschluss.' };
+      return { title: i18nT('harvest.hero.verified_strong_title'), subtitle: i18nT('harvest.hero.verified_strong_subtitle') };
     }
     if (score >= 68) {
-      return { title: 'Verifiziert solide', subtitle: 'Das Ergebnis wurde bestätigt und liegt auf einer stabilen Linie.' };
+      return { title: i18nT('harvest.hero.verified_solid_title'), subtitle: i18nT('harvest.hero.verified_solid_subtitle') };
     }
-    return { title: 'Verifiziert schwierig', subtitle: 'Der Server bestätigt das Ergebnis, aber der Run blieb unter Druck.' };
+    return { title: i18nT('harvest.hero.verified_difficult_title'), subtitle: i18nT('harvest.hero.verified_difficult_subtitle') };
   }
 
   if (verificationStatus === 'provisional') {
-    return { title: 'Vorläufig geprüft', subtitle: 'Eine erste Server-Prüfung liegt vor. Der finale Check läuft noch.' };
+    return { title: i18nT('harvest.hero.provisional_title'), subtitle: i18nT('harvest.hero.provisional_subtitle') };
   }
 
   return buildRunSummaryHarvestTone(fallbackSummary || result);
 }
 
 function formatHarvestVerificationBadge(status, submissionState = 'idle') {
-  if (status === 'verified') return 'Verifiziert';
-  if (status === 'provisional') return 'Vorläufig geprüft';
-  if (status === 'under_review') return 'Wird geprüft';
-  if (status === 'rejected') return 'Nicht verifizierbar';
-  if (status === 'submitted' || submissionState === 'submitting' || submissionState === 'polling') return 'Wird geprüft';
-  return 'Forecast';
+  if (status === 'verified') return i18nT('harvest.badge.verified');
+  if (status === 'provisional') return i18nT('harvest.badge.provisional');
+  if (status === 'under_review') return i18nT('harvest.badge.under_review');
+  if (status === 'rejected') return i18nT('harvest.badge.rejected');
+  if (status === 'submitted' || submissionState === 'submitting' || submissionState === 'polling') return i18nT('harvest.badge.under_review');
+  return i18nT('harvest.badge.forecast');
 }
 
 function buildHarvestVerificationInsightCards(readiness, localSummary) {
@@ -5852,6 +5980,7 @@ async function boot() {
     if (!stateRestoredDuringStartupAuthGate) {
       await runBootSubstep('restore_or_migrate_state', () => initOrMigrateState());
     }
+    await runBootSubstep('init_i18n_runtime', () => initializeI18nRuntime());
     logBootStep('boot:state_restore', {
       simTimeMs: state.simulation.simTimeMs,
       nextEventRealTimeMs: state.events.scheduler.nextEventRealTimeMs,
@@ -8149,7 +8278,7 @@ function openInsufficientCoinsFlow(details = {}) {
   flow.missingCoins = missingCoins;
   flow.actionType = actionType;
   flow.source = source;
-  flow.statusMessage = `Dir fehlen ${formatCompactNumber(missingCoins)} Coins für diese Aktion.`;
+  flow.statusMessage = i18nT('shop.insufficient_hint');
   flow.openedAtMs = nowMs;
   flow.requestSignature = requestSignature;
   flow.inFlight = true;
@@ -8170,8 +8299,8 @@ function onInsufficientCoinsOpenShopClick() {
   if (flow.inFlight) {
     return;
   }
-  flow.statusMessage = 'Coin-Shop wird geöffnet...';
-  setCoinShopStatusMessage('Nicht genug Coins. Du kannst direkt Packs oder Aktionen auswählen.', 'info');
+  flow.statusMessage = i18nT('status.loading');
+  setCoinShopStatusMessage(i18nT('shop.status_not_enough'), 'info');
   renderInsufficientCoinsSheet(true);
   openSheet('coinShop');
 }
@@ -8183,7 +8312,7 @@ async function onInsufficientCoinsRewardedClick() {
   }
   const rewardedOption = resolveInsufficientCoinsRewardedOption();
   if (!rewardedOption.available || typeof rewardedOption.requestFn !== 'function') {
-    flow.statusMessage = 'Rewarded ist gerade nicht verfügbar.';
+    flow.statusMessage = i18nT('shop.status_not_available');
     renderInsufficientCoinsSheet(true);
     if (typeof showRetentionToast === 'function') {
       showRetentionToast('Rewarded aktuell nicht verfügbar');
@@ -8192,7 +8321,7 @@ async function onInsufficientCoinsRewardedClick() {
   }
 
   flow.rewardedPending = true;
-  flow.statusMessage = 'Rewarded wird geladen...';
+  flow.statusMessage = i18nT('status.loading');
   renderInsufficientCoinsSheet(true);
   let rewardedResult = null;
   try {
@@ -8209,7 +8338,7 @@ async function onInsufficientCoinsRewardedClick() {
   }
 
   if (!rewardedResult || !rewardedResult.ok) {
-    flow.statusMessage = 'Rewarded wurde nicht abgeschlossen.';
+    flow.statusMessage = i18nT('shop.status_action_failed');
     renderInsufficientCoinsSheet(true);
     if (typeof showRetentionToast === 'function') {
       showRetentionToast('Rewarded nicht abgeschlossen');
@@ -8222,13 +8351,13 @@ async function onInsufficientCoinsRewardedClick() {
   const dedupKey = `insufficient_rewarded:${String(rewardedResult.grantedAtMs || Date.now())}:${String(flow.actionType || 'action')}`;
   const grantResult = grantCoins(rewardAmount, 'insufficient_rewarded_topup', dedupKey);
   if (!grantResult.ok) {
-    flow.statusMessage = 'Rewarded abgeschlossen, Gutschrift war doppelt und wurde übersprungen.';
+    flow.statusMessage = i18nT('status.saved');
     renderInsufficientCoinsSheet(true);
     return;
   }
   flow.currentCoins = grantResult.coins;
   flow.missingCoins = Math.max(0, flow.requiredCoins - flow.currentCoins);
-  flow.statusMessage = `+${formatCompactNumber(rewardAmount)} Coins gutgeschrieben.`;
+  flow.statusMessage = `+${formatCompactNumber(rewardAmount)} ${i18nT('status.saved')}`;
   renderInsufficientCoinsSheet(true);
   if (typeof showRetentionToast === 'function') {
     showRetentionToast(`Rewarded Bonus · +${rewardAmount} Coins`);
@@ -8257,7 +8386,7 @@ function renderInsufficientCoinsSheet(force = false) {
   flow.missingCoins = Math.max(0, flow.requiredCoins - currentCoins);
   const rewardedOption = resolveInsufficientCoinsRewardedOption();
 
-  hintNode.textContent = flow.statusMessage || `Für diese Aktion fehlen ${formatCompactNumber(flow.missingCoins)} Coins.`;
+  hintNode.textContent = flow.statusMessage || i18nT('shop.insufficient_hint');
   currentNode.textContent = `${formatCompactNumber(currentCoins)} C`;
   requiredNode.textContent = `${formatCompactNumber(flow.requiredCoins)} C`;
   missingNode.textContent = `${formatCompactNumber(flow.missingCoins)} C`;
@@ -8271,7 +8400,7 @@ function renderInsufficientCoinsSheet(force = false) {
   rewardedBtn.classList.toggle('hidden', !showRewarded);
   rewardedBtn.setAttribute('aria-hidden', String(!showRewarded));
   rewardedBtn.disabled = !showRewarded || flow.rewardedPending || flow.inFlight;
-  rewardedBtn.textContent = flow.rewardedPending ? 'Rewarded läuft…' : 'Werbung ansehen';
+  rewardedBtn.textContent = flow.rewardedPending ? i18nT('shop.watch_ad_running') : i18nT('shop.watch_ad');
   rewardedBtn.onclick = showRewarded ? (() => { void onInsufficientCoinsRewardedClick(); }) : null;
 }
 
@@ -11014,7 +11143,10 @@ function nextDaytimeRealMs(realNowMs, simTimeMs) {
 }
 
 function formatSimClock(simTimeMs) {
-  return new Date(simTimeMs).toLocaleTimeString('de-DE');
+  return new Date(simTimeMs).toLocaleTimeString(getIntlLocaleForCurrentLanguage(), {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 function deterministicUnitFloat(contextKey) {
@@ -11074,6 +11206,7 @@ function renderAll() {
   renderLanding();
   renderDeathOverlay();
   renderRunSummaryOverlay();
+  applyI18nTranslations(document);
   if (state.ui && typeof state.ui === 'object') {
     state.ui.lastRenderRealMs = Date.now();
   }
@@ -11245,30 +11378,32 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
     return 'in_progress';
   })();
   const streakHint = streakDoneToday
-    ? `Heute gesichert · Nächster Streak-Bonus +${nextStreakReward} Coins`
+    ? i18nT('daily.retention.streak_secured', { coins: nextStreakReward })
     : (nextMilestone
-      ? `Heute qualifizieren und auf ${Math.max(streakCount + 1, nextMilestone)} erhöhen`
-      : `Heute qualifizieren und Streak ${streakCount + 1} erreichen`);
-  const rewardHint = `Nächster Streak-Bonus: +${nextStreakReward} Coins`;
+      ? i18nT('daily.retention.streak_push_milestone', {
+        target: Math.max(streakCount + 1, nextMilestone)
+      })
+      : i18nT('daily.retention.streak_push_next', { streak: streakCount + 1 }));
+  const rewardHint = i18nT('daily.retention.next_streak_bonus', { coins: nextStreakReward });
   const teaserLine = (() => {
     if (dailyTotal <= 0) {
       return streakHint;
     }
     if (dailyClaimable > 0) {
       return dailyClaimable === 1
-        ? '1 Aufgabe ist abholbereit'
-        : `${dailyClaimable} Aufgaben sind abholbereit`;
+        ? i18nT('daily.retention.claim_ready_single')
+        : i18nT('daily.retention.claim_ready_multi', { count: dailyClaimable });
     }
     if (dailyClaimed >= dailyTotal) {
-      return 'Alles für heute eingesammelt';
+      return i18nT('daily.retention.all_collected_today');
     }
     if (dailyRemaining === 1) {
-      return 'Nur noch 1 Schritt bis zur Tagesrunde';
+      return i18nT('daily.retention.one_step_left');
     }
     if (dailyCompleted > 0) {
-      return `${dailyCompleted}/${dailyTotal} erledigt · dranbleiben`;
+      return i18nT('daily.retention.progress_keep_going', { done: dailyCompleted, total: dailyTotal });
     }
-    return 'Heute startet mit 3 klaren Zielen';
+    return i18nT('daily.retention.today_three_goals');
   })();
 
   return {
@@ -11402,15 +11537,20 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       dailyClaimed,
       dailyRemaining,
       state: retentionState,
-      headline: `Heute ${dailyCompleted}/${Math.max(1, dailyTotal)} Aufgaben`,
+      headline: i18nT('daily.retention.headline', {
+        done: dailyCompleted,
+        total: Math.max(1, dailyTotal)
+      }),
       teaserLine,
       rewardHint,
       teaserText: (() => {
         if (retentionState === 'claimable') {
-          return dailyClaimable === 1 ? '1 Claim wartet' : `${dailyClaimable} Claims warten`;
+          return dailyClaimable === 1
+            ? i18nT('daily.retention.claim_waiting_single')
+            : i18nT('daily.retention.claim_waiting_multi', { count: dailyClaimable });
         }
         if (retentionState === 'claimed') {
-          return 'Tagesrunde abgeschlossen';
+          return i18nT('daily.retention.day_complete');
         }
         return teaserLine;
       })()
@@ -11524,7 +11664,10 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   if (homeMetaRetentionTeaserNode) {
     const retentionVm = vm.retention && typeof vm.retention === 'object' ? vm.retention : {};
     const headline = String(retentionVm.headline || '').trim();
-    const streakLine = `Streak ${Math.max(0, Math.trunc(Number(retentionVm.streakCount) || 0))} · ${retentionVm.streakDoneToday ? 'Heute gesichert' : 'Heute offen'}`;
+    const streakLine = i18nT('daily.retention.streak_line', {
+      streak: Math.max(0, Math.trunc(Number(retentionVm.streakCount) || 0)),
+      status: retentionVm.streakDoneToday ? i18nT('daily.today_secured') : i18nT('daily.today_open')
+    });
     const primaryLine = String(retentionVm.teaserLine || retentionVm.teaserText || '').trim();
     const rewardHint = String(retentionVm.rewardHint || '').trim();
     const subline = [primaryLine, rewardHint].filter(Boolean).join(' · ');
@@ -11535,11 +11678,11 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
       ? `
         <span class="home-retention-card home-retention-card--${escapeHtml(status)}" data-state="${escapeHtml(status)}" aria-label="${escapeHtml(teaser)}">
           <span class="home-retention-card__top">
-            <strong class="home-retention-card__headline">${escapeHtml(headline || 'Heute 0/3 Aufgaben')}</strong>
-            <span class="home-retention-card__state">${escapeHtml(status === 'claimable' ? 'Claimbar' : (status === 'claimed' ? 'Abgeholt' : (status === 'in_progress' ? 'In Arbeit' : 'Offen')))}</span>
+            <strong class="home-retention-card__headline">${escapeHtml(headline || i18nT('daily.retention.headline', { done: 0, total: 3 }))}</strong>
+            <span class="home-retention-card__state">${escapeHtml(status === 'claimable' ? i18nT('daily.claimable') : (status === 'claimed' ? i18nT('daily.collected') : (status === 'in_progress' ? i18nT('daily.in_progress') : i18nT('daily.open'))))}</span>
           </span>
           <span class="home-retention-card__mid">${escapeHtml(streakLine)}</span>
-          <span class="home-retention-card__bottom">${escapeHtml(subline || `Nächster Streak-Bonus: +${nextReward} Coins`)}</span>
+          <span class="home-retention-card__bottom">${escapeHtml(subline || i18nT('daily.retention.next_streak_bonus', { coins: nextReward }))}</span>
         </span>
       `
       : '';
@@ -14295,12 +14438,12 @@ function getModernEventSheetContentState(viewModel, machineState) {
   if (machineState === 'resolved') {
     const outcome = getResolvedOutcomeView();
     return {
-      title: String(outcome && outcome.eventTitle ? outcome.eventTitle : 'Ergebnis bereit'),
+      title: String(outcome && outcome.eventTitle ? outcome.eventTitle : i18nT('events.resolved_title')),
       description: String(formatResolvedOutcome(outcome)),
       meta: [
         formatOutcomeStatusLabel(outcome && outcome.outcomeStatus),
-        outcome && outcome.optionLabel ? `Aktion: ${outcome.optionLabel}` : '',
-        'Schließe das Ereignis, um fortzufahren.'
+        outcome && outcome.optionLabel ? i18nT('events.meta_action_result_in', { action: outcome.optionLabel, time: '-' }) : '',
+        i18nT('events.close_to_continue')
       ].filter(Boolean).join(' | '),
       options: []
     };
@@ -14309,17 +14452,17 @@ function getModernEventSheetContentState(viewModel, machineState) {
   if (machineState === 'cooldown') {
     const cooldownLeft = Number(state.events.cooldownUntilSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0);
     return {
-      title: 'Abklingzeit aktiv',
-      description: 'Das Ereignissystem befindet sich in der Abklingzeit.',
-      meta: `Abklingzeit: ${formatCountdown(cooldownLeft)}`,
+      title: i18nT('events.cooldown_title'),
+      description: i18nT('events.cooldown_text'),
+      meta: `${i18nT('events.state_cooldown')}: ${formatCountdown(cooldownLeft)}`,
       options: []
     };
   }
 
   return {
-    title: 'Kein aktives Ereignis',
-    description: 'Ein Ereignis erscheint, sobald der nächste Wurf erfolgreich ist.',
-    meta: `Nächster Wurf: ${formatCountdown(Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0))}`,
+    title: i18nT('events.no_active_title'),
+    description: i18nT('events.no_active_text'),
+    meta: `${i18nT('home.event')}: ${formatCountdown(Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0))}`,
     options: []
   };
 }
@@ -14332,7 +14475,7 @@ function buildModernEventOptionListMarkup(options) {
 
   return safeOptions.map((option) => `
     <button class="event-option-btn" type="button" data-event-option-id="${escapeHtml(String(option.id || ''))}">
-      ${escapeHtml(String(option.label || option.id || 'Option'))}
+      ${escapeHtml(String(option.label || option.id || i18nT('events.choose_option')))}
     </button>
   `).join('');
 }
@@ -14419,8 +14562,8 @@ function renderModernEventSheetContent(viewModel, machineState) {
       <div class="figma-top-player-subtitle">Autoritativ bleibt Legacy, die Darstellung ist exklusiv modern.</div>
     </section>
     <section class="figma-section-card figma-section-card--event event-sheet-modern-card" data-tone="${escapeHtml(String(tone || 'idle'))}">
-      <h3 class="figma-section-head">Event Focus</h3>
-      <p class="sheet-badge" data-shadow="${escapeHtml(String(shadowSummary.primaryState || ''))}">Status: ${escapeHtml(translateEventState(machineState))}</p>
+      <h3 class="figma-section-head">${escapeHtml(i18nT('events.focus'))}</h3>
+      <p class="sheet-badge" data-shadow="${escapeHtml(String(shadowSummary.primaryState || ''))}">${escapeHtml(i18nT('events.status', { state: translateEventState(machineState) }))}</p>
       ${buildEventMediaMarkup(mediaModel, tone)}
       <h3 class="event-sheet-modern__title">${escapeHtml(String(contentState.title || 'Event'))}</h3>
       <p class="event-sheet-modern__text">${escapeHtml(String(contentState.description || ''))}</p>
@@ -15449,7 +15592,7 @@ function renderAnalysisTimeline() {
   if (!latest.length) {
     const empty = document.createElement('div');
     empty.className = 'gs-analysis-timeline-item';
-    empty.textContent = 'Noch keine Aktivitäten';
+    empty.textContent = i18nT('analysis.no_activity_yet');
     ui.analysisPanelTimeline.appendChild(empty);
     return;
   }
@@ -15461,7 +15604,7 @@ function renderAnalysisTimeline() {
 
     if (row.kind === 'action') {
       const d = row.data || {};
-      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Aktion</div><strong>${escapeHtml(String(d.label || d.id || 'Aktion'))}</strong><br>${formatDeltaSummary(d.deltaSummary || {})}`;
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · ${i18nT('analysis.action')}</div><strong>${escapeHtml(String(d.label || d.id || i18nT('analysis.action')))}</strong><br>${formatDeltaSummary(d.deltaSummary || {})}`;
     } else if (row.kind === 'event') {
       const d = row.data || {};
       const narrative = buildHistoryNarrative(d);
@@ -15471,20 +15614,20 @@ function renderAnalysisTimeline() {
         narrative.guidanceText,
         narrative.followUpText
       ].filter(Boolean);
-      const note = narrative.learningNote ? `<details><summary>Lernhinweis</summary>${escapeHtml(String(narrative.learningNote))}</details>` : '';
+      const note = narrative.learningNote ? `<details><summary>${escapeHtml(i18nT('analysis.learning_note'))}</summary>${escapeHtml(String(narrative.learningNote))}</details>` : '';
       const detail = detailParts.length ? `<br>${escapeHtml(detailParts.join(' · '))}` : '';
-      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Ereignis (${escapeHtml(categoryLabel(String(d.category || 'generic')))})</div><strong>${escapeHtml(String(d.eventTitle || d.optionLabel || d.optionId || d.eventId || 'Ereignis'))}</strong><br>${escapeHtml(String(summary || 'Keine Nettoänderung'))}${detail}${note}`;
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · ${i18nT('home.event')} (${escapeHtml(categoryLabel(String(d.category || 'generic')))})</div><strong>${escapeHtml(String(d.eventTitle || d.optionLabel || d.optionId || d.eventId || i18nT('home.event')))}</strong><br>${escapeHtml(String(summary || i18nT('analysis.no_net_change')))}${detail}${note}`;
     } else if (row.kind === 'forecast') {
       const d = row.data || {};
-      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · Forecast</div><strong>Harvest ${escapeHtml(String(Math.round(Number(d.harvestScore) || 0)))}</strong><br>Qualität ${escapeHtml(String(Math.round(Number(d.qualityScore) || 0)))} · ${escapeHtml(String(d.reason || 'Lokale Prognose aktualisiert.'))}`;
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · ${i18nT('harvest.badge.forecast')}</div><strong>${escapeHtml(i18nT('harvest.local_title'))} ${escapeHtml(String(Math.round(Number(d.harvestScore) || 0)))}</strong><br>${escapeHtml(i18nT('harvest.metric_quality'))} ${escapeHtml(String(Math.round(Number(d.qualityScore) || 0)))} · ${escapeHtml(String(d.reason || i18nT('analysis.local_forecast_updated')))}`;
     } else {
       const d = row.data || {};
       const typeLabel = String(d.type || 'system');
-      const label = d.label || d.id || 'System';
+      const label = d.label || d.id || i18nT('analysis.system');
       const wasDeadNote = typeof d.wasDead === 'boolean'
-        ? (d.wasDead ? ' · Reanimation' : ' · Stabilisierung')
+        ? (d.wasDead ? ` · ${i18nT('analysis.reanimation')}` : ` · ${i18nT('analysis.stabilization')}`)
         : '';
-      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · System (${escapeHtml(typeLabel === 'rescue' ? 'Notfallrettung' : 'System')})</div><strong>${escapeHtml(String(label))}</strong>${wasDeadNote}<br>${formatDeltaSummary(d.effectsApplied || (d.details && d.details.effectsApplied) || {})}`;
+      node.innerHTML = `<div class="gs-analysis-timeline-meta">${simStamp} · ${i18nT('analysis.system')} (${escapeHtml(typeLabel === 'rescue' ? i18nT('analysis.emergency_rescue') : i18nT('analysis.system'))})</div><strong>${escapeHtml(String(label))}</strong>${wasDeadNote}<br>${formatDeltaSummary(d.effectsApplied || (d.details && d.details.effectsApplied) || {})}`;
     }
 
     ui.analysisPanelTimeline.appendChild(node);
@@ -15497,7 +15640,7 @@ function simStampFromMs(simMs) {
   const delta = Math.max(0, raw - base);
   const totalDay = Math.floor(delta / (24 * 60 * 60 * 1000));
   const hh = Math.floor((delta % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-  return `Tag ${totalDay} · ${String(hh).padStart(2, '0')}:00`;
+  return i18nT('analysis.sim_stamp', { day: totalDay, hour: String(hh).padStart(2, '0') });
 }
 
 function formatDeltaSummary(delta) {
@@ -15508,7 +15651,7 @@ function formatDeltaSummary(delta) {
     }
     const n = round2(Number(v));
     parts.push(`${k}: ${n > 0 ? '+' : ''}${n}`);
-  } return parts.length ? parts.join(' · ') : 'Keine Nettoänderung';
+  } return parts.length ? parts.join(' · ') : i18nT('analysis.no_net_change');
 }
 
 function escapeHtml(value) {
@@ -15523,110 +15666,110 @@ function escapeHtml(value) {
 
 const STAT_DETAIL_CONFIG = Object.freeze({
   water: Object.freeze({
-    title: 'Wasser',
-    buttonLabel: 'Gießen',
+    title: 'home.water',
+    buttonLabel: 'care.water',
     action: () => openSheet('care'),
     getValue: () => Math.round(Number(state.status.water) || 0),
     getStatus: (value) => {
-      if (value >= 80) return 'Optimal';
-      if (value >= 60) return 'Stabil';
-      if (value >= 40) return 'Beobachten';
-      return 'Kritisch';
+      if (value >= 80) return i18nT('stat.status.optimal');
+      if (value >= 60) return i18nT('stat.status.stable');
+      if (value >= 40) return i18nT('stat.status.watch');
+      return i18nT('stat.status.critical');
     },
     getExplanation: (value) => {
-      if (value >= 80) return 'Wasser ist aktuell optimal. Die Pflanze bleibt gut versorgt.';
-      if (value >= 60) return 'Wasser ist aktuell stabil. In den nächsten Zyklen noch unkritisch.';
-      if (value >= 40) return 'Wasser wird knapper und sollte beobachtet werden.';
-      return 'Wasser ist niedrig, Trockenstress kann schnell ansteigen.';
+      if (value >= 80) return i18nT('stat.water.expl.optimal');
+      if (value >= 60) return i18nT('stat.water.expl.stable');
+      if (value >= 40) return i18nT('stat.water.expl.watch');
+      return i18nT('stat.water.expl.critical');
     },
     getRecommendation: (value) => {
       const waterIssue = diagnosePlantState().allIssues.find((entry) => entry.id === 'water_deficit' || entry.id === 'waterlogging');
       if (waterIssue) {
-        return `Empfehlung: ${describeDiagnosisRecommendation(waterIssue)}`;
+        return i18nT('stat.recommendation_prefix', { text: describeDiagnosisRecommendation(waterIssue) });
       }
       return value < 60
-        ? 'Empfehlung: Pflege öffnen und zeitnah gießen.'
-        : 'Empfehlung: Feuchtigkeit halten und den Verlauf beobachten.';
+        ? i18nT('stat.water.rec.low')
+        : i18nT('stat.water.rec.stable');
     }
   }),
   nutrition: Object.freeze({
-    title: 'Nährstoffe',
-    buttonLabel: 'Pflege öffnen',
+    title: 'home.feed',
+    buttonLabel: 'care.open',
     action: () => openSheet('care'),
     getValue: () => Math.round(Number(state.status.nutrition) || 0),
     getStatus: (value) => {
-      if (value >= 80) return 'Sehr gut';
-      if (value >= 60) return 'Solide';
-      if (value >= 40) return 'Leicht schwach';
-      return 'Mangelrisiko';
+      if (value >= 80) return i18nT('stat.status.very_good');
+      if (value >= 60) return i18nT('stat.status.solid');
+      if (value >= 40) return i18nT('stat.status.slightly_weak');
+      return i18nT('stat.status.deficit_risk');
     },
     getExplanation: (value) => {
-      if (value >= 60) return 'Nährstoffe unterstützen das Wachstum aktuell noch ausreichend.';
-      if (value >= 40) return 'Sinkende Nährstoffe können das Wachstum bald bremsen.';
-      return 'Nährstoffmangel begrenzt Entwicklung und erhöht Stresspotenzial.';
+      if (value >= 60) return i18nT('stat.nutrition.expl.ok');
+      if (value >= 40) return i18nT('stat.nutrition.expl.watch');
+      return i18nT('stat.nutrition.expl.low');
     },
     getRecommendation: (value) => {
       const issue = diagnosePlantState().allIssues.find((entry) => entry.id === 'nutrient_deficit' || entry.id === 'nutrient_pressure');
       if (issue) {
-        return `Empfehlung: ${describeDiagnosisRecommendation(issue)}`;
+        return i18nT('stat.recommendation_prefix', { text: describeDiagnosisRecommendation(issue) });
       }
       return value < 60
-        ? 'Empfehlung: Pflege öffnen und eine passende Düngungsmaßnahme prüfen.'
-        : 'Empfehlung: Nährstoffniveau halten und regelmäßig kontrollieren.';
+        ? i18nT('stat.nutrition.rec.low')
+        : i18nT('stat.nutrition.rec.ok');
     }
   }),
   growth: Object.freeze({
-    title: 'Wachstum',
-    buttonLabel: 'Analyse öffnen',
+    title: 'home.grow',
+    buttonLabel: 'analysis.open_analysis',
     action: () => openSheet('dashboard'),
     getValue: () => Math.round(Number(state.status.growth) || 0),
     getStatus: (value, impulse) => {
-      if (value >= 70 || impulse >= 0.12) return 'Guter Fortschritt';
-      if (value >= 40 || impulse >= 0.03) return 'Solide Entwicklung';
-      if (value <= 5 || impulse <= 0.005) return 'Kein aktiver Wachstumsfortschritt';
-      return 'Gebremst';
+      if (value >= 70 || impulse >= 0.12) return i18nT('stat.growth.status.good');
+      if (value >= 40 || impulse >= 0.03) return i18nT('stat.growth.status.solid');
+      if (value <= 5 || impulse <= 0.005) return i18nT('stat.growth.status.no_active');
+      return i18nT('stat.growth.status.slowed');
     },
     getExplanation: (_value, impulse) => {
-      if (impulse >= 0.12) return `Das Wachstum läuft stabil. Aktueller Impuls: ${impulse.toFixed(2)}.`;
-      if (impulse >= 0.03) return `Das Wachstum entwickelt sich solide. Impuls: ${impulse.toFixed(2)}.`;
-      return `Das Wachstum ist aktuell gebremst. Impuls: ${impulse.toFixed(2)}.`;
+      if (impulse >= 0.12) return i18nT('stat.growth.expl.good', { impulse: impulse.toFixed(2) });
+      if (impulse >= 0.03) return i18nT('stat.growth.expl.solid', { impulse: impulse.toFixed(2) });
+      return i18nT('stat.growth.expl.slowed', { impulse: impulse.toFixed(2) });
     },
     getRecommendation: (value) => {
       const primary = diagnosePlantState().primaryIssue;
       if (primary) {
-        return `Empfehlung: ${describeDiagnosisRecommendation(primary)}`;
+        return i18nT('stat.recommendation_prefix', { text: describeDiagnosisRecommendation(primary) });
       }
       return value < 40
-        ? 'Empfehlung: Analyse öffnen und Wasser-/Nährstofftreiber prüfen.'
-        : 'Empfehlung: Kurs halten und per Analyse auf Limitierungen achten.';
+        ? i18nT('stat.growth.rec.low')
+        : i18nT('stat.growth.rec.ok');
     }
   }),
   risk: Object.freeze({
-    title: 'Risiko',
-    buttonLabel: 'Analyse öffnen',
+    title: 'home.risk',
+    buttonLabel: 'analysis.open_analysis',
     action: () => openSheet('dashboard'),
     getValue: () => Math.round(Number(state.status.risk) || 0),
     getStatus: (value) => {
-      if (value >= 75) return 'Kritisch';
-      if (value >= 50) return 'Hoch';
-      if (value >= 25) return 'Erhöht';
-      return 'Niedrig';
+      if (value >= 75) return i18nT('stat.status.critical');
+      if (value >= 50) return i18nT('stat.status.high');
+      if (value >= 25) return i18nT('stat.status.elevated');
+      return i18nT('stat.status.low');
     },
     getExplanation: (_value) => {
       const topDriver = diagnosisDrivers()[0];
-      if (!topDriver || topDriver.label === 'Stabiler Zustand') {
-        return 'Aktuell besteht nur geringes Risiko.';
+      if (!topDriver) {
+        return i18nT('stat.risk.expl.low');
       }
-      return `Wichtigster Treiber: ${topDriver.label}. ${topDriver.reason}`;
+      return i18nT('stat.risk.expl.driver', { label: topDriver.label, reason: topDriver.reason });
     },
     getRecommendation: (value) => {
       const primary = diagnosePlantState().primaryIssue;
       if (primary) {
-        return `Empfehlung: ${describeDiagnosisRecommendation(primary)}`;
+        return i18nT('stat.recommendation_prefix', { text: describeDiagnosisRecommendation(primary) });
       }
       return value >= 50
-        ? 'Empfehlung: Analyse öffnen und Gegenmaßnahmen priorisieren.'
-        : 'Empfehlung: Entwicklung beobachten und Risikoquellen früh prüfen.';
+        ? i18nT('stat.risk.rec.high')
+        : i18nT('stat.risk.rec.low');
     }
   })
 });
@@ -15663,27 +15806,27 @@ function getHomeStatPopupModel(statKey, homeVm) {
   if (statKey === 'water') {
     if (water <= 30) {
       return {
-        title: 'Wasserhaushalt',
-        primary: 'Wasser wird knapp.',
-        secondary: risk >= 55 ? 'Bedarf steigt.' : 'Verbrauch leicht erhöht.',
-        actionLabel: 'Gießen',
+        title: i18nT('popup.water.title'),
+        primary: i18nT('popup.water.primary.low'),
+        secondary: risk >= 55 ? i18nT('popup.water.secondary.demand_up') : i18nT('popup.water.secondary.consumption_up'),
+        actionLabel: i18nT('care.water'),
         action: () => openSheet('care')
       };
     }
     if (water <= 55) {
       return {
-        title: 'Wasserhaushalt',
-        primary: 'Wasserreserve sinkt.',
-        secondary: growthImpulse >= 0.08 ? 'Bedarf steigt.' : 'Verbrauch leicht erhöht.',
-        actionLabel: 'Gießen',
+        title: i18nT('popup.water.title'),
+        primary: i18nT('popup.water.primary.reserve_down'),
+        secondary: growthImpulse >= 0.08 ? i18nT('popup.water.secondary.demand_up') : i18nT('popup.water.secondary.consumption_up'),
+        actionLabel: i18nT('care.water'),
         action: () => openSheet('care')
       };
     }
     return {
-      title: 'Wasserhaushalt',
-      primary: 'Wasserhaushalt stabil.',
-      secondary: growthImpulse >= 0.08 ? 'Verbrauch leicht erhöht.' : 'Aufnahme aktuell ruhig.',
-      actionLabel: 'Gießen',
+      title: i18nT('popup.water.title'),
+      primary: i18nT('popup.water.primary.stable'),
+      secondary: growthImpulse >= 0.08 ? i18nT('popup.water.secondary.consumption_up') : i18nT('popup.water.secondary.intake_calm'),
+      actionLabel: i18nT('care.water'),
       action: () => openSheet('care')
     };
   }
@@ -15691,27 +15834,27 @@ function getHomeStatPopupModel(statKey, homeVm) {
   if (statKey === 'nutrients') {
     if (nutrients <= 30) {
       return {
-        title: 'Nährstoffbalance',
-        primary: 'Versorgung wird knapp.',
-        secondary: 'Werte sollten beobachtet werden.',
-        actionLabel: 'Düngen',
+        title: i18nT('popup.nutrition.title'),
+        primary: i18nT('popup.nutrition.primary.low'),
+        secondary: i18nT('popup.nutrition.secondary.watch'),
+        actionLabel: i18nT('care.feed'),
         action: () => openSheet('care')
       };
     }
     if (nutrients <= 55) {
       return {
-        title: 'Nährstoffbalance',
-        primary: 'Nährstoffbedarf steigt.',
-        secondary: growthImpulse >= 0.06 ? 'Bedarf nimmt langsam zu.' : 'Werte sollten beobachtet werden.',
-        actionLabel: 'Düngen',
+        title: i18nT('popup.nutrition.title'),
+        primary: i18nT('popup.nutrition.primary.demand_up'),
+        secondary: growthImpulse >= 0.06 ? i18nT('popup.nutrition.secondary.slowly_up') : i18nT('popup.nutrition.secondary.watch'),
+        actionLabel: i18nT('care.feed'),
         action: () => openSheet('care')
       };
     }
     return {
-      title: 'Nährstoffbalance',
-      primary: 'Versorgung aktuell stabil.',
-      secondary: growthImpulse >= 0.06 ? 'Bedarf nimmt langsam zu.' : 'Aufnahme bleibt ruhig.',
-      actionLabel: 'Düngen',
+      title: i18nT('popup.nutrition.title'),
+      primary: i18nT('popup.nutrition.primary.stable'),
+      secondary: growthImpulse >= 0.06 ? i18nT('popup.nutrition.secondary.slowly_up') : i18nT('popup.nutrition.secondary.intake_calm'),
+      actionLabel: i18nT('care.feed'),
       action: () => openSheet('care')
     };
   }
@@ -15719,43 +15862,43 @@ function getHomeStatPopupModel(statKey, homeVm) {
   if (statKey === 'stress') {
     if (stress >= 70) {
       return {
-        title: 'Stresslevel',
-        primary: 'Stress steigt an.',
-        secondary: 'Beobachtung empfohlen.'
+        title: i18nT('popup.stress.title'),
+        primary: i18nT('popup.stress.primary.up'),
+        secondary: i18nT('popup.stress.secondary.watch')
       };
     }
     if (stress >= 40) {
       return {
-        title: 'Stresslevel',
-        primary: 'Leichte Belastung erkennbar.',
-        secondary: 'Beobachtung empfohlen.'
+        title: i18nT('popup.stress.title'),
+        primary: i18nT('popup.stress.primary.light'),
+        secondary: i18nT('popup.stress.secondary.watch')
       };
     }
     return {
-      title: 'Stresslevel',
-      primary: 'Stress aktuell unkritisch.',
-      secondary: 'Keine direkte Maßnahme nötig.'
+      title: i18nT('popup.stress.title'),
+      primary: i18nT('popup.stress.primary.ok'),
+      secondary: i18nT('popup.stress.secondary.no_action')
     };
   }
 
   if (risk >= 70) {
     return {
-      title: 'Risikoanalyse',
-      primary: 'Risiko nimmt zu.',
-      secondary: 'Beobachtung empfohlen.'
+      title: i18nT('popup.risk.title'),
+      primary: i18nT('popup.risk.primary.up'),
+      secondary: i18nT('popup.risk.secondary.watch')
     };
   }
   if (risk >= 40) {
     return {
-      title: 'Risikoanalyse',
-      primary: 'Einige Werte sollten beobachtet werden.',
-      secondary: 'Trend aktuell stabil.'
+      title: i18nT('popup.risk.title'),
+      primary: i18nT('popup.risk.primary.watch_values'),
+      secondary: i18nT('popup.risk.secondary.trend_stable')
     };
   }
   return {
-    title: 'Risikoanalyse',
-    primary: 'Kein akutes Risiko erkannt.',
-    secondary: 'Keine direkte Maßnahme nötig.'
+    title: i18nT('popup.risk.title'),
+    primary: i18nT('popup.risk.primary.no_acute'),
+    secondary: i18nT('popup.risk.secondary.no_action')
   };
 }
 
@@ -15871,12 +16014,12 @@ function renderStatDetailSheet() {
   const explanation = config.getExplanation(value, impulse);
   const recommendation = config.getRecommendation(value, impulse);
 
-  ui.statDetailTitle.textContent = config.title;
+  ui.statDetailTitle.textContent = i18nT(String(config.title || ''));
   ui.statDetailValue.textContent = `${value}`;
-  ui.statDetailStatus.textContent = `Status: ${status}`;
+  ui.statDetailStatus.textContent = i18nT('stat.status_line', { status });
   ui.statDetailExplanation.textContent = explanation;
   ui.statDetailRecommendation.textContent = recommendation;
-  ui.statDetailPrimaryBtn.textContent = config.buttonLabel;
+  ui.statDetailPrimaryBtn.textContent = i18nT(String(config.buttonLabel || ''));
 }
 
 function openSheet(name) {
@@ -16028,28 +16171,28 @@ function renderMissionsSheet() {
   }, 0);
   const remainingTasks = Math.max(0, totalTasks - completedTasks);
   const dayStatusLabel = claimableTasks > 0
-    ? (claimableTasks === 1 ? '1 Aufgabe claimbar' : `${claimableTasks} Aufgaben claimbar`)
+    ? (claimableTasks === 1 ? `1 ${i18nT('daily.claimable')}` : `${claimableTasks} ${i18nT('daily.claimable')}`)
     : (remainingTasks <= 0
-      ? (daily.allCompleteClaimed ? 'Alles abgeholt' : 'Alles erledigt')
-      : (remainingTasks === 1 ? 'Noch 1 Aufgabe offen' : `Noch ${remainingTasks} Aufgaben offen`));
+      ? (daily.allCompleteClaimed ? i18nT('daily.collected') : i18nT('daily.completed'))
+      : (remainingTasks === 1 ? `1 ${i18nT('daily.open')}` : `${remainingTasks} ${i18nT('daily.open')}`));
   const streakSubline = streakDoneToday
-    ? `Heute gesichert · nächster Bonus +${nextRewardCoins} Coins`
+    ? i18nT('daily.retention.streak_secured', { coins: nextRewardCoins })
     : (nextMilestone
-      ? `Heute qualifizieren und Richtung ${nextMilestone} spielen`
-      : `Heute qualifizieren und +${nextRewardCoins} Coins vorbereiten`);
+      ? i18nT('daily.retention.streak_push_milestone', { target: nextMilestone })
+      : i18nT('daily.retention.prepare_bonus', { coins: nextRewardCoins }));
 
   const streakBlock = uiNode('missionsStreakBlock', 'missionsStreakBlock');
   if (streakBlock) {
     const milestoneLabel = nextMilestone
-      ? `Nächster Milestone: ${nextMilestone} · Nächster Streak-Reward: ${nextRewardCoins} C`
-      : `Nächster Streak-Reward: ${nextRewardCoins} C`;
+      ? i18nT('daily.retention.milestone_with_reward', { milestone: nextMilestone, coins: nextRewardCoins })
+      : i18nT('daily.retention.next_reward_compact', { coins: nextRewardCoins });
     streakBlock.innerHTML = `
       <div class="retention-streak-main">
-        <strong>Daily Streak ${streakCount}</strong>
-        <span class="retention-streak-status ${streakDoneToday ? 'is-secured' : 'is-open'}">${streakDoneToday ? 'Heute gesichert' : 'Heute offen'}</span>
+        <strong>${escapeHtml(i18nT('daily.retention.streak_title', { count: streakCount }))}</strong>
+        <span class="retention-streak-status ${streakDoneToday ? 'is-secured' : 'is-open'}">${escapeHtml(streakDoneToday ? i18nT('daily.today_secured') : i18nT('daily.today_open'))}</span>
       </div>
       <small>${escapeHtml(streakSubline)}</small>
-      <small class="retention-streak-best">Best Streak: ${escapeHtml(String(streakBest))} · ${escapeHtml(milestoneLabel)}</small>
+      <small class="retention-streak-best">${escapeHtml(i18nT('daily.retention.best_streak_line', { best: streakBest }))} · ${escapeHtml(milestoneLabel)}</small>
     `;
   }
 
@@ -16059,7 +16202,7 @@ function renderMissionsSheet() {
     if (!tasks.length) {
       const empty = document.createElement('p');
       empty.className = 'sheet-note';
-      empty.textContent = 'Daily-Care wird vorbereitet.';
+      empty.textContent = i18nT('daily.empty_daily');
       dailyList.appendChild(empty);
     } else {
       const previousStateMap = renderMissionsSheet._taskStateMap && typeof renderMissionsSheet._taskStateMap === 'object'
@@ -16076,13 +16219,17 @@ function renderMissionsSheet() {
           ? (inProgress ? 'in_progress' : 'open')
           : (rewardGranted ? 'claimed' : 'claimable');
         const stateLabel = rowState === 'open'
-          ? 'Offen'
+          ? i18nT('daily.open')
           : (rowState === 'in_progress'
-            ? 'In Arbeit'
-            : (rowState === 'claimable' ? 'Claimbar' : 'Abgeholt'));
+            ? i18nT('daily.in_progress')
+            : (rowState === 'claimable' ? i18nT('daily.claimable') : i18nT('daily.collected')));
         const stateHint = !completed
-          ? (inProgress ? `${progress}/${target} Fortschritt · fast geschafft` : `Starte mit ${String(task.title || 'dieser Aufgabe').toLowerCase()}`)
-          : (rewardGranted ? 'Belohnung eingesammelt.' : `Bereit für +${Math.max(0, Math.trunc(Number(task.rewardCoins) || 0))} Coins`);
+          ? (inProgress
+            ? i18nT('daily.retention.progress_almost', { progress, target })
+            : i18nT('daily.retention.start_task', { task: String(task.title || i18nT('daily.task_fallback')).toLowerCase() }))
+          : (rewardGranted
+            ? i18nT('daily.retention.reward_collected')
+            : i18nT('daily.retention.ready_for_coins', { coins: Math.max(0, Math.trunc(Number(task.rewardCoins) || 0)) }));
         const progressRatio = clamp(progress / target, 0, 1);
         const claimTaskId = String(task.taskId || task.id || '');
         const stateKey = `task:${claimTaskId}`;
@@ -16094,12 +16241,12 @@ function renderMissionsSheet() {
         const row = document.createElement('div');
         row.className = `retention-task-row retention-task-row--${rowState}${completed && rewardGranted ? ' retention-task-row--done' : ''}${transitionClass}`;
         const claimButtonHtml = completed && !rewardGranted
-          ? `<button class="action-btn action-primary retention-task-claim-btn" type="button" data-retention-claim-task="${escapeHtml(claimTaskId)}">Claim +${Math.max(0, Math.trunc(Number(task.rewardCoins) || 0))} C</button>`
+          ? `<button class="action-btn action-primary retention-task-claim-btn" type="button" data-retention-claim-task="${escapeHtml(claimTaskId)}">${i18nT('daily.claim')} +${Math.max(0, Math.trunc(Number(task.rewardCoins) || 0))} C</button>`
           : '';
         const stateToneClass = `retention-task-state retention-task-state--${rowState}`;
         row.innerHTML = `
           <span class="retention-task-copy">
-            <strong>${escapeHtml(String(task.title || 'Aufgabe'))}</strong>
+            <strong>${escapeHtml(String(task.title || i18nT('daily.task_fallback')))}</strong>
             <small>${escapeHtml(stateHint)}</small>
             <span class="retention-task-progress-wrap" aria-hidden="true">
               <span class="retention-task-progress-track">
@@ -16116,15 +16263,22 @@ function renderMissionsSheet() {
             claimButton.disabled = true;
             const result = claimDailyTask(String(task.taskId || task.id || ''), Date.now());
             if (!result.ok && result.reason !== 'already_claimed') {
-              showRetentionToast('Claim aktuell nicht möglich');
+              showRetentionToast(i18nT('daily.claim_not_possible'));
               claimButton.disabled = false;
               return;
             }
             const streakCoins = result.streak && result.streak.ok ? Math.max(0, Math.trunc(Number(result.streak.streakCoins) || 0)) : 0;
             if (result.ok) {
-              showRetentionToast(`Daily eingesammelt · +${Math.max(0, Math.trunc(Number(result.coinsGranted) || 0))} Coins${streakCoins > 0 ? ` · Streak +${streakCoins}` : ''}`);
+              showRetentionToast(streakCoins > 0
+                ? i18nT('daily.claim_success_with_streak', {
+                  coins: Math.max(0, Math.trunc(Number(result.coinsGranted) || 0)),
+                  streak: streakCoins
+                })
+                : i18nT('daily.claim_success', {
+                  coins: Math.max(0, Math.trunc(Number(result.coinsGranted) || 0))
+                }));
             } else {
-              showRetentionToast('Bereits geclaimt');
+              showRetentionToast(i18nT('daily.already_claimed'));
             }
             renderMissionsSheet();
             renderAll();
@@ -16137,8 +16291,8 @@ function renderMissionsSheet() {
         const note = document.createElement('p');
         note.className = 'sheet-note';
         note.textContent = claimableTasks === 1
-          ? '1 Aufgabe ist abholbereit. Hol dir den Claim und sichere die Streak.'
-          : `${claimableTasks} Aufgaben sind abholbereit. Jetzt einsammeln und Streak sichern.`;
+          ? i18nT('daily.retention.claim_note_single')
+          : i18nT('daily.retention.claim_note_multi', { count: claimableTasks });
         dailyList.appendChild(note);
       }
     }
@@ -16147,19 +16301,23 @@ function renderMissionsSheet() {
   const dailyProgressNode = uiNode('missionsDailyCareProgress', 'missionsDailyCareProgress');
   if (dailyProgressNode) {
     if (totalTasks <= 0) {
-      dailyProgressNode.textContent = 'Heute keine Daily-Ziele offen';
+      dailyProgressNode.textContent = i18nT('daily.today_open');
     } else if (claimableTasks > 0) {
       dailyProgressNode.textContent = claimableTasks === 1
-        ? '1 Task ist claimbar'
-        : `${claimableTasks} Tasks sind claimbar`;
+        ? `1 ${i18nT('daily.claimable')}`
+        : `${claimableTasks} ${i18nT('daily.claimable')}`;
     } else if (completedTasks <= 0) {
-      dailyProgressNode.textContent = `${totalTasks} Daily-Ziele für heute offen`;
+      dailyProgressNode.textContent = `${totalTasks} ${i18nT('daily.open')}`;
     } else if (completedTasks >= totalTasks) {
-      dailyProgressNode.textContent = daily.allCompleteClaimed ? 'Heute alles geclaimt' : 'Alles erledigt · Claims offen';
+      dailyProgressNode.textContent = daily.allCompleteClaimed ? i18nT('daily.all_collected') : i18nT('daily.completed');
     } else if (remainingTasks === 1) {
-      dailyProgressNode.textContent = 'Nur noch 1 Aufgabe bis zur Tagesrunde';
+      dailyProgressNode.textContent = i18nT('daily.one_task_left_round');
     } else {
-      dailyProgressNode.textContent = `${completedTasks}/${totalTasks} erledigt · ${dayStatusLabel}`;
+      dailyProgressNode.textContent = i18nT('daily.retention.progress_day_status', {
+        done: completedTasks,
+        total: totalTasks,
+        status: dayStatusLabel
+      });
     }
   }
 
@@ -16179,23 +16337,25 @@ function renderMissionsSheet() {
     if (!recoveryOpen) {
       recoveryTextNode.textContent = '';
     } else if (Number(streak.freezeCredits || 0) > 0) {
-      recoveryTextNode.textContent = `Streak-Rettung verfügbar · ${Math.max(0, Math.trunc(Number(streak.pendingRecoveryStreakCount) || 0))} Tage wiederherstellbar.`;
+      recoveryTextNode.textContent = i18nT('daily.streak_recovery_available', {
+        days: Math.max(0, Math.trunc(Number(streak.pendingRecoveryStreakCount) || 0))
+      });
     } else {
-      recoveryTextNode.textContent = 'Streak-Rettung erkannt. Hook vorbereitet, aktuell kein Recovery-Credit.';
+      recoveryTextNode.textContent = i18nT('daily.streak_recovery_no_credit');
     }
   }
   if (recoveryBtnNode) {
     const hasCredit = Number(streak.freezeCredits || 0) > 0;
     recoveryBtnNode.disabled = !recoveryOpen || !hasCredit;
     recoveryBtnNode.setAttribute('aria-disabled', String(!recoveryOpen || !hasCredit));
-    recoveryBtnNode.textContent = hasCredit ? 'Serie retten' : 'Kein Credit';
+    recoveryBtnNode.textContent = hasCredit ? i18nT('daily.recover_streak') : i18nT('daily.no_credit');
     recoveryBtnNode.onclick = () => {
       const result = tryApplyStreakRecovery(Date.now());
       if (!result.ok) {
-        showRetentionToast('Rettung aktuell nicht möglich');
+        showRetentionToast(i18nT('daily.recovery_not_possible'));
         return;
       }
-      showRetentionToast(`Serie gerettet · ${result.restoredCount} Tage`);
+      showRetentionToast(i18nT('daily.recovery_success_days', { days: result.restoredCount }));
       renderMissionsSheet();
       renderAll();
     };
@@ -16205,19 +16365,19 @@ function renderMissionsSheet() {
     const showBonusCta = recoveryOpen && !hasCredit;
     recoveryBonusBtnNode.classList.toggle('hidden', !showBonusCta);
     recoveryBonusBtnNode.setAttribute('aria-hidden', String(!showBonusCta));
-    recoveryBonusBtnNode.onclick = () => {
-      const result = tryApplyRewardedBonus('streak_recovery_credit', {
-        nowMs: Date.now(),
-        source: 'missions_recovery'
-      });
-      if (!result.ok) {
-        showRetentionToast('Optionaler Bonus aktuell nicht verfügbar');
-        return;
-      }
-      showRetentionToast('Bonus aktiviert · 1 Recovery-Credit');
-      renderMissionsSheet();
-      renderAll();
-    };
+      recoveryBonusBtnNode.onclick = () => {
+        const result = tryApplyRewardedBonus('streak_recovery_credit', {
+          nowMs: Date.now(),
+          source: 'missions_recovery'
+        });
+        if (!result.ok) {
+          showRetentionToast(i18nT('daily.retention.optional_bonus_unavailable'));
+          return;
+        }
+        showRetentionToast(i18nT('daily.retention.recovery_bonus_activated'));
+        renderMissionsSheet();
+        renderAll();
+      };
   }
 
   const microList = uiNode('missionsMicroList', 'missionsMicroList');
@@ -16235,7 +16395,7 @@ function renderMissionsSheet() {
     if (!visibleMicroEntries.length) {
       const empty = document.createElement('p');
       empty.className = 'sheet-note';
-      empty.textContent = 'Heute wartet noch dein erster Micro-Erfolg.';
+      empty.textContent = i18nT('daily.empty_micro');
       microList.appendChild(empty);
     } else {
       for (const entry of visibleMicroEntries) {
@@ -16361,7 +16521,7 @@ function renderMenuDialogRewards(items) {
   }
 }
 
-function openMenuDialog({ title, message, cancelLabel = 'Abbrechen', confirmLabel = 'OK', onConfirm = null, variant = 'default', kicker = '', rewards = [] }) {
+function openMenuDialog({ title, message, cancelLabel = i18nT('common.cancel'), confirmLabel = i18nT('common.ok'), onConfirm = null, variant = 'default', kicker = '', rewards = [] }) {
   if (!ui.menuDialogTitle || !ui.menuDialogText || !ui.menuDialogCancelBtn || !ui.menuDialogConfirmBtn) {
     return;
   }
@@ -16717,13 +16877,13 @@ function renderRunSummaryOverlay() {
     if (!unlocks.length) {
       const empty = document.createElement('p');
       empty.className = 'sheet-note';
-      empty.textContent = 'In diesem Run wurde noch nichts Neues freigeschaltet.';
+      empty.textContent = i18nT('run_summary.unlocks_none');
       ui.runSummaryUnlocks.appendChild(empty);
     } else {
       for (const unlock of unlocks) {
         const row = document.createElement('article');
         row.className = 'run-summary-unlock';
-        row.innerHTML = `<strong>${escapeHtml(String(unlock.title || unlock.value || 'Unlock'))}</strong><p class="sheet-note">${escapeHtml(String(unlock.effect || 'Neue Startoption freigeschaltet.'))}</p>`;
+        row.innerHTML = `<strong>${escapeHtml(String(unlock.title || unlock.value || i18nT('run_summary.unlock_default_title')))}</strong><p class="sheet-note">${escapeHtml(String(unlock.effect || i18nT('run_summary.unlock_default_effect')))}</p>`;
         ui.runSummaryUnlocks.appendChild(row);
       }
     }
@@ -16742,13 +16902,13 @@ function renderRunSummaryOverlay() {
     : harvestSummary;
   const harvestTone = harvestReadiness.verificationStatus === 'verified' && verifiedHarvestResult
     ? buildVerificationHeroTone(verifiedHarvestResult, 'verified', harvestSummary)
-    : (harvestSummary ? buildRunSummaryHarvestTone(harvestSummary) : { title: 'Lokale Harvest-Auswertung', subtitle: 'Der Abschluss ist bereit.' });
+    : (harvestSummary ? buildRunSummaryHarvestTone(harvestSummary) : { title: i18nT('harvest.local_title'), subtitle: i18nT('harvest.finish_ready') });
   if (ui.runSummaryHarvestBadge) {
     const showsVerifiedPrimary = harvestReadiness.verificationStatus === 'verified' && verifiedHarvestResult;
     if (runSummaryHarvestTitleNode) {
-      runSummaryHarvestTitleNode.textContent = showsVerifiedPrimary ? 'Verifiziertes Harvest-Ergebnis' : 'Lokale Harvest-Auswertung';
+      runSummaryHarvestTitleNode.textContent = showsVerifiedPrimary ? i18nT('harvest.verified_result_title') : i18nT('harvest.local_title');
     }
-    ui.runSummaryHarvestBadge.textContent = showsVerifiedPrimary ? 'Verifiziertes Ergebnis' : 'Lokale Auswertung';
+    ui.runSummaryHarvestBadge.textContent = showsVerifiedPrimary ? i18nT('harvest.verified_result_badge') : i18nT('harvest.local_badge');
     ui.runSummaryHarvestBadge.dataset.status = showsVerifiedPrimary ? 'verified' : 'local';
   }
   if (ui.runSummaryHarvestHint) {
@@ -16756,7 +16916,7 @@ function renderRunSummaryOverlay() {
       || describeVerificationStatus(harvestReadiness.verificationStatus, harvestReadiness.submissionState)
       || (harvestSummary && harvestSummary.verificationHint
         ? String(harvestSummary.verificationHint)
-        : 'Für Ranglisten zählt später die verifizierte Server-Wertung.');
+        : i18nT('harvest.verified_required_for_rankings'));
   }
   if (ui.runSummaryHarvestScore) {
     ui.runSummaryHarvestScore.textContent = primaryHarvestSummary ? String(Math.round(Number(primaryHarvestSummary.harvestScore) || 0)) : '0';
@@ -16766,15 +16926,15 @@ function renderRunSummaryOverlay() {
   }
   const runSummaryHarvestHeroToneNode = uiNode('runSummaryHarvestHeroTone', 'runSummaryHarvestHeroTone');
   if (runSummaryHarvestHeroToneNode) {
-    runSummaryHarvestHeroToneNode.textContent = String(harvestTone.title || 'Lokale Harvest-Auswertung');
+    runSummaryHarvestHeroToneNode.textContent = String(harvestTone.title || i18nT('harvest.local_title'));
   }
   if (ui.runSummaryHarvestInterpretation) {
     const primaryInterpretation = primaryHarvestSummary && typeof primaryHarvestSummary === 'object'
-      ? (primaryHarvestSummary.explanation || primaryHarvestSummary.interpretation || harvestTone.subtitle || 'Lokale Harvest-Auswertung bereit.')
-      : 'Lokale Harvest-Auswertung bereit.';
+      ? (primaryHarvestSummary.explanation || primaryHarvestSummary.interpretation || harvestTone.subtitle || i18nT('harvest.local_ready'))
+      : i18nT('harvest.local_ready');
     const baseInterpretation = primaryHarvestSummary
       ? normalizeHarvestUiText(String(primaryInterpretation), 'hero')
-      : 'Lokale Harvest-Auswertung bereit.';
+      : i18nT('harvest.local_ready');
     ui.runSummaryHarvestInterpretation.textContent = baseInterpretation;
   }
   renderRunSummaryHarvestVerification(uiNode('runSummaryHarvestVerification', 'runSummaryHarvestVerification'), harvestReadiness, harvestSummary);
@@ -16785,11 +16945,11 @@ function renderRunSummaryOverlay() {
   const runSummaryHarvestMotivationNode = uiNode('runSummaryHarvestMotivation', 'runSummaryHarvestMotivation');
   if (runSummaryHarvestMotivationNode) {
     if (harvestReadiness.verificationStatus === 'verified' && verifiedHarvestResult) {
-      runSummaryHarvestMotivationNode.textContent = 'Das Ergebnis ist bestätigt. Ein noch ruhigerer nächster Run kann diese Marke weiter anheben.';
+      runSummaryHarvestMotivationNode.textContent = i18nT('harvest.motivation.verified');
     } else if (harvestReadiness.verificationStatus === 'rejected') {
-      runSummaryHarvestMotivationNode.textContent = 'Die lokale Auswertung bleibt wertvoll. Ein saubererer nächster Run erhöht die Chance auf ein bestätigtes Ergebnis.';
+      runSummaryHarvestMotivationNode.textContent = i18nT('harvest.motivation.rejected');
     } else if (harvestReadiness.verificationStatus === 'under_review') {
-      runSummaryHarvestMotivationNode.textContent = 'Dein Ergebnis wird noch geprüft. Parallel lohnt sich schon der Blick auf den nächsten sauberen Run.';
+      runSummaryHarvestMotivationNode.textContent = i18nT('harvest.motivation.under_review');
     } else {
       runSummaryHarvestMotivationNode.textContent = buildRunSummaryHarvestMotivation(harvestSummary);
     }
@@ -16798,20 +16958,20 @@ function renderRunSummaryOverlay() {
     ui.runSummaryHarvestBests.replaceChildren();
     const bestFlags = harvestSummary && harvestSummary.bestFlags ? harvestSummary.bestFlags : {};
     const bestEntries = [
-      { key: 'bestHarvestScore', label: 'Neuer Bestwert: Harvest Score' },
-      { key: 'bestQualityScoreHarvest', label: 'Beste Qualität bisher' },
-      { key: 'bestStabilityScore', label: 'Stabilster Run bisher' }
+      { key: 'bestHarvestScore', label: i18nT('harvest.best.new_harvest_score') },
+      { key: 'bestQualityScoreHarvest', label: i18nT('harvest.best.best_quality') },
+      { key: 'bestStabilityScore', label: i18nT('harvest.best.best_stability') }
     ].filter((entry) => Boolean(bestFlags[entry.key]));
     if (!bestEntries.length) {
       const empty = document.createElement('p');
       empty.className = 'sheet-note';
-      empty.textContent = 'Noch kein neuer persönlicher Harvest-Bestwert in diesem Run.';
+      empty.textContent = i18nT('harvest.best.none_new');
       ui.runSummaryHarvestBests.appendChild(empty);
     } else {
       for (const entry of bestEntries) {
         const row = document.createElement('article');
         row.className = 'run-summary-unlock run-summary-unlock--celebration';
-        row.innerHTML = `<strong>${escapeHtml(entry.label)}</strong><p class="sheet-note">Stark gespielt. Dieser Run setzt eine neue persönliche Marke.</p>`;
+        row.innerHTML = `<strong>${escapeHtml(entry.label)}</strong><p class="sheet-note">${escapeHtml(i18nT('harvest.best.new_personal_mark'))}</p>`;
         ui.runSummaryHarvestBests.appendChild(row);
       }
     }
@@ -16823,10 +16983,10 @@ function renderRunSummaryOverlay() {
   }
   if (ui.runSummaryNewRunBtn) {
     ui.runSummaryNewRunBtn.disabled = false;
-    ui.runSummaryNewRunBtn.textContent = awaitingFinalize ? 'Abschließen & neuen Run starten' : 'Neuen Run starten';
+    ui.runSummaryNewRunBtn.textContent = awaitingFinalize ? i18nT('run_summary.complete_and_new_run') : i18nT('run_summary.start_new_run');
   }
   if (ui.runSummaryAnalyzeBtn) {
-    ui.runSummaryAnalyzeBtn.textContent = isFinalizedSummary ? 'Analyse öffnen' : 'Analyse öffnen';
+    ui.runSummaryAnalyzeBtn.textContent = i18nT('analysis.open_analysis');
   }
   if (harvestReadiness && harvestReadiness.verificationStatus === 'verified' && isAuthSessionValid() && readAuthToken()) {
     void fetchRewardsBundle({ force: false });
@@ -17126,7 +17286,7 @@ function renderDeathOverlay() {
   ui.deathHistoryList.replaceChildren();
   if (!recent.length) {
     const empty = document.createElement('li');
-    empty.textContent = 'Keine Aktionen oder Ereignisse protokolliert.';
+    empty.textContent = i18nT('analysis.no_actions_or_events');
     ui.deathHistoryList.appendChild(empty);
   } else {
     for (const row of recent) {
@@ -17794,15 +17954,15 @@ function addLog(type, message, details) {
 function translateEventState(machineState) {
   switch (machineState) {
     case 'idle':
-      return 'inaktiv';
+      return i18nT('events.state_idle');
     case 'activeEvent':
-      return 'aktives Ereignis';
+      return i18nT('events.state_active');
     case 'resolving':
-      return 'Ergebnis läuft';
+      return i18nT('events.state_resolving');
     case 'resolved':
-      return 'Ergebnis bereit';
+      return i18nT('events.state_resolved');
     case 'cooldown':
-      return 'Abklingzeit';
+      return i18nT('events.state_cooldown');
     default:
       return machineState;
   }
@@ -19575,6 +19735,9 @@ function migrateSettings(state) {
   if (!state.settings || typeof state.settings !== 'object') {
     state.settings = {};
   }
+  if (typeof state.settings.language !== 'string') {
+    state.settings.language = '';
+  }
   if (!state.settings.gameplay) {
     state.settings.gameplay = { simSpeed: DEFAULT_BASE_SIM_SPEED, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
   }
@@ -19601,13 +19764,13 @@ function updateSettingsUI() {
   }
   if (simSpeedNode) {
     const runtimeSpeed = round2(Number(state.simulation && state.simulation.effectiveSpeed) || getEffectiveSimulationSpeed(Date.now()));
-    simSpeedNode.textContent = `Basis ${baseSpeed}x · Aktiv ${runtimeSpeed}x`;
+    simSpeedNode.textContent = `Base ${baseSpeed}x · Active ${runtimeSpeed}x`;
     simSpeedNode.className = 'value_gold';
-    simSpeedNode.setAttribute('title', 'Basisgeschwindigkeit plus optionaler Zeit-Boost.');
+    simSpeedNode.setAttribute('title', 'Base speed plus optional time boost.');
   }
   if (simSpeedHintNode) {
     const boostActive = Number(state.simulation && state.simulation.effectiveSpeed) === BOOST_SIM_SPEED;
-    simSpeedHintNode.textContent = boostActive ? 'Boost aktiv (x24)' : '';
+    simSpeedHintNode.textContent = boostActive ? `${i18nT('home.boost')} active (x24)` : '';
     simSpeedHintNode.classList.toggle('hidden', !boostActive);
     simSpeedHintNode.setAttribute('aria-hidden', String(!boostActive));
   }
@@ -19630,7 +19793,7 @@ function updateSettingsUI() {
 
   const tutNode = document.getElementById('settingsTutorialValue');
   if (tutNode) {
-    tutNode.textContent = 'Nicht aktiv';
+    tutNode.textContent = i18nT('settings.not_active');
     tutNode.className = 'subtitle';
     tutNode.setAttribute('title', 'Der Tutorial-Schalter ist im aktuellen Build noch ohne Runtime-Wirkung.');
   }
@@ -19644,28 +19807,28 @@ function updateSettingsUI() {
 
   const volNode = document.getElementById('settingsVolumeValue');
   if (volNode) {
-    volNode.textContent = 'Nicht aktiv';
+    volNode.textContent = i18nT('settings.not_active');
     volNode.className = 'subtitle';
     volNode.setAttribute('title', 'Aktuell nur lokaler Anzeigezustand ohne Audio-Backend.');
   }
 
   const effNode = document.getElementById('settingsEffectsValue');
   if (effNode) {
-    effNode.textContent = 'Nicht aktiv';
+    effNode.textContent = i18nT('settings.not_active');
     effNode.className = 'subtitle';
     effNode.setAttribute('title', 'Aktuell nur lokaler Anzeigezustand ohne Grafik-/FX-Anbindung.');
   }
 
   const batNode = document.getElementById('settingsBatteryValue');
   if (batNode) {
-    batNode.textContent = 'Nicht aktiv';
+    batNode.textContent = i18nT('settings.not_active');
     batNode.className = 'subtitle';
     batNode.setAttribute('title', 'Aktuell ohne direkte Runtime-Wirkung.');
   }
 
   const hapNode = document.getElementById('settingsHapticValue');
   if (hapNode) {
-    hapNode.textContent = 'Nicht aktiv';
+    hapNode.textContent = i18nT('settings.not_active');
     hapNode.className = 'subtitle';
     hapNode.setAttribute('title', 'Aktuell ohne direkte Runtime-Wirkung.');
   }
@@ -19674,7 +19837,7 @@ function updateSettingsUI() {
   if (cloudNode) {
     const authIdentity = getAuthDisplayIdentity();
     const isAuthed = Boolean(authIdentity);
-    cloudNode.textContent = isAuthed ? (authIdentity.email || 'Verbunden') : 'Nicht verbunden';
+    cloudNode.textContent = isAuthed ? (authIdentity.email || i18nT('auth.connected')) : i18nT('settings.not_connected');
     cloudNode.className = isAuthed ? 'value_green' : 'value_gold';
     cloudNode.setAttribute(
       'title',
@@ -19682,6 +19845,12 @@ function updateSettingsUI() {
         ? 'Cloud Sync aktiv. Klick öffnet Account-Optionen.'
         : 'Nicht mit Cloud verbunden. Klick öffnet Login/Registrierung.'
     );
+  }
+
+  const languageSelectNode = document.getElementById('settingsLanguageSelect');
+  const i18nApi = getI18nApi();
+  if (languageSelectNode && i18nApi && typeof i18nApi.getCurrentLanguage === 'function') {
+    languageSelectNode.value = i18nApi.getCurrentLanguage();
   }
 
   renderPushSettingsUi();
@@ -19866,15 +20035,17 @@ function setAuthModalMode(mode = 'login') {
   const isRegister = authModalMode === 'register';
   if (nodes.tabLogin) {
     nodes.tabLogin.classList.toggle('is-active', !isRegister);
+    nodes.tabLogin.textContent = i18nT('auth.login');
   }
   if (nodes.tabRegister) {
     nodes.tabRegister.classList.toggle('is-active', isRegister);
+    nodes.tabRegister.textContent = i18nT('auth.register');
   }
   if (nodes.displayNameLabel) {
     nodes.displayNameLabel.classList.toggle('hidden', !isRegister);
   }
   if (nodes.primaryBtn) {
-    nodes.primaryBtn.textContent = isRegister ? 'Registrieren' : 'Login';
+    nodes.primaryBtn.textContent = isRegister ? i18nT('auth.register') : i18nT('auth.login');
   }
   if (nodes.passwordInput) {
     nodes.passwordInput.setAttribute('autocomplete', isRegister ? 'new-password' : 'current-password');
@@ -19908,10 +20079,17 @@ function syncAuthModalContent() {
   const gateMode = authGateActive && !isAuthed;
 
   if (nodes.title) {
-    nodes.title.textContent = gateMode ? 'Anmeldung erforderlich' : 'Account';
+    nodes.title.textContent = gateMode ? i18nT('auth.required_title') : i18nT('auth.title');
   }
   if (nodes.cancelBtn) {
     nodes.cancelBtn.classList.toggle('hidden', gateMode);
+    nodes.cancelBtn.textContent = i18nT('auth.cancel');
+  }
+  if (nodes.closeBtn) {
+    nodes.closeBtn.textContent = i18nT('common.close');
+  }
+  if (nodes.logoutBtn) {
+    nodes.logoutBtn.textContent = i18nT('auth.logout');
   }
   if (nodes.modal) {
     nodes.modal.dataset.gate = gateMode ? 'required' : 'optional';
@@ -19998,7 +20176,7 @@ async function submitAuthModal() {
 
   const authApi = window.GrowSimAuth;
   if (!authApi || typeof authApi.login !== 'function' || typeof authApi.register !== 'function') {
-    setAuthModalError('Auth API ist nicht verfügbar.');
+    setAuthModalError(i18nT('errors.auth_unavailable'));
     return;
   }
 
@@ -20009,11 +20187,11 @@ async function submitAuthModal() {
   const isRegister = authModalMode === 'register';
 
   if (!email || !password) {
-    setAuthModalError('Bitte E-Mail und Passwort eingeben.');
+    setAuthModalError(i18nT('auth.missing_credentials'));
     return;
   }
   if (isRegister && !displayName) {
-    setAuthModalError('Bitte einen Anzeigenamen eingeben.');
+    setAuthModalError(i18nT('auth.missing_display_name'));
     return;
   }
 
@@ -20035,7 +20213,7 @@ async function submitAuthModal() {
     schedulePersistState(true);
   } catch (error) {
     console.info(isRegister ? '[auth] register failed' : '[auth] login failed');
-    const message = error && error.message ? String(error.message) : 'Authentifizierung fehlgeschlagen';
+    const message = error && error.message ? String(error.message) : i18nT('errors.auth_failed');
     setAuthModalError(message);
   } finally {
     setAuthModalBusyState(false);
@@ -20095,6 +20273,19 @@ function initSettingsEvents() {
   const saveBtn = byId('settingsSaveBtn');
   if (saveBtn) {
     saveBtn.setAttribute('title', 'Speichert den aktuellen lokalen Zustand im Browser.');
+  }
+
+  const languageSelect = byId('settingsLanguageSelect');
+  if (languageSelect && languageSelect.dataset.bound !== 'true') {
+    languageSelect.addEventListener('change', (event) => {
+      const selectedLanguage = event && event.target ? event.target.value : '';
+      const i18nApi = getI18nApi();
+      if (!i18nApi || typeof i18nApi.setLanguage !== 'function') {
+        return;
+      }
+      i18nApi.setLanguage(selectedLanguage);
+    });
+    languageSelect.dataset.bound = 'true';
   }
 
   const speedControl = byId('settingsSimSpeedControl');

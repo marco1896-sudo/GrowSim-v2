@@ -19,7 +19,8 @@
             "stress": -5,
             "risk": -4,
             "growth": 2
-          }
+          },
+          "labelKey": "events.soil_compaction.choice.loosen_top_layer"
         },
         {
           "id": "full_flush",
@@ -28,7 +29,8 @@
             "water": 10,
             "stress": 4,
             "risk": 5
-          }
+          },
+          "labelKey": "events.soil_compaction.choice.full_flush"
         },
         {
           "id": "ignore_compaction",
@@ -37,7 +39,8 @@
             "stress": 5,
             "risk": 6,
             "health": -3
-          }
+          },
+          "labelKey": "events.soil_compaction.choice.ignore_compaction"
         }
       ],
       "allowedPhases": [
@@ -52,7 +55,9 @@
           "min": 2,
           "max": 6
         }
-      }
+      },
+      "titleKey": "events.soil_compaction.title",
+      "descriptionKey": "events.soil_compaction.description"
     },
     {
       "id": "fungus_gnat_wave",
@@ -76,7 +81,8 @@
           "intent": "integrated_control",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.fungus_gnat_wave.choice.dry_back_cycle"
         },
         {
           "id": "overwater_panic",
@@ -89,7 +95,8 @@
           "intent": "heavy_water_push",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.fungus_gnat_wave.choice.overwater_panic"
         },
         {
           "id": "biological_treatment",
@@ -103,7 +110,9 @@
           "intent": "integrated_control",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.fungus_gnat_wave.choice.biological_treatment",
+          "followUpKey": "events.fungus_gnat_wave.followup.biological_treatment"
         }
       ],
       "allowedPhases": [
@@ -139,7 +148,9 @@
           "recoverySignificance": "medium",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.fungus_gnat_wave.title",
+      "descriptionKey": "events.fungus_gnat_wave.description"
     },
     {
       "id": "nitrogen_lockout",
@@ -164,7 +175,8 @@
           "intent": "ph_corrective",
           "contextFit": [
             "lockout"
-          ]
+          ],
+          "labelKey": "events.nitrogen_lockout.choice.ph_corrected_feed"
         },
         {
           "id": "strong_feed",
@@ -177,7 +189,8 @@
           "intent": "heavy_feed_push",
           "contextFit": [
             "lockout"
-          ]
+          ],
+          "labelKey": "events.nitrogen_lockout.choice.strong_feed"
         },
         {
           "id": "plain_water_only",
@@ -190,7 +203,8 @@
           "intent": "observe_only",
           "contextFit": [
             "lockout"
-          ]
+          ],
+          "labelKey": "events.nitrogen_lockout.choice.plain_water_only"
         }
       ],
       "allowedPhases": [
@@ -227,7 +241,9 @@
           "recoverySignificance": "high",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.nitrogen_lockout.title",
+      "descriptionKey": "events.nitrogen_lockout.description"
     },
     {
       "id": "magnesium_deficit",
@@ -247,7 +263,8 @@
             "health": 4,
             "stress": -3,
             "risk": -2
-          }
+          },
+          "labelKey": "events.magnesium_deficit.choice.epsom_foliar"
         },
         {
           "id": "add_calmag_soil",
@@ -256,7 +273,8 @@
             "nutrition": 6,
             "health": 3,
             "growth": 2
-          }
+          },
+          "labelKey": "events.magnesium_deficit.choice.add_calmag_soil"
         },
         {
           "id": "delay_action",
@@ -265,7 +283,8 @@
             "health": -3,
             "stress": 4,
             "risk": 3
-          }
+          },
+          "labelKey": "events.magnesium_deficit.choice.delay_action"
         }
       ],
       "allowedPhases": [
@@ -280,7 +299,9 @@
           "min": 4,
           "max": 9
         }
-      }
+      },
+      "titleKey": "events.magnesium_deficit.title",
+      "descriptionKey": "events.magnesium_deficit.description"
     },
     {
       "id": "salt_buildup",
@@ -302,7 +323,8 @@
             "stress": -3,
             "nutrition": -3,
             "health": 3
-          }
+          },
+          "labelKey": "events.salt_buildup.choice.gentle_flush"
         },
         {
           "id": "topdress_compost",
@@ -311,7 +333,8 @@
             "nutrition": 6,
             "water": 4,
             "risk": -2
-          }
+          },
+          "labelKey": "events.salt_buildup.choice.topdress_compost"
         },
         {
           "id": "ignore_salt",
@@ -320,7 +343,8 @@
             "risk": 5,
             "stress": 3,
             "health": -2
-          }
+          },
+          "labelKey": "events.salt_buildup.choice.ignore_salt"
         }
       ],
       "allowedPhases": [
@@ -336,7 +360,9 @@
           "min": 4,
           "max": 10
         }
-      }
+      },
+      "titleKey": "events.salt_buildup.title",
+      "descriptionKey": "events.salt_buildup.description"
     },
     {
       "id": "soil_too_wet",
@@ -361,7 +387,8 @@
           "intent": "oxygen_relief",
           "contextFit": [
             "wet"
-          ]
+          ],
+          "labelKey": "events.soil_too_wet.choice.increase_airflow"
         },
         {
           "id": "transplant_aerated_mix",
@@ -375,7 +402,8 @@
           "intent": "root_recovery",
           "contextFit": [
             "wet"
-          ]
+          ],
+          "labelKey": "events.soil_too_wet.choice.transplant_aerated_mix"
         },
         {
           "id": "water_again",
@@ -388,7 +416,8 @@
           "intent": "heavy_water_push",
           "contextFit": [
             "wet"
-          ]
+          ],
+          "labelKey": "events.soil_too_wet.choice.water_again"
         }
       ],
       "allowedPhases": [
@@ -427,7 +456,9 @@
           "recoverySignificance": "high",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.soil_too_wet.title",
+      "descriptionKey": "events.soil_too_wet.description"
     },
     {
       "id": "dry_pocket",
@@ -450,7 +481,8 @@
           "intent": "gradual_rehydrate",
           "contextFit": [
             "dry"
-          ]
+          ],
+          "labelKey": "events.dry_pocket.choice.slow_even_water"
         },
         {
           "id": "wetting_agent",
@@ -463,7 +495,8 @@
           "intent": "gradual_rehydrate",
           "contextFit": [
             "dry"
-          ]
+          ],
+          "labelKey": "events.dry_pocket.choice.wetting_agent"
         },
         {
           "id": "force_heavy_watering",
@@ -476,7 +509,8 @@
           "intent": "heavy_water_push",
           "contextFit": [
             "dry"
-          ]
+          ],
+          "labelKey": "events.dry_pocket.choice.force_heavy_watering"
         }
       ],
       "allowedPhases": [
@@ -510,7 +544,9 @@
           "recoverySignificance": "medium",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.dry_pocket.title",
+      "descriptionKey": "events.dry_pocket.description"
     },
     {
       "id": "ph_drift_high",
@@ -534,7 +570,8 @@
           "intent": "ph_corrective",
           "contextFit": [
             "lockout"
-          ]
+          ],
+          "labelKey": "events.ph_drift_high.choice.acidify_feed"
         },
         {
           "id": "flush_and_reset",
@@ -548,7 +585,8 @@
           "intent": "ph_corrective",
           "contextFit": [
             "lockout"
-          ]
+          ],
+          "labelKey": "events.ph_drift_high.choice.flush_and_reset"
         },
         {
           "id": "no_action_ph",
@@ -561,7 +599,8 @@
           "intent": "ignore",
           "contextFit": [
             "lockout"
-          ]
+          ],
+          "labelKey": "events.ph_drift_high.choice.no_action_ph"
         }
       ],
       "allowedPhases": [
@@ -596,7 +635,9 @@
           "recoverySignificance": "high",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.ph_drift_high.title",
+      "descriptionKey": "events.ph_drift_high.description"
     },
     {
       "id": "topsoil_mold",
@@ -624,7 +665,8 @@
           "intent": "surface_cleanup",
           "contextFit": [
             "mold_surface"
-          ]
+          ],
+          "labelKey": "events.topsoil_mold.choice.scrape_and_dry"
         },
         {
           "id": "add_mulch",
@@ -637,7 +679,8 @@
           "intent": "root_recovery",
           "contextFit": [
             "mold_surface"
-          ]
+          ],
+          "labelKey": "events.topsoil_mold.choice.add_mulch"
         },
         {
           "id": "ignore_mold",
@@ -650,7 +693,8 @@
           "intent": "ignore",
           "contextFit": [
             "mold_surface"
-          ]
+          ],
+          "labelKey": "events.topsoil_mold.choice.ignore_mold"
         }
       ],
       "allowedPhases": [
@@ -681,7 +725,9 @@
           "recoverySignificance": "medium",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.topsoil_mold.title",
+      "descriptionKey": "events.topsoil_mold.description"
     },
     {
       "id": "root_bound_warning",
@@ -706,7 +752,8 @@
           "intent": "root_recovery",
           "contextFit": [
             "root_pressure"
-          ]
+          ],
+          "labelKey": "events.root_bound_warning.choice.up_pot_now"
         },
         {
           "id": "root_prune_light",
@@ -719,7 +766,8 @@
           "intent": "stressful_shortcut",
           "contextFit": [
             "root_pressure"
-          ]
+          ],
+          "labelKey": "events.root_bound_warning.choice.root_prune_light"
         },
         {
           "id": "delay_transplant",
@@ -733,7 +781,8 @@
           "intent": "delay_action",
           "contextFit": [
             "root_pressure"
-          ]
+          ],
+          "labelKey": "events.root_bound_warning.choice.delay_transplant"
         }
       ],
       "allowedPhases": [
@@ -763,7 +812,9 @@
           "recoverySignificance": "high",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.root_bound_warning.title",
+      "descriptionKey": "events.root_bound_warning.description"
     },
     {
       "id": "calcium_spotting",
@@ -783,7 +834,8 @@
             "health": 4,
             "growth": 2,
             "risk": -2
-          }
+          },
+          "labelKey": "events.calcium_spotting.choice.add_calcium"
         },
         {
           "id": "stabilize_watering",
@@ -792,7 +844,8 @@
             "water": 4,
             "stress": -3,
             "health": 3
-          }
+          },
+          "labelKey": "events.calcium_spotting.choice.stabilize_watering"
         },
         {
           "id": "high_ec_fix",
@@ -801,7 +854,8 @@
             "nutrition": 9,
             "stress": 4,
             "risk": 5
-          }
+          },
+          "labelKey": "events.calcium_spotting.choice.high_ec_fix"
         }
       ],
       "allowedPhases": [
@@ -813,7 +867,9 @@
           "min": 3,
           "max": 8
         }
-      }
+      },
+      "titleKey": "events.calcium_spotting.title",
+      "descriptionKey": "events.calcium_spotting.description"
     },
     {
       "id": "thrips_early",
@@ -837,7 +893,8 @@
           "intent": "integrated_control",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.thrips_early.choice.ipm_rotation"
         },
         {
           "id": "single_spray",
@@ -849,7 +906,8 @@
           "intent": "stressful_shortcut",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.thrips_early.choice.single_spray"
         },
         {
           "id": "postpone_treatment",
@@ -862,7 +920,8 @@
           "intent": "delay_action",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.thrips_early.choice.postpone_treatment"
         }
       ],
       "allowedPhases": [
@@ -894,7 +953,9 @@
           "recoverySignificance": "medium",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.thrips_early.title",
+      "descriptionKey": "events.thrips_early.description"
     },
     {
       "id": "mite_hotspot",
@@ -918,7 +979,8 @@
           "intent": "integrated_control",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.mite_hotspot.choice.raise_humidity_control"
         },
         {
           "id": "predatory_mites",
@@ -932,7 +994,9 @@
           "intent": "integrated_control",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.mite_hotspot.choice.predatory_mites",
+          "followUpKey": "events.mite_hotspot.followup.predatory_mites"
         },
         {
           "id": "ignore_mites",
@@ -945,7 +1009,8 @@
           "intent": "ignore",
           "contextFit": [
             "population_pressure"
-          ]
+          ],
+          "labelKey": "events.mite_hotspot.choice.ignore_mites"
         }
       ],
       "allowedPhases": [
@@ -976,7 +1041,9 @@
           "recoverySignificance": "medium",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.mite_hotspot.title",
+      "descriptionKey": "events.mite_hotspot.description"
     },
     {
       "id": "cold_root_zone",
@@ -999,7 +1066,8 @@
             "stress": -4,
             "health": 3,
             "growth": 2
-          }
+          },
+          "labelKey": "events.cold_root_zone.choice.insulate_pot"
         },
         {
           "id": "increase_feed_strength",
@@ -1008,7 +1076,8 @@
             "nutrition": 6,
             "risk": 3,
             "stress": 2
-          }
+          },
+          "labelKey": "events.cold_root_zone.choice.increase_feed_strength"
         },
         {
           "id": "wait_for_weather",
@@ -1017,7 +1086,8 @@
             "growth": -3,
             "health": -2,
             "stress": 3
-          }
+          },
+          "labelKey": "events.cold_root_zone.choice.wait_for_weather"
         }
       ],
       "allowedPhases": [
@@ -1030,7 +1100,9 @@
           "min": 2,
           "max": 8
         }
-      }
+      },
+      "titleKey": "events.cold_root_zone.title",
+      "descriptionKey": "events.cold_root_zone.description"
     },
     {
       "id": "hot_dry_day",
@@ -1054,7 +1126,8 @@
             "water": 10,
             "stress": -5,
             "risk": -2
-          }
+          },
+          "labelKey": "events.hot_dry_day.choice.split_watering"
         },
         {
           "id": "single_heavy_watering",
@@ -1063,7 +1136,8 @@
             "water": 12,
             "risk": 4,
             "stress": 2
-          }
+          },
+          "labelKey": "events.hot_dry_day.choice.single_heavy_watering"
         },
         {
           "id": "mulch_surface",
@@ -1072,7 +1146,8 @@
             "water": 6,
             "growth": 2,
             "risk": -3
-          }
+          },
+          "labelKey": "events.hot_dry_day.choice.mulch_surface"
         }
       ],
       "allowedPhases": [
@@ -1085,7 +1160,9 @@
           "min": 2,
           "max": 9
         }
-      }
+      },
+      "titleKey": "events.hot_dry_day.title",
+      "descriptionKey": "events.hot_dry_day.description"
     },
     {
       "id": "overfeeding_warning",
@@ -1110,7 +1187,8 @@
             "health": 4,
             "stress": -3,
             "risk": -4
-          }
+          },
+          "labelKey": "events.overfeeding_warning.choice.reduce_ec"
         },
         {
           "id": "flush_medium",
@@ -1120,7 +1198,8 @@
             "nutrition": -8,
             "risk": -2,
             "stress": 1
-          }
+          },
+          "labelKey": "events.overfeeding_warning.choice.flush_medium"
         },
         {
           "id": "keep_schedule",
@@ -1129,7 +1208,8 @@
             "health": -4,
             "risk": 5,
             "stress": 4
-          }
+          },
+          "labelKey": "events.overfeeding_warning.choice.keep_schedule"
         }
       ],
       "allowedPhases": [
@@ -1141,7 +1221,9 @@
           "min": 4,
           "max": 9
         }
-      }
+      },
+      "titleKey": "events.overfeeding_warning.title",
+      "descriptionKey": "events.overfeeding_warning.description"
     },
     {
       "id": "beneficial_fungi_colonized",
@@ -1165,7 +1247,8 @@
             "growth": 4,
             "health": 3,
             "risk": -3
-          }
+          },
+          "labelKey": "events.beneficial_fungi_colonized.choice.maintain_program"
         },
         {
           "id": "add_extra_biology",
@@ -1174,7 +1257,8 @@
             "nutrition": 3,
             "risk": -2,
             "stress": -1
-          }
+          },
+          "labelKey": "events.beneficial_fungi_colonized.choice.add_extra_biology"
         },
         {
           "id": "disrupt_with_flush",
@@ -1183,7 +1267,8 @@
             "water": 7,
             "growth": -3,
             "risk": 2
-          }
+          },
+          "labelKey": "events.beneficial_fungi_colonized.choice.disrupt_with_flush"
         }
       ],
       "allowedPhases": [
@@ -1196,7 +1281,9 @@
           "min": 2,
           "max": 8
         }
-      }
+      },
+      "titleKey": "events.beneficial_fungi_colonized.title",
+      "descriptionKey": "events.beneficial_fungi_colonized.description"
     },
     {
       "id": "watering_gap",
@@ -1220,7 +1307,8 @@
             "water": 9,
             "stress": -4,
             "health": 2
-          }
+          },
+          "labelKey": "events.watering_gap.choice.recover_gradually"
         },
         {
           "id": "instant_full_rewater",
@@ -1229,7 +1317,8 @@
             "water": 13,
             "stress": 2,
             "risk": 3
-          }
+          },
+          "labelKey": "events.watering_gap.choice.instant_full_rewater"
         },
         {
           "id": "skip_until_tomorrow",
@@ -1238,7 +1327,8 @@
             "water": -7,
             "health": -3,
             "stress": 5
-          }
+          },
+          "labelKey": "events.watering_gap.choice.skip_until_tomorrow"
         }
       ],
       "allowedPhases": [
@@ -1251,7 +1341,9 @@
           "min": 1,
           "max": 8
         }
-      }
+      },
+      "titleKey": "events.watering_gap.title",
+      "descriptionKey": "events.watering_gap.description"
     },
     {
       "id": "soil_life_decline",
@@ -1275,7 +1367,8 @@
             "nutrition": 5,
             "health": 3,
             "growth": 2
-          }
+          },
+          "labelKey": "events.soil_life_decline.choice.add_compost_extract"
         },
         {
           "id": "topdress_worm_castings",
@@ -1284,7 +1377,8 @@
             "nutrition": 7,
             "water": 2,
             "risk": -2
-          }
+          },
+          "labelKey": "events.soil_life_decline.choice.topdress_worm_castings"
         },
         {
           "id": "continue_synthetic_only",
@@ -1293,7 +1387,8 @@
             "growth": 1,
             "risk": 4,
             "health": -2
-          }
+          },
+          "labelKey": "events.soil_life_decline.choice.continue_synthetic_only"
         }
       ],
       "allowedPhases": [
@@ -1305,7 +1400,9 @@
           "min": 3,
           "max": 9
         }
-      }
+      },
+      "titleKey": "events.soil_life_decline.title",
+      "descriptionKey": "events.soil_life_decline.description"
     },
     {
       "id": "late_flower_humidity",
@@ -1333,7 +1430,8 @@
           "intent": "climate_stabilize",
           "contextFit": [
             "mold_surface"
-          ]
+          ],
+          "labelKey": "events.late_flower_humidity.choice.defoliate_lightly"
         },
         {
           "id": "dehumidify_and_hold_feed",
@@ -1346,7 +1444,8 @@
           "intent": "ignore",
           "contextFit": [
             "mold_surface"
-          ]
+          ],
+          "labelKey": "events.late_flower_humidity.choice.dehumidify_and_hold_feed"
         },
         {
           "id": "ignore_humidity",
@@ -1355,7 +1454,8 @@
             "risk": 10,
             "health": -5,
             "stress": 4
-          }
+          },
+          "labelKey": "events.late_flower_humidity.choice.ignore_humidity"
         }
       ],
       "allowedPhases": [
@@ -1386,7 +1486,9 @@
           "recoverySignificance": "high",
           "executionRelevant": true
         }
-      }
+      },
+      "titleKey": "events.late_flower_humidity.title",
+      "descriptionKey": "events.late_flower_humidity.description"
     }
   ]
 }

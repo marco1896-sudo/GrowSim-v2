@@ -1,0 +1,803 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "save": "Guardar",
+    "continue": "Continuar",
+    "back": "Atrás",
+    "start": "Iniciar"
+  },
+  "status": {
+    "loading": "Cargando...",
+    "saved": "Guardado",
+    "ready": "Listo",
+    "retry": "Reintentar",
+    "preparing": "Preparando...",
+    "boot_failed": "No se pudo completar el inicio.",
+    "boot_timeout": "Puedes esperar o reiniciar el arranque.",
+    "unavailable_now": "No disponible actualmente"
+  },
+  "errors": {
+    "generic": "Ha ocurrido un error.",
+    "network": "Error de red. Inténtalo más tarde.",
+    "auth_unavailable": "La API de autenticación no está disponible.",
+    "auth_failed": "La autenticación falló"
+  },
+  "auth": {
+    "title": "Cuenta",
+    "required_title": "Inicio de sesión requerido",
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "display_name": "Nombre visible",
+    "logout": "Cerrar sesión",
+    "connected": "Conectado",
+    "cancel": "Cancelar",
+    "missing_credentials": "Introduce correo y contraseña.",
+    "missing_display_name": "Introduce un nombre visible."
+  },
+  "menu": {
+    "title": "Menú",
+    "analysis": "Análisis",
+    "leaderboard": "Clasificación",
+    "rescue": "Rescate de emergencia",
+    "coin_shop": "Tienda de monedas",
+    "support": "Apoyar GrowSim",
+    "missions": "Misiones",
+    "about": "Información del proyecto",
+    "imprint": "Aviso legal",
+    "privacy": "Privacidad",
+    "settings": "Ajustes",
+    "new_run": "Guardar y salir",
+    "close": "Cerrar"
+  },
+  "home": {
+    "water": "Agua",
+    "feed": "Nutrientes",
+    "health": "Salud",
+    "grow": "Crecimiento",
+    "risk": "Riesgo",
+    "stress": "Estrés",
+    "boost": "Boost",
+    "care_boost": "Care Boost",
+    "climate_stabilize": "Climate Stabilize",
+    "night_shift": "Night Shift",
+    "events": "Eventos",
+    "analyze": "Análisis",
+    "care": "Cuidados",
+    "event": "Evento"
+  },
+  "shop": {
+    "title": "Tienda de monedas",
+    "buy": "Comprar",
+    "status_default": "Todos los efectos se aplican al instante sin inventario.",
+    "balance_available": "{amount} monedas disponibles",
+    "status_apply_purchase": "Aplicando compra...",
+    "status_prepare_purchase": "Preparando compra...",
+    "status_not_available": "La acción no está disponible.",
+    "status_action_running": "Espera un momento, la acción ya está en curso.",
+    "status_not_enough": "No tienes suficientes monedas. Debajo encontrarás packs adecuados.",
+    "status_action_failed": "No se pudo ejecutar la acción.",
+    "status_action_success": "Acción aplicada correctamente.",
+    "status_pack_missing": "No se encontró el pack seleccionado.",
+    "status_pack_unavailable": "El pack de monedas no está disponible.",
+    "status_pack_processing": "La compra ya se está procesando.",
+    "status_pack_purchase_unavailable": "La compra de monedas no está disponible actualmente.",
+    "status_pack_purchase_unavailable_now": "La compra de monedas no está disponible actualmente.",
+    "insufficient_title": "No hay suficientes monedas",
+    "insufficient_hint": "Aún faltan monedas para esta acción.",
+    "open_shop": "Conseguir monedas",
+    "watch_ad": "Ver anuncio",
+    "watch_ad_running": "Reward en curso…",
+    "insufficient_cancel": "Cancelar",
+    "metric_current": "Actual",
+    "metric_required": "Requerido",
+    "metric_missing": "Faltan",
+    "direct_apply": "Aplicar al instante",
+    "too_few_coins": "Monedas insuficientes"
+  },
+  "daily": {
+    "title": "Misiones y logros",
+    "claim": "Reclamar",
+    "completed": "Completado",
+    "claimable": "Reclamable",
+    "open": "Abierto",
+    "in_progress": "En progreso",
+    "collected": "Cobrado",
+    "empty_daily": "Se están preparando las tareas diarias.",
+    "empty_micro": "Tu primer micro-logro de hoy aún te espera.",
+    "claim_not_possible": "Ahora no se puede reclamar",
+    "already_claimed": "Ya reclamado",
+    "claim_success": "Diaria cobrada · +{coins} monedas",
+    "claim_success_with_streak": "Diaria cobrada · +{coins} monedas · Racha +{streak}",
+    "all_collected": "Todo cobrado por hoy",
+    "today_open": "Abierto hoy",
+    "today_secured": "Asegurado hoy",
+    "one_task_left_round": "Solo queda 1 tarea para la ronda de hoy",
+    "streak_recovery_available": "Recuperacion de racha disponible ? se pueden restaurar {days} dias.",
+    "streak_recovery_no_credit": "Recuperacion de racha detectada. El hook esta listo, pero ahora no hay credito de recuperacion.",
+    "recover_streak": "Recuperar racha",
+    "no_credit": "Sin credito",
+    "recovery_not_possible": "La recuperacion no es posible ahora",
+    "recovery_success_days": "Racha recuperada ? {days} dias",
+    "task_fallback": "Tarea",
+    "task": {
+      "water_once": {
+        "title": "Regar una vez",
+        "description": "Completa hoy una accion de riego."
+      },
+      "resolve_one_event": {
+        "title": "Resolver un evento con control",
+        "description": "Responde a un evento y cierralo bien."
+      },
+      "open_app_twice": {
+        "title": "Dos sesiones hoy",
+        "description": "Abre la app en dos sesiones separadas hoy."
+      },
+      "stable_climate_window": {
+        "title": "Mantener clima estable un momento",
+        "description": "Mant?n los valores de clima en zona verde durante una ventana corta."
+      }
+    },
+    "toast": {
+      "task_done": "Diaria completada: {task}",
+      "strong_streak": "Buena racha diaria.",
+      "all_done": "Todas las metas diarias completadas hoy.",
+      "first_done": "Primera tarea diaria completada.",
+      "claim_now": "{text} Reclama ahora.",
+      "multi_done": "Impulso diario: {count} tareas completadas."
+    },
+    "retention": {
+      "streak_secured": "Hoy asegurado. Proximo bonus de racha +{coins} monedas.",
+      "streak_push_milestone": "Clasifica hoy y apunta a {target}.",
+      "streak_push_next": "Clasifica hoy y alcanza racha {streak}.",
+      "next_streak_bonus": "Proximo bonus de racha: +{coins} monedas",
+      "claim_ready_single": "1 tarea esta lista para reclamar.",
+      "claim_ready_multi": "{count} tareas estan listas para reclamar.",
+      "all_collected_today": "Todo recogido por hoy.",
+      "one_step_left": "Solo queda 1 paso para cerrar el dia.",
+      "progress_keep_going": "{done}/{total} completadas. Sigue asi.",
+      "today_three_goals": "Hoy empieza con 3 metas claras.",
+      "headline": "Hoy {done}/{total} tareas",
+      "claim_waiting_single": "1 reclamo en espera.",
+      "claim_waiting_multi": "{count} reclamos en espera.",
+      "day_complete": "Ronda diaria completada.",
+      "prepare_bonus": "Clasifica hoy y prepara +{coins} monedas.",
+      "milestone_with_reward": "Proximo hito: {milestone} | Proxima recompensa de racha: {coins} C",
+      "next_reward_compact": "Proxima recompensa de racha: {coins} C",
+      "streak_title": "Racha diaria {count}",
+      "best_streak_line": "Mejor racha: {best}",
+      "progress_almost": "{progress}/{target} de progreso. Casi listo.",
+      "start_task": "Empieza con {task}",
+      "reward_collected": "Recompensa recogida.",
+      "ready_for_coins": "Lista para +{coins} monedas",
+      "claim_note_single": "1 tarea esta lista para reclamar. Toma el claim y asegura tu racha.",
+      "claim_note_multi": "{count} tareas estan listas para reclamar. Recogelas y asegura tu racha.",
+      "progress_day_status": "{done}/{total} completadas | {status}",
+      "optional_bonus_unavailable": "El bonus opcional no esta disponible ahora.",
+      "recovery_bonus_activated": "Bonus activado. 1 credito de recuperacion.",
+      "streak_line": "Racha {streak} | {status}"
+    }
+  },
+  "events": {
+    "title": "Evento",
+    "focus": "Enfoque del evento",
+    "status": "Estado: {state}",
+    "state_idle": "inactivo",
+    "state_active": "evento activo",
+    "state_resolving": "en evaluación",
+    "state_resolved": "resuelto",
+    "state_cooldown": "en enfriamiento",
+    "meta_severity_tags": "Severidad: {severity} | Etiquetas: {tags}",
+    "meta_action_result_in": "Acción: {action} | Resultado en: {time}",
+    "meta_result": "Causa: {cause} | Resultado: {result} | Guía: {guidance}",
+    "close_to_continue": "Cierra el evento para continuar.",
+    "observing_title": "Evento en observación",
+    "observing_text": "Tu decisión se evalúa durante un breve periodo.",
+    "resolved_title": "Resultado listo",
+    "resolved_text": "La evaluación ha finalizado.",
+    "cooldown_title": "Enfriamiento activo",
+    "cooldown_text": "El sistema de eventos está en enfriamiento.",
+    "no_active_title": "No hay evento activo",
+    "no_active_text": "Los detalles aparecerán cuando haya un evento activo.",
+    "choose_option": "Opción",
+    "soil_compaction": {
+      "title": "Compactacion del sustrato detectada",
+      "description": "La capa superior se ha encostrado tras riegos repetidos y reduce la aireacion radicular.",
+      "choice": {
+        "loosen_top_layer": "Aflojar con cuidado los 2 cm superiores",
+        "full_flush": "Hacer un lavado y esperar mejor drenaje",
+        "ignore_compaction": "No hacer nada por ahora"
+      }
+    },
+    "fungus_gnat_wave": {
+      "title": "Mosquitas del sustrato en la maceta",
+      "description": "Mosquitas adultas sobre suelo humedo indican presion de larvas.",
+      "choice": {
+        "dry_back_cycle": "Aplicar fase de secado y colocar trampas amarillas",
+        "overwater_panic": "Entrar en panico y regar de mas",
+        "biological_treatment": "Usar nematodos para control biologico"
+      },
+      "followup": {
+        "biological_treatment": "Revisar de nuevo la poblacion en 48 h"
+      }
+    },
+    "nitrogen_lockout": {
+      "title": "Senales de bloqueo de nitrogeno",
+      "description": "Las hojas bajas amarillean pese al abonado; la deriva de pH puede bloquear la absorcion.",
+      "choice": {
+        "ph_corrected_feed": "Corregir pH y abonar suavemente",
+        "strong_feed": "Aumentar la concentracion del fertilizante",
+        "plain_water_only": "Dar solo agua en este ciclo"
+      }
+    },
+    "magnesium_deficit": {
+      "title": "Clorosis internervial visible",
+      "description": "En hojas viejas de la zona media aparece un patron de deficiencia de magnesio.",
+      "choice": {
+        "epsom_foliar": "Aplicar un spray foliar suave de magnesio",
+        "add_calmag_soil": "Agregar CalMag equilibrado a la solucion nutritiva",
+        "delay_action": "Esperar y observar"
+      }
+    },
+    "salt_buildup": {
+      "title": "Costra de sales en el borde de la maceta",
+      "description": "La evaporacion ha dejado sales nutritivas en el borde del contenedor.",
+      "choice": {
+        "gentle_flush": "Lavar con agua ajustada de pH",
+        "topdress_compost": "Aplicar cobertura con compost y mulch",
+        "ignore_salt": "Ignorarlo hasta el siguiente ciclo"
+      }
+    },
+    "soil_too_wet": {
+      "title": "La zona radicular permanece humeda demasiado tiempo",
+      "description": "El peso de la maceta sigue alto tras 48 h; baja el oxigeno en la raiz.",
+      "choice": {
+        "increase_airflow": "Aumentar flujo de aire y pausar riego",
+        "transplant_aerated_mix": "Trasplantar a un sustrato mas aireado",
+        "water_again": "Seguir regando segun plan"
+      }
+    },
+    "dry_pocket": {
+      "title": "Bolsa seca hidrofobica",
+      "description": "Parte del sustrato repele el agua y provoca hidratacion desigual de raices.",
+      "choice": {
+        "slow_even_water": "Rehidratar lentamente en dos pasadas",
+        "wetting_agent": "Usar un agente humectante suave",
+        "force_heavy_watering": "Forzarlo con riego fuerte desde arriba"
+      }
+    },
+    "ph_drift_high": {
+      "title": "El pH del sustrato deriva al alza",
+      "description": "El drenaje muestra deriva alcalina y empeora la absorcion de micronutrientes.",
+      "choice": {
+        "acidify_feed": "Bajar el pH de la solucion nutritiva",
+        "flush_and_reset": "Lavar el medio y reiniciar el programa",
+        "no_action_ph": "Mantener la rutina sin cambios"
+      }
+    },
+    "topsoil_mold": {
+      "title": "Moho en la superficie del sustrato",
+      "description": "Aparece pelusa blanca por humedad alta y poca circulacion de aire.",
+      "choice": {
+        "scrape_and_dry": "Retirar la capa superior y dejar secar",
+        "add_mulch": "Anadir un mulch transpirable",
+        "ignore_mold": "Ignorarlo por ahora"
+      }
+    },
+    "root_bound_warning": {
+      "title": "Raices circulando en el contenedor",
+      "description": "Se ven puntas de raiz densas en los drenajes; comienza el estres por raiz apretada.",
+      "choice": {
+        "up_pot_now": "Trasplantar ahora a una maceta mayor",
+        "root_prune_light": "Poda ligera de raices y renovar sustrato",
+        "delay_transplant": "Retrasar el trasplante una semana"
+      }
+    },
+    "calcium_spotting": {
+      "title": "Manchas en puntas de crecimiento nuevo",
+      "description": "El transporte de calcio parece limitado en tejido de crecimiento rapido.",
+      "choice": {
+        "add_calcium": "Anadir calcio en dosis baja",
+        "stabilize_watering": "Estabilizar oscilaciones de humedad",
+        "high_ec_fix": "Aplicar un arreglo rapido de EC alto"
+      }
+    },
+    "thrips_early": {
+      "title": "Senales tempranas de trips",
+      "description": "Estrias plateadas en hojas indican presion temprana de trips.",
+      "choice": {
+        "ipm_rotation": "Iniciar rotacion de manejo integrado",
+        "single_spray": "Hacer solo una pulverizacion",
+        "postpone_treatment": "Posponer el tratamiento"
+      }
+    },
+    "mite_hotspot": {
+      "title": "Foco de acaros en el borde del dosel",
+      "description": "Una zona seca en el borde ha creado condiciones favorables para acaros.",
+      "choice": {
+        "raise_humidity_control": "Subir humedad y tratar",
+        "predatory_mites": "Soltar acaros depredadores",
+        "ignore_mites": "Ignorar senales leves"
+      },
+      "followup": {
+        "predatory_mites": "Observar el asentamiento de acaros beneficiosos"
+      }
+    },
+    "cold_root_zone": {
+      "title": "Zona radicular fria por la noche",
+      "description": "La temperatura nocturna de la maceta bajo y freno la absorcion de nutrientes.",
+      "choice": {
+        "insulate_pot": "Aislar la maceta y templar aire de entrada",
+        "increase_feed_strength": "En su lugar aumentar la fuerza del abonado",
+        "wait_for_weather": "Esperar noches mas calidas"
+      }
+    },
+    "hot_dry_day": {
+      "title": "Dia caluroso y seco",
+      "description": "El calor y la baja humedad secaron el sustrato rapidamente.",
+      "choice": {
+        "split_watering": "Dividir el riego durante el dia",
+        "single_heavy_watering": "Un riego unico y fuerte",
+        "mulch_surface": "Mulchar la superficie para reducir evaporacion"
+      }
+    },
+    "overfeeding_warning": {
+      "title": "Aviso de quemado de puntas",
+      "description": "El quemado temprano de puntas indica concentracion nutritiva excesiva.",
+      "choice": {
+        "reduce_ec": "Bajar EC durante dos abonados",
+        "flush_medium": "Lavar el sustrato de inmediato",
+        "keep_schedule": "Mantener el plan actual"
+      }
+    },
+    "beneficial_fungi_colonized": {
+      "title": "Micorriza establecida con exito",
+      "description": "La revision de raices muestra fuerte actividad de hongos beneficiosos en la rizosfera.",
+      "choice": {
+        "maintain_program": "Mantener el programa actual",
+        "add_extra_biology": "Anadir un refuerzo extra de biologia del suelo",
+        "disrupt_with_flush": "Lavar de forma agresiva"
+      }
+    },
+    "watering_gap": {
+      "title": "Hueco inesperado de riego",
+      "description": "El riego planificado se retraso y el sustrato se seco mas de lo esperado.",
+      "choice": {
+        "recover_gradually": "Recuperar humedad de forma gradual",
+        "instant_full_rewater": "Rehidratar por completo de una vez",
+        "skip_until_tomorrow": "Saltar hasta manana"
+      }
+    },
+    "soil_life_decline": {
+      "title": "Disminuye la vida del suelo",
+      "description": "El olor y la estructura sugieren menor actividad microbiana.",
+      "choice": {
+        "add_compost_extract": "Aplicar extracto de compost",
+        "topdress_worm_castings": "Aplicar humus de lombriz en cobertura",
+        "continue_synthetic_only": "Seguir solo con abonado mineral"
+      }
+    },
+    "late_flower_humidity": {
+      "title": "Presion de humedad en floracion tardia",
+      "description": "Un dosel denso y sustrato humedo elevan el riesgo de moho en fase tardia.",
+      "choice": {
+        "defoliate_lightly": "Defoliacion ligera y reducir humedad",
+        "dehumidify_and_hold_feed": "Deshumidificar y pausar abonado fuerte",
+        "ignore_humidity": "Ignorarlo en este ciclo"
+      }
+    },
+    "outcome": {
+      "observing_text": "La medida se observa ahora durante un breve periodo del juego.",
+      "choice_prefix": "Tu decision \"{label}\"",
+      "choice_prefix_generic": "Tu decision",
+      "followup_hint": " Se ha dejado una pista de seguimiento para {id}.",
+      "explanation": {
+        "improved": "{choice} redujo de forma notable la presion.{hint}",
+        "stabilized": "{choice} ayudo, pero la situacion aun no esta totalmente limpia.{hint}",
+        "worsened": "{choice} no abordo bien la causa principal.{hint}",
+        "escalated": "{choice} llego tarde o no encajo con el patron de presion actual.{hint}",
+        "unresolved": "{choice} solo cambio parcialmente la situacion.{hint}"
+      },
+      "result": {
+        "improved": "La planta puede estabilizarse y recuperar reservas poco a poco.",
+        "stabilized": "La presion aguda se contuvo, pero sigue siendo relevante en segundo plano.",
+        "worsened": "El estres siguio activo y continuo afectando crecimiento o estabilidad.",
+        "escalated": "La presion evoluciono hacia un problema de seguimiento mas claro.",
+        "unresolved": "La planta sigue vulnerable por ahora, incluso sin escalada fuerte."
+      },
+      "guidance": {
+        "improved": "Mant?n la correccion estable y observa si los valores se mantienen.",
+        "stabilized": "La situacion esta contenida, pero necesita uno o dos ciclos de seguimiento limpio.",
+        "worsened": "La presion aun no esta resuelta. Correcciones pequenas y precisas son mejores que reaccionar con prisa.",
+        "escalated": "La situacion sigue escalando. Prioriza contencion en lugar de empuje de crecimiento.",
+        "unresolved": "Observa los siguientes ciclos y corrige solo el desencadenante real."
+      }
+    },
+    "problem_source": {
+      "water_wet": "El sustrato estuvo humedo demasiado tiempo y redujo el oxigeno en la zona radicular.",
+      "water_dry": "El cepellon se seco demasiado y la planta tuvo que compensar estres hidrico.",
+      "nutrition_lockout": "La absorcion fue inestable. Derivas de EC o pH desplazaron la disponibilidad de nutrientes.",
+      "nutrition_deficit": "El buffer nutritivo actual ya no cubria bien esta fase de desarrollo.",
+      "disease_mold": "Humedad, poco flujo de aire o dosel denso desequilibraron el microclima.",
+      "environment_heat_dry": "El calor y aire demasiado seco aumentaron la presion de transpiracion.",
+      "environment_cold": "La temperatura bajo demasiado y freno metabolismo y absorcion de agua.",
+      "environment_light": "La intensidad de luz y la distancia del dosel fueron demasiado agresivas para el estado actual.",
+      "generic": "Varios factores de estres se acumularon con el tiempo y causaron la presion actual."
+    }
+  },
+  "settings": {
+    "title": "Ajustes",
+    "language": "Idioma",
+    "language_hint": "Los cambios se aplican de inmediato.",
+    "not_active": "No activo",
+    "language_de": "Deutsch",
+    "language_en": "English",
+    "language_es": "Español",
+    "gameplay": "JUGABILIDAD",
+    "event_frequency": "Frecuencia de eventos",
+    "tutorial_hints": "Consejos del tutorial",
+    "autosave": "Autoguardado",
+    "audio_graphics": "AUDIO Y GRÁFICOS",
+    "master_volume": "Volumen maestro",
+    "effects": "Efectos",
+    "battery_mode": "Modo batería",
+    "haptic": "Háptica",
+    "account": "CUENTA",
+    "cloud_sync": "Sincronización en la nube",
+    "not_connected": "No conectado",
+    "push_supported": "Push compatible",
+    "push_permission": "Permiso",
+    "push_status": "Estado",
+    "push_enable": "Activar push",
+    "push_disable": "Desactivar push",
+    "push_test": "Enviar notificación de prueba",
+    "reset": "REINICIAR",
+    "default": "POR DEFECTO",
+    "save": "GUARDAR"
+  },
+  "boot": {
+    "init": "Iniciando sistema...",
+    "restore_session": "Restaurando sesión...",
+    "load_data": "Cargando datos del juego...",
+    "init_simulation": "Inicializando simulación...",
+    "render_ui": "Construyendo interfaz...",
+    "ready": "Listo"
+  },
+  "support": {
+    "paypal_cta": "Apoyar con PayPal",
+    "voluntary_hint": "Voluntario. Cada aporte ayuda directamente al desarrollo.",
+    "title": "Apoyar GrowSim"
+  },
+  "rewards": {
+    "status_claimed": "Ya reclamado",
+    "status_claimable": "Reclamable",
+    "status_not_claimable": "No reclamable",
+    "claim_loading": "Reclamando?",
+    "claim_now": "Reclamar ahora",
+    "verified_weekly_reward": "Recompensa semanal verificada.",
+    "weekly_value": "Semanal",
+    "login_required": "Inicio de sesion requerido",
+    "claimable_count": "{count} reclamable",
+    "no_open_claim": "Sin reclamo abierto",
+    "login_to_see_verified": "Inicia sesion para ver aqui recompensas semanales verificadas.",
+    "loading_rewards": "Cargando recompensas?",
+    "none_for_period": "Aun no hay recompensas semanales para este periodo.",
+    "claimable_verified_waiting": "{count} recompensa(s) semanal(es) verificada(s) te esperan.",
+    "already_claimed_count": "{count} recompensa(s) semanal(es) ya reclamada(s).",
+    "none_claimable_now": "No hay recompensas semanales reclamables ahora.",
+    "not_visible_without_login": "Sin inicio de sesion, las recompensas semanales no se muestran.",
+    "verified_ready_to_claim": "Recompensa semanal verificada lista para reclamar.",
+    "none_open_weekly": "No hay recompensa semanal abierta ahora."
+  },
+  "leaderboard": {
+    "only_verified": "Aqui solo aparecen resultados verificados.",
+    "loading": "Cargando clasificacion?",
+    "period": "Periodo {period}",
+    "weekly_snapshot": "Resumen semanal",
+    "your_weekly_rank": "Tu rango semanal",
+    "metric_quality": "Calidad",
+    "metric_score": "Puntuacion",
+    "current_score_line": "Actual {score} {metric}{best}",
+    "best_rank_suffix": " ? Mejor semanal #{rank}",
+    "login_to_see_rank": "Inicia sesion para ver tu rango semanal y posicion en la tabla.",
+    "no_verified_entry_profile": "Aun no hay entrada semanal verificada para este perfil.",
+    "no_verified_entries_week": "Esta semana aun no hay entradas verificadas aqui.",
+    "around_me_after_verified": "Cuando tengas una entrada semanal verificada, aqui aparecera tu entorno.",
+    "login_to_see_position": "Inicia sesion para ver aqui tu posicion cercana."
+  },
+  "harvest": {
+    "next_improvement": "siguiente mejora",
+    "clearest_lever_here": "Aqui esta la palanca mas clara para el siguiente paso.",
+    "brake_factor": "factor de freno",
+    "play_calmer_next_run": "Juega {label} con mas calma en el siguiente run y habra mas margen.",
+    "close_to_stronger_harvest": "Estas cerca de una cosecha mas fuerte. Un siguiente paso limpio suele ser suficiente.",
+    "metric_yield": "Rendimiento",
+    "metric_quality": "Calidad",
+    "metric_stability": "Estabilidad",
+    "metric_efficiency": "Eficiencia",
+    "metric_challenge": "Desafio",
+    "strong_factor": "Factor fuerte",
+    "reason_supported_forecast": "Sostuvo claramente la prevision.",
+    "reason_slowed_forecast": "Freno la prevision.",
+    "no_dominant_factor": "Ningun factor individual domino este run.",
+    "strongest_moment_prefix": "Momento mas fuerte",
+    "good_phase": "Fase positiva",
+    "phase_supported_run": "Esta fase sostuvo claramente el run.",
+    "biggest_loss_prefix": "Mayor perdida",
+    "part_dragged_finish": "Esta parte redujo notablemente el cierre.",
+    "run_balanced_no_spike": "El run se mantuvo equilibrado sin un pico dominante.",
+    "verification_status": {
+      "verified": "Este resultado fue verificado por el servidor.",
+      "provisional": "Hay una revision provisional. El resultado final aun puede ajustarse.",
+      "under_review": "Tu resultado sigue en revision.",
+      "rejected": "Este resultado no pudo verificarse. La evaluacion local se mantiene.",
+      "submitting": "Enviando la evaluacion local al servidor.",
+      "polling": "Tu resultado se esta revisando.",
+      "local_only": "No hay verificacion backend. Esta evaluacion queda local."
+    },
+    "hero": {
+      "verified_strong_title": "Verificado fuerte",
+      "verified_strong_subtitle": "El servidor confirma un cierre muy limpio.",
+      "verified_solid_title": "Verificado solido",
+      "verified_solid_subtitle": "El resultado esta verificado y en una linea estable.",
+      "verified_difficult_title": "Verificado dificil",
+      "verified_difficult_subtitle": "El servidor verifico el resultado, pero el run se mantuvo bajo presion.",
+      "provisional_title": "Revision provisional",
+      "provisional_subtitle": "Hay una primera revision del servidor. La comprobacion final sigue en curso."
+    },
+    "badge": {
+      "verified": "Verificado",
+      "provisional": "Provisional",
+      "under_review": "En revision",
+      "rejected": "No verificable",
+      "forecast": "Pronostico"
+    },
+    "local_title": "Evaluacion local de cosecha",
+    "finish_ready": "El cierre esta listo.",
+    "verified_result_title": "Resultado de cosecha verificado",
+    "verified_result_badge": "Resultado verificado",
+    "local_badge": "Evaluacion local",
+    "verified_required_for_rankings": "Las clasificaciones usan la valoracion verificada del servidor.",
+    "local_ready": "Evaluacion local de cosecha lista.",
+    "motivation": {
+      "verified": "El resultado esta verificado. Un siguiente run mas limpio puede subir aun mas esta marca.",
+      "rejected": "La evaluacion local sigue siendo valiosa. Un run mas limpio aumenta la probabilidad de un resultado verificado.",
+      "under_review": "Tu resultado sigue en revision. Ya vale la pena planear el siguiente run limpio."
+    },
+    "best": {
+      "new_harvest_score": "Nuevo mejor registro: puntuacion de cosecha",
+      "best_quality": "Mejor calidad hasta ahora",
+      "best_stability": "Run mas estable hasta ahora",
+      "none_new": "Aun no hay nuevo mejor personal de cosecha en este run.",
+      "new_personal_mark": "Gran ejecucion. Este run marca un nuevo hito personal."
+    }
+  },
+  "run_summary": {
+    "unlocks_none": "Aun no se desbloqueo nada nuevo en este run.",
+    "unlock_default_title": "Desbloqueo",
+    "unlock_default_effect": "Nueva opcion inicial desbloqueada.",
+    "complete_and_new_run": "Finalizar e iniciar nuevo run",
+    "start_new_run": "Iniciar nuevo run",
+    "finalize": "Finalizar"
+  },
+  "analysis": {
+    "no_activity_yet": "Aun no hay actividad",
+    "open_analysis": "Abrir analisis",
+    "no_actions_or_events": "No hay acciones ni eventos registrados.",
+    "action": "Accion",
+    "emergency_rescue": "Rescate de emergencia",
+    "learning_note": "Nota de aprendizaje",
+    "local_forecast_updated": "Pronostico local actualizado.",
+    "no_net_change": "Sin cambio neto",
+    "reanimation": "Reanimacion",
+    "sim_stamp": "Dia {day} ? {hour}:00",
+    "stabilization": "Estabilizacion",
+    "system": "Sistema"
+  },
+  "notifications": {
+    "plant_needs_water": "Tu planta necesita cuidados."
+  },
+  "care": {
+    "feed": "Fertilizar",
+    "open": "Abrir cuidados",
+    "water": "Regar"
+  },
+  "death": {
+    "discard_and_restart": "Descartar run y reiniciar",
+    "use_emergency_rescue": "Usar rescate de emergencia"
+  },
+  "diagnosis": {
+    "stable_state": "Estado estable"
+  },
+  "legal": {
+    "de_only_notice": "El siguiente texto legal esta disponible actualmente solo en aleman.",
+    "imprint_title": "Aviso legal",
+    "privacy_title": "Privacidad"
+  },
+  "popup": {
+    "nutrition": {
+      "primary": {
+        "demand_up": "La demanda de nutrientes esta subiendo.",
+        "low": "El suministro se queda corto.",
+        "stable": "El suministro esta estable."
+      },
+      "secondary": {
+        "intake_calm": "La absorcion se mantiene estable.",
+        "slowly_up": "La demanda aumenta lentamente.",
+        "watch": "Conviene vigilar los valores."
+      },
+      "title": "Balance de nutrientes"
+    },
+    "risk": {
+      "primary": {
+        "no_acute": "No se detecta riesgo agudo.",
+        "up": "El riesgo esta aumentando.",
+        "watch_values": "Algunos valores deben vigilarse."
+      },
+      "secondary": {
+        "no_action": "No se necesita accion directa.",
+        "trend_stable": "La tendencia es estable por ahora.",
+        "watch": "Se recomienda observacion."
+      },
+      "title": "Analisis de riesgo"
+    },
+    "stress": {
+      "primary": {
+        "light": "Se aprecia una carga ligera.",
+        "ok": "El estres es bajo actualmente.",
+        "up": "El estres esta subiendo."
+      },
+      "secondary": {
+        "no_action": "No se necesita accion directa.",
+        "watch": "Se recomienda observacion."
+      },
+      "title": "Nivel de estres"
+    },
+    "water": {
+      "primary": {
+        "low": "El agua empieza a faltar.",
+        "reserve_down": "La reserva de agua esta bajando.",
+        "stable": "El balance de agua es estable."
+      },
+      "secondary": {
+        "consumption_up": "El consumo esta algo elevado.",
+        "demand_up": "La demanda esta subiendo.",
+        "intake_calm": "La absorcion esta tranquila por ahora."
+      },
+      "title": "Balance hidrico"
+    }
+  },
+  "stat": {
+    "growth": {
+      "expl": {
+        "good": "El crecimiento es estable. Impulso actual: {impulse}.",
+        "slowed": "El crecimiento esta frenado. Impulso: {impulse}.",
+        "solid": "El crecimiento avanza de forma solida. Impulso: {impulse}."
+      },
+      "rec": {
+        "low": "Recomendacion: abre analisis y revisa los factores de agua/nutrientes.",
+        "ok": "Recomendacion: manten el rumbo y vigila limites con analisis."
+      },
+      "status": {
+        "good": "Buen progreso",
+        "no_active": "Sin progreso activo de crecimiento",
+        "slowed": "Frenado",
+        "solid": "Desarrollo solido"
+      }
+    },
+    "nutrition": {
+      "expl": {
+        "low": "La falta de nutrientes limita el desarrollo y aumenta el riesgo de estres.",
+        "ok": "Los nutrientes aun sostienen bien el crecimiento.",
+        "watch": "La bajada de nutrientes puede frenar pronto el crecimiento."
+      },
+      "rec": {
+        "low": "Recomendacion: abre cuidados y revisa una accion de fertilizacion adecuada.",
+        "ok": "Recomendacion: manten estable el nivel de nutrientes y controla de forma regular."
+      }
+    },
+    "recommendation_prefix": "Recomendacion: {text}",
+    "risk": {
+      "expl": {
+        "driver": "Factor principal: {label}. {reason}",
+        "low": "Actualmente el riesgo es bajo."
+      },
+      "rec": {
+        "high": "Recomendacion: abre analisis y prioriza contramedidas.",
+        "low": "Recomendacion: observa la evolucion y revisa pronto las fuentes de riesgo."
+      }
+    },
+    "status": {
+      "critical": "Critico",
+      "deficit_risk": "Riesgo de carencia",
+      "elevated": "Elevado",
+      "high": "Alto",
+      "low": "Bajo",
+      "optimal": "Optimo",
+      "slightly_weak": "Ligeramente debil",
+      "solid": "Solido",
+      "stable": "Estable",
+      "very_good": "Muy bien",
+      "watch": "Vigilar"
+    },
+    "status_line": "Estado: {status}",
+    "water": {
+      "expl": {
+        "critical": "El agua esta baja y el estres por sequia puede subir rapido.",
+        "optimal": "El agua es optima ahora. La planta se mantiene bien abastecida.",
+        "stable": "El agua esta estable y no es critica en los proximos ciclos.",
+        "watch": "El agua empieza a escasear y conviene vigilarla."
+      },
+      "rec": {
+        "low": "Recomendacion: abre cuidados y riega pronto.",
+        "stable": "Recomendacion: manten la humedad estable y vigila la tendencia."
+      }
+    }
+  },
+  "onboarding": {
+    "hook": {
+      "1": "Haz crecer tu primera planta. Cada sesion cuenta.",
+      "2": "Cada decision cambia tu grow.",
+      "3": "Puedes cerrar un run perfecto sin crisis?"
+    }
+  },
+  "push": {
+    "title": "GrowSim",
+    "generic": "Hay una nueva novedad de GrowSim esperandote.",
+    "water": {
+      "1": "Tu planta tiene sed. Sesion rapida de cuidado?",
+      "2": "No la dejes secar. Hora de regar."
+    },
+    "event": {
+      "occurred": "Hay un nuevo evento esperando tu decision."
+    },
+    "harvest": {
+      "ready": "Tu planta ya esta lista para cosecha."
+    },
+    "daily": {
+      "reminder": "Reclama tu recompensa diaria ahora.",
+      "tasks_pending": "Todavia tienes tareas diarias pendientes hoy."
+    },
+    "streak": {
+      "risk": "Tu racha sigue abierta hoy. Un chequeo corto alcanza."
+    },
+    "critical": {
+      "health": "Estado critico: salud muy baja.",
+      "risk": "Estado critico: riesgo muy alto.",
+      "stress": "Estado critico: estres extremadamente alto."
+    },
+    "reminder": {
+      "care": "Tu planta necesita cuidados. Una accion rapida puede estabilizar el run."
+    }
+  },
+  "store": {
+    "short_description": "El juego de cultivo donde cada decision pesa.",
+    "long_description": "Planifica tu run, responde a eventos en vivo y guia tu planta hasta una cosecha estable. En GrowSim, agua, nutrientes, timing y riesgo cambian el resultado en tiempo real.",
+    "features": {
+      "1": "Eventos dinamicos con decisiones de impacto real",
+      "2": "Progresion por runs con decisiones clave",
+      "3": "Misiones diarias, rachas y recompensas de retorno",
+      "4": "Herramientas de analisis para mejorar el siguiente run"
+    },
+    "hook": {
+      "1": "Cada decision cambia tu grow.",
+      "2": "Juegas seguro o vas all-in?",
+      "3": "Puedes construir un run perfecto?"
+    }
+  },
+  "social": {
+    "feedback": {
+      "ask": "Que le falta a GrowSim para tu run perfecto?",
+      "feature": "Que feature quieres ver en la siguiente version?"
+    },
+    "test": {
+      "invite": "Prueba la nueva version ahora y comparte feedback."
+    },
+    "update": {
+      "announce": "Nuevo update en vivo. Hora de tu siguiente grow."
+    }
+  }
+}
