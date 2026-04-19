@@ -1417,11 +1417,19 @@
             <span data-i18n="auth.email">E-Mail</span>
             <input id="authEmailInput" type="email" autocomplete="email" />
           </label>
-          <label class="auth-field">
-            <span data-i18n="auth.password">Passwort</span>
-            <input id="authPasswordInput" type="password" autocomplete="current-password" />
-          </label>
-        </div>
+            <label class="auth-field">
+              <span data-i18n="auth.password">Passwort</span>
+              <input id="authPasswordInput" type="password" autocomplete="current-password" />
+            </label>
+            <label class="auth-field">
+              <span data-i18n="settings.language">Sprache</span>
+              <select id="authLanguageSelect" class="settings-language-select" aria-label="Sprache auswählen">
+                <option value="de" data-i18n="settings.language_de">Deutsch</option>
+                <option value="en" data-i18n="settings.language_en">English</option>
+                <option value="es" data-i18n="settings.language_es">Español</option>
+              </select>
+            </label>
+          </div>
         <p id="authModalError" class="sheet-note auth-modal-error hidden" aria-live="polite"></p>
         <div class="menu-dialog-actions">
           <button id="authModalCancelBtn" class="ghost-btn" type="button" data-i18n="auth.cancel">Abbrechen</button>

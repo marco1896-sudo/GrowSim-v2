@@ -1403,11 +1403,23 @@ function getI18nApi() {
 }
 
 function i18nT(key, vars = null) {
+  const safeKey = String(key || '');
   const api = getI18nApi();
   if (api && typeof api.t === 'function') {
-    return api.t(key, vars || undefined);
+    const translated = api.t(safeKey, vars || undefined);
+    const warnings = i18nT.__missingWarnings || (i18nT.__missingWarnings = new Set());
+    if (
+      translated === safeKey
+      && safeKey.includes('.')
+      && /^[a-z0-9_.-]+$/i.test(safeKey)
+      && !warnings.has(safeKey)
+    ) {
+      warnings.add(safeKey);
+      console.warn(`[i18n][app] unresolved key in runtime: ${safeKey}`);
+    }
+    return translated;
   }
-  return String(key || '');
+  return safeKey;
 }
 
 function pickI18nVariant(baseKey, variantCount = 1, seed = 0) {
@@ -1415,6 +1427,20 @@ function pickI18nVariant(baseKey, variantCount = 1, seed = 0) {
   const safeSeed = Math.max(0, Math.trunc(Number(seed) || 0));
   const index = (safeSeed % total) + 1;
   return `${String(baseKey || '').trim()}.${index}`;
+}
+
+function resolveLikelyI18nText(rawValue, fallbackKey = '') {
+  const raw = String(rawValue || '').trim();
+  if (!raw) {
+    return fallbackKey ? i18nT(fallbackKey) : '';
+  }
+  if (raw.includes('.') && /^[a-z0-9_.-]+$/i.test(raw)) {
+    const translated = i18nT(raw);
+    if (translated !== raw) {
+      return translated;
+    }
+  }
+  return raw;
 }
 
 function applyI18nTranslations(root = document) {
@@ -1639,7 +1665,10 @@ function ensureRetentionState(snapshot = state) {
         targetValue: target,
         completed: Boolean(task.completed) || Boolean(completedAt) || progress >= target,
         claimed,
-        rewardCoins: Math.max(0, Math.trunc(Number(task.rewardCoins) || 0)),
+        rewardCoins: Math.max(
+          0,
+          Math.trunc(Number(task.rewardCoins) || getDefaultDailyTaskCoins(String(task.type || task.trigger || task.sheetName || '').trim()))
+        ),
         xp: Math.max(0, Math.trunc(Number(task.xp) || 0)),
         completedAt,
         claimedAt,
@@ -3242,7 +3271,12 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
         eventKey: `daily_task_completed:${retention.dailyCare.dayKey}:${task.taskId}`
       });
       completionFeedback.push(i18nT('daily.toast.task_done', {
-        task: String(task.title || i18nT('daily.task_fallback'))
+        task: resolveLikelyI18nText(
+          task.title,
+          String(task.type || task.trigger || task.sheetName || '').trim()
+            ? `daily.task.${String(task.type || task.trigger || task.sheetName || '').trim()}.title`
+            : 'daily.task_fallback'
+        )
       }));
     }
   }
@@ -5940,6 +5974,7 @@ async function boot() {
     if (window.GrowSimAuth && typeof window.GrowSimAuth.restoreSession === 'function') {
       await runBootSubstep('restore_auth_session', () => window.GrowSimAuth.restoreSession());
     }
+    await runBootSubstep('init_i18n_runtime_pre_auth_gate', () => initializeI18nRuntime());
     let hasValidSession = isAuthSessionValid();
     const useLocalDevBypass = !hasValidSession && shouldBypassAuthForLocalDev();
     if (typeof window !== 'undefined') {
@@ -16023,7 +16058,7 @@ function renderStatDetailSheet() {
 }
 
 function openSheet(name) {
-  if (authGateActive && name !== 'imprint' && name !== 'privacy') {
+  if (authGateActive && name !== 'imprint' && name !== 'privacy' && name !== 'diagnosis') {
     openCloudAuthModal({ gate: true });
     return;
   }
@@ -16210,6 +16245,8 @@ function renderMissionsSheet() {
         : {};
       const nextStateMap = {};
       for (const task of tasks) {
+        const taskTypeKey = String(task.type || task.trigger || task.sheetName || '').trim();
+        const taskTitle = resolveLikelyI18nText(task.title, taskTypeKey ? `daily.task.${taskTypeKey}.title` : 'daily.task_fallback');
         const target = Math.max(1, Math.trunc(Number(task.target || task.targetValue) || 1));
         const progress = clampInt(Number(task.progress || task.progressValue) || 0, 0, target);
         const completed = Boolean(task.completed) || progress >= target;
@@ -16226,12 +16263,13 @@ function renderMissionsSheet() {
         const stateHint = !completed
           ? (inProgress
             ? i18nT('daily.retention.progress_almost', { progress, target })
-            : i18nT('daily.retention.start_task', { task: String(task.title || i18nT('daily.task_fallback')).toLowerCase() }))
+            : i18nT('daily.retention.start_task', { task: String(taskTitle || i18nT('daily.task_fallback')).toLowerCase() }))
           : (rewardGranted
             ? i18nT('daily.retention.reward_collected')
             : i18nT('daily.retention.ready_for_coins', { coins: Math.max(0, Math.trunc(Number(task.rewardCoins) || 0)) }));
         const progressRatio = clamp(progress / target, 0, 1);
         const claimTaskId = String(task.taskId || task.id || '');
+        const claimCoins = Math.max(0, Math.trunc(Number(task.rewardCoins) || 0));
         const stateKey = `task:${claimTaskId}`;
         const previousState = String(previousStateMap[stateKey] || '');
         nextStateMap[stateKey] = rowState;
@@ -16241,12 +16279,12 @@ function renderMissionsSheet() {
         const row = document.createElement('div');
         row.className = `retention-task-row retention-task-row--${rowState}${completed && rewardGranted ? ' retention-task-row--done' : ''}${transitionClass}`;
         const claimButtonHtml = completed && !rewardGranted
-          ? `<button class="action-btn action-primary retention-task-claim-btn" type="button" data-retention-claim-task="${escapeHtml(claimTaskId)}">${i18nT('daily.claim')} +${Math.max(0, Math.trunc(Number(task.rewardCoins) || 0))} C</button>`
+          ? `<button class="action-btn action-primary retention-task-claim-btn" type="button" data-retention-claim-task="${escapeHtml(claimTaskId)}">${claimCoins > 0 ? `${i18nT('daily.claim')} +${claimCoins} C` : i18nT('daily.claim')}</button>`
           : '';
         const stateToneClass = `retention-task-state retention-task-state--${rowState}`;
         row.innerHTML = `
           <span class="retention-task-copy">
-            <strong>${escapeHtml(String(task.title || i18nT('daily.task_fallback')))}</strong>
+            <strong>${escapeHtml(String(taskTitle || i18nT('daily.task_fallback')))}</strong>
             <small>${escapeHtml(stateHint)}</small>
             <span class="retention-task-progress-wrap" aria-hidden="true">
               <span class="retention-task-progress-track">
@@ -19848,9 +19886,16 @@ function updateSettingsUI() {
   }
 
   const languageSelectNode = document.getElementById('settingsLanguageSelect');
+  const authLanguageSelectNode = document.getElementById('authLanguageSelect');
   const i18nApi = getI18nApi();
-  if (languageSelectNode && i18nApi && typeof i18nApi.getCurrentLanguage === 'function') {
-    languageSelectNode.value = i18nApi.getCurrentLanguage();
+  if (i18nApi && typeof i18nApi.getCurrentLanguage === 'function') {
+    const currentLanguage = i18nApi.getCurrentLanguage();
+    if (languageSelectNode) {
+      languageSelectNode.value = currentLanguage;
+    }
+    if (authLanguageSelectNode) {
+      authLanguageSelectNode.value = currentLanguage;
+    }
   }
 
   renderPushSettingsUi();
@@ -19987,6 +20032,7 @@ function getAuthModalNodes() {
     displayNameInput: document.getElementById('authDisplayNameInput'),
     emailInput: document.getElementById('authEmailInput'),
     passwordInput: document.getElementById('authPasswordInput'),
+    languageSelect: document.getElementById('authLanguageSelect'),
     errorNode: document.getElementById('authModalError'),
     primaryBtn: document.getElementById('authModalPrimaryBtn'),
     cancelBtn: document.getElementById('authModalCancelBtn'),
@@ -20016,6 +20062,7 @@ function setAuthModalBusyState(isBusy) {
     nodes.displayNameInput,
     nodes.emailInput,
     nodes.passwordInput,
+    nodes.languageSelect,
     nodes.primaryBtn,
     nodes.cancelBtn,
     nodes.closeBtn,
@@ -20090,6 +20137,12 @@ function syncAuthModalContent() {
   }
   if (nodes.logoutBtn) {
     nodes.logoutBtn.textContent = i18nT('auth.logout');
+  }
+  if (nodes.languageSelect) {
+    const i18nApi = getI18nApi();
+    if (i18nApi && typeof i18nApi.getCurrentLanguage === 'function') {
+      nodes.languageSelect.value = i18nApi.getCurrentLanguage();
+    }
   }
   if (nodes.modal) {
     nodes.modal.dataset.gate = gateMode ? 'required' : 'optional';
@@ -20247,6 +20300,30 @@ function ensureSettingsUiReady() {
   void refreshPushStatus({ force: false });
 }
 
+function bindLanguageSelectControl(selectNode) {
+  if (!selectNode || selectNode.dataset.bound === 'true') {
+    return;
+  }
+  selectNode.addEventListener('change', (event) => {
+    const selectedLanguage = event && event.target ? event.target.value : '';
+    const i18nApi = getI18nApi();
+    if (!i18nApi || typeof i18nApi.setLanguage !== 'function') {
+      return;
+    }
+    i18nApi.setLanguage(selectedLanguage);
+    const language = i18nApi.getCurrentLanguage ? i18nApi.getCurrentLanguage() : String(selectedLanguage || '');
+    const settingsLanguageSelect = document.getElementById('settingsLanguageSelect');
+    if (settingsLanguageSelect && settingsLanguageSelect !== selectNode) {
+      settingsLanguageSelect.value = language;
+    }
+    const authLanguageSelect = document.getElementById('authLanguageSelect');
+    if (authLanguageSelect && authLanguageSelect !== selectNode) {
+      authLanguageSelect.value = language;
+    }
+  });
+  selectNode.dataset.bound = 'true';
+}
+
 function initSettingsEvents() {
   if (settingsEventsInitialized) {
     return;
@@ -20276,17 +20353,10 @@ function initSettingsEvents() {
   }
 
   const languageSelect = byId('settingsLanguageSelect');
-  if (languageSelect && languageSelect.dataset.bound !== 'true') {
-    languageSelect.addEventListener('change', (event) => {
-      const selectedLanguage = event && event.target ? event.target.value : '';
-      const i18nApi = getI18nApi();
-      if (!i18nApi || typeof i18nApi.setLanguage !== 'function') {
-        return;
-      }
-      i18nApi.setLanguage(selectedLanguage);
-    });
-    languageSelect.dataset.bound = 'true';
-  }
+  bindLanguageSelectControl(languageSelect);
+
+  const authLanguageSelect = byId('authLanguageSelect');
+  bindLanguageSelectControl(authLanguageSelect);
 
   const speedControl = byId('settingsSimSpeedControl');
   if (speedControl && speedControl.dataset.bound !== 'true') {
