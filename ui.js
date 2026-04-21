@@ -610,7 +610,38 @@ function bindHomeScreenEvents(controller = null) {
   }
 
   if (ui.homeClimateCard) {
-    ui.homeClimateCard.addEventListener('click', () => {
+    ui.homeClimateCard.addEventListener('click', (event) => {
+      const actionButton = event.target instanceof Element
+        ? event.target.closest('[data-climate-controller-action]')
+        : null;
+      const controllerApi = window.GrowSimHomeClimateController;
+      if (actionButton) {
+        const action = String(actionButton.getAttribute('data-climate-controller-action') || '').trim();
+        actionButton.dataset.pressed = 'true';
+        window.setTimeout(() => {
+          if (actionButton && actionButton.dataset) {
+            delete actionButton.dataset.pressed;
+          }
+        }, 130);
+        if (action === 'select') {
+          if (controllerApi && typeof controllerApi.cycleSelectedField === 'function') {
+            controllerApi.cycleSelectedField(1);
+          }
+          return;
+        }
+        if (action === 'up') {
+          if (controllerApi && typeof controllerApi.stepSelectedFieldValue === 'function') {
+            controllerApi.stepSelectedFieldValue(1);
+          }
+          return;
+        }
+        if (action === 'down') {
+          if (controllerApi && typeof controllerApi.stepSelectedFieldValue === 'function') {
+            controllerApi.stepSelectedFieldValue(-1);
+          }
+          return;
+        }
+      }
       const activeController = resolveController();
       if (activeController && typeof activeController.handleOpenSheet === 'function') {
         activeController.handleOpenSheet('climate');

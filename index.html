@@ -7,7 +7,7 @@
   <title>Grow-Simulator</title>
   <script>
     (function initBuildMeta() {
-      const buildId = '20260412-075600';
+      const buildId = '20260421-072934';
       const appVersion = `growsim-${buildId}`;
       window.GrowSimBuild = Object.freeze({
         id: buildId,
@@ -192,39 +192,64 @@
         </div>
 
         <div class="home-right-column">
-          <button id="homeClimateCard" class="home-climate-card" type="button" aria-label="Klima-Steuerung öffnen">
-            <div class="home-climate-card__header">
-              <div class="home-climate-card__copy">
-                <span class="home-climate-card__eyebrow">Climate</span>
-                <div class="home-climate-card__headline">
-                  <strong id="envVpdValue" class="home-climate-card__hero-value">1.2 kPa</strong>
+          <div id="homeClimateCard" class="home-climate-card climate-controller-card" role="group" aria-label="Klima-Controller">
+            <img class="climate-controller-frame" src="/assets/ui/cards/asset_controller.png" alt="" draggable="false" aria-hidden="true">
+            <div class="climate-controller-display">
+              <div class="climate-controller-display__topline">
+                <span id="homeClimateMainMode" class="climate-controller-display__mode">AUTO</span>
+                <span id="homeClimateBadge" class="climate-controller-display__badge">Optimal</span>
+              </div>
+              <div id="homeClimateMetricTemp" class="climate-controller-display__hero" data-field="temp" data-active="true">
+                <div class="climate-controller-display__hero-value-row">
+                  <strong id="homeClimateMainValue" class="climate-controller-display__value">25.0</strong>
+                  <span id="homeClimateMainUnit" class="climate-controller-display__unit">°C</span>
                 </div>
               </div>
-              <span id="homeClimateBadge" class="home-climate-card__badge">Optimal</span>
-            </div>
-
-            <div class="home-climate-card__metrics" aria-label="Klima-Istwerte">
-              <div class="home-climate-metric" aria-label="Temperatur">
-                <img class="home-climate-metric__icon" src="assets/ui/icons/icon_temperatur.svg" alt="" aria-hidden="true">
-                <strong id="envTempValue" class="home-climate-metric__value">25.3°C</strong>
+              <div class="climate-controller-display__track" aria-hidden="true">
+                <span id="homeClimateTrackFill" class="climate-controller-display__track-fill"></span>
               </div>
-              <div class="home-climate-metric" aria-label="Luftfeuchte">
-                <img class="home-climate-metric__icon" src="assets/ui/icons/icon_humidity.svg" alt="" aria-hidden="true">
-                <strong id="envHumidityValue" class="home-climate-metric__value">61%</strong>
+              <div class="climate-controller-display__metrics" aria-label="Klima-Werte">
+                <div id="homeClimateMetricHumidity" class="climate-controller-display__metric" data-field="humidity" data-active="false">
+                  <span class="climate-controller-display__metric-icon-wrap" aria-hidden="true">
+                    <img class="climate-controller-display__metric-icon" src="/assets/ui/icons/icon_humidity.svg" alt="">
+                  </span>
+                  <div class="climate-controller-display__metric-copy">
+                    <strong id="envHumidityValue" class="climate-controller-display__metric-value">61%</strong>
+                  </div>
+                </div>
+                <div id="homeClimateMetricVpd" class="climate-controller-display__metric" data-field="vpd" data-active="false">
+                  <span class="climate-controller-display__metric-icon-wrap" aria-hidden="true">
+                    <img class="climate-controller-display__metric-icon" src="/assets/ui/icons/icon_vpd.svg" alt="">
+                  </span>
+                  <div class="climate-controller-display__metric-copy">
+                    <strong id="envVpdValue" class="climate-controller-display__metric-value">1.2 kPa</strong>
+                  </div>
+                </div>
+                <div id="homeClimateMetricPpfd" class="climate-controller-display__metric" data-field="ppfd" data-active="false">
+                  <span class="climate-controller-display__metric-icon-wrap" aria-hidden="true">
+                    <img class="climate-controller-display__metric-icon" src="/assets/ui/icons/icon_light.svg" alt="">
+                  </span>
+                  <div class="climate-controller-display__metric-copy">
+                    <strong id="envLightValue" class="climate-controller-display__metric-value">720</strong>
+                  </div>
+                </div>
+              </div>
+              <div class="climate-controller-display__footer">
+                <span id="homeClimateStatusText">TARGET</span>
+                <span class="climate-controller-display__footer-dot" aria-hidden="true"></span>
               </div>
             </div>
-
-            <div class="home-climate-card__footer" aria-label="Licht">
-              <img class="home-climate-metric__icon home-climate-metric__icon--tiny" src="assets/ui/icons/icon_light.svg" alt="" aria-hidden="true">
-              <strong id="envLightValue" class="home-climate-card__footer-value">720</strong>
-              <span id="envLightLabel" class="home-climate-card__footer-unit">PPFD</span>
-            </div>
-
+            <button type="button" class="controller-btn controller-btn-menu" data-climate-controller-action="menu" aria-label="Klimaübersicht öffnen"></button>
+            <button type="button" class="controller-btn controller-btn-select" data-climate-controller-action="select" aria-label="Aktiven Klimawert wechseln"></button>
+            <button type="button" class="controller-btn controller-btn-up" data-climate-controller-action="up" aria-label="Aktiven Klimawert erhöhen"></button>
+            <button type="button" class="controller-btn controller-btn-down" data-climate-controller-action="down" aria-label="Aktiven Klimawert verringern"></button>
             <span id="envTempLabel" class="home-climate-card__sr-only">Temperatur</span>
+            <span id="envTempValue" class="home-climate-card__sr-only">25.3°C</span>
             <span id="envHumidityLabel" class="home-climate-card__sr-only">Luftfeuchte</span>
+            <span id="envLightLabel" class="home-climate-card__sr-only">PPFD</span>
             <span id="envAirflowLabel" class="home-climate-card__sr-only">Luftstrom</span>
             <span id="envAirflowValue" class="home-climate-card__sr-only">Good</span>
-          </button>
+          </div>
         </div>
 
         <div class="home-content-scroll">

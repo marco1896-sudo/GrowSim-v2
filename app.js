@@ -12021,17 +12021,17 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   const climateModeCycleInfo = document.getElementById('climateModeCycleInfo');
   const climatePhaseValue = document.getElementById('climatePhaseValue');
   const climatePrimaryCards = document.querySelectorAll('.climate-primary-card');
+  const vpd = Number(liveReadout && liveReadout.vpdKpa || 0);
+  const climateState = (vpd >= 0.9 && vpd <= 1.5)
+    ? 'optimal'
+    : ((vpd >= 0.7 && vpd <= 1.7) ? 'watch' : 'alert');
+  const climateTension = climateState === 'optimal'
+    ? 'calm'
+    : (climateState === 'watch' ? 'elevated' : 'critical');
+  const climateLabel = climateState === 'optimal'
+    ? 'Optimal'
+    : (climateState === 'watch' ? 'Beobachten' : 'Alarm');
   if (homeClimateBadge || homeClimateCard || climateSheet || climateStatusBadge || climateStatusText) {
-    const vpd = Number(liveReadout && liveReadout.vpdKpa || 0);
-    const climateState = (vpd >= 0.9 && vpd <= 1.5)
-      ? 'optimal'
-      : ((vpd >= 0.7 && vpd <= 1.7) ? 'watch' : 'alert');
-    const climateTension = climateState === 'optimal'
-      ? 'calm'
-      : (climateState === 'watch' ? 'elevated' : 'critical');
-    const climateLabel = climateState === 'optimal'
-      ? 'Optimal'
-      : (climateState === 'watch' ? 'Beobachten' : 'Alarm');
     if (homeClimateBadge) {
       homeClimateBadge.textContent = climateLabel;
       homeClimateBadge.dataset.state = climateState;
@@ -12060,6 +12060,82 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
     }
   }
   const autoModeActive = Boolean(controls.vpdTargetEnabled);
+  const climateController = ensureHomeClimateControllerState(state);
+  const selectedField = climateController.selectedField;
+  const selectedFieldConfig = {
+    temp: {
+      label: 'TEMP',
+      value: Number(controls.targets.day.temperatureC),
+      unit: '°C',
+      decimals: 1
+    },
+    humidity: {
+      label: 'RH',
+      value: Number(controls.targets.day.humidityPercent),
+      unit: '%',
+      decimals: 0
+    },
+    vpd: {
+      label: 'VPD',
+      value: Number(controls.targets.day.vpdKpa),
+      unit: 'kPa',
+      decimals: 2
+    },
+    ppfd: {
+      label: 'PPFD',
+      value: Number.isFinite(Number(climateController.ppfdTarget))
+        ? Number(climateController.ppfdTarget)
+        : Number(liveReadout && liveReadout.ppfd),
+      unit: 'PPFD',
+      decimals: 0
+    }
+  };
+  const activeField = Object.prototype.hasOwnProperty.call(selectedFieldConfig, selectedField)
+    ? selectedFieldConfig[selectedField]
+    : selectedFieldConfig.temp;
+  const activeValue = Number.isFinite(activeField.value) ? activeField.value : 0;
+  const activeValueText = activeField.decimals > 0
+    ? activeValue.toFixed(activeField.decimals)
+    : String(Math.round(activeValue));
+  setText('homeClimateMainLabel', activeField.label);
+  setText('homeClimateMainValue', activeValueText);
+  setText('homeClimateMainUnit', activeField.unit);
+  setText('homeClimateMainMode', autoModeActive ? 'AUTO' : 'MANUAL');
+  setText(
+    'homeClimateStatusText',
+    selectedField === 'ppfd' && !Number.isFinite(Number(climateController.ppfdTarget))
+      ? 'LIVE'
+      : 'TARGET'
+  );
+  const selectedFieldProgress = {
+    temp: clamp((activeValue - 16) / (36 - 16), 0, 1),
+    humidity: clamp((activeValue - 30) / (90 - 30), 0, 1),
+    vpd: clamp((activeValue - 0.2) / (3.0 - 0.2), 0, 1),
+    ppfd: clamp((activeValue - 100) / (1600 - 100), 0, 1)
+  };
+  const trackFillNode = document.getElementById('homeClimateTrackFill');
+  if (trackFillNode) {
+    const fallbackProgress = clamp((Number(activeValue) || 0) / 100, 0, 1);
+    const nextProgress = Object.prototype.hasOwnProperty.call(selectedFieldProgress, selectedField)
+      ? selectedFieldProgress[selectedField]
+      : fallbackProgress;
+    trackFillNode.style.setProperty('--climate-track', nextProgress.toFixed(3));
+  }
+  const metricNodes = [
+    { id: 'homeClimateMetricTemp', field: 'temp' },
+    { id: 'homeClimateMetricHumidity', field: 'humidity' },
+    { id: 'homeClimateMetricVpd', field: 'vpd' },
+    { id: 'homeClimateMetricPpfd', field: 'ppfd' }
+  ];
+  for (const metric of metricNodes) {
+    const node = document.getElementById(metric.id);
+    if (node) {
+      node.dataset.active = String(metric.field === selectedField);
+    }
+  }
+  if (homeClimateCard) {
+    homeClimateCard.setAttribute('aria-label', `Klima-Controller · ${activeField.label} ${activeValueText} ${activeField.unit}`.trim());
+  }
   if (climateModeAuto) {
     climateModeAuto.dataset.active = String(autoModeActive);
   }
@@ -12194,6 +12270,76 @@ function deriveAirflowLabel(airflowPercent) {
   if (airflowPercent >= 40) return 'Mittel';
   return 'Schwach';
 }
+
+const HOME_CLIMATE_CONTROLLER_FIELDS = Object.freeze(['temp', 'humidity', 'vpd', 'ppfd']);
+
+function ensureHomeClimateControllerState(sourceState = state) {
+  const target = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  if (!target.ui || typeof target.ui !== 'object') {
+    target.ui = {};
+  }
+  if (!target.ui.homeClimateController || typeof target.ui.homeClimateController !== 'object') {
+    target.ui.homeClimateController = {
+      selectedField: 'temp',
+      ppfdTarget: null
+    };
+  }
+  const controller = target.ui.homeClimateController;
+  const selectedField = String(controller.selectedField || 'temp').trim();
+  controller.selectedField = HOME_CLIMATE_CONTROLLER_FIELDS.includes(selectedField) ? selectedField : 'temp';
+  const ppfdTarget = Number(controller.ppfdTarget);
+  controller.ppfdTarget = Number.isFinite(ppfdTarget) ? clampInt(ppfdTarget, 100, 1600) : null;
+  return controller;
+}
+
+function cycleHomeClimateControllerField(direction = 1) {
+  const controller = ensureHomeClimateControllerState(state);
+  const currentIndex = Math.max(0, HOME_CLIMATE_CONTROLLER_FIELDS.indexOf(controller.selectedField));
+  const step = Number(direction) >= 0 ? 1 : -1;
+  const nextIndex = (currentIndex + step + HOME_CLIMATE_CONTROLLER_FIELDS.length) % HOME_CLIMATE_CONTROLLER_FIELDS.length;
+  controller.selectedField = HOME_CLIMATE_CONTROLLER_FIELDS[nextIndex];
+  renderHud();
+  schedulePersistState();
+}
+
+function stepHomeClimateControllerValue(direction = 1) {
+  const stepDirection = Number(direction) >= 0 ? 1 : -1;
+  const controller = ensureHomeClimateControllerState(state);
+  const selectedField = controller.selectedField;
+
+  if (selectedField === 'temp') {
+    const controls = ensureEnvironmentControls(state);
+    const nextValue = clamp(Number(controls.targets.day.temperatureC || 25) + (stepDirection * 0.5), 16, 36);
+    onEnvironmentControlInput('temperatureC', Number(nextValue.toFixed(1)));
+    return;
+  }
+  if (selectedField === 'humidity') {
+    const controls = ensureEnvironmentControls(state);
+    const nextValue = clampInt(Number(controls.targets.day.humidityPercent || 60) + stepDirection, 30, 90);
+    onEnvironmentControlInput('humidityPercent', nextValue);
+    return;
+  }
+  if (selectedField === 'vpd') {
+    const controls = ensureEnvironmentControls(state);
+    const nextValue = clamp(Number(controls.targets.day.vpdKpa || 1.2) + (stepDirection * 0.05), 0.2, 3.0);
+    onEnvironmentControlInput('dayVpdKpa', Number(nextValue.toFixed(2)));
+    return;
+  }
+
+  const liveReadout = deriveEnvironmentReadout(state);
+  const basePpfd = Number.isFinite(Number(controller.ppfdTarget))
+    ? Number(controller.ppfdTarget)
+    : Number(liveReadout && liveReadout.ppfd);
+  const nextPpfd = clampInt(Math.round((Number(basePpfd || 500) + (stepDirection * 25)) / 25) * 25, 100, 1600);
+  controller.ppfdTarget = nextPpfd;
+  renderHud();
+  schedulePersistState();
+}
+
+window.GrowSimHomeClimateController = Object.freeze({
+  cycleSelectedField: (direction = 1) => cycleHomeClimateControllerField(direction),
+  stepSelectedFieldValue: (direction = 1) => stepHomeClimateControllerValue(direction)
+});
 
 function onEnvironmentControlInput(controlKey, rawValue) {
   const controls = ensureEnvironmentControls(state);
