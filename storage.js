@@ -115,6 +115,7 @@ async function createStorageAdapter() {
     const db = await openDb();
     return {
       async get() {
+        const localSnapshot = await localStorageAdapter().get();
         let localSnapshotMissing = false;
         try {
           localSnapshotMissing = localStorage.getItem(LS_STATE_KEY) === null;
@@ -132,9 +133,13 @@ async function createStorageAdapter() {
             }
             return null;
           }
+          if (localSnapshot && typeof localSnapshot === 'object') {
+            const preferredSnapshot = choosePreferredRestoreSnapshot(localSnapshot, stored);
+            return preferredSnapshot.source === 'local' ? localSnapshot : stored;
+          }
           return stored;
         }
-        return localStorageAdapter().get();
+        return localSnapshot;
       },
       async set(snapshot) {
         try {
