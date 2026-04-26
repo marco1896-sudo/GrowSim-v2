@@ -12030,6 +12030,23 @@ function renderHud() {
   updateHomeFromViewModel(homeVm, null);
 }
 
+function triggerPlayerHudPulse(node, className = 'is-updating', durationMs = 820) {
+  if (!node || !node.classList) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  if (node.__playerHudPulseTimer) {
+    window.clearTimeout(node.__playerHudPulseTimer);
+  }
+
+  node.classList.remove(className);
+  void node.offsetWidth;
+  node.classList.add(className);
+  node.__playerHudPulseTimer = window.setTimeout(() => {
+    node.classList.remove(className);
+    node.__playerHudPulseTimer = null;
+  }, durationMs);
+}
+
 function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm === 'object' ? homeVm : buildHomeViewModel(state);
   const panel = vm.panel || {};
 
@@ -12057,11 +12074,25 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   }
   const playerXpFillNode = uiNode('playerXpFill', 'playerXpFill');
   if (playerXpFillNode) {
-    playerXpFillNode.style.setProperty('--xp', String(Number(panel.xpPercent || 0)));
+    const xpPercent = String(Number(panel.xpPercent || 0));
+    const previousXpPercent = playerXpFillNode.style.getPropertyValue('--xp');
+    playerXpFillNode.style.setProperty('--xp', xpPercent);
+    if (previousXpPercent && previousXpPercent !== xpPercent) {
+      triggerPlayerHudPulse(playerXpFillNode.closest('.player-xp-track'));
+    }
   }
 
   const coinNode = uiNode('currencyCoinValue', 'playerCoinValue');
-  if (coinNode) coinNode.textContent = String(panel.coinText || '');
+  if (coinNode) {
+    const coinText = String(panel.coinText || '');
+    const previousCoinText = coinNode.textContent;
+    if (previousCoinText !== coinText) {
+      coinNode.textContent = coinText;
+      if (previousCoinText) {
+        triggerPlayerHudPulse(coinNode.closest('.player-coins'));
+      }
+    }
+  }
 
   const envTempNode = uiNode('envTemperatureValue', 'envTempValue');
   const envHumidityNode = uiNode('envHumidityValue', 'envHumidityValue');
