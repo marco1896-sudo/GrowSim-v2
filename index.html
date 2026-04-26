@@ -7,7 +7,7 @@
   <title>Grow-Simulator</title>
   <script>
     (function initBuildMeta() {
-      const buildId = '20260421-072934';
+      const buildId = '20260426-115352';
       const appVersion = `growsim-${buildId}`;
       window.GrowSimBuild = Object.freeze({
         id: buildId,
@@ -209,7 +209,6 @@
 
         <div class="home-right-column">
           <div id="homeClimateCard" class="home-climate-card climate-controller-card" role="group" aria-label="Klima-Controller">
-            <img class="climate-controller-frame" src="/assets/ui/cards/asset_controller.png" alt="" draggable="false" aria-hidden="true">
             <div class="climate-controller-display">
               <div class="climate-controller-display__topline">
                 <span id="homeClimateMainMode" class="climate-controller-display__mode">AUTO</span>
@@ -238,7 +237,7 @@
                     <img class="climate-controller-display__metric-icon" src="/assets/ui/icons/icon_vpd.svg" alt="">
                   </span>
                   <div class="climate-controller-display__metric-copy">
-                    <strong id="envVpdValue" class="climate-controller-display__metric-value">1.2 kPa</strong>
+                    <strong id="envVpdValue" class="climate-controller-display__metric-value climate-controller-display__metric-value--vpd">1.2 kPa</strong>
                   </div>
                 </div>
                 <div id="homeClimateMetricPpfd" class="climate-controller-display__metric" data-field="ppfd" data-active="false">
