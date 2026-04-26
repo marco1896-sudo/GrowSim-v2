@@ -11311,6 +11311,59 @@ function getCompactRunGoalTitle(runGoal) {
   }
 }
 
+function derivePlayerSignalState(statusLike = {}, diagnosticsLike = {}, eventStatusLike = {}, retentionLike = {}) {
+  const status = statusLike && typeof statusLike === 'object' ? statusLike : {};
+  const diagnostics = diagnosticsLike && typeof diagnosticsLike === 'object' ? diagnosticsLike : {};
+  const eventStatus = eventStatusLike && typeof eventStatusLike === 'object' ? eventStatusLike : {};
+  const retention = retentionLike && typeof retentionLike === 'object' ? retentionLike : {};
+  const health = clamp(Number(status.health || 0), 0, 100);
+  const stress = clamp(Number(status.stress || 0), 0, 100);
+  const risk = clamp(Number(status.risk || 0), 0, 100);
+  const water = clamp(Number(status.water || 0), 0, 100);
+  const nutrition = clamp(Number(status.nutrition || 0), 0, 100);
+  const primaryIssue = diagnostics.primaryIssue && typeof diagnostics.primaryIssue === 'object'
+    ? diagnostics.primaryIssue
+    : null;
+  const primarySeverity = String(primaryIssue && primaryIssue.severity || '').toLowerCase();
+  const eventValue = String(eventStatus.value || '').toLowerCase();
+  const hasCriticalEvent = eventValue.includes('ereignis aktiv') || primarySeverity === 'critical';
+  if (
+    health <= 30
+    || water <= 18
+    || nutrition <= 18
+    || stress >= 70
+    || risk >= 70
+    || primarySeverity === 'high'
+    || hasCriticalEvent
+  ) {
+    return 'danger';
+  }
+  if (
+    health <= 55
+    || water <= 40
+    || nutrition <= 40
+    || stress >= 40
+    || risk >= 40
+    || primarySeverity === 'medium'
+    || Number(retention.dailyRemaining || 0) > 0
+  ) {
+    return 'warning';
+  }
+  return 'good';
+}
+
+function getPlayerSignalLabel(signalState) {
+  switch (String(signalState || 'good')) {
+    case 'danger':
+      return 'Status: kritisch';
+    case 'warning':
+      return 'Status: beobachten';
+    case 'good':
+    default:
+      return 'Status: stabil';
+  }
+}
+
 function getAuthDisplayIdentity() {
   const authApi = window.GrowSimAuth;
   if (!authApi || typeof authApi.isAuthenticated !== 'function' || typeof authApi.getUser !== 'function') {
@@ -11531,6 +11584,13 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       primaryTitle: String(diagnostics && diagnostics.primaryIssue && diagnostics.primaryIssue.title || ''),
       hints: guidanceHints.slice(0, 3)
     },
+    playerSignal: (() => {
+      const signalState = derivePlayerSignalState(status, diagnostics, eventStatus, { dailyRemaining });
+      return {
+        state: signalState,
+        label: getPlayerSignalLabel(signalState)
+      };
+    })(),
     runGoal: showRunGoal
       ? {
         visible: true,
@@ -11673,6 +11733,7 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   const homeMetaGoalStatusNode = uiNode('homeMetaGoalStatus', 'homeMetaGoalStatus');
   const homeMetaRetentionTeaserNode = uiNode('homeMetaRetentionTeaser', 'homeMetaRetentionTeaser');
   const homeMetaBuildChipNode = uiNode('homeMetaBuildChip', 'homeMetaBuildChip');
+  const playerSignalNode = uiNode('playerSignalDot', 'playerSignalDot');
   const homeMetaDetailNode = uiNode('homeMetaDetail', 'homeMetaDetail');
   const homeMetaDetailStatusNode = uiNode('homeMetaDetailStatus', 'homeMetaDetailStatus');
   const homeMetaDetailTitleNode = uiNode('homeMetaDetailTitle', 'homeMetaDetailTitle');
@@ -11689,10 +11750,11 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   const harvestForecastQualityNode = uiNode('harvestForecastQuality', 'harvestForecastQuality');
   const runGoalVm = vm.runGoal || {};
   if (homeMetaToggleNode) {
-    homeMetaToggleNode.classList.toggle('hidden', !Boolean(runGoalVm.visible));
-    homeMetaToggleNode.setAttribute('aria-hidden', String(!Boolean(runGoalVm.visible)));
-    homeMetaToggleNode.dataset.status = String(runGoalVm.status || 'active');
     const retentionVm = vm.retention && typeof vm.retention === 'object' ? vm.retention : {};
+    const showHomeMeta = Boolean(runGoalVm.visible || Number(retentionVm.dailyTotal || 0) > 0);
+    homeMetaToggleNode.classList.toggle('hidden', !showHomeMeta);
+    homeMetaToggleNode.setAttribute('aria-hidden', String(!showHomeMeta));
+    homeMetaToggleNode.dataset.status = String(runGoalVm.status || 'active');
     const retentionState = String(retentionVm.state || 'idle');
     homeMetaToggleNode.dataset.retentionState = retentionState;
     homeMetaToggleNode.classList.toggle('home-meta-strip--retention-claimable', retentionState === 'claimable');
@@ -11707,6 +11769,18 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
     homeMetaGoalStatusNode.textContent = String(runGoalVm.statusText || '');
     homeMetaGoalStatusNode.dataset.status = String(runGoalVm.status || 'active');
   }
+  if (playerSignalNode) {
+    const playerSignal = vm.playerSignal && typeof vm.playerSignal === 'object'
+      ? vm.playerSignal
+      : {};
+    const signalState = ['good', 'warning', 'danger'].includes(String(playerSignal.state || ''))
+      ? String(playerSignal.state)
+      : 'good';
+    const signalLabel = String(playerSignal.label || getPlayerSignalLabel(signalState));
+    playerSignalNode.dataset.signal = signalState;
+    playerSignalNode.setAttribute('aria-label', signalLabel);
+    playerSignalNode.setAttribute('title', signalLabel);
+  }
   if (homeMetaRetentionTeaserNode) {
     const retentionVm = vm.retention && typeof vm.retention === 'object' ? vm.retention : {};
     const headline = String(retentionVm.headline || '').trim();
@@ -11716,19 +11790,20 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
     });
     const primaryLine = String(retentionVm.teaserLine || retentionVm.teaserText || '').trim();
     const rewardHint = String(retentionVm.rewardHint || '').trim();
-    const subline = [primaryLine, rewardHint].filter(Boolean).join(' · ');
+    const streakRewardLine = [streakLine, rewardHint].filter(Boolean).join(' | ');
+    const bottomLine = primaryLine || retentionVm.teaserText || '';
     const nextReward = Math.max(0, Math.trunc(Number(retentionVm.nextStreakReward) || 0));
     const status = String(retentionVm.state || 'idle');
-    const teaser = [headline, streakLine, subline].filter(Boolean).join(' ');
+    const teaser = [headline, streakRewardLine, bottomLine].filter(Boolean).join(' ');
     homeMetaRetentionTeaserNode.innerHTML = teaser
       ? `
         <span class="home-retention-card home-retention-card--${escapeHtml(status)}" data-state="${escapeHtml(status)}" aria-label="${escapeHtml(teaser)}">
           <span class="home-retention-card__top">
             <strong class="home-retention-card__headline">${escapeHtml(headline || i18nT('daily.retention.headline', { done: 0, total: 3 }))}</strong>
-            <span class="home-retention-card__state">${escapeHtml(status === 'claimable' ? i18nT('daily.claimable') : (status === 'claimed' ? i18nT('daily.collected') : (status === 'in_progress' ? i18nT('daily.in_progress') : i18nT('daily.open'))))}</span>
+            <span class="home-retention-card__state">Daily Achievements</span>
           </span>
-          <span class="home-retention-card__mid">${escapeHtml(streakLine)}</span>
-          <span class="home-retention-card__bottom">${escapeHtml(subline || i18nT('daily.retention.next_streak_bonus', { coins: nextReward }))}</span>
+          <span class="home-retention-card__mid">${escapeHtml(streakRewardLine || i18nT('daily.retention.next_streak_bonus', { coins: nextReward }))}</span>
+          <span class="home-retention-card__bottom">${escapeHtml(bottomLine || i18nT('daily.retention.next_streak_bonus', { coins: nextReward }))}</span>
         </span>
       `
       : '';
@@ -11745,9 +11820,10 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
     homeMetaRetentionTeaserNode.classList.toggle('is-claimable', status === 'claimable');
   }
   if (homeMetaBuildChipNode) {
-    homeMetaBuildChipNode.textContent = String(runGoalVm.buildTag || runGoalVm.buildTitle || 'Build');
+    homeMetaBuildChipNode.textContent = '';
     homeMetaBuildChipNode.dataset.tone = String(runGoalVm.buildTone || 'balanced');
-    homeMetaBuildChipNode.classList.toggle('hidden', !String(runGoalVm.buildTag || runGoalVm.buildTitle || '').trim());
+    homeMetaBuildChipNode.classList.add('hidden');
+    homeMetaBuildChipNode.setAttribute('aria-hidden', 'true');
   }
   if (homeMetaDetailNode && !Boolean(runGoalVm.visible)) {
     homeMetaDetailNode.classList.add('home-meta-detail--disabled');
@@ -11885,43 +11961,13 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
 
   const homeGuidancePanelNode = uiNode('homeGuidancePanel', 'homeGuidancePanel');
   const homeGuidanceListNode = uiNode('homeGuidanceList', 'homeGuidanceList');
-  const guidanceHints = Array.isArray(vm.diagnostics && vm.diagnostics.hints)
-    ? vm.diagnostics.hints.filter((hint) => hint && typeof hint === 'object').slice(0, 3)
-    : [];
   if (homeGuidanceListNode) {
-    const nextSignature = guidanceHints.map((hint) => {
-      const severity = String(hint.severity || 'low').trim();
-      const title = String(hint.title || '').trim();
-      const body = String(hint.body || '').trim();
-      return `${severity}:${title}:${body}`;
-    }).join('|');
-    const previousSignature = String(homeGuidanceListNode.dataset.signature || '').trim();
-    const markFresh = Boolean(nextSignature && previousSignature && nextSignature !== previousSignature);
     homeGuidanceListNode.replaceChildren();
-    homeGuidanceListNode.dataset.signature = nextSignature;
-
-    for (const hint of guidanceHints) {
-      const severity = String(hint.severity || 'low').trim();
-      const tone = severity === 'high' || severity === 'critical' ? 'caution' : 'stabilize';
-      const itemNode = document.createElement('article');
-      itemNode.className = `home-guidance-item home-guidance-item--${tone}${markFresh ? ' home-guidance-item--fresh' : ''}`;
-
-      const titleNode = document.createElement('strong');
-      titleNode.className = 'home-guidance-item__title';
-      titleNode.textContent = String(hint.title || 'Hinweis');
-
-      const bodyNode = document.createElement('p');
-      bodyNode.className = 'home-guidance-item__body';
-      bodyNode.textContent = String(hint.body || '');
-
-      itemNode.append(titleNode, bodyNode);
-      homeGuidanceListNode.appendChild(itemNode);
-    }
+    homeGuidanceListNode.dataset.signature = '';
   }
   if (homeGuidancePanelNode) {
-    const hasGuidance = guidanceHints.length > 0;
-    homeGuidancePanelNode.classList.toggle('hidden', !hasGuidance);
-    homeGuidancePanelNode.setAttribute('aria-hidden', String(!hasGuidance));
+    homeGuidancePanelNode.classList.add('hidden');
+    homeGuidancePanelNode.setAttribute('aria-hidden', 'true');
   }
 
   renderPanelReadouts(vm);
@@ -11988,8 +12034,13 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   const panel = vm.panel || {};
 
   const playerLevelNode = uiNode('playerLevelBadge', 'playerLevelBadge');
-  if (playerLevelNode && playerLevelNode.textContent !== panel.playerLevel) {
-    playerLevelNode.textContent = String(panel.playerLevel || 'LVL 1');
+  if (playerLevelNode) {
+    const levelText = String(panel.playerLevel || 'LVL 1');
+    if (playerLevelNode.textContent !== levelText) {
+      playerLevelNode.textContent = levelText;
+    }
+    const levelNumber = levelText.match(/\d+/);
+    playerLevelNode.dataset.level = levelNumber ? levelNumber[0] : '1';
   }
 
   const playerNameNode = uiNode('playerNameValue', 'playerNameValue');

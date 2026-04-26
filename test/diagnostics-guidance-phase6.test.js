@@ -90,16 +90,23 @@ async function evaluateScenario(page, scenario) {
       window.renderHud();
     }
 
-    const homeHints = Array.from(document.querySelectorAll('#homeGuidanceList .home-guidance-item')).map((node) => ({
-      title: (node.querySelector('.home-guidance-item__title') || {}).textContent || '',
-      body: (node.querySelector('.home-guidance-item__body') || {}).textContent || ''
-    }));
+    const homeGuidancePanel = document.querySelector('#homeGuidancePanel');
+    const homeGuidanceStyle = homeGuidancePanel ? window.getComputedStyle(homeGuidancePanel) : null;
+    const homeGuidanceRect = homeGuidancePanel ? homeGuidancePanel.getBoundingClientRect() : { width: 0, height: 0 };
 
     return {
       primaryIssueId: diagnostics.primaryIssue ? diagnostics.primaryIssue.id : null,
       summary: diagnostics.summary,
       hints,
-      homeHints
+      homeHintCount: document.querySelectorAll('#homeGuidanceList .home-guidance-item').length,
+      homeGuidanceVisible: Boolean(
+        homeGuidancePanel
+        && homeGuidanceStyle
+        && homeGuidanceStyle.display !== 'none'
+        && homeGuidanceStyle.visibility !== 'hidden'
+        && homeGuidanceRect.width > 0
+        && homeGuidanceRect.height > 0
+      )
     };
   }, scenario);
 }
@@ -165,8 +172,8 @@ async function main() {
       controls: { temperatureC: 30, humidityPercent: 38, airflowPercent: 28, dayVpdKpa: 2.0, ph: 6.5, ec: 2.1 }
     });
     assert.ok(stackedProblems.hints.length <= 3, 'guidance should stay capped at three hints');
-    assert.ok(stackedProblems.homeHints.length <= 3, 'home HUD should also stay capped at three hints');
-    assert.ok(stackedProblems.homeHints.length >= 1, 'home HUD should show at least one relevant hint in bad states');
+    assert.strictEqual(stackedProblems.homeHintCount, 0, 'home HUD should not render guidance cards in the default homescreen');
+    assert.strictEqual(stackedProblems.homeGuidanceVisible, false, 'home HUD guidance panel must not occupy visible homescreen space');
   } finally {
     await closeBrowser(browser);
     await closeServer(server);

@@ -100,58 +100,59 @@
   <div id="app-hud" class="app-hud">
     <main class="hud-main hud-screen is-active home-screen" data-screen="home">
       <section class="home-stage" aria-label="Home HUD">
-        <article class="home-player-panel" aria-label="Spielerpanel">
-          <div class="home-player-header">
-            <div class="home-player-hero">
-              <div class="home-player-identity-layer">
-                <div class="home-avatar-cluster">
-                  <div class="home-avatar-shell">
-                    <span class="home-level-pill" id="playerLevelBadge">LVL 9</span>
-                  </div>
-                  <span class="home-identity-badge">Account</span>
+        <article class="home-player-panel player-card" aria-label="Spielerpanel">
+          <div class="player-card-inner">
+            <div class="player-card-top">
+              <div class="player-level">
+                <div class="player-avatar" aria-hidden="true">
+                  <img id="playerAvatarImage" class="player-avatar-image hidden" alt="" draggable="false">
                 </div>
-                <div class="home-player-meta">
-                  <span class="home-player-kicker">Grower Profile</span>
-                  <div class="home-player-title-row">
-                    <strong id="playerNameValue" class="home-player-name">Max Mustergrower</strong>
-                    <span id="playerRoleValue" class="home-player-role">Gärtner</span>
-                  </div>
+                <span class="player-level-badge" id="playerLevelBadge" data-level="9">LVL 9</span>
+              </div>
+              <div class="player-identity">
+                <div class="player-identity-copy">
+                  <strong id="playerNameValue" class="player-name">Max Mustergrower</strong>
+                  <span id="playerRoleValue" class="player-role">Gärtner</span>
+                  <p id="playerXpValue" class="player-xp">XP: 7.350 / 8.650</p>
+                </div>
+                <div class="player-xp-track" aria-hidden="true">
+                  <span id="playerXpFill" class="player-xp-fill" style="--xp:84;"></span>
                 </div>
               </div>
-              <div class="home-player-progress-layer">
-                <div class="home-player-progress-head">
-                  <span class="home-player-progress-label">Progress</span>
-                  <p id="playerXpValue" class="home-player-xp">XP: 7.350 / 8.650</p>
+              <span id="homeMetaBuildChip" class="player-status-pill hidden" data-tone="balanced" aria-hidden="true"></span>
+              <div class="player-utilities">
+                <div class="player-coins" aria-label="Coins">
+                  <span class="player-coin-icon" aria-hidden="true">&#x1FA99;</span>
+                  <strong id="playerCoinValue">2.480</strong>
                 </div>
-                <div class="home-player-xp-track" aria-hidden="true">
-                  <span id="playerXpFill" class="home-player-xp-fill" style="--xp:84;"></span>
-                </div>
+                <button id="menuToggleBtn" class="player-menu-button" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
+                  <img src="assets/ui/icons/menu.svg" alt="" aria-hidden="true">
+                  <span id="menuToggleRewardHint" class="reward-hint-dot reward-hint-dot--menu hidden" aria-hidden="true"></span>
+                  <span class="visually-hidden">Menü öffnen</span>
+                </button>
               </div>
             </div>
-            <div class="home-player-tools home-player-utility-layer">
-              <div class="home-currency-stack" aria-label="Coins">
-                <span class="home-utility-label">Coins</span>
-                <div class="home-currency-row home-currency-row--gold"><span>&#x1FA99;</span><strong id="playerCoinValue">2.480</strong></div>
+            <div class="player-card-bottom">
+              <div class="player-run">
+                <span id="playerSignalDot" class="player-run-dot player-signal" role="status" aria-label="Status: stabil" data-signal="good"></span>
+                <div class="player-run-copy">
+                  <div class="player-run-line player-run-line--goal">
+                    <span class="player-run-label">RUN-ZIEL:</span>
+                    <strong id="homeMetaGoalCompact" class="player-run-value">saubere Linie (Halte den Stress niedrig)</strong>
+                    <span id="homeMetaGoalStatus" class="player-run-status" data-status="active">Läuft</span>
+                  </div>
+                  <div class="player-run-line player-run-line--progress">
+                    <span class="player-run-label">FORTSCHRITT:</span>
+                    <span id="homeMetaGoalProgress" class="player-run-progress">28 / 30 Tage</span>
+                  </div>
+                </div>
+                <button id="homeMetaToggle" class="player-meta-toggle hidden" type="button" aria-label="Run-Details anzeigen" aria-expanded="false" aria-controls="homeMetaDetail" aria-hidden="true">
+                  <span class="player-meta-caret" aria-hidden="true"></span>
+                </button>
               </div>
-              <button id="menuToggleBtn" class="home-menu-btn" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
-                <img src="assets/ui/icons/menu.svg" alt="" aria-hidden="true">
-                <span id="menuToggleRewardHint" class="reward-hint-dot reward-hint-dot--menu hidden" aria-hidden="true"></span>
-                <span class="visually-hidden">Menü öffnen</span>
-              </button>
+              <span id="homeMetaRetentionTeaser" class="player-daily hidden" aria-hidden="true"></span>
             </div>
           </div>
-          <button id="homeMetaToggle" class="home-meta-strip hidden" type="button" aria-expanded="false" aria-controls="homeMetaDetail" aria-hidden="true">
-            <span class="home-meta-inline">
-              <span class="home-meta-kicker">Heute</span>
-              <strong id="homeMetaGoalCompact" class="home-meta-title">Tag 20</strong>
-              <span id="homeMetaGoalProgress" class="home-meta-progress">0/20</span>
-              <span id="homeMetaGoalStatus" class="home-meta-status" data-status="active">Läuft</span>
-            </span>
-            <span class="home-meta-side">
-              <span id="homeMetaBuildChip" class="home-meta-build-chip" data-tone="balanced">Ausgewogen</span>
-              <span class="home-meta-caret" aria-hidden="true"></span>
-            </span>
-          </button>
           <div id="homeMetaDetail" class="home-meta-detail hidden" aria-hidden="true">
             <section class="home-meta-detail-block home-meta-detail-block--goal" aria-label="Run-Ziel Details">
               <div class="home-meta-detail-top">
@@ -160,7 +161,6 @@
               </div>
               <strong id="homeMetaDetailTitle" class="home-meta-detail-title">Erreiche Tag 20</strong>
               <p id="homeMetaDetailDescription" class="home-meta-detail-copy">Halte die Pflanze bis mindestens Tag 20 am Leben.</p>
-              <span id="homeMetaRetentionTeaser" class="home-meta-retention hidden" aria-hidden="true"></span>
               <div class="home-meta-detail-grid">
                 <div class="home-meta-detail-stat">
                   <span>Fortschritt</span>
