@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0.0",
+  "items": [
+    {
+      "condition_name": "powdery_mildew_overlay_light",
+      "severity": "light",
+      "visual_logic": "subtle transparent white powder patches",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "powdery_mildew_overlay_heavy",
+      "severity": "heavy",
+      "visual_logic": "stronger powder patches, still transparent and non-text",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "spider_mite_webbing_overlay",
+      "severity": "medium",
+      "visual_logic": "fine web strands for top canopy and leaf joints",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "leaf_spot_overlay",
+      "severity": "medium",
+      "visual_logic": "transparent circular spots with yellow halos",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "necrosis_tip_burn_overlay",
+      "severity": "medium",
+      "visual_logic": "small burnt leaf tip and edge accents",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "yellowing_gradient_overlay",
+      "severity": "medium",
+      "visual_logic": "soft yellowing gradient patches",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "pest_swarm_small_overlay",
+      "severity": "medium",
+      "visual_logic": "tiny subtle pest swarm specks",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "heat_shimmer_overlay",
+      "severity": "medium",
+      "visual_logic": "subtle translucent heat shimmer effect",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "recovery_glow_overlay",
+      "severity": "recovery",
+      "visual_logic": "very subtle fresh growth highlight",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    },
+    {
+      "condition_name": "warning_pulse_overlay",
+      "severity": "warning",
+      "visual_logic": "abstract transparent attention pulse, no text",
+      "transparent_background": true,
+      "usage": "composite over approved plant assets",
+      "no_full_plant": true
+    }
+  ]
+}

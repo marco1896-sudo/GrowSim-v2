@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0.0",
+  "severities": [
+    "light",
+    "medium",
+    "heavy"
+  ],
+  "items": [
+    {
+      "condition_name": "nitrogen_deficiency",
+      "affected_leaf_age": "older/lower leaves",
+      "visual_pattern": "older leaves yellow first, general chlorosis progressing upward",
+      "common_confusion": "magnesium deficiency or natural late flower fade",
+      "recommended_game_diagnostic_hint": "Older leaves fade first; check feed strength and stage before diagnosing.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    },
+    {
+      "condition_name": "phosphorus_deficiency",
+      "affected_leaf_age": "older leaves and whole plant vigor",
+      "visual_pattern": "darker dull foliage, slow growth, possible purple tones",
+      "common_confusion": "cold stress or genetics-related purple coloration",
+      "recommended_game_diagnostic_hint": "Dark slow plant with cool conditions may mimic phosphorus issues.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    },
+    {
+      "condition_name": "potassium_deficiency",
+      "affected_leaf_age": "older leaf edges and tips",
+      "visual_pattern": "marginal burn and edge necrosis, weak leaf edges",
+      "common_confusion": "nutrient burn or salt stress",
+      "recommended_game_diagnostic_hint": "Edge burn with weaker older leaves can point to potassium shortage.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    },
+    {
+      "condition_name": "calcium_deficiency",
+      "affected_leaf_age": "newer growth and actively transpiring leaves",
+      "visual_pattern": "irregular rusty spots, small necrotic lesions, possible deformation",
+      "common_confusion": "pH lockout or pest speckling",
+      "recommended_game_diagnostic_hint": "Rusty spots on new growth suggest calcium availability problems.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    },
+    {
+      "condition_name": "magnesium_deficiency",
+      "affected_leaf_age": "older fan leaves",
+      "visual_pattern": "interveinal chlorosis with green veins remaining",
+      "common_confusion": "nitrogen deficiency or iron deficiency",
+      "recommended_game_diagnostic_hint": "Green veins with yellowing between them on older leaves is a strong magnesium clue.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    },
+    {
+      "condition_name": "sulfur_deficiency",
+      "affected_leaf_age": "younger leaves",
+      "visual_pattern": "even pale yellowing on young growth",
+      "common_confusion": "nitrogen deficiency or iron deficiency",
+      "recommended_game_diagnostic_hint": "Younger leaves paling evenly suggests sulfur, but verify pH and feed history.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    },
+    {
+      "condition_name": "iron_deficiency",
+      "affected_leaf_age": "newest leaves",
+      "visual_pattern": "young leaves yellow with greener veins early",
+      "common_confusion": "magnesium deficiency or sulfur deficiency",
+      "recommended_game_diagnostic_hint": "If new growth yellows first while older leaves stay greener, consider iron/pH lockout.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    },
+    {
+      "condition_name": "manganese_deficiency",
+      "affected_leaf_age": "young to middle leaves",
+      "visual_pattern": "interveinal chlorosis plus speckling",
+      "common_confusion": "iron deficiency or calcium spotting",
+      "recommended_game_diagnostic_hint": "Speckled chlorosis can indicate manganese availability issues.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    },
+    {
+      "condition_name": "zinc_deficiency",
+      "affected_leaf_age": "new growth tips",
+      "visual_pattern": "small distorted new leaves, shortened internodes, chlorosis",
+      "common_confusion": "light stress or genetic mutation",
+      "recommended_game_diagnostic_hint": "Distorted compact new growth plus chlorosis can suggest zinc issues.",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "flower"
+      ]
+    }
+  ]
+}

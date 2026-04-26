@@ -6058,6 +6058,7 @@ async function boot() {
     await runBootSubstep('evaluate_daily_retention', () => evaluateDailyRetention(state, bootNowMs, { forceCheckin: false, skipPersist: true }));
     await runBootSubstep('record_retention_session_start', () => recordRetentionSessionStart(bootNowMs, 'boot', { skipPersist: true }));
     await runBootSubstep('resume_harvest_backend_flows', () => resumeHarvestBackendFlowsAfterRestore());
+    await runBootSubstep('clear_transient_boot_ui_state', () => clearTransientBootUiState());
     logBootStep('boot:runtime_sync', {
       nowMs: state.simulation.nowMs,
       simTimeMs: state.simulation.simTimeMs,
@@ -9575,7 +9576,8 @@ function getRewardActionPresentation(type, payload = {}) {
   const usage = canUseRewardAction(actionType, payload);
   const gateState = getRewardActionGrantState(actionType, payload);
   const coinCost = getRewardActionCoinCost(actionType, payload.state || state);
-  const affordable = coinCost > 0 ? canAfford(coinCost, payload.state || state) : true;
+  const bypassCoinCost = shouldBypassRewardActionCoinCost(actionType, payload);
+  const affordable = bypassCoinCost || coinCost <= 0 ? true : canAfford(coinCost, payload.state || state);
   const cooldownRemainingMs = Math.max(0, Number(usage.cooldownRemainingMs) || 0);
   const cooldownText = formatRewardCooldownHint(cooldownRemainingMs);
   const disabled = !Boolean(usage.ok) || !Boolean(gateState.ok) || !affordable;
@@ -9600,7 +9602,7 @@ function getRewardActionPresentation(type, payload = {}) {
     disabled,
     hidden,
     reason: String((!usage.ok ? usage.reason : gateState.reason) || (disabled ? 'not_available' : 'ok')),
-    hint,
+    hint: bypassCoinCost && !usage.ok ? String(usage.hint || hint) : hint,
     cooldownRemainingMs,
     cooldownText,
     availability,
@@ -9613,6 +9615,14 @@ function getRewardActionPresentation(type, payload = {}) {
       ? 0
       : (config.tone === 'emergency' ? 100 : 50)
   };
+}
+
+function shouldBypassRewardActionCoinCost(type, payload = {}) {
+  const actionType = String(type || '').trim().toLowerCase();
+  const source = String(payload && payload.source || '').trim().toLowerCase();
+  const context = String(payload && payload.context || '').trim().toLowerCase();
+  return actionType === REWARD_ACTION_TYPES.EMERGENCY_SAVE
+    && (source === 'rescue_entry' || context === 'death_overlay');
 }
 
 function scoreRewardEffectDelta(metric, delta) {
@@ -10878,7 +10888,8 @@ async function triggerRewardAction(type, payload = {}) {
   }
 
   const coinCost = getRewardActionCoinCost(actionType, state);
-  if (coinCost > 0 && !canAfford(coinCost)) {
+  const bypassCoinCost = shouldBypassRewardActionCoinCost(actionType, payload);
+  if (!bypassCoinCost && coinCost > 0 && !canAfford(coinCost)) {
     const coinBlockedResult = {
       ok: false,
       type: actionType,
@@ -10997,7 +11008,7 @@ async function triggerRewardAction(type, payload = {}) {
   });
 
   let spendResult = null;
-  if (coinCost > 0) {
+  if (!bypassCoinCost && coinCost > 0) {
     spendResult = spendCoins(coinCost, `reward_action:${actionType}`);
     if (!spendResult.ok) {
       const spendBlockedResult = {
@@ -11810,6 +11821,8 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
   if (riskRingNode) {
     riskRingNode.removeAttribute('data-risk-visual');
   }
+  applyRingVisualState(stressRingNode, 'stressVisual', vm.motion && vm.motion.stressVisual);
+  applyRingVisualState(riskRingNode, 'riskVisual', vm.motion && vm.motion.riskVisual);
   applyRingVisualState(growthRingNode, 'growthVisual', vm.motion && vm.motion.growthVisual);
   const activeStatPopupKey = normalizeHomeStatPopupKey(state.ui && state.ui.activeStatPopup);
   const interactiveRingNodes = [
@@ -11872,13 +11885,43 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
 
   const homeGuidancePanelNode = uiNode('homeGuidancePanel', 'homeGuidancePanel');
   const homeGuidanceListNode = uiNode('homeGuidanceList', 'homeGuidanceList');
-  if (homeGuidancePanelNode) {
-    homeGuidancePanelNode.classList.add('hidden');
-    homeGuidancePanelNode.setAttribute('aria-hidden', 'true');
-  }
+  const guidanceHints = Array.isArray(vm.diagnostics && vm.diagnostics.hints)
+    ? vm.diagnostics.hints.filter((hint) => hint && typeof hint === 'object').slice(0, 3)
+    : [];
   if (homeGuidanceListNode) {
+    const nextSignature = guidanceHints.map((hint) => {
+      const severity = String(hint.severity || 'low').trim();
+      const title = String(hint.title || '').trim();
+      const body = String(hint.body || '').trim();
+      return `${severity}:${title}:${body}`;
+    }).join('|');
+    const previousSignature = String(homeGuidanceListNode.dataset.signature || '').trim();
+    const markFresh = Boolean(nextSignature && previousSignature && nextSignature !== previousSignature);
     homeGuidanceListNode.replaceChildren();
-    homeGuidanceListNode.dataset.signature = '';
+    homeGuidanceListNode.dataset.signature = nextSignature;
+
+    for (const hint of guidanceHints) {
+      const severity = String(hint.severity || 'low').trim();
+      const tone = severity === 'high' || severity === 'critical' ? 'caution' : 'stabilize';
+      const itemNode = document.createElement('article');
+      itemNode.className = `home-guidance-item home-guidance-item--${tone}${markFresh ? ' home-guidance-item--fresh' : ''}`;
+
+      const titleNode = document.createElement('strong');
+      titleNode.className = 'home-guidance-item__title';
+      titleNode.textContent = String(hint.title || 'Hinweis');
+
+      const bodyNode = document.createElement('p');
+      bodyNode.className = 'home-guidance-item__body';
+      bodyNode.textContent = String(hint.body || '');
+
+      itemNode.append(titleNode, bodyNode);
+      homeGuidanceListNode.appendChild(itemNode);
+    }
+  }
+  if (homeGuidancePanelNode) {
+    const hasGuidance = guidanceHints.length > 0;
+    homeGuidancePanelNode.classList.toggle('hidden', !hasGuidance);
+    homeGuidancePanelNode.setAttribute('aria-hidden', String(!hasGuidance));
   }
 
   renderPanelReadouts(vm);
@@ -18019,7 +18062,6 @@ function onVisibilityChange() {
     return uiRuntimeApi.onVisibilityChange();
   }
   if (document.visibilityState === 'hidden') {
-    schedulePersistState(true);
     stopLoop();
     return;
   }
@@ -19802,7 +19844,17 @@ function openDb() {
         db.createObjectStore(DB_STORE);
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => {
+        try {
+          db.close();
+        } catch (_error) {
+          // best-effort; a blocked delete should never keep stale state alive
+        }
+      };
+      resolve(db);
+    };
   });
 }
 
@@ -19948,13 +20000,13 @@ function updateSettingsUI() {
   }
   if (simSpeedNode) {
     const runtimeSpeed = round2(Number(state.simulation && state.simulation.effectiveSpeed) || getEffectiveSimulationSpeed(Date.now()));
-    simSpeedNode.textContent = `Base ${baseSpeed}x · Active ${runtimeSpeed}x`;
+    simSpeedNode.textContent = `Basis ${baseSpeed}x · Aktiv ${runtimeSpeed}x`;
     simSpeedNode.className = 'value_gold';
-    simSpeedNode.setAttribute('title', 'Base speed plus optional time boost.');
+    simSpeedNode.setAttribute('title', 'Basisgeschwindigkeit plus optionaler Zeit-Boost.');
   }
   if (simSpeedHintNode) {
     const boostActive = Number(state.simulation && state.simulation.effectiveSpeed) === BOOST_SIM_SPEED;
-    simSpeedHintNode.textContent = boostActive ? `${i18nT('home.boost')} active (x24)` : '';
+    simSpeedHintNode.textContent = boostActive ? `${i18nT('home.boost')} aktiv (x24)` : '';
     simSpeedHintNode.classList.toggle('hidden', !boostActive);
     simSpeedHintNode.setAttribute('aria-hidden', String(!boostActive));
   }
@@ -20112,6 +20164,18 @@ function resolveStartupAuthGateClear(stateRestored = false) {
   const resolve = startupAuthGateResolver;
   startupAuthGateResolver = null;
   resolve(Boolean(stateRestored));
+}
+
+function clearTransientBootUiState() {
+  if (!state.ui || typeof state.ui !== 'object') {
+    return;
+  }
+
+  state.ui.menuOpen = false;
+  state.ui.menuDialogOpen = false;
+  state.ui.openSheet = null;
+  state.ui.statDetailKey = null;
+  state.ui.activeStatPopup = null;
 }
 
 function setAuthGateActive(active) {

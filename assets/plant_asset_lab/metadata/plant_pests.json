@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0.0",
+  "severities": [
+    "light",
+    "medium",
+    "heavy"
+  ],
+  "items": [
+    {
+      "condition_name": "spider_mites",
+      "visible_plant_damage": "fine stippling, dull leaves, webbing only in heavier infestation",
+      "close_up_pest_card_concept": "tiny mites and fine web strands on leaf underside",
+      "leaf_damage_detail": "stippling, tiny pale dots, possible webbing",
+      "gameplay_event_wording": "spider mites pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    },
+    {
+      "condition_name": "thrips",
+      "visible_plant_damage": "silver streaks and scars, small black dots, distorted young leaves",
+      "close_up_pest_card_concept": "slender thrips on leaf surface",
+      "leaf_damage_detail": "silvery scraped patches and black fecal specks",
+      "gameplay_event_wording": "thrips pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    },
+    {
+      "condition_name": "aphids",
+      "visible_plant_damage": "clusters on soft new growth, curling leaves, sticky honeydew feeling",
+      "close_up_pest_card_concept": "green or black aphid clusters on tender stems",
+      "leaf_damage_detail": "curled soft growth with small aphid clusters",
+      "gameplay_event_wording": "aphids pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    },
+    {
+      "condition_name": "fungus_gnats",
+      "visible_plant_damage": "indirect root stress, slower growth, mild wilt; adults shown mostly in pest card",
+      "close_up_pest_card_concept": "small dark adult gnats near root-zone concept",
+      "leaf_damage_detail": "minimal leaf damage; use root stress notes",
+      "gameplay_event_wording": "fungus gnats pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    },
+    {
+      "condition_name": "whiteflies",
+      "visible_plant_damage": "small white insects, sucking damage, pale stressed leaves",
+      "close_up_pest_card_concept": "whiteflies around leaf underside",
+      "leaf_damage_detail": "tiny white insects and pale speckling",
+      "gameplay_event_wording": "whiteflies pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    },
+    {
+      "condition_name": "leaf_miners",
+      "visible_plant_damage": "winding pale tunnels in leaves",
+      "close_up_pest_card_concept": "larva inside leaf tunnel concept",
+      "leaf_damage_detail": "serpentine pale tunnels through leaf tissue",
+      "gameplay_event_wording": "leaf miners pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    },
+    {
+      "condition_name": "caterpillars",
+      "visible_plant_damage": "chewed holes and missing leaf sections",
+      "close_up_pest_card_concept": "small caterpillar on cannabis leaf",
+      "leaf_damage_detail": "irregular bite holes and missing edges",
+      "gameplay_event_wording": "caterpillars pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    },
+    {
+      "condition_name": "root_aphids_optional",
+      "visible_plant_damage": "indirect decline and wilt, root-zone diagnosis context",
+      "close_up_pest_card_concept": "root aphids on root detail, no pot",
+      "leaf_damage_detail": "yellowing and decline with root pest clue",
+      "gameplay_event_wording": "root aphids optional pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    },
+    {
+      "condition_name": "russet_mites_optional",
+      "visible_plant_damage": "bronzing, twisted new growth, hard-to-diagnose advanced pest",
+      "close_up_pest_card_concept": "microscopic mite concept enlarged for card",
+      "leaf_damage_detail": "bronzed twisted new growth",
+      "gameplay_event_wording": "russet mites optional pressure is affecting the plant.",
+      "diagnosis_hints": [
+        "inspect leaf undersides",
+        "compare damage pattern",
+        "check stage and humidity context"
+      ]
+    }
+  ]
+}

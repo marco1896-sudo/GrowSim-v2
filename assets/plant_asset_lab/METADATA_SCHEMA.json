@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grow Simulator Plant Asset Metadata Entry",
+  "type": "object",
+  "required": [
+    "id",
+    "filename",
+    "category",
+    "growth_stage",
+    "condition_type",
+    "condition_name",
+    "severity",
+    "symptoms",
+    "affected_area",
+    "gameplay_tags",
+    "compatible_stages",
+    "recommended_usage",
+    "canvas_size",
+    "transparent_background",
+    "anchor_policy",
+    "generation_prompt",
+    "qa_status",
+    "notes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "filename": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+\\.png$"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "plants/base",
+        "plants/states",
+        "plants/deficiencies",
+        "plants/excess_lockout",
+        "plants/pests",
+        "plants/diseases",
+        "leaves",
+        "pests",
+        "diseases",
+        "diagrams",
+        "overlays",
+        "thumbnails"
+      ]
+    },
+    "growth_stage": {
+      "type": "string"
+    },
+    "condition_type": {
+      "type": "string"
+    },
+    "condition_name": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "none",
+        "light",
+        "medium",
+        "heavy",
+        "recovery",
+        "warning",
+        "optional"
+      ]
+    },
+    "symptoms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "affected_area": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "gameplay_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "compatible_stages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommended_usage": {
+      "type": "string"
+    },
+    "canvas_size": {
+      "type": "string"
+    },
+    "transparent_background": {
+      "type": "boolean"
+    },
+    "anchor_policy": {
+      "type": "string"
+    },
+    "generation_prompt": {
+      "type": "string"
+    },
+    "qa_status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "needs_review",
+        "pass",
+        "fail",
+        "revision_requested"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "prompt_ready",
+        "pending_generation",
+        "generated",
+        "qa_pass",
+        "qa_fail"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

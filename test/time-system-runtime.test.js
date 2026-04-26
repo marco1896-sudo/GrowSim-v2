@@ -12,6 +12,29 @@ const HOST = '127.0.0.1';
 let APP_URL = '';
 const LS_STATE_KEY = 'grow-sim-state-v2';
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
+const TIME_TEST_DEBUG = process.env.TIME_TEST_DEBUG === '1';
+const TIME_TEST_ONLY = String(process.env.TIME_TEST_ONLY || '').trim();
+
+function debugLog(message, details) {
+  if (!TIME_TEST_DEBUG) {
+    return;
+  }
+  if (details === undefined) {
+    console.log(`[time-test] ${message}`);
+    return;
+  }
+  console.log(`[time-test] ${message}`, details);
+}
+
+async function runScenario(name, fn) {
+  if (TIME_TEST_ONLY && TIME_TEST_ONLY !== name) {
+    return;
+  }
+  const startedAt = Date.now();
+  debugLog(`start ${name}`);
+  await fn();
+  debugLog(`done ${name}`, { durationMs: Date.now() - startedAt });
+}
 
 function assertApproxRatio(label, simDeltaMs, realDeltaMs, expectedSpeed, tolerance = 1.5) {
   const ratio = simDeltaMs / realDeltaMs;
@@ -934,29 +957,29 @@ async function main() {
   });
 
   try {
-    await scenarioLiveX12(page);
-    await scenarioSimTimeNeverDecreases(page);
-    await scenarioCareActionsDoNotJumpTime(page);
-    await scenarioBaseSpeedChanges(page);
-    await scenarioSettingsSimSpeedUi(page);
-    await scenarioNegativeRealDeltaClamp(page);
-    await scenarioBoostActivationAndExpiry(page);
-    await scenarioReloadDuringActiveBoost(page);
-    await scenarioReloadAfterExpiredBoost(page);
-    await scenarioOfflineResume(page);
-    await scenarioResumeHooksDoNotMultiFire(page);
-    await scenarioSkipNight(page);
-    await scenarioWatchdogRecoversStalledLoop(page);
-    await scenarioRetentionStreakIdempotent(page);
-    await scenarioRetentionDailyTaskDedupe(page);
-    await scenarioRetentionAllCompleteDedupeAndPersist(page);
-    await scenarioMicroRegistryMapping(page);
-    await scenarioStreakRecoveryFlow(page);
-    await scenarioStreakRecoveryOfferDedupe(page);
-    await scenarioRetentionAnalyticsDedupe(page);
-    await scenarioRetentionAggregationHelpers(page);
-    await scenarioRewardedBonusHooks(page);
-    await scenarioRetentionInsightsRender(page);
+    await runScenario('scenarioLiveX12', () => scenarioLiveX12(page));
+    await runScenario('scenarioSimTimeNeverDecreases', () => scenarioSimTimeNeverDecreases(page));
+    await runScenario('scenarioCareActionsDoNotJumpTime', () => scenarioCareActionsDoNotJumpTime(page));
+    await runScenario('scenarioBaseSpeedChanges', () => scenarioBaseSpeedChanges(page));
+    await runScenario('scenarioSettingsSimSpeedUi', () => scenarioSettingsSimSpeedUi(page));
+    await runScenario('scenarioNegativeRealDeltaClamp', () => scenarioNegativeRealDeltaClamp(page));
+    await runScenario('scenarioBoostActivationAndExpiry', () => scenarioBoostActivationAndExpiry(page));
+    await runScenario('scenarioReloadDuringActiveBoost', () => scenarioReloadDuringActiveBoost(page));
+    await runScenario('scenarioReloadAfterExpiredBoost', () => scenarioReloadAfterExpiredBoost(page));
+    await runScenario('scenarioOfflineResume', () => scenarioOfflineResume(page));
+    await runScenario('scenarioResumeHooksDoNotMultiFire', () => scenarioResumeHooksDoNotMultiFire(page));
+    await runScenario('scenarioSkipNight', () => scenarioSkipNight(page));
+    await runScenario('scenarioWatchdogRecoversStalledLoop', () => scenarioWatchdogRecoversStalledLoop(page));
+    await runScenario('scenarioRetentionStreakIdempotent', () => scenarioRetentionStreakIdempotent(page));
+    await runScenario('scenarioRetentionDailyTaskDedupe', () => scenarioRetentionDailyTaskDedupe(page));
+    await runScenario('scenarioRetentionAllCompleteDedupeAndPersist', () => scenarioRetentionAllCompleteDedupeAndPersist(page));
+    await runScenario('scenarioMicroRegistryMapping', () => scenarioMicroRegistryMapping(page));
+    await runScenario('scenarioStreakRecoveryFlow', () => scenarioStreakRecoveryFlow(page));
+    await runScenario('scenarioStreakRecoveryOfferDedupe', () => scenarioStreakRecoveryOfferDedupe(page));
+    await runScenario('scenarioRetentionAnalyticsDedupe', () => scenarioRetentionAnalyticsDedupe(page));
+    await runScenario('scenarioRetentionAggregationHelpers', () => scenarioRetentionAggregationHelpers(page));
+    await runScenario('scenarioRewardedBonusHooks', () => scenarioRewardedBonusHooks(page));
+    await runScenario('scenarioRetentionInsightsRender', () => scenarioRetentionInsightsRender(page));
     console.log('time-system-runtime: all scenarios passed');
   } finally {
     await closeBrowser(browser);

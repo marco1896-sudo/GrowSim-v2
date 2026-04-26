@@ -115,9 +115,33 @@ async function createStorageAdapter() {
     const db = await openDb();
     return {
       async get() {
-        return dbGet(db, DB_KEY);
+        let localSnapshotMissing = false;
+        try {
+          localSnapshotMissing = localStorage.getItem(LS_STATE_KEY) === null;
+        } catch (_error) {
+          localSnapshotMissing = false;
+        }
+        const stored = await dbGet(db, DB_KEY);
+        if (stored && typeof stored === 'object') {
+          if (localSnapshotMissing) {
+            console.warn('[storage] ignoring stale IndexedDB snapshot because localStorage state is missing');
+            try {
+              await dbDelete(db, DB_KEY);
+            } catch (_error) {
+              // best-effort cleanup; stale state must not win over an explicit clear
+            }
+            return null;
+          }
+          return stored;
+        }
+        return localStorageAdapter().get();
       },
       async set(snapshot) {
+        try {
+          await localStorageAdapter().set(snapshot);
+        } catch (_error) {
+          // keep IndexedDB as the primary durable store
+        }
         await dbSet(db, DB_KEY, snapshot);
       }
     };
@@ -1068,6 +1092,7 @@ async function restoreState(options = {}) {
   if (!saved || typeof saved !== 'object') {
     return;
   }
+  globalThis.__gsStorageHasWrittenLocalState = selectedRestore.source === 'local';
 
   if (selectedRestore.source === 'local' && remoteSaved && localSaved) {
     console.info('[restore] local save selected over remote', {
@@ -1338,6 +1363,23 @@ async function persistState() {
     return;
   }
 
+  if (globalThis.__gsStorageHasWrittenLocalState === true) {
+    let localSnapshotMissing = false;
+    try {
+      localSnapshotMissing = localStorage.getItem(LS_STATE_KEY) === null;
+    } catch (_error) {
+      localSnapshotMissing = false;
+    }
+    if (localSnapshotMissing) {
+      if (!globalThis.__gsStorageExternalClearDetected) {
+        globalThis.__gsStorageExternalClearDetected = true;
+        console.warn('[storage] persist skipped because local state was cleared externally; reload required to rehydrate safely');
+      }
+      return;
+    }
+    globalThis.__gsStorageExternalClearDetected = false;
+  }
+
   stampStatePersistence(state);
   try {
     const events = getCanonicalEvents(state);
@@ -1356,6 +1398,7 @@ async function persistState() {
 
   try {
     await storageAdapter.set(state);
+    globalThis.__gsStorageHasWrittenLocalState = true;
   } catch (error) {
     console.warn('[storage] persist failed', error);
   }
@@ -1682,13 +1725,23 @@ function ensureStateIntegrity(nowMs) {
     state.schemaVersion = '1.0.0';
   }
 
+  const canonicalSettings = getCanonicalSettings(state);
+  const canonicalRequestedBaseSpeed = normalizeStorageBaseSimulationSpeed(
+    canonicalSettings
+    && canonicalSettings.gameplay
+    && canonicalSettings.gameplay.simSpeed
+      ? canonicalSettings.gameplay.simSpeed
+      : (state.simulation.baseSpeed || state.simulation.timeCompression)
+  );
+
   state.simulation.mode = STORAGE_MODE;
   state.simulation.tickIntervalMs = STORAGE_UI_TICK_INTERVAL_MS;
-  state.simulation.baseSpeed = normalizeStorageBaseSimulationSpeed(state.simulation.baseSpeed || state.simulation.timeCompression);
+  state.simulation.baseSpeed = canonicalRequestedBaseSpeed;
   state.simulation.effectiveSpeed = getStorageEffectiveSimulationSpeed(nowMs);
   state.simulation.timeCompression = state.simulation.effectiveSpeed;
   state.simulation.globalSeed = STORAGE_SIM_GLOBAL_SEED;
   state.simulation.plantId = STORAGE_SIM_PLANT_ID;
+  canonicalSettings.gameplay.simSpeed = canonicalRequestedBaseSpeed;
 
   if (!Number.isFinite(state.simulation.nowMs)) {
     state.simulation.nowMs = nowMs;

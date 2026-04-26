@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0.0",
+  "items": [
+    {
+      "condition_name": "plant_anatomy_board",
+      "concept": "simple labeled cannabis anatomy board with leaves, nodes, cola, stem, roots placeholder",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "growth_stages_timeline_board",
+      "concept": "visual timeline from seedling to harvest ready with small plant icons",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "nutrient_deficiency_comparison_board",
+      "concept": "comparison board showing N, Mg, Ca, K, Fe, P symptom patterns",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "mobile_vs_immobile_nutrients_board",
+      "concept": "old-growth vs new-growth symptom location educational board",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "ph_lockout_availability_board",
+      "concept": "pH availability concept board with simplified colored availability bands",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "nutrient_antagonism_board",
+      "concept": "nutrient antagonism concept board with K, Ca, Mg, P, trace interactions",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "potassium_excess_blocks_ca_mg_board",
+      "concept": "focused board showing potassium excess blocking calcium and magnesium uptake",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "watering_mistakes_board",
+      "concept": "underwatering vs overwatering posture comparison",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "vpd_stress_board",
+      "concept": "high VPD vs low VPD leaf posture and climate risk board",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "pest_identification_board",
+      "concept": "visual pest identification grid for mites, thrips, aphids, whiteflies, miners",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "disease_identification_board",
+      "concept": "visual disease grid for powdery mildew, septoria, bud rot, root rot",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "bud_rot_risk_board",
+      "concept": "late flower bud rot risk factors and visual warning board",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "root_zone_health_board",
+      "concept": "healthy roots vs root stress concept board without pots",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "harvest_window_board",
+      "concept": "harvest window board with bud maturity and trichome color placeholders",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "old_vs_new_growth_symptoms_board",
+      "concept": "symptom location board comparing old lower leaves and new top growth",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    },
+    {
+      "condition_name": "deficiency_vs_toxicity_board",
+      "concept": "deficiency fade vs toxicity claw/burn comparison board",
+      "style": "premium mobile educational card",
+      "text_policy": "minimal labels or placeholders only",
+      "canvas_size": "2048x2048 or 1080x1350"
+    }
+  ]
+}

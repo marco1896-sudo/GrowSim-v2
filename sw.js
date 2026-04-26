@@ -113,6 +113,7 @@ self.addEventListener('activate', (event) => {
           .filter((key) => key.startsWith(`${CACHE_PREFIX}-`) && key !== SHELL_CACHE && key !== RUNTIME_CACHE)
           .map((key) => caches.delete(key))
       ))
+      .then(() => pruneRuntimeCacheForCurrentBuild())
       .then(() => self.clients.claim())
   );
 });
@@ -220,6 +221,27 @@ async function navigationNetworkFirst(request) {
       }
     });
   }
+}
+
+async function pruneRuntimeCacheForCurrentBuild() {
+  const runtimeCache = await caches.open(RUNTIME_CACHE);
+  const requests = await runtimeCache.keys();
+
+  await Promise.all(requests.map(async (request) => {
+    try {
+      const url = new URL(request.url);
+      if (url.origin !== self.location.origin) {
+        return;
+      }
+
+      const isShellCodeAsset = /\.(?:css|js|mjs|html?)$/i.test(url.pathname);
+      if (isShellCodeAsset && !url.searchParams.has('v')) {
+        await runtimeCache.delete(request);
+      }
+    } catch (_error) {
+      // keep cache entries we cannot safely inspect
+    }
+  }));
 }
 
 function parsePushPayload(event) {

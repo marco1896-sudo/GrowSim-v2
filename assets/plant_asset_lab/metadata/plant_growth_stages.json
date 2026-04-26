@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0.0",
+  "items": [
+    {
+      "growth_stage": "seedling",
+      "visual_traits": "2 cotyledons and first serrated leaves",
+      "expected_plant_size": "very small",
+      "leaf_density": "2 cotyledons and first serrated leaves",
+      "bud_development": "none",
+      "gameplay_meaning": "newly emerged plant; fragile water and damping-off phase",
+      "possible_ui_usage": "home plant avatar, tutorial, early diagnosis",
+      "default_filename": "cannabis_seedling_healthy_v001.png"
+    },
+    {
+      "growth_stage": "early_veg",
+      "visual_traits": "few true leaf sets, open spacing",
+      "expected_plant_size": "small",
+      "leaf_density": "few true leaf sets, open spacing",
+      "bud_development": "none",
+      "gameplay_meaning": "established young vegetative growth",
+      "possible_ui_usage": "plant card, stage transition",
+      "default_filename": "cannabis_early_veg_healthy_v001.png"
+    },
+    {
+      "growth_stage": "mid_veg",
+      "visual_traits": "broader fan leaves, symmetrical branching",
+      "expected_plant_size": "medium",
+      "leaf_density": "broader fan leaves, symmetrical branching",
+      "bud_development": "none",
+      "gameplay_meaning": "active vegetative expansion and training window",
+      "possible_ui_usage": "main simulator avatar",
+      "default_filename": "cannabis_mid_veg_healthy_v001.png"
+    },
+    {
+      "growth_stage": "late_veg",
+      "visual_traits": "dense fan leaf canopy and many branches",
+      "expected_plant_size": "large veg",
+      "leaf_density": "dense fan leaf canopy and many branches",
+      "bud_development": "none",
+      "gameplay_meaning": "mature vegetative plant ready for flip or preflower",
+      "possible_ui_usage": "plant overview and repot logic visuals",
+      "default_filename": "cannabis_late_veg_healthy_v001.png"
+    },
+    {
+      "growth_stage": "stretch",
+      "visual_traits": "elongated internodes, canopy widening",
+      "expected_plant_size": "tall transitional",
+      "leaf_density": "elongated internodes, canopy widening",
+      "bud_development": "tiny preflower sites only",
+      "gameplay_meaning": "early flower stretch period",
+      "possible_ui_usage": "stage marker and climate warning visuals",
+      "default_filename": "cannabis_stretch_healthy_v001.png"
+    },
+    {
+      "growth_stage": "early_flower",
+      "visual_traits": "fan leaves plus visible bud sites",
+      "expected_plant_size": "tall early bloom",
+      "leaf_density": "fan leaves plus visible bud sites",
+      "bud_development": "small white pistil clusters",
+      "gameplay_meaning": "flower formation begins",
+      "possible_ui_usage": "flowering UI and nutrient transitions",
+      "default_filename": "cannabis_early_flower_healthy_v001.png"
+    },
+    {
+      "growth_stage": "mid_flower",
+      "visual_traits": "balanced leaves and forming colas",
+      "expected_plant_size": "full mature plant",
+      "leaf_density": "balanced leaves and forming colas",
+      "bud_development": "medium bud clusters with white pistils",
+      "gameplay_meaning": "core diagnostic stage for symptoms and pests",
+      "possible_ui_usage": "primary condition asset baseline",
+      "default_filename": "cannabis_mid_flower_healthy_v001.png"
+    },
+    {
+      "growth_stage": "late_flower",
+      "visual_traits": "slightly reduced leaf dominance",
+      "expected_plant_size": "full heavy bloom",
+      "leaf_density": "slightly reduced leaf dominance",
+      "bud_development": "dense mature colas with mixed pistils",
+      "gameplay_meaning": "ripening and disease-risk stage",
+      "possible_ui_usage": "harvest planning and disease visuals",
+      "default_filename": "cannabis_late_flower_healthy_v001.png"
+    },
+    {
+      "growth_stage": "harvest_ready",
+      "visual_traits": "mature canopy, some natural fade allowed",
+      "expected_plant_size": "full final plant",
+      "leaf_density": "mature canopy, some natural fade allowed",
+      "bud_development": "dense ripe colas, mostly mature pistils",
+      "gameplay_meaning": "ideal harvest window",
+      "possible_ui_usage": "harvest prompt, final summary",
+      "default_filename": "cannabis_harvest_ready_healthy_v001.png"
+    },
+    {
+      "growth_stage": "overripe_optional",
+      "visual_traits": "faded leaves and tired posture",
+      "expected_plant_size": "full late plant",
+      "leaf_density": "faded leaves and tired posture",
+      "bud_development": "very mature darker colas",
+      "gameplay_meaning": "late/overripe educational state",
+      "possible_ui_usage": "optional harvest delay warning",
+      "default_filename": "cannabis_overripe_optional_healthy_v001.png"
+    }
+  ]
+}

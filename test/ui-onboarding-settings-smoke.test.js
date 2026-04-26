@@ -27,6 +27,45 @@ async function expectDisabled(page, selector) {
   assert.strictEqual(state.ariaDisabled, 'true', `${selector} should expose disabled state`);
 }
 
+async function waitForTransientUiSettled(page, timeoutMs = 12000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastSnapshot = null;
+
+  while (Date.now() < deadline) {
+    lastSnapshot = await page.evaluate(() => {
+      const menu = document.getElementById('gameMenu');
+      const dialog = document.getElementById('menuDialog');
+      const uiState = window.__gsState && window.__gsState.ui && typeof window.__gsState.ui === 'object'
+        ? window.__gsState.ui
+        : {};
+
+      return {
+        bootOk: window.__gsBootOk === true,
+        menuHidden: Boolean(menu && menu.classList.contains('hidden')),
+        menuAriaHidden: menu ? menu.getAttribute('aria-hidden') : null,
+        dialogHidden: Boolean(dialog && dialog.classList.contains('hidden')),
+        dialogAriaHidden: dialog ? dialog.getAttribute('aria-hidden') : null,
+        uiMenuOpen: Boolean(uiState.menuOpen),
+        uiMenuDialogOpen: Boolean(uiState.menuDialogOpen)
+      };
+    });
+
+    const domSettled = lastSnapshot.menuHidden
+      && lastSnapshot.dialogHidden
+      && lastSnapshot.menuAriaHidden === 'true'
+      && lastSnapshot.dialogAriaHidden === 'true';
+    const stateSettled = !lastSnapshot.uiMenuOpen && !lastSnapshot.uiMenuDialogOpen;
+
+    if (lastSnapshot.bootOk && domSettled && stateSettled) {
+      return lastSnapshot;
+    }
+
+    await page.waitForTimeout(120);
+  }
+
+  throw new Error(`transient UI state did not settle after reload: ${JSON.stringify(lastSnapshot)}`);
+}
+
 async function main() {
   const { server, baseUrl } = await startStaticServer(ROOT, HOST);
 
@@ -194,14 +233,7 @@ async function main() {
 
     await page.reload({ waitUntil: 'networkidle' });
     await waitForBootReady(page);
-    await page.waitForFunction(() => {
-      const menu = document.getElementById('gameMenu');
-      const dialog = document.getElementById('menuDialog');
-      return Boolean(
-        menu && menu.classList.contains('hidden')
-        && dialog && dialog.classList.contains('hidden')
-      );
-    });
+    await waitForTransientUiSettled(page);
 
     const transientUiState = await page.evaluate(() => ({
       menuOpen: document.getElementById('gameMenu').classList.contains('hidden') === false,

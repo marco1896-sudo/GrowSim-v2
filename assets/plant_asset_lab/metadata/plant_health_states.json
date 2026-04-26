@@ -1,0 +1,200 @@
+{
+  "schema_version": "1.0.0",
+  "items": [
+    {
+      "condition_name": "healthy",
+      "severity": "none",
+      "symptoms": "balanced posture, saturated natural green, no visible stress",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "underwatered_light",
+      "severity": "light",
+      "symptoms": "slightly limp lower leaves, early loss of turgor",
+      "affected_area": "upper canopy",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "underwatered_medium",
+      "severity": "medium",
+      "symptoms": "clear drooping leaves, dry tired posture, thin petioles",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "underwatered_heavy",
+      "severity": "heavy",
+      "symptoms": "severe wilting, curled dry leaves, visibly collapsed posture",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "overwatered_light",
+      "severity": "light",
+      "symptoms": "slightly heavy downward leaf posture, duller green",
+      "affected_area": "upper canopy",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "overwatered_medium",
+      "severity": "medium",
+      "symptoms": "downward clawing, swollen limp leaf look, slow heavy posture",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "overwatered_heavy",
+      "severity": "heavy",
+      "symptoms": "severe clawing and limp mass, dull dark wet-stress look",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "heat_stress_light",
+      "severity": "light",
+      "symptoms": "subtle upward leaf edges near canopy top",
+      "affected_area": "upper canopy",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "heat_stress_medium",
+      "severity": "medium",
+      "symptoms": "leaf tacoing, dry tension, top canopy affected",
+      "affected_area": "upper canopy",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "heat_stress_heavy",
+      "severity": "heavy",
+      "symptoms": "severe tacoing, crisped top edges, heat-scorched tension",
+      "affected_area": "upper canopy",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "light_stress",
+      "severity": "medium",
+      "symptoms": "upper leaf bleaching, pale top growth, slight crispy tips",
+      "affected_area": "upper canopy",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "cold_stress",
+      "severity": "medium",
+      "symptoms": "darker tones, slight purple hints, compact slowed look",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "high_vpd_stress",
+      "severity": "medium",
+      "symptoms": "dry narrow tense leaves, transpiration stress posture",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "low_vpd_stress",
+      "severity": "medium",
+      "symptoms": "soft sluggish leaf posture, humid disease-risk feeling",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    },
+    {
+      "condition_name": "recovery_state",
+      "severity": "recovery",
+      "symptoms": "new healthy growth with older damaged leaves still present",
+      "affected_area": "whole plant posture",
+      "compatible_stages": [
+        "mid_veg",
+        "late_veg",
+        "stretch",
+        "flower"
+      ],
+      "diagnostic_hint": "Compare posture, leaf surface texture, and recent water/climate history before deciding."
+    }
+  ]
+}

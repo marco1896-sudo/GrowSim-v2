@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "items": [
+    {
+      "condition_name": "nutrient_burn_light",
+      "severity": "light",
+      "visual_logic": "small burnt tips on multiple leaves, plant otherwise functional",
+      "diagnostic_context": "Requires feed strength, EC, pH, runoff, or recent action context before confident diagnosis."
+    },
+    {
+      "condition_name": "nutrient_burn_medium",
+      "severity": "medium",
+      "visual_logic": "clear burnt tips and beginning edge necrosis",
+      "diagnostic_context": "Requires feed strength, EC, pH, runoff, or recent action context before confident diagnosis."
+    },
+    {
+      "condition_name": "nutrient_burn_heavy",
+      "severity": "heavy",
+      "visual_logic": "widespread tip burn, edge necrosis, stressed dark canopy",
+      "diagnostic_context": "Requires feed strength, EC, pH, runoff, or recent action context before confident diagnosis."
+    },
+    {
+      "condition_name": "nitrogen_toxicity",
+      "severity": "medium",
+      "visual_logic": "very dark glossy green leaves with clawing and heavy posture",
+      "diagnostic_context": "Requires feed strength, EC, pH, runoff, or recent action context before confident diagnosis."
+    },
+    {
+      "condition_name": "salt_stress_high_ec",
+      "severity": "medium",
+      "visual_logic": "tip burn plus edge burn and general osmotic stress posture",
+      "diagnostic_context": "Requires feed strength, EC, pH, runoff, or recent action context before confident diagnosis."
+    },
+    {
+      "condition_name": "ph_lockout",
+      "severity": "medium",
+      "visual_logic": "mixed deficiency symptoms across old and new leaves, not one clean pattern",
+      "diagnostic_context": "Requires feed strength, EC, pH, runoff, or recent action context before confident diagnosis."
+    },
+    {
+      "condition_name": "potassium_excess_ca_mg_lockout",
+      "severity": "medium",
+      "visual_logic": "Mg/Ca-like symptoms from antagonism, rusty spots and interveinal yellowing",
+      "diagnostic_context": "Requires feed strength, EC, pH, runoff, or recent action context before confident diagnosis."
+    },
+    {
+      "condition_name": "phosphorus_excess_trace_lockout",
+      "severity": "medium",
+      "visual_logic": "trace-element lockout look, pale new growth plus irregular spotting",
+      "diagnostic_context": "Requires feed strength, EC, pH, runoff, or recent action context before confident diagnosis."
+    }
+  ]
+}

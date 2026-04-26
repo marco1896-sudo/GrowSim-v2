@@ -1323,6 +1323,19 @@ function renderHud() {
   setRing(ui.nutritionRing, ui.nutritionValue, state.status.nutrition);
   setRing(ui.growthRing, ui.growthValue, state.status.growth);
   setRing(ui.riskRing, ui.riskValue, state.status.risk);
+  applyRingVisualState(ui.stressRing, 'stressVisual', classifyStressVisualLevel(state.status.stress));
+  applyRingVisualState(ui.riskRing, 'riskVisual', classifyRiskVisualLevel(state.status.risk));
+  applyRingVisualState(
+    ui.growthRing,
+    'growthVisual',
+    classifyGrowthVisualLevel(state.status.growth, state.simulation.growthImpulse)
+  );
+
+  if (ui.plantImage) {
+    ui.plantImage.dataset.growthVisual = classifyGrowthVisualLevel(state.status.growth, state.simulation.growthImpulse);
+    ui.plantImage.dataset.stressVisual = classifyStressVisualLevel(state.status.stress);
+    ui.plantImage.dataset.riskVisual = classifyRiskVisualLevel(state.status.risk);
+  }
 
   if (ui.plantImage && typeof renderPlantFromSprite === 'function') {
     renderPlantFromSprite(ui.plantImage);
@@ -1380,6 +1393,38 @@ function setRing(ringNode, textNode, value) {
   if (textNode.textContent !== roundedText) {
     textNode.textContent = roundedText;
   }
+}
+
+function applyRingVisualState(ringNode, visualKey, visualState) {
+  if (!ringNode) {
+    return;
+  }
+  ringNode.dataset[visualKey] = String(visualState || 'calm');
+}
+
+function classifyStressVisualLevel(value) {
+  const safe = Math.max(0, Math.min(100, Number(value) || 0));
+  if (safe >= 78) return 'critical';
+  if (safe >= 58) return 'high';
+  if (safe >= 34) return 'elevated';
+  return 'calm';
+}
+
+function classifyRiskVisualLevel(value) {
+  const safe = Math.max(0, Math.min(100, Number(value) || 0));
+  if (safe >= 82) return 'critical';
+  if (safe >= 62) return 'high';
+  if (safe >= 38) return 'elevated';
+  return 'calm';
+}
+
+function classifyGrowthVisualLevel(growthValue, growthImpulse) {
+  const growth = Math.max(0, Math.min(100, Number(growthValue) || 0));
+  const impulse = Number(growthImpulse) || 0;
+  if (impulse >= 1.18 || growth >= 72) return 'boosted';
+  if (impulse >= 0.92 || growth >= 34) return 'steady';
+  if (impulse <= 0.38 || growth <= 8) return 'stalled';
+  return 'slow';
 }
 
 function renderOverlayVisibility() {
@@ -2580,7 +2625,6 @@ function dismissActiveEvent() {
 
 function onVisibilityChange() {
   if (document.visibilityState === 'hidden') {
-    schedulePersistState(true);
     stopLoop();
     return;
   }

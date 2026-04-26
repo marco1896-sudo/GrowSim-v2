@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0.0",
+  "items": [
+    {
+      "condition_name": "powdery_mildew",
+      "affected_area": "leaves",
+      "visual_logic": "white powdery patches on leaf surfaces",
+      "notes": "humid airflow issue visual, not frost or trichomes",
+      "diagnosis_hints": [
+        "check humidity and airflow history",
+        "check growth stage validity",
+        "avoid triggering without cause"
+      ]
+    },
+    {
+      "condition_name": "bud_rot",
+      "affected_area": "buds",
+      "visual_logic": "brown and grey dead areas inside dense buds, late flower risk",
+      "notes": "show diseased bud detail without gore or exaggeration",
+      "diagnosis_hints": [
+        "check humidity and airflow history",
+        "check growth stage validity",
+        "avoid triggering without cause"
+      ]
+    },
+    {
+      "condition_name": "root_rot",
+      "affected_area": "root-zone/whole plant",
+      "visual_logic": "wilt despite wet root issue, yellowing and limp posture",
+      "notes": "pair with root-zone diagram for diagnosis",
+      "diagnosis_hints": [
+        "check humidity and airflow history",
+        "check growth stage validity",
+        "avoid triggering without cause"
+      ]
+    },
+    {
+      "condition_name": "leaf_spot_septoria",
+      "affected_area": "leaves",
+      "visual_logic": "circular necrotic spots with yellow halos",
+      "notes": "avoid confusing with random dirt or pest dots",
+      "diagnosis_hints": [
+        "check humidity and airflow history",
+        "check growth stage validity",
+        "avoid triggering without cause"
+      ]
+    },
+    {
+      "condition_name": "damping_off_seedling",
+      "affected_area": "seedling stem",
+      "visual_logic": "thin collapsed seedling stem at base, plant toppled",
+      "notes": "only valid early seedling stage",
+      "diagnosis_hints": [
+        "check humidity and airflow history",
+        "check growth stage validity",
+        "avoid triggering without cause"
+      ]
+    },
+    {
+      "condition_name": "general_fungal_pressure",
+      "affected_area": "canopy",
+      "visual_logic": "soft humid plant look, early warning state, slight dullness",
+      "notes": "pre-disease risk state without fake symptoms",
+      "diagnosis_hints": [
+        "check humidity and airflow history",
+        "check growth stage validity",
+        "avoid triggering without cause"
+      ]
+    }
+  ]
+}
