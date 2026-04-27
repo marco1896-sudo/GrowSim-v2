@@ -117,6 +117,74 @@ async function main() {
     await expectDisabled(page, '#setupBackBtn');
     await expectDisabled(page, '#setupPresetBtn');
 
+    const initialBuilderState = await page.evaluate(() => ({
+      stepLabel: document.getElementById('onboardingStepLabel')?.textContent.trim() || null,
+      activeTitle: document.querySelector('.run-builder-step.is-active h3')?.textContent.trim() || null,
+      activePot: Boolean(document.querySelector('[data-setup-select="setupPotSize"].is-active')),
+      buddySrc: document.querySelector('.run-builder-step.is-active .onboarding-buddy-tip img')?.getAttribute('src') || null,
+      potIconSrc: document.querySelector('[data-setup-select="setupPotSize"][data-setup-value="small"] .onboarding-option-media__image')?.getAttribute('src') || null,
+      nextHidden: document.getElementById('setupNextBtn')?.classList.contains('hidden') || false,
+      startHidden: document.getElementById('startRunBtn')?.classList.contains('hidden') || false,
+      outdoorDisabled: Boolean(document.querySelector('[data-setup-select="setupMode"][data-setup-value="outdoor"]')?.disabled),
+      highLightDisabled: Boolean(document.querySelector('[data-setup-select="setupLight"][data-setup-value="high"]')?.disabled)
+    }));
+    assert.strictEqual(initialBuilderState.stepLabel, 'Schritt 1 von 6', 'run builder should start directly at step 1');
+    assert.strictEqual(initialBuilderState.activeTitle, 'Topfgröße', 'first onboarding step should be pot size');
+    assert.strictEqual(initialBuilderState.activePot, true, 'first step should have an active default pot selection');
+    assert.strictEqual(initialBuilderState.buddySrc, 'assets/onboarding/buddy_pot.png', 'pot step should use the pot Buddy asset');
+    assert.strictEqual(initialBuilderState.potIconSrc, 'assets/onboarding/pot_s.png', 'small pot card should use the small pot PNG asset');
+    assert.strictEqual(initialBuilderState.nextHidden, false, 'next button should be visible before summary');
+    assert.strictEqual(initialBuilderState.startHidden, true, 'start button should stay hidden before summary');
+    assert.strictEqual(initialBuilderState.outdoorDisabled, true, 'locked outdoor setup should remain disabled for a fresh profile');
+    assert.strictEqual(initialBuilderState.highLightDisabled, true, 'locked high light setup should remain disabled for a fresh profile');
+
+    for (let index = 0; index < 5; index += 1) {
+      if (index === 0) {
+        await page.click('#setupNextBtn');
+        const geneticsBuddySrc = await page.locator('.run-builder-step.is-active .onboarding-buddy-tip img').getAttribute('src');
+        const geneticsIconSrc = await page.locator('[data-setup-select="setupGenetics"][data-setup-value="hybrid"] .onboarding-option-media__image').getAttribute('src');
+        assert.strictEqual(geneticsBuddySrc, 'assets/onboarding/buddy_genetics.png', 'genetics step should use the genetics Buddy asset');
+        assert.strictEqual(geneticsIconSrc, 'assets/onboarding/genetic_hybrid.png', 'hybrid genetics card should use the hybrid PNG asset');
+        continue;
+      }
+      await page.click('#setupNextBtn');
+    }
+
+    const summaryState = await page.evaluate(() => ({
+      stepLabel: document.getElementById('onboardingStepLabel')?.textContent.trim() || null,
+      activeTitle: document.querySelector('.run-builder-step.is-active h3')?.textContent.trim() || null,
+      nextHidden: document.getElementById('setupNextBtn')?.classList.contains('hidden') || false,
+      startHidden: document.getElementById('startRunBtn')?.classList.contains('hidden') || false,
+      backDisabled: Boolean(document.getElementById('setupBackBtn')?.disabled),
+      pot: document.getElementById('onboardingSummaryPot')?.textContent.trim() || null,
+      genetics: document.getElementById('onboardingSummaryGenetics')?.textContent.trim() || null,
+      mode: document.getElementById('onboardingSummaryMode')?.textContent.trim() || null,
+      medium: document.getElementById('onboardingSummaryMedium')?.textContent.trim() || null,
+      light: document.getElementById('onboardingSummaryLight')?.textContent.trim() || null,
+      profileTitle: document.getElementById('setupStrategyTitle')?.textContent.trim() || null,
+      buddySrc: document.querySelector('.run-builder-step.is-active .onboarding-buddy-tip img')?.getAttribute('src') || null,
+      mediumLightIconSrc: document.querySelector('[data-setup-select="setupLight"][data-setup-value="medium"] .onboarding-option-media__image')?.getAttribute('src') || null,
+      summaryPotIconSrc: document.querySelector('[data-summary-select="setupPotSize"] .summary-setup-media__image')?.getAttribute('src') || null,
+      summaryGeneticsIconSrc: document.querySelector('[data-summary-select="setupGenetics"] .summary-setup-media__image')?.getAttribute('src') || null,
+      summaryLightIconSrc: document.querySelector('[data-summary-select="setupLight"] .summary-setup-media__image')?.getAttribute('src') || null
+    }));
+    assert.strictEqual(summaryState.stepLabel, 'Schritt 6 von 6', 'summary should be the sixth onboarding step');
+    assert.strictEqual(summaryState.activeTitle, 'Dein Run ist bereit.', 'summary step should show the final run state');
+    assert.strictEqual(summaryState.nextHidden, true, 'next button should be hidden on summary');
+    assert.strictEqual(summaryState.startHidden, false, 'start button should be visible on summary');
+    assert.strictEqual(summaryState.backDisabled, false, 'back button should be available on summary');
+    assert.strictEqual(summaryState.pot, '2 Liter (S)', 'summary should include selected pot size');
+    assert.strictEqual(summaryState.genetics, 'Hybrid', 'summary should include selected genetics');
+    assert.strictEqual(summaryState.mode, 'Indoor Run', 'summary should include selected setup mode');
+    assert.strictEqual(summaryState.medium, 'Soil Medium', 'summary should include selected medium');
+    assert.strictEqual(summaryState.light, 'Medium Light', 'summary should include selected light');
+    assert.strictEqual(summaryState.profileTitle, 'Balanced Control', 'summary should reuse the run build presentation');
+    assert.strictEqual(summaryState.buddySrc, 'assets/onboarding/buddy_summary.png', 'summary step should use the summary Buddy asset');
+    assert.strictEqual(summaryState.mediumLightIconSrc, 'assets/onboarding/light_medium.png', 'medium light card should use the medium light PNG asset');
+    assert.strictEqual(summaryState.summaryPotIconSrc, 'assets/onboarding/pot_s.png', 'summary pot should use the selected pot PNG asset');
+    assert.strictEqual(summaryState.summaryGeneticsIconSrc, 'assets/onboarding/genetic_hybrid.png', 'summary genetics should use the selected genetics PNG asset');
+    assert.strictEqual(summaryState.summaryLightIconSrc, 'assets/onboarding/light_medium.png', 'summary light should use the selected light PNG asset');
+
     await page.click('#startRunBtn');
     await page.waitForFunction(() => document.getElementById('landing').classList.contains('hidden'));
 

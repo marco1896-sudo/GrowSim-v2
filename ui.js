@@ -269,6 +269,17 @@ function cacheUi() {
 
   ui.landing = document.getElementById('landing');
   ui.startRunBtn = document.getElementById('startRunBtn');
+  ui.setupNextBtn = document.getElementById('setupNextBtn');
+  ui.setupBackBtn = document.getElementById('setupBackBtn');
+  ui.setupPresetBtn = document.getElementById('setupPresetBtn');
+  ui.onboardingStepLabel = document.getElementById('onboardingStepLabel');
+  ui.onboardingProgressFill = document.getElementById('onboardingProgressFill');
+  ui.onboardingStepPanels = Array.from(document.querySelectorAll('[data-onboarding-step-panel]'));
+  ui.onboardingSummaryPot = document.getElementById('onboardingSummaryPot');
+  ui.onboardingSummaryGenetics = document.getElementById('onboardingSummaryGenetics');
+  ui.onboardingSummaryMode = document.getElementById('onboardingSummaryMode');
+  ui.onboardingSummaryMedium = document.getElementById('onboardingSummaryMedium');
+  ui.onboardingSummaryLight = document.getElementById('onboardingSummaryLight');
   ui.setupMode = document.getElementById('setupMode');
   ui.setupLight = document.getElementById('setupLight');
   ui.setupMedium = document.getElementById('setupMedium');
@@ -350,6 +361,7 @@ function bindUi() {
   bindMenuOverlayEvents(window.__gsUiController || null);
   bindSheetsOverlayEvents(window.__gsUiController || null);
   bindSetupOptionButtons();
+  bindOnboardingStepControls();
 
   if (ui.startRunBtn) {
     ui.startRunBtn.addEventListener('click', onStartRun);
@@ -1123,6 +1135,9 @@ function bindSetupOptionButtons() {
       if (typeof renderSetupOptionLocks === 'function') {
         renderSetupOptionLocks();
       }
+      if (typeof updateOnboardingBuilderUi === 'function') {
+        updateOnboardingBuilderUi();
+      }
     });
   }
 
@@ -1131,6 +1146,281 @@ function bindSetupOptionButtons() {
   syncGroup('setupMode');
   syncGroup('setupMedium');
   syncGroup('setupLight');
+  updateOnboardingBuilderUi();
+}
+
+let onboardingBuilderStep = 0;
+
+const ONBOARDING_BUDDY_FALLBACK_SRC = 'assets/onboarding/buddy_summary.png';
+const ONBOARDING_BUDDY_ASSETS = Object.freeze({
+  pot: Object.freeze({
+    src: 'assets/onboarding/buddy_pot.png',
+    alt: 'Buddy erklärt die Topfgröße'
+  }),
+  genetics: Object.freeze({
+    src: 'assets/onboarding/buddy_genetics.png',
+    alt: 'Buddy erklärt die Genetik-Auswahl'
+  }),
+  setup: Object.freeze({
+    src: 'assets/onboarding/buddy_setup.png',
+    alt: 'Buddy erklärt den Setup-Modus'
+  }),
+  mode: Object.freeze({
+    src: 'assets/onboarding/buddy_setup.png',
+    alt: 'Buddy erklärt den Setup-Modus'
+  }),
+  substrate: Object.freeze({
+    src: 'assets/onboarding/buddy_substrate.png',
+    alt: 'Buddy erklärt das Substrat'
+  }),
+  medium: Object.freeze({
+    src: 'assets/onboarding/buddy_substrate.png',
+    alt: 'Buddy erklärt das Substrat'
+  }),
+  light: Object.freeze({
+    src: 'assets/onboarding/buddy_light.png',
+    alt: 'Buddy erklärt das Lichtprofil'
+  }),
+  summary: Object.freeze({
+    src: ONBOARDING_BUDDY_FALLBACK_SRC,
+    alt: 'Buddy bestätigt die Run-Zusammenfassung'
+  })
+});
+
+const ONBOARDING_OPTION_ICON_ASSETS = Object.freeze({
+  setupPotSize: Object.freeze({
+    small: Object.freeze({ src: 'assets/onboarding/pot_s.png', alt: 'Topfgröße S' }),
+    medium: Object.freeze({ src: 'assets/onboarding/pot_m.png', alt: 'Topfgröße M' }),
+    large: Object.freeze({ src: 'assets/onboarding/pot_l.png', alt: 'Topfgröße L' }),
+    xlarge: Object.freeze({ src: 'assets/onboarding/pot_xl.png', alt: 'Topfgröße XL' })
+  }),
+  setupGenetics: Object.freeze({
+    hybrid: Object.freeze({ src: 'assets/onboarding/genetic_hybrid.png', alt: 'Hybrid Genetik' }),
+    indica: Object.freeze({ src: 'assets/onboarding/genetic_hardy.png', alt: 'Robuste Genetik' }),
+    sativa: Object.freeze({ src: 'assets/onboarding/genetic_fast.png', alt: 'Schnelle Genetik' })
+  }),
+  setupMode: Object.freeze({
+    indoor: Object.freeze({ src: 'assets/onboarding/run_indoor.png', alt: 'Indoor Run' }),
+    outdoor: Object.freeze({ src: 'assets/onboarding/run_outdoor.png', alt: 'Outdoor Run' })
+  }),
+  setupMedium: Object.freeze({
+    soil: Object.freeze({ src: 'assets/onboarding/substrate_soil.png', alt: 'Erde Substrat' }),
+    coco: Object.freeze({ src: 'assets/onboarding/substrate_coco.png', alt: 'Coco Substrat' })
+  }),
+  setupLight: Object.freeze({
+    medium: Object.freeze({ src: 'assets/onboarding/light_medium.png', alt: 'Medium Light' }),
+    high: Object.freeze({ src: 'assets/onboarding/light_high.png', alt: 'High Output Light' })
+  })
+});
+
+function getOnboardingStepCount() {
+  return Array.isArray(ui.onboardingStepPanels) && ui.onboardingStepPanels.length
+    ? ui.onboardingStepPanels.length
+    : 6;
+}
+
+function clampOnboardingStep(step) {
+  const maxStep = Math.max(0, getOnboardingStepCount() - 1);
+  return Math.max(0, Math.min(maxStep, Math.trunc(Number(step) || 0)));
+}
+
+function getSetupOptionLabel(selectId, fallback) {
+  const selectNode = document.getElementById(selectId);
+  const value = selectNode ? String(selectNode.value || '') : '';
+  const button = Array.isArray(ui.setupOptionButtons)
+    ? ui.setupOptionButtons.find((candidate) => (
+      candidate
+      && String(candidate.dataset.setupSelect || '') === String(selectId || '')
+      && String(candidate.dataset.setupValue || '') === value
+    ))
+    : null;
+  if (!button) {
+    return fallback;
+  }
+  const titleNode = button.querySelector('.onboarding-card-title');
+  const primaryNode = titleNode || button.querySelector('span');
+  return String(
+    button.dataset.title
+    || (primaryNode && primaryNode.textContent ? primaryNode.textContent.trim() : '')
+    || fallback
+  );
+}
+
+function renderOnboardingSummarySelections() {
+  if (ui.onboardingSummaryPot) {
+    ui.onboardingSummaryPot.textContent = getSetupOptionLabel('setupPotSize', '2 Liter (S)');
+  }
+  if (ui.onboardingSummaryGenetics) {
+    ui.onboardingSummaryGenetics.textContent = getSetupOptionLabel('setupGenetics', 'Hybrid');
+  }
+  if (ui.onboardingSummaryMode) {
+    ui.onboardingSummaryMode.textContent = getSetupOptionLabel('setupMode', 'Indoor');
+  }
+  if (ui.onboardingSummaryMedium) {
+    ui.onboardingSummaryMedium.textContent = getSetupOptionLabel('setupMedium', 'Erde');
+  }
+  if (ui.onboardingSummaryLight) {
+    ui.onboardingSummaryLight.textContent = getSetupOptionLabel('setupLight', 'Medium Light');
+  }
+}
+
+function syncOnboardingBuddyAssets() {
+  const tips = document.querySelectorAll('.onboarding-buddy-tip[data-buddy-key]');
+  tips.forEach((tip) => {
+    const key = String(tip.dataset.buddyKey || 'summary');
+    const asset = ONBOARDING_BUDDY_ASSETS[key] || ONBOARDING_BUDDY_ASSETS.summary;
+    const image = tip.querySelector('img');
+    if (!image) {
+      return;
+    }
+    image.onerror = () => {
+      if (image.dataset.fallbackApplied === 'true') {
+        image.hidden = true;
+        return;
+      }
+      image.dataset.fallbackApplied = 'true';
+      image.src = ONBOARDING_BUDDY_FALLBACK_SRC;
+      image.alt = ONBOARDING_BUDDY_ASSETS.summary.alt;
+    };
+    image.hidden = false;
+    image.dataset.fallbackApplied = 'false';
+    if (image.getAttribute('src') !== asset.src) {
+      image.src = asset.src;
+    }
+    image.alt = asset.alt;
+  });
+}
+
+function getOnboardingOptionIconAsset(selectId, value) {
+  const group = ONBOARDING_OPTION_ICON_ASSETS[String(selectId || '')];
+  return group && group[String(value || '')] ? group[String(value || '')] : null;
+}
+
+function renderOnboardingAssetIcon(media, asset, options = {}) {
+  if (!media || !asset) {
+    return;
+  }
+  const mediaClass = options.mediaClass || 'onboarding-option-media';
+  const imageClass = options.imageClass || 'onboarding-option-media__image';
+  media.classList.add('onboarding-icon--asset', mediaClass);
+  let image = media.querySelector('img');
+  if (!image) {
+    image = document.createElement('img');
+    media.replaceChildren(image);
+  }
+  image.className = imageClass;
+  image.decoding = 'async';
+  image.loading = 'eager';
+  image.onerror = () => {
+    image.hidden = true;
+    media.classList.remove('onboarding-icon--asset', mediaClass);
+  };
+  image.hidden = false;
+  if (image.getAttribute('src') !== asset.src) {
+    image.src = asset.src;
+  }
+  image.alt = asset.alt;
+}
+
+function syncOnboardingOptionAssetIcons() {
+  const buttons = Array.isArray(ui.setupOptionButtons) ? ui.setupOptionButtons : [];
+  buttons.forEach((button) => {
+    if (!button) {
+      return;
+    }
+    const selectId = String(button.dataset.setupSelect || '');
+    const value = String(button.dataset.setupValue || '');
+    const asset = getOnboardingOptionIconAsset(selectId, value);
+    const media = button.querySelector('.onboarding-icon');
+    if (!media || !asset) {
+      return;
+    }
+
+    renderOnboardingAssetIcon(media, asset);
+  });
+}
+
+function syncOnboardingSummaryAssetIcons() {
+  const items = document.querySelectorAll('[data-summary-select]');
+  items.forEach((item) => {
+    const selectId = String(item.dataset.summarySelect || '');
+    const selectNode = document.getElementById(selectId);
+    const value = selectNode ? String(selectNode.value || '') : '';
+    const asset = getOnboardingOptionIconAsset(selectId, value);
+    const media = item.querySelector('.summary-setup-media');
+    if (!media || !asset) {
+      return;
+    }
+    renderOnboardingAssetIcon(media, asset, {
+      mediaClass: 'summary-setup-media--asset',
+      imageClass: 'summary-setup-media__image'
+    });
+  });
+}
+
+function updateOnboardingBuilderUi() {
+  const stepCount = getOnboardingStepCount();
+  const currentStep = clampOnboardingStep(onboardingBuilderStep);
+  onboardingBuilderStep = currentStep;
+  const isSummaryStep = currentStep === stepCount - 1;
+  const landingCard = ui.landing ? ui.landing.querySelector('.run-builder-card') : null;
+
+  if (landingCard) {
+    landingCard.dataset.onboardingStep = String(currentStep);
+  }
+  if (Array.isArray(ui.onboardingStepPanels)) {
+    ui.onboardingStepPanels.forEach((panel, index) => {
+      const active = index === currentStep;
+      panel.classList.toggle('is-active', active);
+      panel.setAttribute('aria-hidden', String(!active));
+    });
+  }
+  if (ui.onboardingStepLabel) {
+    ui.onboardingStepLabel.textContent = `Schritt ${currentStep + 1} von ${stepCount}`;
+  }
+  if (ui.onboardingProgressFill) {
+    ui.onboardingProgressFill.style.width = `${((currentStep + 1) / stepCount) * 100}%`;
+  }
+  syncOnboardingBuddyAssets();
+  syncOnboardingOptionAssetIcons();
+  syncOnboardingSummaryAssetIcons();
+  if (ui.setupBackBtn) {
+    const disabled = currentStep === 0;
+    ui.setupBackBtn.disabled = disabled;
+    ui.setupBackBtn.setAttribute('aria-disabled', String(disabled));
+  }
+  if (ui.setupNextBtn) {
+    ui.setupNextBtn.classList.toggle('hidden', isSummaryStep);
+    ui.setupNextBtn.setAttribute('aria-hidden', String(isSummaryStep));
+  }
+  if (ui.startRunBtn) {
+    ui.startRunBtn.classList.toggle('hidden', !isSummaryStep);
+    ui.startRunBtn.setAttribute('aria-hidden', String(!isSummaryStep));
+  }
+  renderOnboardingSummarySelections();
+  if (typeof renderSetupStrategyPreview === 'function') {
+    renderSetupStrategyPreview();
+  }
+}
+
+function bindOnboardingStepControls() {
+  if (ui.setupNextBtn && ui.setupNextBtn.dataset.onboardingBound !== 'true') {
+    ui.setupNextBtn.dataset.onboardingBound = 'true';
+    ui.setupNextBtn.addEventListener('click', () => {
+      onboardingBuilderStep = clampOnboardingStep(onboardingBuilderStep + 1);
+      updateOnboardingBuilderUi();
+    });
+  }
+
+  if (ui.setupBackBtn && ui.setupBackBtn.dataset.onboardingBound !== 'true') {
+    ui.setupBackBtn.dataset.onboardingBound = 'true';
+    ui.setupBackBtn.addEventListener('click', () => {
+      onboardingBuilderStep = clampOnboardingStep(onboardingBuilderStep - 1);
+      updateOnboardingBuilderUi();
+    });
+  }
+
+  updateOnboardingBuilderUi();
 }
 
 function ensureRequiredUi() {
@@ -1201,7 +1491,7 @@ function ensureRequiredUi() {
     'careCategoryList', 'careActionList', 'careEffectsList', 'careExecuteButton', 'careFeedback', 'eventStateBadge', 'eventTitle', 'eventText', 'eventMeta', 'eventOptionList',
     'analysisTabOverview', 'analysisTabDiagnosis', 'analysisTabTimeline', 'analysisPanelOverview', 'analysisPanelDiagnosis', 'analysisPanelTimeline',
     'analysisResetBtn',
-    'landing', 'startRunBtn', 'setupMode', 'setupLight', 'setupMedium', 'setupPotSize', 'setupGenetics',
+    'landing', 'startRunBtn', 'setupNextBtn', 'setupBackBtn', 'setupPresetBtn', 'setupMode', 'setupLight', 'setupMedium', 'setupPotSize', 'setupGenetics',
     'setupStrategyTag', 'setupStrategyTitle', 'setupStrategyDescription', 'setupStrategyTradeoff', 'setupStrategyLoadout',
     'deathOverlay', 'deathDriverList', 'deathHistoryList', 'deathResetBtn', 'deathAnalyzeBtn',
     'runSummaryOverlay', 'runSummaryBadge', 'runSummaryTitle', 'runSummarySubtitle', 'runSummaryRating',

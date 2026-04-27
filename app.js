@@ -16980,7 +16980,7 @@ function renderSetupOptionLocks() {
     button.disabled = !unlocked; button.setAttribute('aria-disabled', unlocked ? 'false' : 'true');
     button.classList.toggle('is-locked', !unlocked);
     button.dataset.tone = String(presentation.tone || 'balanced');
-    const primaryNode = button.querySelector('span');
+    const primaryNode = button.querySelector('.onboarding-card-title') || button.querySelector('span:not(.onboarding-icon)');
     if (primaryNode) {
       primaryNode.textContent = String(presentation.title || value || primaryNode.textContent || '');
     }
@@ -16988,10 +16988,17 @@ function renderSetupOptionLocks() {
       ? `${presentation.effect} ${presentation.tradeoff ? `Tradeoff: ${presentation.tradeoff}` : ''}`.trim()
       : `Freischaltung ab Level ${presentation.requiredLevel}: ${presentation.effect}`;
 
-    const helperNode = button.querySelector('.badge, .subtitle, .value_green, .value_gold');
+    const helperNode = button.querySelector('.onboarding-card-badge, .badge, .subtitle, .value_green, .value_gold');
     if (helperNode) {
       helperNode.dataset.unlockedText = presentation.tag || helperNode.textContent || presentation.effect;
       helperNode.textContent = unlocked ? (helperNode.dataset.unlockedText || presentation.effect) : `Lv ${presentation.requiredLevel}`;
+    }
+
+    const descriptionNode = button.querySelector('.onboarding-card-description');
+    if (descriptionNode) {
+      descriptionNode.textContent = unlocked
+        ? String(button.dataset.description || presentation.effect || '')
+        : `Freischaltung ab Level ${presentation.requiredLevel}.`;
     }
 
     let effectNode = button.querySelector('.setup-option-effect');
@@ -17001,8 +17008,8 @@ function renderSetupOptionLocks() {
       button.appendChild(effectNode);
     }
     effectNode.textContent = unlocked
-      ? `${presentation.effect} ${presentation.tradeoff ? `Tradeoff: ${presentation.tradeoff}` : ''}`.trim()
-      : `Freischaltung ab Level ${presentation.requiredLevel}. ${presentation.effect}`;
+      ? String(button.dataset.effect || presentation.tradeoff || presentation.effect || '').trim()
+      : `Gesperrt · Lv ${presentation.requiredLevel}`;
 
     const selectNode = document.getElementById(selectId);
     if (selectNode && !unlocked && selectNode.value === value) {
@@ -17062,6 +17069,9 @@ function renderLanding() {
   landingNode.setAttribute('aria-hidden', String(!visible));
   if (visible) {
     renderSetupOptionLocks();
+    if (typeof updateOnboardingBuilderUi === 'function') {
+      updateOnboardingBuilderUi();
+    }
   }
 }
 

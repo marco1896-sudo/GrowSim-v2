@@ -1190,61 +1190,190 @@
   </section>
 
   <section id="landing" class="landing-overlay figma-onboarding-overlay hidden" aria-hidden="true">
-    <div class="landing-card figma-onboarding-card">
-      <h2>Start / Onboarding</h2>
-      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-        <div class="figma-top-player-title">Grow Simulator</div>
-        <div class="figma-top-player-subtitle">Neue Session</div>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Topfgröße</h3>
-        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupPotSize" data-setup-value="small"><span>2 Liter (S)</span><strong class="value_gold">Frühspiel</strong></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="medium"><span>8 Liter (M)</span><strong class="value_green">Ausgewogen</strong></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="large"><span>16 Liter (L)</span><strong class="value_gold">Langzeit</strong></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupPotSize" data-setup-value="xlarge"><span>25 Liter (XL)</span><strong class="value_gold">Expert</strong></button>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Pflanzentyp</h3>
-        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupGenetics" data-setup-value="hybrid"><span>Hybrid</span><span class="badge">Empfohlen</span></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupGenetics" data-setup-value="indica"><span>Indica</span><span class="subtitle">Robust</span></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupGenetics" data-setup-value="sativa"><span>Sativa</span><span class="subtitle">Langzyklus</span></button>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Setup-Modus</h3>
-        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupMode" data-setup-value="indoor"><span>Auto Setup</span><strong class="value_green">Aktiv</strong></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupMode" data-setup-value="outdoor"><span>Foto Setup</span><span class="subtitle">Manuell</span></button>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Substrat</h3>
-        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupMedium" data-setup-value="soil"><span>Soil</span><span class="badge">Stabil</span></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupMedium" data-setup-value="coco"><span>Coco</span><span class="subtitle">Reaktiv</span></button>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Lichtprofil</h3>
-        <button class="figma-static-row setup-option-btn is-active" type="button" data-setup-select="setupLight" data-setup-value="medium"><span>Medium Light</span><span class="badge">Kontrolle</span></button>
-        <button class="figma-static-row setup-option-btn" type="button" data-setup-select="setupLight" data-setup-value="high"><span>High Output</span><span class="subtitle">Mehr Druck</span></button>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding setup-strategy-card">
-        <div class="setup-strategy-top">
-          <h3 class="figma-section-head">Run-Profil</h3>
-          <strong id="setupStrategyTag" class="setup-strategy-tag" data-tone="balanced">Ausgewogen</strong>
+    <div class="landing-card figma-onboarding-card run-builder-card" data-onboarding-step="0">
+      <header class="run-builder-header">
+        <div class="run-builder-brand">
+          <span class="run-builder-kicker">Grow Simulator</span>
+          <h2>Grow-Run erstellen</h2>
         </div>
-        <strong id="setupStrategyTitle" class="setup-strategy-title">Balanced Control</strong>
-        <p id="setupStrategyDescription" class="sheet-note">Solider Kontroll-Run mit guter Fehlertoleranz und ohne harte Peaks.</p>
-        <p id="setupStrategyTradeoff" class="setup-strategy-tradeoff">Kein extremer Vorteil, aber auch keine große Sollbruchstelle.</p>
-        <div id="setupStrategyLoadout" class="setup-strategy-loadout">Hybrid · Soil Medium · Medium Light · Mode: Indoor Run</div>
-      </section>
+        <span id="onboardingStepLabel" class="run-builder-step-label">Schritt 1 von 6</span>
+      </header>
+      <div class="run-builder-progress" aria-hidden="true">
+        <span id="onboardingProgressFill" class="run-builder-progress-fill"></span>
+      </div>
 
-      <div class="figma-onboarding-actions">
-        <button id="setupBackBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfügbar">Zurück</button>
-        <button id="setupPresetBtn" class="ghost-btn" type="button" disabled aria-disabled="true" title="Noch nicht verfügbar">Preset</button>
-        <button id="startRunBtn" class="action-btn action-primary" type="button">Start</button>
+      <div id="onboardingStepPanels" class="run-builder-content">
+        <section class="run-builder-step is-active" data-onboarding-step-panel="0" data-step-title="Topfgröße">
+          <div class="run-builder-copy">
+            <span class="run-builder-eyebrow">Schritt 1</span>
+            <h3>Topfgröße</h3>
+            <p>Wähle den Wurzelraum für deinen ersten Run.</p>
+          </div>
+          <aside class="onboarding-buddy-tip" data-buddy-key="pot">
+            <img alt="Buddy erklärt die Topfgröße" loading="eager">
+            <p>Mehr Wurzelraum gibt dir mehr Puffer, braucht aber etwas mehr Zeit.</p>
+          </aside>
+          <div class="onboarding-option-grid">
+            <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupPotSize" data-setup-value="small" data-title="2 Liter (S)" data-badge="Frühspiel" data-description="Kleiner Start mit schnellem Feedback." data-effect="Schnell · eng · direkt" data-icon="pot">
+              <span class="onboarding-icon onboarding-icon--pot" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">2 Liter (S)</span><strong class="onboarding-card-badge value_gold">Frühspiel</strong></span><span class="onboarding-card-description">Kleiner Start mit schnellem Feedback.</span><span class="onboarding-card-effect setup-option-effect">Schnell · eng · direkt</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+            <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupPotSize" data-setup-value="medium" data-title="8 Liter (M)" data-badge="Empfohlen" data-description="Ausgewogener Puffer für den ersten Run." data-effect="Stabil · flexibel · fair" data-icon="pot">
+              <span class="onboarding-icon onboarding-icon--pot" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">8 Liter (M)</span><strong class="onboarding-card-badge value_green">Empfohlen</strong></span><span class="onboarding-card-description">Ausgewogener Puffer für den ersten Run.</span><span class="onboarding-card-effect setup-option-effect">Stabil · flexibel · fair</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+            <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupPotSize" data-setup-value="large" data-title="16 Liter (L)" data-badge="Langzeit" data-description="Mehr Reserve für ruhige Entwicklung." data-effect="Mehr Puffer · mehr Dauer" data-icon="pot">
+              <span class="onboarding-icon onboarding-icon--pot" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">16 Liter (L)</span><strong class="onboarding-card-badge value_gold">Langzeit</strong></span><span class="onboarding-card-description">Mehr Reserve für ruhige Entwicklung.</span><span class="onboarding-card-effect setup-option-effect">Mehr Puffer · mehr Dauer</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+            <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupPotSize" data-setup-value="xlarge" data-title="25 Liter (XL)" data-badge="Experte" data-description="Großer Wurzelraum mit langsamem Start." data-effect="Stabilität · Potenzial · Geduld" data-icon="pot">
+              <span class="onboarding-icon onboarding-icon--pot" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">25 Liter (XL)</span><strong class="onboarding-card-badge value_gold">Experte</strong></span><span class="onboarding-card-description">Großer Wurzelraum mit langsamem Start.</span><span class="onboarding-card-effect setup-option-effect">Stabilität · Potenzial · Geduld</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="run-builder-step" data-onboarding-step-panel="1" data-step-title="Pflanzentyp">
+          <div class="run-builder-copy">
+            <span class="run-builder-eyebrow">Schritt 2</span>
+            <h3>Pflanzentyp</h3>
+            <p>Lege fest, wie stabil oder anspruchsvoll dein Run wird.</p>
+          </div>
+          <aside class="onboarding-buddy-tip" data-buddy-key="genetics">
+            <img alt="Buddy erklärt die Genetik-Auswahl" loading="eager">
+            <p>Hybrid ist der stabilste Start, wenn du nicht direkt ins Risiko gehen willst.</p>
+          </aside>
+          <div class="onboarding-option-grid">
+            <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupGenetics" data-setup-value="hybrid" data-description="Stabiler Basistyp ohne extreme Schwäche." data-effect="Balance · Kontrolle · Puffer" data-icon="genetics">
+              <span class="onboarding-icon onboarding-icon--genetics" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">Hybrid</span><span class="onboarding-card-badge badge">Empfohlen</span></span><span class="onboarding-card-description">Stabiler Basistyp ohne extreme Schwäche.</span><span class="onboarding-card-effect setup-option-effect">Balance · Kontrolle · Puffer</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+            <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupGenetics" data-setup-value="indica" data-description="Mehr Fehlerpuffer bei ruhigerem Tempo." data-effect="Robust · ruhig · sicher" data-icon="genetics">
+              <span class="onboarding-icon onboarding-icon--genetics" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">Indica</span><span class="onboarding-card-badge subtitle">Robust</span></span><span class="onboarding-card-description">Mehr Fehlerpuffer bei ruhigerem Tempo.</span><span class="onboarding-card-effect setup-option-effect">Robust · ruhig · sicher</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+            <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupGenetics" data-setup-value="sativa" data-description="Mehr Tempo, aber sensibler bei Fehlern." data-effect="Tempo · Druck · Risiko" data-icon="genetics">
+              <span class="onboarding-icon onboarding-icon--genetics" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">Sativa</span><span class="onboarding-card-badge subtitle">Langzyklus</span></span><span class="onboarding-card-description">Mehr Tempo, aber sensibler bei Fehlern.</span><span class="onboarding-card-effect setup-option-effect">Tempo · Druck · Risiko</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="run-builder-step" data-onboarding-step-panel="2" data-step-title="Setup-Modus">
+          <div class="run-builder-copy">
+            <span class="run-builder-eyebrow">Schritt 3</span>
+            <h3>Setup-Modus</h3>
+            <p>Bestimme, wie stark die Umgebung deinen Run beeinflusst.</p>
+          </div>
+          <aside class="onboarding-buddy-tip" data-buddy-key="setup">
+            <img alt="Buddy erklärt den Setup-Modus" loading="eager">
+            <p>Indoor gibt dir mehr Kontrolle, Outdoor bringt mehr natürliche Schwankungen.</p>
+          </aside>
+          <div class="onboarding-option-grid">
+            <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupMode" data-setup-value="indoor" data-description="Kontrollierter Standard mit stabilen Bedingungen." data-effect="Kontrolle · stabil · planbar" data-icon="setup">
+              <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">Indoor</span><strong class="onboarding-card-badge value_green">Kontrolle</strong></span><span class="onboarding-card-description">Kontrollierter Standard mit stabilen Bedingungen.</span><span class="onboarding-card-effect setup-option-effect">Kontrolle · stabil · planbar</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+            <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupMode" data-setup-value="outdoor" data-description="Natürlicher Lauf mit mehr Klima-Varianz." data-effect="Varianz · Wetter · Timing" data-icon="setup">
+              <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">Outdoor</span><span class="onboarding-card-badge subtitle">Natürlich</span></span><span class="onboarding-card-description">Natürlicher Lauf mit mehr Klima-Varianz.</span><span class="onboarding-card-effect setup-option-effect">Varianz · Wetter · Timing</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="run-builder-step" data-onboarding-step-panel="3" data-step-title="Substrat">
+          <div class="run-builder-copy">
+            <span class="run-builder-eyebrow">Schritt 4</span>
+            <h3>Substrat</h3>
+            <p>Wähle, wie direkt Wasser und Nährstoffe reagieren.</p>
+          </div>
+          <aside class="onboarding-buddy-tip" data-buddy-key="substrate">
+            <img alt="Buddy erklärt das Substrat" loading="eager">
+            <p>Erde verzeiht mehr Fehler, Coco reagiert schneller.</p>
+          </aside>
+          <div class="onboarding-option-grid">
+            <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupMedium" data-setup-value="soil" data-description="Toleranter Start mit ruhigem Verhalten." data-effect="Puffer · stabil · träge" data-icon="substrate">
+              <span class="onboarding-icon onboarding-icon--substrate" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">Erde</span><span class="onboarding-card-badge badge">Stabil</span></span><span class="onboarding-card-description">Toleranter Start mit ruhigem Verhalten.</span><span class="onboarding-card-effect setup-option-effect">Puffer · stabil · träge</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+            <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupMedium" data-setup-value="coco" data-description="Schneller Uptake mit mehr Pflege-Druck." data-effect="Reaktiv · schnell · sensibel" data-icon="substrate">
+              <span class="onboarding-icon onboarding-icon--substrate" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">Coco</span><span class="onboarding-card-badge subtitle">Reaktiv</span></span><span class="onboarding-card-description">Schneller Uptake mit mehr Pflege-Druck.</span><span class="onboarding-card-effect setup-option-effect">Reaktiv · schnell · sensibel</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="run-builder-step" data-onboarding-step-panel="4" data-step-title="Lichtprofil">
+          <div class="run-builder-copy">
+            <span class="run-builder-eyebrow">Schritt 5</span>
+            <h3>Lichtprofil</h3>
+            <p>Setze das Tempo und den Verbrauch deines Runs.</p>
+          </div>
+          <aside class="onboarding-buddy-tip" data-buddy-key="light">
+            <img alt="Buddy erklärt das Lichtprofil" loading="eager">
+            <p>Mehr Licht bringt mehr Tempo, erhöht aber auch Verbrauch und Stressdruck.</p>
+          </aside>
+          <div class="onboarding-option-grid">
+            <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupLight" data-setup-value="medium" data-description="Solider Lichtstandard für stabile Runs." data-effect="Balance · Kontrolle · sicher" data-icon="light">
+              <span class="onboarding-icon onboarding-icon--light" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">Medium Light</span><span class="onboarding-card-badge badge">Kontrolle</span></span><span class="onboarding-card-description">Solider Lichtstandard für stabile Runs.</span><span class="onboarding-card-effect setup-option-effect">Balance · Kontrolle · sicher</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+            <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupLight" data-setup-value="high" data-description="Mehr Output, aber höherer Stressdruck." data-effect="Peak · Verbrauch · Druck" data-icon="light">
+              <span class="onboarding-icon onboarding-icon--light" aria-hidden="true"></span>
+              <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title">High Output</span><span class="onboarding-card-badge subtitle">Riskant</span></span><span class="onboarding-card-description">Mehr Output, aber höherer Stressdruck.</span><span class="onboarding-card-effect setup-option-effect">Peak · Verbrauch · Druck</span></span>
+              <span class="onboarding-card-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="run-builder-step run-builder-step--summary" data-onboarding-step-panel="5" data-step-title="Summary">
+          <div class="run-builder-copy">
+            <span class="run-builder-eyebrow">Schritt 6</span>
+            <h3>Dein Run ist bereit.</h3>
+            <p>Prüfe dein Setup und starte die Simulation.</p>
+          </div>
+          <aside class="onboarding-buddy-tip onboarding-buddy-tip--summary" data-buddy-key="summary">
+            <img alt="Buddy bestätigt die Run-Zusammenfassung" loading="eager">
+            <p>Dein Run ist bereit. Prüfe kurz dein Setup und starte dann die Simulation.</p>
+          </aside>
+          <section class="setup-strategy-card run-builder-summary-card">
+            <div class="setup-strategy-top">
+              <h3 class="figma-section-head">Run-Profil</h3>
+              <strong id="setupStrategyTag" class="setup-strategy-tag" data-tone="balanced">Ausgewogen</strong>
+            </div>
+            <span class="onboarding-icon onboarding-icon--profile" aria-hidden="true"></span>
+            <strong id="setupStrategyTitle" class="setup-strategy-title">Balanced Control</strong>
+            <p id="setupStrategyDescription" class="sheet-note">Solider Kontroll-Run mit guter Fehlertoleranz und ohne harte Peaks.</p>
+            <p id="setupStrategyTradeoff" class="setup-strategy-tradeoff">Kein extremer Vorteil, aber auch keine große Sollbruchstelle.</p>
+            <div id="setupStrategyLoadout" class="setup-strategy-loadout">Hybrid · Soil Medium · Medium Light · Mode: Indoor Run</div>
+          </section>
+          <div class="run-builder-summary-grid" aria-label="Gewähltes Setup">
+            <article data-summary-select="setupPotSize"><span class="onboarding-icon onboarding-icon--pot summary-setup-media" aria-hidden="true"></span><small>Topf</small><strong id="onboardingSummaryPot">2 Liter (S)</strong></article>
+            <article data-summary-select="setupGenetics"><span class="onboarding-icon onboarding-icon--genetics summary-setup-media" aria-hidden="true"></span><small>Genetik</small><strong id="onboardingSummaryGenetics">Hybrid</strong></article>
+            <article data-summary-select="setupMode"><span class="onboarding-icon onboarding-icon--setup summary-setup-media" aria-hidden="true"></span><small>Setup</small><strong id="onboardingSummaryMode">Indoor</strong></article>
+            <article data-summary-select="setupMedium"><span class="onboarding-icon onboarding-icon--substrate summary-setup-media" aria-hidden="true"></span><small>Substrat</small><strong id="onboardingSummaryMedium">Erde</strong></article>
+            <article data-summary-select="setupLight"><span class="onboarding-icon onboarding-icon--light summary-setup-media" aria-hidden="true"></span><small>Licht</small><strong id="onboardingSummaryLight">Medium Light</strong></article>
+          </div>
+        </section>
+      </div>
+
+      <div class="figma-onboarding-actions run-builder-footer">
+        <button id="setupBackBtn" class="ghost-btn" type="button" disabled aria-disabled="true">Zurück</button>
+        <button id="setupPresetBtn" class="ghost-btn setup-preset-btn" type="button" disabled aria-disabled="true" title="Preset wird später aktiviert">Preset</button>
+        <button id="setupNextBtn" class="action-btn action-primary" type="button">Weiter</button>
+        <button id="startRunBtn" class="action-btn action-primary hidden" type="button">Run starten</button>
       </div>
 
       <div class="setup-hidden-selects" aria-hidden="true">
