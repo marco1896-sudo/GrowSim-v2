@@ -103,6 +103,19 @@ function cacheUi() {
   ui.harvestForecastTrend = document.getElementById('harvestForecastTrend');
   ui.harvestForecastScore = document.getElementById('harvestForecastScore');
   ui.harvestForecastQuality = document.getElementById('harvestForecastQuality');
+  ui.harvestAnalysisSheet = document.getElementById('harvestAnalysisSheet');
+  ui.harvestAnalysisProjectedValue = document.getElementById('harvestAnalysisProjectedValue');
+  ui.harvestAnalysisQualityValue = document.getElementById('harvestAnalysisQualityValue');
+  ui.harvestAnalysisTrendValue = document.getElementById('harvestAnalysisTrendValue');
+  ui.harvestAnalysisUsedValue = document.getElementById('harvestAnalysisUsedValue');
+  ui.harvestAnalysisProgressFill = document.getElementById('harvestAnalysisProgressFill');
+  ui.harvestAnalysisMaxValue = document.getElementById('harvestAnalysisMaxValue');
+  ui.harvestAnalysisRecoverableValue = document.getElementById('harvestAnalysisRecoverableValue');
+  ui.harvestAnalysisLostValue = document.getElementById('harvestAnalysisLostValue');
+  ui.harvestAnalysisPositiveList = document.getElementById('harvestAnalysisPositiveList');
+  ui.harvestAnalysisNegativeList = document.getElementById('harvestAnalysisNegativeList');
+  ui.harvestAnalysisRecommendationsList = document.getElementById('harvestAnalysisRecommendationsList');
+  ui.harvestAnalysisDetailsBtn = document.getElementById('harvestAnalysisDetailsBtn');
   ui.healthRing = document.getElementById('healthRing');
   ui.stressRing = document.getElementById('stressRing');
   ui.waterRing = document.getElementById('waterRing');
@@ -152,6 +165,7 @@ function cacheUi() {
   ui.envCtrlAirflow = document.getElementById('envCtrlAirflow');
   ui.envCtrlNightTemp = document.getElementById('envCtrlNightTemp');
   ui.envCtrlNightHumidity = document.getElementById('envCtrlNightHumidity');
+  ui.envCtrlPpfd = document.getElementById('envCtrlPpfd');
   ui.envCtrlDayVpd = document.getElementById('envCtrlDayVpd');
   ui.envCtrlNightVpd = document.getElementById('envCtrlNightVpd');
   ui.envCtrlFanMax = document.getElementById('envCtrlFanMax');
@@ -161,8 +175,7 @@ function cacheUi() {
   ui.envCtrlRamp = document.getElementById('envCtrlRamp');
   ui.envCtrlTransition = document.getElementById('envCtrlTransition');
   ui.envCtrlVpdEnabled = document.getElementById('envCtrlVpdEnabled');
-  ui.envCtrlPh = document.getElementById('envCtrlPh');
-  ui.envCtrlEc = document.getElementById('envCtrlEc');
+  ui.envCtrlPpfdOut = document.getElementById('envCtrlPpfdOut');
 
   ui.backdrop = document.getElementById('sheetBackdrop');
   ui.careSheet = document.getElementById('careSheet');
@@ -419,11 +432,7 @@ function bindUi() {
   }
   if (ui.harvestForecastWidget) {
     ui.harvestForecastWidget.addEventListener('click', () => {
-      if (typeof openHarvestAnalysis === 'function') {
-        openHarvestAnalysis();
-        return;
-      }
-      onRunSummaryAnalyzeClick();
+      openSheet('harvestAnalysis');
     });
   }
 
@@ -449,6 +458,7 @@ function getEnvironmentStepperSize(controlKey, inputNode) {
     nightTemperatureC: 0.5,
     humidityPercent: 1,
     nightHumidityPercent: 1,
+    ppfdTarget: 25,
     airflowPercent: 5,
     fanMaxPercent: 5,
     dayVpdKpa: 0.05,
@@ -457,8 +467,7 @@ function getEnvironmentStepperSize(controlKey, inputNode) {
     humidityBufferPercent: 1,
     vpdBufferKpa: 0.01,
     rampPercentPerMinute: 1,
-    transitionMinutes: 5,
-    ph: 0.1
+    transitionMinutes: 5
   };
   if (Object.prototype.hasOwnProperty.call(steppedControls, controlKey)) {
     return steppedControls[controlKey];
@@ -746,6 +755,10 @@ function bindHomeScreenEvents(controller = null) {
     if (event.key !== 'Escape') {
       return;
     }
+    if (state && state.ui && state.ui.openSheet === 'harvestAnalysis') {
+      closeSheet();
+      return;
+    }
     if (!state || !state.ui || !state.ui.activeStatPopup) {
       return;
     }
@@ -762,12 +775,23 @@ function bindHomeScreenEvents(controller = null) {
     });
   }
 
+  if (ui.harvestAnalysisDetailsBtn) {
+    ui.harvestAnalysisDetailsBtn.addEventListener('click', () => {
+      if (typeof openHarvestAnalysis === 'function') {
+        openHarvestAnalysis();
+        return;
+      }
+      openSheet('dashboard');
+    });
+  }
+
   const controlBindings = [
     { node: ui.envCtrlTemp, key: 'temperatureC' },
     { node: ui.envCtrlHumidity, key: 'humidityPercent' },
     { node: ui.envCtrlAirflow, key: 'airflowPercent' },
     { node: ui.envCtrlNightTemp, key: 'nightTemperatureC' },
     { node: ui.envCtrlNightHumidity, key: 'nightHumidityPercent' },
+    { node: ui.envCtrlPpfd, key: 'ppfdTarget' },
     { node: ui.envCtrlDayVpd, key: 'dayVpdKpa' },
     { node: ui.envCtrlNightVpd, key: 'nightVpdKpa' },
     { node: ui.envCtrlFanMax, key: 'fanMaxPercent' },
@@ -775,8 +799,7 @@ function bindHomeScreenEvents(controller = null) {
     { node: ui.envCtrlHumidityBuffer, key: 'humidityBufferPercent' },
     { node: ui.envCtrlVpdBuffer, key: 'vpdBufferKpa' },
     { node: ui.envCtrlRamp, key: 'rampPercentPerMinute' },
-    { node: ui.envCtrlTransition, key: 'transitionMinutes' },
-    { node: ui.envCtrlPh, key: 'ph' }
+    { node: ui.envCtrlTransition, key: 'transitionMinutes' }
   ];
   for (const binding of controlBindings) {
     if (!binding.node) continue;
@@ -1483,7 +1506,7 @@ function ensureRequiredUi() {
     'plantImage', 'nextEventValue', 'growthImpulseValue', 'simTimeValue', 'boostUsageText',
     'overlayBurn', 'overlayDefMg', 'overlayDefN', 'overlayMoldWarning', 'overlayPestMites', 'overlayPestThrips',
     'careActionBtn', 'careBoostActionBtn', 'climateStabilizeActionBtn', 'analyzeActionBtn', 'boostActionBtn', 'skipNightActionBtn', 'openDiagnosisBtn', 'menuToggleBtn',
-    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'leaderboardSheet', 'diagnosisSheet', 'imprintSheet', 'privacySheet', 'statDetailSheet', 'supportSheet', 'coinShopSheet', 'insufficientCoinsSheet',
+    'backdrop', 'careSheet', 'eventSheet', 'dashboardSheet', 'harvestAnalysisSheet', 'leaderboardSheet', 'diagnosisSheet', 'imprintSheet', 'privacySheet', 'statDetailSheet', 'supportSheet', 'coinShopSheet', 'insufficientCoinsSheet',
     'statDetailTitle', 'statDetailValue', 'statDetailStatus', 'statDetailExplanation', 'statDetailRecommendation', 'statDetailPrimaryBtn',
     'menuBackdrop', 'gameMenu', 'menuCloseBtn', 'menuHeaderCloseBtn', 'menuNewRunBtn', 'menuRescueBtn', 'menuRescueSubtext',
     'menuStatsBtn', 'menuPushBtn', 'menuPushStatus', 'menuLanguageBtn', 'menuSupportBtn', 'menuMissionsBtn', 'menuCoinShopBtn', 'menuAboutBtn', 'menuImprintBtn', 'menuPrivacyBtn',
@@ -1751,6 +1774,7 @@ function renderSheets() {
   toggleSheet(ui.climateSheet, activeSheet === 'climate');
   toggleSheet(ui.eventSheet, activeSheet === 'event');
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
+  toggleSheet(ui.harvestAnalysisSheet, activeSheet === 'harvestAnalysis');
   toggleSheet(ui.leaderboardSheet, activeSheet === 'leaderboard');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
   toggleSheet(ui.imprintSheet, activeSheet === 'imprint');
@@ -2402,6 +2426,8 @@ function openSheet(name) {
 
   if (name === 'dashboard') {
     renderAnalysisPanel(true);
+  } else if (name === 'harvestAnalysis' && typeof renderHarvestAnalysisSheet === 'function') {
+    renderHarvestAnalysisSheet(true);
   } else if (name === 'event') {
     renderEventSheet();
   } else if (name === 'care') {

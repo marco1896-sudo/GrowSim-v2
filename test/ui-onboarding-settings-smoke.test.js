@@ -188,6 +188,62 @@ async function main() {
     await page.click('#startRunBtn');
     await page.waitForFunction(() => document.getElementById('landing').classList.contains('hidden'));
 
+    await page.locator('#harvestForecastWidget').evaluate((node) => node.click());
+    await page.waitForFunction(() => {
+      const harvestSheet = document.getElementById('harvestAnalysisSheet');
+      const dashboardSheet = document.getElementById('dashboardSheet');
+      return harvestSheet
+        && !harvestSheet.classList.contains('hidden')
+        && dashboardSheet
+        && dashboardSheet.classList.contains('hidden');
+    });
+    const harvestPopupState = await page.evaluate(() => ({
+      openSheet: window.__gsState && window.__gsState.ui ? window.__gsState.ui.openSheet : null,
+      projected: document.getElementById('harvestAnalysisProjectedValue')?.textContent.trim() || null,
+      quality: document.getElementById('harvestAnalysisQualityValue')?.textContent.trim() || null,
+      trend: document.getElementById('harvestAnalysisTrendValue')?.textContent.trim() || null,
+      hasRecommendation: Boolean(document.querySelector('#harvestAnalysisRecommendationsList > *'))
+    }));
+    assert.strictEqual(harvestPopupState.openSheet, 'harvestAnalysis', 'harvest mini card should open the compact harvest analysis sheet');
+    assert.ok(/g$/.test(harvestPopupState.projected || ''), 'harvest popup should render a gram forecast');
+    assert.ok((harvestPopupState.quality || '').includes('/'), 'harvest popup should render quality grade and score');
+    assert.ok(/steigt|stabil|f.llt/.test(harvestPopupState.trend || ''), 'harvest popup should render a readable trend');
+    assert.strictEqual(harvestPopupState.hasRecommendation, true, 'harvest popup should render recommendations or fallback guidance');
+
+    await page.click('#harvestAnalysisSheet [data-close-sheet]');
+    await page.waitForFunction(() => document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
+    await page.locator('#harvestForecastWidget').evaluate((node) => node.click());
+    await page.waitForFunction(() => !document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
+    await page.click('#harvestAnalysisSheet .harvest-analysis-understood-btn');
+    await page.waitForFunction(() => document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
+    await page.locator('#harvestForecastWidget').evaluate((node) => node.click());
+    await page.waitForFunction(() => !document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
+    await page.click('#harvestAnalysisDetailsBtn');
+    await page.waitForFunction(() => {
+      const harvestSheet = document.getElementById('harvestAnalysisSheet');
+      const dashboardSheet = document.getElementById('dashboardSheet');
+      return harvestSheet
+        && harvestSheet.classList.contains('hidden')
+        && dashboardSheet
+        && !dashboardSheet.classList.contains('hidden');
+    });
+    await page.click('#dashboardSheet [data-close-sheet]');
+    await page.evaluate(() => {
+      const run = window.getCanonicalRun ? window.getCanonicalRun() : state.run;
+      if (run && run.harvest) {
+        run.harvest.currentForecast = null;
+      }
+    });
+    await page.locator('#harvestForecastWidget').evaluate((node) => node.click());
+    await page.waitForFunction(() => !document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
+    const fallbackPopupState = await page.evaluate(() => ({
+      projected: document.getElementById('harvestAnalysisProjectedValue')?.textContent.trim() || null,
+      dashboardOpen: document.getElementById('dashboardSheet')?.classList.contains('hidden') === false
+    }));
+    assert.ok(/g$/.test(fallbackPopupState.projected || ''), 'harvest popup should survive missing forecast data with a gram fallback');
+    assert.strictEqual(fallbackPopupState.dashboardOpen, false, 'fallback harvest popup open should still not open dashboard');
+    await page.click('#harvestAnalysisSheet [data-close-sheet]');
+
     await page.evaluate(() => {
       state.ui.openSheet = 'diagnosis';
       renderAll();

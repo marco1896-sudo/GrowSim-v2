@@ -183,9 +183,9 @@
             </section>
           </div>
         </article>
-        <button id="harvestForecastWidget" class="harvest-mini-card" type="button" aria-label="Harvest-Analyse öffnen">
+        <button id="harvestForecastWidget" class="harvest-mini-card" type="button" aria-label="Ernte-Analyse öffnen">
           <span class="harvest-mini-card__line harvest-mini-card__line--primary">
-            <span class="harvest-mini-card__label">Harvest</span>
+            <span class="harvest-mini-card__label" data-i18n="harvest.analysis_popup.mini_label">Ernte</span>
             <strong id="harvestForecastScore">--</strong>
           </span>
           <span class="harvest-mini-card__line harvest-mini-card__line--secondary">
@@ -353,11 +353,11 @@
         <section class="home-action-panel" aria-label="Schnellaktionen">
           <button id="boostActionBtn" class="home-action-btn" type="button" aria-label="Boost aktivieren" data-i18n-aria-label="home.boost">
             <span class="home-boost-tag">x24</span>
-            <img id="boostActionIcon" class="home-action-icon" src="assets/ui/icons/icon_boost_neu.png" width="56" height="56" alt="" aria-hidden="true">
+            <img id="boostActionIcon" class="home-action-icon home-action-icon--boost" src="assets/ui/icons/icon_x24boost_1.png" width="96" height="96" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true" data-i18n="home.boost">Boost</span>
           </button>
           <button id="careBoostActionBtn" class="home-action-btn hidden" type="button" aria-label="Care Boost aktivieren" data-i18n-aria-label="home.care_boost">
-            <img id="careBoostActionIcon" class="home-action-icon" src="assets/ui/icons/time_boost.png" width="56" height="56" alt="" aria-hidden="true">
+            <img id="careBoostActionIcon" class="home-action-icon home-action-icon--boost" src="assets/ui/icons/icon_x24boost_1.png" width="96" height="96" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true" data-i18n="home.care_boost">Care Boost</span>
           </button>
           <button id="climateStabilizeActionBtn" class="home-action-btn hidden" type="button" aria-label="Climate Stabilize aktivieren" data-i18n-aria-label="home.climate_stabilize">
@@ -366,19 +366,19 @@
           </button>
           <button id="skipNightActionBtn" class="home-action-btn" type="button" aria-label="Night Shift aktivieren" data-i18n-aria-label="home.night_shift">
             <span class="home-action-cost-tag" aria-hidden="true">25C</span>
-            <img id="skipNightActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_nightshift.png" width="56" height="56" alt="" aria-hidden="true">
+            <img id="skipNightActionIcon" class="home-action-icon home-action-icon--nightshift home-side-icon" src="assets/ui/icons/icon_nightshift_1.png" width="96" height="96" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true" data-i18n="home.night_shift">Night Shift</span>
           </button>
           <button id="eventsActionBtn" class="home-action-btn" type="button" aria-label="Events öffnen" data-i18n-aria-label="home.events">
-            <img id="eventsActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_events_neu.png" width="56" height="56" alt="" aria-hidden="true">
+            <img id="eventsActionIcon" class="home-action-icon home-action-icon--event home-side-icon" src="assets/ui/icons/icon_events_1.png" width="96" height="96" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true" data-i18n="home.events">Events</span>
           </button>
           <button id="analyzeActionBtn" class="home-action-btn" type="button" aria-label="Analyse öffnen" data-i18n-aria-label="home.analyze">
-            <img id="analyzeActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_analyse_neu.png" width="56" height="56" alt="" aria-hidden="true">
+            <img id="analyzeActionIcon" class="home-action-icon home-action-icon--analysis home-side-icon" src="assets/ui/icons/icon_analyse_1.png" width="96" height="96" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true" data-i18n="home.analyze">Analyse</span>
           </button>
           <button id="careActionBtn" class="home-action-btn" type="button" aria-label="Pflege öffnen" data-i18n-aria-label="home.care">
-            <img id="careActionIcon" class="home-action-icon home-side-icon" src="assets/ui/icons/icon_pflege_neu.png" width="56" height="56" alt="" aria-hidden="true">
+            <img id="careActionIcon" class="home-action-icon home-action-icon--care home-side-icon" src="assets/ui/icons/icon_pflege_1.png" width="96" height="96" alt="" aria-hidden="true">
             <span class="home-action-title" aria-hidden="true" data-i18n="home.care">Pflege</span>
           </button>
         </section>
@@ -427,40 +427,44 @@
     <div class="climate-sheet__shell">
       <header class="sheet-header climate-sheet__header">
         <div class="climate-sheet__heading">
-          <span class="climate-sheet__eyebrow">Environment Control</span>
-          <h2>Klima &amp; Umwelt</h2>
-          <p class="climate-sheet__subtitle">Status zuerst. Hauptentscheidungen vorne. Feintuning nur dort, wo es wirklich hilft.</p>
+          <span class="climate-sheet__eyebrow" data-i18n="climate.sheet.live_values">Live-Werte</span>
+          <h2 data-i18n="climate.sheet.title">Klima &amp; Umwelt</h2>
+          <p class="climate-sheet__subtitle" data-i18n="climate.sheet.subtitle">Steuerung, Zielwerte &amp; Licht</p>
         </div>
         <button class="sheet-close climate-sheet__close" data-close-sheet type="button" aria-label="Schließen">Schließen</button>
       </header>
 
       <div class="sheet-content climate-sheet__content">
-        <section class="climate-status" aria-label="Status">
+        <section class="climate-status climate-status--premium" aria-label="Status">
           <div class="climate-status__hero">
             <div class="climate-status__copy">
-              <span class="climate-section__eyebrow">Status</span>
+              <span class="climate-section__eyebrow" data-i18n="climate.sheet.status">Status</span>
               <strong id="climateLiveVpdValue" class="climate-status__value">1.2 kPa</strong>
               <div class="climate-status__row">
-                <span class="climate-status__label">VPD</span>
+                <span class="climate-status__label" data-i18n="climate.sheet.vpd_current">VPD aktuell</span>
                 <span id="climateStatusBadge" class="climate-status__badge">Optimal</span>
               </div>
               <p id="climateStatusText" class="climate-status__text">VPD liegt im Zielkorridor und die Umgebung wirkt stabil.</p>
             </div>
             <div class="climate-status__meta">
               <div class="climate-metric">
-                <span class="climate-metric__label">Temperatur</span>
+                <span class="climate-metric__label" data-i18n="climate.sheet.temperature_current">Temperatur aktuell</span>
                 <strong id="climateLiveTempValue" class="climate-metric__value">25.3°C</strong>
               </div>
               <div class="climate-metric">
-                <span class="climate-metric__label">Luftfeuchte</span>
+                <span class="climate-metric__label" data-i18n="climate.sheet.humidity_current">Luftfeuchte aktuell</span>
                 <strong id="climateLiveHumidityValue" class="climate-metric__value">61%</strong>
               </div>
               <div class="climate-metric">
-                <span class="climate-metric__label">PPFD</span>
+                <span class="climate-metric__label" data-i18n="climate.sheet.ppfd_current">PPFD aktuell</span>
                 <strong id="climateLiveLightValue" class="climate-metric__value">720 PPFD</strong>
               </div>
               <div class="climate-metric">
-                <span class="climate-metric__label">Luftstrom</span>
+                <span class="climate-metric__label" data-i18n="climate.sheet.light_power">Lichtstrom</span>
+                <strong id="climateLiveLightPowerValue" class="climate-metric__value">82%</strong>
+              </div>
+              <div class="climate-metric">
+                <span class="climate-metric__label">Airflow</span>
                 <strong id="climateLiveAirflowValue" class="climate-metric__value">Good</strong>
               </div>
             </div>
@@ -469,31 +473,31 @@
 
         <section class="climate-section climate-section--mode" aria-label="Modus und Steuerlogik">
           <div class="climate-section__top">
-            <span class="climate-section__eyebrow">Steuerlogik</span>
-            <strong class="climate-section__title">Modus &amp; Kontext</strong>
+            <span class="climate-section__eyebrow" data-i18n="climate.sheet.context">Kontext</span>
+            <strong class="climate-section__title" data-i18n="climate.sheet.mode">Modus &amp; Kontext</strong>
           </div>
 
           <div class="climate-mode-grid">
             <article class="climate-mode-card climate-mode-card--wide">
-              <span class="climate-mode-card__label">Controller</span>
+              <span class="climate-mode-card__label" data-i18n="climate.sheet.controller_mode">Controller-Modus</span>
               <div class="climate-segmented climate-segmented--static" aria-label="Controller-Modus">
-                <span id="climateModeAuto" class="climate-segmented__item">Auto</span>
-                <span id="climateModeManual" class="climate-segmented__item">Manuell</span>
+                <span id="climateModeAuto" class="climate-segmented__item" data-i18n="climate.sheet.auto">Auto</span>
+                <span id="climateModeManual" class="climate-segmented__item" data-i18n="climate.sheet.manual">Manuell</span>
               </div>
               <small id="climateModeSummary" class="climate-note">Direkte Zielwerte aktiv. Auto-Regelung nur bei Bedarf einschalten.</small>
             </article>
 
             <article class="climate-mode-card">
-              <span class="climate-mode-card__label">Tagesprofil</span>
+              <span class="climate-mode-card__label" data-i18n="climate.sheet.day_profile">Tagesprofil</span>
               <div class="climate-segmented climate-segmented--static" aria-label="Tagesprofil">
-                <span id="climateModeDay" class="climate-segmented__item">Tag</span>
-                <span id="climateModeNight" class="climate-segmented__item">Nacht</span>
+                <span id="climateModeDay" class="climate-segmented__item" data-i18n="climate.sheet.day">Tag</span>
+                <span id="climateModeNight" class="climate-segmented__item" data-i18n="climate.sheet.night">Nacht</span>
               </div>
               <small id="climateModeCycleInfo" class="climate-note">Aktuell Tagphase.</small>
             </article>
 
             <article class="climate-mode-card">
-              <span class="climate-mode-card__label">Pflanzenphase</span>
+              <span class="climate-mode-card__label" data-i18n="climate.sheet.plant_phase">Pflanzenphase</span>
               <strong id="climatePhaseValue" class="climate-mode-card__value">Vegetativ</strong>
               <small class="climate-note">Nur als Kontext, keine zusätzliche Logik.</small>
             </article>
@@ -502,13 +506,13 @@
 
         <section class="climate-section climate-section--quick" aria-label="Schnelle Steuerung">
           <div class="climate-section__top">
-            <span class="climate-section__eyebrow">Kernsteuerung</span>
-            <strong class="climate-section__title">Schnelle Entscheidungen</strong>
+            <span class="climate-section__eyebrow" data-i18n="climate.sheet.targets">Zielwerte</span>
+            <strong class="climate-section__title" data-i18n="climate.sheet.targets">Zielwerte</strong>
           </div>
 
           <div class="climate-primary-grid">
             <article class="climate-primary-card climate-control-module">
-              <span class="climate-primary-card__label">Tag Temp Ziel</span>
+              <span class="climate-primary-card__label" data-i18n="climate.sheet.day_temperature">Temperatur Tag Ziel</span>
               <strong id="envCtrlTempOut" class="climate-primary-card__value">25.0°C</strong>
               <div class="climate-inline-controls" role="group" aria-label="Tag Temperatur Ziel">
                 <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlTemp" data-env-step-key="temperatureC" data-env-step-dir="-1" aria-label="Tag Temperatur verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
@@ -518,7 +522,7 @@
             </article>
 
             <article class="climate-primary-card climate-control-module">
-              <span class="climate-primary-card__label">Tag rF Ziel</span>
+              <span class="climate-primary-card__label" data-i18n="climate.sheet.day_humidity">Luftfeuchte Tag Ziel</span>
               <strong id="envCtrlHumidityOut" class="climate-primary-card__value">60%</strong>
               <div class="climate-inline-controls" role="group" aria-label="Tag Luftfeuchte Ziel">
                 <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlHumidity" data-env-step-key="humidityPercent" data-env-step-dir="-1" aria-label="Tag Luftfeuchte verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
@@ -528,7 +532,7 @@
             </article>
 
             <article class="climate-primary-card climate-control-module">
-              <span class="climate-primary-card__label">Nacht Temp</span>
+              <span class="climate-primary-card__label" data-i18n="climate.sheet.night_temperature">Temperatur Nacht Ziel</span>
               <strong id="envCtrlNightTempOut" class="climate-primary-card__value">21.0°C</strong>
               <div class="climate-inline-controls" role="group" aria-label="Nacht Temperatur Ziel">
                 <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlNightTemp" data-env-step-key="nightTemperatureC" data-env-step-dir="-1" aria-label="Nacht Temperatur verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
@@ -538,7 +542,7 @@
             </article>
 
             <article class="climate-primary-card climate-control-module">
-              <span class="climate-primary-card__label">Nacht rF</span>
+              <span class="climate-primary-card__label" data-i18n="climate.sheet.night_humidity">Luftfeuchte Nacht Ziel</span>
               <strong id="envCtrlNightHumidityOut" class="climate-primary-card__value">55%</strong>
               <div class="climate-inline-controls" role="group" aria-label="Nacht Luftfeuchte Ziel">
                 <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlNightHumidity" data-env-step-key="nightHumidityPercent" data-env-step-dir="-1" aria-label="Nacht Luftfeuchte verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
@@ -546,19 +550,29 @@
               </div>
               <input id="envCtrlNightHumidity" class="climate-native-input" type="range" min="30" max="90" step="1" value="55">
             </article>
+
+            <article class="climate-primary-card climate-primary-card--light climate-control-module">
+              <span class="climate-primary-card__label" data-i18n="climate.sheet.ppfd_target">PPFD Ziel</span>
+              <strong id="envCtrlPpfdOut" class="climate-primary-card__value">620 PPFD</strong>
+              <div class="climate-inline-controls" role="group" aria-label="PPFD Ziel">
+                <button class="climate-inline-control climate-inline-control--prev" type="button" data-env-step-input="envCtrlPpfd" data-env-step-key="ppfdTarget" data-env-step-dir="-1" aria-label="PPFD Ziel verringern"><svg class="climate-inline-control__icon climate-inline-control__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-inline-control climate-inline-control--next" type="button" data-env-step-input="envCtrlPpfd" data-env-step-key="ppfdTarget" data-env-step-dir="1" aria-label="PPFD Ziel erhöhen"><svg class="climate-inline-control__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
+              </div>
+              <input id="envCtrlPpfd" class="climate-native-input" type="range" min="100" max="1600" step="25" value="620">
+            </article>
           </div>
         </section>
 
         <section class="climate-section climate-section--regulation" aria-label="Regelung">
           <div class="climate-section__top">
-            <span class="climate-section__eyebrow">Regelung</span>
-            <strong class="climate-section__title">Controller &amp; Luftführung</strong>
+            <span class="climate-section__eyebrow" data-i18n="climate.sheet.controller_airflow">Controller &amp; Luftführung</span>
+            <strong class="climate-section__title" data-i18n="climate.sheet.controller_airflow">Controller &amp; Luftführung</strong>
           </div>
 
           <div class="climate-regulation-grid">
             <div class="climate-toggle-card climate-toggle-card--primary">
               <div class="climate-toggle-card__copy">
-                <span class="climate-toggle-card__label">VPD Ziel aktiv</span>
+                <span class="climate-toggle-card__label" data-i18n="climate.sheet.vpd_enabled">VPD Ziel aktiv</span>
                 <strong id="envCtrlVpdEnabledOut" class="climate-toggle-card__value">Aus</strong>
               </div>
               <label class="climate-switch" for="envCtrlVpdEnabled">
@@ -569,7 +583,33 @@
 
             <article class="climate-control-card">
               <div class="climate-control-card__head">
-                <span class="climate-control-card__label">Min. Abluft</span>
+                <span class="climate-control-card__label" data-i18n="climate.sheet.vpd_day_target">VPD Ziel Tag</span>
+                <strong id="envCtrlDayVpdOut" class="climate-control-card__value">1.3 kPa</strong>
+              </div>
+              <small class="climate-note">Aktiver VPD-Korridor in der Tagphase.</small>
+              <div class="climate-stepper climate-stepper--compact" role="group" aria-label="Tag VPD">
+                <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="-1" aria-label="Tag VPD verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="1" aria-label="Tag VPD erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
+              </div>
+              <input id="envCtrlDayVpd" class="climate-native-input" type="range" min="0.2" max="3.0" step="0.01" value="1.3">
+            </article>
+
+            <article class="climate-control-card">
+              <div class="climate-control-card__head">
+                <span class="climate-control-card__label" data-i18n="climate.sheet.vpd_night_target">VPD Ziel Nacht</span>
+                <strong id="envCtrlNightVpdOut" class="climate-control-card__value">1.1 kPa</strong>
+              </div>
+              <small class="climate-note">Ruhiger Korridor während der Dunkelphase.</small>
+              <div class="climate-stepper climate-stepper--compact" role="group" aria-label="Nacht VPD">
+                <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="-1" aria-label="Nacht VPD verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
+                <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="1" aria-label="Nacht VPD erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
+              </div>
+              <input id="envCtrlNightVpd" class="climate-native-input" type="range" min="0.2" max="3.0" step="0.01" value="1.1">
+            </article>
+
+            <article class="climate-control-card">
+              <div class="climate-control-card__head">
+                <span class="climate-control-card__label" data-i18n="climate.sheet.min_airflow">Min. Abluft</span>
                 <strong id="envCtrlAirflowOut" class="climate-control-card__value">70%</strong>
               </div>
               <small class="climate-note">Grundlast für den Luftaustausch.</small>
@@ -582,7 +622,7 @@
 
             <article class="climate-control-card">
               <div class="climate-control-card__head">
-                <span class="climate-control-card__label">Max. Abluft</span>
+                <span class="climate-control-card__label" data-i18n="climate.sheet.max_airflow">Max. Abluft</span>
                 <strong id="envCtrlFanMaxOut" class="climate-control-card__value">100%</strong>
               </div>
               <small class="climate-note">Obergrenze für starke Gegensteuerung.</small>
@@ -595,7 +635,7 @@
 
             <article class="climate-control-card">
               <div class="climate-control-card__head">
-                <span class="climate-control-card__label">Übergang</span>
+                <span class="climate-control-card__label" data-i18n="climate.sheet.transition">Übergang</span>
                 <strong id="envCtrlTransitionOut" class="climate-control-card__value">45 min</strong>
               </div>
               <small class="climate-note">Wechsel zwischen Tag- und Nachtprofil.</small>
@@ -611,34 +651,14 @@
         <details class="climate-advanced-panel">
           <summary class="climate-advanced-panel__summary">
             <span class="climate-advanced-panel__copy">
-              <span class="climate-section__eyebrow">Erweitert</span>
-              <strong class="climate-section__title">Feintuning</strong>
+              <span class="climate-section__eyebrow" data-i18n="climate.sheet.advanced">Advanced</span>
+              <strong class="climate-section__title" data-i18n="climate.sheet.advanced">Feintuning</strong>
             </span>
             <span class="climate-advanced-panel__hint">sekundär</span>
           </summary>
 
           <div class="climate-advanced-panel__body">
             <div class="climate-compact-grid">
-              <article class="climate-compact-card">
-                <span class="climate-compact-card__label">Tag VPD</span>
-                <strong id="envCtrlDayVpdOut" class="climate-compact-card__value">1.3 kPa</strong>
-                <div class="climate-stepper climate-stepper--compact">
-                  <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="-1" aria-label="Tag VPD verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
-                  <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlDayVpd" data-env-step-key="dayVpdKpa" data-env-step-dir="1" aria-label="Tag VPD erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
-                </div>
-                <input id="envCtrlDayVpd" class="climate-native-input" type="range" min="0.2" max="3.0" step="0.01" value="1.3">
-              </article>
-
-              <article class="climate-compact-card">
-                <span class="climate-compact-card__label">Nacht VPD</span>
-                <strong id="envCtrlNightVpdOut" class="climate-compact-card__value">1.1 kPa</strong>
-                <div class="climate-stepper climate-stepper--compact">
-                  <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="-1" aria-label="Nacht VPD verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
-                  <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlNightVpd" data-env-step-key="nightVpdKpa" data-env-step-dir="1" aria-label="Nacht VPD erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
-                </div>
-                <input id="envCtrlNightVpd" class="climate-native-input" type="range" min="0.2" max="3.0" step="0.01" value="1.1">
-              </article>
-
               <article class="climate-compact-card">
                 <span class="climate-compact-card__label">Temp Buffer</span>
                 <strong id="envCtrlTempBufferOut" class="climate-compact-card__value">0.7°C</strong>
@@ -681,32 +701,6 @@
             </div>
           </div>
         </details>
-
-        <section class="climate-section climate-section--root" aria-label="Wurzelsteuerung">
-          <div class="climate-section__top">
-            <span class="climate-section__eyebrow">Wurzelzone</span>
-            <strong class="climate-section__title">Medium &amp; Lösung</strong>
-          </div>
-
-          <div class="climate-root-grid">
-            <article class="climate-root-card">
-              <span class="climate-root-card__label">pH</span>
-              <strong id="envCtrlPhOut" class="climate-root-card__value">6.0</strong>
-              <small class="climate-note">Direkt im Zielbereich nachfuehren.</small>
-              <div class="climate-stepper climate-stepper--compact" role="group" aria-label="pH Ziel">
-                <button class="climate-stepper__btn climate-stepper__btn--prev" type="button" data-env-step-input="envCtrlPh" data-env-step-key="ph" data-env-step-dir="-1" aria-label="pH verringern"><svg class="climate-stepper__icon climate-stepper__icon--prev" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg></button>
-                <button class="climate-stepper__btn climate-stepper__btn--next" type="button" data-env-step-input="envCtrlPh" data-env-step-key="ph" data-env-step-dir="1" aria-label="pH erhöhen"><svg class="climate-stepper__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></button>
-              </div>
-              <input id="envCtrlPh" class="climate-native-input" type="range" min="5.0" max="7.0" step="0.1" value="6.0">
-            </article>
-
-            <article class="climate-root-card climate-root-card--readonly">
-              <span class="climate-root-card__label">EC</span>
-              <strong id="envCtrlEcOut" class="climate-root-card__value">1.4 mS</strong>
-              <small id="envCtrlEcHint" class="climate-note">nur über mineralisches Düngen</small>
-            </article>
-          </div>
-        </section>
       </div>
     </div>
   </section>
@@ -782,6 +776,81 @@
         <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button" title="Zeigt aktuelle Diagnose-Treiber und die empfohlene nächste Pflege.">Treiber</button>
         <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button" title="Kein Dateiexport. Zeigt den letzten protokollierten Run-Verlauf.">Verlauf</button>
       </div>
+    </div>
+  </section>
+
+  <section id="harvestAnalysisSheet" class="bottom-sheet harvest-analysis-sheet hidden" aria-hidden="true">
+    <div class="harvest-analysis-modal">
+      <header class="harvest-analysis-modal__header">
+        <div>
+          <h2 data-i18n="harvest.analysis_popup.title">Ernte-Analyse</h2>
+          <p data-i18n="harvest.analysis_popup.subtitle">Prognose &amp; Potenzial</p>
+        </div>
+        <button class="sheet-close harvest-analysis-modal__close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen">X</button>
+      </header>
+
+      <div class="harvest-analysis-modal__content">
+        <section class="harvest-analysis-popup-hero" aria-live="polite">
+          <span class="harvest-analysis-popup-hero__label" data-i18n="harvest.analysis_popup.projected_yield">Ertragsprognose</span>
+          <strong id="harvestAnalysisProjectedValue" class="harvest-analysis-popup-hero__value">-- g</strong>
+          <div class="harvest-analysis-popup-hero__meta">
+            <span id="harvestAnalysisQualityValue">--</span>
+            <span id="harvestAnalysisTrendValue">--</span>
+          </div>
+        </section>
+
+        <section class="harvest-analysis-popup-section harvest-analysis-popup-section--potential">
+          <div class="harvest-analysis-popup-section__head">
+            <strong data-i18n="harvest.analysis_popup.potential">Potenzial</strong>
+            <span id="harvestAnalysisUsedValue">--%</span>
+          </div>
+          <div class="harvest-analysis-progress" aria-hidden="true">
+            <span id="harvestAnalysisProgressFill" class="harvest-analysis-progress__fill" style="--harvest-analysis-progress: 0%;"></span>
+          </div>
+          <div class="harvest-analysis-potential-grid">
+            <div>
+              <span data-i18n="harvest.analysis_popup.max_possible">Maximal möglich</span>
+              <strong id="harvestAnalysisMaxValue">-- g</strong>
+            </div>
+            <div>
+              <span data-i18n="harvest.analysis_popup.recoverable">Noch rettbar</span>
+              <strong id="harvestAnalysisRecoverableValue">-- g</strong>
+            </div>
+            <div>
+              <span data-i18n="harvest.analysis_popup.lost">Bereits verloren</span>
+              <strong id="harvestAnalysisLostValue">-- g</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="harvest-analysis-popup-section">
+          <div class="harvest-analysis-popup-section__head">
+            <strong data-i18n="harvest.analysis_popup.breakdown">Analyse-Breakdown</strong>
+          </div>
+          <div class="harvest-analysis-driver-columns">
+            <div>
+              <h3 data-i18n="harvest.analysis_popup.positive_drivers">Positive Treiber</h3>
+              <div id="harvestAnalysisPositiveList" class="harvest-analysis-driver-list"></div>
+            </div>
+            <div>
+              <h3 data-i18n="harvest.analysis_popup.negative_drivers">Negative Treiber</h3>
+              <div id="harvestAnalysisNegativeList" class="harvest-analysis-driver-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="harvest-analysis-popup-section harvest-analysis-popup-section--recommendations">
+          <div class="harvest-analysis-popup-section__head">
+            <strong data-i18n="harvest.analysis_popup.recommendations">Empfehlungen</strong>
+          </div>
+          <div id="harvestAnalysisRecommendationsList" class="harvest-analysis-recommendation-list"></div>
+        </section>
+      </div>
+
+      <footer class="harvest-analysis-modal__footer">
+        <button class="action-btn action-primary harvest-analysis-understood-btn" data-close-sheet type="button" data-i18n="harvest.analysis_popup.understood">Verstanden</button>
+        <button id="harvestAnalysisDetailsBtn" class="ghost-btn harvest-analysis-details-btn" type="button" data-i18n="harvest.analysis_popup.details">Details ansehen</button>
+      </footer>
     </div>
   </section>
 

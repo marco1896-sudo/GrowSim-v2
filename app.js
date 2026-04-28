@@ -4759,20 +4759,20 @@ function refreshHarvestForecast(options = {}) {
 function formatHarvestTrendLabel(trend) {
   switch (String(trend || 'stable')) {
     case 'rising':
-      return 'Steigt';
+      return i18nT('harvest.analysis_popup.trend_rising');
     case 'falling':
-      return 'Fällt';
+      return i18nT('harvest.analysis_popup.trend_falling');
     default:
-      return 'Stabil';
+      return i18nT('harvest.analysis_popup.trend_stable');
   }
 }
 
 function formatHarvestTrendSymbol(trend) {
   switch (String(trend || 'stable')) {
     case 'rising':
-      return '↑';
+      return '↗';
     case 'falling':
-      return '↓';
+      return '↘';
     default:
       return '→';
   }
@@ -4828,6 +4828,180 @@ function buildHarvestHeroCopy(forecast) {
     title: 'Schwieriger Lauf, aber offen',
     subtitle: 'Ein Teil ist bereits weg, trotzdem kann ein ruhiger letzter Hebel den Abschluss noch deutlich aufwerten.'
   };
+}
+
+function getHarvestAnalysisQualityGrade(qualityScore, forecast = null) {
+  const harvestApi = getHarvestApi();
+  if (harvestApi && typeof harvestApi.qualityTierLabel === 'function' && forecast && forecast.projectedQualityTier) {
+    return harvestApi.qualityTierLabel(forecast.projectedQualityTier);
+  }
+  const score = clamp(Number(qualityScore) || 0, 0, 100);
+  if (score >= 90) return 'S';
+  if (score >= 80) return 'A';
+  if (score >= 68) return 'B';
+  if (score >= 54) return 'C';
+  if (score >= 40) return 'D';
+  return 'E';
+}
+
+function buildHarvestFallbackRecommendation(status = {}, environment = {}) {
+  const rows = [];
+  const water = Number(status.water) || 0;
+  const nutrition = Number(status.nutrition) || 0;
+  const stress = Number(status.stress) || 0;
+  const risk = Number(status.risk) || 0;
+  const instability = Number(environment.instabilityScore || environment.tent && environment.tent.instabilityScore) || 0;
+
+  if (water < 42 || water > 78) rows.push({ id: 'water', label: i18nT('harvest.analysis_popup.recommendation_water'), gainText: '' });
+  if (nutrition < 40 || nutrition > 78) rows.push({ id: 'nutrition', label: i18nT('harvest.analysis_popup.recommendation_nutrients'), gainText: '' });
+  if (stress > 46) rows.push({ id: 'stress', label: i18nT('harvest.analysis_popup.recommendation_stress'), gainText: '' });
+  if (risk > 48 || instability > 34) rows.push({ id: 'climate', label: i18nT('harvest.analysis_popup.recommendation_climate'), gainText: '' });
+  if (!rows.length) rows.push({ id: 'stable', label: i18nT('harvest.analysis_popup.recommendation_stable'), gainText: '' });
+  return rows.slice(0, 3);
+}
+
+function buildHarvestAnalysisPopupModel(snapshot = state) {
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : state;
+  const refreshed = source === state ? refreshHarvestForecast({ force: true }) : null;
+  const forecast = refreshed || getCanonicalHarvestForecast(source) || {};
+  const status = source.status && typeof source.status === 'object' ? source.status : {};
+  const environment = source.climate && typeof source.climate === 'object' ? source.climate : {};
+  const harvestScore = clamp(Number(forecast.harvestScore) || Number(forecast.yieldScore) || 0, 0, 100);
+  const qualityScore = clamp(Number(forecast.qualityScore) || 0, 0, 100);
+  const maxGrams = 100;
+  // v1 fallback: no canonical gram yield exists yet, so UI grams map 1:1 from the normalized harvest score.
+  const projectedGrams = Math.round(harvestScore);
+  const positiveDrivers = (Array.isArray(forecast.positiveDrivers) ? forecast.positiveDrivers : []).slice(0, 3).map((item) => {
+    const impact = Math.max(1, Math.round(Number(item && item.impact) || 0));
+    return {
+      id: String(item && item.id || 'positive'),
+      label: normalizeHarvestUiLabel(item && item.label || i18nT('harvest.strong_factor')),
+      impact,
+      impactText: `+${impact} g`,
+      reason: normalizeHarvestUiText(item && item.reason || i18nT('harvest.reason_supported_forecast'))
+    };
+  });
+  const negativeDrivers = (Array.isArray(forecast.negativeDrivers) ? forecast.negativeDrivers : []).slice(0, 3).map((item) => {
+    const impact = Math.max(1, Math.round(Number(item && item.impact) || 0));
+    return {
+      id: String(item && item.id || 'negative'),
+      label: normalizeHarvestUiLabel(item && item.label || i18nT('harvest.brake_factor')),
+      impact,
+      impactText: `-${impact} g`,
+      reason: normalizeHarvestUiText(item && item.reason || i18nT('harvest.reason_slowed_forecast'))
+    };
+  });
+  const opportunities = Array.isArray(forecast.recoveryOpportunities) ? forecast.recoveryOpportunities.slice(0, 3) : [];
+  const recommendations = opportunities.map((item) => ({
+    id: String(item && item.id || 'opportunity'),
+    label: normalizeHarvestUiLabel(item && item.label || i18nT('harvest.next_improvement'), 'opportunity'),
+    gainText: describeHarvestGainRange(item)
+  }));
+  const recoverableGrams = Math.round((Array.isArray(forecast.recoveryOpportunities) ? forecast.recoveryOpportunities : [])
+    .reduce((sum, item) => sum + Math.max(0, Number(item && (item.estimatedGainMax ?? item.impact)) || 0), 0));
+  const lostGrams = Math.round((Array.isArray(forecast.lockedLosses) ? forecast.lockedLosses : [])
+    .reduce((sum, item) => sum + Math.max(0, Number(item && item.impact) || (Number(item && item.severity) || 0) * 4), 0));
+  const trend = ['rising', 'falling', 'stable'].includes(String(forecast.forecastTrend)) ? String(forecast.forecastTrend) : 'stable';
+
+  return {
+    projectedGrams,
+    maxGrams,
+    usedPercent: Math.round(clamp(harvestScore, 0, 100)),
+    qualityScore: Math.round(qualityScore),
+    qualityGrade: getHarvestAnalysisQualityGrade(qualityScore, forecast),
+    trend,
+    trendLabel: formatHarvestTrendLabel(trend),
+    trendSymbol: formatHarvestTrendSymbol(trend),
+    recoverableGrams,
+    lostGrams,
+    positiveDrivers,
+    negativeDrivers,
+    recommendations: (recommendations.length ? recommendations : buildHarvestFallbackRecommendation(status, environment)).slice(0, 3)
+  };
+}
+
+function renderHarvestDriverRows(container, rows, mode) {
+  if (!container) return;
+  container.replaceChildren();
+  const safeRows = Array.isArray(rows) ? rows : [];
+  if (!safeRows.length) {
+    const empty = document.createElement('p');
+    empty.className = 'harvest-analysis-empty';
+    empty.textContent = i18nT('harvest.analysis_popup.empty_drivers');
+    container.appendChild(empty);
+    return;
+  }
+  for (const row of safeRows) {
+    const item = document.createElement('article');
+    item.className = `harvest-analysis-driver-row harvest-analysis-driver-row--${mode || 'neutral'}`;
+    item.innerHTML = `
+      <span>${escapeHtml(String(row.label || ''))}</span>
+      <strong>${escapeHtml(String(row.impactText || ''))}</strong>
+    `;
+    container.appendChild(item);
+  }
+}
+
+function renderHarvestRecommendationRows(container, rows) {
+  if (!container) return;
+  container.replaceChildren();
+  const safeRows = Array.isArray(rows) ? rows.slice(0, 3) : [];
+  if (!safeRows.length) {
+    const empty = document.createElement('p');
+    empty.className = 'harvest-analysis-empty';
+    empty.textContent = i18nT('harvest.analysis_popup.empty_recommendations');
+    container.appendChild(empty);
+    return;
+  }
+  for (const row of safeRows) {
+    const item = document.createElement('article');
+    item.className = 'harvest-analysis-recommendation-row';
+    const gain = row.gainText ? `<strong>${escapeHtml(String(row.gainText))}</strong>` : '';
+    item.innerHTML = `<span>${escapeHtml(String(row.label || ''))}</span>${gain}`;
+    container.appendChild(item);
+  }
+}
+
+function renderHarvestAnalysisSheet(force = false) {
+  if (!force && state.ui.openSheet !== 'harvestAnalysis') {
+    return;
+  }
+  if (!ui.harvestAnalysisSheet) {
+    warnMissingUiOnce('harvestAnalysisSheet');
+    return;
+  }
+  const model = buildHarvestAnalysisPopupModel(state);
+  if (ui.harvestAnalysisProjectedValue) {
+    ui.harvestAnalysisProjectedValue.textContent = `${model.projectedGrams} g`;
+  }
+  if (ui.harvestAnalysisQualityValue) {
+    ui.harvestAnalysisQualityValue.textContent = i18nT('harvest.analysis_popup.quality_value', {
+      grade: model.qualityGrade,
+      score: model.qualityScore
+    });
+  }
+  if (ui.harvestAnalysisTrendValue) {
+    ui.harvestAnalysisTrendValue.textContent = `${model.trendSymbol} ${model.trendLabel}`;
+    ui.harvestAnalysisTrendValue.dataset.trend = model.trend;
+  }
+  if (ui.harvestAnalysisUsedValue) {
+    ui.harvestAnalysisUsedValue.textContent = i18nT('harvest.analysis_popup.used_value', { percent: model.usedPercent });
+  }
+  if (ui.harvestAnalysisProgressFill) {
+    ui.harvestAnalysisProgressFill.style.setProperty('--harvest-analysis-progress', `${model.usedPercent}%`);
+  }
+  if (ui.harvestAnalysisMaxValue) {
+    ui.harvestAnalysisMaxValue.textContent = `${model.maxGrams} g`;
+  }
+  if (ui.harvestAnalysisRecoverableValue) {
+    ui.harvestAnalysisRecoverableValue.textContent = `+${model.recoverableGrams} g`;
+  }
+  if (ui.harvestAnalysisLostValue) {
+    ui.harvestAnalysisLostValue.textContent = `-${model.lostGrams} g`;
+  }
+  renderHarvestDriverRows(ui.harvestAnalysisPositiveList, model.positiveDrivers, 'positive');
+  renderHarvestDriverRows(ui.harvestAnalysisNegativeList, model.negativeDrivers, 'negative');
+  renderHarvestRecommendationRows(ui.harvestAnalysisRecommendationsList, model.recommendations);
 }
 
 function formatHarvestImpactLabel(impact, mode = 'neutral') {
@@ -12133,6 +12307,13 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   setText('climateLiveLightValue', panel.envLightText || '');
   setText('climateLiveAirflowValue', panel.envAirflowText || '');
   const liveReadout = deriveEnvironmentReadout(state);
+  const lightDevice = state.climate && state.climate.devices && state.climate.devices.light
+    ? state.climate.devices.light
+    : {};
+  const lightPowerPercent = Number.isFinite(Number(lightDevice.targetPercent))
+    ? Math.round(Number(lightDevice.targetPercent))
+    : (Number.isFinite(Number(lightDevice.outputPercent)) ? Math.round(Number(lightDevice.outputPercent)) : 0);
+  setText('climateLiveLightPowerValue', `${lightPowerPercent}%`);
   const homeClimateBadge = document.getElementById('homeClimateBadge');
   const homeClimateCard = document.getElementById('homeClimateCard');
   const climateSheet = document.getElementById('climateSheet');
@@ -12208,9 +12389,7 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
     },
     ppfd: {
       label: 'PPFD',
-      value: Number.isFinite(Number(climateController.ppfdTarget))
-        ? Number(climateController.ppfdTarget)
-        : Number(liveReadout && liveReadout.ppfd),
+      value: getEnvironmentPpfdTarget(state),
       unit: 'PPFD',
       decimals: 0
     }
@@ -12226,12 +12405,7 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   setText('homeClimateMainValue', activeValueText);
   setText('homeClimateMainUnit', activeField.unit);
   setText('homeClimateMainMode', autoModeActive ? 'AUTO' : 'MANUAL');
-  setText(
-    'homeClimateStatusText',
-    selectedField === 'ppfd' && !Number.isFinite(Number(climateController.ppfdTarget))
-      ? 'LIVE'
-      : 'TARGET'
-  );
+  setText('homeClimateStatusText', 'TARGET');
   const selectedFieldProgress = {
     temp: clamp((activeValue - 16) / (36 - 16), 0, 1),
     humidity: clamp((activeValue - 30) / (90 - 30), 0, 1),
@@ -12292,6 +12466,7 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   setText('envCtrlAirflowOut', `${controls.fan.minPercent}%`);
   setText('envCtrlNightTempOut', `${controls.targets.night.temperatureC.toFixed(1)}°C`);
   setText('envCtrlNightHumidityOut', `${controls.targets.night.humidityPercent}%`);
+  setText('envCtrlPpfdOut', `${getEnvironmentPpfdTarget(state)} PPFD`);
   setText('envCtrlDayVpdOut', `${controls.targets.day.vpdKpa.toFixed(2)} kPa`);
   setText('envCtrlNightVpdOut', `${controls.targets.night.vpdKpa.toFixed(2)} kPa`);
   setText('envCtrlFanMaxOut', `${controls.fan.maxPercent}%`);
@@ -12301,15 +12476,13 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   setText('envCtrlRampOut', `${Math.round(controls.ramp.percentPerMinute)}%/min`);
   setText('envCtrlTransitionOut', `${Math.round(controls.transitionMinutes)} min`);
   setText('envCtrlVpdEnabledOut', controls.vpdTargetEnabled ? 'An' : 'Aus');
-  setText('envCtrlPhOut', `${controls.ph.toFixed(1)}`);
-  setText('envCtrlEcOut', `${controls.ec.toFixed(1)} mS`);
-  setText('envCtrlEcHint', 'nur über mineralisches Düngen');
 
   setRange('envCtrlTemp', controls.targets.day.temperatureC.toFixed(1));
   setRange('envCtrlHumidity', controls.targets.day.humidityPercent);
   setRange('envCtrlAirflow', controls.fan.minPercent);
   setRange('envCtrlNightTemp', controls.targets.night.temperatureC.toFixed(1));
   setRange('envCtrlNightHumidity', controls.targets.night.humidityPercent);
+  setRange('envCtrlPpfd', getEnvironmentPpfdTarget(state));
   setRange('envCtrlDayVpd', controls.targets.day.vpdKpa.toFixed(2));
   setRange('envCtrlNightVpd', controls.targets.night.vpdKpa.toFixed(2));
   setRange('envCtrlFanMax', controls.fan.maxPercent);
@@ -12322,7 +12495,6 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
   if (vpdToggle && document.activeElement !== vpdToggle) {
     vpdToggle.checked = Boolean(controls.vpdTargetEnabled);
   }
-  setRange('envCtrlPh', controls.ph.toFixed(1));
 }
 
 window.GrowSimHomeRenderer = Object.freeze({
@@ -12348,9 +12520,21 @@ function getEnvironmentControlDefaults() {
     vpdTargetEnabled: false,
     fan: { minPercent: 70, maxPercent: 100 },
     buffers: { temperatureC: 0.7, humidityPercent: 4, vpdKpa: 0.12 },
+    light: { ppfdTarget: 620 },
     ramp: { percentPerMinute: 18 },
     transitionMinutes: 45
   };
+}
+
+function normalizeEnvironmentPpfdTarget(value, fallback = 620) {
+  const raw = Number.isFinite(Number(value)) ? Number(value) : Number(fallback);
+  return clampInt(Math.round(raw / 25) * 25, 100, 1600);
+}
+
+function getEnvironmentPpfdTarget(sourceState = state) {
+  const controls = ensureEnvironmentControls(sourceState);
+  const baseFallback = typeof resolveLightPpfdBase === 'function' ? resolveLightPpfdBase(sourceState) : 620;
+  return normalizeEnvironmentPpfdTarget(controls && controls.light ? controls.light.ppfdTarget : null, baseFallback);
 }
 
 function ensureEnvironmentControls(sourceState = state) { const target = sourceState && typeof sourceState === 'object' ? sourceState : state;
@@ -12387,6 +12571,14 @@ function ensureEnvironmentControls(sourceState = state) { const target = sourceS
   if (!controls.ramp || typeof controls.ramp !== 'object') controls.ramp = {};
   controls.ramp.percentPerMinute = clamp(Number(controls.ramp.percentPerMinute || 18), 1, 100);
   controls.transitionMinutes = clamp(Number(controls.transitionMinutes || 45), 1, 180);
+  if (!controls.light || typeof controls.light !== 'object') controls.light = {};
+  const legacyPpfdTarget = target.ui && target.ui.homeClimateController
+    ? Number(target.ui.homeClimateController.ppfdTarget)
+    : NaN;
+  controls.light.ppfdTarget = normalizeEnvironmentPpfdTarget(
+    Number.isFinite(Number(controls.light.ppfdTarget)) ? Number(controls.light.ppfdTarget) : legacyPpfdTarget,
+    typeof resolveLightPpfdBase === 'function' ? resolveLightPpfdBase(target) : 620
+  );
   return controls;
 }
 
@@ -12405,15 +12597,12 @@ function ensureHomeClimateControllerState(sourceState = state) {
   }
   if (!target.ui.homeClimateController || typeof target.ui.homeClimateController !== 'object') {
     target.ui.homeClimateController = {
-      selectedField: 'temp',
-      ppfdTarget: null
+      selectedField: 'temp'
     };
   }
   const controller = target.ui.homeClimateController;
   const selectedField = String(controller.selectedField || 'temp').trim();
   controller.selectedField = HOME_CLIMATE_CONTROLLER_FIELDS.includes(selectedField) ? selectedField : 'temp';
-  const ppfdTarget = Number(controller.ppfdTarget);
-  controller.ppfdTarget = Number.isFinite(ppfdTarget) ? clampInt(ppfdTarget, 100, 1600) : null;
   return controller;
 }
 
@@ -12451,14 +12640,11 @@ function stepHomeClimateControllerValue(direction = 1) {
     return;
   }
 
-  const liveReadout = deriveEnvironmentReadout(state);
-  const basePpfd = Number.isFinite(Number(controller.ppfdTarget))
-    ? Number(controller.ppfdTarget)
-    : Number(liveReadout && liveReadout.ppfd);
+  const controls = ensureEnvironmentControls(state);
+  const basePpfd = getEnvironmentPpfdTarget(state);
   const nextPpfd = clampInt(Math.round((Number(basePpfd || 500) + (stepDirection * 25)) / 25) * 25, 100, 1600);
-  controller.ppfdTarget = nextPpfd;
-  renderHud();
-  schedulePersistState();
+  controls.light.ppfdTarget = nextPpfd;
+  onEnvironmentControlInput('ppfdTarget', nextPpfd);
 }
 
 window.GrowSimHomeClimateController = Object.freeze({
@@ -12509,6 +12695,10 @@ function onEnvironmentControlInput(controlKey, rawValue) {
   if (controlKey === 'vpdBufferKpa') controls.buffers.vpdKpa = clamp(value, 0.02, 0.6);
   if (controlKey === 'rampPercentPerMinute') controls.ramp.percentPerMinute = clamp(value, 1, 100);
   if (controlKey === 'transitionMinutes') controls.transitionMinutes = clamp(value, 1, 180);
+  if (controlKey === 'ppfdTarget') {
+    if (!controls.light || typeof controls.light !== 'object') controls.light = {};
+    controls.light.ppfdTarget = normalizeEnvironmentPpfdTarget(value, typeof resolveLightPpfdBase === 'function' ? resolveLightPpfdBase(state) : 620);
+  }
   if (controlKey === 'ph') controls.ph = clamp(value, 5.0, 7.0);
   if (controlKey === 'ec') {
     addLog('action', 'EC ist nicht direkt regelbar. Nutze mineralische Düngung.', { attemptedValue: value });
@@ -12858,6 +13048,7 @@ function renderSheets() {
   toggleSheet(ui.climateSheet, activeSheet === 'climate');
   toggleSheet(ui.eventSheet, activeSheet === 'event');
   toggleSheet(ui.dashboardSheet, activeSheet === 'dashboard');
+  toggleSheet(ui.harvestAnalysisSheet, activeSheet === 'harvestAnalysis');
   toggleSheet(ui.diagnosisSheet, activeSheet === 'diagnosis');
   toggleSheet(ui.imprintSheet, activeSheet === 'imprint');
   toggleSheet(ui.privacySheet, activeSheet === 'privacy');
@@ -16353,6 +16544,9 @@ function openSheet(name) {
   if (name === 'dashboard') {
     refreshHarvestForecast({ force: true });
     renderAnalysisPanel(true);
+  } else if (name === 'harvestAnalysis') {
+    refreshHarvestForecast({ force: true });
+    renderHarvestAnalysisSheet(true);
   } else if (name === 'event') {
     renderEventSheet();
   } else if (name === 'care') {
@@ -17325,18 +17519,19 @@ function renderHarvestMiniCard(harvestVmInput, nodes = {}) {
     widgetNode.classList.toggle('hidden', !visible);
     widgetNode.setAttribute('aria-hidden', String(!visible));
     widgetNode.dataset.trend = trend;
-    const score = visible ? String(harvestVm.score || 0) : '--';
+    const score = visible ? `${String(harvestVm.score || 0)} g` : '--';
     const quality = String(harvestVm.qualityText || '--');
-    widgetNode.setAttribute('aria-label', `Harvest-Analyse öffnen. Forecast ${score}. Qualität ${quality}.`);
+    widgetNode.setAttribute('aria-label', `${i18nT('harvest.analysis_popup.title')} öffnen. ${i18nT('harvest.analysis_popup.projected_yield')} ${score}. ${quality}.`);
   }
   if (trendNode) {
-    trendNode.textContent = String(harvestVm.trendSymbol || formatHarvestTrendSymbol(trend));
+    const trendLabel = String(harvestVm.trendLabel || formatHarvestTrendLabel(trend)).toLowerCase();
+    trendNode.textContent = `${String(harvestVm.trendSymbol || formatHarvestTrendSymbol(trend))} ${trendLabel}`;
     trendNode.dataset.trend = trend;
     trendNode.setAttribute('title', String(harvestVm.trendLabel || formatHarvestTrendLabel(trend)));
     trendNode.setAttribute('aria-label', `Trend ${String(harvestVm.trendLabel || formatHarvestTrendLabel(trend))}`);
   }
   if (scoreNode) {
-    scoreNode.textContent = visible ? String(harvestVm.score || 0) : '--';
+    scoreNode.textContent = visible ? `${String(harvestVm.score || 0)} g` : '--';
   }
   if (qualityNode) {
     qualityNode.textContent = String(harvestVm.qualityText || '--');

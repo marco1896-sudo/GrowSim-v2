@@ -528,7 +528,18 @@ function normalizeEnvironmentState(snapshot = state) {
   }
 
   if (!s.environmentControls || typeof s.environmentControls !== 'object') {
-    s.environmentControls = { temperatureC: 25, humidityPercent: 60, airflowPercent: 70, ph: 6.0, ec: 1.4 };
+    s.environmentControls = {
+      temperatureC: 25,
+      humidityPercent: 60,
+      airflowPercent: 70,
+      ph: 6.0,
+      ec: 1.4,
+      light: { ppfdTarget: 620 }
+    };
+  } else if (!s.environmentControls.light || typeof s.environmentControls.light !== 'object') {
+    s.environmentControls.light = { ppfdTarget: 620 };
+  } else if (!Number.isFinite(Number(s.environmentControls.light.ppfdTarget))) {
+    s.environmentControls.light.ppfdTarget = 620;
   }
   if (!s.climate || typeof s.climate !== 'object') {
     s.climate = {};
@@ -1517,7 +1528,7 @@ function resetStateToDefaults() {
   const climateApi = getClimateApi();
   state.environmentControls = climateApi && typeof climateApi.getEnvironmentControlDefaults === 'function'
     ? climateApi.getEnvironmentControlDefaults()
-    : { temperatureC: 25, humidityPercent: 60, airflowPercent: 70, ph: 6.0, ec: 1.4 };
+    : { temperatureC: 25, humidityPercent: 60, airflowPercent: 70, ph: 6.0, ec: 1.4, light: { ppfdTarget: 620 } };
   state.climate = {};
   state.history = { actions: [], events: [], system: [], systemLog: [], telemetry: [] };
   state.debug = { enabled: false, showInternalTicks: false, forceDaytime: false };

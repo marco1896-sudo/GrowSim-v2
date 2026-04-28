@@ -146,6 +146,9 @@ function getEnvironmentControlDefaults() {
       humidityPercent: 4,
       vpdKpa: 0.12
     },
+    light: {
+      ppfdTarget: resolveLightPpfdBase(state)
+    },
     ramp: {
       percentPerMinute: 18
     },
@@ -219,6 +222,14 @@ function normalizeEnvironmentControls(sourceState = state) {
   if (!controls.ramp || typeof controls.ramp !== 'object') controls.ramp = {};
   controls.ramp.percentPerMinute = clamp(Number.isFinite(Number(controls.ramp.percentPerMinute)) ? Number(controls.ramp.percentPerMinute) : defaults.ramp.percentPerMinute, 1, 100);
   controls.transitionMinutes = clamp(Number.isFinite(Number(controls.transitionMinutes)) ? Number(controls.transitionMinutes) : defaults.transitionMinutes, 1, 180);
+  if (!controls.light || typeof controls.light !== 'object') controls.light = {};
+  const legacyPpfdTarget = target.ui && target.ui.homeClimateController
+    ? Number(target.ui.homeClimateController.ppfdTarget)
+    : NaN;
+  controls.light.ppfdTarget = normalizePpfdTarget(
+    Number.isFinite(Number(controls.light.ppfdTarget)) ? Number(controls.light.ppfdTarget) : legacyPpfdTarget,
+    resolveLightPpfdBase(target)
+  );
 
   controls.temperatureC = controls.targets.day.temperatureC;
   controls.humidityPercent = controls.targets.day.humidityPercent;
@@ -238,14 +249,29 @@ function resolveLightPpfdBase(sourceState = state) {
   return 620;
 }
 
+function normalizePpfdTarget(value, fallback = 620) {
+  const raw = Number.isFinite(Number(value)) ? Number(value) : Number(fallback);
+  return clampInt(Math.round(raw / 25) * 25, 100, 1600);
+}
+
+function resolveLightPpfdTarget(sourceState = state) {
+  const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const controls = activeState.environmentControls && typeof activeState.environmentControls === 'object'
+    ? activeState.environmentControls
+    : {};
+  const lightControls = controls.light && typeof controls.light === 'object' ? controls.light : {};
+  return normalizePpfdTarget(lightControls.ppfdTarget, resolveLightPpfdBase(activeState));
+}
+
 function resolveLightOutputPercent(sourceState = state, simulationLike = state.simulation) {
   if (!(simulationLike && simulationLike.isDaytime)) {
     return 0;
   }
+  const ppfdBase = resolveLightPpfdBase(sourceState);
+  const ppfdTarget = resolveLightPpfdTarget(sourceState);
   const setupLight = String(sourceState && sourceState.setup && sourceState.setup.light || 'medium').toLowerCase();
-  if (setupLight === 'high') return 100;
-  if (setupLight === 'low') return 62;
-  return 82;
+  const baseOutput = setupLight === 'high' ? 100 : (setupLight === 'low' ? 62 : 82);
+  return clamp((ppfdTarget / Math.max(1, ppfdBase)) * baseOutput, 0, 100);
 }
 
 function isIndoorClimateMode(sourceState = state) {
@@ -414,9 +440,9 @@ function buildEnvironmentReadoutFromState(
   const activeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
   const controls = normalizeEnvironmentControls(activeState);
   const climate = ensureClimateState(activeState, statusLike, simulationLike, plantLike);
-  const ppfdBase = resolveLightPpfdBase(activeState);
+  const ppfdTarget = resolveLightPpfdTarget(activeState);
   const ppfd = (simulationLike && simulationLike.isDaytime)
-    ? Math.round(clamp(ppfdBase + (Number(statusLike && statusLike.growth || 0) * 1.4), 320, 1100))
+    ? Math.round(clamp(ppfdTarget + (Number(statusLike && statusLike.growth || 0) * 1.4), 100, 1600))
     : 45;
 
   if (climate && climate.tent) {

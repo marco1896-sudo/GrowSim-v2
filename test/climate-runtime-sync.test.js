@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 const path = require('path');
 const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
-const { installAuthHarness: setupAuthHarness } = require('./support/browserRuntime');
+const { clearClientStorage, installAuthHarness: setupAuthHarness } = require('./support/browserRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
 const HOST = '127.0.0.1';
@@ -22,9 +22,12 @@ async function waitForRuntime(page) {
 }
 
 async function clearPersistence(page) {
-  await page.goto(APP_URL, { waitUntil: 'networkidle' });
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+  await clearClientStorage(page, { preserveLocalStorageKeys: [AUTH_TOKEN_KEY] });
   await page.evaluate(async (stateKey) => {
     localStorage.removeItem(stateKey);
+    window.__gsStorageHasWrittenLocalState = false;
+    window.__gsStorageExternalClearDetected = false;
     if (typeof indexedDB !== 'undefined') {
       await new Promise((resolve) => {
         const request = indexedDB.deleteDatabase('grow-sim-db');
@@ -38,13 +41,9 @@ async function clearPersistence(page) {
 
 async function startFreshRun(page) {
   await clearPersistence(page);
-  await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForSelector('#landing:not(.hidden)');
-  await page.click('#startRunBtn');
-  await page.waitForFunction(() => {
-    const node = document.getElementById('landing');
-    return Boolean(node && node.classList.contains('hidden'));
-  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__gsBootOk === true && typeof window.onStartRun === 'function');
+  await page.evaluate(() => window.onStartRun());
   await waitForRuntime(page);
   await page.waitForTimeout(1200);
 }
@@ -59,6 +58,7 @@ async function scenarioImmediateClimateRuntimeSync(page) {
       demand: JSON.parse(JSON.stringify(window.__gsState.climate.runtime.controlDemand || {})),
       targets: {
         exhaust: Number(window.__gsState.climate.devices?.exhaust?.targetPercent || 0),
+        light: Number(window.__gsState.climate.devices?.light?.targetPercent || 0),
         heater: Number(window.__gsState.climate.devices?.heater?.targetPercent || 0),
         humidifier: Number(window.__gsState.climate.devices?.humidifier?.targetPercent || 0),
         dehumidifier: Number(window.__gsState.climate.devices?.dehumidifier?.targetPercent || 0)
@@ -69,6 +69,7 @@ async function scenarioImmediateClimateRuntimeSync(page) {
     onEnvironmentControlInput('temperatureC', 27.5);
     onEnvironmentControlInput('humidityPercent', 52);
     onEnvironmentControlInput('dayVpdKpa', 1.48);
+    onEnvironmentControlInput('ppfdTarget', 725);
     onEnvironmentControlInput('nightVpdKpa', 0.92);
     onEnvironmentControlInput('fanMaxPercent', 88);
 
@@ -82,6 +83,7 @@ async function scenarioImmediateClimateRuntimeSync(page) {
         demand: JSON.parse(JSON.stringify(window.__gsState.climate.runtime.controlDemand || {})),
         targets: {
           exhaust: Number(window.__gsState.climate.devices?.exhaust?.targetPercent || 0),
+          light: Number(window.__gsState.climate.devices?.light?.targetPercent || 0),
           heater: Number(window.__gsState.climate.devices?.heater?.targetPercent || 0),
           humidifier: Number(window.__gsState.climate.devices?.humidifier?.targetPercent || 0),
           dehumidifier: Number(window.__gsState.climate.devices?.dehumidifier?.targetPercent || 0)
@@ -89,7 +91,8 @@ async function scenarioImmediateClimateRuntimeSync(page) {
         ui: {
           vpdEnabled: String(document.getElementById('envCtrlVpdEnabledOut')?.textContent || ''),
           dayVpd: String(document.getElementById('envCtrlDayVpdOut')?.textContent || ''),
-          temp: String(document.getElementById('envCtrlTempOut')?.textContent || '')
+          temp: String(document.getElementById('envCtrlTempOut')?.textContent || ''),
+          ppfd: String(document.getElementById('envCtrlPpfdOut')?.textContent || '')
         }
       }
     };
@@ -100,15 +103,18 @@ async function scenarioImmediateClimateRuntimeSync(page) {
   assert.strictEqual(result.after.controls.targets.day.humidityPercent, 52, 'day humidity should be committed');
   assert.strictEqual(result.after.controls.targets.day.vpdKpa, 1.48, 'day VPD target should be committed');
   assert.strictEqual(result.after.controls.targets.night.vpdKpa, 0.92, 'night VPD target should be committed');
+  assert.strictEqual(result.after.controls.light.ppfdTarget, 725, 'PPFD target should be committed');
   assert.strictEqual(result.after.demand.targetTemperatureC, 27.5, 'runtime demand should immediately use the new day temperature target');
   assert.strictEqual(result.after.demand.targetHumidityPercent, 52, 'runtime demand should immediately use the new day humidity target');
   assert.strictEqual(result.after.demand.targetVpdKpa, 1.48, 'runtime demand should immediately use the new day VPD target');
+  assert(result.after.targets.light > 0, 'daytime light target should be recomputed from PPFD target');
   assert.notDeepStrictEqual(result.after.targets, result.before.targets, 'device targets should be recomputed immediately after control input');
   assert.strictEqual(result.after.simTimeMs, result.before.simTimeMs, 'climate runtime sync must not advance simulation time');
   assert.strictEqual(result.after.tickCount, result.before.tickCount, 'climate runtime sync must not increment tick count');
   assert.strictEqual(result.after.machineState, result.before.machineState, 'climate runtime sync must not trigger event state changes');
   assert.strictEqual(result.after.ui.vpdEnabled, 'An', 'UI should reflect the committed VPD toggle');
   assert.strictEqual(result.after.ui.dayVpd, '1.48 kPa', 'UI should reflect the committed day VPD target');
+  assert.strictEqual(result.after.ui.ppfd, '725 PPFD', 'UI should reflect the committed PPFD target');
   assert.strictEqual(result.after.ui.temp, '27.5°C', 'UI should reflect the committed day temperature target');
 }
 
@@ -121,33 +127,41 @@ async function scenarioReloadPreservesActiveVpdTargets(page) {
     onEnvironmentControlInput('dayVpdKpa', 1.48);
     onEnvironmentControlInput('nightVpdKpa', 0.92);
     onEnvironmentControlInput('fanMaxPercent', 88);
+    onEnvironmentControlInput('ppfdTarget', 725);
     if (typeof persistState === 'function') {
+      window.__gsStorageHasWrittenLocalState = false;
+      window.__gsStorageExternalClearDetected = false;
       await persistState();
     }
   });
 
-  await page.reload({ waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForRuntime(page);
 
   const result = await page.evaluate(() => ({
     controls: JSON.parse(JSON.stringify(window.__gsState.environmentControls)),
     demand: JSON.parse(JSON.stringify(window.__gsState.climate.runtime.controlDemand || {})),
+    lightTarget: Number(window.__gsState.climate.devices?.light?.targetPercent || 0),
     ui: {
       vpdEnabled: String(document.getElementById('envCtrlVpdEnabledOut')?.textContent || ''),
       dayVpd: String(document.getElementById('envCtrlDayVpdOut')?.textContent || ''),
-      nightVpd: String(document.getElementById('envCtrlNightVpdOut')?.textContent || '')
+      nightVpd: String(document.getElementById('envCtrlNightVpdOut')?.textContent || ''),
+      ppfd: String(document.getElementById('envCtrlPpfdOut')?.textContent || '')
     }
   }));
 
   assert.strictEqual(result.controls.vpdTargetEnabled, true, 'reload should preserve active VPD mode');
   assert.strictEqual(result.controls.targets.day.vpdKpa, 1.48, 'reload should preserve the day VPD target');
   assert.strictEqual(result.controls.targets.night.vpdKpa, 0.92, 'reload should preserve the night VPD target');
+  assert.strictEqual(result.controls.light.ppfdTarget, 725, 'reload should preserve the PPFD target');
   assert.strictEqual(result.demand.targetTemperatureC, 27.5, 'reload runtime should use the persisted day temperature target');
   assert.strictEqual(result.demand.targetHumidityPercent, 52, 'reload runtime should use the persisted day humidity target');
   assert.strictEqual(result.demand.targetVpdKpa, 1.48, 'reload runtime should use the persisted day VPD target');
+  assert(result.lightTarget > 0, 'reload runtime should keep a light target derived from persisted PPFD');
   assert.strictEqual(result.ui.vpdEnabled, 'An', 'reload UI should show the persisted VPD toggle');
   assert.strictEqual(result.ui.dayVpd, '1.48 kPa', 'reload UI should show the persisted day VPD target');
   assert.strictEqual(result.ui.nightVpd, '0.92 kPa', 'reload UI should show the persisted night VPD target');
+  assert.strictEqual(result.ui.ppfd, '725 PPFD', 'reload UI should show the persisted PPFD target');
 }
 
 async function scenarioResumeKeepsClimateTargetsAuthoritative(page) {
@@ -157,6 +171,7 @@ async function scenarioResumeKeepsClimateTargetsAuthoritative(page) {
     onEnvironmentControlInput('temperatureC', 27.5);
     onEnvironmentControlInput('humidityPercent', 52);
     onEnvironmentControlInput('dayVpdKpa', 1.48);
+    onEnvironmentControlInput('ppfdTarget', 725);
 
     const before = {
       simTimeMs: Number(window.__gsState.simulation.simTimeMs || 0),
@@ -182,6 +197,7 @@ async function scenarioResumeKeepsClimateTargetsAuthoritative(page) {
   assert.strictEqual(result.after.controls.targets.day.temperatureC, 27.5, 'resume should keep the day temperature target');
   assert.strictEqual(result.after.controls.targets.day.humidityPercent, 52, 'resume should keep the day humidity target');
   assert.strictEqual(result.after.controls.targets.day.vpdKpa, 1.48, 'resume should keep the day VPD target');
+  assert.strictEqual(result.after.controls.light.ppfdTarget, 725, 'resume should keep the PPFD target');
   assert.strictEqual(result.after.demand.targetTemperatureC, 27.5, 'resume runtime should still target the day temperature');
   assert.strictEqual(result.after.demand.targetHumidityPercent, 52, 'resume runtime should still target the day humidity');
   assert.strictEqual(result.after.demand.targetVpdKpa, 1.48, 'resume runtime should still target the day VPD');
