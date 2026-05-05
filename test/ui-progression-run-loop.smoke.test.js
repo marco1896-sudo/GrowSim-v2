@@ -17,6 +17,37 @@ const CLIENT_HOST = HOST;
 let PORT = 0;
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
 
+async function rewindOnboardingToFirstStep(page) {
+  for (let index = 0; index < 6; index += 1) {
+    const disabled = await page.locator('#setupBackBtn').evaluate((node) => Boolean(node.disabled));
+    if (disabled) {
+      return;
+    }
+    await page.click('#setupBackBtn');
+  }
+}
+
+async function advanceOnboardingToSummary(page) {
+  for (let index = 0; index < 6; index += 1) {
+    const startVisible = await page.locator('#startRunBtn').evaluate((node) => (
+      !node.classList.contains('hidden')
+      && node.getAttribute('aria-hidden') === 'false'
+    ));
+    if (startVisible) {
+      return;
+    }
+    await page.click('#setupNextBtn');
+  }
+  await page.waitForFunction(() => {
+    const startButton = document.getElementById('startRunBtn');
+    return Boolean(
+      startButton
+      && !startButton.classList.contains('hidden')
+      && startButton.getAttribute('aria-hidden') === 'false'
+    );
+  }, null, { timeout: 10000 });
+}
+
 async function main() {
   const { server, port: resolvedPort } = await startStaticServer(ROOT, HOST);
   PORT = Number(resolvedPort || 0);
@@ -57,6 +88,8 @@ async function main() {
     assert.ok(initialStrategyPreview.title.length > 0, 'start flow should show a strategy title');
     assert.ok(initialStrategyPreview.tag.length > 0, 'start flow should show a strategy tag');
     assert.ok(initialStrategyPreview.loadout.length > 0, 'start flow should show a readable loadout summary');
+
+    await advanceOnboardingToSummary(page);
 
     await page.click('#startRunBtn');
     await page.waitForFunction(() => window.getCanonicalRun().status === 'active');
@@ -250,8 +283,13 @@ async function main() {
       }
       renderAll();
     });
+    await rewindOnboardingToFirstStep(page);
+    await page.click('#setupNextBtn');
     await page.click('[data-setup-select="setupGenetics"][data-setup-value="sativa"]');
+    await page.click('#setupNextBtn');
+    await page.click('#setupNextBtn');
     await page.click('[data-setup-select="setupMedium"][data-setup-value="coco"]');
+    await page.click('#setupNextBtn');
     await page.click('[data-setup-select="setupLight"][data-setup-value="high"]');
     const upgradedStrategyPreview = await page.evaluate(() => ({
       title: document.getElementById('setupStrategyTitle').textContent.trim(),
@@ -261,6 +299,7 @@ async function main() {
     assert.ok(/High Pressure|Fast Cycle|Reactive Feed/.test(upgradedStrategyPreview.title), 'preview should react to strategic start choices');
     assert.ok(['risky', 'fast'].includes(upgradedStrategyPreview.tone), 'upgraded strategy should expose a non-default tone');
 
+    await advanceOnboardingToSummary(page);
     await page.click('#startRunBtn');
     await page.waitForFunction(() => window.getCanonicalRun().status === 'active');
 

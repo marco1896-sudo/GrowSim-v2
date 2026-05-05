@@ -74,19 +74,24 @@ async function main() {
       const stressRing = document.getElementById('stressRing');
       const riskRing = document.getElementById('riskRing');
       const plantImage = document.getElementById('plantImage');
-      const freshHints = document.querySelectorAll('.home-guidance-item--fresh').length;
+      const guidancePanel = document.getElementById('homeGuidancePanel');
+      const guidanceItems = document.querySelectorAll('#homeGuidanceList .home-guidance-item').length;
       return {
         stressVisual: stressRing ? stressRing.dataset.stressVisual : '',
         riskVisual: riskRing ? riskRing.dataset.riskVisual : '',
         plantStressVisual: plantImage ? plantImage.dataset.stressVisual : '',
-        freshHints
+        guidanceItems,
+        guidanceHidden: guidancePanel
+          ? guidancePanel.classList.contains('hidden') && guidancePanel.getAttribute('aria-hidden') === 'true'
+          : false
       };
     });
 
     assert.ok(['high', 'critical'].includes(stressRiskState.stressVisual), 'high stress should activate visible stress motion');
     assert.ok(['high', 'critical'].includes(stressRiskState.riskVisual), 'high risk should activate visible risk motion');
     assert.ok(['high', 'critical'].includes(stressRiskState.plantStressVisual), 'plant image should reflect stressed state');
-    assert.ok(stressRiskState.freshHints >= 1, 'new important guidance should be briefly highlighted');
+    assert.strictEqual(stressRiskState.guidanceItems, 0, 'home guidance should not render below the status cards');
+    assert.strictEqual(stressRiskState.guidanceHidden, true, 'home guidance panel should remain hidden on the homescreen');
 
     const animatedWater = await page.evaluate(async () => {
       Object.assign(window.__gsState.status, {

@@ -109,8 +109,9 @@ assert(
 );
 
 assert(
-  cssSource.includes('.home-core-stats-bar {\n  position: relative;'),
-  'core stats bar should participate in the shared bottom cluster instead of anchoring separately'
+  cssSource.includes('/* Core stats premium HUD: single source of truth */') &&
+    cssSource.includes('.core-stats-premium {\n  position: relative;'),
+  'core stats bar should use the premium HUD source of truth and stay in the shared bottom cluster'
 );
 
 assert(
@@ -134,6 +135,13 @@ assert(
   cssSource.includes('.home-content-scroll .home-progress-panel {') &&
     cssSource.includes('margin-top: 0;'),
   'progress card should no longer depend on scroll-offset overlap spacing'
+);
+
+assert(
+  indexSource.includes('id="phaseCard" class="growth-card-premium"') &&
+    cssSource.includes('/* Growth card premium HUD: single source of truth */') &&
+    cssSource.includes('.growth-card-premium {\n  position: relative;'),
+  'phase card should use the premium growth-card structure and source of truth'
 );
 
 assert(
@@ -172,9 +180,9 @@ assert(
 );
 
 assert(
-  cssSource.includes('.home-player-panel::before') &&
-    cssSource.includes('.home-player-panel::after') &&
-    cssSource.includes('.home-progress-panel:hover,') &&
+    cssSource.includes('.home-player-panel.player-card::before') &&
+    cssSource.includes('.home-player-panel.player-card::after') &&
+    cssSource.includes('.growth-card-premium::before') &&
     cssSource.includes('#boostActionBtn::after') &&
     cssSource.includes('.home-action-panel #skipNightActionBtn::after'),
   'premium polish should keep card sheen and matched orb surface treatments for x24 and night shift'
@@ -204,13 +212,14 @@ assert(
 );
 
 assert(
-  cssSource.includes('#coreStatsBar > .home-core-stat {'),
-  'all four core stat slots should share a scoped structural baseline inside the core bar'
+  indexSource.includes('class="core-stat-premium core-stat-premium--water"') &&
+    cssSource.includes('.core-stat-premium {\n  --core-color: #78d8ff;'),
+  'all four core stat slots should share a scoped premium structural baseline inside the core bar'
 );
 
 assert(
-  cssSource.includes('#coreStatsBar > .home-core-stat::after {'),
-  'all four core stat slots should disable stray legacy pseudo-element effects inside the core bar'
+  cssSource.includes('.core-stat-premium::after {\n  content: none;'),
+  'all four core stat slots should disable stray legacy pseudo-element effects inside the premium core bar'
 );
 
 assert(

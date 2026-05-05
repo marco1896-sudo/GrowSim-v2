@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" role="img" aria-label="Level badge frame">
+  <defs>
+    <linearGradient id="badgeMetal" x1="10" y1="5" x2="54" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe78e"/>
+      <stop offset="0.18" stop-color="#8bd15d"/>
+      <stop offset="0.58" stop-color="#16351f"/>
+      <stop offset="1" stop-color="#d0952d"/>
+    </linearGradient>
+    <linearGradient id="badgeGlass" x1="32" y1="9" x2="32" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3b7938"/>
+      <stop offset="0.55" stop-color="#17351f"/>
+      <stop offset="1" stop-color="#07100d"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 9h40l7 9v30L32 66 5 48V18z" fill="url(#badgeMetal)"/>
+  <path d="M16 14h32l5 7v24L32 59 11 45V21z" fill="url(#badgeGlass)"/>
+  <path d="M17 16h30" stroke="#fff2b6" stroke-opacity="0.38" stroke-width="2" stroke-linecap="round"/>
+  <path d="M11 45l21 14 21-14" fill="none" stroke="#060a08" stroke-opacity="0.72" stroke-width="2"/>
+</svg>

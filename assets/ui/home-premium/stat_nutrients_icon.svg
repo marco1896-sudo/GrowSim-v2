@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Nutrients">
+  <defs>
+    <radialGradient id="nutriCore" cx="36%" cy="26%" r="70%">
+      <stop offset="0" stop-color="#fff5bd"/>
+      <stop offset="0.45" stop-color="#8cf087"/>
+      <stop offset="1" stop-color="#1a6230"/>
+    </radialGradient>
+    <linearGradient id="nutriRim" x1="8" y1="8" x2="56" y2="56">
+      <stop offset="0" stop-color="#ffeaa1"/>
+      <stop offset=".5" stop-color="#8ee89c"/>
+      <stop offset="1" stop-color="#0b3218"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="28" fill="#10180d" stroke="url(#nutriRim)" stroke-width="3"/>
+  <circle cx="32" cy="32" r="22.5" fill="none" stroke="#d9c275" stroke-opacity=".24" stroke-width="1.5"/>
+  <path d="M32 43c-1-8 1.7-15.3 9.8-21.8C41.6 32 37.4 39 32 43Z" fill="url(#nutriCore)" stroke="#f5e6a4" stroke-width="1.2"/>
+  <path d="M31.8 43c-5.8-2.4-9.8-7-11.5-14.4 7.5.5 11.8 4.4 11.5 14.4Z" fill="#61ce6f" stroke="#d8f6ac" stroke-width="1"/>
+  <circle cx="43.5" cy="39.5" r="4.5" fill="#dcb957" stroke="#fff0ad" stroke-width="1"/>
+  <circle cx="20.5" cy="22.5" r="3.4" fill="#a2ef83" stroke="#fff0ad" stroke-width=".8"/>
+</svg>

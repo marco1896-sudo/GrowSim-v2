@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Daily achievement icon">
+  <defs>
+    <linearGradient id="dailyRim" x1="8" y1="6" x2="40" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8dd7a"/>
+      <stop offset="0.43" stop-color="#8fd95f"/>
+      <stop offset="1" stop-color="#152116"/>
+    </linearGradient>
+  </defs>
+  <rect x="9" y="10" width="30" height="30" rx="7" fill="none" stroke="url(#dailyRim)" stroke-width="4"/>
+  <path d="M16 7v8M32 7v8" stroke="#f6db74" stroke-width="4" stroke-linecap="round"/>
+  <path d="M16 25l6 6 11-13" fill="none" stroke="#bff07e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

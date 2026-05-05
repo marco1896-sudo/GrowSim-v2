@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 48" preserveAspectRatio="none" role="img" aria-label="Coin capsule frame">
+  <defs>
+    <linearGradient id="capsuleRim" x1="0" y1="0" x2="172" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff0a7"/>
+      <stop offset="0.32" stop-color="#d4a33b"/>
+      <stop offset="0.64" stop-color="#182014"/>
+      <stop offset="1" stop-color="#f1ca62"/>
+    </linearGradient>
+    <linearGradient id="capsuleGlass" x1="86" y1="7" x2="86" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#302710"/>
+      <stop offset="1" stop-color="#070807"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="168" height="44" rx="22" fill="url(#capsuleRim)"/>
+  <rect x="7" y="7" width="158" height="34" rx="17" fill="url(#capsuleGlass)" stroke="#fff0a0" stroke-opacity="0.18"/>
+  <path d="M18 10h136" stroke="#fff3b2" stroke-opacity="0.22" stroke-width="2" stroke-linecap="round"/>
+  <path d="M14 38h144" stroke="#000" stroke-opacity="0.46" stroke-width="3" stroke-linecap="round"/>
+</svg>

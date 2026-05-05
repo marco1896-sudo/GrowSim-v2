@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Menu button">
+  <defs>
+    <linearGradient id="menuRim" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff2ad"/>
+      <stop offset="0.28" stop-color="#9ccc68"/>
+      <stop offset="0.68" stop-color="#172018"/>
+      <stop offset="1" stop-color="#d49a36"/>
+    </linearGradient>
+    <linearGradient id="menuBody" x1="32" y1="10" x2="32" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#304034"/>
+      <stop offset="1" stop-color="#070b0a"/>
+    </linearGradient>
+    <linearGradient id="barGold" x1="19" y1="0" x2="45" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a8711b"/>
+      <stop offset="0.5" stop-color="#ffdd73"/>
+      <stop offset="1" stop-color="#b88021"/>
+    </linearGradient>
+  </defs>
+  <rect x="5" y="5" width="54" height="54" rx="16" fill="url(#menuRim)"/>
+  <rect x="10" y="10" width="44" height="44" rx="12" fill="url(#menuBody)"/>
+  <path d="M17 14h30" stroke="#fff0b0" stroke-opacity="0.22" stroke-width="2" stroke-linecap="round"/>
+  <rect x="19" y="22" width="26" height="5" rx="2.5" fill="url(#barGold)"/>
+  <rect x="19" y="31" width="26" height="5" rx="2.5" fill="url(#barGold)"/>
+  <rect x="19" y="40" width="26" height="5" rx="2.5" fill="url(#barGold)"/>
+</svg>

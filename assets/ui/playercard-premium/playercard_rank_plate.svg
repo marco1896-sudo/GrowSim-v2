@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 28" preserveAspectRatio="none" role="img" aria-label="Rank plate">
+  <defs>
+    <linearGradient id="rankRim" x1="0" y1="0" x2="128" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e8d078"/>
+      <stop offset="0.4" stop-color="#6fad4d"/>
+      <stop offset="1" stop-color="#1a241a"/>
+    </linearGradient>
+    <linearGradient id="rankBody" x1="64" y1="4" x2="64" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#355229"/>
+      <stop offset="1" stop-color="#0a120d"/>
+    </linearGradient>
+  </defs>
+  <path d="M10 1h108l9 8v10l-9 8H10l-9-8V9z" fill="url(#rankRim)"/>
+  <path d="M12 4h104l6 6v8l-6 6H12l-6-6v-8z" fill="url(#rankBody)"/>
+  <path d="M15 6h96" stroke="#fff0b0" stroke-opacity="0.18" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

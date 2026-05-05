@@ -10,7 +10,7 @@ const indexSource = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const cssSource = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 
 (function testHomeHudOrderKeepsPlayerCardAsTopAnchor() {
-  const playerIdx = indexSource.indexOf('class="home-player-panel"');
+  const playerIdx = indexSource.indexOf('class="home-player-panel player-card premium-playercard"');
   const harvestIdx = indexSource.indexOf('id="harvestForecastWidget"');
   const climateIdx = indexSource.indexOf('id="homeClimateCard"');
 
@@ -21,52 +21,60 @@ const cssSource = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
   assert(harvestIdx < climateIdx, 'harvest widget should stay above climate card in home markup');
 })();
 
+(function testProductivePlayerCardUsesPreviewStructure() {
+  assert(indexSource.includes('class="premium-playercard__inner"'), 'productive player card should use the premium preview inner structure');
+  assert(indexSource.includes('class="premium-playercard__avatar-art"'), 'productive player card should use the premium avatar PNG slot');
+  assert(indexSource.includes('class="premium-playercard__coin-icon"'), 'productive player card should use the premium coin PNG slot');
+  assert(!indexSource.includes('class="player-card-inner"'), 'old visible player-card inner structure should not remain in home markup');
+  assert(!indexSource.includes('class="player-avatar"'), 'old visible player avatar structure should not remain in home markup');
+  assert(!indexSource.includes('class="player-coins"'), 'old visible coin capsule structure should not remain in home markup');
+})();
+
 (function testCompactPlayerCardOverrideKeepsTightVerticalSpacing() {
-  const compactStart = cssSource.indexOf('/* Compact premium top module override */');
-  assert(compactStart !== -1, 'compact premium override block should exist');
-  const compactBlock = cssSource.slice(compactStart, compactStart + 5200);
+  const compactStart = cssSource.indexOf('/* Playercard reference HUD: single source of truth */');
+  assert(compactStart !== -1, 'playercard reference override block should exist');
+  const compactBlock = cssSource.slice(compactStart);
 
   assert(
-    compactBlock.includes('.home-player-panel {') &&
-      compactBlock.includes('gap: 2px;') &&
-      compactBlock.includes('padding: 5px 9px 4px;'),
-    'player panel compact override should reduce vertical spacing and padding'
+    compactBlock.includes('.home-player-panel.player-card.premium-playercard {') &&
+      compactBlock.includes('height: 122px;') &&
+      compactBlock.includes('max-height: 122px;'),
+    'premium player card should keep the preview desktop height'
   );
 
   assert(
-    compactBlock.includes('.home-player-header {') &&
-      compactBlock.includes('grid-template-columns: 38px minmax(0, 1fr) auto;') &&
-      compactBlock.includes('gap: 5px;'),
-    'header should use a tighter avatar and column gap layout'
+    compactBlock.includes('.premium-playercard__top {') &&
+      compactBlock.includes('grid-template-columns: 75px minmax(0, 1fr) 146px;') &&
+      compactBlock.includes('gap: 7px;'),
+    'top row should preserve preview avatar, identity, and utilities columns'
   );
 
   assert(
-    compactBlock.includes('.home-meta-strip {') &&
-      compactBlock.includes('min-height: 18px;') &&
-      compactBlock.includes('padding: 1px 0 0;') &&
-      compactBlock.includes('gap: 3px;'),
-    'meta strip should remain readable while reducing reserved vertical height'
+    compactBlock.includes('.premium-playercard__bottom {') &&
+      compactBlock.includes('grid-template-columns: minmax(0, 1fr) minmax(126px, 38%);') &&
+      compactBlock.includes('padding-top: 7px;'),
+    'bottom row should keep preview run and daily information in the card height'
   );
 
   assert(
-    compactBlock.includes('@media (max-width: 420px) {') &&
-      compactBlock.includes('.home-player-panel {') &&
-      compactBlock.includes('padding: 5px 7px 4px;') &&
-      compactBlock.includes('grid-template-columns: 36px minmax(0, 1fr) auto;'),
+    compactBlock.includes('@media (max-width: 350px) {') &&
+      compactBlock.includes('.premium-playercard__top {') &&
+      compactBlock.includes('grid-template-columns: 62px minmax(0, 1fr) 124px;'),
     'mobile override should preserve compact layout on narrow screens'
   );
 })();
 
-(function testCoinPillKeepsCompactHeightInFinalEconomyOverride() {
-  const coinBlockStart = cssSource.indexOf('/* Coin economy final UI overrides */');
-  assert(coinBlockStart !== -1, 'coin economy final override block should exist');
-  const coinBlock = cssSource.slice(coinBlockStart, coinBlockStart + 1800);
+(function testCoinPillKeepsCompactHeightInPlayerCardSourceOfTruth() {
+  const compactStart = cssSource.indexOf('/* Playercard reference HUD: single source of truth */');
+  assert(compactStart !== -1, 'playercard reference override block should exist');
+  const compactBlock = cssSource.slice(compactStart);
 
   assert(
-    coinBlock.includes('.home-currency-row {') &&
-      coinBlock.includes('min-height: 18px;') &&
-      coinBlock.includes('padding: 2px 6px;'),
-    'final coin override should keep compact currency row height'
+    compactBlock.includes('.premium-playercard__coins {') &&
+      compactBlock.includes('height: 34px;') &&
+      compactBlock.includes('padding: 0 12px 0 8px;') &&
+      compactBlock.includes('.premium-playercard__coin-frame {'),
+    'player card source of truth should keep the premium coin pill compact and framed'
   );
 })();
 

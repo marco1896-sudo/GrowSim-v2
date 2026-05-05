@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Run target icon">
+  <defs>
+    <linearGradient id="targetGold" x1="8" y1="6" x2="40" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f9df82"/>
+      <stop offset="0.45" stop-color="#8fd95f"/>
+      <stop offset="1" stop-color="#172515"/>
+    </linearGradient>
+  </defs>
+  <circle cx="24" cy="24" r="18" fill="none" stroke="url(#targetGold)" stroke-width="4"/>
+  <circle cx="24" cy="24" r="9" fill="none" stroke="#aee872" stroke-width="3"/>
+  <circle cx="24" cy="24" r="3" fill="#f8df82"/>
+  <path d="M34 14l6-6M37 8h6v6" fill="none" stroke="#f8df82" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

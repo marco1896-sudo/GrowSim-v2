@@ -100,57 +100,67 @@
   <div id="app-hud" class="app-hud">
     <main class="hud-main hud-screen is-active home-screen" data-screen="home">
       <section class="home-stage" aria-label="Home HUD">
-        <article class="home-player-panel player-card" aria-label="Spielerpanel">
-          <div class="player-card-inner">
-            <div class="player-card-top">
-              <div class="player-level">
-                <div class="player-avatar" aria-hidden="true">
-                  <img id="playerAvatarImage" class="player-avatar-image hidden" alt="" draggable="false">
+        <article class="home-player-panel player-card premium-playercard" aria-label="Spielerpanel">
+          <div class="premium-playercard__inner">
+            <div class="premium-playercard__top">
+              <div class="premium-playercard__avatar-cluster" aria-label="Profil Level 9">
+                <div class="premium-playercard__avatar" aria-hidden="true">
+                  <img class="premium-playercard__avatar-ring" src="assets/ui/playercard-premium/playercard_avatar_ring.svg" alt="" aria-hidden="true">
+                  <img class="premium-playercard__avatar-art" src="assets/ui/playercard-premium/playercard_avatar_placeholder.png" alt="" aria-hidden="true" draggable="false">
+                  <img id="playerAvatarImage" class="premium-playercard__avatar-image hidden" alt="" draggable="false">
                 </div>
-                <span class="player-level-badge" id="playerLevelBadge" data-level="9">LVL 9</span>
+                <div class="premium-playercard__level" aria-hidden="true">
+                  <img src="assets/ui/playercard-premium/playercard_level_badge_frame.svg" alt="" aria-hidden="true">
+                  <span>LVL</span>
+                  <strong id="playerLevelBadge" data-level="9">LVL 9</strong>
+                </div>
               </div>
-              <div class="player-identity">
-                <div class="player-identity-copy">
-                  <strong id="playerNameValue" class="player-name">Max Mustergrower</strong>
-                  <span id="playerRoleValue" class="player-role">Gärtner</span>
-                  <p id="playerXpValue" class="player-xp">XP: 7.350 / 8.650</p>
+              <div class="premium-playercard__identity">
+                <div class="premium-playercard__name-row">
+                  <strong id="playerNameValue" class="premium-playercard__name">Max Mustergrower</strong>
+                  <span id="playerRoleValue" class="premium-playercard__rank">Gärtner</span>
                 </div>
-                <div class="player-xp-track" aria-hidden="true">
-                  <span id="playerXpFill" class="player-xp-fill" style="--xp:84;"></span>
+                <span id="playerXpValue" class="premium-playercard__xp-text">XP: 7.350 / 8.650</span>
+                <div class="premium-playercard__xp-track" aria-hidden="true">
+                  <span id="playerXpFill" class="premium-playercard__xp-fill" style="--xp:84;"></span>
+                  <img src="assets/ui/playercard-premium/playercard_xp_glow_cap.svg" alt="" aria-hidden="true">
                 </div>
               </div>
               <span id="homeMetaBuildChip" class="player-status-pill hidden" data-tone="balanced" aria-hidden="true"></span>
-              <div class="player-utilities">
-                <div class="player-coins" aria-label="Coins">
-                  <span class="player-coin-icon" aria-hidden="true">&#x1FA99;</span>
+              <div class="premium-playercard__tools">
+                <div class="premium-playercard__coins" aria-label="Coins">
+                  <img class="premium-playercard__coin-frame" src="assets/ui/playercard-premium/playercard_coin_capsule_frame.svg" alt="" aria-hidden="true">
+                  <span class="premium-playercard__coin-icon" aria-hidden="true">
+                    <img src="assets/ui/playercard-premium/playercard_coin_premium.png" alt="" aria-hidden="true" draggable="false">
+                  </span>
                   <strong id="playerCoinValue">2.480</strong>
                 </div>
-                <button id="menuToggleBtn" class="player-menu-button" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
-                  <img src="assets/ui/icons/menu.svg" alt="" aria-hidden="true">
+                <button id="menuToggleBtn" class="premium-playercard__menu" type="button" aria-label="Menü öffnen" aria-haspopup="dialog" aria-expanded="false">
+                  <img src="assets/ui/playercard-premium/playercard_menu_button.svg" alt="" aria-hidden="true">
                   <span id="menuToggleRewardHint" class="reward-hint-dot reward-hint-dot--menu hidden" aria-hidden="true"></span>
                   <span class="visually-hidden">Menü öffnen</span>
                 </button>
               </div>
             </div>
-            <div class="player-card-bottom">
-              <div class="player-run">
-                <span id="playerSignalDot" class="player-run-dot player-signal" role="status" aria-label="Status: stabil" data-signal="good"></span>
-                <div class="player-run-copy">
-                  <div class="player-run-line player-run-line--goal">
-                    <span class="player-run-label">RUN-ZIEL:</span>
-                    <strong id="homeMetaGoalCompact" class="player-run-value">saubere Linie (Halte den Stress niedrig)</strong>
-                    <span id="homeMetaGoalStatus" class="player-run-status" data-status="active">Läuft</span>
-                  </div>
-                  <div class="player-run-line player-run-line--progress">
-                    <span class="player-run-label">FORTSCHRITT:</span>
-                    <span id="homeMetaGoalProgress" class="player-run-progress">28 / 30 Tage</span>
-                  </div>
+            <div class="premium-playercard__bottom">
+              <div class="premium-playercard__run">
+                <span id="playerSignalDot" class="premium-playercard__run-icon player-signal" role="status" aria-label="Status: stabil" data-signal="good"></span>
+                <div class="premium-playercard__run-copy">
+                  <p>
+                    <span>RUN-ZIEL:</span>
+                    <strong id="homeMetaGoalCompact">saubere Linie (Halte den Stress niedrig)</strong>
+                    <span id="homeMetaGoalStatus" class="premium-playercard__goal-status" data-status="active">Läuft</span>
+                  </p>
+                  <p>
+                    <span>FORTSCHRITT:</span>
+                    <span id="homeMetaGoalProgress">28 / 30 Tage</span>
+                  </p>
                 </div>
-                <button id="homeMetaToggle" class="player-meta-toggle hidden" type="button" aria-label="Run-Details anzeigen" aria-expanded="false" aria-controls="homeMetaDetail" aria-hidden="true">
-                  <span class="player-meta-caret" aria-hidden="true"></span>
+                <button id="homeMetaToggle" class="premium-playercard__meta-toggle hidden" type="button" aria-label="Run-Details anzeigen" aria-expanded="false" aria-controls="homeMetaDetail" aria-hidden="true">
+                  <span aria-hidden="true"></span>
                 </button>
               </div>
-              <span id="homeMetaRetentionTeaser" class="player-daily hidden" aria-hidden="true"></span>
+              <span id="homeMetaRetentionTeaser" class="premium-playercard__daily hidden" aria-hidden="true"></span>
             </div>
           </div>
           <div id="homeMetaDetail" class="home-meta-detail hidden" aria-hidden="true">
@@ -269,74 +279,77 @@
 
         <div class="home-content-scroll">
 
-        <article id="phaseCard" class="home-progress-panel" aria-live="polite">
-          <div class="home-progress-heading">
-            <strong id="phaseCardTitle" class="home-progress-title">Vegetativ</strong>
-            <span id="phaseCardAge" class="home-progress-day">Tag 14</span>
+        <article id="phaseCard" class="growth-card-premium" aria-live="polite">
+          <div class="growth-card-premium__heading">
+            <div class="growth-card-premium__phase">
+              <span class="growth-card-premium__eyebrow">WACHSTUM</span>
+              <strong id="phaseCardTitle" class="growth-card-premium__title">Vegetativ</strong>
+            </div>
+            <span id="phaseCardAge" class="growth-card-premium__day">Tag 14</span>
           </div>
-          <div class="home-progress-top">
-            <div class="home-progress-grow">
+          <div class="growth-card-premium__top">
+            <div class="growth-card-premium__metric">
               <strong id="phaseCardSubtitle">42%</strong>
-              <span>Wachstum</span>
+              <span>Zielphase</span>
             </div>
-            <span id="plantStatusChip" class="home-progress-stress-chip">Stress</span>
-            <strong id="growthImpulseValue" class="home-progress-multi">+0.80x</strong>
-            <button id="openDiagnosisBtn" class="home-progress-pause" type="button" aria-label="Diagnose öffnen"></button>
+            <span id="plantStatusChip" class="growth-card-premium__status">Stress</span>
+            <strong id="growthImpulseValue" class="growth-card-premium__impulse">+0.80x</strong>
+            <button id="openDiagnosisBtn" class="growth-card-premium__diagnosis" type="button" aria-label="Diagnose öffnen"></button>
           </div>
-          <div class="phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
-            <span id="phaseProgressFill" class="phase-progress-fill" style="--phase-progress:42;"></span>
-            <span id="phaseProgressMarker" class="phase-progress-marker" aria-hidden="true"></span>
+          <div class="growth-card-premium__track phase-progress" role="progressbar" aria-label="Fortschritt in aktueller Phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
+            <span id="phaseProgressFill" class="growth-card-premium__fill phase-progress-fill" style="--phase-progress:42;"></span>
+            <span id="phaseProgressMarker" class="growth-card-premium__marker phase-progress-marker" aria-hidden="true"></span>
           </div>
-          <div class="home-progress-bottom">
-            <div class="home-progress-cluster home-progress-cluster--time">
-              <span class="home-progress-footer-icon home-progress-footer-icon--time" aria-hidden="true"></span>
-              <span id="phaseCardCycle" class="home-progress-cycle" aria-label="Tageszyklus">D</span>
-              <span class="home-progress-inline-label">Zeit</span>
-              <strong id="simTimeValue" class="home-progress-time">09:18</strong>
+          <div class="growth-card-premium__bottom">
+            <div class="growth-card-premium__cluster growth-card-premium__cluster--time">
+              <img class="growth-card-premium__cluster-icon" src="assets/ui/home-premium/growth_time_icon.svg" alt="" aria-hidden="true">
+              <span id="phaseCardCycle" class="growth-card-premium__cycle" aria-label="Tageszyklus">D</span>
+              <span class="growth-card-premium__label">Zeit</span>
+              <strong id="simTimeValue" class="growth-card-premium__time">09:18</strong>
             </div>
-            <div class="home-progress-cluster home-progress-cluster--boost">
-              <span class="home-progress-footer-icon home-progress-footer-icon--boost" aria-hidden="true"></span>
-              <span id="boostUsageText" class="home-progress-boost">Boost x24 Bereit</span>
+            <div class="growth-card-premium__cluster growth-card-premium__cluster--boost">
+              <span class="growth-card-premium__boost-icon" aria-hidden="true"></span>
+              <span id="boostUsageText" class="growth-card-premium__boost">Boost x24 Bereit</span>
             </div>
-            <div class="home-progress-cluster home-progress-cluster--event">
-              <span class="home-progress-footer-icon home-progress-footer-icon--event" aria-hidden="true"></span>
-              <span class="home-progress-event-label">Ereignis</span>
-              <strong id="nextEventValue" class="home-progress-event">11:43</strong>
+            <div class="growth-card-premium__cluster growth-card-premium__cluster--event">
+              <img class="growth-card-premium__cluster-icon" src="assets/ui/home-premium/growth_event_icon.svg" alt="" aria-hidden="true">
+              <span class="growth-card-premium__label growth-card-premium__label--event">Ereignis</span>
+              <strong id="nextEventValue" class="growth-card-premium__event">11:43</strong>
             </div>
           </div>
         </article>
 
-        <section id="coreStatsBar" class="home-core-stats-bar" aria-label="Kernwerte">
-          <article id="waterRing" class="home-core-stat home-core-stat--water" data-core-stat-key="water" role="button" tabindex="0" aria-label="Wasser anzeigen" style="--value:70;">
-            <span class="home-core-stat__icon-wrap" aria-hidden="true">
-              <img class="home-core-stat__icon" src="assets/ui/icons/icon_water.svg" alt="">
+        <section id="coreStatsBar" class="core-stats-premium" aria-label="Kernwerte">
+          <article id="waterRing" class="core-stat-premium core-stat-premium--water" data-core-stat-key="water" role="button" tabindex="0" aria-label="Wasser anzeigen" style="--value:70;">
+            <span class="core-stat-premium__icon-wrap" aria-hidden="true">
+              <img class="core-stat-premium__icon" src="assets/ui/home-premium/stat_water_icon.svg" alt="">
             </span>
-            <strong id="waterValue" class="home-core-stat__value">70%</strong>
-            <span class="home-core-stat__track" aria-hidden="true"><span class="home-core-stat__fill"></span></span>
+            <strong id="waterValue" class="core-stat-premium__value">70%</strong>
+            <span class="core-stat-premium__track" aria-hidden="true"><span class="core-stat-premium__fill"></span></span>
             <span id="plantWaterLabel" class="visually-hidden">Wasser</span>
           </article>
-          <article id="nutritionRing" class="home-core-stat home-core-stat--nutrients" data-core-stat-key="nutrients" role="button" tabindex="0" aria-label="Nährstoffe anzeigen" style="--value:65;">
-            <span class="home-core-stat__icon-wrap" aria-hidden="true">
-              <img class="home-core-stat__icon" src="assets/ui/icons/icon_nutrients.svg" alt="">
+          <article id="nutritionRing" class="core-stat-premium core-stat-premium--nutrients" data-core-stat-key="nutrients" role="button" tabindex="0" aria-label="Nährstoffe anzeigen" style="--value:65;">
+            <span class="core-stat-premium__icon-wrap" aria-hidden="true">
+              <img class="core-stat-premium__icon" src="assets/ui/home-premium/stat_nutrients_icon.svg" alt="">
             </span>
-            <strong id="nutritionValue" class="home-core-stat__value">65%</strong>
-            <span class="home-core-stat__track" aria-hidden="true"><span class="home-core-stat__fill"></span></span>
+            <strong id="nutritionValue" class="core-stat-premium__value">65%</strong>
+            <span class="core-stat-premium__track" aria-hidden="true"><span class="core-stat-premium__fill"></span></span>
             <span id="plantNutritionLabel" class="visually-hidden">Nährstoffe</span>
           </article>
-          <article id="stressRing" class="home-core-stat home-core-stat--stress" data-core-stat-key="stress" role="button" tabindex="0" aria-label="Stress anzeigen" style="--value:15;">
-            <span class="home-core-stat__icon-wrap" aria-hidden="true">
-              <img class="home-core-stat__icon" src="assets/ui/icons/icon_stress.svg" alt="">
+          <article id="stressRing" class="core-stat-premium core-stat-premium--stress" data-core-stat-key="stress" role="button" tabindex="0" aria-label="Stress anzeigen" style="--value:15;">
+            <span class="core-stat-premium__icon-wrap" aria-hidden="true">
+              <img class="core-stat-premium__icon" src="assets/ui/home-premium/stat_stress_icon.svg" alt="">
             </span>
-            <strong id="stressValue" class="home-core-stat__value">15%</strong>
-            <span class="home-core-stat__track" aria-hidden="true"><span class="home-core-stat__fill"></span></span>
+            <strong id="stressValue" class="core-stat-premium__value">15%</strong>
+            <span class="core-stat-premium__track" aria-hidden="true"><span class="core-stat-premium__fill"></span></span>
             <span id="plantStressLabel" class="visually-hidden">Stress</span>
           </article>
-          <article id="riskRing" class="home-core-stat home-core-stat--risk" data-core-stat-key="risk" role="button" tabindex="0" aria-label="Risiko anzeigen" style="--value:20;">
-            <span class="home-core-stat__icon-wrap" aria-hidden="true">
-              <img class="home-core-stat__icon" src="assets/ui/icons/icon_risk.svg" alt="">
+          <article id="riskRing" class="core-stat-premium core-stat-premium--risk" data-core-stat-key="risk" role="button" tabindex="0" aria-label="Risiko anzeigen" style="--value:20;">
+            <span class="core-stat-premium__icon-wrap" aria-hidden="true">
+              <img class="core-stat-premium__icon" src="assets/ui/home-premium/stat_risk_icon.svg" alt="">
             </span>
-            <strong id="riskValue" class="home-core-stat__value">20%</strong>
-            <span class="home-core-stat__track" aria-hidden="true"><span class="home-core-stat__fill"></span></span>
+            <strong id="riskValue" class="core-stat-premium__value">20%</strong>
+            <span class="core-stat-premium__track" aria-hidden="true"><span class="core-stat-premium__fill"></span></span>
             <span id="plantRiskLabel" class="visually-hidden">Risiko</span>
           </article>
         </section>

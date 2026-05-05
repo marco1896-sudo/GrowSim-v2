@@ -12135,11 +12135,9 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
 
   const homeGuidancePanelNode = uiNode('homeGuidancePanel', 'homeGuidancePanel');
   const homeGuidanceListNode = uiNode('homeGuidanceList', 'homeGuidanceList');
-  if (homeGuidanceListNode) {
+  if (homeGuidanceListNode && homeGuidancePanelNode) {
     homeGuidanceListNode.replaceChildren();
     homeGuidanceListNode.dataset.signature = '';
-  }
-  if (homeGuidancePanelNode) {
     homeGuidancePanelNode.classList.add('hidden');
     homeGuidancePanelNode.setAttribute('aria-hidden', 'true');
   }
@@ -12252,7 +12250,7 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
     const previousXpPercent = playerXpFillNode.style.getPropertyValue('--xp');
     playerXpFillNode.style.setProperty('--xp', xpPercent);
     if (previousXpPercent && previousXpPercent !== xpPercent) {
-      triggerPlayerHudPulse(playerXpFillNode.closest('.player-xp-track'));
+      triggerPlayerHudPulse(playerXpFillNode.closest('.premium-playercard__xp-track, .player-xp-track'));
     }
   }
 
@@ -12263,7 +12261,7 @@ function renderPanelReadouts(homeVm = null) { const vm = homeVm && typeof homeVm
     if (previousCoinText !== coinText) {
       coinNode.textContent = coinText;
       if (previousCoinText) {
-        triggerPlayerHudPulse(coinNode.closest('.player-coins'));
+            triggerPlayerHudPulse(coinNode.closest('.premium-playercard__coins, .player-coins'));
       }
     }
   }
@@ -13066,7 +13064,10 @@ function renderGameMenu() {
   }
 
   const menuOpen = state.ui.menuOpen === true;
-  const dialogOpen = state.ui.menuDialogOpen === true;
+  const dialogOpen = menuOpen && state.ui.menuDialogOpen === true;
+  if (!menuOpen && state.ui.menuDialogOpen === true) {
+    state.ui.menuDialogOpen = false;
+  }
 
   ui.menuBackdrop.classList.toggle('hidden', !menuOpen);
   ui.menuBackdrop.setAttribute('aria-hidden', String(!menuOpen));

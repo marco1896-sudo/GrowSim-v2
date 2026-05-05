@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Stress">
+  <defs>
+    <linearGradient id="stressRim" x1="9" y1="8" x2="55" y2="58">
+      <stop offset="0" stop-color="#ffe69c"/>
+      <stop offset=".48" stop-color="#ffb545"/>
+      <stop offset="1" stop-color="#5b2505"/>
+    </linearGradient>
+    <radialGradient id="stressCore" cx="40%" cy="24%" r="76%">
+      <stop offset="0" stop-color="#fff4b5"/>
+      <stop offset=".46" stop-color="#ffba42"/>
+      <stop offset="1" stop-color="#7a3510"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="28" fill="#1c1308" stroke="url(#stressRim)" stroke-width="3"/>
+  <path d="M14 35h9l4-12 8 24 5-13h10" fill="none" stroke="#34200a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M14 35h9l4-12 8 24 5-13h10" fill="none" stroke="url(#stressCore)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="22.5" fill="none" stroke="#ffe19a" stroke-opacity=".24" stroke-width="1.5"/>
+</svg>
