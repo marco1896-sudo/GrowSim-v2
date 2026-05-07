@@ -1,6 +1,7 @@
 {
   "scripts": {
     "dev": "node scripts/dev-server.js",
+    "dev:center": "node tools/growsim-dev-center/server.js",
     "start": "node scripts/dev-server.js",
     "build:stamp": "node scripts/bump-build-id.js",
     "test": "npm run check:syntax && npm run check:i18n && npm run check:ui-architecture && npm run test:smoke && npm run test:runtime",
@@ -13,5 +14,8 @@
   },
   "devDependencies": {
     "playwright": "^1.58.2"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }

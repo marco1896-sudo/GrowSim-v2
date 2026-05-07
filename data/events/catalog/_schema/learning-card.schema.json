@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://growsimulator/schemas/learning-card.schema.json",
+  "title": "Learning Card v3",
+  "description": "Mikro-Lektion. Wird von Events referenziert, hat aber kein eigenes Spielmechanik-Verhalten. Quelle: docs/event-system-v2/02_data-model.md, Abschnitt 8.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "presentation",
+    "content",
+    "knowledgeProfile",
+    "appearsIn",
+    "i18n",
+    "authoring"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 3 },
+    "id":            { "type": "string", "description": "Globally unique. Empfohlenes Präfix lc_." },
+    "title":         { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+    "subtitle":      { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+    "presentation": {
+      "type": "object",
+      "properties": {
+        "preferredHeroAsset":   { "type": "string" },
+        "estimatedReadSeconds": { "type": "number", "minimum": 10, "maximum": 180 },
+        "layout":               { "enum": ["hero_then_bullets", "bullets_only", "story_panel"] }
+      }
+    },
+    "content": {
+      "type": "object",
+      "required": ["bullets"],
+      "properties": {
+        "bullets": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" }
+        },
+        "realWorldNoteKey": { "type": "string", "description": "i18n-Key für die Realwelt-Begründung." },
+        "moreReadingRef":   { "type": "string", "description": "Optionaler Verweis in die In-Game-Bibliothek." }
+      }
+    },
+    "knowledgeProfile": {
+      "type": "object",
+      "required": ["primaryDimension"],
+      "properties": {
+        "primaryDimension": { "type": "string", "description": "z. B. water_basics, humidity_vpd, nutrient_lockout." },
+        "gainOnFirstView":  { "type": "number", "minimum": 0, "maximum": 0.2 },
+        "gainOnLaterView":  { "type": "number", "minimum": 0, "maximum": 0.05 }
+      }
+    },
+    "appearsIn": {
+      "type": "object",
+      "properties": {
+        "linkedEventIds": { "type": "array", "items": { "type": "string" } },
+        "minStage":       { "type": "integer", "minimum": 1, "maximum": 12 },
+        "modes": {
+          "type": "array",
+          "items": { "$ref": "common-defs.schema.json#/definitions/ModeKey" }
+        }
+      }
+    },
+    "i18n": {
+      "type": "object",
+      "required": ["requiredKeys", "supportedLocales"],
+      "properties": {
+        "requiredKeys":     { "type": "array", "items": { "type": "string" } },
+        "supportedLocales": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+    "authoring": {
+      "type": "object",
+      "required": ["status", "lastReviewed"],
+      "properties": {
+        "owner":        { "type": "string" },
+        "status":       { "enum": ["draft", "review", "approved", "published", "frozen"] },
+        "lastReviewed": { "type": "string" }
+      }
+    }
+  }
+}

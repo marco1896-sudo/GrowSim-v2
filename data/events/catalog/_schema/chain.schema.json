@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://growsimulator/schemas/chain.schema.json",
+  "title": "Event Chain v3",
+  "description": "Geordnete Sequenz von Event-Schritten mit Übergangsregeln pro OutcomeQuality. Quelle: docs/event-system-v2/02_data-model.md, Abschnitt 7.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "summary",
+    "expectedSpanSimHours",
+    "preconditions",
+    "steps",
+    "uiBanner",
+    "telemetry",
+    "authoring"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 3 },
+    "id":            { "type": "string", "description": "Eindeutige Chain-ID, Empfehlung: chain_<thema>." },
+    "title":         { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+    "summary":       { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+    "expectedSpanSimHours": {
+      "type": "object",
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "type": "number", "minimum": 0 },
+        "max": { "type": "number", "minimum": 0 }
+      }
+    },
+    "preconditions": {
+      "type": "object",
+      "properties": {
+        "stageIn":   { "type": "array", "items": { "type": "string" } },
+        "anySetup":  { "type": "boolean" },
+        "modeIn":    { "type": "array", "items": { "enum": ["indoor", "outdoor", "greenhouse"] } }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "eventId", "role", "transitionsOnOutcome"],
+        "properties": {
+          "id":       { "type": "string" },
+          "eventId":  { "type": "string", "description": "Referenz auf eine existierende Event-ID." },
+          "role":     { "enum": ["trigger", "escalation", "resolution", "critical", "branch"] },
+          "transitionsOnOutcome": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "to":              { "type": ["string", "null"] },
+                "delaySimHours":   { "type": "number", "minimum": 0 },
+                "endsChainAs":     { "enum": ["success", "failure", "neutral"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "uiBanner": {
+      "type": "object",
+      "properties": {
+        "presentWhileActive": { "type": "boolean" },
+        "labelKey":           { "type": "string" },
+        "tone":               { "enum": ["info", "warning", "danger", "celebration"] }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "properties": {
+        "kpiBuckets": { "type": "array", "items": { "type": "string" } },
+        "logSteps":   { "type": "boolean" }
+      }
+    },
+    "authoring": {
+      "type": "object",
+      "required": ["status", "lastReviewed"],
+      "properties": {
+        "status":       { "enum": ["draft", "review", "approved", "published", "frozen"] },
+        "lastReviewed": { "type": "string" }
+      }
+    }
+  }
+}

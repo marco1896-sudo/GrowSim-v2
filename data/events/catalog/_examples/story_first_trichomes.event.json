@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 3,
+  "id": "v3_story_first_trichomes",
+  "type": "story_beat",
+  "category": "positive",
+  "tags": ["story_beat", "learning_beat", "any_setup"],
+
+  "title":        { "key": "events.v3_story_first_trichomes.title" },
+  "shortSymptom": { "key": "events.v3_story_first_trichomes.symptom" },
+
+  "options": [
+    { "id": "celebrate",  "label": { "key": "options.celebrate" },  "intent": "acknowledge", "contextFit": ["positive"], "effects": {} },
+    { "id": "learn_more", "label": { "key": "options.learn_more" }, "intent": "study",       "contextFit": ["positive"], "effects": {} }
+  ],
+
+  "triggers": {
+    "all": [
+      { "field": "plant.stageIndex", "op": ">=", "value": 9 }
+    ]
+  },
+
+  "eligibility": { "allowedPhases": ["flowering"] },
+
+  "pressure": { "primaryPressure": "narrative_only", "weight": 0.0, "polarity": "positive" },
+  "severity": { "level": "info" },
+
+  "escalationProfile": {
+    "stages": [
+      { "id": "warning", "afterSimHours": 0 }
+    ]
+  },
+
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": { "knowledgeProfileGains": { "flower_phenology": 0.10 } },
+      "no_action":       { }
+    }
+  },
+
+  "rewards": { "score": { "strong_recovery": 30, "no_action": 0 } },
+
+  "ui": {
+    "presentation": "modal",
+    "modalLayout": "image_first",
+    "audioCue": "soft_celebrate_v1",
+    "haptic": "single_pulse",
+    "modalDismissPolicy": "after_choice"
+  },
+
+  "assets": {
+    "cover": {
+      "kind": "image",
+      "src": "assets/events/positive/first_trichomes_cover.png",
+      "altKey": "alt.events.v3_story_first_trichomes.cover",
+      "fallback": "assets/events/_placeholder/cover.png"
+    }
+  },
+
+  "i18n": {
+    "requiredKeys": [
+      "events.v3_story_first_trichomes.title",
+      "events.v3_story_first_trichomes.symptom",
+      "options.celebrate",
+      "options.learn_more",
+      "alt.events.v3_story_first_trichomes.cover"
+    ],
+    "supportedLocales": ["de", "en", "es"]
+  },
+
+  "telemetry": {
+    "eventName": "story_beat_impression",
+    "tags": ["story_beat", "phenology"],
+    "kpiBuckets": ["story_first_trichomes"]
+  },
+
+  "learningCard": { "ref": "lc_trichome_basics", "presentation": "after_outcome" },
+
+  "chainHooks": { "startsChain": null, "advancesChainsOnOutcome": null },
+
+  "authoring": { "owner": "design", "lastReviewed": "2026-05-06", "status": "draft" }
+}

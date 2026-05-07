@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 3,
+  "id": "v3_water_dry_pot",
+  "type": "event",
+  "category": "water",
+  "tags": ["learning_beat", "chain_starter", "indoor_only"],
+
+  "title":           { "key": "events.v3_water_dry_pot.title" },
+  "shortSymptom":    { "key": "events.v3_water_dry_pot.symptom" },
+  "longDescription": { "key": "events.v3_water_dry_pot.description" },
+
+  "cause": {
+    "kind": "watering_gap",
+    "explanation": { "key": "events.v3_water_dry_pot.cause" }
+  },
+
+  "symptoms": [
+    { "id": "leaves_drooping_mild", "label": { "key": "symptoms.leaves_drooping_mild" }, "spriteOverlay": "drooping_v1", "weight": 1.0 }
+  ],
+
+  "diagnostics": {
+    "available": ["soil_touch", "weight_check"],
+    "modeAvailability": { "beginner": "always", "guided": "rationed", "pro": "tools_only" },
+    "rations": { "guided": { "perSimDay": 3 } },
+    "results": {
+      "soil_touch": {
+        "label": { "key": "diagnostics.soil_touch.dry_pot" },
+        "informationValue": "high",
+        "revealsCauseHints": ["watering_gap"]
+      }
+    }
+  },
+
+  "options": [
+    {
+      "id": "water_slow",
+      "label": { "key": "options.water_slow" },
+      "intent": "gradual_rehydrate",
+      "contextFit": ["dry"],
+      "effects": { "water": 14, "stress": -3, "risk": -1 },
+      "applyOver": { "realSeconds": 120, "simHours": 4 },
+      "recommendedIn": ["beginner", "guided"],
+      "isDeliberateMistake": false
+    },
+    {
+      "id": "water_fast",
+      "label": { "key": "options.water_fast" },
+      "intent": "heavy_water_push",
+      "contextFit": ["dry"],
+      "effects": { "water": 20, "stress": -1, "risk": 3 },
+      "isDeliberateMistake": false
+    },
+    {
+      "id": "delay_action",
+      "label": { "key": "options.delay_action" },
+      "intent": "delay_action",
+      "contextFit": ["any"],
+      "effects": { "health": -2, "stress": 3, "risk": 2 },
+      "isDeliberateMistake": true
+    }
+  ],
+
+  "triggers": {
+    "all": [
+      { "field": "status.water",          "op": "<=", "value": 30 },
+      { "field": "status.stress",         "op": ">=", "value": 25 },
+      { "field": "simulation.isDaytime",  "op": "==", "value": true }
+    ],
+    "stage": { "min": 3, "max": 9 },
+    "setup": { "modeIn": ["indoor", "greenhouse"] }
+  },
+
+  "eligibility": {
+    "allowedPhases": ["vegetative", "flowering", "harvest"],
+    "constraints": { "minDay": 2, "minPlantSize": 8 }
+  },
+
+  "pressure": {
+    "primaryPressure": "water_dry",
+    "weight": 0.9,
+    "specificPressureFormula": "linear:status.water:0..30",
+    "polarity": "negative"
+  },
+
+  "severity": { "level": "warning" },
+
+  "warningProfile": { "cadence": "early_visible", "leadTimeSimHours": 2 },
+
+  "escalationProfile": {
+    "stages": [
+      { "id": "warning",     "afterSimHours": 0,  "spriteOverlay": "drooping_v1" },
+      { "id": "escalating",  "afterSimHours": 6,  "spriteOverlay": "drooping_v2", "addsRiskPerHour": 1 },
+      { "id": "critical",    "afterSimHours": 12, "spriteOverlay": "drooping_v3", "addsHealthLossPerHour": 0.5, "deathPathEligible": false }
+    ],
+    "noActionHooks": ["pressure_retention_possible"],
+    "poorOutcomeHooks": ["pressure_retention_possible"]
+  },
+
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery":    { "plantStateMutations": { "stress": -4 }, "knowledgeProfileGains": { "water_basics": 0.06 } },
+      "partial_mitigation": { "plantStateMutations": { "stress": -1 }, "knowledgeProfileGains": { "water_basics": 0.03 } },
+      "poor_outcome":       { "plantStateMutations": { "risk": 4, "stress": 6 }, "permanentMarkers": ["stage_water_stress_memory"] },
+      "no_action":          { "plantStateMutations": { "risk": 6, "stress": 8 }, "permanentMarkers": ["stage_water_stress_memory"] }
+    },
+    "narrativeTextKey": "aftermath.v3_water_dry_pot"
+  },
+
+  "rewards": {
+    "score": { "strong_recovery": 60, "partial_mitigation": 25, "poor_outcome": 0, "no_action": -10 },
+    "coachVoiceLineKey": "coach.water_dry.outcome"
+  },
+
+  "ui": {
+    "presentation": "modal",
+    "modalLayout": "symptom_first",
+    "audioCue": "soft_alert_v1",
+    "haptic": "single_pulse",
+    "modalDismissPolicy": "after_outcome",
+    "recommendedOptionId": "water_slow",
+    "showRiskRewardChips": true
+  },
+
+  "assets": {
+    "cover": {
+      "kind": "image",
+      "src": "assets/events/water/dry_pot_cover.png",
+      "altKey": "alt.events.v3_water_dry_pot.cover",
+      "fallback": "assets/events/_placeholder/cover.png"
+    },
+    "spriteOverlays": {
+      "drooping_v1": "assets/sprites/overlays/leaves_drooping_v1.png",
+      "drooping_v2": "assets/sprites/overlays/leaves_drooping_v2.png",
+      "drooping_v3": "assets/sprites/overlays/leaves_drooping_v3.png"
+    }
+  },
+
+  "i18n": {
+    "requiredKeys": [
+      "events.v3_water_dry_pot.title",
+      "events.v3_water_dry_pot.symptom",
+      "events.v3_water_dry_pot.description",
+      "events.v3_water_dry_pot.cause",
+      "options.water_slow",
+      "options.water_fast",
+      "options.delay_action",
+      "alt.events.v3_water_dry_pot.cover"
+    ],
+    "supportedLocales": ["de", "en", "es"]
+  },
+
+  "telemetry": {
+    "eventName": "event_impression",
+    "tags": ["water", "learning_beat"],
+    "kpiBuckets": ["recovery_path_water"]
+  },
+
+  "learningCard": { "ref": "lc_water_basics", "presentation": "before_decision_first_time_only" },
+
+  "chainHooks": {
+    "startsChain": null,
+    "advancesChainsOnOutcome": {
+      "poor_outcome": ["chain.late_flower_humidity_risk@step1"],
+      "no_action":    ["chain.late_flower_humidity_risk@step1"]
+    }
+  },
+
+  "migration": {
+    "supersedes": ["v2_water_dry_pot"],
+    "mappingNotes": "Identische Trigger; ergänzt um diagnostics, escalationProfile.stages und aftermathProfile."
+  },
+
+  "authoring": {
+    "owner": "design",
+    "lastReviewed": "2026-05-06",
+    "qualityChecklistVersion": 1,
+    "status": "draft"
+  }
+}

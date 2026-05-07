@@ -142,7 +142,7 @@ async function main() {
         risk: 18
       });
       window.__gsState.ui.care.selectedCategory = 'watering';
-      window.__gsState.ui.care.selectedActionId = 'watering_low_mist';
+      window.__gsState.ui.care.selectedActionId = 'water_moisten_surface';
       window.renderCareSheet(true);
       window.onCareExecuteAction();
 
@@ -154,7 +154,7 @@ async function main() {
       };
     });
 
-    assert.ok(/care-execute-btn--impact-low/.test(actionFeedback.buttonClass), 'low care action should trigger a subtle impact pulse');
+    assert.ok(/care-execute-btn--impact-(low|light)/.test(actionFeedback.buttonClass), 'low care action should trigger a subtle impact pulse');
     assert.ok(/care-feedback--fresh/.test(actionFeedback.feedbackClass), 'care feedback should softly refresh after action execution');
   } finally {
     await closeBrowser(browser);

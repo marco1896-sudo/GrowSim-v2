@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 3,
+  "id": "v3_late_flower_humidity_risk",
+  "type": "event",
+  "category": "disease",
+  "tags": ["chain_starter", "ambiguous", "indoor_only"],
+
+  "title":           { "key": "events.v3_late_flower_humidity_risk.title" },
+  "shortSymptom":    { "key": "events.v3_late_flower_humidity_risk.symptom" },
+  "longDescription": { "key": "events.v3_late_flower_humidity_risk.description" },
+
+  "cause": {
+    "kind": "humidity_high_stage9",
+    "explanation": { "key": "events.v3_late_flower_humidity_risk.cause" }
+  },
+
+  "symptoms": [
+    { "id": "humidity_meter_high", "label": { "key": "symptoms.humidity_meter_high" }, "spriteOverlay": null, "weight": 1.0 }
+  ],
+
+  "diagnostics": {
+    "available": ["humidity_meter", "bud_close_up"],
+    "modeAvailability": { "beginner": "always", "guided": "rationed", "pro": "tools_only" },
+    "rations": { "guided": { "perSimDay": 2 } },
+    "results": {
+      "bud_close_up": {
+        "label": { "key": "diagnostics.bud_close_up.early_botrytis" },
+        "informationValue": "high",
+        "revealsCauseHints": ["humidity_high_stage9"]
+      }
+    }
+  },
+
+  "options": [
+    {
+      "id": "increase_airflow",
+      "label": { "key": "options.increase_airflow" },
+      "intent": "lower_humidity",
+      "contextFit": ["humidity_high"],
+      "effects": { "risk": -8, "stress": 2 },
+      "applyOver": { "realSeconds": 240, "simHours": 8 },
+      "recommendedIn": ["beginner", "guided"]
+    },
+    {
+      "id": "lower_temp_target",
+      "label": { "key": "options.lower_temp_target" },
+      "intent": "lower_temperature",
+      "contextFit": ["temperature_high"],
+      "effects": { "risk": -3, "stress": -1 }
+    },
+    {
+      "id": "delay_action",
+      "label": { "key": "options.delay_action" },
+      "intent": "delay_action",
+      "contextFit": ["any"],
+      "effects": { "risk": 5 },
+      "isDeliberateMistake": true
+    }
+  ],
+
+  "triggers": {
+    "all": [
+      { "field": "env.humidityPercent", "op": ">=", "value": 65 },
+      { "field": "plant.stageIndex",    "op": ">=", "value": 9 }
+    ],
+    "stage": { "min": 9, "max": 11 },
+    "setup": { "modeIn": ["indoor", "greenhouse"] }
+  },
+
+  "eligibility": { "allowedPhases": ["flowering", "harvest"] },
+
+  "pressure": { "primaryPressure": "humidity_high", "weight": 1.1, "polarity": "negative" },
+  "severity": { "level": "critical" },
+
+  "warningProfile": { "cadence": "subtle", "leadTimeSimHours": 4 },
+
+  "escalationProfile": {
+    "stages": [
+      { "id": "warning",     "afterSimHours": 0 },
+      { "id": "escalating",  "afterSimHours": 6,  "spriteOverlay": "bud_grey_speck",     "addsRiskPerHour": 1.5 },
+      { "id": "critical",    "afterSimHours": 14, "spriteOverlay": "bud_botrytis_spot",  "addsHealthLossPerHour": 0.8, "deathPathEligible": true }
+    ],
+    "unresolvedHooks": ["chain.late_flower_humidity_risk@step2"]
+  },
+
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery":    { "plantStateMutations": { "risk": -10, "stress": -2 }, "knowledgeProfileGains": { "flower_humidity_risk": 0.08 } },
+      "partial_mitigation": { "plantStateMutations": { "risk": -4 },                "knowledgeProfileGains": { "flower_humidity_risk": 0.04 } },
+      "poor_outcome":       { "plantStateMutations": { "risk": 8, "health": -3 },   "permanentMarkers": ["botrytis_scar"] },
+      "no_action":          { "plantStateMutations": { "risk": 14, "health": -8 },  "permanentMarkers": ["botrytis_scar"] }
+    },
+    "narrativeTextKey": "aftermath.v3_late_flower_humidity_risk"
+  },
+
+  "rewards": {
+    "score": { "strong_recovery": 90, "partial_mitigation": 30, "poor_outcome": -20, "no_action": -50 }
+  },
+
+  "ui": {
+    "presentation": "modal",
+    "modalLayout": "symptom_first",
+    "audioCue": "soft_alert_v2",
+    "haptic": "double_pulse",
+    "modalDismissPolicy": "after_outcome",
+    "recommendedOptionId": "increase_airflow",
+    "showRiskRewardChips": true
+  },
+
+  "assets": {
+    "cover": {
+      "kind": "image",
+      "src": "assets/events/disease/late_flower_humidity_cover.png",
+      "altKey": "alt.events.v3_late_flower_humidity_risk.cover",
+      "fallback": "assets/events/_placeholder/cover.png"
+    }
+  },
+
+  "i18n": {
+    "requiredKeys": [
+      "events.v3_late_flower_humidity_risk.title",
+      "events.v3_late_flower_humidity_risk.symptom",
+      "events.v3_late_flower_humidity_risk.description",
+      "options.increase_airflow",
+      "options.lower_temp_target",
+      "options.delay_action",
+      "alt.events.v3_late_flower_humidity_risk.cover"
+    ],
+    "supportedLocales": ["de", "en", "es"]
+  },
+
+  "telemetry": {
+    "eventName": "event_impression",
+    "tags": ["disease", "chain_starter"],
+    "kpiBuckets": ["disease_humidity_path"]
+  },
+
+  "learningCard": { "ref": "lc_humidity_vpd", "presentation": "before_decision_first_time_only" },
+
+  "chainHooks": {
+    "startsChain": "chain_late_flower_humidity_risk",
+    "advancesChainsOnOutcome": null
+  },
+
+  "migration": {
+    "supersedes": ["v2_late_flower_humidity"],
+    "mappingNotes": "Trigger nahezu identisch; ergänzt um Eskalationsstufen, Aftermath-Marker und Diagnostics."
+  },
+
+  "authoring": {
+    "owner": "design",
+    "lastReviewed": "2026-05-06",
+    "qualityChecklistVersion": 1,
+    "status": "draft"
+  }
+}

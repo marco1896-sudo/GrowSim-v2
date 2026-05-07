@@ -1,6 +1,15 @@
 'use strict';
 
 (function attachCareMapping(globalScope) {
+  function mapPhaseLabel(stageIndex, plantPhase) {
+    const safePhase = String(plantPhase || '').trim().toLowerCase();
+    const safeStageIndex = Number.isFinite(Number(stageIndex)) ? Number(stageIndex) : 0;
+    if (safePhase.includes('late')) return 'late_flower';
+    if (safePhase.includes('flower') || safeStageIndex >= 7) return 'flower';
+    if (safePhase.includes('stretch') || safeStageIndex >= 5) return 'stretch';
+    return 'vegetative';
+  }
+
   const categoryOrder = Object.freeze(['watering', 'fertilizing', 'training', 'environment']);
   const categoryLabels = Object.freeze({
     watering: 'Bewässerung',
@@ -9,15 +18,24 @@
     environment: 'Umgebung'
   });
 
+  const tabCategoryMap = Object.freeze({
+    water: ['watering'],
+    feed: ['fertilizing'],
+    routine: ['training', 'environment'],
+    diagnosis: []
+  });
+
   const careMapping = Object.freeze({
     id: 'care',
     reads: Object.freeze([
+      'ui.care.selectedStudioTab',
       'ui.care.selectedCategory',
       'ui.care.selectedActionId',
       'ui.care.feedback',
       'actions.catalog',
       'actions.byId',
       'actions.cooldowns',
+      'actions.lastResult',
       'simulation.nowMs',
       'simulation.isDaytime',
       'plant.stageIndex',
@@ -28,6 +46,7 @@
       'status.stress',
       'status.risk',
       'status.health',
+      'care',
       'climate.tent.temperatureC',
       'climate.tent.humidityPercent',
       'climate.tent.vpdKpa',
@@ -42,37 +61,66 @@
       const plant = safeState.plant || {};
       const status = safeState.status || {};
       const simulation = safeState.simulation || {};
+      const care = safeState.care && typeof safeState.care === 'object' ? safeState.care : {};
       const tentClimate = safeState.climate && safeState.climate.tent && typeof safeState.climate.tent === 'object'
         ? safeState.climate.tent
         : {};
       const catalog = Array.isArray(actions.catalog) ? actions.catalog.slice() : [];
-      const cooldowns = actions.cooldowns || {};
       const nowMs = Date.now();
       const hintApi = globalScope.GrowSimCareActionHints;
+      const careApi = globalScope.GrowSimCareModel;
+      const careMethodsApi = globalScope.GrowSimCareMethods;
       const stageIndex = Number(plant.stageIndex || 0);
       const plantPhase = String(plant.phase || '');
+      const normalizedCare = careApi && typeof careApi.normalizeCareState === 'function'
+        ? careApi.normalizeCareState(care, safeState)
+        : care;
+      const careSummary = careApi && typeof careApi.deriveCareSummary === 'function'
+        ? careApi.deriveCareSummary(normalizedCare, safeState)
+        : (normalizedCare.summary || {});
+      const careReadiness = careApi && typeof careApi.getCareReadiness === 'function'
+        ? careApi.getCareReadiness({ ...safeState, care: normalizedCare })
+        : null;
 
-      const availableCategories = categoryOrder.filter((category) => catalog.some((action) => action && action.category === category));
-      const selectedCategory = availableCategories.includes(careUi.selectedCategory)
-        ? careUi.selectedCategory
-        : (availableCategories[0] || null);
+      const methodDefinitions = careMethodsApi && typeof careMethodsApi.getAvailableCareMethods === 'function'
+        ? careMethodsApi.getAvailableCareMethods(safeState)
+        : [];
+      const derivedCategories = categoryOrder.filter((category) => methodDefinitions.some((method) => method && method.category === category));
+      const availableCategories = derivedCategories.length
+        ? derivedCategories
+        : categoryOrder.filter((category) => catalog.some((action) => action && action.category === category));
 
-      const visibleActions = catalog
-        .filter((action) => action && action.category === selectedCategory)
-        .map((action) => {
-          const cooldownUntil = Number(cooldowns[action.id] || 0);
-          return {
-            id: String(action.id || ''),
-            label: String(action.label || action.id || ''),
-            category: String(action.category || ''),
-            intensity: String(action.intensity || 'medium'),
-            cooldownRealMinutes: Number(action.cooldownRealMinutes || 0),
-            cooldownUntil,
-            cooldownLeftMs: Math.max(0, cooldownUntil - nowMs),
-            uxCopy: action.uxCopy || null,
-            effects: action.effects || null
-          };
-        });
+      const selectedTab = typeof careUi.selectedStudioTab === 'string' ? careUi.selectedStudioTab : 'water';
+      const selectedActionId = careUi.selectedActionId || null;
+      const selectedMethod = careMethodsApi && typeof careMethodsApi.getCareMethodById === 'function'
+        ? careMethodsApi.getCareMethodById(selectedActionId)
+        : null;
+      const selectedLegacyAction = selectedMethod && actions.byId && selectedMethod.legacyFallbackActionId
+        ? actions.byId[selectedMethod.legacyFallbackActionId] || null
+        : null;
+      const actionPreview = selectedMethod && careMethodsApi && typeof careMethodsApi.getCareMethodPreview === 'function'
+        ? careMethodsApi.getCareMethodPreview({ ...safeState, care: normalizedCare }, selectedMethod, { legacyAction: selectedLegacyAction })
+        : null;
+
+      const activeCategories = tabCategoryMap[selectedTab] || [];
+      const visibleActions = methodDefinitions
+        .filter((method) => selectedTab === 'diagnosis' ? false : activeCategories.includes(String(method.category || '')))
+        .map((method) => ({
+          id: String(method.id || ''),
+          labelKey: String(method.labelKey || ''),
+          shortKey: String(method.shortKey || ''),
+          descriptionKey: String(method.descriptionKey || ''),
+          successKey: String(method.successKey || ''),
+          category: String(method.category || ''),
+          type: String(method.type || 'observe'),
+          intensity: String(method.intensity || 'light'),
+          cooldownRealMinutes: Math.max(0, Math.round(Number(method.cooldownHours || 0) * 60)),
+          cooldownUntil: Number(actions.cooldowns && actions.cooldowns[method.id] || 0),
+          cooldownLeftMs: Math.max(0, Number(actions.cooldowns && actions.cooldowns[method.id] || 0) - nowMs),
+          riskProfile: String(method.riskProfile || 'safe'),
+          legacyFallbackActionId: method.legacyFallbackActionId || null,
+          isCareMethod: true
+        }));
 
       const context = {
         stageIndex,
@@ -96,16 +144,51 @@
         }
       };
 
+      const nutrientModel = normalizedCare && normalizedCare.nutrients && typeof normalizedCare.nutrients === 'object'
+        ? normalizedCare.nutrients
+        : {};
+      const lastFeedback = normalizedCare && normalizedCare.feedback && typeof normalizedCare.feedback === 'object'
+        ? normalizedCare.feedback
+        : {};
+
       return {
         open: ui.openSheet === 'care',
-        selectedCategory,
-        selectedActionId: careUi.selectedActionId || null,
-        feedback: careUi.feedback || { kind: 'info', text: 'Wähle eine Aktion.' },
+        selectedStudioTab: selectedTab,
+        selectedCategory: availableCategories.includes(careUi.selectedCategory)
+          ? careUi.selectedCategory
+          : (availableCategories[0] || null),
+        selectedActionId,
+        selectedAction: selectedMethod,
+        feedback: careUi.feedback || { kind: 'info', text: 'Wähle eine Methode.' },
         categoryOrder,
         categoryLabels,
         availableCategories,
         actions: visibleActions,
-        context
+        context,
+        care: {
+          model: normalizedCare,
+          summary: careSummary,
+          readiness: careReadiness,
+          moistureStatus: careSummary.moistureBand || 'stable',
+          rootZoneHint: careSummary.rootZoneHint || 'care.hint.root_zone_balanced',
+          wateringRecommendation: careSummary.wateringRecommendation || null,
+          feedingRecommendation: careSummary.feedingRecommendation || null,
+          riskLevel: careSummary.riskLevel || 'low',
+          nextCareFocus: careSummary.nextCareFocus || 'routine',
+          buddyHintKey: careSummary.buddyHintKey || 'care.buddy.observe',
+          phaseLabel: mapPhaseLabel(stageIndex, plantPhase),
+          drybackRatePerHour: Number(normalizedCare && normalizedCare.water ? normalizedCare.water.drybackRatePerHour : 0) || 0,
+          nutrientBars: [
+            { key: 'n', value: Math.round(Number(nutrientModel.n || 0)) },
+            { key: 'p', value: Math.round(Number(nutrientModel.p || 0)) },
+            { key: 'k', value: Math.round(Number(nutrientModel.k || 0)) },
+            { key: 'micro', value: Math.round(Number(nutrientModel.micro || 0)) }
+          ],
+          saltLoad: Math.round(Number(nutrientModel.saltLoad || 0)),
+          actionPreview,
+          lastFeedback,
+          diagnosis: careSummary.diagnosis || null
+        }
       };
     }
   });

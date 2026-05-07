@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://growsimulator/schemas/common-defs.schema.json",
+  "title": "Common Definitions for Event System V2",
+  "description": "Geteilte Sub-Schemas. Wird von event.schema.json, chain.schema.json und learning-card.schema.json über $ref referenziert.",
+  "type": "object",
+  "definitions": {
+    "LocalizedRef": {
+      "type": "object",
+      "description": "Verweis auf einen i18n-Key. Inline-Strings sind in der Authoring-Phase erlaubt, vor Release jedoch nicht.",
+      "properties": {
+        "key": { "type": "string", "description": "i18n-Key, kebab-/dot-getrennt." }
+      },
+      "required": ["key"]
+    },
+    "Effect": {
+      "type": "object",
+      "description": "Mutationen auf den Plant-Status. Werte sind Deltas, keine Absolutwerte.",
+      "properties": {
+        "water": { "type": "number", "description": "Delta auf Wasser-Status." },
+        "nutrition": { "type": "number" },
+        "health": { "type": "number" },
+        "stress": { "type": "number" },
+        "risk": { "type": "number" },
+        "growth": { "type": "number" }
+      }
+    },
+    "TriggerCondition": {
+      "type": "object",
+      "description": "Eine einzelne Bedingung; vom Engine-Resolver gegen einen Snapshot ausgewertet.",
+      "properties": {
+        "field": { "type": "string", "description": "Whitelisted Feldpfad (z. B. status.water, env.humidityPercent, plant.stageIndex)." },
+        "op": { "enum": ["==", "!=", ">", ">=", "<", "<=", "in", "not_in"] },
+        "value": { "description": "Vergleichswert. Bei in/not_in ein Array, sonst Skalar." }
+      },
+      "required": ["field", "op", "value"]
+    },
+    "StageRange": {
+      "type": "object",
+      "description": "Zulässige Pflanzenstufen 1..12 als min/max.",
+      "properties": {
+        "min": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "max": { "type": "integer", "minimum": 1, "maximum": 12 }
+      }
+    },
+    "AssetRef": {
+      "type": "object",
+      "description": "Verweis auf eine Asset-Datei mit Alt-Text und Fallback.",
+      "properties": {
+        "kind": { "enum": ["image", "spritesheet", "video", "audio", "placeholder"] },
+        "src": { "type": "string", "description": "Repo-relativer Pfad ab Projekt-Root." },
+        "altKey": { "type": "string", "description": "i18n-Key des Alt-Textes." },
+        "fallback": { "type": "string", "description": "Pfad einer Fallback-Datei, wenn src fehlt." }
+      },
+      "required": ["kind", "src"]
+    },
+    "OutcomeQuality": {
+      "enum": ["strong_recovery", "partial_mitigation", "poor_outcome", "no_action"],
+      "description": "Bewertung eines Spielerverhaltens beim Lösen eines Events."
+    },
+    "EscalationStageId": {
+      "enum": ["latent", "warning", "escalating", "critical"],
+      "description": "Stufen der internen Eskalation eines aktiven Events."
+    },
+    "Severity": {
+      "enum": ["info", "warning", "critical", "emergency"],
+      "description": "Anzeigestärke des Events. Steuert Coach-Tonalität, Audio-Cue, Modal-Mindestdauer."
+    },
+    "Polarity": {
+      "enum": ["negative", "neutral", "positive"],
+      "description": "Drucksignatur eines Events."
+    },
+    "ModeKey": {
+      "enum": ["beginner", "guided", "pro"],
+      "description": "Spielmodus."
+    }
+  }
+}

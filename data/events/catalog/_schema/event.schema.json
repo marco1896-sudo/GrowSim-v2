@@ -1,0 +1,299 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://growsimulator/schemas/event.schema.json",
+  "title": "Event v3",
+  "description": "Top-Level-Schema für ein Event-Dokument im neuen V2-System (Schema-Version 3). Quelle: docs/event-system-v2/02_data-model.md, Abschnitt 4.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "type",
+    "category",
+    "title",
+    "shortSymptom",
+    "options",
+    "triggers",
+    "eligibility",
+    "pressure",
+    "severity",
+    "escalationProfile",
+    "aftermathProfile",
+    "ui",
+    "assets",
+    "i18n",
+    "telemetry",
+    "authoring"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 3, "description": "Aktuelle V2-Engine-Schemaversion. Muss exakt 3 sein." },
+    "id": { "type": "string", "description": "Globally unique. Empfohlenes Präfix v3_." },
+    "type": { "enum": ["event", "story_beat", "reward_beat"] },
+    "category": { "enum": ["water", "nutrition", "environment", "pest", "disease", "positive", "special"] },
+    "tags": { "type": "array", "items": { "type": "string" }, "description": "Sekundäre Tags wie learning_beat, chain_starter, indoor_only." },
+    "title": { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+    "shortSymptom": { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+    "longDescription": { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+    "cause": {
+      "type": "object",
+      "description": "Gameplay-Ursache, retrospektiv im Outcome erklärbar.",
+      "properties": {
+        "kind": { "type": "string" },
+        "explanation": { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" }
+      }
+    },
+    "symptoms": {
+      "type": "array",
+      "description": "Sichtbare Pflanzen-Symptomvarianten.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+          "spriteOverlay": { "type": ["string", "null"] },
+          "weight": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "description": "Optionale Diagnose-Aktionen vor der Entscheidung.",
+      "properties": {
+        "available": { "type": "array", "items": { "type": "string" } },
+        "modeAvailability": {
+          "type": "object",
+          "properties": {
+            "beginner": { "enum": ["always", "rationed", "tools_only", "off"] },
+            "guided":   { "enum": ["always", "rationed", "tools_only", "off"] },
+            "pro":      { "enum": ["always", "rationed", "tools_only", "off"] }
+          }
+        },
+        "rations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": { "perSimDay": { "type": "integer", "minimum": 0 } }
+          }
+        },
+        "results": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "options": {
+      "type": "array",
+      "minItems": 2,
+      "description": "Mindestens 2 Optionen, davon mindestens eine bewusst falsche und eine richtige.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "intent", "effects"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "$ref": "common-defs.schema.json#/definitions/LocalizedRef" },
+          "intent": { "type": "string", "description": "Gameplay-Absicht, z. B. gradual_rehydrate, lower_humidity, delay_action." },
+          "contextFit": { "type": "array", "items": { "type": "string" } },
+          "effects": { "$ref": "common-defs.schema.json#/definitions/Effect" },
+          "applyOver": {
+            "type": "object",
+            "properties": {
+              "realSeconds": { "type": "number", "minimum": 0 },
+              "simHours": { "type": "number", "minimum": 0 }
+            }
+          },
+          "recommendedIn": {
+            "type": "array",
+            "items": { "$ref": "common-defs.schema.json#/definitions/ModeKey" }
+          },
+          "isDeliberateMistake": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "triggers": {
+      "type": "object",
+      "properties": {
+        "all": { "type": "array", "items": { "$ref": "common-defs.schema.json#/definitions/TriggerCondition" } },
+        "any": { "type": "array", "items": { "$ref": "common-defs.schema.json#/definitions/TriggerCondition" } },
+        "stage": { "$ref": "common-defs.schema.json#/definitions/StageRange" },
+        "setup": {
+          "type": "object",
+          "properties": {
+            "modeIn": { "type": "array", "items": { "enum": ["indoor", "outdoor", "greenhouse"] } }
+          }
+        }
+      }
+    },
+    "eligibility": {
+      "type": "object",
+      "required": ["allowedPhases"],
+      "properties": {
+        "allowedPhases": {
+          "type": "array",
+          "items": { "enum": ["germination", "seedling", "vegetative", "preflower", "flowering", "ripening", "harvest"] }
+        },
+        "constraints": { "type": "object", "additionalProperties": true },
+        "playerProfile": {
+          "type": "object",
+          "properties": {
+            "minKnowledge": { "type": ["object", "null"] },
+            "blockIfKnowledgeAtLeast": { "type": ["object", "null"] }
+          }
+        }
+      }
+    },
+    "pressure": {
+      "type": "object",
+      "required": ["primaryPressure", "weight", "polarity"],
+      "properties": {
+        "primaryPressure": { "type": "string" },
+        "weight": { "type": "number", "minimum": 0 },
+        "specificPressureFormula": { "type": "string", "description": "Mini-DSL, z. B. linear:status.water:0..30." },
+        "polarity": { "$ref": "common-defs.schema.json#/definitions/Polarity" }
+      }
+    },
+    "severity": {
+      "type": "object",
+      "required": ["level"],
+      "properties": {
+        "level": { "$ref": "common-defs.schema.json#/definitions/Severity" },
+        "scale": { "type": "string", "default": "info|warning|critical|emergency" }
+      }
+    },
+    "warningProfile": {
+      "type": "object",
+      "properties": {
+        "cadence": { "type": "string" },
+        "leadTimeSimHours": { "type": "number", "minimum": 0 }
+      }
+    },
+    "escalationProfile": {
+      "type": "object",
+      "required": ["stages"],
+      "properties": {
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "afterSimHours"],
+            "properties": {
+              "id": { "$ref": "common-defs.schema.json#/definitions/EscalationStageId" },
+              "afterSimHours": { "type": "number", "minimum": 0 },
+              "spriteOverlay": { "type": ["string", "null"] },
+              "addsRiskPerHour": { "type": "number" },
+              "addsHealthLossPerHour": { "type": "number" },
+              "deathPathEligible": { "type": "boolean" },
+              "coachLineKey": { "type": "string" }
+            }
+          }
+        },
+        "noActionHooks": { "type": "array", "items": { "type": "string" } },
+        "poorOutcomeHooks": { "type": "array", "items": { "type": "string" } },
+        "unresolvedHooks": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "aftermathProfile": {
+      "type": "object",
+      "required": ["perOutcomeQuality"],
+      "properties": {
+        "perOutcomeQuality": {
+          "type": "object",
+          "description": "Mindestens strong_recovery und no_action müssen gesetzt sein.",
+          "properties": {
+            "strong_recovery":    { "type": "object", "additionalProperties": true },
+            "partial_mitigation": { "type": "object", "additionalProperties": true },
+            "poor_outcome":       { "type": "object", "additionalProperties": true },
+            "no_action":          { "type": "object", "additionalProperties": true }
+          },
+          "required": ["strong_recovery", "no_action"]
+        },
+        "narrativeTextKey": { "type": "string" }
+      }
+    },
+    "rewards": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "type": "object",
+          "properties": {
+            "strong_recovery":    { "type": "number" },
+            "partial_mitigation": { "type": "number" },
+            "poor_outcome":       { "type": "number" },
+            "no_action":          { "type": "number" }
+          }
+        },
+        "cosmeticUnlock":     { "type": ["string", "null"] },
+        "coachVoiceLineKey":  { "type": "string" }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "required": ["presentation"],
+      "properties": {
+        "presentation":         { "enum": ["modal", "toast", "banner"] },
+        "modalLayout":          { "enum": ["symptom_first", "image_first", "data_first"] },
+        "audioCue":             { "type": "string" },
+        "haptic":               { "type": "string" },
+        "modalDismissPolicy":   { "enum": ["after_outcome", "after_choice", "manual"] },
+        "recommendedOptionId":  { "type": "string" },
+        "showRiskRewardChips":  { "type": "boolean" }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "required": ["cover"],
+      "properties": {
+        "cover":          { "$ref": "common-defs.schema.json#/definitions/AssetRef" },
+        "spriteOverlays": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "i18n": {
+      "type": "object",
+      "required": ["requiredKeys", "supportedLocales"],
+      "properties": {
+        "requiredKeys":     { "type": "array", "items": { "type": "string" } },
+        "supportedLocales": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "required": ["eventName"],
+      "properties": {
+        "eventName":  { "type": "string" },
+        "tags":       { "type": "array", "items": { "type": "string" } },
+        "kpiBuckets": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "learningCard": {
+      "type": "object",
+      "properties": {
+        "ref":          { "type": "string" },
+        "presentation": { "enum": ["before_decision_first_time_only", "after_outcome", "optional_button"] }
+      }
+    },
+    "chainHooks": {
+      "type": "object",
+      "properties": {
+        "startsChain": { "type": ["string", "null"] },
+        "advancesChainsOnOutcome": {
+          "type": ["object", "null"],
+          "additionalProperties": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "properties": {
+        "supersedes":    { "type": "array", "items": { "type": "string" } },
+        "mappingNotes":  { "type": "string" }
+      }
+    },
+    "authoring": {
+      "type": "object",
+      "required": ["status", "lastReviewed"],
+      "properties": {
+        "owner":                   { "type": "string" },
+        "lastReviewed":            { "type": "string", "description": "ISO-Datum YYYY-MM-DD." },
+        "qualityChecklistVersion": { "type": "integer" },
+        "status":                  { "enum": ["draft", "review", "approved", "published", "frozen"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "presetMeta": {
+    "id": "near-harvest",
+    "label": "Near harvest",
+    "description": "Late-stage plant with healthy conditions and harvest proximity.",
+    "generatedBy": "GrowSim Dev Control Center",
+    "generatedAt": "2026-05-05T14:46:24.137Z",
+    "safeMode": true,
+    "note": "Analysis preset only. Do not overwrite real saves without validating against storage.js migrations."
+  },
+  "schemaVersion": "1.0.0",
+  "seed": "dev-center-near-harvest",
+  "plantId": "dev-near-harvest",
+  "setup": {
+    "mode": "indoor",
+    "light": "medium",
+    "medium": "soil",
+    "potSize": "medium",
+    "genetics": "auto",
+    "createdAtReal": 1777992384137
+  },
+  "simulation": {
+    "startRealTimeMs": 1777992384137,
+    "lastTickRealTimeMs": 1777992384137,
+    "simTimeMs": 0,
+    "simDay": 52,
+    "simHour": 8,
+    "simMinute": 0,
+    "timeCompression": 12,
+    "baseSpeed": 12,
+    "dayWindow": {
+      "startHour": 6,
+      "endHour": 22
+    },
+    "isDaytime": true
+  },
+  "plant": {
+    "stageIndex": 11,
+    "stageKey": "stage_11",
+    "stageStartSimDay": 0,
+    "lifecycle": {
+      "totalSimDays": 56,
+      "qualityTier": "perfect",
+      "qualityScore": 91
+    },
+    "assets": {}
+  },
+  "status": {
+    "water": 74,
+    "nutrition": 78,
+    "health": 91,
+    "stress": 14,
+    "risk": 10,
+    "growth": 88
+  },
+  "progression": {
+    "playerLevel": 1,
+    "xp": 0,
+    "coins": 100
+  },
+  "events": {
+    "scheduler": {
+      "nextEventRealTimeMs": 1777995084137,
+      "lastEventRealTimeMs": 0,
+      "lastEventId": null,
+      "deferredUntilDaytime": false
+    },
+    "active": null,
+    "history": []
+  },
+  "retention": {
+    "dailyTasks": {
+      "tasks": [],
+      "completedIds": [],
+      "lastRefreshDay": 0
+    },
+    "streak": {
+      "count": 0,
+      "lastClaimDay": null
+    }
+  },
+  "history": {
+    "actions": [],
+    "events": [],
+    "system": []
+  },
+  "ui": {},
+  "debug": {
+    "source": "dev-center-preset"
+  }
+}

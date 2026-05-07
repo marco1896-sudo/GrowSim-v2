@@ -669,9 +669,389 @@
     "plant_needs_water": "Deine Pflanze braucht Pflege."
   },
   "care": {
-    "feed": "D?ngen",
-    "open": "Pflege ?ffnen",
-    "water": "Gie?en"
+    "buddy": {
+      "observe": "Lies die Pflanze erst sauber, dann setz den nächsten Schritt.",
+      "wait_dryback": "Die Wurzelzone ist noch zu feucht. Gib ihr noch etwas Luft.",
+      "water_window": "Die Oberfläche trocknet sauber ab. Gießen passt bald oder schon jetzt.",
+      "feed_hold": "Die Salzlast ist erhöht. Mit Dünger besser noch kurz warten.",
+      "feed_window": "Die Pflanze wirkt aufnahmefähig für eine dosierte Düngung."
+    },
+    "feed": "Düngen",
+    "hint": {
+      "root_zone_balanced": "Wurzelzone stabil",
+      "root_zone_deeper_than_surface": "Oben trockener als unten",
+      "root_zone_dry": "Wurzelzone wird trocken",
+      "root_zone_wet": "Wurzelzone noch nass"
+    },
+    "open": "Pflege öffnen",
+    "reason": {
+      "medium_too_dry": "Die Wurzelzone ist noch zu trocken für eine saubere Nährstoffaufnahme",
+      "moisture_stable": "Feuchte ist gerade stabil",
+      "nutrient_buffer_low": "Die Versorgung wird knapper und die Pflanze kann jetzt gut aufnehmen",
+      "nutrition_stable": "Nährstofflage ist stabil",
+      "root_zone_wet": "Die Wurzelzone trägt noch zu viel Feuchte",
+      "salt_pressure": "Die Salzlast ist erhöht",
+      "substrate_dry": "Substrat trocknet aus",
+      "surface_dry": "Die Oberfläche ist trocken, während die Wurzelzone noch Reserven hält"
+    },
+    "recommendation": {
+      "feed": {
+        "feed_now": "Die Pflanze wirkt aufnahmefähig. Eine moderate Düngung passt jetzt gut.",
+        "hold": "Die Salzlast ist erhöht. Stärkere Düngung würde das Risiko weiter erhöhen.",
+        "hydrate_first": "Die Wurzelzone ist zu trocken. Erst leicht befeuchten, dann düngen.",
+        "stable": "Die Versorgung ist gerade stabil.",
+        "wait_root_zone": "Die Wurzelzone ist noch zu feucht. Füttern wäre aktuell weniger effizient."
+      },
+      "water": {
+        "monitor": "Feuchte wirkt stabil. Weiter beobachten.",
+        "small_sip": "Die Oberfläche ist trocken, aber unten steckt noch Feuchte. Ein kleiner Schluck reicht.",
+        "wait_dryback": "Die Wurzelzone ist noch feucht. Warte, bis die obere Zone weiter abtrocknet.",
+        "water_now": "Die Oberfläche ist abgetrocknet und die Wurzelzone bleibt stabil. Gießen ist jetzt sinnvoll."
+      }
+    },
+    "water": "Gießen"
+  },
+  "careStudio": {
+    "buddy": {
+      "feedLight": "Etwas leichter zu düngen wäre hier sauberer.",
+      "feedReady": "Die Pflanze wirkt aufnahmefähig für eine dosierte Düngung.",
+      "feedTooRisky": "Die Salzlast ist schon erhöht. Lieber noch kurz warten.",
+      "monitorRoots": "Lies erst die Wurzelzone, dann entscheide.",
+      "routineCareful": "Leichte Pflege ist hier sauberer als ein harter Eingriff.",
+      "routineStable": "Das ist ein guter Moment für sanfte Pflege.",
+      "stabilizeFirst": "Erst stabilisieren, dann weiteren Stress setzen.",
+      "waterGoodTiming": "Die Oberfläche ist bereit und die Wurzelzone bleibt stabil.",
+      "waterSmallSip": "Ein kleiner Schluck passt hier besser als ein volles Gießen.",
+      "waterTooSoon": "Die Wurzelzone ist noch zu feucht. Für stärkeres Gießen ist es zu früh."
+    },
+    "actionPanel": {
+      "diagnosis_subtitle": "Diagnose hilft dir erst zu lesen, bevor du handelst.",
+      "diagnosis_title": "Diagnoseansicht",
+      "empty_actions": "In diesem Bereich sind gerade keine passenden Pflegemethoden verfügbar.",
+      "empty_diagnosis": "Die Diagnose bleibt bewusst beim Lesen der Pflanze.",
+      "feed_subtitle": "Wähle eine passende Methode für Versorgung, Aufnahme und Salzlast.",
+      "feed_title": "Dünge-Methoden",
+      "routine_subtitle": "Sanfte Routinen und Stabilisierungsschritte bleiben hier gebündelt.",
+      "routine_title": "Pflege-Methoden",
+      "water_subtitle": "Wähle eine passende Methode für den aktuellen Zustand.",
+      "water_title": "Gieß-Methoden"
+    },
+    "chips": {
+      "moisture": "Feuchte",
+      "nutrition": "Versorg.",
+      "risk": "Risiko",
+      "stress": "Stress"
+    },
+    "diagnosis": {
+      "buddy_hint": "Buddy-Hinweis",
+      "cause": {
+        "generalStressLoad": "Stress, Risiko oder Gesundheit zeigen gerade zu viel Druck.",
+        "nutrientBufferFalling": "Die Versorgung sinkt, während Salzlast und Wurzelzone noch sauber wirken.",
+        "rootZoneDrysSlow": "Die tiefe Zone trocknet langsamer als die Oberfläche.",
+        "rootZoneLosesBuffer": "Die Pflanze verliert Feuchte schneller, als die Wurzelzone puffern kann.",
+        "supplyAheadOfDemand": "Es ist noch genug Versorgung da, aber die Salzlast steigt.",
+        "surfaceDryRootStable": "Die Oberfläche ist abgetrocknet, während die Wurzelzone stabil bleibt.",
+        "valuesInRange": "Wasser, Wurzelzone und Versorgung liegen gerade im sauberen Bereich."
+      },
+      "current_focus": "Aktueller Fokus",
+      "focus": {
+        "growth": "Wachstum",
+        "nutrition": "Nährstoffe",
+        "risk": "Risiko",
+        "rootZone": "Wurzelzone",
+        "saltLoad": "Salzlast",
+        "stable": "Beobachten",
+        "stress": "Stress",
+        "water": "Wasser"
+      },
+      "headline": {
+        "nutritionLow": "Moderater Nährstoffbedarf",
+        "rootZoneWet": "Wurzelzone noch zu feucht",
+        "saltLoadHigh": "Salzlast steigt",
+        "stable": "Stabiler Zustand",
+        "stressHigh": "Erst Stress stabilisieren",
+        "waterLow": "Feuchte fällt zu schnell",
+        "waterWindow": "Sauberes Gießfenster"
+      },
+      "message": {
+        "nutritionLow": "Die Pflanze wirkt aufnahmefähig und hat wieder Puffer für eine moderate Versorgung.",
+        "rootZoneWet": "Die Wurzelzone ist noch zu feucht. Erneutes Gießen würde Sauerstoffstress fördern.",
+        "saltLoadHigh": "Die Versorgung ist vorhanden, aber die Salzlast steigt. Starke Düngung vermeiden.",
+        "stable": "Der Zustand ist stabil. Beobachte Dryback und Versorgung, bevor du eingreifst.",
+        "stressHigh": "Die Pflanze ist instabil. Sanfte Pflege ist aktuell sinnvoller als starke Eingriffe.",
+        "waterLow": "Die Pflanze verliert Feuchte schneller, als die Wurzelzone noch sauber puffern kann.",
+        "waterWindow": "Die Oberfläche ist abgetrocknet, während die Wurzelzone noch stabil bleibt."
+      },
+      "next_focus": "Nächster Fokus",
+      "next_observation": "Nächste Beobachtung",
+      "next_check": "Später prüfen",
+      "nextCheck": {
+        "dryback": "Prüfe später, ob der Dryback weiter fortschreitet.",
+        "monitor": "Beobachte weiter, bevor du den nächsten starken Eingriff setzt.",
+        "nutrition": "Prüfe nach der nächsten Versorgung, wie ruhig die Pflanze reagiert.",
+        "rootZone": "Prüfe später, ob die tiefe Zone weiter entlastet.",
+        "saltLoad": "Beobachte, ob sich der Druck vor der nächsten Düngung beruhigt.",
+        "stress": "Achte zuerst auf ruhigere Reaktion, bevor du nachlegst."
+      },
+      "nutrients": "Nährstoffe",
+      "observe": {
+        "avoidStrongFeed": "Vermeide starke Düngung und beobachte, ob sich der Druck beruhigt.",
+        "feedModerately": "Eine moderate Versorgung passt eher als ein starker Schub.",
+        "monitorDryback": "Beobachte, wie Oberfläche und Wurzelzone weiter auseinanderlaufen oder sich angleichen.",
+        "monitorDrybackAndSupply": "Beobachte Dryback und Versorgung weiter, bevor du eingreifst.",
+        "recheckAfterWatering": "Nach dem Gießen prüfen, ob die Wurzelzone wieder sauber stabilisiert.",
+        "stabilizeBeforeIntervention": "Erst beruhigen, dann Training, starke Düngung oder weitere Belastung setzen."
+      },
+      "probable_cause": "Wahrscheinliche Ursache",
+      "ready_focus": "Lies erst Wasser, Wurzelzone und Versorgung sauber, dann wähle die klarste Aktion.",
+      "risk": "Risiko",
+      "risk_level": "Risiko-Level",
+      "root_zone": "Wurzelzone",
+      "state": "Status",
+      "status": {
+        "act": "Jetzt handeln",
+        "avoid": "Lieber vermeiden",
+        "stable": "Stabil",
+        "watch": "Beobachten"
+      },
+      "stress": "Stress",
+      "suggested_direction": "Passende Richtung",
+      "title": "Diagnose",
+      "water": "Wasser"
+    },
+    "feedback": {
+      "badCare": "Diese Entscheidung hat mehr Druck als Entlastung gebracht.",
+      "effect": {
+        "dryStressReduced": "Trockenstress gesenkt",
+        "monitorResponse": "Pflanzenreaktion beobachten",
+        "moistureRaised": "Feuchte angehoben",
+        "nutrientSupport": "Versorgung angehoben",
+        "riskRaised": "Risiko gestiegen",
+        "riskSettled": "Risiko beruhigt"
+      },
+        "goodCare": "Saubere Pflegeentscheidung. Die Pflanze sollte ruhiger reagieren.",
+        "goodWatering": "Gute Entscheidung. Die Feuchte stabilisiert sich, ohne die Wurzelzone stark zu belasten.",
+        "grade": {
+          "bad": "Schlecht",
+          "good": "Gut",
+        "okay": "Okay",
+        "perfect": "Perfekt",
+        "risky": "Riskant"
+      },
+        "goodFeeding": "Gute Entscheidung. Die Pflanze wirkt aufnahmefähig und die Versorgung steigt kontrolliert.",
+        "hygieneSettled": "Gute Entscheidung. Die Umgebung wirkt ruhiger und der Risikodruck sinkt leicht.",
+        "okayCare": "Die Aktion passt, aber das Timing war noch nicht ganz sauber.",
+        "perfectCare": "Sehr starke Entscheidung. Die Pflanze reagiert sauber.",
+        "perfectWatering": "Perfektes Dryback-Fenster. Das Gießen passt sehr sauber zum aktuellen Zustand.",
+        "rootZoneRelief": "Gute Entscheidung. Die Wurzelzone wird vorsichtig entlastet, ohne wie ein neuer Gießdurchgang zu wirken.",
+        "rootZoneReliefLimited": "Die Entlastung greift nur begrenzt. Beobachte weiter, ob die Wurzelzone wirklich Druck zeigt.",
+        "riskyCare": "Die Aktion war machbar, baut aber zusätzlichen Druck auf. Beobachte die Reaktion genau.",
+        "riskyFeeding": "Die Versorgung steigt, aber auch die Salzlast. Beim nächsten Mal vorsichtiger dosieren.",
+        "riskyWatering": "Das war etwas früh. Beobachte die Wurzelzone, bevor du erneut gießt.",
+        "uptakeLimited": "Die Aufnahme bleibt noch begrenzt. Erst Wurzelzone und Salzlast weiter beruhigen.",
+        "uptakeStabilized": "Gute Entscheidung. Die Aufnahme wirkt ruhiger, ohne die Salzlast stark zu erhöhen.",
+        "title": "Nachwirkung"
+      },
+    "aftercare": {
+      "grade": "Note",
+      "title": "Nachwirkung"
+    },
+    "decision": {
+      "effects_title": "Auswirkungen",
+      "risk": "Risiko",
+      "selectedAction": "Auswahl",
+      "title": "Entscheidung"
+    },
+    "delta": {
+      "dryStress": "Trockenstress",
+      "empty": "Keine klare Delta-Prognose",
+      "growth": "Wachstum",
+      "health": "Gesundheit",
+      "moisture": "Feuchte",
+      "nutrition": "Versorgung",
+      "overwatering": "Wurzelrisiko",
+      "risk": "Risiko",
+      "rootZoneMoisture": "Wurzelzone",
+      "saltLoad": "Salzlast",
+      "stability": "Stabilität",
+      "stress": "Stress",
+      "surfaceMoisture": "Oberfläche",
+      "title": "Delta-Prognose"
+    },
+    "feed": {
+      "k": "K",
+      "micro": "Mikro",
+      "n": "N",
+      "p": "P",
+      "phase": "Phase",
+      "recommendation": "Dünge-Fokus",
+      "salt_load": "Salzlast",
+      "title": "Nährstoffbalance"
+    },
+    "focus": {
+      "monitorDryback": "Dryback beobachten",
+      "monitorPlant": "Pflanzenreaktion beobachten",
+      "stabilizePlant": "Pflanze stabilisieren",
+      "watchSaltLoad": "Salzlast beobachten"
+    },
+    "phase": {
+      "flower": "Blüte",
+      "late_flower": "Späte Blüte",
+      "stretch": "Stretch",
+      "vegetative": "Vegi"
+    },
+    "preview": {
+      "benefit": {
+        "high": "Hoch",
+        "low": "Niedrig",
+        "medium": "Mittel"
+      },
+      "effect": {
+        "burnRiskUp": "Burn-Risiko kann steigen",
+        "dryStressDown": "Trockenstress kann sinken",
+        "environmentStable": "Umgebungsdruck kann sich beruhigen",
+        "flowerSupport": "Blütefokus kann profitieren",
+        "growthSupport": "Wachstum kann profitieren",
+        "moistureUp": "Feuchte steigt voraussichtlich",
+        "monitor": "Reaktion beobachten",
+        "nutritionUp": "Versorgung steigt voraussichtlich",
+        "rootStressUp": "Wurzelstress kann steigen",
+        "routineStable": "Routinepflege bleibt voraussichtlich sauber",
+        "saltRiskUp": "Salzdruck kann steigen"
+      },
+      "labels": {
+        "benefit": "Nutzen",
+        "effect": "Effekt",
+        "risk": "Risiko",
+        "timing": "Timing"
+      },
+      "reason": {
+        "feedAlreadyHigh": "Die Versorgung ist bereits hoch",
+        "lateFlowerSensitive": "Späte Blüte verzeiht hier weniger zusätzlichen Stress",
+        "mediumTooDry": "Die Wurzelzone ist zu trocken für eine saubere Nährstoffaufnahme",
+        "nutrientBufferLow": "Die Pflanze kann Nährstoffe aufnehmen und ihr Puffer ist gerade eher niedrig",
+        "overwaterPressure": "Die Wurzelzone steht schon unter Feuchtedruck",
+        "phaseMismatch": "Diese Düngung passt nur eingeschränkt zur aktuellen Phase",
+        "plantStressed": "Die Pflanze steht bereits unter Stress",
+        "rootZoneReady": "Die Wurzelzone bleibt stabil und kann die Aktion sauber aufnehmen",
+        "rootZoneWet": "Die Wurzelzone ist noch feucht. Zu frühes Nachlegen würde sie weiter belasten",
+        "saltPressureHigh": "Die Salzlast ist bereits erhöht. Mehr Dünger würde den Druck weiter steigern",
+        "smallSipSafer": "Ein kleinerer Schluck wäre hier die sicherere Wahl",
+        "stableCanopy": "Die Pflanze wirkt stabil",
+        "strongAction": "Das ist eine stärkere Gießaktion und belastet nasse Zonen schneller",
+        "strongFeed": "Das ist eine stärkere Düngung und erhöht den Druck deutlicher",
+        "surfaceReady": "Die Oberfläche ist abgetrocknet und öffnet ein sauberes Gießfenster",
+        "trainingInvasive": "Diese Pflege ist etwas invasiver"
+      },
+      "timing": {
+        "early": "Zu früh",
+        "good": "Gut",
+        "okay": "Okay",
+        "poor": "Schwach"
+      },
+      "title": "Prognose",
+      "verdict": {
+        "recommended": "Empfohlen",
+        "risky": "Riskant",
+        "situational": "Situativ",
+        "wait": "Besser warten"
+      }
+    },
+    "risk": {
+      "high": "Hoch",
+      "low": "Niedrig",
+      "medium": "Mittel"
+    },
+    "routine": {
+      "active_actions": "Live nutzbar",
+      "coming_soon": "Bald verfügbar",
+      "hygiene": "Hygiene-Runde",
+      "leaf_check": "Blätter prüfen",
+      "note": {
+        "hygiene": "Hält die Umgebung ruhiger und senkt unnötigen Druck.",
+        "leaf_check": "Hilft dir, Stress- und Mangelanzeichen früh zu erkennen.",
+        "pot_weight": "Hilft dir, den richtigen Gießzeitpunkt besser einzuschätzen.",
+        "rotate": "Sorgt für gleichmäßigere Ausrichtung und ein ruhigeres Wachstum.",
+        "substrate_check": "Zeigt, ob Oberfläche und Wurzelzone wirklich zusammenpassen."
+      },
+      "pot_weight": "Topfgewicht schätzen",
+      "rotate": "Pflanze drehen",
+      "substrate_check": "Substrat prüfen",
+      "title": "Routine"
+    },
+    "state": {
+      "active": "Aktiv",
+      "balanced": "Stabil",
+      "dry": "Trocken",
+      "low": "Niedrig",
+      "stable": "Stabil",
+      "watch": "Beobachten",
+      "wet": "Nass"
+    },
+    "subtitle": {
+      "ready": "Pflegefenster aktiv",
+      "risk": "Risiko ist erhöht",
+      "stable": "Wurzelzone stabil",
+      "wait": "Besser noch etwas warten"
+    },
+    "tabs": {
+      "diagnosis": "Diagnose",
+      "feed": "Düngen",
+      "routine": "Pflege",
+      "water": "Gießen"
+    },
+    "timing": {
+      "ready": "Jetzt sinnvoll",
+      "soon": "Bald prüfen",
+      "wait": "Warten",
+      "warning": "Achtung"
+    },
+    "title": "Care Studio",
+    "water": {
+      "dry_stress": "Trockenstress",
+      "dryback": "Dryback",
+      "next_window": "Nächstes Gießfenster",
+      "overwatering": "Wurzelrisiko",
+      "root_zone": "Wurzelzone",
+      "surface": "Oberfläche",
+      "title": "Feuchteprofil"
+    },
+    "visual": {
+      "buddySlot": "Buddy-Slot",
+      "rootSlot": "Wurzelzone",
+      "timingSlot": "Timing"
+    },
+    "trend": {
+      "message": {
+        "moistureFalling": "Die Feuchte f?llt weiter. Beobachte, ob die Wurzelzone noch sauber puffert.",
+        "moistureRising": "Die Feuchte steigt gerade. Pr?fe, ob sich der Bereich danach ruhig stabilisiert.",
+        "rootZoneDrying": "Die tiefe Zone verliert langsam Feuchte. Beobachten ist aktuell sinnvoll.",
+        "rootZoneStayingWet": "Die Wurzelzone bleibt l?nger feucht. Weiteres Gie?en w?rde das Risiko erh?hen.",
+        "saltLoadRising": "Die Salzlast steigt. Starke D?ngung sollte vorerst vermieden werden.",
+        "saltLoadStable": "Die Salzlast bleibt ruhig. Beobachte weiter, bevor du st?rker nachlegst.",
+        "stressRising": "Der Stress nimmt zu. Vermeide starke Eingriffe und beobachte die Ursache.",
+        "stressRecovering": "Der Stress geht zur?ck. Die letzte Pflegeentscheidung wirkt stabilisierend.",
+        "riskRising": "Das Risiko baut sich auf. Handle nur mit klarer Begr?ndung weiter.",
+        "riskFalling": "Der Druck nimmt ab. Weiter beobachten ist aktuell oft sauberer als nachlegen.",
+        "nutritionDepleting": "Die Versorgung f?llt. Eine moderate D?ngung kann bald sinnvoll werden.",
+        "nutritionRecovering": "Die Versorgung erholt sich. Beobachte, wie ruhig die Pflanze darauf reagiert.",
+        "stable": "Der Verlauf bleibt ruhig. Beobachte weiter, bevor du eingreifst."
+      },
+      "label": "Tendenz",
+      "moistureFalling": "Feuchte sinkt",
+      "moistureRising": "Feuchte steigt",
+      "rootZoneDrying": "Wurzelzone trocknet ab",
+      "rootZoneStayingWet": "Wurzelzone bleibt nass",
+      "saltLoadRising": "Salzlast steigt",
+      "saltLoadStable": "Salzlast bleibt stabil",
+      "stressRising": "Stress steigt",
+      "stressRecovering": "Stress erholt sich",
+      "riskRising": "Risiko steigt",
+      "riskFalling": "Risiko sinkt",
+      "nutritionDepleting": "Versorgung sinkt",
+      "nutritionRecovering": "Versorgung erholt sich",
+      "stable": "Stabiler Verlauf"
+    }
   },
   "death": {
     "discard_and_restart": "Run verwerfen & neu starten",
@@ -866,6 +1246,110 @@
     },
     "update": {
       "announce": "Neues Update ist live. Zeit fuer deinen naechsten Grow."
+    }
+  },
+  "careMethod": {
+    "water": {
+      "checkPotWeight": {
+        "label": "Topfgewicht prüfen",
+        "short": "Hilft dir, den Gießzeitpunkt ruhiger einzuschätzen.",
+        "description": "Vergleicht Gefühl und Feuchtebild, ohne direkt einzugreifen.",
+        "success": "Topfgewicht geprüft. Der Wasserstatus lässt sich jetzt sicherer einschätzen."
+      },
+      "moistenSurface": {
+        "label": "Oberfläche befeuchten",
+        "short": "Kleine Korrektur für eine trockene obere Zone.",
+        "description": "Beruhigt nur die Oberfläche, ohne die Wurzelzone stark zu belasten.",
+        "success": "Oberfläche leicht befeuchtet. Die obere Zone wirkt ruhiger."
+      },
+      "evenWatering": {
+        "label": "Gleichmäßig angießen",
+        "short": "Moderate Wassergabe bei sauberem Dryback-Fenster.",
+        "description": "Stabilisiert Feuchte und Trockenstress, ohne aggressiv zu wirken.",
+        "success": "Gleichmäßig angegossen. Die Feuchte verteilt sich wieder sauberer."
+      },
+      "normalWatering": {
+        "label": "Normaler Gießdurchgang",
+        "short": "Kräftigere Standardpflege, wenn die Wurzelzone bereit ist.",
+        "description": "Wirkt stärker, braucht aber ein sauberes Timing.",
+        "success": "Normal gegossen. Die Pflanze hat wieder einen soliden Feuchtepuffer."
+      },
+      "relieveRootZone": {
+        "label": "Wurzelzone entlasten",
+        "short": "Nur bei Salz- oder Wurzelzonen-Druck sinnvoll.",
+        "description": "Soll Druck aus der Zone nehmen, nicht einfach nur mehr Wasser geben.",
+        "success": "Wurzelzone vorsichtig entlastet. Beobachte jetzt, wie ruhig sie nachzieht."
+      }
+    },
+    "feed": {
+      "checkSupply": {
+        "label": "Versorgung prüfen",
+        "short": "Liest Bedarf und Aufnahmefähigkeit vor einer Fütterung.",
+        "description": "Hilft dir einzuschätzen, ob die Pflanze aktuell Futter sauber aufnehmen kann.",
+        "success": "Versorgung geprüft. Die nächste Düngeentscheidung ist jetzt klarer."
+      },
+      "lightBase": {
+        "label": "Leichte Basisversorgung",
+        "short": "Vorsichtige Versorgung bei leichtem Bedarf.",
+        "description": "Gibt sanfte Grundversorgung, wenn die Wurzelzone stabil genug wirkt.",
+        "success": "Leichte Basisversorgung gegeben. Die Pflanze wirkt wieder etwas besser versorgt."
+      },
+      "phaseSupply": {
+        "label": "Phasengerechte Versorgung",
+        "short": "Standardversorgung passend zur aktuellen Phase.",
+        "description": "Passt nur, wenn Aufnahme, Wurzelzone und Salzlast zusammenspielen.",
+        "success": "Phasengerecht versorgt. Jetzt beobachten, ob die Aufnahme ruhig bleibt."
+      },
+      "stabilizeUptake": {
+        "label": "Aufnahme stabilisieren",
+        "short": "Sanfte Versorgung für unruhige oder gestresste Zustände.",
+        "description": "Zielt mehr auf Stabilität als auf starken Schub.",
+        "success": "Aufnahme stabilisiert. Die Versorgung wirkt jetzt etwas ruhiger."
+      },
+      "protectSaltLoad": {
+        "label": "Salzlast schonen",
+        "short": "Bewusst nicht füttern, um weiteren Druck zu vermeiden.",
+        "description": "Nicht jede gute Pflegeentscheidung ist zusätzliche Düngung.",
+        "success": "Salzlast geschont. Weniger Druck ist hier gerade die bessere Versorgung."
+      }
+    },
+    "routine": {
+      "checkLeaves": {
+        "label": "Blätter prüfen",
+        "short": "Erkennt Stress- und Mangelzeichen früher.",
+        "description": "Hilft dir, die Pflanze zu lesen, bevor kleine Probleme groß werden.",
+        "success": "Blätter geprüft. Auffälligkeiten lassen sich jetzt früher einordnen."
+      },
+      "estimatePotWeight": {
+        "label": "Topfgewicht schätzen",
+        "short": "Verbessert dein Gefühl für den Gießrhythmus.",
+        "description": "Verbindet Wassergefühl, Topfgewicht und Feuchtebild.",
+        "success": "Topfgewicht geschätzt. Der Wasserrhythmus wird klarer."
+      },
+      "checkSubstrate": {
+        "label": "Substrat prüfen",
+        "short": "Verbindet Oberfläche und Wurzelzone besser.",
+        "description": "Hilft dir zu erkennen, ob oben und unten wirklich zusammenpassen.",
+        "success": "Substrat geprüft. Oberfläche und Wurzelzone lassen sich besser einordnen."
+      },
+      "rotatePlant": {
+        "label": "Pflanze drehen",
+        "short": "Kleine Stabilitäts- und Ausrichtungsaktion.",
+        "description": "Bringt etwas Ruhe in die Entwicklung, ohne hart einzugreifen.",
+        "success": "Pflanze gedreht. Die Entwicklung bleibt damit etwas gleichmäßiger."
+      },
+      "hygieneRound": {
+        "label": "Hygiene-Runde",
+        "short": "Sorgt für ein ruhigeres Umfeld mit weniger Risikodruck.",
+        "description": "Senkt leichten Druck, ohne die Pflanze direkt zu belasten.",
+        "success": "Hygiene-Runde erledigt. Das Umfeld wirkt wieder sauberer und ruhiger."
+      },
+      "gentleStressCheck": {
+        "label": "Sanfte Stresskontrolle",
+        "short": "Kleine Stabilitätsrunde ohne invasive Eingriffe.",
+        "description": "Hilft, Druck früh zu entschärfen statt erst spät zu reagieren.",
+        "success": "Sanfte Stresskontrolle durchgeführt. Die Pflanze wirkt etwas ruhiger."
+      }
     }
   }
 }

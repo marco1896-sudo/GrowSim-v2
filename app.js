@@ -485,6 +485,40 @@ const state = {
     growth: 0,
     risk: 20
   },
+  care: {
+    version: 1,
+    water: {
+      substrateMoisture: 70,
+      surfaceMoisture: 62,
+      rootZoneMoisture: 74,
+      drybackRatePerHour: 0,
+      overwateringPressure: 0,
+      dryStressPressure: 0,
+      lastWateredAtSimMs: 0,
+      lastWaterAmountMl: 0,
+      lastWaterMethod: null
+    },
+    nutrients: {
+      n: 60,
+      p: 50,
+      k: 55,
+      micro: 55,
+      saltLoad: 20,
+      lastFeedAtSimMs: 0,
+      lastFeedType: null,
+      lastFeedStrength: null
+    },
+    routine: {
+      lastLeafCheckAtSimMs: 0,
+      lastPotWeightCheckAtSimMs: 0,
+      lastSubstrateCheckAtSimMs: 0,
+      careScoreToday: 0
+    },
+    feedback: {
+      lastCareGrade: null,
+      lastCareMessageKey: null
+    }
+  },
   boost: {
     boostUsedToday: 0,
     boostMaxPerDay: 6,
@@ -515,9 +549,10 @@ const state = {
     deathOverlayAcknowledged: false,
     runSummaryOpen: false,
     care: {
+      selectedStudioTab: 'water',
       selectedCategory: null,
       selectedActionId: null,
-      feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
+      feedback: { kind: 'info', text: 'Wähle eine Methode.' }
     },
     analysis: {
       activeTab: 'overview'
@@ -1375,6 +1410,16 @@ function getProgressionApi() {
   const api = window.GrowSimProgression; return api && typeof api === 'object' ? api : null;
 }
 
+function getCareModelApi() {
+  const api = window.GrowSimCareModel;
+  return api && typeof api === 'object' ? api : null;
+}
+
+function getCareMethodsApi() {
+  const api = window.GrowSimCareMethods;
+  return api && typeof api === 'object' ? api : null;
+}
+
 function getMenuUiPresentationApi() {
   const api = window.GrowSimMenuUiPresentation;
   return api && typeof api === 'object' ? api : null;
@@ -1441,6 +1486,28 @@ function resolveLikelyI18nText(rawValue, fallbackKey = '') {
     }
   }
   return raw;
+}
+
+function looksLikeI18nKey(value) {
+  const safeValue = String(value || '').trim();
+  return Boolean(safeValue && safeValue.includes('.') && /^[a-z0-9_.-]+$/i.test(safeValue));
+}
+
+function resolveCareUiCopy(rawValue, fallbackValue = '', fallbackKey = '') {
+  const resolved = resolveLikelyI18nText(rawValue, fallbackKey);
+  if (!looksLikeI18nKey(resolved)) {
+    return resolved;
+  }
+  if (fallbackValue) {
+    return String(fallbackValue);
+  }
+  if (fallbackKey) {
+    const fallbackResolved = resolveLikelyI18nText(fallbackKey);
+    if (!looksLikeI18nKey(fallbackResolved)) {
+      return fallbackResolved;
+    }
+  }
+  return '';
 }
 
 function applyI18nTranslations(root = document) {
@@ -3230,6 +3297,9 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
   const safeTrigger = String(triggerType || '').trim();
   const actionId = String(payload.actionId || '').trim().toLowerCase();
   const actionCategory = String(payload.category || '').trim().toLowerCase();
+  const countsAsWatering = payload.countsAsWatering === undefined
+    ? null
+    : Boolean(payload.countsAsWatering);
   const currentOpenCount = Math.max(0, Math.trunc(Number(payload.openCount) || Number(retention.session && retention.session.openCount) || 0));
 
   for (const task of retention.dailyCare.tasks) {
@@ -3237,15 +3307,18 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
       continue;
     }
     const target = Math.max(1, Math.trunc(Number(task.target || task.targetValue) || 1));
-    const previousProgress = clampInt(Number(task.progress || task.progressValue) || 0, 0, target);
-    let nextProgress = previousProgress;
-    const type = String(task.type || task.trigger || '').trim();
-
-    if (type === 'water_once' && safeTrigger === 'action_success') {
-      if (actionCategory === 'watering' || actionId.includes('water')) {
-        nextProgress = Math.min(target, previousProgress + 1);
-      }
-    } else if (type === 'resolve_one_event' && safeTrigger === 'event_resolved') {
+      const previousProgress = clampInt(Number(task.progress || task.progressValue) || 0, 0, target);
+      let nextProgress = previousProgress;
+      const type = String(task.type || task.trigger || '').trim();
+  
+      if (type === 'water_once' && safeTrigger === 'action_success') {
+        const shouldCountAsWatering = countsAsWatering === null
+          ? (actionCategory === 'watering' || actionId.includes('water'))
+          : countsAsWatering;
+        if (shouldCountAsWatering) {
+          nextProgress = Math.min(target, previousProgress + 1);
+        }
+      } else if (type === 'resolve_one_event' && safeTrigger === 'event_resolved') {
       nextProgress = Math.min(target, previousProgress + 1);
     } else if (type === 'open_app_twice' && safeTrigger === 'session_start') {
       nextProgress = Math.min(target, currentOpenCount);
@@ -7135,6 +7208,7 @@ function applyAction(actionId) {
 
   const after = snapshotStatus();
   const deltaSummary = summarizeDelta(before, after);
+  syncCareStateFromAction(action, before, after);
 
   addLog('action', `Aktion: ${action.label}`, {
     type: 'action',
@@ -7958,6 +8032,102 @@ function summarizeDelta(before, after) {
     out[key] = round2((after[key] || 0) - (before[key] || 0));
   }
   return out;
+}
+
+function syncCareStateFromAction(action, before, after) {
+  const careApi = getCareModelApi();
+  if (!careApi || typeof careApi.normalizeCareState !== 'function') {
+    return;
+  }
+
+  const safeAction = action && typeof action === 'object' ? action : null;
+  if (!safeAction) {
+    return;
+  }
+
+  const nextCareState = careApi.normalizeCareState(state.care, state);
+  const beforeTrendSnapshot = typeof careApi.captureCareTrendSnapshot === 'function'
+    ? careApi.captureCareTrendSnapshot({
+      ...state,
+      care: nextCareState
+    })
+    : null;
+  const simTimeMs = Math.max(0, Number(state.simulation && state.simulation.simTimeMs || 0));
+  const beforeWater = Number(before && before.water || state.status.water || 0);
+  const afterWater = Number(after && after.water || state.status.water || 0);
+  const beforeNutrition = Number(before && before.nutrition || state.status.nutrition || 0);
+  const afterNutrition = Number(after && after.nutrition || state.status.nutrition || 0);
+  const waterDelta = round2(afterWater - beforeWater);
+  const nutritionDelta = round2(afterNutrition - beforeNutrition);
+
+  if (safeAction.category === 'watering') {
+    nextCareState.water.lastWateredAtSimMs = simTimeMs;
+    nextCareState.water.lastWaterMethod = String(safeAction.id || safeAction.intensity || 'watering');
+    nextCareState.water.lastWaterAmountMl = Math.max(
+      0,
+      Math.round((Number(nextCareState.water.lastWaterAmountMl) || 0) + (Math.max(0, waterDelta) * 45))
+    );
+    nextCareState.water.substrateMoisture = clamp(Number(nextCareState.water.substrateMoisture || 0) + (waterDelta * 0.9), 0, 100);
+    nextCareState.water.surfaceMoisture = clamp(Number(nextCareState.water.surfaceMoisture || 0) + (waterDelta * 0.72), 0, 100);
+    nextCareState.water.rootZoneMoisture = clamp(Number(nextCareState.water.rootZoneMoisture || 0) + (waterDelta * 1.08), 0, 100);
+    nextCareState.water.overwateringPressure = clamp(
+      Number(nextCareState.water.overwateringPressure || 0)
+        + (Math.max(0, afterWater - 76) * 0.65)
+        - (Math.max(0, 42 - afterWater) * 0.2),
+      0,
+      100
+    );
+    nextCareState.water.dryStressPressure = clamp(
+      Number(nextCareState.water.dryStressPressure || 0)
+        - (Math.max(0, waterDelta) * 1.4)
+        + (Math.max(0, 38 - afterWater) * 0.35),
+      0,
+      100
+    );
+  }
+
+  if (safeAction.category === 'fertilizing' || safeAction.id === 'watering_medium_vitamin') {
+    nextCareState.nutrients.lastFeedAtSimMs = simTimeMs;
+    nextCareState.nutrients.lastFeedType = safeAction.category === 'fertilizing' ? String(safeAction.id || 'fertilizing') : 'feed_solution';
+    nextCareState.nutrients.lastFeedStrength = String(safeAction.intensity || 'medium');
+    nextCareState.nutrients.n = clamp(Number(nextCareState.nutrients.n || 0) + (nutritionDelta * 0.85), 0, 100);
+    nextCareState.nutrients.p = clamp(Number(nextCareState.nutrients.p || 0) + (nutritionDelta * 0.72), 0, 100);
+    nextCareState.nutrients.k = clamp(Number(nextCareState.nutrients.k || 0) + (nutritionDelta * 0.82), 0, 100);
+    nextCareState.nutrients.micro = clamp(Number(nextCareState.nutrients.micro || 0) + (nutritionDelta * 0.55), 0, 100);
+    nextCareState.nutrients.saltLoad = clamp(
+      Number(nextCareState.nutrients.saltLoad || 0)
+        + (Math.max(0, nutritionDelta) * 1.2)
+        - (safeAction.id === 'watering_high_flush' ? 14 : 0),
+      0,
+      100
+    );
+  }
+
+  let normalizedCare = careApi.normalizeCareState(nextCareState, state);
+  if (typeof careApi.captureCareTrendSnapshot === 'function' && typeof careApi.normalizeCareTrends === 'function') {
+    const afterTrendSnapshot = careApi.captureCareTrendSnapshot({
+      ...state,
+      care: normalizedCare
+    });
+    normalizedCare.trends = careApi.normalizeCareTrends({
+      ...(normalizedCare.trends || {}),
+      version: 1,
+      lastSnapshotAtSimMs: Math.max(
+        0,
+        Number(afterTrendSnapshot && afterTrendSnapshot.atSimMs || simTimeMs || 0)
+      ),
+      previous: beforeTrendSnapshot && beforeTrendSnapshot.values ? beforeTrendSnapshot.values : null,
+      current: afterTrendSnapshot && afterTrendSnapshot.values ? afterTrendSnapshot.values : null
+    }, {
+      ...state,
+      care: normalizedCare
+    });
+    normalizedCare = careApi.normalizeCareState(normalizedCare, state);
+  }
+  state.care = normalizedCare;
+  if (typeof careApi.deriveCareSummary === 'function') {
+    state.care.summary = careApi.deriveCareSummary(state.care, state);
+  }
 }
 
 const loggedCareActionTimeDiagnostics = new Set();
@@ -13196,14 +13366,15 @@ function renderCareSheet(force = false) {
   }
 
   const careMapping = window.GrowSimScreenMappings && window.GrowSimScreenMappings.care;
-  const careViewModel = careMapping && typeof careMapping.toViewModel === 'function' ? careMapping.toViewModel(state) : null; const catalog = Array.isArray(state.actions.catalog) ? state.actions.catalog : [];
+  const careViewModel = careMapping && typeof careMapping.toViewModel === 'function' ? careMapping.toViewModel(state) : null;
+  const catalog = Array.isArray(state.actions.catalog) ? state.actions.catalog : [];
   const categoryOrder = careViewModel && Array.isArray(careViewModel.categoryOrder) ? careViewModel.categoryOrder.slice() : ['watering', 'fertilizing', 'training', 'environment'];
   const categoryLabels = careViewModel && careViewModel.categoryLabels ? careViewModel.categoryLabels : {
-      watering: 'Bewässerung',
-      fertilizing: 'Nährstoffe',
-      training: 'Training',
-      environment: 'Umgebung'
-    };
+    watering: 'Bewässerung',
+    fertilizing: 'Nährstoffe',
+    training: 'Training',
+    environment: 'Umgebung'
+  };
   const categoryIcons = {
     watering: '<img src="assets/ui/icons/icon_water.svg" alt="" aria-hidden="true">',
     fertilizing: '<img src="assets/ui/icons/icon_nutrients.svg" alt="" aria-hidden="true">',
@@ -13211,7 +13382,10 @@ function renderCareSheet(force = false) {
     environment: '<img src="assets/ui/icons/icon_airflow.svg" alt="" aria-hidden="true">'
   };
 
-  const availableCategories = careViewModel && Array.isArray(careViewModel.availableCategories) ? careViewModel.availableCategories.slice() : categoryOrder.filter((category) => catalog.some((action) => action.category === category));
+  const availableCategories = careViewModel && Array.isArray(careViewModel.availableCategories)
+    ? careViewModel.availableCategories.slice()
+    : categoryOrder.filter((category) => catalog.some((action) => action.category === category));
+  const studioTabs = getCareStudioTabs(availableCategories);
   if (!availableCategories.length) {
     console.warn('[care] renderCareSheet called with empty actions catalog', {
       catalogCount: catalog.length,
@@ -13221,24 +13395,227 @@ function renderCareSheet(force = false) {
     ui.careActionList.replaceChildren();
     ui.careEffectsList.replaceChildren();
     ui.careExecuteButton.disabled = true;
-    setCareFeedback('error', 'Keine Aktionen geladen.');
+    setCareFeedback('error', 'Keine Pflegemethoden geladen.');
     return;
   }
 
-  if (!state.ui.care || !availableCategories.includes(state.ui.care.selectedCategory)) {
-    state.ui.care = state.ui.care || {};
-    state.ui.care.selectedCategory = availableCategories[0];
+  state.ui.care = state.ui.care || {};
+  if (!studioTabs.some((tab) => tab.id === state.ui.care.selectedStudioTab)) {
+    state.ui.care.selectedStudioTab = deriveInitialCareStudioTab(state.ui.care.selectedCategory, studioTabs);
   }
 
-  renderCareCategoryButtons(availableCategories, categoryLabels, categoryIcons);
-  renderCareActionButtons(state.ui.care.selectedCategory, careViewModel);
+  const activeTabId = state.ui.care.selectedStudioTab;
+  const activeCategories = getCareStudioTabCategories(activeTabId);
+  if (!availableCategories.includes(state.ui.care.selectedCategory) || (activeTabId !== 'diagnosis' && !activeCategories.includes(state.ui.care.selectedCategory))) {
+    const preferredCategory = activeCategories.find((category) => availableCategories.includes(category));
+    state.ui.care.selectedCategory = preferredCategory || availableCategories[0];
+  }
+
+  renderCareStudioChrome(careViewModel);
+  renderCareCategoryButtons(studioTabs, categoryLabels, categoryIcons);
+  renderCareActionButtons(activeTabId, careViewModel);
   renderCareEffectsPanel(careViewModel);
+  renderCareDecisionPanel(careViewModel);
   renderCareFeedback();
   renderCareExecuteButton();
+  hydrateCareAssetFrames(ui.careSheet || document);
 }
 
-function renderCareCategoryButtons(categories, labels, icons) {
-  const signature = categories.join('|') + `|selected:${state.ui.care.selectedCategory}`;
+function getCareStudioTabs(availableCategories) {
+  const hasRoutine = availableCategories.includes('training') || availableCategories.includes('environment');
+  return [
+    { id: 'water', label: i18nT('careStudio.tabs.water'), icon: getCareStudioTabIconMarkup('water'), available: availableCategories.includes('watering') },
+    { id: 'feed', label: i18nT('careStudio.tabs.feed'), icon: getCareStudioTabIconMarkup('feed'), available: availableCategories.includes('fertilizing') },
+    { id: 'routine', label: i18nT('careStudio.tabs.routine'), icon: getCareStudioTabIconMarkup('routine'), available: hasRoutine },
+    { id: 'diagnosis', label: i18nT('careStudio.tabs.diagnosis'), icon: getCareStudioTabIconMarkup('diagnosis'), available: true }
+  ].filter((tab) => tab.available);
+}
+
+function getCareStudioTabCategories(tabId) {
+  if (tabId === 'water') return ['watering'];
+  if (tabId === 'feed') return ['fertilizing'];
+  if (tabId === 'routine') return ['training', 'environment'];
+  return [];
+}
+
+function deriveInitialCareStudioTab(selectedCategory, tabs) {
+  const safeCategory = String(selectedCategory || '');
+  if (safeCategory === 'fertilizing' && tabs.some((tab) => tab.id === 'feed')) return 'feed';
+  if ((safeCategory === 'training' || safeCategory === 'environment') && tabs.some((tab) => tab.id === 'routine')) return 'routine';
+  if (safeCategory === 'watering' && tabs.some((tab) => tab.id === 'water')) return 'water';
+  return tabs[0] ? tabs[0].id : 'water';
+}
+
+const CARE_STUDIO_ASSET_PATHS = Object.freeze({
+  buddyBase: 'assets/ui/care-studio/buddy/care-buddy-base.png',
+  props: Object.freeze({
+    wateringCan: 'assets/ui/care-studio/props/care-prop-watering-can.png',
+    measuringCup: 'assets/ui/care-studio/props/care-prop-measuring-cup.png',
+    warningBadge: 'assets/ui/care-studio/props/care-prop-warning-badge.png',
+    checkBadge: 'assets/ui/care-studio/props/care-prop-check-badge.png'
+  }),
+  icons: Object.freeze({
+    water: 'assets/ui/care-studio/icons/care-icon-watering.png',
+    feed: 'assets/ui/care-studio/icons/care-icon-feeding.png',
+    routine: 'assets/ui/care-studio/icons/care-icon-routine.png',
+    diagnosis: 'assets/ui/care-studio/icons/care-icon-diagnosis.png',
+    timing: 'assets/ui/care-studio/icons/care-icon-timing.png',
+    rootZone: 'assets/ui/care-studio/icons/care-icon-root-zone.png'
+  }),
+  legacy: Object.freeze({
+    water: 'assets/ui/icons/icon_water.svg',
+    feed: 'assets/ui/icons/icon_nutrients.svg',
+    routine: 'assets/ui/icons/icon_growth.svg',
+    environment: 'assets/ui/icons/icon_airflow.svg',
+    diagnosis: 'assets/ui/icons/icon_airflow.svg'
+  })
+});
+
+function buildCareLegacyIconMarkup(src, className = '') {
+  const safeSrc = escapeHtml(String(src || ''));
+  const safeClassName = String(className || '').trim();
+  return `<img src="${safeSrc}" class="care-studio-legacy-icon${safeClassName ? ` ${escapeHtml(safeClassName)}` : ''}" alt="" aria-hidden="true">`;
+}
+
+function buildCareMediaFrameMarkup({ src = '', frameClass = '', imageClass = '', fallbackClass = '', fallbackMarkup = '', alt = '', loading = 'lazy' } = {}) {
+  const safeSrc = String(src || '').trim();
+  const safeAlt = escapeHtml(String(alt || ''));
+  const safeFrameClass = escapeHtml(String(frameClass || '').trim());
+  const safeImageClass = escapeHtml(String(imageClass || '').trim());
+  const safeFallbackClass = escapeHtml(String(fallbackClass || '').trim());
+  const ariaHidden = safeAlt ? '' : ' aria-hidden="true"';
+  const loadingMode = loading === 'eager' ? 'eager' : 'lazy';
+  return `
+    <span class="care-studio-media-frame ${safeFrameClass}" data-care-asset-frame>
+      ${safeSrc ? `<img src="${escapeHtml(safeSrc)}" class="${safeImageClass}" alt="${safeAlt}"${ariaHidden} loading="${loadingMode}" decoding="async">` : ''}
+      <span class="care-studio-media-fallback ${safeFallbackClass}" aria-hidden="true">${fallbackMarkup || ''}</span>
+    </span>
+  `;
+}
+
+function hydrateCareAssetFrames(root = document) {
+  if (!root || typeof root.querySelectorAll !== 'function') {
+    return;
+  }
+
+  const frames = root.querySelectorAll('[data-care-asset-frame]');
+  frames.forEach((frame) => {
+    if (!frame || frame.dataset.careAssetBound === 'true') {
+      return;
+    }
+
+    frame.dataset.careAssetBound = 'true';
+    const img = frame.querySelector('img');
+    if (!img || !img.getAttribute('src')) {
+      frame.classList.add('is-missing');
+      return;
+    }
+
+    const showLoaded = () => {
+      if (img.naturalWidth > 0) {
+        frame.classList.add('is-loaded');
+        frame.classList.remove('is-missing');
+      } else {
+        frame.classList.remove('is-loaded');
+        frame.classList.add('is-missing');
+      }
+    };
+
+    const showMissing = () => {
+      frame.classList.remove('is-loaded');
+      frame.classList.add('is-missing');
+    };
+
+    if (img.complete) {
+      showLoaded();
+      return;
+    }
+
+    img.addEventListener('load', showLoaded, { once: true });
+    img.addEventListener('error', showMissing, { once: true });
+  });
+}
+
+function getCareStudioTabIconMarkup(tabId) {
+  const iconMap = {
+    water: CARE_STUDIO_ASSET_PATHS.icons.water,
+    feed: CARE_STUDIO_ASSET_PATHS.icons.feed,
+    routine: CARE_STUDIO_ASSET_PATHS.icons.routine,
+    diagnosis: CARE_STUDIO_ASSET_PATHS.icons.diagnosis
+  };
+  const fallbackMap = {
+    water: buildCareLegacyIconMarkup(CARE_STUDIO_ASSET_PATHS.legacy.water),
+    feed: buildCareLegacyIconMarkup(CARE_STUDIO_ASSET_PATHS.legacy.feed),
+    routine: buildCareLegacyIconMarkup(CARE_STUDIO_ASSET_PATHS.legacy.routine),
+    diagnosis: buildCareLegacyIconMarkup(CARE_STUDIO_ASSET_PATHS.legacy.diagnosis)
+  };
+  return buildCareMediaFrameMarkup({
+    src: iconMap[tabId] || '',
+    frameClass: `care-studio-icon-frame care-studio-icon-frame--tab care-studio-icon-frame--${String(tabId || 'generic')}`,
+    imageClass: 'care-studio-icon-image care-studio-icon-image--tab',
+    fallbackClass: 'care-studio-icon-fallback care-studio-icon-fallback--tab',
+    fallbackMarkup: fallbackMap[tabId] || '',
+    alt: ''
+  });
+}
+
+function getCareStudioDecisionIconMarkup(kind) {
+  const iconMap = {
+    timing: CARE_STUDIO_ASSET_PATHS.icons.timing,
+    rootZone: CARE_STUDIO_ASSET_PATHS.icons.rootZone
+  };
+  const fallbackMarkup = buildCareLegacyIconMarkup(
+    kind === 'timing' ? CARE_STUDIO_ASSET_PATHS.legacy.water : CARE_STUDIO_ASSET_PATHS.legacy.routine,
+    'care-studio-legacy-icon--decision'
+  );
+  return buildCareMediaFrameMarkup({
+    src: iconMap[kind] || '',
+    frameClass: `care-studio-icon-frame care-studio-icon-frame--decision care-studio-icon-frame--${String(kind || 'generic')}`,
+    imageClass: 'care-studio-icon-image care-studio-icon-image--decision',
+    fallbackClass: 'care-studio-icon-fallback care-studio-icon-fallback--decision',
+    fallbackMarkup,
+    alt: ''
+  });
+}
+
+function getCareStudioPropMarkup(propKey, frameClass = '') {
+  const src = CARE_STUDIO_ASSET_PATHS.props[propKey] || '';
+  return buildCareMediaFrameMarkup({
+    src,
+    frameClass: `care-studio-prop-frame ${String(frameClass || '').trim()}`.trim(),
+    imageClass: 'care-studio-prop-image',
+    fallbackClass: 'care-studio-prop-fallback',
+    fallbackMarkup: '<span class="care-studio-prop-dot"></span>',
+    alt: ''
+  });
+}
+
+function getCareStudioHeroProps(careViewModel = null, overallLevel = 'info', riskLevel = 'low') {
+  const activeTabId = String(state.ui && state.ui.care && state.ui.care.selectedStudioTab || 'water');
+  const actionPreview = getSelectedCareActionPreview(careViewModel);
+  const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
+  const lastCareFeedback = careData.lastFeedback && typeof careData.lastFeedback === 'object' ? careData.lastFeedback : {};
+  const previewVerdict = String(actionPreview && actionPreview.recommendation && actionPreview.recommendation.verdict || '');
+
+  let contextPropKey = '';
+  if (activeTabId === 'water') {
+    contextPropKey = 'wateringCan';
+  } else if (activeTabId === 'feed') {
+    contextPropKey = 'measuringCup';
+  }
+
+  let statusPropKey = '';
+  if (previewVerdict === 'risky' || previewVerdict === 'wait' || riskLevel === 'high' || overallLevel === 'warning' || overallLevel === 'caution') {
+    statusPropKey = 'warningBadge';
+  } else if (['good', 'perfect'].includes(String(lastCareFeedback.lastCareGrade || ''))) {
+    statusPropKey = 'checkBadge';
+  }
+
+  return { contextPropKey, statusPropKey };
+}
+
+function renderCareCategoryButtons(categories) {
+  const signature = categories.map((tab) => tab.id).join('|') + `|selected:${state.ui.care.selectedStudioTab}`;
   if (ui.careCategoryList.dataset.signature === signature) {
     return;
   }
@@ -13247,7 +13624,7 @@ function renderCareCategoryButtons(categories, labels, icons) {
   ui.careCategoryList.replaceChildren();
   const primitives = getUiPrimitives();
 
-  for (const category of categories) {
+  for (const tab of categories) {
     const btn = primitives && typeof primitives.button === 'function'
       ? primitives.button({ className: 'care-category-tab', attrs: { role: 'tab' } })
       : document.createElement('button');
@@ -13256,13 +13633,19 @@ function renderCareCategoryButtons(categories, labels, icons) {
       btn.className = 'care-category-tab';
     }
     btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-selected', String(state.ui.care.selectedCategory === category));
-    if (state.ui.care.selectedCategory === category) {
+    btn.dataset.careStudioTab = tab.id;
+    btn.setAttribute('aria-selected', String(state.ui.care.selectedStudioTab === tab.id));
+    if (state.ui.care.selectedStudioTab === tab.id) {
       btn.classList.add('care-category-tab-active');
     }
-    btn.innerHTML = `<span class="care-category-icon" aria-hidden="true">${icons[category] || '◌'}</span><span class="care-category-label">${labels[category] || category}</span>`;
+    btn.innerHTML = `<span class="care-category-icon" aria-hidden="true">${tab.icon || '◌'}</span><span class="care-category-label">${escapeHtml(tab.label || tab.id)}</span>`;
     btn.addEventListener('click', () => {
-      state.ui.care.selectedCategory = category;
+      state.ui.care.selectedStudioTab = tab.id;
+      const tabCategories = getCareStudioTabCategories(tab.id);
+      const nextCategory = tabCategories.find((category) => state.actions.catalog.some((action) => action.category === category));
+      if (nextCategory) {
+        state.ui.care.selectedCategory = nextCategory;
+      }
       state.ui.care.selectedActionId = null;
       state.ui.care.feedback = null;
       ui.careCategoryList.dataset.signature = '';
@@ -13273,24 +13656,313 @@ function renderCareCategoryButtons(categories, labels, icons) {
   }
 }
 
-function renderCareActionButtons(category, careViewModel = null) {
-  const rawActions = careViewModel && Array.isArray(careViewModel.actions)
-    ? careViewModel.actions
-      .filter((action) => action.category === category)
-    : state.actions.catalog
-      .filter((action) => action.category === category)
-      .slice();
+function renderCareStudioChrome(careViewModel = null) {
+  const subtitleNode = uiNode('careSheetSubtitle', 'careSheetSubtitle');
+  const statusNode = uiNode('careStudioStatusChips', 'careStudioStatusChips');
+  const timingNode = uiNode('careStudioTimingBadge', 'careStudioTimingBadge');
+  const hintNode = uiNode('careStudioHintText', 'careStudioHintText');
+  const buddySlot = document.querySelector('#careSheet .care-studio-buddy-slot');
+  const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
+  const careSummary = careData.summary && typeof careData.summary === 'object' ? careData.summary : {};
+  const wateringRecommendation = careData.wateringRecommendation || careSummary.wateringRecommendation || null;
+  const feedingRecommendation = careData.feedingRecommendation || careSummary.feedingRecommendation || null;
+  const riskLevel = String(careData.riskLevel || careSummary.riskLevel || 'low');
+  const moistureStatus = String(careData.moistureStatus || careSummary.moistureBand || 'stable');
+  const buddyHintKey = String(careData.buddyHintKey || 'care.buddy.observe');
+  const overallLevel = wateringRecommendation && wateringRecommendation.level && wateringRecommendation.level !== 'info'
+    ? wateringRecommendation.level
+    : (feedingRecommendation && feedingRecommendation.level ? feedingRecommendation.level : 'info');
 
-  const actions = rawActions
-    .map((action) => {
+  if (subtitleNode) {
+    let subtitleKey = 'careStudio.subtitle.stable';
+    if (riskLevel === 'high' || overallLevel === 'warning') {
+      subtitleKey = 'careStudio.subtitle.risk';
+    } else if (overallLevel === 'positive') {
+      subtitleKey = 'careStudio.subtitle.ready';
+    } else if (overallLevel === 'caution') {
+      subtitleKey = 'careStudio.subtitle.wait';
+    }
+    subtitleNode.textContent = i18nT(subtitleKey);
+  }
+
+  if (timingNode) {
+    let timingKey = 'careStudio.timing.wait';
+    let timingTone = 'info';
+    if (riskLevel === 'high' || overallLevel === 'warning') {
+      timingKey = 'careStudio.timing.warning';
+      timingTone = 'warning';
+    } else if (overallLevel === 'positive') {
+      timingKey = 'careStudio.timing.ready';
+      timingTone = 'positive';
+    } else if (overallLevel === 'caution') {
+      timingKey = 'careStudio.timing.soon';
+      timingTone = 'caution';
+    }
+    timingNode.textContent = i18nT(timingKey);
+    timingNode.dataset.tone = timingTone;
+  }
+
+  if (hintNode) {
+    hintNode.textContent = i18nT(buddyHintKey) || i18nT('careStudio.diagnosis.ready_focus');
+  }
+
+  if (buddySlot) {
+    const heroProps = getCareStudioHeroProps(careViewModel, overallLevel, riskLevel);
+    buddySlot.innerHTML = `
+      <span class="care-studio-buddy-visual">
+        ${buildCareMediaFrameMarkup({
+          src: CARE_STUDIO_ASSET_PATHS.buddyBase,
+          frameClass: 'care-studio-buddy-frame',
+          imageClass: 'care-studio-buddy-image',
+          fallbackClass: 'care-studio-buddy-fallback',
+          fallbackMarkup: '<span class="care-studio-buddy-glyph">+</span>',
+          alt: '',
+          loading: 'eager'
+        })}
+        ${heroProps.statusPropKey ? `<span class="care-studio-buddy-overlay care-studio-buddy-overlay--status">${getCareStudioPropMarkup(heroProps.statusPropKey, 'care-studio-prop-frame--status')}</span>` : ''}
+        ${heroProps.contextPropKey ? `<span class="care-studio-buddy-overlay care-studio-buddy-overlay--context">${getCareStudioPropMarkup(heroProps.contextPropKey, 'care-studio-prop-frame--context')}</span>` : ''}
+      </span>
+      <span class="care-studio-buddy-label">${escapeHtml(i18nT('careStudio.title'))}</span>
+    `;
+  }
+
+  if (statusNode) {
+    const nutritionBars = Array.isArray(careData.nutrientBars) ? careData.nutrientBars : [];
+    const nutritionAverage = nutritionBars.length
+      ? Math.round(nutritionBars.reduce((sum, entry) => sum + Number(entry.value || 0), 0) / nutritionBars.length)
+      : Number(state.status && state.status.nutrition || 0);
+    const chips = [
+      {
+        label: i18nT('careStudio.chips.moisture'),
+        value: `${Math.round(Number(careSummary.substrateMoisture || state.status.water || 0))}%`,
+        tone: moistureStatus === 'dry' ? 'warning' : (moistureStatus === 'wet' ? 'caution' : 'stable'),
+        detail: i18nT(`careStudio.state.${moistureStatus}`)
+      },
+      {
+        label: i18nT('careStudio.chips.nutrition'),
+        value: `${nutritionAverage}%`,
+        tone: nutritionAverage <= 42 ? 'warning' : (nutritionAverage >= 64 ? 'positive' : 'stable'),
+        detail: i18nT(nutritionAverage <= 42 ? 'careStudio.state.watch' : 'careStudio.state.balanced')
+      },
+      {
+        label: i18nT('careStudio.chips.stress'),
+        value: `${Math.round(Number(state.status && state.status.stress || 0))}%`,
+        tone: Number(state.status && state.status.stress || 0) >= 60 ? 'warning' : 'stable',
+        detail: Number(state.status && state.status.stress || 0) >= 60 ? i18nT('careStudio.state.active') : i18nT('careStudio.state.low')
+      },
+      {
+        label: i18nT('careStudio.chips.risk'),
+        value: i18nT(`careStudio.risk.${riskLevel}`),
+        tone: riskLevel,
+        detail: i18nT(`careStudio.risk.${riskLevel}`)
+      }
+    ];
+    statusNode.replaceChildren();
+    for (const chipData of chips) {
+      const chip = document.createElement('article');
+      chip.className = `care-studio-chip care-studio-chip--${chipData.tone}`;
+      chip.innerHTML = `
+        <span class="care-studio-chip__label">${escapeHtml(chipData.label)}</span>
+        <strong class="care-studio-chip__value">${escapeHtml(chipData.value)}</strong>
+        <small class="care-studio-chip__detail">${escapeHtml(chipData.detail)}</small>
+      `;
+      statusNode.appendChild(chip);
+    }
+  }
+}
+
+function getSelectedCareActionPreview(careViewModel = null) {
+  return careViewModel
+    && careViewModel.care
+    && careViewModel.care.actionPreview
+    && typeof careViewModel.care.actionPreview === 'object'
+    ? careViewModel.care.actionPreview
+    : null;
+}
+
+function getSelectedCareEntry(careViewModel = null) {
+  if (careViewModel && careViewModel.selectedAction && typeof careViewModel.selectedAction === 'object') {
+    const selectedAction = careViewModel.selectedAction;
+    const careMethodsApi = getCareMethodsApi();
+    if (careMethodsApi && typeof careMethodsApi.getCareMethodById === 'function') {
+      const method = careMethodsApi.getCareMethodById(selectedAction.id);
+      if (method) {
+        return method;
+      }
+    }
+    return selectedAction;
+  }
+  const selectedId = String(state.ui && state.ui.care && state.ui.care.selectedActionId || '').trim();
+  if (!selectedId) {
+    return null;
+  }
+  const careMethodsApi = getCareMethodsApi();
+  if (careMethodsApi && typeof careMethodsApi.getCareMethodById === 'function') {
+    const method = careMethodsApi.getCareMethodById(selectedId);
+    if (method) {
+      return method;
+    }
+  }
+  return state.actions.byId[selectedId] || null;
+}
+
+function isCareMethodEntry(entry) {
+  return Boolean(entry && typeof entry === 'object' && entry.id && !state.actions.byId[entry.id]);
+}
+
+function getLegacyActionForCareMethod(method) {
+  if (!method || typeof method !== 'object') {
+    return null;
+  }
+  const legacyActionId = String(method.legacyFallbackActionId || '').trim();
+  if (!legacyActionId) {
+    return null;
+  }
+  return state.actions.byId[legacyActionId] || null;
+}
+
+function getCareEntryLabel(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return '';
+  }
+  if (entry.labelKey) {
+    return resolveCareUiCopy(entry.labelKey, String(entry.label || entry.id || '').trim(), entry.labelKey);
+  }
+  return String(entry.label || entry.id || '').trim();
+}
+
+function getCareEntryDescription(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return '';
+  }
+  if (entry.descriptionKey) {
+    return resolveCareUiCopy(entry.descriptionKey, 'Beschreibung folgt.', entry.descriptionKey);
+  }
+  if (entry.uxCopy && entry.uxCopy.short) {
+    return resolveCareUiCopy(entry.uxCopy.short, 'Beschreibung folgt.');
+  }
+  return '';
+}
+
+function getCarePreviewVerdictTone(preview) {
+  const verdict = String(preview && preview.recommendation && preview.recommendation.verdict || '');
+  if (verdict === 'recommended') return 'positive';
+  if (verdict === 'situational') return 'neutral';
+  if (verdict === 'risky') return 'warning';
+  return 'critical';
+}
+
+function getCareActionPreviewForUi(action) {
+  if (!action) {
+    return null;
+  }
+  const careMethodsApi = getCareMethodsApi();
+  if (isCareMethodEntry(action) && careMethodsApi && typeof careMethodsApi.getCareMethodPreview === 'function') {
+    try {
+      return careMethodsApi.getCareMethodPreview(state, action, { legacyAction: getLegacyActionForCareMethod(action) });
+    } catch (error) {
+      console.warn('[care] method preview failed', action && action.id, error);
+      return null;
+    }
+  }
+  const careApi = getCareModelApi();
+  if (!careApi || typeof careApi.getCareActionPreview !== 'function') {
+    return null;
+  }
+  try {
+    return careApi.getCareActionPreview(state, action);
+  } catch (error) {
+    console.warn('[care] action preview failed', action && action.id, error);
+    return null;
+  }
+}
+
+function formatCareDeltaValue(value) {
+  const numeric = Number(value || 0);
+  const rounded = Math.round(numeric);
+  return `${rounded > 0 ? '+' : ''}${rounded}`;
+}
+
+function renderCareDeltaChips(deltas) {
+  const safeDeltas = Array.isArray(deltas) ? deltas : [];
+  return safeDeltas
+    .slice(0, 4)
+    .map((delta) => {
+      const key = escapeHtml(String(delta && delta.key || 'stability'));
+      const tone = escapeHtml(String(delta && delta.tone || 'neutral'));
+      const direction = escapeHtml(String(delta && delta.direction || 'neutral'));
+      const label = escapeHtml(i18nT(delta && delta.labelKey || 'careStudio.delta.stability'));
+      const value = escapeHtml(formatCareDeltaValue(delta && delta.value));
+      return `<span class="care-studio-delta-chip care-studio-delta-chip--${tone}" data-delta-key="${key}" data-direction="${direction}"><strong>${value}</strong><span>${label}</span></span>`;
+    })
+    .join('');
+}
+
+function renderCareActionButtons(activeTabId, careViewModel = null) {
+  const actionPanelTitleNode = uiNode('careActionPanelTitle', 'careActionPanelTitle');
+  const actionPanelSubtitleNode = uiNode('careActionPanelSubtitle', 'careActionPanelSubtitle');
+  const careMethodsApi = getCareMethodsApi();
+  const rawMethods = Array.isArray(careViewModel && careViewModel.actions)
+    ? careViewModel.actions.slice()
+    : (careMethodsApi && typeof careMethodsApi.getCareMethodsForTab === 'function'
+      ? careMethodsApi.getCareMethodsForTab(state, activeTabId)
+      : []);
+
+  const panelCopy = {
+    water: {
+      titleKey: 'careStudio.actionPanel.water_title',
+      subtitleKey: 'careStudio.actionPanel.water_subtitle',
+      title: i18nT('careStudio.actionPanel.water_title'),
+      subtitle: i18nT('careStudio.actionPanel.water_subtitle')
+    },
+    feed: {
+      titleKey: 'careStudio.actionPanel.feed_title',
+      subtitleKey: 'careStudio.actionPanel.feed_subtitle',
+      title: i18nT('careStudio.actionPanel.feed_title'),
+      subtitle: i18nT('careStudio.actionPanel.feed_subtitle')
+    },
+    routine: {
+      titleKey: 'careStudio.actionPanel.routine_title',
+      subtitleKey: 'careStudio.actionPanel.routine_subtitle',
+      title: i18nT('careStudio.actionPanel.routine_title'),
+      subtitle: i18nT('careStudio.actionPanel.routine_subtitle')
+    },
+    diagnosis: {
+      titleKey: 'careStudio.actionPanel.diagnosis_title',
+      subtitleKey: 'careStudio.actionPanel.diagnosis_subtitle',
+      title: i18nT('careStudio.actionPanel.diagnosis_title'),
+      subtitle: i18nT('careStudio.actionPanel.diagnosis_subtitle')
+    }
+  };
+  const activePanelCopy = panelCopy[activeTabId] || panelCopy.water;
+  if (actionPanelTitleNode) {
+    actionPanelTitleNode.dataset.i18n = activePanelCopy.titleKey;
+    actionPanelTitleNode.textContent = activePanelCopy.title;
+  }
+  if (actionPanelSubtitleNode) {
+    actionPanelSubtitleNode.dataset.i18n = activePanelCopy.subtitleKey;
+    actionPanelSubtitleNode.textContent = activePanelCopy.subtitle;
+  }
+
+  const actions = rawMethods
+    .map((method) => {
+      const legacyAction = getLegacyActionForCareMethod(method);
+      const actionForHints = legacyAction || method;
       const cooldownUntil = Number(
-        Object.prototype.hasOwnProperty.call(action, 'cooldownUntil') ? action.cooldownUntil : state.actions.cooldowns[action.id] || 0
+        Object.prototype.hasOwnProperty.call(method, 'cooldownUntil') ? method.cooldownUntil : state.actions.cooldowns[method.id] || 0
       );
       const cooldownLeftMs = Math.max(0, cooldownUntil - Date.now());
-      const availability = getActionAvailability(state.actions.byId[action.id] || action);
-      const priority = getActionPriorityTier(state.actions.byId[action.id] || action, availability, cooldownLeftMs, careViewModel);
+      const legacyAvailability = legacyAction ? getActionAvailability(legacyAction) : { ok: true, soft: false };
+      const availability = careMethodsApi && typeof careMethodsApi.getCareMethodAvailability === 'function'
+        ? careMethodsApi.getCareMethodAvailability(state, method, { legacyAction, legacyAvailability })
+        : legacyAvailability;
+      const priority = getActionPriorityTier(actionForHints, availability, cooldownLeftMs, careViewModel);
       return {
-        ...action,
+        ...method,
+        label: getCareEntryLabel(method),
+        description: getCareEntryDescription(method),
+        legacyAction,
+        actionForHints,
         cooldownUntil,
         cooldownLeftMs,
         availability,
@@ -13318,7 +13990,7 @@ function renderCareActionButtons(category, careViewModel = null) {
     state.ui.care.selectedActionId = null;
   }
 
-  const signature = actions.map((action) => {
+  const signature = `${activeTabId}|` + actions.map((action) => {
     return `${action.id}:${action.cooldownUntil}:${action.tier}:${action.availability.reason || 'ok'}:selected:${state.ui.care.selectedActionId === action.id}`;
   }).join('|');
 
@@ -13328,6 +14000,14 @@ function renderCareActionButtons(category, careViewModel = null) {
 
   ui.careActionList.dataset.signature = signature;
   ui.careActionList.replaceChildren();
+  if (!actions.length) {
+    const empty = document.createElement('div');
+    empty.className = 'care-action-empty';
+    empty.textContent = i18nT(activeTabId === 'diagnosis' ? 'careStudio.actionPanel.empty_diagnosis' : 'careStudio.actionPanel.empty_actions');
+    ui.careActionList.appendChild(empty);
+    return;
+  }
+
   const primitives = getUiPrimitives();
   const primaryActions = actions.filter((action) => action.tier === 'primary');
   const secondaryActions = actions.filter((action) => action.tier === 'secondary');
@@ -13344,12 +14024,20 @@ function renderCareActionButtons(category, careViewModel = null) {
   const appendFullActionCard = (action) => {
     const cooldownLeft = Math.max(0, Number(action.cooldownLeftMs) || 0);
     const cooldownText = cooldownLeft > 0 ? `${Math.ceil(cooldownLeft / 60000)} min` : `${Math.round(action.cooldownRealMinutes || 0)} min`;
+    const preview = getCareActionPreviewForUi(action);
+    const previewTone = preview ? getCarePreviewVerdictTone(preview) : 'neutral';
+    const verdictKey = preview && preview.recommendation && preview.recommendation.labelKey
+      ? preview.recommendation.labelKey
+      : 'careStudio.preview.verdict.situational';
+    const riskKey = preview && preview.risk && preview.risk.labelKey
+      ? preview.risk.labelKey
+      : 'careStudio.risk.low';
     const hintText = action.hintSummary && action.hintSummary.topHint
       ? (() => {
         const hintCopy = getCareHintCopy(action.hintSummary.topHint);
         return hintCopy.headline || hintCopy.explanation || formatActionHint(action, cooldownLeft);
       })()
-      : formatActionHint(action, cooldownLeft);
+      : (action.description || formatActionHint(action, cooldownLeft));
 
     const button = primitives && typeof primitives.button === 'function'
       ? primitives.button({ className: 'care-action-card' })
@@ -13364,6 +14052,7 @@ function renderCareActionButtons(category, careViewModel = null) {
     if (action.tier === 'primary') {
       button.classList.add('is-primary');
     }
+    button.dataset.previewTone = previewTone;
     button.setAttribute('aria-pressed', String(state.ui.care.selectedActionId === action.id));
     button.disabled = false;
     button.setAttribute('aria-disabled', 'false');
@@ -13373,12 +14062,14 @@ function renderCareActionButtons(category, careViewModel = null) {
         <img src="${getActionIconPath(action)}" class="care-action-card-icon" alt="" aria-hidden="true">
       </div>
       <div class="care-action-info-box">
-        <span class="care-action-label">${escapeHtml(action.label)}</span>
+        <span class="care-action-title-row"><span class="care-action-label">${escapeHtml(action.label)}</span><span class="care-action-verdict care-action-verdict--${escapeHtml(previewTone)}">${escapeHtml(i18nT(verdictKey))}</span></span>
         <span class="care-action-hint" title="${escapeHtml(`Cooldown: ${cooldownText}`)}">${escapeHtml(hintText)}</span>
+        <span class="care-action-risk-line">${escapeHtml(i18nT('careStudio.decision.risk'))}: ${escapeHtml(i18nT(riskKey))}</span>
       </div>`;
 
     button.addEventListener('click', () => {
       state.ui.care.selectedActionId = action.id;
+      state.ui.care.selectedCategory = String(action.category || state.ui.care.selectedCategory || '');
       state.ui.care.feedback = null;
       ui.careActionList.dataset.signature = '';
       renderCareSheet(true);
@@ -13534,10 +14225,25 @@ function getCareHintCopy(hint) { const key = hint && hint.key ? String(hint.key)
 
 function renderCareEffectsPanel(careViewModel = null) {
   ui.careEffectsList.replaceChildren();
+  const activeTabId = String(state.ui && state.ui.care && state.ui.care.selectedStudioTab || 'water');
+  const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
+  const careSummary = careData.summary && typeof careData.summary === 'object' ? careData.summary : {};
+  const careModel = careData.model && typeof careData.model === 'object' ? careData.model : {};
+  const careWater = careModel.water && typeof careModel.water === 'object' ? careModel.water : {};
+  const careNutrients = careModel.nutrients && typeof careModel.nutrients === 'object' ? careModel.nutrients : {};
+  const nutrientBars = Array.isArray(careData.nutrientBars) ? careData.nutrientBars : [];
 
   const appendSectionLabel = (text, tone = '') => {
-    const li = document.createElement('li'); li.className = tone ? `care-section-label care-section-label--${tone}` : 'care-section-label';
+    const li = document.createElement('li');
+    li.className = tone ? `care-section-label care-section-label--${tone}` : 'care-section-label';
     li.textContent = text;
+    ui.careEffectsList.appendChild(li);
+  };
+
+  const appendHtmlCard = (className, html) => {
+    const li = document.createElement('li');
+    li.className = className;
+    li.innerHTML = html;
     ui.careEffectsList.appendChild(li);
   };
 
@@ -13548,65 +14254,419 @@ function renderCareEffectsPanel(careViewModel = null) {
     ui.careEffectsList.appendChild(li);
   };
 
-  const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
-  if (ui.carePreviewWrap) {
-    ui.carePreviewWrap.classList.add('hidden');
-    ui.carePreviewWrap.setAttribute('aria-hidden', 'true');
+  if (activeTabId === 'water') {
+    appendSectionLabel(i18nT('careStudio.water.title'), 'hints');
+    appendHtmlCard('care-studio-insight-card care-studio-insight-card--water', `
+      <div class="care-studio-water-profile">
+        <div class="care-studio-soil-zone care-studio-soil-zone--surface">
+          <span>${escapeHtml(i18nT('careStudio.water.surface'))}</span>
+          <strong>${escapeHtml(String(Math.round(Number(careSummary.surfaceMoisture || careWater.surfaceMoisture || 0))))}%</strong>
+        </div>
+        <div class="care-studio-soil-zone care-studio-soil-zone--root">
+          <span>${escapeHtml(i18nT('careStudio.water.root_zone'))}</span>
+          <strong>${escapeHtml(String(Math.round(Number(careSummary.rootZoneMoisture || careWater.rootZoneMoisture || 0))))}%</strong>
+        </div>
+      </div>
+      <div class="care-studio-water-mini-grid">
+        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.dryback'))}</small><strong>${escapeHtml(`${round2(Number(careData.drybackRatePerHour || careWater.drybackRatePerHour || 0))}/h`)}</strong></span>
+        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.overwatering'))}</small><strong>${escapeHtml(`${Math.round(Number(careWater.overwateringPressure || 0))}%`)}</strong></span>
+        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.dry_stress'))}</small><strong>${escapeHtml(`${Math.round(Number(careWater.dryStressPressure || 0))}%`)}</strong></span>
+      </div>
+      <div class="care-studio-meta-row care-studio-meta-row--stacked">
+        <span>${escapeHtml(i18nT('careStudio.water.next_window'))}</span>
+        <strong>${escapeHtml(i18nT((careData.wateringRecommendation && careData.wateringRecommendation.messageKey) || 'care.recommendation.water.monitor'))}</strong>
+      </div>
+    `);
+  } else if (activeTabId === 'feed') {
+    appendSectionLabel(i18nT('careStudio.feed.title'), 'hints');
+    appendHtmlCard('care-studio-insight-card care-studio-insight-card--feed', `
+      <div class="care-studio-bars">
+        ${nutrientBars.map((entry) => `
+          <div class="care-studio-bar-row">
+            <span>${escapeHtml(i18nT(`careStudio.feed.${entry.key}`))}</span>
+            <div class="care-studio-bar"><span style="width:${Math.max(0, Math.min(100, Number(entry.value || 0)))}%"></span></div>
+            <strong>${escapeHtml(String(Math.round(Number(entry.value || 0))))}</strong>
+          </div>
+        `).join('')}
+      </div>
+      <div class="care-studio-meta-row">
+        <span>${escapeHtml(i18nT('careStudio.feed.salt_load'))}</span>
+        <strong>${escapeHtml(`${Math.round(Number(careData.saltLoad || careNutrients.saltLoad || 0))}%`)}</strong>
+      </div>
+      <div class="care-studio-meta-row">
+        <span>${escapeHtml(i18nT('careStudio.feed.phase'))}</span>
+        <strong>${escapeHtml(i18nT(`careStudio.phase.${String(careData.phaseLabel || 'vegetative')}`))}</strong>
+      </div>
+      <div class="care-studio-meta-row">
+        <span>${escapeHtml(i18nT('careStudio.feed.recommendation'))}</span>
+        <strong>${escapeHtml(i18nT((careData.feedingRecommendation && careData.feedingRecommendation.messageKey) || 'care.recommendation.feed.stable'))}</strong>
+      </div>
+    `);
+  } else if (activeTabId === 'routine') {
+    appendSectionLabel(i18nT('careStudio.routine.title'), 'hints');
+    const routineCards = [
+      { title: resolveCareUiCopy('careMethod.routine.checkLeaves.label', 'Blätter prüfen'), note: resolveCareUiCopy('careMethod.routine.checkLeaves.description', 'Beschreibung folgt.') },
+      { title: resolveCareUiCopy('careMethod.routine.estimatePotWeight.label', 'Topfgewicht schätzen'), note: resolveCareUiCopy('careMethod.routine.estimatePotWeight.description', 'Beschreibung folgt.') },
+      { title: resolveCareUiCopy('careMethod.routine.checkSubstrate.label', 'Substrat prüfen'), note: resolveCareUiCopy('careMethod.routine.checkSubstrate.description', 'Beschreibung folgt.') },
+      { title: resolveCareUiCopy('careMethod.routine.rotatePlant.label', 'Pflanze drehen'), note: resolveCareUiCopy('careMethod.routine.rotatePlant.description', 'Beschreibung folgt.') },
+      { title: resolveCareUiCopy('careMethod.routine.hygieneRound.label', 'Hygiene-Runde'), note: resolveCareUiCopy('careMethod.routine.hygieneRound.description', 'Beschreibung folgt.') }
+    ];
+    appendHtmlCard('care-studio-insight-card care-studio-insight-card--routine', `
+      <div class="care-studio-routine-grid">
+        ${routineCards.map((card) => `
+          <article class="care-studio-routine-card">
+            <strong>${escapeHtml(card.title)}</strong>
+            <small>${escapeHtml(card.note)}</small>
+          </article>
+        `).join('')}
+      </div>
+    `);
+  } else {
+    appendSectionLabel(i18nT('careStudio.diagnosis.title'), 'hints');
+    const diagnosis = careData.diagnosis && typeof careData.diagnosis === 'object' ? careData.diagnosis : null;
+    const trend = careData.summary && careData.summary.trend && typeof careData.summary.trend === 'object'
+      ? careData.summary.trend
+      : null;
+    const diagnosisFocusKey = diagnosis && diagnosis.primaryFocus
+      ? `careStudio.diagnosis.focus.${String(diagnosis.primaryFocus)}`
+      : 'careStudio.diagnosis.focus.stable';
+    const diagnosisStatusKey = diagnosis && diagnosis.status
+      ? `careStudio.diagnosis.status.${String(diagnosis.status)}`
+      : 'careStudio.diagnosis.status.stable';
+    const diagnosisCauseKey = diagnosis && Array.isArray(diagnosis.causeKeys) && diagnosis.causeKeys[0]
+      ? diagnosis.causeKeys[0]
+      : String(careData.rootZoneHint || 'care.hint.root_zone_balanced');
+    const diagnosisObserveKey = diagnosis && Array.isArray(diagnosis.observationKeys) && diagnosis.observationKeys[0]
+      ? diagnosis.observationKeys[0]
+      : String(careData.buddyHintKey || 'care.buddy.observe');
+    const diagnosisDirectionFocus = diagnosis && diagnosis.suggestedActionCategory === 'watering'
+      ? 'water'
+      : (diagnosis && diagnosis.suggestedActionCategory === 'fertilizing'
+        ? 'nutrition'
+        : (diagnosis && diagnosis.suggestedActionCategory === 'routine'
+          ? 'stress'
+          : 'stable'));
+    const diagnosisDirectionKey = `careStudio.diagnosis.focus.${String(diagnosisDirectionFocus || 'stable')}`;
+    const nextFocusTabId = String(careData.nextCareFocus || 'routine') === 'feeding'
+      ? 'feed'
+      : (String(careData.nextCareFocus || 'routine') === 'watering'
+        ? 'water'
+        : String(careData.nextCareFocus || 'routine'));
+    appendHtmlCard('care-studio-insight-card care-studio-insight-card--diagnosis', `
+      <div class="care-studio-meta-row">
+        <span>${escapeHtml(i18nT('careStudio.diagnosis.current_focus'))}</span>
+        <strong>${escapeHtml(i18nT(diagnosisFocusKey))}</strong>
+      </div>
+      <div class="care-studio-meta-row">
+        <span>${escapeHtml(i18nT('careStudio.diagnosis.state'))}</span>
+        <strong>${escapeHtml(i18nT(diagnosisStatusKey))}</strong>
+      </div>
+      <div class="care-studio-meta-row">
+        <span>${escapeHtml(i18nT('careStudio.diagnosis.risk_level'))}</span>
+        <strong>${escapeHtml(i18nT(`careStudio.risk.${String(careData.riskLevel || 'low')}`))}</strong>
+      </div>
+      <div class="care-studio-meta-row">
+        <span>${escapeHtml(i18nT('careStudio.diagnosis.next_focus'))}</span>
+        <strong>${escapeHtml(i18nT(`careStudio.tabs.${nextFocusTabId}`))}</strong>
+      </div>
+      <div class="care-studio-meta-row">
+        <span>${escapeHtml(i18nT('careStudio.trend.label'))}</span>
+        <strong>${escapeHtml(i18nT(trend && trend.labelKey || diagnosis && diagnosis.trendKey || 'careStudio.trend.stable'))}</strong>
+      </div>
+      <div class="care-studio-meta-copy">
+        <strong>${escapeHtml(i18nT(diagnosis && diagnosis.titleKey || 'careStudio.diagnosis.headline.stable'))}</strong>
+        <p>${escapeHtml(i18nT(diagnosis && diagnosis.messageKey || 'careStudio.diagnosis.message.stable'))}</p>
+        <p>${escapeHtml(i18nT(trend && trend.messageKey || diagnosis && diagnosis.trendMessageKey || 'careStudio.trend.message.stable'))}</p>
+      </div>
+    `);
+    appendHtmlCard('care-studio-insight-card care-studio-insight-card--stats', `
+      <div class="care-studio-meta-row"><span>${escapeHtml(i18nT('careStudio.diagnosis.probable_cause'))}</span><strong>${escapeHtml(i18nT(diagnosisCauseKey))}</strong></div>
+      <div class="care-studio-meta-row"><span>${escapeHtml(i18nT('careStudio.diagnosis.next_observation'))}</span><strong>${escapeHtml(i18nT(diagnosisObserveKey))}</strong></div>
+      <div class="care-studio-meta-row"><span>${escapeHtml(i18nT('careStudio.diagnosis.suggested_direction'))}</span><strong>${escapeHtml(i18nT(diagnosisDirectionKey))}</strong></div>
+      <div class="care-studio-meta-row"><span>${escapeHtml(i18nT('careStudio.diagnosis.next_check'))}</span><strong>${escapeHtml(i18nT(diagnosis && diagnosis.nextCheckHintKey || 'careStudio.diagnosis.nextCheck.monitor'))}</strong></div>
+    `);
   }
-  if (ui.carePreviewImage) {
-    ui.carePreviewImage.removeAttribute('src');
-    ui.carePreviewImage.alt = '';
+}
+
+function getCareMethodAvailabilityForUi(method) {
+  const careMethodsApi = getCareMethodsApi();
+  if (!method || !careMethodsApi || typeof careMethodsApi.getCareMethodAvailability !== 'function') {
+    return { ok: false, reason: 'unknown_method' };
   }
-  if (ui.carePreviewLabel) {
-    ui.carePreviewLabel.textContent = '';
-  }
-  if (ui.carePreviewNote) {
-    ui.carePreviewNote.textContent = '';
+  const legacyAction = getLegacyActionForCareMethod(method);
+  const legacyAvailability = legacyAction ? getActionAvailability(legacyAction) : { ok: true, soft: false };
+  return careMethodsApi.getCareMethodAvailability(state, method, { legacyAction, legacyAvailability });
+}
+
+function applyDirectCareMethodPlan(plan) {
+  const method = plan && plan.method ? plan.method : null;
+  if (!method) {
+    return { ok: false, reason: 'unknown_method' };
   }
 
-  if (!selected) {
-    appendEmptyRow('Keine Aktion ausgewählt.');
+  const careApi = getCareModelApi();
+  const before = snapshotStatus();
+  const beforeCare = careApi && typeof careApi.normalizeCareState === 'function'
+    ? careApi.normalizeCareState(state.care, state)
+    : (state.care || {});
+  const beforeTrendSnapshot = careApi && typeof careApi.captureCareTrendSnapshot === 'function'
+    ? careApi.captureCareTrendSnapshot({ ...state, care: beforeCare })
+    : null;
+  const simTimeMs = Math.max(0, Number(state.simulation && state.simulation.simTimeMs || 0));
+
+  const directStatus = plan.directEffects && plan.directEffects.status && typeof plan.directEffects.status === 'object'
+    ? plan.directEffects.status
+    : {};
+  for (const [key, rawDelta] of Object.entries(directStatus)) {
+    const numericDelta = Number(rawDelta || 0);
+    if (!Number.isFinite(numericDelta) || !Object.prototype.hasOwnProperty.call(state.status, key)) {
+      continue;
+    }
+    if (key === 'growth') {
+      applyGrowthPercentDelta(numericDelta);
+    } else {
+      state.status[key] = Number(state.status[key] || 0) + numericDelta;
+    }
+  }
+
+  let nextCare = careApi && typeof careApi.normalizeCareState === 'function'
+    ? careApi.normalizeCareState(state.care, state)
+    : (state.care || {});
+  const directCare = plan.directEffects && plan.directEffects.care && typeof plan.directEffects.care === 'object'
+    ? plan.directEffects.care
+    : {};
+
+  if (directCare.water && nextCare.water) {
+    for (const [key, rawDelta] of Object.entries(directCare.water)) {
+      nextCare.water[key] = clamp(Number(nextCare.water[key] || 0) + Number(rawDelta || 0), 0, 100);
+    }
+    if (method.category === 'watering') {
+      nextCare.water.lastWateredAtSimMs = simTimeMs;
+      nextCare.water.lastWaterMethod = String(method.id || 'care_method');
+    }
+  }
+
+  if (directCare.nutrients && nextCare.nutrients) {
+    for (const [key, rawDelta] of Object.entries(directCare.nutrients)) {
+      nextCare.nutrients[key] = clamp(Number(nextCare.nutrients[key] || 0) + Number(rawDelta || 0), 0, 100);
+    }
+    if (method.category === 'fertilizing') {
+      nextCare.nutrients.lastFeedAtSimMs = simTimeMs;
+      nextCare.nutrients.lastFeedType = String(method.id || 'care_method');
+      nextCare.nutrients.lastFeedStrength = String(method.intensity || 'light');
+    }
+  }
+
+  if (plan.directEffects && plan.directEffects.routine && nextCare.routine) {
+    const routine = plan.directEffects.routine;
+    if (routine.leafCheck) nextCare.routine.lastLeafCheckAtSimMs = simTimeMs;
+    if (routine.potWeightCheck) nextCare.routine.lastPotWeightCheckAtSimMs = simTimeMs;
+    if (routine.substrateCheck) nextCare.routine.lastSubstrateCheckAtSimMs = simTimeMs;
+  }
+
+  clampStatus();
+  updateVisibleOverlays();
+  syncCanonicalStateShape();
+
+  let normalizedCare = careApi && typeof careApi.normalizeCareState === 'function'
+    ? careApi.normalizeCareState(nextCare, state)
+    : nextCare;
+  if (careApi && typeof careApi.captureCareTrendSnapshot === 'function' && typeof careApi.normalizeCareTrends === 'function') {
+    const afterTrendSnapshot = careApi.captureCareTrendSnapshot({ ...state, care: normalizedCare });
+    normalizedCare.trends = careApi.normalizeCareTrends({
+      ...(normalizedCare.trends || {}),
+      version: 1,
+      lastSnapshotAtSimMs: Math.max(0, Number(afterTrendSnapshot && afterTrendSnapshot.atSimMs || simTimeMs || 0)),
+      previous: beforeTrendSnapshot && beforeTrendSnapshot.values ? beforeTrendSnapshot.values : null,
+      current: afterTrendSnapshot && afterTrendSnapshot.values ? afterTrendSnapshot.values : null
+    }, { ...state, care: normalizedCare });
+    normalizedCare = careApi.normalizeCareState(normalizedCare, state);
+  }
+  state.care = normalizedCare;
+  if (careApi && typeof careApi.deriveCareSummary === 'function') {
+    state.care.summary = careApi.deriveCareSummary(state.care, state);
+  }
+
+  const nowMs = Date.now();
+  const cooldownMs = Math.round(Number(plan.cooldownRealMinutes || 0) * 60 * 1000);
+  state.actions.cooldowns[method.id] = nowMs + cooldownMs;
+
+  const after = snapshotStatus();
+  const deltaSummary = summarizeDelta(before, after);
+  addLog('action', `Pflegemethode: ${getCareEntryLabel(method)}`, {
+    type: 'care_method',
+    id: method.id,
+    category: method.category,
+    intensity: method.intensity,
+    label: getCareEntryLabel(method),
+    legacyCategory: plan && plan.trackingFlags ? plan.trackingFlags.legacyCategory : String(method.category || ''),
+    methodType: plan && plan.trackingFlags ? plan.trackingFlags.methodType : String(method.type || ''),
+    countsAsWatering: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsWatering),
+    countsAsFeeding: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsFeeding),
+    countsAsCare: true,
+    simTime: simTimeMs,
+    realTime: nowMs,
+    deltaSummary
+  });
+  if (typeof window.checkMissions === 'function') {
+    window.checkMissions('action', {
+      actionId: method.id,
+      category: method.category,
+      legacyCategory: plan && plan.trackingFlags ? plan.trackingFlags.legacyCategory : String(method.category || ''),
+      methodType: plan && plan.trackingFlags ? plan.trackingFlags.methodType : String(method.type || ''),
+      countsAsWatering: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsWatering),
+      countsAsFeeding: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsFeeding),
+      countsAsCare: true,
+      deltaSummary,
+      sideEffects: []
+    });
+  }
+  evaluateDailyRetention(state, nowMs, { forceCheckin: false, skipPersist: true });
+  updateDailyCareCompletion('action_success', {
+    nowMs,
+    actionId: method.id,
+    category: method.category,
+    countsAsWatering: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsWatering)
+  });
+  syncRunGoalProgress('action');
+  state.actions.lastResult = {
+    ok: true,
+    reason: 'ok',
+    actionId: method.id,
+    atRealTimeMs: nowMs,
+    legacyCategory: plan && plan.trackingFlags ? plan.trackingFlags.legacyCategory : String(method.category || ''),
+    methodType: plan && plan.trackingFlags ? plan.trackingFlags.methodType : String(method.type || ''),
+    countsAsWatering: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsWatering),
+    countsAsFeeding: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsFeeding),
+    countsAsCare: true
+  };
+  schedulePersistState(true);
+  return {
+    ok: true,
+    id: method.id,
+    deltaSummary,
+    sideEffects: [],
+    soft: false,
+    guidanceHint: ''
+  };
+}
+
+function renderCareDecisionPanel(careViewModel = null) {
+  const zone = uiNode('careDecisionZone', 'careDecisionZone');
+  if (!zone) {
     return;
   }
 
+  zone.replaceChildren();
+  const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
+  const actionPreview = getSelectedCareActionPreview(careViewModel);
+  const lastCareFeedback = careData.lastFeedback && typeof careData.lastFeedback === 'object' ? careData.lastFeedback : {};
+  const selected = getSelectedCareEntry(careViewModel);
+
+  const appendBlock = (className, html) => {
+    const node = document.createElement('section');
+    node.className = className;
+    node.innerHTML = html;
+    zone.appendChild(node);
+  };
+
+  if (actionPreview && selected) {
+    const forecastDeltas = Array.isArray(actionPreview.forecastDeltas) ? actionPreview.forecastDeltas : [];
+    const decisionTone = getCarePreviewVerdictTone(actionPreview);
+    const actionLabel = getCareEntryLabel(selected) || i18nT('careStudio.decision.selectedAction');
+    appendBlock(`care-studio-preview-card care-studio-decision-card care-studio-decision-card--${decisionTone}`, `
+      <div class="care-studio-decision-top">
+        ${getCareStudioDecisionIconMarkup('timing')}
+        <div class="care-studio-decision-title">
+          <small>${escapeHtml(i18nT('careStudio.decision.selectedAction'))}</small>
+          <strong>${escapeHtml(actionLabel)}</strong>
+        </div>
+        <span class="care-studio-verdict-badge care-studio-verdict-badge--${escapeHtml(decisionTone)}">${escapeHtml(i18nT(actionPreview.recommendation && actionPreview.recommendation.labelKey || 'careStudio.preview.verdict.wait'))}</span>
+      </div>
+      <div class="care-studio-decision-badges">
+        <span class="care-studio-mini-badge"><small>${escapeHtml(i18nT('careStudio.preview.labels.timing'))}</small><strong>${escapeHtml(i18nT(actionPreview.timing && actionPreview.timing.labelKey || 'careStudio.preview.timing.okay'))}</strong></span>
+        <span class="care-studio-mini-badge"><small>${escapeHtml(i18nT('careStudio.preview.labels.benefit'))}</small><strong>${escapeHtml(i18nT(`careStudio.preview.benefit.${String(actionPreview.benefit && actionPreview.benefit.level || 'low')}`))}</strong></span>
+        <span class="care-studio-mini-badge care-studio-mini-badge--risk"><small>${escapeHtml(i18nT('careStudio.preview.labels.risk'))}</small><strong>${escapeHtml(i18nT(actionPreview.risk && actionPreview.risk.labelKey || 'careStudio.risk.low'))}</strong></span>
+      </div>
+      <div class="care-studio-delta-strip" aria-label="${escapeHtml(i18nT('careStudio.delta.title'))}">
+        ${forecastDeltas.length ? renderCareDeltaChips(forecastDeltas) : `<span class="care-studio-delta-empty">${escapeHtml(i18nT('careStudio.delta.empty'))}</span>`}
+      </div>
+      <div class="care-studio-preview-reasons care-studio-decision-reasons">
+        ${(Array.isArray(actionPreview.risk && actionPreview.risk.reasons) ? actionPreview.risk.reasons : [])
+          .slice(0, 2)
+          .map((reasonKey) => `<span class="care-studio-preview-pill">${escapeHtml(i18nT(reasonKey))}</span>`)
+          .join('')}
+      </div>
+      <p class="care-studio-preview-buddy care-studio-decision-buddy">${escapeHtml(i18nT(actionPreview.buddyHintKey || 'careStudio.buddy.monitorRoots'))}</p>
+    `);
+  }
+
+  if (lastCareFeedback && lastCareFeedback.lastCareMessageKey) {
+    const feedbackGrade = String(lastCareFeedback.lastCareGrade || 'okay');
+    appendBlock(`care-studio-feedback-card care-studio-aftercare-card care-studio-feedback-card--${escapeHtml(feedbackGrade)}`, `
+      <div class="care-studio-aftercare-head">
+        ${getCareStudioDecisionIconMarkup('rootZone')}
+        <div>
+          <small>${escapeHtml(i18nT('careStudio.aftercare.grade'))}</small>
+          <strong>${escapeHtml(i18nT(`careStudio.feedback.grade.${feedbackGrade}`))}</strong>
+        </div>
+        <span>${escapeHtml(i18nT(lastCareFeedback.lastFocusKey || 'careStudio.focus.monitorPlant'))}</span>
+      </div>
+      <p class="care-studio-preview-buddy">${escapeHtml(i18nT(lastCareFeedback.lastCareMessageKey))}</p>
+      <div class="care-studio-preview-reasons care-studio-aftercare-effects">
+        ${(Array.isArray(lastCareFeedback.lastEffects) ? lastCareFeedback.lastEffects : [])
+          .slice(0, 3)
+          .map((effectKey) => `<span class="care-studio-preview-pill">${escapeHtml(i18nT(effectKey))}</span>`)
+          .join('')}
+      </div>
+    `);
+  }
+
+  if (!selected) {
+    zone.classList.remove('has-selection');
+    return;
+  }
+
+  zone.classList.add('has-selection');
   const hintApi = window.GrowSimCareActionHints;
+  const hintAction = selected && selected.actionForHints ? selected.actionForHints : (getLegacyActionForCareMethod(selected) || selected);
   let renderedHints = 0;
-  if (hintApi && typeof hintApi.buildCareActionContext === 'function' && typeof hintApi.selectTopHints === 'function') { const baseContext = careViewModel && careViewModel.context ? careViewModel.context : state;
-    const hintContext = hintApi.buildCareActionContext(baseContext, selected);
+  if (hintApi && typeof hintApi.buildCareActionContext === 'function' && typeof hintApi.selectTopHints === 'function') {
+    const baseContext = careViewModel && careViewModel.context ? careViewModel.context : state;
+    const hintContext = hintApi.buildCareActionContext(baseContext, hintAction);
     let hints = [];
 
-    if (selected.category === 'watering' && typeof hintApi.evaluateWateringHints === 'function') {
+    if (hintAction.category === 'watering' && typeof hintApi.evaluateWateringHints === 'function') {
       hints = hintApi.evaluateWateringHints(hintContext);
-    } else if (selected.category === 'fertilizing' && typeof hintApi.evaluateFertilizingHints === 'function') {
+    } else if (hintAction.category === 'fertilizing' && typeof hintApi.evaluateFertilizingHints === 'function') {
       hints = hintApi.evaluateFertilizingHints(hintContext);
-    } else if (selected.category === 'training' && typeof hintApi.evaluateTrainingHints === 'function') {
+    } else if (hintAction.category === 'training' && typeof hintApi.evaluateTrainingHints === 'function') {
       hints = hintApi.evaluateTrainingHints(hintContext);
-    } else if (selected.category === 'environment' && typeof hintApi.evaluateEnvironmentHints === 'function') {
+    } else if (hintAction.category === 'environment' && typeof hintApi.evaluateEnvironmentHints === 'function') {
       hints = hintApi.evaluateEnvironmentHints(hintContext);
     }
 
     const topHints = hintApi.selectTopHints(hints, 2);
-    if (topHints.length) {
-      appendSectionLabel('Hinweise zur aktuellen Lage', 'hints');
-    }
     for (const hint of topHints) {
-      const li = document.createElement('li');
-      li.className = `care-hint-item care-hint-item--${hint.severity}`;
       const hintCopy = getCareHintCopy(hint);
-      const severityLabel = hint.severity === 'warning' ? 'Warnung' : (hint.severity === 'caution' ? 'Vorsicht' : 'Empfehlung');
-      li.setAttribute('aria-label', severityLabel);
-      li.innerHTML = `
+      appendBlock(`care-hint-item care-hint-item--${hint.severity}`, `
         <div class="care-hint-head">
           <span class="care-hint-marker" aria-hidden="true"></span>
         </div>
-        <strong class="care-hint-headline">${escapeHtml(hintCopy.headline || hint.message)}</strong>${hintCopy.explanation ? `<p class="care-hint-message">${escapeHtml(hintCopy.explanation)}</p>` : ''}
-      `;
-      ui.careEffectsList.appendChild(li);
+        <strong class="care-hint-headline">${escapeHtml(hintCopy.headline || hint.message)}</strong>
+        ${hintCopy.explanation ? `<p class="care-hint-message">${escapeHtml(hintCopy.explanation)}</p>` : ''}
+      `);
       renderedHints += 1;
     }
   }
-  appendSectionLabel('Auswirkungen der Aktion', renderedHints ? 'effects' : '');
-  const immediate = selected.effects && selected.effects.immediate ? selected.effects.immediate : {};
+
+  const effectSource = hintAction && hintAction.effects && hintAction.effects.immediate
+    ? hintAction
+    : (selected && selected.directEffects && selected.directEffects.status
+      ? { effects: { immediate: selected.directEffects.status } }
+      : selected);
+  const immediate = effectSource && effectSource.effects && effectSource.effects.immediate ? effectSource.effects.immediate : {};
+  const rows = [];
   if (Array.isArray(immediate)) {
     const labels = {
       water: 'Feuchtigkeit',
@@ -13617,65 +14677,180 @@ function renderCareEffectsPanel(careViewModel = null) {
       health: 'Gesundheit'
     };
     for (const effect of immediate) {
-      if (!effect || typeof effect !== 'object') {
-        continue;
-      }
-      const li = document.createElement('li');
-      li.className = 'care-effect-row';
-      const statLabel = labels[String(effect.stat || '')] || 'System';
-      li.innerHTML = `<span>${escapeHtml(statLabel)}</span><strong>${escapeHtml(String(effect.label || 'Systemeingriff'))}</strong>`;
-      ui.careEffectsList.appendChild(li);
+      if (!effect || typeof effect !== 'object') continue;
+      rows.push(`<div class="care-effect-row"><span>${escapeHtml(labels[String(effect.stat || '')] || 'System')}</span><strong>${escapeHtml(String(effect.label || 'Systemeingriff'))}</strong></div>`);
     }
-
-    if (!ui.careEffectsList.children.length) {
-      appendEmptyRow('Keine unmittelbaren Effekte.');
+  } else {
+    const effectRows = [
+      ['water', 'Feuchtigkeit'],
+      ['nutrition', 'Nährstoffe'],
+      ['growth', 'Wachstum'],
+      ['stress', 'Stress'],
+      ['risk', 'Risiko'],
+      ['health', 'Gesundheit']
+    ];
+    for (const [key, label] of effectRows) {
+      const value = Number(immediate[key] || 0);
+      if (!value) continue;
+      rows.push(`<div class="care-effect-row"><span>${label}</span><strong>${value > 0 ? '+' : ''}${round2(value)}</strong></div>`);
     }
-    return;
-  }
-  const effectRows = [
-    ['water', 'Feuchtigkeit'],
-    ['nutrition', 'Nährstoffe'],
-    ['growth', 'Wachstum'],
-    ['stress', 'Stress'],
-    ['risk', 'Risiko'],
-    ['health', 'Gesundheit']
-  ];
-
-  for (const [key, label] of effectRows) {
-    const value = Number(immediate[key] || 0);
-    if (!value) {
-      continue;
-    }
-    const li = document.createElement('li');
-    li.className = 'care-effect-row'; li.innerHTML = `<span>${label}</span><strong>${value > 0 ? '+' : ''}${round2(value)}</strong>`;
-    ui.careEffectsList.appendChild(li);
   }
 
-  if (!ui.careEffectsList.querySelector('.care-effect-row')) {
-    appendEmptyRow('Keine unmittelbaren Effekte.');
+  if (rows.length || renderedHints) {
+    appendBlock('care-action-outcome-card', `
+      <div class="care-action-outcome-head">${escapeHtml(i18nT('careStudio.decision.effects_title') || 'Auswirkungen')}</div>
+      <div class="care-action-outcome-list">${rows.length ? rows.join('') : `<div class="care-empty-row">Keine unmittelbaren Effekte.</div>`}</div>
+    `);
   }
 }
 
 function renderCareExecuteButton() {
-  const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
-  const availability = selected ? getActionAvailability(selected) : { ok: false };
+  const careMapping = window.GrowSimScreenMappings && window.GrowSimScreenMappings.care;
+  const careViewModel = careMapping && typeof careMapping.toViewModel === 'function' ? careMapping.toViewModel(state) : null;
+  const selected = getSelectedCareEntry(careViewModel);
+  const availability = selected
+    ? (isCareMethodEntry(selected) ? getCareMethodAvailabilityForUi(selected) : getActionAvailability(selected))
+    : { ok: false };
   const cooldownUntil = selected ? Number(state.actions.cooldowns[selected.id] || 0) : 0;
+  const preview = getSelectedCareActionPreview(careViewModel);
+  const executePanel = uiNode('careExecutePanel', 'careExecutePanel');
   ui.careExecuteButton.disabled = !selected || !availability.ok || cooldownUntil > Date.now();
+  ui.careExecuteButton.dataset.previewTone = preview ? getCarePreviewVerdictTone(preview) : 'neutral';
+  if (executePanel) {
+    executePanel.classList.toggle('is-idle', !selected);
+    executePanel.classList.toggle('has-selection', Boolean(selected));
+  }
 }
 
 function onCareExecuteAction() {
-  const action = state.actions.byId[state.ui.care.selectedActionId || ''];
-  if (!action) {
-    setCareFeedback('error', 'Bitte zuerst eine Aktion wählen.');
+  const careMapping = window.GrowSimScreenMappings && window.GrowSimScreenMappings.care;
+  const careViewModel = careMapping && typeof careMapping.toViewModel === 'function' ? careMapping.toViewModel(state) : null;
+  const selected = getSelectedCareEntry(careViewModel);
+  if (!selected) {
+    setCareFeedback('error', 'Bitte zuerst eine Methode wählen.');
     renderCareSheet(true);
     return;
   }
 
-  const result = executeCareAction(action.id);
-  if (result.ok) { const baseMessage = action.uxCopy && action.uxCopy.success ? action.uxCopy.success : `${action.label} ausgeführt.`;
+  const isMethod = isCareMethodEntry(selected);
+  const actionLike = isMethod
+    ? ((getCareMethodsApi() && typeof getCareMethodsApi().buildActionLikeFromMethod === 'function')
+      ? getCareMethodsApi().buildActionLikeFromMethod(selected, getLegacyActionForCareMethod(selected), state)
+      : getLegacyActionForCareMethod(selected))
+    : selected;
+  const availability = isMethod ? getCareMethodAvailabilityForUi(selected) : getActionAvailability(selected);
+  const cooldownUntil = Number(state.actions.cooldowns[selected.id] || 0);
+  if (!availability.ok || cooldownUntil > Date.now()) {
+    const reason = cooldownUntil > Date.now()
+      ? `cooldown_active:${Math.ceil((cooldownUntil - Date.now()) / 1000)}s`
+      : availability.reason;
+    setCareFeedback('error', explainActionFailure(reason));
+    renderCareSheet(true);
+    return;
+  }
+
+  let result;
+  if (isMethod) {
+    const careMethodsApi = getCareMethodsApi();
+    const legacyAction = getLegacyActionForCareMethod(selected);
+    const plan = careMethodsApi && typeof careMethodsApi.buildCareMethodExecutionPlan === 'function'
+      ? careMethodsApi.buildCareMethodExecutionPlan(state, selected, { legacyAction })
+      : null;
+    if (!plan) {
+      setCareFeedback('error', explainActionFailure('unknown_method'));
+      renderCareSheet(true);
+      return;
+    }
+    result = plan.mode === 'legacy'
+      ? executeCareAction(plan.legacyActionId)
+      : applyDirectCareMethodPlan(plan);
+    if (result && result.ok) {
+      const cooldownMs = Math.round(Number(plan.cooldownRealMinutes || 0) * 60 * 1000);
+      state.actions.cooldowns[selected.id] = Date.now() + cooldownMs;
+      if (plan.mode === 'legacy') {
+        const latestHistoryAction = Array.isArray(state.history && state.history.actions)
+          ? state.history.actions[state.history.actions.length - 1]
+          : null;
+        if (latestHistoryAction && String(latestHistoryAction.id || '') === String(plan.legacyActionId || '')) {
+          latestHistoryAction.id = selected.id;
+          latestHistoryAction.label = getCareEntryLabel(selected);
+          latestHistoryAction.category = selected.category;
+          latestHistoryAction.intensity = selected.intensity;
+          latestHistoryAction.legacyActionId = plan.legacyActionId;
+          latestHistoryAction.legacyCategory = plan && plan.trackingFlags ? plan.trackingFlags.legacyCategory : String(selected.category || '');
+          latestHistoryAction.methodType = plan && plan.trackingFlags ? plan.trackingFlags.methodType : String(selected.type || '');
+          latestHistoryAction.countsAsWatering = Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsWatering);
+          latestHistoryAction.countsAsFeeding = Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsFeeding);
+          latestHistoryAction.countsAsCare = true;
+        }
+        const latestSystemLog = Array.isArray(state.history && state.history.systemLog)
+          ? state.history.systemLog[state.history.systemLog.length - 1]
+          : null;
+        if (latestSystemLog && String(latestSystemLog.type || '') === 'action') {
+          latestSystemLog.message = `Pflegemethode: ${getCareEntryLabel(selected)}`;
+          latestSystemLog.msg = latestSystemLog.message;
+          latestSystemLog.details = Object.assign({}, latestSystemLog.details, {
+            id: selected.id,
+            label: getCareEntryLabel(selected),
+            category: selected.category,
+            intensity: selected.intensity,
+            legacyActionId: plan.legacyActionId,
+            legacyCategory: plan && plan.trackingFlags ? plan.trackingFlags.legacyCategory : String(selected.category || ''),
+            methodType: plan && plan.trackingFlags ? plan.trackingFlags.methodType : String(selected.type || ''),
+            countsAsWatering: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsWatering),
+            countsAsFeeding: Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsFeeding),
+            countsAsCare: true
+          });
+          latestSystemLog.data = latestSystemLog.details;
+        }
+      }
+      if (state.actions.lastResult && typeof state.actions.lastResult === 'object') {
+        state.actions.lastResult.careMethodId = selected.id;
+        state.actions.lastResult.careMethodLabel = getCareEntryLabel(selected);
+        state.actions.lastResult.legacyCategory = plan && plan.trackingFlags ? plan.trackingFlags.legacyCategory : String(selected.category || '');
+        state.actions.lastResult.methodType = plan && plan.trackingFlags ? plan.trackingFlags.methodType : String(selected.type || '');
+        state.actions.lastResult.countsAsWatering = Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsWatering);
+        state.actions.lastResult.countsAsFeeding = Boolean(plan && plan.trackingFlags && plan.trackingFlags.countsAsFeeding);
+        state.actions.lastResult.countsAsCare = true;
+      }
+    }
+  } else {
+    result = executeCareAction(selected.id);
+  }
+
+  if (result.ok) {
+    const careApi = getCareModelApi();
+    if (careApi && typeof careApi.getCareActionFeedback === 'function') {
+      const feedback = careApi.getCareActionFeedback(state, actionLike, result);
+      state.care = state.care && typeof state.care === 'object' ? state.care : {};
+      state.care.feedback = Object.assign({}, state.care.feedback, {
+        lastCareGrade: feedback.grade || null,
+        lastCareMessageKey: feedback.messageKey || null,
+        lastEffects: Array.isArray(feedback.effects) ? feedback.effects.slice(0, 3) : [],
+        lastFocusKey: feedback.nextFocusKey || null,
+        lastActionId: selected.id,
+        lastUpdatedAtSimMs: Math.max(0, Number(state.simulation && state.simulation.simTimeMs || 0))
+      });
+      if (state.care.routine && typeof state.care.routine === 'object') {
+        state.care.routine.careScoreToday = clamp(
+          Number(state.care.routine.careScoreToday || 0) + Number(feedback.scoreDelta || 0),
+          -100,
+          100
+        );
+      }
+    }
+    const successCopy = isMethod && selected.successKey
+      ? resolveLikelyI18nText(selected.successKey, selected.successKey)
+      : '';
+    const legacySuccessCopy = actionLike && actionLike.uxCopy && actionLike.uxCopy.success
+      ? String(actionLike.uxCopy.success).trim()
+      : '';
+    const baseMessage = successCopy
+      || legacySuccessCopy
+      || `${getCareEntryLabel(selected)} ausgeführt.`;
     const detail = String(result.guidanceHint || '').trim();
     setCareFeedback('success', detail ? `${baseMessage} ${detail}` : baseMessage);
-    triggerCareActionVisualFeedback(action);
+    triggerCareActionVisualFeedback(actionLike || selected);
     state.ui.care.selectedActionId = null;
   } else {
     setCareFeedback('error', explainActionFailure(result.reason));
@@ -13687,15 +14862,19 @@ function onCareExecuteAction() {
 }
 
 function renderCareFeedback() {
-  const selected = state.actions.byId[state.ui.care.selectedActionId || ''];
-  const availability = selected ? getActionAvailability(selected) : null;
+  const careMapping = window.GrowSimScreenMappings && window.GrowSimScreenMappings.care;
+  const careViewModel = careMapping && typeof careMapping.toViewModel === 'function' ? careMapping.toViewModel(state) : null;
+  const selected = getSelectedCareEntry(careViewModel);
+  const availability = selected
+    ? (isCareMethodEntry(selected) ? getCareMethodAvailabilityForUi(selected) : getActionAvailability(selected))
+    : null;
   const cooldownUntil = selected ? Number(state.actions.cooldowns[selected.id] || 0) : 0;
   const cooldownReason = cooldownUntil > Date.now() ? `cooldown_active:${Math.ceil((cooldownUntil - Date.now()) / 1000)}s` : '';
   const softReason = selected && availability && availability.ok && availability.soft
     ? (availability.note || 'Verfügbar, aber heute weniger effizient und etwas riskanter.')
     : '';
   const feedback = (state.ui.care && state.ui.care.feedback)
-    || { kind: 'info', text: selected ? (cooldownReason ? explainActionFailure(cooldownReason) : (availability && !availability.ok ? explainActionFailure(availability.reason) : (softReason || 'Bereit zur Ausführung'))) : 'Wähle eine Aktion.' };
+    || { kind: 'info', text: selected ? (cooldownReason ? explainActionFailure(cooldownReason) : (availability && !availability.ok ? explainActionFailure(availability.reason) : (softReason || 'Bereit zur Ausführung'))) : 'Wähle eine Methode.' };
   ui.careFeedback.textContent = feedback.text;
   ui.careFeedback.classList.toggle('is-info', feedback.kind === 'info');
   ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');
@@ -13764,6 +14943,24 @@ function explainActionFailure(reason) {
   }
   if (value === 'dead_run_ended') {
     return 'Aktion nicht möglich: Die Pflanze ist eingegangen.';
+  }
+  if (value === 'unknown_method') {
+    return 'Diese Pflegemethode ist gerade nicht verfügbar.';
+  }
+  if (value === 'care_method_not_needed') {
+    return 'Diese Methode ist im aktuellen Zustand eher nicht nötig.';
+  }
+  if (value === 'care_method_root_zone_wet') {
+    return 'Die Wurzelzone ist dafür noch zu feucht.';
+  }
+  if (value === 'care_method_surface_still_wet') {
+    return 'Die Oberfläche ist dafür noch nicht trocken genug.';
+  }
+  if (value === 'care_method_salt_pressure') {
+    return 'Die Salzlast ist dafür aktuell zu hoch.';
+  }
+  if (value === 'care_method_root_zone_too_dry') {
+    return 'Die Wurzelzone ist dafür aktuell zu trocken.';
   }
   return `Aktion blockiert (${value}).`;
 }
@@ -19239,16 +20436,16 @@ function getActionIconPath(action) {
     return gameplayPath;
   }
   const cat = action.category || 'environment';
-  const intensity = action.intensity || 'low';
-  if (cat === 'watering') { return intensity === 'high' ? 'assets/ui/icons/icon_water.svg' : 'assets/ui/icons/icon_water.svg';
+  if (cat === 'watering') {
+    return CARE_STUDIO_ASSET_PATHS.icons.water || CARE_STUDIO_ASSET_PATHS.legacy.water;
   }
   if (cat === 'fertilizing') {
-    return 'assets/ui/icons/icon_nutrients.svg';
+    return CARE_STUDIO_ASSET_PATHS.icons.feed || CARE_STUDIO_ASSET_PATHS.legacy.feed;
   }
   if (cat === 'training') {
-    return 'assets/ui/icons/icon_growth.svg';
+    return CARE_STUDIO_ASSET_PATHS.icons.routine || CARE_STUDIO_ASSET_PATHS.legacy.routine;
   }
-  return 'assets/ui/icons/icon_airflow.svg';
+  return CARE_STUDIO_ASSET_PATHS.legacy.environment;
 }
 
 function getCareActionAssetPath(action) {

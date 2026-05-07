@@ -669,9 +669,389 @@
     "plant_needs_water": "Tu planta necesita cuidados."
   },
   "care": {
+    "buddy": {
+      "observe": "Lee la planta primero y elige el siguiente paso con calma.",
+      "wait_dryback": "La zona radicular sigue humeda. Dale mas aire.",
+      "water_window": "Ahora es una buena ventana para regar.",
+      "feed_hold": "La presion nutricional esta alta. Mejor esperar con el abono.",
+      "feed_window": "La planta parece lista para una nutricion medida."
+    },
     "feed": "Fertilizar",
+    "hint": {
+      "root_zone_balanced": "Zona radicular estable",
+      "root_zone_deeper_than_surface": "La superficie esta mas seca que abajo",
+      "root_zone_dry": "La zona radicular se seca",
+      "root_zone_wet": "La zona radicular sigue humeda"
+    },
     "open": "Abrir cuidados",
+    "reason": {
+      "medium_too_dry": "El sustrato esta demasiado seco para abonar",
+      "moisture_stable": "La humedad esta estable ahora",
+      "nutrient_buffer_low": "La reserva de nutrientes es baja",
+      "nutrition_stable": "La nutricion esta estable",
+      "root_zone_wet": "La zona radicular sigue con demasiada humedad",
+      "salt_pressure": "La carga de sales esta alta",
+      "substrate_dry": "El sustrato se esta secando",
+      "surface_dry": "La capa superior esta mas seca que la zona radicular"
+    },
+    "recommendation": {
+      "feed": {
+        "feed_now": "Una nutricion medida encaja bien ahora.",
+        "hold": "Es mejor esperar antes de abonar.",
+        "hydrate_first": "Primero hidrata y luego abona.",
+        "stable": "La nutricion esta estable por ahora.",
+        "wait_root_zone": "La zona radicular sigue demasiado humeda. Abonar ahora seria menos eficiente."
+      },
+      "water": {
+        "monitor": "La humedad se ve estable. Sigue observando.",
+        "small_sip": "Ahora solo encaja un riego pequeno.",
+        "wait_dryback": "Espera a mas dryback antes de volver a regar.",
+        "water_now": "Ahora es buen momento para un riego limpio."
+      }
+    },
     "water": "Regar"
+  },
+  "careStudio": {
+    "buddy": {
+      "feedLight": "Aqui encaja mejor una nutricion mas ligera.",
+      "feedReady": "La planta parece lista para una nutricion medida.",
+      "feedTooRisky": "La presion nutricional ya es alta. Mejor esperar.",
+      "monitorRoots": "Lee primero la zona radicular y luego decide.",
+      "routineCareful": "Una rutina ligera es mas limpia que un empuje duro.",
+      "routineStable": "Es un buen momento para un cuidado suave.",
+      "stabilizeFirst": "Primero estabiliza la planta antes de sumar mas estres.",
+      "waterGoodTiming": "El timing para regar se ve limpio.",
+      "waterSmallSip": "Un pequeno sorbo encaja mejor aqui.",
+      "waterTooSoon": "Todavia es pronto para un riego mas fuerte."
+    },
+    "actionPanel": {
+      "diagnosis_subtitle": "El diagn?stico te ayuda a leer la planta antes de actuar.",
+      "diagnosis_title": "Vista de diagn?stico",
+      "empty_actions": "No hay m?todos de cuidado adecuados en esta pesta?a ahora mismo.",
+      "empty_diagnosis": "Diagnostico se centra en entender la planta.",
+      "feed_subtitle": "Elige un m?todo adecuado para la absorci?n, la nutrici?n y la carga de sales.",
+      "feed_title": "M?todos de abonado",
+      "routine_subtitle": "Las rutinas suaves y los pasos de estabilizaci?n siguen agrupados aqu?.",
+      "routine_title": "M?todos de cuidado",
+      "water_subtitle": "Elige un m?todo adecuado para el estado actual.",
+      "water_title": "M?todos de riego"
+    },
+    "chips": {
+      "moisture": "Humedad",
+      "nutrition": "Nutricion",
+      "risk": "Riesgo",
+      "stress": "Estres"
+    },
+    "diagnosis": {
+      "buddy_hint": "Consejo de Buddy",
+      "cause": {
+        "generalStressLoad": "El estrés, el riesgo o la salud muestran demasiada presión ahora mismo.",
+        "nutrientBufferFalling": "La nutrición baja mientras la carga de sales y la zona radicular siguen limpias.",
+        "rootZoneDrysSlow": "La zona profunda se seca más lento que la superficie.",
+        "rootZoneLosesBuffer": "La planta pierde humedad más rápido de lo que la zona radicular puede amortiguar.",
+        "supplyAheadOfDemand": "Todavía hay nutrición disponible, pero la carga de sales está subiendo.",
+        "surfaceDryRootStable": "La superficie ya secó mientras la zona radicular sigue estable.",
+        "valuesInRange": "Agua, zona radicular y nutrición están dentro de un rango limpio."
+      },
+      "current_focus": "Foco actual",
+      "focus": {
+        "growth": "Crecimiento",
+        "nutrition": "Nutrientes",
+        "risk": "Riesgo",
+        "rootZone": "Zona radicular",
+        "saltLoad": "Carga de sales",
+        "stable": "Observar",
+        "stress": "Estrés",
+        "water": "Agua"
+      },
+      "headline": {
+        "nutritionLow": "Demanda moderada de nutrientes",
+        "rootZoneWet": "Zona radicular todavía demasiado húmeda",
+        "saltLoadHigh": "La carga de sales está subiendo",
+        "stable": "Estado estable",
+        "stressHigh": "Primero estabilizar el estrés",
+        "waterLow": "La humedad cae demasiado rápido",
+        "waterWindow": "Ventana limpia de riego"
+      },
+      "message": {
+        "nutritionLow": "La planta parece capaz de volver a absorber una nutrición moderada.",
+        "rootZoneWet": "La zona radicular sigue demasiado húmeda. Más agua aumentaría el estrés por falta de oxígeno.",
+        "saltLoadHigh": "Hay nutrición disponible, pero la carga de sales está subiendo. Evita una fertilización fuerte.",
+        "stable": "El estado es estable. Observa dryback y nutrición antes de intervenir.",
+        "stressHigh": "La planta está inestable. Ahora encaja mejor un cuidado suave que una intervención fuerte.",
+        "waterLow": "La planta pierde humedad más rápido de lo que la zona radicular puede amortiguar con limpieza.",
+        "waterWindow": "La superficie se ha secado mientras la zona radicular sigue estable."
+      },
+      "next_focus": "Siguiente foco",
+      "next_observation": "Siguiente observación",
+      "next_check": "Revisar después",
+      "nextCheck": {
+        "dryback": "Comprueba más tarde si el dryback sigue avanzando.",
+        "monitor": "Sigue observando antes de hacer otro movimiento fuerte.",
+        "nutrition": "Tras la próxima nutrición, revisa si la planta sigue reaccionando con calma.",
+        "rootZone": "Comprueba más tarde si la zona profunda sigue descargando presión.",
+        "saltLoad": "Observa si la presión baja antes de la próxima fertilización.",
+        "stress": "Busca una reacción más calmada antes de añadir algo más."
+      },
+      "nutrients": "Nutrientes",
+      "observe": {
+        "avoidStrongFeed": "Evita una fertilización fuerte y observa si la presión se calma.",
+        "feedModerately": "Encaja mejor una nutrición moderada que un empuje fuerte.",
+        "monitorDryback": "Observa cómo siguen separándose o juntándose superficie y zona radicular.",
+        "monitorDrybackAndSupply": "Sigue observando dryback y nutrición antes de intervenir.",
+        "recheckAfterWatering": "Después de regar, revisa si la zona radicular vuelve a estabilizarse.",
+        "stabilizeBeforeIntervention": "Primero estabiliza la planta antes de entrenamiento, fertilización fuerte o más presión."
+      },
+      "probable_cause": "Causa probable",
+      "ready_focus": "Lee la planta primero y luego elige la accion mas limpia.",
+      "risk": "Riesgo",
+      "risk_level": "Nivel de riesgo",
+      "root_zone": "Zona radicular",
+      "state": "Estado",
+      "status": {
+        "act": "Actuar ahora",
+        "avoid": "Evitar por ahora",
+        "stable": "Estable",
+        "watch": "Observar"
+      },
+      "stress": "Estres",
+      "suggested_direction": "Dirección sugerida",
+      "title": "Diagnostico",
+      "water": "Agua"
+    },
+    "feedback": {
+      "badCare": "Esa decision anadio mas presion que alivio.",
+      "effect": {
+        "dryStressReduced": "Estres seco reducido",
+        "monitorResponse": "Observar la respuesta",
+        "moistureRaised": "Humedad recuperada",
+        "nutrientSupport": "Nutricion reforzada",
+        "riskRaised": "El riesgo subio",
+        "riskSettled": "El riesgo se calmo"
+      },
+        "goodCare": "Buena decision de cuidado. La planta deberia reaccionar mejor.",
+        "goodFeeding": "Buena decision. La planta parece capaz de absorber nutrientes sin sumar demasiada presion.",
+        "goodWatering": "Buen riego. La zona radicular deberia estar mas tranquila.",
+        "hygieneSettled": "Buena decision. El entorno se siente mas tranquilo y la presion de riesgo baja un poco.",
+        "grade": {
+          "bad": "Malo",
+          "good": "Bueno",
+          "okay": "Okay",
+          "perfect": "Perfecto",
+          "risky": "Arriesgado"
+        },
+        "okayCare": "La accion funciono, pero el timing fue solo medio.",
+        "perfectCare": "Muy buena decision. La planta responde limpia.",
+        "perfectWatering": "Ventana de dryback perfecta. Fue un riego premium.",
+        "rootZoneRelief": "Buena decision. La zona radicular se alivia con cuidado sin convertirse en un riego completo.",
+        "rootZoneReliefLimited": "Ese alivio tiene efecto limitado aqui. Observa mejor si la zona radicular realmente esta bajo presion.",
+        "riskyCare": "La accion funciono, pero sumo riesgo.",
+        "riskyFeeding": "La nutricion sube, pero tambien la carga de sales. La proxima vez conviene ir mas suave.",
+        "riskyWatering": "Fue un poco pronto. Observa la zona radicular antes de volver a regar.",
+        "uptakeLimited": "La absorcion sigue limitada. Primero conviene calmar un poco mas la zona radicular y la carga de sales.",
+        "uptakeStabilized": "Buena decision. La absorcion se siente mas estable sin empujar demasiado la carga de sales.",
+        "title": "Resultado"
+      },
+    "aftercare": {
+      "grade": "Nota",
+      "title": "Resultado"
+    },
+    "decision": {
+      "effects_title": "Efectos",
+      "risk": "Riesgo",
+      "selectedAction": "Seleccion",
+      "title": "Decision"
+    },
+    "delta": {
+      "dryStress": "Estres seco",
+      "empty": "Sin delta claro",
+      "growth": "Crecimiento",
+      "health": "Salud",
+      "moisture": "Humedad",
+      "nutrition": "Nutricion",
+      "overwatering": "Riesgo raiz",
+      "risk": "Riesgo",
+      "rootZoneMoisture": "Zona raiz",
+      "saltLoad": "Sales",
+      "stability": "Estabilidad",
+      "stress": "Estres",
+      "surfaceMoisture": "Superficie",
+      "title": "Delta"
+    },
+    "feed": {
+      "k": "K",
+      "micro": "Micro",
+      "n": "N",
+      "p": "P",
+      "phase": "Fase",
+      "recommendation": "Foco de abonado",
+      "salt_load": "Carga de sales",
+      "title": "Balance de nutrientes"
+    },
+    "focus": {
+      "monitorDryback": "Vigilar dryback",
+      "monitorPlant": "Vigilar respuesta",
+      "stabilizePlant": "Estabilizar planta",
+      "watchSaltLoad": "Vigilar carga de sales"
+    },
+    "phase": {
+      "flower": "Floracion",
+      "late_flower": "Floracion tardia",
+      "stretch": "Stretch",
+      "vegetative": "Vegi"
+    },
+    "preview": {
+      "benefit": {
+        "high": "Alto",
+        "low": "Bajo",
+        "medium": "Medio"
+      },
+      "effect": {
+        "burnRiskUp": "El riesgo de burn puede subir",
+        "dryStressDown": "El estres seco puede bajar",
+        "environmentStable": "La presion ambiental puede calmarse",
+        "flowerSupport": "El soporte de flor puede mejorar",
+        "growthSupport": "El soporte de crecimiento puede mejorar",
+        "moistureUp": "La humedad deberia subir",
+        "monitor": "Observar respuesta",
+        "nutritionUp": "La nutricion deberia subir",
+        "rootStressUp": "El estres radicular puede subir",
+        "routineStable": "La rutina deberia mantenerse segura",
+        "saltRiskUp": "La presion de sales puede subir"
+      },
+      "labels": {
+        "benefit": "Beneficio",
+        "effect": "Efecto",
+        "risk": "Riesgo",
+        "timing": "Timing"
+      },
+      "reason": {
+        "feedAlreadyHigh": "La nutricion ya es alta",
+        "lateFlowerSensitive": "La floracion tardia perdona menos",
+        "mediumTooDry": "El sustrato esta demasiado seco",
+        "nutrientBufferLow": "La reserva de nutrientes es baja",
+        "overwaterPressure": "La presion por exceso de agua ya esta alta",
+        "phaseMismatch": "Esta nutricion encaja mal con la fase",
+        "plantStressed": "La planta ya esta estresada",
+        "rootZoneReady": "La zona radicular parece lista",
+        "rootZoneWet": "La zona radicular sigue humeda",
+        "saltPressureHigh": "La presion de sales esta alta",
+        "smallSipSafer": "Un sorbo pequeno seria mas seguro",
+        "stableCanopy": "La planta se ve estable",
+        "strongAction": "Es una accion de riego fuerte",
+        "strongFeed": "Es una nutricion fuerte",
+        "surfaceReady": "La superficie esta lista",
+        "trainingInvasive": "Esta accion es algo mas invasiva"
+      },
+      "timing": {
+        "early": "Temprano",
+        "good": "Bueno",
+        "okay": "Okay",
+        "poor": "Debil"
+      },
+      "title": "Prevision",
+      "verdict": {
+        "recommended": "Recomendado",
+        "risky": "Arriesgado",
+        "situational": "Situacional",
+        "wait": "Mejor esperar"
+      }
+    },
+    "risk": {
+      "high": "Alto",
+      "low": "Bajo",
+      "medium": "Medio"
+    },
+    "routine": {
+      "active_actions": "Acciones activas",
+      "coming_soon": "Pronto",
+      "hygiene": "Ronda de higiene",
+      "leaf_check": "Revisar hojas",
+      "note": {
+        "hygiene": "Mantiene el entorno mas calmado y evita presion innecesaria.",
+        "leaf_check": "Ayuda a detectar pronto signos de estres o carencias.",
+        "pot_weight": "Te ayuda a leer mejor la siguiente ventana de riego.",
+        "rotate": "Favorece una orientacion mas uniforme y un crecimiento mas estable.",
+        "substrate_check": "Muestra si la superficie y la zona radicular siguen coincidiendo."
+      },
+      "pot_weight": "Estimar peso de la maceta",
+      "rotate": "Girar planta",
+      "substrate_check": "Revisar sustrato",
+      "title": "Rutina"
+    },
+    "state": {
+      "active": "Activo",
+      "balanced": "Equilibrado",
+      "dry": "Seco",
+      "low": "Bajo",
+      "stable": "Estable",
+      "watch": "Vigilar",
+      "wet": "Humedo"
+    },
+    "subtitle": {
+      "ready": "Ventana de cuidado activa",
+      "risk": "El riesgo esta elevado",
+      "stable": "Zona radicular estable",
+      "wait": "Mejor esperar un poco"
+    },
+    "tabs": {
+      "diagnosis": "Diagnostico",
+      "feed": "Abono",
+      "routine": "Rutina",
+      "water": "Riego"
+    },
+    "timing": {
+      "ready": "Ahora",
+      "soon": "Pronto",
+      "wait": "Esperar",
+      "warning": "Atencion"
+    },
+    "title": "Care Studio",
+    "water": {
+      "dry_stress": "Estres seco",
+      "dryback": "Dryback",
+      "next_window": "Siguiente ventana de riego",
+      "overwatering": "Riesgo raiz",
+      "root_zone": "Zona radicular",
+      "surface": "Superficie",
+      "title": "Perfil de humedad"
+    },
+    "visual": {
+      "buddySlot": "Slot Buddy",
+      "rootSlot": "Zona raiz",
+      "timingSlot": "Timing"
+    },
+    "trend": {
+      "message": {
+        "moistureFalling": "La humedad sigue bajando. Observa si la zona radicular todav?a amortigua bien.",
+        "moistureRising": "La humedad est? subiendo. Revisa si la zona se estabiliza con calma despu?s.",
+        "rootZoneDrying": "La zona profunda pierde humedad lentamente. Ahora conviene observar.",
+        "rootZoneStayingWet": "La zona radicular sigue h?meda m?s tiempo. M?s riego elevar?a el riesgo.",
+        "saltLoadRising": "La carga de sales est? subiendo. Conviene evitar una fertilizaci?n fuerte por ahora.",
+        "saltLoadStable": "La carga de sales se mantiene tranquila. Sigue observando antes de empujar m?s.",
+        "stressRising": "El estr?s est? aumentando. Evita intervenciones fuertes y observa la causa.",
+        "stressRecovering": "El estr?s est? bajando. La ?ltima decisi?n de cuidado parece estabilizar.",
+        "riskRising": "El riesgo est? aumentando. Solo sigue si tienes una raz?n clara.",
+        "riskFalling": "La presi?n est? bajando. Observar suele ser m?s limpio que a?adir m?s ahora.",
+        "nutritionDepleting": "La nutrici?n est? cayendo. Una fertilizaci?n moderada pronto podr?a encajar.",
+        "nutritionRecovering": "La nutrici?n se est? recuperando. Observa c?mo responde la planta.",
+        "stable": "La tendencia se mantiene tranquila. Sigue observando antes de intervenir."
+      },
+      "label": "Tendencia",
+      "moistureFalling": "La humedad baja",
+      "moistureRising": "La humedad sube",
+      "rootZoneDrying": "La zona radicular se seca",
+      "rootZoneStayingWet": "La zona radicular sigue h?meda",
+      "saltLoadRising": "La carga de sales sube",
+      "saltLoadStable": "La carga de sales se mantiene",
+      "stressRising": "El estr?s sube",
+      "stressRecovering": "El estr?s se recupera",
+      "riskRising": "El riesgo sube",
+      "riskFalling": "El riesgo baja",
+      "nutritionDepleting": "La nutrici?n baja",
+      "nutritionRecovering": "La nutrici?n se recupera",
+      "stable": "Tendencia estable"
+    }
   },
   "death": {
     "discard_and_restart": "Descartar run y reiniciar",
@@ -866,6 +1246,110 @@
     },
     "update": {
       "announce": "Nuevo update en vivo. Hora de tu siguiente grow."
+    }
+  },
+  "careMethod": {
+    "water": {
+      "checkPotWeight": {
+        "label": "Comprobar peso de la maceta",
+        "short": "Ayuda a leer mejor el momento de riego.",
+        "description": "Compara sensaci?n y humedad sin forzar una acci?n de riego.",
+        "success": "Peso de la maceta revisado. El momento de riego ahora es m?s claro."
+      },
+      "moistenSurface": {
+        "label": "Humedecer superficie",
+        "short": "Peque?a correcci?n para una capa superior seca.",
+        "description": "Calma la superficie sin cargar demasiado la zona radicular.",
+        "success": "Superficie humedecida ligeramente. La capa superior se ve m?s tranquila."
+      },
+      "evenWatering": {
+        "label": "Regar de forma uniforme",
+        "short": "Riego moderado para una buena ventana de secado.",
+        "description": "Estabiliza humedad y estr?s h?drico sin ser agresivo.",
+        "success": "Riego uniforme realizado. La humedad vuelve a repartirse mejor."
+      },
+      "normalWatering": {
+        "label": "Riego normal",
+        "short": "Cuidado m?s fuerte cuando la zona radicular est? lista.",
+        "description": "Tiene m?s efecto, pero exige mejor timing.",
+        "success": "Riego normal completado. La planta vuelve a tener una buena reserva de humedad."
+      },
+      "relieveRootZone": {
+        "label": "Aliviar zona radicular",
+        "short": "Solo tiene sentido con presi?n de sales o en ra?ces.",
+        "description": "Busca aliviar la zona, no solo a?adir m?s agua.",
+        "success": "Zona radicular aliviada con cuidado. Observa ahora c?mo se estabiliza."
+      }
+    },
+    "feed": {
+      "checkSupply": {
+        "label": "Comprobar nutrici?n",
+        "short": "Lee necesidad y absorci?n antes de abonar.",
+        "description": "Ayuda a juzgar si la planta puede absorber nutrientes de forma limpia ahora.",
+        "success": "Nutrici?n revisada. La siguiente decisi?n de abonado es m?s clara."
+      },
+      "lightBase": {
+        "label": "Base ligera de nutrici?n",
+        "short": "Nutrici?n suave para una necesidad ligera.",
+        "description": "A?ade una base prudente cuando la zona radicular parece estable.",
+        "success": "Base ligera aplicada. La planta parece un poco mejor sostenida."
+      },
+      "phaseSupply": {
+        "label": "Nutrici?n seg?n fase",
+        "short": "Nutrici?n est?ndar ajustada a la fase actual.",
+        "description": "Funciona mejor cuando absorci?n, ra?ces y sales est?n alineadas.",
+        "success": "Nutrici?n seg?n fase aplicada. Observa ahora si la absorci?n sigue tranquila."
+      },
+      "stabilizeUptake": {
+        "label": "Estabilizar absorci?n",
+        "short": "Apoyo suave para estados inestables o con estr?s.",
+        "description": "Busca estabilidad m?s que empujar fuerte el crecimiento.",
+        "success": "Absorci?n estabilizada. La presi?n de abonado se siente m?s tranquila."
+      },
+      "protectSaltLoad": {
+        "label": "Proteger carga de sales",
+        "short": "Decidir no abonar para evitar m?s presi?n.",
+        "description": "A veces no abonar es la mejor decisi?n de cuidado.",
+        "success": "Carga de sales protegida. Menos presi?n era la mejor decisi?n aqu?."
+      }
+    },
+    "routine": {
+      "checkLeaves": {
+        "label": "Revisar hojas",
+        "short": "Detecta antes se?ales de estr?s y carencias.",
+        "description": "Ayuda a leer la planta antes de que los problemas peque?os crezcan.",
+        "success": "Hojas revisadas. Ahora ser? m?s f?cil leer las se?ales."
+      },
+      "estimatePotWeight": {
+        "label": "Estimar peso de la maceta",
+        "short": "Mejora tu lectura del ritmo de riego.",
+        "description": "Conecta sensaci?n de agua, peso de la maceta y humedad.",
+        "success": "Peso estimado. El ritmo de riego ahora es m?s claro."
+      },
+      "checkSubstrate": {
+        "label": "Revisar sustrato",
+        "short": "Conecta mejor superficie y zona radicular.",
+        "description": "Ayuda a ver si la parte superior y profunda realmente coinciden.",
+        "success": "Sustrato revisado. Superficie y ra?ces son m?s f?ciles de comparar ahora."
+      },
+      "rotatePlant": {
+        "label": "Girar planta",
+        "short": "Peque?a acci?n de equilibrio y estabilidad.",
+        "description": "Aporta algo de equilibrio sin una intervenci?n dura.",
+        "success": "Planta girada. El crecimiento deber?a seguir algo m?s parejo."
+      },
+      "hygieneRound": {
+        "label": "Ronda de higiene",
+        "short": "Mantiene el entorno m?s limpio y con menos presi?n de riesgo.",
+        "description": "Reduce presi?n ligera sin estresar directamente a la planta.",
+        "success": "Ronda de higiene hecha. El entorno vuelve a sentirse m?s limpio y tranquilo."
+      },
+      "gentleStressCheck": {
+        "label": "Control suave de estr?s",
+        "short": "Peque?a ronda de estabilidad sin trabajo invasivo.",
+        "description": "Ayuda a aliviar presi?n temprano en lugar de reaccionar tarde.",
+        "success": "Control suave realizado. La planta se siente un poco m?s tranquila."
+      }
     }
   }
 }

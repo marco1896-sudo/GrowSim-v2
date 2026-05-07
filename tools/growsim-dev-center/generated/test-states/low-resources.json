@@ -1,0 +1,91 @@
+{
+  "presetMeta": {
+    "id": "low-resources",
+    "label": "Low resources",
+    "description": "Resource scarcity state for affordability and warning flows.",
+    "generatedBy": "GrowSim Dev Control Center",
+    "generatedAt": "2026-05-05T14:46:24.140Z",
+    "safeMode": true,
+    "note": "Analysis preset only. Do not overwrite real saves without validating against storage.js migrations."
+  },
+  "schemaVersion": "1.0.0",
+  "seed": "dev-center-low-resources",
+  "plantId": "dev-low-resources",
+  "setup": {
+    "mode": "indoor",
+    "light": "medium",
+    "medium": "soil",
+    "potSize": "medium",
+    "genetics": "auto",
+    "createdAtReal": 1777992384140
+  },
+  "simulation": {
+    "startRealTimeMs": 1777992384140,
+    "lastTickRealTimeMs": 1777992384140,
+    "simTimeMs": 0,
+    "simDay": 0,
+    "simHour": 8,
+    "simMinute": 0,
+    "timeCompression": 12,
+    "baseSpeed": 12,
+    "dayWindow": {
+      "startHour": 6,
+      "endHour": 22
+    },
+    "isDaytime": true
+  },
+  "plant": {
+    "stageIndex": 1,
+    "stageKey": "stage_01",
+    "stageStartSimDay": 0,
+    "lifecycle": {
+      "totalSimDays": 56,
+      "qualityTier": "normal",
+      "qualityScore": 75
+    },
+    "assets": {}
+  },
+  "status": {
+    "water": 18,
+    "nutrition": 24,
+    "health": 62,
+    "stress": 45,
+    "risk": 52,
+    "growth": 35
+  },
+  "progression": {
+    "playerLevel": 1,
+    "xp": 0,
+    "coins": 5
+  },
+  "events": {
+    "scheduler": {
+      "nextEventRealTimeMs": 1777995084140,
+      "lastEventRealTimeMs": 0,
+      "lastEventId": null,
+      "deferredUntilDaytime": false
+    },
+    "active": null,
+    "history": []
+  },
+  "retention": {
+    "dailyTasks": {
+      "tasks": [],
+      "completedIds": [],
+      "lastRefreshDay": 0
+    },
+    "streak": {
+      "count": 0,
+      "lastClaimDay": null
+    }
+  },
+  "history": {
+    "actions": [],
+    "events": [],
+    "system": []
+  },
+  "ui": {},
+  "debug": {
+    "source": "dev-center-preset"
+  }
+}

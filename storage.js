@@ -74,6 +74,118 @@ function getStorageEffectiveSimulationSpeed(nowMs = Date.now()) {
   return normalizeStorageBaseSimulationSpeed(state && state.simulation && state.simulation.baseSpeed);
 }
 
+function getCareModelApi() {
+  const careApi = (typeof window !== 'undefined' && window.GrowSimCareModel && typeof window.GrowSimCareModel === 'object')
+    ? window.GrowSimCareModel
+    : ((typeof globalThis !== 'undefined' && globalThis.GrowSimCareModel && typeof globalThis.GrowSimCareModel === 'object')
+      ? globalThis.GrowSimCareModel
+      : null);
+  return careApi;
+}
+
+function createDefaultCareStateFromBase(baseState) {
+  const careApi = getCareModelApi();
+  if (careApi && typeof careApi.createDefaultCareState === 'function') {
+    return careApi.createDefaultCareState(baseState);
+  }
+  const status = baseState && baseState.status && typeof baseState.status === 'object' ? baseState.status : {};
+  const water = clamp(Number(status.water || 70), 0, 100);
+  const nutrition = clamp(Number(status.nutrition || 65), 0, 100);
+  return {
+    version: 1,
+    water: {
+      substrateMoisture: water,
+      surfaceMoisture: clamp(water - 8, 0, 100),
+      rootZoneMoisture: clamp(water + 4, 0, 100),
+      drybackRatePerHour: 1.2,
+      overwateringPressure: clamp((water - 76) * 1.1, 0, 100),
+      dryStressPressure: clamp((40 - water) * 0.8, 0, 100),
+      lastWateredAtSimMs: Number(baseState && baseState.simulation && baseState.simulation.simTimeMs || 0),
+      lastWaterAmountMl: 0,
+      lastWaterMethod: null
+    },
+    nutrients: {
+      n: clamp(nutrition, 0, 100),
+      p: clamp(nutrition - 6, 0, 100),
+      k: clamp(nutrition - 4, 0, 100),
+      micro: clamp(nutrition - 8, 0, 100),
+      saltLoad: clamp((nutrition - 50) * 0.3, 0, 100),
+      lastFeedAtSimMs: 0,
+      lastFeedType: null,
+      lastFeedStrength: null
+    },
+    routine: {
+      lastLeafCheckAtSimMs: 0,
+      lastPotWeightCheckAtSimMs: 0,
+      lastSubstrateCheckAtSimMs: 0,
+      careScoreToday: 0
+    },
+    feedback: {
+      lastCareGrade: null,
+      lastCareMessageKey: null,
+      lastEffects: [],
+      lastFocusKey: null,
+      lastActionId: null,
+      lastUpdatedAtSimMs: 0
+    },
+    trends: {
+      version: 1,
+      lastSnapshotAtSimMs: Number(baseState && baseState.simulation && baseState.simulation.simTimeMs || 0),
+      previous: {
+        substrateMoisture: null,
+        rootZoneMoisture: null,
+        surfaceMoisture: null,
+        saltLoad: null,
+        stress: null,
+        risk: null,
+        nutrition: null
+      },
+      current: {
+        substrateMoisture: water,
+        rootZoneMoisture: clamp(water + 4, 0, 100),
+        surfaceMoisture: clamp(water - 8, 0, 100),
+        saltLoad: clamp((nutrition - 50) * 0.3, 0, 100),
+        stress: clamp(Number(status.stress || 15), 0, 100),
+        risk: clamp(Number(status.risk || 20), 0, 100),
+        nutrition
+      },
+      deltas: {
+        moisture: 0,
+        rootZone: 0,
+        surface: 0,
+        saltLoad: 0,
+        stress: 0,
+        risk: 0,
+        nutrition: 0
+      }
+    }
+  };
+}
+
+function normalizeCanonicalCareState(careState, baseState) {
+  const careApi = getCareModelApi();
+  if (careApi && typeof careApi.normalizeCareState === 'function') {
+    return careApi.normalizeCareState(careState, baseState);
+  }
+  return createDefaultCareStateFromBase(baseState);
+}
+
+function deriveCanonicalCareSummary(careState, baseState) {
+  const careApi = getCareModelApi();
+  if (careApi && typeof careApi.deriveCareSummary === 'function') {
+    return careApi.deriveCareSummary(careState, baseState);
+  }
+  return {
+    moistureBand: 'stable',
+    rootZoneHint: 'care.hint.root_zone_balanced',
+    wateringRecommendation: { key: 'monitor', level: 'info', actionId: null, messageKey: 'care.recommendation.water.monitor' },
+    feedingRecommendation: { key: 'stable', level: 'info', actionId: null, messageKey: 'care.recommendation.feed.stable' },
+    riskLevel: 'low',
+    nextCareFocus: 'routine',
+    buddyHintKey: 'care.buddy.observe'
+  };
+}
+
 function repairStoredTextEncoding(value) {
   const api = window.GrowSimTextEncoding;
   return api && typeof api.deepRepairMojibake === 'function'
@@ -751,6 +863,12 @@ function getCanonicalHistory(snapshot) {
   return s.history;
 }
 
+function getCanonicalCare(snapshot) {
+  const s = snapshot || state;
+  s.care = normalizeCanonicalCareState(s.care, s);
+  return s.care;
+}
+
 function getCanonicalMeta(snapshot) {
   const s = snapshot || state;
   if (!s.meta || typeof s.meta !== 'object') {
@@ -1182,6 +1300,12 @@ async function restoreState(options = {}) {
 
   if (saved.status && typeof saved.status === 'object') {
     Object.assign(state.status, saved.status);
+  }
+  if (saved.care && typeof saved.care === 'object') {
+    state.care = {
+      ...(state.care && typeof state.care === 'object' ? state.care : {}),
+      ...saved.care
+    };
   }
   if (saved.environmentControls && typeof saved.environmentControls === 'object') {
     state.environmentControls = {
@@ -1626,6 +1750,7 @@ function resetStateToDefaults() {
     risk: 20,
     coins: 0
   };
+  state.care = createDefaultCareStateFromBase(state);
 
   state.boost = {
     boostUsedToday: 0,
@@ -1700,6 +1825,7 @@ state.rewardActions = {
     deathOverlayAcknowledged: false,
     runSummaryOpen: false,
     care: {
+      selectedStudioTab: 'water',
       selectedCategory: null,
       selectedActionId: null,
       feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' }
@@ -1839,6 +1965,8 @@ function ensureStateIntegrity(nowMs) {
 
   clampStatus();
   state.status.growth = round2(computeGrowthPercent());
+  state.care = normalizeCanonicalCareState(state.care, state);
+  state.care.summary = deriveCanonicalCareSummary(state.care, state);
 
   state.boost.boostMaxPerDay = 6;
   if (!Number.isFinite(state.boost.boostUsedToday)) {
@@ -2182,7 +2310,10 @@ function ensureStateIntegrity(nowMs) {
     state.ui.visibleOverlayIds = [];
   }
   if (!state.ui.care || typeof state.ui.care !== 'object') {
-    state.ui.care = { selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' } };
+    state.ui.care = { selectedStudioTab: 'water', selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' } };
+  }
+  if (!['water', 'feed', 'routine', 'diagnosis'].includes(String(state.ui.care.selectedStudioTab || ''))) {
+    state.ui.care.selectedStudioTab = 'water';
   }
   if (typeof state.ui.care.selectedCategory !== 'string') {
     state.ui.care.selectedCategory = null;
@@ -2313,6 +2444,7 @@ function syncCanonicalStateShape() {
   const plant = getCanonicalPlant(state);
   const events = getCanonicalEvents(state);
   const history = getCanonicalHistory(state);
+  const care = getCanonicalCare(state);
   const meta = getCanonicalMeta(state);
   const settings = getCanonicalSettings(state);
   const profile = getCanonicalProfile(state);
@@ -2439,6 +2571,9 @@ function syncCanonicalStateShape() {
     delete state.event;
   }
 
+  state.care = care;
+  state.care.summary = deriveCanonicalCareSummary(care, state);
+
   syncLegacyMirrorsFromCanonical(state);
 }
 
@@ -2448,6 +2583,7 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
   const plant = getCanonicalPlant(s);
   const events = getCanonicalEvents(s);
   const history = getCanonicalHistory(s);
+  const care = getCanonicalCare(s);
   ensureStorageCurrencyState(s);
 
   s.sim = {
@@ -2484,6 +2620,10 @@ function syncLegacyMirrorsFromCanonical(snapshot) {
     qualityTier: plant.lifecycle.qualityTier,
     qualityLocked: Boolean(plant.lifecycle.qualityLocked)
   };
+  s.care = {
+    ...care,
+    summary: deriveCanonicalCareSummary(care, s)
+  };
 
   s.lastEventId = events.scheduler.lastEventId || null;
   s.lastChoiceId = events.scheduler.lastChoiceId || null;
@@ -2502,6 +2642,7 @@ window.GrowSimStorage = Object.freeze({
   getCanonicalPlant,
   getCanonicalEvents,
   getCanonicalHistory,
+  getCanonicalCare,
   getCanonicalMeta,
   getCanonicalSettings,
   getCanonicalNotificationsSettings,

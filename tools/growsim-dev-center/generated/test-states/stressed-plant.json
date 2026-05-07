@@ -1,0 +1,91 @@
+{
+  "presetMeta": {
+    "id": "stressed-plant",
+    "label": "Stressed plant",
+    "description": "Bad-conditions state for care feedback and recovery testing.",
+    "generatedBy": "GrowSim Dev Control Center",
+    "generatedAt": "2026-05-05T14:46:24.132Z",
+    "safeMode": true,
+    "note": "Analysis preset only. Do not overwrite real saves without validating against storage.js migrations."
+  },
+  "schemaVersion": "1.0.0",
+  "seed": "dev-center-stressed-plant",
+  "plantId": "dev-stressed-plant",
+  "setup": {
+    "mode": "indoor",
+    "light": "medium",
+    "medium": "soil",
+    "potSize": "medium",
+    "genetics": "auto",
+    "createdAtReal": 1777992384132
+  },
+  "simulation": {
+    "startRealTimeMs": 1777992384132,
+    "lastTickRealTimeMs": 1777992384132,
+    "simTimeMs": 0,
+    "simDay": 14,
+    "simHour": 8,
+    "simMinute": 0,
+    "timeCompression": 12,
+    "baseSpeed": 12,
+    "dayWindow": {
+      "startHour": 6,
+      "endHour": 22
+    },
+    "isDaytime": true
+  },
+  "plant": {
+    "stageIndex": 4,
+    "stageKey": "stage_04",
+    "stageStartSimDay": 0,
+    "lifecycle": {
+      "totalSimDays": 56,
+      "qualityTier": "normal",
+      "qualityScore": 75
+    },
+    "assets": {}
+  },
+  "status": {
+    "water": 22,
+    "nutrition": 31,
+    "health": 48,
+    "stress": 76,
+    "risk": 67,
+    "growth": 18
+  },
+  "progression": {
+    "playerLevel": 1,
+    "xp": 0,
+    "coins": 100
+  },
+  "events": {
+    "scheduler": {
+      "nextEventRealTimeMs": 1777995084132,
+      "lastEventRealTimeMs": 0,
+      "lastEventId": null,
+      "deferredUntilDaytime": false
+    },
+    "active": null,
+    "history": []
+  },
+  "retention": {
+    "dailyTasks": {
+      "tasks": [],
+      "completedIds": [],
+      "lastRefreshDay": 0
+    },
+    "streak": {
+      "count": 0,
+      "lastClaimDay": null
+    }
+  },
+  "history": {
+    "actions": [],
+    "events": [],
+    "system": []
+  },
+  "ui": {},
+  "debug": {
+    "source": "dev-center-preset"
+  }
+}

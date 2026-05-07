@@ -669,9 +669,389 @@
     "plant_needs_water": "Your plant needs care."
   },
   "care": {
+    "buddy": {
+      "observe": "Watch the plant and keep the next move clean.",
+      "wait_dryback": "The root zone still feels wet. Give it time to breathe.",
+      "water_window": "This is a solid watering window.",
+      "feed_hold": "Nutrient pressure is elevated. Hold feeding for now.",
+      "feed_window": "The plant looks ready for a measured feed."
+    },
     "feed": "Feed",
+    "hint": {
+      "root_zone_balanced": "Root zone balanced",
+      "root_zone_deeper_than_surface": "Surface is drier than the root zone",
+      "root_zone_dry": "Root zone is getting dry",
+      "root_zone_wet": "Root zone is still wet"
+    },
     "open": "Open care",
+    "reason": {
+      "medium_too_dry": "Medium is too dry for feeding",
+      "moisture_stable": "Moisture is stable right now",
+      "nutrient_buffer_low": "Nutrient buffer is low",
+      "nutrition_stable": "Nutrient balance is stable",
+      "root_zone_wet": "Root zone still carries too much moisture",
+      "salt_pressure": "Salt pressure is elevated",
+      "substrate_dry": "Substrate is running dry",
+      "surface_dry": "Top layer is drier than the root zone"
+    },
+    "recommendation": {
+      "feed": {
+        "feed_now": "Measured feed fits well now.",
+        "hold": "Hold feed and let pressure settle first.",
+        "hydrate_first": "Hydrate first, then feed.",
+        "stable": "Feed status is stable right now.",
+        "wait_root_zone": "The root zone is still too wet. Feeding would be less efficient right now."
+      },
+      "water": {
+        "monitor": "Moisture looks stable. Keep monitoring.",
+        "small_sip": "Only a small sip fits the current dryback.",
+        "wait_dryback": "Wait for more dryback before watering again.",
+        "water_now": "This is a good moment for a proper watering."
+      }
+    },
     "water": "Water"
+  },
+  "careStudio": {
+    "buddy": {
+      "feedLight": "A lighter feed keeps the root zone calmer here.",
+      "feedReady": "The plant looks ready for a measured feed.",
+      "feedTooRisky": "Feed pressure is already high. Better hold for now.",
+      "monitorRoots": "Read the root zone first and then commit.",
+      "routineCareful": "A light routine step is cleaner than a hard push now.",
+      "routineStable": "This is a stable moment for light care.",
+      "stabilizeFirst": "Stabilize the plant first before adding more stress.",
+      "waterGoodTiming": "This timing looks clean for watering.",
+      "waterSmallSip": "A smaller sip fits the current dryback better.",
+      "waterTooSoon": "It is still too early for heavier watering."
+    },
+    "actionPanel": {
+      "diagnosis_subtitle": "Diagnosis reads the plant before you commit to the next move.",
+      "diagnosis_title": "Diagnosis view",
+      "empty_actions": "No matching care methods are available in this tab right now.",
+      "empty_diagnosis": "Diagnosis stays focused on reading the plant.",
+      "feed_subtitle": "Choose a fitting method for uptake, supply, and salt pressure.",
+      "feed_title": "Feed Methods",
+      "routine_subtitle": "Gentle routines and stabilization steps stay grouped here.",
+      "routine_title": "Care Methods",
+      "water_subtitle": "Choose a fitting method for the current state.",
+      "water_title": "Water Methods"
+    },
+    "chips": {
+      "moisture": "Moisture",
+      "nutrition": "Supply",
+      "risk": "Risk",
+      "stress": "Stress"
+    },
+    "diagnosis": {
+      "buddy_hint": "Buddy hint",
+      "cause": {
+        "generalStressLoad": "Stress, risk, or health are carrying too much pressure right now.",
+        "nutrientBufferFalling": "Supply is falling while salt load and root moisture still look clean.",
+        "rootZoneDrysSlow": "The deeper zone is drying more slowly than the surface.",
+        "rootZoneLosesBuffer": "The plant is losing moisture faster than the root zone can buffer it.",
+        "supplyAheadOfDemand": "There is still enough supply, but salt load is building.",
+        "surfaceDryRootStable": "The surface has dried back while the root zone still feels stable.",
+        "valuesInRange": "Water, root zone, and supply are sitting in a stable range."
+      },
+      "current_focus": "Current focus",
+      "focus": {
+        "growth": "Growth",
+        "nutrition": "Nutrients",
+        "risk": "Risk",
+        "rootZone": "Root zone",
+        "saltLoad": "Salt load",
+        "stable": "Observe",
+        "stress": "Stress",
+        "water": "Water"
+      },
+      "headline": {
+        "nutritionLow": "Moderate nutrient demand",
+        "rootZoneWet": "Root zone still too wet",
+        "saltLoadHigh": "Salt load is climbing",
+        "stable": "Stable condition",
+        "stressHigh": "Stabilize stress first",
+        "waterLow": "Moisture is dropping too fast",
+        "waterWindow": "Clean watering window"
+      },
+      "message": {
+        "nutritionLow": "The plant looks ready to take in a moderate feed again.",
+        "rootZoneWet": "The root zone is still too wet. More water would push oxygen stress.",
+        "saltLoadHigh": "Supply is present, but salt load is rising. Avoid strong feeding.",
+        "stable": "The condition is stable. Watch dryback and supply before stepping in again.",
+        "stressHigh": "The plant is unstable. Light care fits better than strong moves right now.",
+        "waterLow": "The plant is losing moisture faster than the root zone can buffer cleanly.",
+        "waterWindow": "The surface has dried back while the root zone still stays stable."
+      },
+      "next_focus": "Next focus",
+      "next_observation": "Next observation",
+      "next_check": "Check later",
+      "nextCheck": {
+        "dryback": "Check later if dryback keeps progressing.",
+        "monitor": "Keep watching before you commit to another stronger move.",
+        "nutrition": "After the next feed, check whether the plant still reacts calmly.",
+        "rootZone": "Check later whether the deeper zone has settled further.",
+        "saltLoad": "Watch whether pressure settles before the next feed.",
+        "stress": "Look for a calmer response before adding anything else."
+      },
+      "nutrients": "Nutrients",
+      "observe": {
+        "avoidStrongFeed": "Avoid strong feeding and watch whether pressure settles.",
+        "feedModerately": "A measured feed fits better than a heavy push.",
+        "monitorDryback": "Watch how surface and root zone continue to separate or reconnect.",
+        "monitorDrybackAndSupply": "Keep watching dryback and supply before stepping in again.",
+        "recheckAfterWatering": "After watering, check whether the root zone stabilizes cleanly again.",
+        "stabilizeBeforeIntervention": "Settle the plant first before training, heavy feeding, or more pressure."
+      },
+      "probable_cause": "Likely cause",
+      "ready_focus": "Read the plant first and then choose the cleanest action.",
+      "risk": "Risk",
+      "risk_level": "Risk level",
+      "root_zone": "Root zone",
+      "state": "State",
+      "status": {
+        "act": "Act now",
+        "avoid": "Avoid for now",
+        "stable": "Stable",
+        "watch": "Watch"
+      },
+      "stress": "Stress",
+      "suggested_direction": "Suggested direction",
+      "title": "Diagnosis",
+      "water": "Water"
+    },
+    "feedback": {
+      "badCare": "That move added more pressure than support.",
+      "effect": {
+        "dryStressReduced": "Dry stress reduced",
+        "monitorResponse": "Watch how the plant responds",
+        "moistureRaised": "Moisture restored",
+        "nutrientSupport": "Nutrient support increased",
+        "riskRaised": "Risk climbed",
+        "riskSettled": "Risk settled"
+      },
+        "goodCare": "Clean care choice. The plant should settle well.",
+        "goodFeeding": "Good call. The plant looks ready to take in feed without extra pressure.",
+        "goodWatering": "Good watering call. The root zone should stay calmer now.",
+        "hygieneSettled": "Good call. The space feels calmer now and the background risk eases a little.",
+        "grade": {
+          "bad": "Bad",
+          "good": "Good",
+          "okay": "Okay",
+          "perfect": "Perfect",
+          "risky": "Risky"
+        },
+        "okayCare": "The action landed, but timing was only average.",
+        "perfectCare": "Excellent call. The plant is responding cleanly.",
+        "perfectWatering": "Perfect dryback timing. That was a premium watering call.",
+        "rootZoneRelief": "Good call. The root zone is being eased carefully without turning into a full watering pass.",
+        "rootZoneReliefLimited": "That relief move can only do so much here. Keep watching whether the root zone is really under pressure.",
+        "riskyCare": "The action worked, but it pushed extra risk.",
+        "riskyFeeding": "Supply rises, but so does salt pressure. Go a little lighter next time.",
+        "riskyWatering": "That was a bit early. Watch the root zone before watering again.",
+        "uptakeLimited": "Uptake is still limited. Calm the root zone and salt pressure a bit more first.",
+        "uptakeStabilized": "Good call. Uptake feels steadier now without pushing salt load too hard.",
+        "title": "Aftercare"
+      },
+    "aftercare": {
+      "grade": "Grade",
+      "title": "Aftercare"
+    },
+    "decision": {
+      "effects_title": "Effects",
+      "risk": "Risk",
+      "selectedAction": "Selection",
+      "title": "Decision Card"
+    },
+    "delta": {
+      "dryStress": "Dry stress",
+      "empty": "No clear delta forecast",
+      "growth": "Growth",
+      "health": "Health",
+      "moisture": "Moisture",
+      "nutrition": "Supply",
+      "overwatering": "Root risk",
+      "risk": "Risk",
+      "rootZoneMoisture": "Root zone",
+      "saltLoad": "Salt load",
+      "stability": "Stability",
+      "stress": "Stress",
+      "surfaceMoisture": "Surface",
+      "title": "Delta Forecast"
+    },
+    "feed": {
+      "k": "K",
+      "micro": "Micro",
+      "n": "N",
+      "p": "P",
+      "phase": "Phase",
+      "recommendation": "Feeding focus",
+      "salt_load": "Salt load",
+      "title": "Nutrient balance"
+    },
+    "focus": {
+      "monitorDryback": "Monitor dryback",
+      "monitorPlant": "Monitor plant response",
+      "stabilizePlant": "Stabilize the plant",
+      "watchSaltLoad": "Watch salt load"
+    },
+    "phase": {
+      "flower": "Flower",
+      "late_flower": "Late flower",
+      "stretch": "Stretch",
+      "vegetative": "Veg"
+    },
+    "preview": {
+      "benefit": {
+        "high": "High",
+        "low": "Low",
+        "medium": "Medium"
+      },
+      "effect": {
+        "burnRiskUp": "Burn risk may rise",
+        "dryStressDown": "Dry stress may ease",
+        "environmentStable": "Environment pressure may settle",
+        "flowerSupport": "Flower support can improve",
+        "growthSupport": "Growth support can improve",
+        "moistureUp": "Moisture should rise",
+        "monitor": "Watch the response",
+        "nutritionUp": "Nutrient level should rise",
+        "rootStressUp": "Root stress may rise",
+        "routineStable": "Routine care should stay safe",
+        "saltRiskUp": "Salt pressure may rise"
+      },
+      "labels": {
+        "benefit": "Benefit",
+        "effect": "Effect",
+        "risk": "Risk",
+        "timing": "Timing"
+      },
+      "reason": {
+        "feedAlreadyHigh": "Feed buffer is already high",
+        "lateFlowerSensitive": "Late flower is less forgiving",
+        "mediumTooDry": "Medium is too dry",
+        "nutrientBufferLow": "Nutrient buffer is low",
+        "overwaterPressure": "Overwatering pressure is already elevated",
+        "phaseMismatch": "This feed fits the current phase poorly",
+        "plantStressed": "The plant is already stressed",
+        "rootZoneReady": "Root zone is ready",
+        "rootZoneWet": "Root zone is still wet",
+        "saltPressureHigh": "Salt pressure is elevated",
+        "smallSipSafer": "A lighter dose is safer",
+        "stableCanopy": "Plant posture is stable",
+        "strongAction": "This is a stronger watering action",
+        "strongFeed": "This is a stronger feed",
+        "surfaceReady": "Surface layer is ready",
+        "trainingInvasive": "This training move is more invasive"
+      },
+      "timing": {
+        "early": "Early",
+        "good": "Good",
+        "okay": "Okay",
+        "poor": "Poor"
+      },
+      "title": "Preview",
+      "verdict": {
+        "recommended": "Recommended",
+        "risky": "Risky",
+        "situational": "Situational",
+        "wait": "Better wait"
+      }
+    },
+    "risk": {
+      "high": "High",
+      "low": "Low",
+      "medium": "Medium"
+    },
+    "routine": {
+      "active_actions": "Live actions",
+      "coming_soon": "Soon",
+      "hygiene": "Hygiene round",
+      "leaf_check": "Check leaves",
+      "note": {
+        "hygiene": "Keeps the environment calmer and avoids extra pressure.",
+        "leaf_check": "Helps you spot stress and deficiency signs early.",
+        "pot_weight": "Helps you read the next watering window more reliably.",
+        "rotate": "Supports more even posture and calmer growth.",
+        "substrate_check": "Shows whether surface moisture and root zone still match."
+      },
+      "pot_weight": "Estimate pot weight",
+      "rotate": "Rotate plant",
+      "substrate_check": "Check substrate",
+      "title": "Routine"
+    },
+    "state": {
+      "active": "Active",
+      "balanced": "Balanced",
+      "dry": "Dry",
+      "low": "Low",
+      "stable": "Stable",
+      "watch": "Watch",
+      "wet": "Wet"
+    },
+    "subtitle": {
+      "ready": "Care window active",
+      "risk": "Risk is elevated",
+      "stable": "Root zone stable",
+      "wait": "Better to wait a little"
+    },
+    "tabs": {
+      "diagnosis": "Diagnosis",
+      "feed": "Feed",
+      "routine": "Routine",
+      "water": "Water"
+    },
+    "timing": {
+      "ready": "Ready now",
+      "soon": "Check soon",
+      "wait": "Wait",
+      "warning": "Warning"
+    },
+    "title": "Care Studio",
+    "water": {
+      "dry_stress": "Dry stress",
+      "dryback": "Dryback",
+      "next_window": "Next watering window",
+      "overwatering": "Root risk",
+      "root_zone": "Root zone",
+      "surface": "Surface",
+      "title": "Moisture profile"
+    },
+    "visual": {
+      "buddySlot": "Buddy slot",
+      "rootSlot": "Root zone",
+      "timingSlot": "Timing"
+    },
+    "trend": {
+      "message": {
+        "moistureFalling": "Moisture keeps dropping. Watch whether the root zone can still buffer cleanly.",
+        "moistureRising": "Moisture is rising right now. Check whether the zone settles calmly afterward.",
+        "rootZoneDrying": "The deeper zone is drying slowly. Watching is sensible right now.",
+        "rootZoneStayingWet": "The root zone is staying wet longer. More water would lift risk.",
+        "saltLoadRising": "Salt load is climbing. Hold off on stronger feeding for now.",
+        "saltLoadStable": "Salt load is staying calm. Keep watching before pushing harder.",
+        "stressRising": "Stress is building. Avoid stronger interventions and watch the cause.",
+        "stressRecovering": "Stress is easing. The last care choice looks stabilizing.",
+        "riskRising": "Risk is building. Only push further with a clear reason.",
+        "riskFalling": "Pressure is easing. Watching is often cleaner than adding more right now.",
+        "nutritionDepleting": "Supply is fading. A measured feed may soon fit again.",
+        "nutritionRecovering": "Supply is recovering. Watch how calmly the plant responds.",
+        "stable": "The trend is calm. Keep observing before stepping in."
+      },
+      "label": "Trend",
+      "moistureFalling": "Moisture falling",
+      "moistureRising": "Moisture rising",
+      "rootZoneDrying": "Root zone drying",
+      "rootZoneStayingWet": "Root zone staying wet",
+      "saltLoadRising": "Salt load rising",
+      "saltLoadStable": "Salt load stable",
+      "stressRising": "Stress rising",
+      "stressRecovering": "Stress recovering",
+      "riskRising": "Risk rising",
+      "riskFalling": "Risk falling",
+      "nutritionDepleting": "Supply falling",
+      "nutritionRecovering": "Supply recovering",
+      "stable": "Stable trend"
+    }
   },
   "death": {
     "discard_and_restart": "Discard run & restart",
@@ -866,6 +1246,110 @@
     },
     "update": {
       "announce": "New update is live. Time for your next grow."
+    }
+  },
+  "careMethod": {
+    "water": {
+      "checkPotWeight": {
+        "label": "Check pot weight",
+        "short": "Helps you read watering timing with more confidence.",
+        "description": "Compares feel and moisture picture without forcing a watering move.",
+        "success": "Pot weight checked. The water timing is easier to judge now."
+      },
+      "moistenSurface": {
+        "label": "Moisten surface",
+        "short": "Small correction for a dry top layer.",
+        "description": "Calms only the surface without pushing the root zone too hard.",
+        "success": "Surface lightly moistened. The top layer looks calmer now."
+      },
+      "evenWatering": {
+        "label": "Water evenly",
+        "short": "Moderate watering for a clean dryback window.",
+        "description": "Stabilises moisture and dry stress without feeling aggressive.",
+        "success": "Even watering applied. Moisture is spreading more evenly again."
+      },
+      "normalWatering": {
+        "label": "Normal watering pass",
+        "short": "Stronger standard care when the root zone is ready.",
+        "description": "Has more impact, but needs cleaner timing.",
+        "success": "Normal watering completed. The plant has a solid moisture buffer again."
+      },
+      "relieveRootZone": {
+        "label": "Relieve root zone",
+        "short": "Only makes sense under salt or root-zone pressure.",
+        "description": "Aims to ease pressure in the zone, not just dump in more water.",
+        "success": "Root zone carefully relieved. Watch how calmly it settles now."
+      }
+    },
+    "feed": {
+      "checkSupply": {
+        "label": "Check supply",
+        "short": "Reads demand and uptake before feeding.",
+        "description": "Helps you judge whether the plant can take a feed cleanly right now.",
+        "success": "Supply checked. The next feeding decision is clearer now."
+      },
+      "lightBase": {
+        "label": "Light base supply",
+        "short": "Gentle nutrition for mild demand.",
+        "description": "Adds a cautious baseline when the root zone looks stable enough.",
+        "success": "Light base supply given. The plant looks a bit better supported."
+      },
+      "phaseSupply": {
+        "label": "Phase-aware supply",
+        "short": "Standard supply matched to the current phase.",
+        "description": "Works best when uptake, root zone and salt load line up.",
+        "success": "Phase-aware supply applied. Now watch whether uptake stays calm."
+      },
+      "stabilizeUptake": {
+        "label": "Stabilise uptake",
+        "short": "Gentle support for unsettled or stressed conditions.",
+        "description": "Targets stability more than pushing hard growth.",
+        "success": "Uptake stabilised. Feeding pressure feels calmer now."
+      },
+      "protectSaltLoad": {
+        "label": "Protect salt load",
+        "short": "Choose not to feed to avoid more pressure.",
+        "description": "Sometimes not feeding is the smarter care choice.",
+        "success": "Salt load protected. Less pressure is the better feed decision here."
+      }
+    },
+    "routine": {
+      "checkLeaves": {
+        "label": "Check leaves",
+        "short": "Spots stress and deficiency signs earlier.",
+        "description": "Helps you read the plant before small issues turn bigger.",
+        "success": "Leaves checked. Signs will be easier to read now."
+      },
+      "estimatePotWeight": {
+        "label": "Estimate pot weight",
+        "short": "Improves your feel for watering rhythm.",
+        "description": "Connects water feel, pot weight and moisture picture.",
+        "success": "Pot weight estimated. The watering rhythm is clearer now."
+      },
+      "checkSubstrate": {
+        "label": "Check substrate",
+        "short": "Links surface and root zone more clearly.",
+        "description": "Helps you see whether top and bottom layers actually match.",
+        "success": "Substrate checked. Surface and root zone are easier to compare now."
+      },
+      "rotatePlant": {
+        "label": "Rotate plant",
+        "short": "Small stability and balance action.",
+        "description": "Adds a bit of balance without a harsh intervention.",
+        "success": "Plant rotated. Growth should stay a little more even now."
+      },
+      "hygieneRound": {
+        "label": "Hygiene round",
+        "short": "Keeps the environment calmer with less risk pressure.",
+        "description": "Lowers light pressure without stressing the plant directly.",
+        "success": "Hygiene round done. The environment feels cleaner and calmer again."
+      },
+      "gentleStressCheck": {
+        "label": "Gentle stress check",
+        "short": "Small stabilising pass without invasive work.",
+        "description": "Helps ease pressure early instead of reacting too late.",
+        "success": "Gentle stress check done. The plant feels a little calmer now."
+      }
     }
   }
 }

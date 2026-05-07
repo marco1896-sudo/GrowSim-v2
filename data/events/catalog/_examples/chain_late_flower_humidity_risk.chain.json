@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 3,
+  "id": "chain_late_flower_humidity_risk",
+
+  "title":   { "key": "chains.late_flower_humidity_risk.title" },
+  "summary": { "key": "chains.late_flower_humidity_risk.summary" },
+
+  "expectedSpanSimHours": { "min": 12, "max": 36 },
+
+  "preconditions": {
+    "stageIn": ["flowering"],
+    "anySetup": true
+  },
+
+  "steps": [
+    {
+      "id": "step1",
+      "eventId": "v3_late_flower_humidity_risk",
+      "role": "trigger",
+      "transitionsOnOutcome": {
+        "strong_recovery":    { "to": "step_recover", "delaySimHours": 4 },
+        "partial_mitigation": { "to": "step2",        "delaySimHours": 8 },
+        "poor_outcome":       { "to": "step2",        "delaySimHours": 6 },
+        "no_action":          { "to": "step2",        "delaySimHours": 4 }
+      }
+    },
+    {
+      "id": "step2",
+      "eventId": "v3_disease_botrytis_onset",
+      "role": "escalation",
+      "transitionsOnOutcome": {
+        "strong_recovery": { "to": "step_recover",  "delaySimHours": 6 },
+        "no_action":       { "to": "step3_critical","delaySimHours": 8 }
+      }
+    },
+    {
+      "id": "step3_critical",
+      "eventId": "v3_disease_botrytis_critical",
+      "role": "critical",
+      "transitionsOnOutcome": {
+        "strong_recovery": { "to": "step_recover", "delaySimHours": 8 },
+        "no_action":       { "to": null, "endsChainAs": "failure", "delaySimHours": 4 }
+      }
+    },
+    {
+      "id": "step_recover",
+      "eventId": "v3_positive_recovery_window",
+      "role": "resolution",
+      "transitionsOnOutcome": {
+        "strong_recovery": { "to": null, "endsChainAs": "success",  "delaySimHours": 0 },
+        "no_action":       { "to": null, "endsChainAs": "neutral",  "delaySimHours": 0 }
+      }
+    }
+  ],
+
+  "uiBanner": {
+    "presentWhileActive": true,
+    "labelKey": "chains.late_flower_humidity_risk.banner",
+    "tone": "warning"
+  },
+
+  "telemetry": {
+    "kpiBuckets": ["chain_late_flower_humidity"],
+    "logSteps": true
+  },
+
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-06"
+  }
+}

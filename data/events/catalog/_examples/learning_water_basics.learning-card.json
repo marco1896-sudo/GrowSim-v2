@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 3,
+  "id": "lc_water_basics",
+
+  "title":    { "key": "learningCards.lc_water_basics.title" },
+  "subtitle": { "key": "learningCards.lc_water_basics.subtitle" },
+
+  "presentation": {
+    "preferredHeroAsset": "assets/learning/water_basics_hero.png",
+    "estimatedReadSeconds": 60,
+    "layout": "hero_then_bullets"
+  },
+
+  "content": {
+    "bullets": [
+      { "key": "learningCards.lc_water_basics.bullet_1" },
+      { "key": "learningCards.lc_water_basics.bullet_2" },
+      { "key": "learningCards.lc_water_basics.bullet_3" }
+    ],
+    "realWorldNoteKey": "learningCards.lc_water_basics.real_world_note",
+    "moreReadingRef": "library.water.advanced_irrigation"
+  },
+
+  "knowledgeProfile": {
+    "primaryDimension": "water_basics",
+    "gainOnFirstView": 0.05,
+    "gainOnLaterView": 0.01
+  },
+
+  "appearsIn": {
+    "linkedEventIds": ["v3_water_dry_pot", "v3_water_overwater_warning"],
+    "minStage": 1,
+    "modes": ["beginner", "guided"]
+  },
+
+  "i18n": {
+    "requiredKeys": [
+      "learningCards.lc_water_basics.title",
+      "learningCards.lc_water_basics.subtitle",
+      "learningCards.lc_water_basics.bullet_1",
+      "learningCards.lc_water_basics.bullet_2",
+      "learningCards.lc_water_basics.bullet_3",
+      "learningCards.lc_water_basics.real_world_note"
+    ],
+    "supportedLocales": ["de", "en", "es"]
+  },
+
+  "authoring": {
+    "owner": "design",
+    "status": "draft",
+    "lastReviewed": "2026-05-06"
+  }
+}

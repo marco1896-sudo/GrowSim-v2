@@ -1,0 +1,91 @@
+{
+  "presetMeta": {
+    "id": "new-player",
+    "label": "New player",
+    "description": "Fresh onboarding-adjacent state with safe default plant conditions.",
+    "generatedBy": "GrowSim Dev Control Center",
+    "generatedAt": "2026-05-05T14:46:24.125Z",
+    "safeMode": true,
+    "note": "Analysis preset only. Do not overwrite real saves without validating against storage.js migrations."
+  },
+  "schemaVersion": "1.0.0",
+  "seed": "dev-center-new-player",
+  "plantId": "dev-new-player",
+  "setup": {
+    "mode": "indoor",
+    "light": "medium",
+    "medium": "soil",
+    "potSize": "medium",
+    "genetics": "auto",
+    "createdAtReal": 1777992384125
+  },
+  "simulation": {
+    "startRealTimeMs": 1777992384125,
+    "lastTickRealTimeMs": 1777992384125,
+    "simTimeMs": 0,
+    "simDay": 0,
+    "simHour": 8,
+    "simMinute": 0,
+    "timeCompression": 12,
+    "baseSpeed": 12,
+    "dayWindow": {
+      "startHour": 6,
+      "endHour": 22
+    },
+    "isDaytime": true
+  },
+  "plant": {
+    "stageIndex": 1,
+    "stageKey": "stage_01",
+    "stageStartSimDay": 0,
+    "lifecycle": {
+      "totalSimDays": 56,
+      "qualityTier": "normal",
+      "qualityScore": 75
+    },
+    "assets": {}
+  },
+  "status": {
+    "water": 70,
+    "nutrition": 70,
+    "health": 85,
+    "stress": 10,
+    "risk": 8,
+    "growth": 35
+  },
+  "progression": {
+    "playerLevel": 1,
+    "xp": 0,
+    "coins": 100
+  },
+  "events": {
+    "scheduler": {
+      "nextEventRealTimeMs": 1777995084125,
+      "lastEventRealTimeMs": 0,
+      "lastEventId": null,
+      "deferredUntilDaytime": false
+    },
+    "active": null,
+    "history": []
+  },
+  "retention": {
+    "dailyTasks": {
+      "tasks": [],
+      "completedIds": [],
+      "lastRefreshDay": 0
+    },
+    "streak": {
+      "count": 0,
+      "lastClaimDay": null
+    }
+  },
+  "history": {
+    "actions": [],
+    "events": [],
+    "system": []
+  },
+  "ui": {},
+  "debug": {
+    "source": "dev-center-preset"
+  }
+}

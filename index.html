@@ -414,21 +414,36 @@
   <section id="careSheet" class="bottom-sheet figma-sheet figma-sheet-care hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <div class="care-sheet-heading">
-        <h2>Pflege / Aktionen</h2>
-        <p class="care-sheet-subtitle">Aktionsdeck</p>
+        <h2 id="careSheetTitle" data-i18n="careStudio.title">Care Studio</h2>
+        <p id="careSheetSubtitle" class="care-sheet-subtitle" data-i18n="careStudio.subtitle.stable">Root zone stable</p>
       </div>
       <button class="sheet-close care-sheet-close" data-close-sheet type="button" aria-label="Schließen">Schließen</button>
     </header>
     <div class="sheet-content figma-sheet-content">
-      <section class="figma-section-card figma-section-card--care">
-        <h3 class="figma-section-head">Pflegeaktionen</h3>
-        <div id="careCategoryList" class="care-category-list figma-care-categories" role="tablist" aria-label="Pflegekategorien"></div>
-        <div id="careActionList" class="care-action-list figma-care-actions" aria-live="polite"></div>
+      <section class="figma-section-card figma-section-card--care figma-section-card--care-studio">
+        <div id="careStudioStatusChips" class="care-studio-status-chips" aria-live="polite"></div>
+        <div class="care-studio-hero">
+          <div class="care-studio-buddy-slot" aria-hidden="true">
+            <span class="care-studio-buddy-glyph">+</span>
+            <span class="care-studio-buddy-label" data-i18n="careStudio.title">Care Studio</span>
+          </div>
+          <div class="care-studio-hero-copy">
+            <span id="careStudioTimingBadge" class="care-studio-timing-badge" data-tone="info" data-i18n="careStudio.timing.wait">Wait</span>
+            <p id="careStudioHintText" class="care-studio-hint-text" data-i18n="careStudio.diagnosis.ready_focus">Observe the plant and choose the cleanest next step.</p>
+          </div>
+        </div>
+        <div id="careCategoryList" class="care-category-list figma-care-categories care-studio-tabs" role="tablist" aria-label="Care Studio tabs"></div>
+        <ul id="careEffectsList" class="care-effects-list care-studio-insights" aria-live="polite"></ul>
       </section>
 
       <section class="figma-section-card figma-section-card--care figma-section-card--care-detail">
-        <ul id="careEffectsList" class="care-effects-list"></ul>
-        <div class="care-execute-panel">
+        <div class="care-action-panel-head">
+          <h3 id="careActionPanelTitle" class="figma-section-head" data-i18n="careStudio.actionPanel.water_title">Water actions</h3>
+          <p id="careActionPanelSubtitle" class="care-action-panel-subtitle" data-i18n="careStudio.actionPanel.water_subtitle">Existing watering actions stay available here.</p>
+        </div>
+        <div id="careActionList" class="care-action-list figma-care-actions" aria-live="polite"></div>
+        <div id="careDecisionZone" class="care-decision-zone" aria-live="polite"></div>
+        <div id="careExecutePanel" class="care-execute-panel">
           <button id="careExecuteButton" class="action-btn action-primary care-execute-btn" type="button">Aktion ausführen</button>
           <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite">Wähle eine Aktion.</p>
         </div>
@@ -1767,6 +1782,8 @@
       { src: 'src/i18n/index.js' },
       { src: 'sim.js' },
       { src: 'src/simulation/plantState.js' },
+      { src: 'src/simulation/careModel.js' },
+      { src: 'src/simulation/careMethods.js' },
       { src: 'src/events/eventFlags.js' },
       { src: 'src/events/eventMemory.js' },
       { src: 'src/events/eventAnalysis.js' },

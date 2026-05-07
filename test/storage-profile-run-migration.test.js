@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const progression = require('../src/progression/progression.js');
+const careModel = require('../src/simulation/careModel.js');
 
 function buildContext(savedSnapshot) {
   const storageSource = fs.readFileSync(path.join(__dirname, '..', 'storage.js'), 'utf8');
@@ -31,7 +32,8 @@ function buildContext(savedSnapshot) {
       GrowSimTextEncoding: {
         deepRepairMojibake: (value) => value
       },
-      GrowSimProgression: progression
+      GrowSimProgression: progression,
+      GrowSimCareModel: careModel
     },
     LS_STATE_KEY: 'grow-sim-state-v2',
     MODE: 'prod',
@@ -89,6 +91,12 @@ function buildContext(savedSnapshot) {
   assert.strictEqual(ctx.state.profile.totalXp, 0, 'default profile should start at 0 xp');
   assert.deepStrictEqual(ctx.state.profile.unlocks.genetics, ['hybrid'], 'default genetics unlock should exist');
   assert.strictEqual(ctx.state.run.status, 'idle', 'default run should be idle');
+  assert.ok(ctx.state.care && typeof ctx.state.care === 'object', 'default state should include care model');
+  assert.strictEqual(ctx.state.care.version, 1, 'default care model should start at version 1');
+  assert.strictEqual(typeof ctx.state.care.water.substrateMoisture, 'number', 'default care model should include water state');
+  assert.strictEqual(typeof ctx.state.care.nutrients.saltLoad, 'number', 'default care model should include nutrient state');
+  assert.ok(ctx.state.care.trends && typeof ctx.state.care.trends === 'object', 'default care model should include care trends');
+  assert.strictEqual(typeof ctx.state.care.trends.deltas.moisture, 'number', 'default care trends should expose deltas');
 })();
 
 (async function testOldSaveMigratesIntoActiveRunAndDefaultProfile() {
@@ -141,6 +149,52 @@ function buildContext(savedSnapshot) {
   assert.strictEqual(ctx.state.run.status, 'active', 'old save with setup should migrate into an active run');
   assert.strictEqual(ctx.state.run.setupSnapshot.mode, 'indoor', 'migrated run should preserve setup snapshot');
   assert.ok(ctx.state.run.goal && ctx.state.run.goal.id, 'migrated active run should receive a mission-light goal');
+  assert.ok(ctx.state.care && typeof ctx.state.care === 'object', 'old saves should be migrated with a care model');
+  assert.ok(ctx.state.care.trends && typeof ctx.state.care.trends === 'object', 'old saves should be migrated with care trends');
+  assert.strictEqual(ctx.state.status.water, 80, 'water summary should remain intact after care migration');
+  assert.strictEqual(ctx.state.status.nutrition, 72, 'nutrition summary should remain intact after care migration');
+  assert.ok(
+    Math.abs(Number(ctx.state.care.water.substrateMoisture) - Number(ctx.state.status.water)) <= 14,
+    'care moisture should derive from restored water summary'
+  );
+})();
+
+(function testEnsureStateIntegrityRepairsPartialCareState() {
+  const ctx = buildContext(null);
+  ctx.resetStateToDefaults();
+  ctx.state.care = {
+    version: 0,
+    water: {
+      substrateMoisture: 180,
+      surfaceMoisture: -10
+    },
+    nutrients: {
+      n: '88',
+      saltLoad: 900
+    },
+    routine: {},
+    feedback: {
+      lastCareGrade: 22
+    }
+  };
+
+  ctx.ensureStateIntegrity(Date.now());
+
+  assert.strictEqual(ctx.state.care.version, 1, 'care version should normalize to v1 minimum');
+  assert(ctx.state.care.water.substrateMoisture <= 100, 'substrate moisture should clamp to 100');
+  assert(ctx.state.care.water.surfaceMoisture >= 0, 'surface moisture should clamp to 0 minimum');
+  assert.strictEqual(typeof ctx.state.care.water.rootZoneMoisture, 'number', 'missing root zone moisture should be restored');
+  assert.strictEqual(typeof ctx.state.care.water.drybackRatePerHour, 'number', 'missing dryback rate should be restored');
+  assert.strictEqual(typeof ctx.state.care.nutrients.p, 'number', 'missing nutrient channels should be restored');
+  assert(ctx.state.care.nutrients.saltLoad <= 100, 'salt load should clamp to max 100');
+  assert.strictEqual(ctx.state.care.feedback.lastCareGrade, null, 'invalid care grade should normalize to null');
+  assert.ok(Array.isArray(ctx.state.care.feedback.lastEffects), 'missing care feedback effects should restore to an array');
+  assert.strictEqual(ctx.state.care.feedback.lastFocusKey, null, 'missing care feedback focus should restore to null');
+  assert.ok(ctx.state.care.trends && typeof ctx.state.care.trends === 'object', 'missing care trends should be restored');
+  assert.strictEqual(typeof ctx.state.care.trends.current.rootZoneMoisture, 'number', 'trend current values should be restored');
+  assert.strictEqual(typeof ctx.state.care.trends.deltas.rootZone, 'number', 'trend deltas should be restored');
+  assert.strictEqual(ctx.state.status.water, 70, 'care normalization should not remove water summary');
+  assert.strictEqual(ctx.state.status.nutrition, 65, 'care normalization should not remove nutrition summary');
 })();
 
 (async function testRestoreRecoversCompletedButUnresolvedGoalState() {

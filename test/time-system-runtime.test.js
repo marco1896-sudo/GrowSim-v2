@@ -99,12 +99,8 @@ async function clearPersistence(page) {
 async function startFreshRun(page) {
   await clearPersistence(page);
   await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForSelector('#landing:not(.hidden)');
-  await page.click('#startRunBtn');
-  await page.waitForFunction(() => {
-    const node = document.getElementById('landing');
-    return Boolean(node && node.classList.contains('hidden'));
-  });
+  await page.waitForFunction(() => window.__gsBootOk === true && typeof window.onStartRun === 'function');
+  await page.evaluate(() => window.onStartRun());
   await waitForRuntime(page);
   await page.waitForTimeout(1200);
 }
@@ -216,6 +212,7 @@ async function scenarioCareActionsDoNotJumpTime(page) {
       resetActionState();
       window.__gsState.status.water = 42;
       window.__gsState.status.nutrition = 50;
+      window.__gsState.care = null;
     });
 
     const fertilizing = runAction('fertilizing_low_microfeed', () => {
@@ -249,6 +246,20 @@ async function scenarioCareActionsDoNotJumpTime(page) {
       `${snapshot.actionId} changed lastTickRealTimeMs during care action`
     );
   }
+  assert(result.watering.actionResult && result.watering.actionResult.ok, 'watering action should still succeed');
+  const careSnapshot = await page.evaluate(() => ({
+    care: window.__gsState && window.__gsState.care ? {
+      substrateMoisture: Number(window.__gsState.care.water && window.__gsState.care.water.substrateMoisture),
+      rootZoneMoisture: Number(window.__gsState.care.water && window.__gsState.care.water.rootZoneMoisture),
+      saltLoad: Number(window.__gsState.care.nutrients && window.__gsState.care.nutrients.saltLoad),
+      lastWaterMethod: window.__gsState.care.water && window.__gsState.care.water.lastWaterMethod,
+      lastFeedStrength: window.__gsState.care.nutrients && window.__gsState.care.nutrients.lastFeedStrength
+    } : null
+  }));
+  assert(careSnapshot.care, 'care state should exist after runtime actions');
+  assert(Number.isFinite(careSnapshot.care.substrateMoisture), 'care moisture should stay numeric after runtime actions');
+  assert(Number.isFinite(careSnapshot.care.rootZoneMoisture), 'care root-zone moisture should stay numeric after runtime actions');
+  assert(Number.isFinite(careSnapshot.care.saltLoad), 'care salt load should stay numeric after runtime actions');
 }
 
 async function scenarioSettingsSimSpeedUi(page) {

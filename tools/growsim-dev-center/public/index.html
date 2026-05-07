@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GrowSim Dev Control Center</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">GS</div>
+          <div>
+            <h1>GrowSim Dev Control Center</h1>
+            <p>Local developer dashboard</p>
+          </div>
+        </div>
+        <nav class="nav" aria-label="Tool sections">
+          <button class="nav-button active" data-section="overview">Overview</button>
+          <button class="nav-button" data-section="scripts">Scripts</button>
+          <button class="nav-button" data-section="assets">Assets</button>
+          <button class="nav-button" data-section="i18n">i18n</button>
+          <button class="nav-button" data-section="states">Test States</button>
+          <button class="nav-button" data-section="prompts">Codex Prompt Builder</button>
+        </nav>
+        <div class="sidebar-note">
+          <span class="status-dot ok"></span>
+          Local-only tool. Not wired into the public app.
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Internal Tool</p>
+            <h2 id="sectionTitle">Overview</h2>
+          </div>
+          <button id="refreshAllButton" class="primary-button">Refresh scans</button>
+        </header>
+
+        <section id="overview" class="section active">
+          <div class="grid two">
+            <article class="panel">
+              <div class="panel-header">
+                <h3>Project Status</h3>
+                <span id="healthChip" class="chip neutral">Loading</span>
+              </div>
+              <dl class="details" id="projectDetails"></dl>
+            </article>
+            <article class="panel">
+              <div class="panel-header">
+                <h3>Detected Structure</h3>
+                <span id="structureCount" class="chip">0</span>
+              </div>
+              <div id="structureList" class="structure-list"></div>
+            </article>
+          </div>
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Last Checks</h3>
+              <span id="checksCount" class="chip">0</span>
+            </div>
+            <div id="checksList" class="history-list empty">No checks executed yet.</div>
+          </article>
+        </section>
+
+        <section id="scripts" class="section">
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Package Scripts</h3>
+              <button id="reloadScriptsButton" class="ghost-button">Reload</button>
+            </div>
+            <div id="scriptsList" class="script-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Output</h3>
+              <span id="scriptStatus" class="chip neutral">Idle</span>
+            </div>
+            <pre id="scriptOutput" class="output-panel">Select a package.json script to run.</pre>
+          </article>
+        </section>
+
+        <section id="assets" class="section">
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Asset Scan</h3>
+              <button id="reloadAssetsButton" class="ghost-button">Scan assets</button>
+            </div>
+            <div id="assetSummary" class="summary-strip"></div>
+            <div id="assetDirectories" class="folder-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Previewable Files</h3>
+              <span id="assetCount" class="chip">0</span>
+            </div>
+            <div id="assetGrid" class="asset-grid"></div>
+          </article>
+        </section>
+
+        <section id="i18n" class="section">
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Language Files</h3>
+              <button id="reloadI18nButton" class="ghost-button">Scan i18n</button>
+            </div>
+            <div id="i18nSummary" class="summary-strip"></div>
+            <div id="i18nLanguages" class="language-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Key Comparison</h3>
+              <span id="i18nHealth" class="chip neutral">Unknown</span>
+            </div>
+            <div id="i18nIssues" class="issue-list"></div>
+          </article>
+        </section>
+
+        <section id="states" class="section">
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Safe JSON Presets</h3>
+              <button id="generateAllStatesButton" class="ghost-button">Generate all</button>
+            </div>
+            <p class="muted">Presets are written only under <code>tools/growsim-dev-center/generated/test-states/</code>.</p>
+            <div id="presetList" class="preset-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Generated Result</h3>
+              <span id="presetStatus" class="chip neutral">Idle</span>
+            </div>
+            <pre id="presetOutput" class="output-panel">No preset generated yet.</pre>
+          </article>
+        </section>
+
+        <section id="prompts" class="section">
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Prompt Builder</h3>
+              <button id="copyPromptButton" class="ghost-button">Copy</button>
+            </div>
+            <div class="form-grid">
+              <label>
+                Bereich
+                <select id="promptArea">
+                  <option value="homescreen">Homescreen</option>
+                  <option value="events">Events</option>
+                  <option value="retention">Retention / Daily Tasks</option>
+                  <option value="shop">Shop / Coins / Monetization</option>
+                  <option value="assets">Assets</option>
+                  <option value="i18n">i18n</option>
+                  <option value="push">Push Notifications</option>
+                  <option value="minigame">Minigame</option>
+                  <option value="backend">Backend/Admin</option>
+                  <option value="general" selected>Allgemein</option>
+                </select>
+              </label>
+              <label>
+                Aufgabentyp
+                <select id="promptTaskType">
+                  <option>Analyse</option>
+                  <option>Bugfix</option>
+                  <option>UI-Verbesserung</option>
+                  <option>neues Feature</option>
+                  <option>Refactor</option>
+                  <option>Tests ergänzen</option>
+                  <option>Asset-Integration</option>
+                </select>
+              </label>
+              <label>
+                Risiko-Level
+                <select id="promptRisk">
+                  <option value="vorsichtig">vorsichtig</option>
+                  <option value="normal">normal</option>
+                  <option value="gruendlich">gründlich</option>
+                </select>
+              </label>
+            </div>
+            <label class="full-label">
+              Zielbeschreibung
+              <textarea id="promptDescription" rows="5" placeholder="Beschreibe, was Codex analysieren oder bauen soll."></textarea>
+            </label>
+          </article>
+          <article class="panel">
+            <div class="panel-header">
+              <h3>Generated Prompt</h3>
+              <span id="copyStatus" class="chip neutral">Ready</span>
+            </div>
+            <pre id="promptOutput" class="output-panel prompt-output"></pre>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>
