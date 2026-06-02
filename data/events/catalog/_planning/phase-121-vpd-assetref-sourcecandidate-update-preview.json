@@ -1,0 +1,8 @@
+{
+  "eventId": "indoor_vpd_mismatch_veg",
+  "wouldPatch": false,
+  "field": "assetRefs.sourceCandidate",
+  "from": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_01.png",
+  "to": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_03.png",
+  "reason": "candidate_03 resolves wide-hero format blocker"
+}

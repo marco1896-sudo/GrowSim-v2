@@ -75,6 +75,37 @@ const CLIMATE_EXHAUST_EXCHANGE_FACTOR = 0.00023;
 const CLIMATE_CIRCULATION_EXCHANGE_FACTOR = 0.00004;
 const CLIMATE_MAX_EXCHANGE_PER_MINUTE = 0.08;
 
+function recordEventV1WriteTelemetryHit(type, context = {}) {
+  try {
+    const root = (typeof window !== 'undefined')
+      ? window
+      : ((typeof globalThis !== 'undefined') ? globalThis : null);
+    const api = root && root.GrowSimEventV1WriteTelemetry && typeof root.GrowSimEventV1WriteTelemetry.recordEventV1WriteHit === 'function'
+      ? root.GrowSimEventV1WriteTelemetry
+      : null;
+    if (!api) return;
+    const safeContext = context && typeof context === 'object' ? context : {};
+    const eventId = safeContext.eventId == null ? null : String(safeContext.eventId);
+    const hasEventV2 = typeof state !== 'undefined' && state && state.eventV2 && typeof state.eventV2 === 'object';
+    const activationRegistry = root && root.GrowSimEventV2ActivationRegistry && typeof root.GrowSimEventV2ActivationRegistry === 'object'
+      ? root.GrowSimEventV2ActivationRegistry
+      : null;
+    const v2RuntimeEnabled = activationRegistry && typeof activationRegistry.isEventV2RuntimeEnabled === 'function' && eventId
+      ? activationRegistry.isEventV2RuntimeEnabled(eventId) === true
+      : false;
+    api.recordEventV1WriteHit(type, {
+      ...safeContext,
+      eventId,
+      hasEventV2,
+      v2RuntimeEnabled,
+      legacyFallback: safeContext.legacyFallback !== false,
+      mode: safeContext.mode || 'simulation-runtime'
+    });
+  } catch (_error) {
+    // Telemetry must never impact runtime behavior.
+  }
+}
+
 function getEnvStageProfile(stageIndexOneBased) {
   const stage = clampInt(Number(stageIndexOneBased) || 1, 1, 12);
   return ENV_STAGE_PROFILES.find((profile) => stage >= profile.minStage && stage <= profile.maxStage) || ENV_STAGE_PROFILES[1];
@@ -943,7 +974,7 @@ function updateEffectiveSpeedState(nowMs, options = {}) {
   }
 
   if (previousEffectiveSpeed !== nextEffectiveSpeed) {
-    addLog('system', 'Effektive Simulationsgeschwindigkeit geÃ¤ndert', {
+    addLog('system', 'Effektive Simulationsgeschwindigkeit geändert', {
       from: previousEffectiveSpeed,
       to: nextEffectiveSpeed,
       reason: options.reason || (currentBoostActive ? 'boost_active' : 'base_speed')
@@ -1062,7 +1093,7 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
       chunkCursorMs = chunkEndMs;
     }
 
-    if (!options.suppressEvents) {
+    if (!options.suppressEvents && !runEventSystemBridgePilotForSimulation(safeTargetRealNowMs, 'sim.offline_catchup')) {
       runEventStateMachine(safeTargetRealNowMs);
     }
     if (!options.suppressEvents) {
@@ -1092,7 +1123,7 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
   const elapsedSimMs = computeSimulationDeltaMs(safePreviousTickMs, safeTargetRealNowMs);
 
   if (!options.suppressLogs && realDeltaMs >= SIM_RUNTIME_LARGE_TIME_JUMP_LOG_MS) {
-    addLog('system', 'GroÃŸer Realzeit-Sprung erkannt', {
+    addLog('system', 'Großer Realzeit-Sprung erkannt', {
       realDeltaMs,
       effectiveSpeedBefore: getEffectiveSimulationSpeed(safePreviousTickMs)
     });
@@ -1116,7 +1147,7 @@ function advanceSimulationTime(targetRealNowMs, options = {}) {
   const suppressDeathForLockedWindow = Boolean(options.suppressDeath) || isDeathSuppressedForFairness(safeTargetRealNowMs);
   advanceGrowthTick(timeResult.elapsedSimMs, { suppressDeath: suppressDeathForLockedWindow });
   applyFairnessSurvivalGuard(safeTargetRealNowMs);
-  if (!options.suppressEvents) {
+  if (!options.suppressEvents && !runEventSystemBridgePilotForSimulation(safeTargetRealNowMs, 'sim.advance')) {
     runEventStateMachine(safeTargetRealNowMs);
   }
   resetBoostDaily(safeTargetRealNowMs);
@@ -1231,6 +1262,30 @@ function getResumeEventReconciliationApi() {
       ? exportedApi.enterEventCooldown.bind(exportedApi)
       : (typeof enterEventCooldown === 'function' ? enterEventCooldown : null)
   };
+}
+
+function runEventSystemBridgePilotForSimulation(nowMs, source) {
+  try {
+    const bridge = (typeof window !== 'undefined' && window.GrowSimEventSystemRuntimeBridge)
+      ? window.GrowSimEventSystemRuntimeBridge
+      : null;
+    if (!bridge || typeof bridge.consultBrowserRuntimeBridge !== 'function') {
+      return false;
+    }
+    const result = bridge.consultBrowserRuntimeBridge(state, {
+      eventSystemMode: 'v2-active-with-v1-legacy-read',
+      now: Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs(),
+      eventId: 'indoor_dry_rootball',
+      source: source || 'sim.event_runtime_bridge_pilot'
+    });
+    if (state && state.eventV2 && state.eventV2.meta && typeof state.eventV2.meta === 'object') {
+      state.eventV2.meta.lastRuntimeBridgePilotAt = Number.isFinite(Number(nowMs)) ? Number(nowMs) : getRealNowMs();
+      state.eventV2.meta.lastRuntimeBridgePilotSource = source || 'sim.event_runtime_bridge_pilot';
+    }
+    return Boolean(result && result.activeEventSystem === 'v2' && result.shouldBlockLegacyCreate === true);
+  } catch (_error) {
+    return false;
+  }
 }
 
 function reconcileEventStateAfterResume(nowMs, options = {}) {
@@ -1352,7 +1407,7 @@ function syncSimulationFromElapsedTime(nowMs) {
     console.error('[offline] catch-up failed', error);
     state.simulation.lastTickRealTimeMs = Math.max(Number(state.simulation.lastTickRealTimeMs) || 0, safeNowMs);
     state.simulation.growthImpulse = 0;
-    addLog('system', 'Offline-Fortschritt konnte nicht vollstÃ¤ndig berechnet werden.', {
+    addLog('system', 'Offline-Fortschritt konnte nicht vollständig berechnet werden.', {
       error: error && error.message ? error.message : String(error)
     });
     syncCanonicalStateShape();
@@ -1434,7 +1489,7 @@ function applyOfflineNightSurvivalClamp() {
   state.ui.deathOverlayAcknowledged = false;
 
   const meta = getCanonicalMeta(state);
-  meta.rescue.lastResult = 'Offline-Nacht: Pflanze knapp Ã¼berlebt und ist kritisch.';
+  meta.rescue.lastResult = 'Offline-Nacht: Pflanze knapp überlebt und ist kritisch.';
   addLog('system', 'Offline-Nachtschutz aktiv: Todeszustand verhindert', {
     health: round2(state.status.health),
     stress: round2(state.status.stress),
@@ -2441,7 +2496,7 @@ function formatPlantAgeLabel(stage, simDay) {
   }
 
   const bloomDay = Math.max(1, Math.floor(safeSimDay - floweringStart.simDayStart) + 1);
-  return `BlÃ¼tetag ${bloomDay}`;
+  return `Blütetag ${bloomDay}`;
 }
 
 function formatPhaseProgressLabel(progressPercent, nextLabel) {
@@ -2555,7 +2610,7 @@ function normalizeStageKey(rawStageKey) {
 
 function onBoostAction() {
   // Absichtlich limitierter Boost: Event-Timer um 30 Min vorziehen,
-  // Pflanzenwerte nur leicht anstoÃŸen (kein vollstÃ¤ndiger 30-Minuten-Simulationssprung).
+  // Pflanzenwerte nur leicht anstoßen (kein vollständiger 30-Minuten-Simulationssprung).
   const BOOST_PLANT_EFFECT_MS = 3 * 60 * 1000;
   const BOOST_GROWTH_PERCENT_DELTA = 0.02;
 
@@ -2580,11 +2635,18 @@ function onBoostAction() {
 
   state.events.scheduler.nextEventRealTimeMs = Math.max(nowMs, state.events.scheduler.nextEventRealTimeMs - BOOST_ADVANCE_MS);
   state.events.cooldownUntilMs = Math.max(nowMs, state.events.cooldownUntilMs - BOOST_ADVANCE_MS);
+  recordEventV1WriteTelemetryHit('W3', {
+    source: 'sim.js:boost_event_timer_adjust',
+    eventId: state.events.activeEventId || null,
+    notes: ['legacy_timer_write']
+  });
 
-  runEventStateMachine(nowMs);
+  if (!runEventSystemBridgePilotForSimulation(nowMs, 'sim.boost_action')) {
+    runEventStateMachine(nowMs);
+  }
   updateVisibleOverlays();
 
-  addLog('action', 'Ereignis-Boost angewendet (Event-Timer -30 Min, Pflanze leicht angestoÃŸen)', {
+  addLog('action', 'Ereignis-Boost angewendet (Event-Timer -30 Min, Pflanze leicht angestoßen)', {
     usedToday: state.boost.boostUsedToday,
     nextEventAtMs: state.events.scheduler.nextEventRealTimeMs
   });
@@ -2606,7 +2668,7 @@ function resetBoostDaily(nowMs) {
   if (state.boost.dayStamp !== currentStamp) {
     state.boost.dayStamp = currentStamp;
     state.boost.boostUsedToday = 0;
-    addLog('system', 'TÃ¤glicher Boost-ZÃ¤hler zurÃ¼ckgesetzt', { dayStamp: currentStamp });
+    addLog('system', 'Täglicher Boost-Zähler zurückgesetzt', { dayStamp: currentStamp });
   }
 }
 
@@ -2647,7 +2709,7 @@ function activateSpeedBoost(nowMs = getRealNowMs()) {
     reason: previousBoostActive ? 'boost_extend' : 'boost_start'
   });
 
-  addLog('action', previousBoostActive ? 'Zeit-Boost verlÃ¤ngert' : 'Zeit-Boost aktiviert', {
+  addLog('action', previousBoostActive ? 'Zeit-Boost verlängert' : 'Zeit-Boost aktiviert', {
     boostEndsAtMs: state.boost.boostEndsAtMs,
     remainingBoostMs: nextRemainingBoostMs,
     effectiveSpeed: getEffectiveSimulationSpeed(safeNowMs)
@@ -2675,7 +2737,7 @@ function setBaseSimulationSpeed(value, nowMs = getRealNowMs()) {
   if (state.settings && state.settings.gameplay && typeof state.settings.gameplay === 'object') {
     state.settings.gameplay.simSpeed = nextBaseSpeed;
   }
-  addLog('system', 'Basis-Simulationsgeschwindigkeit geÃ¤ndert', {
+  addLog('system', 'Basis-Simulationsgeschwindigkeit geändert', {
     from: previousBaseSpeed,
     to: nextBaseSpeed
   });
@@ -2843,8 +2905,8 @@ async function loadEventCatalog() {
     catalogs.push(normalizeEvent({
       id: 'fallback_soil_check',
       category: 'water',
-      title: 'Bodenfeuchte prÃ¼fen',
-      description: 'Bei der manuellen Kontrolle wurde ungleichmÃ¤ÃŸige Feuchte festgestellt.',
+      title: 'Bodenfeuchte prüfen',
+      description: 'Bei der manuellen Kontrolle wurde ungleichmäßige Feuchte festgestellt.',
       choices: [
         { id: 'fallback_care', label: 'Ausgewogene Pflege anwenden', effects: { water: 6, stress: -2, health: 2 } },
         { id: 'fallback_wait', label: 'Einen Zyklus warten', effects: { stress: 2, risk: 2 } },

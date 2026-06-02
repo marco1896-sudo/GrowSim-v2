@@ -1,0 +1,659 @@
+{
+  "ok": true,
+  "phase": "134",
+  "mode": "dev_only_event_center_preview_report",
+  "summary": {
+    "eventsChecked": 22,
+    "previewItemsGenerated": 22,
+    "validImageItems": 22,
+    "missingPreviewAsset": 0,
+    "missingRequiredPreviewField": 0,
+    "brokenPaths": 0,
+    "previewAdapterStatus": "preview_adapter_ready"
+  },
+  "status": {
+    "previewSurface": "preview_adapter_ready",
+    "uiLab": "ready_for_ui_lab_preview",
+    "shadow": "ready_for_shadow_preview"
+  },
+  "items": [
+    {
+      "id": "indoor_dry_rootball",
+      "title": "title",
+      "subtitle": "events.v2.indoor_dry_rootball.title",
+      "category": "water",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/indoor_dry_rootball/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_dry_rootball/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_dry_rootball.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "water",
+        "indoor",
+        "ready"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_dry_rootball/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_dry_rootball/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_dry_rootball/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_fan_failure_airflow_drop",
+      "title": "title",
+      "subtitle": "events.v2.indoor_fan_failure_airflow_drop.title",
+      "category": "environment",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_fan_failure_airflow_drop/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_fan_failure_airflow_drop.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "environment",
+        "indoor",
+        "temporary_usable_needs_revision"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_fan_failure_airflow_drop/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_heat_stress_air",
+      "title": "title",
+      "subtitle": "events.v2.indoor_heat_stress_air.title",
+      "category": "environment",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_heat_stress_air/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_heat_stress_air.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "environment",
+        "indoor",
+        "temporary_usable_needs_revision"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_heat_stress_air/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_light_burn_canopy_top",
+      "title": "title",
+      "subtitle": "events.v2.indoor_light_burn_canopy_top.title",
+      "category": "environment",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_light_burn_canopy_top.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "environment",
+        "indoor",
+        "temporary_usable_needs_revision"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_light_nutrient_tox_early",
+      "title": "title",
+      "subtitle": "events.v2.indoor_light_nutrient_tox_early.title",
+      "category": "nutrition",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_light_nutrient_tox_early/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_light_nutrient_tox_early/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_light_nutrient_tox_early.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "nutrition",
+        "indoor",
+        "temporary_usable_needs_revision"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_light_nutrient_tox_early/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_light_nutrient_tox_early/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_light_nutrient_tox_early/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_overtraining_stall_mild",
+      "title": "title",
+      "subtitle": "events.v2.indoor_overtraining_stall_mild.title",
+      "category": "special",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/indoor_overtraining_stall_mild/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_overtraining_stall_mild/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_overtraining_stall_mild.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "special",
+        "indoor",
+        "usable_with_watch"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_overtraining_stall_mild/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_overtraining_stall_mild/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_overtraining_stall_mild/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_overwatering_early",
+      "title": "title",
+      "subtitle": "events.v2.indoor_overwatering_early.title",
+      "category": "water",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_overwatering_early/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_overwatering_early.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "water",
+        "indoor",
+        "usable_with_watch"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_overwatering_early/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_rootzone_airless_medium",
+      "title": "title",
+      "subtitle": "events.v2.indoor_rootzone_airless_medium.title",
+      "category": "water",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_rootzone_airless_medium/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_rootzone_airless_medium.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "water",
+        "indoor",
+        "ready"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_rootzone_airless_medium/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_soil_ph_out_of_range",
+      "title": "title",
+      "subtitle": "events.v2.indoor_soil_ph_out_of_range.title",
+      "category": "nutrition",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_soil_ph_out_of_range/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_soil_ph_out_of_range.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "nutrition",
+        "indoor",
+        "temporary_usable_needs_revision"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_soil_ph_out_of_range/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "indoor_vpd_mismatch_veg",
+      "title": "title",
+      "subtitle": "events.v2.indoor_vpd_mismatch_veg.title",
+      "category": "environment",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp",
+      "imageFallback": "assets/events/v2/final/indoor_vpd_mismatch_veg/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/indoor/indoor_vpd_mismatch_veg.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "environment",
+        "indoor",
+        "temporary_usable_needs_revision"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp",
+        "coverSrc": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp",
+        "coverFallback": "assets/events/v2/final/indoor_vpd_mismatch_veg/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "outdoor_cold_night_stress",
+      "title": "title",
+      "subtitle": "events.v2.outdoor_cold_night_stress.title",
+      "category": "environment",
+      "environment": "outdoor",
+      "severity": "warning",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+      "imageFallback": "assets/events/v2/final/outdoor_cold_night_stress/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/outdoor/outdoor_cold_night_stress.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "environment",
+        "outdoor",
+        "usable_with_watch"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+        "coverSrc": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+        "coverFallback": "assets/events/v2/final/outdoor_cold_night_stress/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "outdoor_early_pest_pressure_leaf_underside",
+      "title": "title",
+      "subtitle": "events.v2.outdoor_early_pest_pressure_leaf_underside.title",
+      "category": "pest",
+      "environment": "outdoor",
+      "severity": "warning",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero.webp",
+      "imageFallback": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/outdoor/outdoor_early_pest_pressure_leaf_underside.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "pest",
+        "outdoor",
+        "usable_with_watch"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero.webp",
+        "coverSrc": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero.webp",
+        "coverFallback": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "outdoor_heatwave_dry_wind",
+      "title": "title",
+      "subtitle": "events.v2.outdoor_heatwave_dry_wind.title",
+      "category": "environment",
+      "environment": "outdoor",
+      "severity": "critical",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+      "imageFallback": "assets/events/v2/final/outdoor_heatwave_dry_wind/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/outdoor/outdoor_heatwave_dry_wind.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "environment",
+        "outdoor",
+        "temporary_usable_needs_revision"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+        "coverSrc": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+        "coverFallback": "assets/events/v2/final/outdoor_heatwave_dry_wind/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "outdoor_heavy_rain_waterlogging_risk",
+      "title": "title",
+      "subtitle": "events.v2.outdoor_heavy_rain_waterlogging_risk.title",
+      "category": "water",
+      "environment": "outdoor",
+      "severity": "warning",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+      "imageFallback": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/outdoor/outdoor_heavy_rain_waterlogging_risk.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "water",
+        "outdoor",
+        "usable_with_watch"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+        "coverSrc": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+        "coverFallback": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "outdoor_pot_dries_by_afternoon",
+      "title": "title",
+      "subtitle": "events.v2.outdoor_pot_dries_by_afternoon.title",
+      "category": "water",
+      "environment": "outdoor",
+      "severity": "warning",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+      "imageFallback": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/outdoor/outdoor_pot_dries_by_afternoon.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "water",
+        "outdoor",
+        "ready"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+        "coverSrc": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+        "coverFallback": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "outdoor_wind_exposure_stem_stress",
+      "title": "title",
+      "subtitle": "events.v2.outdoor_wind_exposure_stem_stress.title",
+      "category": "environment",
+      "environment": "outdoor",
+      "severity": "warning",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp",
+      "imageFallback": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/outdoor/outdoor_wind_exposure_stem_stress.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "environment",
+        "outdoor",
+        "ready"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp",
+        "coverSrc": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp",
+        "coverFallback": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "shared_early_pest_signs_mild",
+      "title": "title",
+      "subtitle": "events.v2.shared_early_pest_signs_mild.title",
+      "category": "pest",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+      "imageFallback": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/shared/shared_early_pest_signs_mild.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "pest",
+        "indoor",
+        "ready"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+        "coverSrc": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+        "coverFallback": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "shared_light_distance_error",
+      "title": "title",
+      "subtitle": "events.v2.shared_light_distance_error.title",
+      "category": "environment",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+      "imageFallback": "assets/events/v2/final/shared_light_distance_error/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/shared/shared_light_distance_error.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "environment",
+        "indoor",
+        "temporary_usable_needs_revision"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+        "coverSrc": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+        "coverFallback": "assets/events/v2/final/shared_light_distance_error/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "shared_observation_recovery_after_stress",
+      "title": "title",
+      "subtitle": "events.v2.shared_observation_recovery_after_stress.title",
+      "category": "positive",
+      "environment": "shared",
+      "severity": "info",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+      "imageFallback": "assets/events/v2/final/shared_observation_recovery_after_stress/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/shared/shared_observation_recovery_after_stress.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "positive",
+        "shared",
+        "usable_with_watch"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+        "coverSrc": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+        "coverFallback": "assets/events/v2/final/shared_observation_recovery_after_stress/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "shared_panic_watering_misread",
+      "title": "title",
+      "subtitle": "events.v2.shared_panic_watering_misread.title",
+      "category": "water",
+      "environment": "shared",
+      "severity": "warning",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+      "imageFallback": "assets/events/v2/final/shared_panic_watering_misread/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/shared/shared_panic_watering_misread.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "water",
+        "shared",
+        "ready"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+        "coverSrc": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+        "coverFallback": "assets/events/v2/final/shared_panic_watering_misread/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "shared_rootbound_warning",
+      "title": "title",
+      "subtitle": "events.v2.shared_rootbound_warning.title",
+      "category": "water",
+      "environment": "indoor",
+      "severity": "warning",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+      "imageFallback": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/shared/shared_rootbound_warning.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "water",
+        "indoor",
+        "ready"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+        "coverSrc": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+        "coverFallback": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    },
+    {
+      "id": "shared_substrate_drainage_compaction",
+      "title": "title",
+      "subtitle": "events.v2.shared_substrate_drainage_compaction.title",
+      "category": "water",
+      "environment": "shared",
+      "severity": "warning",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+      "imageFallback": "assets/events/v2/final/shared_substrate_drainage_compaction/fallback.webp",
+      "sourceCandidate": "data/events/catalog/events/shared/shared_substrate_drainage_compaction.event.json",
+      "assetStatus": "trial_asset_set_v1",
+      "previewReady": true,
+      "tags": [
+        "water",
+        "shared",
+        "ready"
+      ],
+      "debug": {
+        "previewImageSource": "assetRefs.hero",
+        "assetRefHero": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+        "coverSrc": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+        "coverFallback": "assets/events/v2/final/shared_substrate_drainage_compaction/fallback.webp",
+        "previewStatus": "ready_for_ui_lab_preview"
+      },
+      "imageExists": true,
+      "hasRequiredFields": true,
+      "status": "preview_surface_ready"
+    }
+  ]
+}

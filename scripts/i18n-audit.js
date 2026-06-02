@@ -53,10 +53,18 @@ function extractUsedKeysFromContent(content) {
   for (const pattern of patterns) {
     let match;
     while ((match = pattern.exec(content))) {
-      if (match[1]) keys.add(match[1]);
+      if (isStaticI18nKey(match[1])) keys.add(match[1]);
     }
   }
   return keys;
+}
+
+function isStaticI18nKey(value) {
+  const key = String(value || '').trim();
+  if (!key) return false;
+  if (key.includes('${')) return false;
+  if (/[()\s+|?:]/.test(key)) return false;
+  return /^[a-z0-9_.-]+$/i.test(key);
 }
 
 function main() {
@@ -143,4 +151,3 @@ function main() {
 }
 
 main();
-

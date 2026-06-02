@@ -14,6 +14,7 @@ const LS_STATE_KEY = 'grow-sim-state-v2';
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
 const TIME_TEST_DEBUG = process.env.TIME_TEST_DEBUG === '1';
 const TIME_TEST_ONLY = String(process.env.TIME_TEST_ONLY || '').trim();
+const TIME_TEST_SCENARIO_TIMEOUT_MS = Math.max(10000, Number(process.env.TIME_TEST_SCENARIO_TIMEOUT_MS || 120000));
 
 function debugLog(message, details) {
   if (!TIME_TEST_DEBUG) {
@@ -31,9 +32,25 @@ async function runScenario(name, fn) {
     return;
   }
   const startedAt = Date.now();
-  debugLog(`start ${name}`);
-  await fn();
-  debugLog(`done ${name}`, { durationMs: Date.now() - startedAt });
+  console.log(`[time-test] start ${name}`);
+  let timeoutId = null;
+  try {
+    await Promise.race([
+      fn(),
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`${name} exceeded ${TIME_TEST_SCENARIO_TIMEOUT_MS}ms`));
+        }, TIME_TEST_SCENARIO_TIMEOUT_MS);
+      })
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+  const durationMs = Date.now() - startedAt;
+  console.log(`[time-test] done ${name} (${durationMs}ms)`);
+  debugLog(`done ${name}`, { durationMs });
 }
 
 function assertApproxRatio(label, simDeltaMs, realDeltaMs, expectedSpeed, tolerance = 1.5) {
@@ -85,7 +102,33 @@ async function clearPersistence(page) {
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
   await evaluateWithRetry(page, async (stateKey) => {
     localStorage.removeItem(stateKey);
+    window.__gsStorageHasWrittenLocalState = false;
+    window.__gsStorageExternalClearDetected = false;
     if (typeof indexedDB !== 'undefined') {
+      await new Promise((resolve) => {
+        const openRequest = indexedDB.open('grow-sim-db', 1);
+        openRequest.onerror = () => resolve();
+        openRequest.onupgradeneeded = () => {
+          const db = openRequest.result;
+          if (!db.objectStoreNames.contains('kv')) {
+            db.createObjectStore('kv');
+          }
+        };
+        openRequest.onsuccess = () => {
+          const db = openRequest.result;
+          try {
+            const tx = db.transaction('kv', 'readwrite');
+            tx.objectStore('kv').delete('state-v2');
+            tx.oncomplete = tx.onerror = tx.onabort = () => {
+              db.close();
+              resolve();
+            };
+          } catch (_error) {
+            db.close();
+            resolve();
+          }
+        };
+      });
       await new Promise((resolve) => {
         const request = indexedDB.deleteDatabase('grow-sim-db');
         request.onsuccess = () => resolve();
@@ -100,6 +143,30 @@ async function startFreshRun(page) {
   await clearPersistence(page);
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__gsBootOk === true && typeof window.onStartRun === 'function');
+  await page.evaluate(() => {
+    if (typeof resetStateToDefaults === 'function') {
+      resetStateToDefaults();
+    }
+    if (window.__gsState && window.__gsState.settings && window.__gsState.settings.gameplay) {
+      window.__gsState.settings.gameplay.simSpeed = 12;
+    }
+    if (window.__gsState && window.__gsState.boost) {
+      window.__gsState.boost.boostEndsAtMs = 0;
+    }
+    if (typeof setBaseSimulationSpeed === 'function') {
+      setBaseSimulationSpeed(12, Date.now());
+    } else if (window.__gsState && window.__gsState.simulation) {
+      window.__gsState.simulation.baseSpeed = 12;
+      window.__gsState.simulation.effectiveSpeed = 12;
+      window.__gsState.simulation.timeCompression = 12;
+    }
+    if (typeof ensureStateIntegrity === 'function') {
+      ensureStateIntegrity(Date.now());
+    }
+    if (typeof renderAll === 'function') {
+      renderAll();
+    }
+  });
   await page.evaluate(() => window.onStartRun());
   await waitForRuntime(page);
   await page.waitForTimeout(1200);
@@ -445,14 +512,56 @@ async function scenarioBoostActivationAndExpiry(page) {
 
 async function scenarioReloadDuringActiveBoost(page) {
   await startFreshRun(page);
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     setBaseSimulationSpeed(8, Date.now());
     activateSpeedBoost(Date.now());
+    if (typeof persistState === 'function') {
+      await persistState();
+    }
   });
   const beforeReload = await getSnapshot(page);
+  await page.waitForFunction(({ stateKey, expectedEndsAt }) => {
+    try {
+      const raw = localStorage.getItem(stateKey);
+      if (!raw) {
+        return false;
+      }
+      const snapshot = JSON.parse(raw);
+      return Number(snapshot && snapshot.boost && snapshot.boost.boostEndsAtMs) === Number(expectedEndsAt);
+    } catch (_error) {
+      return false;
+    }
+  }, { stateKey: LS_STATE_KEY, expectedEndsAt: beforeReload.boostEndsAtMs });
+  const storedBeforeReload = await page.evaluate(async (stateKey) => {
+    const localRaw = localStorage.getItem(stateKey);
+    const local = localRaw ? JSON.parse(localRaw) : null;
+    const db = await new Promise((resolve) => {
+      const request = indexedDB.open('grow-sim-db', 1);
+      request.onerror = () => resolve(null);
+      request.onsuccess = () => resolve(request.result);
+    });
+    const indexed = db ? await new Promise((resolve) => {
+      const tx = db.transaction('kv', 'readonly');
+      const store = tx.objectStore('kv');
+      const request = store.get('state-v2');
+      request.onerror = () => resolve(null);
+      request.onsuccess = () => resolve(request.result || null);
+    }) : null;
+    if (db) {
+      db.close();
+    }
+    return {
+      localBoostEndsAtMs: Number(local && local.boost && local.boost.boostEndsAtMs),
+      indexedBoostEndsAtMs: Number(indexed && indexed.boost && indexed.boost.boostEndsAtMs),
+      localSavedAt: Number(local && local.meta && local.meta.persistence && local.meta.persistence.lastSavedAtRealMs),
+      indexedSavedAt: Number(indexed && indexed.meta && indexed.meta.persistence && indexed.meta.persistence.lastSavedAtRealMs)
+    };
+  }, LS_STATE_KEY);
+  debugLog('scenarioReloadDuringActiveBoost stored before reload', storedBeforeReload);
   await page.reload({ waitUntil: 'networkidle' });
   await waitForRuntime(page);
   const afterReload = await getSnapshot(page);
+  debugLog('scenarioReloadDuringActiveBoost snapshots', { beforeReload, afterReload });
   assert.strictEqual(afterReload.baseSpeed, 8, 'base speed did not persist through active-boost reload');
   assert.strictEqual(afterReload.effectiveSpeed, 24, 'active boost did not persist through reload');
   assert(afterReload.remainingBoostMs > 0, 'active boost lost remaining duration on reload');

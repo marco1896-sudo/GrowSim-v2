@@ -7,6 +7,37 @@ let homeMetaExpanded = false;
 let homeHudAnchorRafId = 0;
 const warnedMissingUiKeys = new Set();
 
+function recordEventV1WriteTelemetryHit(type, context = {}) {
+  try {
+    const root = (typeof window !== 'undefined')
+      ? window
+      : ((typeof globalThis !== 'undefined') ? globalThis : null);
+    const api = root && root.GrowSimEventV1WriteTelemetry && typeof root.GrowSimEventV1WriteTelemetry.recordEventV1WriteHit === 'function'
+      ? root.GrowSimEventV1WriteTelemetry
+      : null;
+    if (!api) return;
+    const safeContext = context && typeof context === 'object' ? context : {};
+    const eventId = safeContext.eventId == null ? null : String(safeContext.eventId);
+    const hasEventV2 = typeof state !== 'undefined' && state && state.eventV2 && typeof state.eventV2 === 'object';
+    const activationRegistry = root && root.GrowSimEventV2ActivationRegistry && typeof root.GrowSimEventV2ActivationRegistry === 'object'
+      ? root.GrowSimEventV2ActivationRegistry
+      : null;
+    const v2RuntimeEnabled = activationRegistry && typeof activationRegistry.isEventV2RuntimeEnabled === 'function' && eventId
+      ? activationRegistry.isEventV2RuntimeEnabled(eventId) === true
+      : false;
+    api.recordEventV1WriteHit(type, {
+      ...safeContext,
+      eventId,
+      hasEventV2,
+      v2RuntimeEnabled,
+      legacyFallback: safeContext.legacyFallback !== false,
+      mode: safeContext.mode || 'ui-fallback'
+    });
+  } catch (_error) {
+    // Telemetry must never impact runtime behavior.
+  }
+}
+
 function getMenuUiPresentationApi() {
   const api = window.GrowSimMenuUiPresentation;
   return api && typeof api === 'object' ? api : null;
@@ -2005,6 +2036,87 @@ function explainActionFailure(reason) {
   return `Aktion blockiert (${value}).`;
 }
 
+function getEventCenterV2PilotViewModel() {
+  const bridge = window.GrowSimEventSystemRuntimeBridge;
+  if (!bridge || typeof bridge.buildEventCenterV2PilotViewModel !== 'function') {
+    return null;
+  }
+  try {
+    return bridge.buildEventCenterV2PilotViewModel(state);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function getLatestEventCenterV2PilotHistoryEntry() {
+  const history = state.eventV2 && Array.isArray(state.eventV2.history) ? state.eventV2.history : [];
+  return history.find((entry) => entry && entry.source === 'event-center-v2-resolve-pilot') || null;
+}
+
+function getEventV2ResolvePresentation(eventId, optionId) {
+  const api = window.GrowSimEventV2PresentationMap;
+  if (!api || typeof api.getEventV2ResolvePresentation !== 'function') {
+    return null;
+  }
+  try {
+    return api.getEventV2ResolvePresentation(eventId, optionId);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function renderEventCenterV2PilotActiveEvent(viewModel) {
+  if (ui.eventImageWrap && ui.eventImage) {
+    ui.eventImage.removeAttribute('src');
+    ui.eventImage.alt = '';
+    ui.eventImageWrap.classList.add('hidden');
+    ui.eventImageWrap.setAttribute('aria-hidden', 'true');
+  }
+
+  ui.eventStateBadge.textContent = 'Status: V2 Pilot';
+  ui.eventTitle.textContent = viewModel.title || 'V2 Ereignis';
+  ui.eventText.textContent = viewModel.description || 'Dieses Ereignis wird über den V2-Pilotpfad ausgewertet.';
+  ui.eventMeta.textContent = `Kategorie: ${viewModel.category || 'care'} | Schweregrad: ${viewModel.severity || 'warning'}`;
+
+  const options = Array.isArray(viewModel.options) ? viewModel.options : [];
+  const optionSignature = `v2:${viewModel.instanceId || viewModel.eventId}|${options.map((option) => `${option.id}:${option.label}`).join('|')}`;
+  if (ui.eventOptionList.dataset.signature !== optionSignature) {
+    ui.eventOptionList.dataset.signature = optionSignature;
+    ui.eventOptionList.replaceChildren();
+    for (const option of options) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'event-option-btn';
+      button.textContent = option.label || option.id;
+      button.addEventListener('click', () => onEventOptionClick(option.id));
+      ui.eventOptionList.appendChild(button);
+    }
+  }
+}
+
+function renderEventCenterV2PilotResolvedFeedback(historyEntry) {
+  if (ui.eventImageWrap && ui.eventImage) {
+    ui.eventImage.removeAttribute('src');
+    ui.eventImage.alt = '';
+    ui.eventImageWrap.classList.add('hidden');
+    ui.eventImageWrap.setAttribute('aria-hidden', 'true');
+  }
+
+  const resolvePresentation = getEventV2ResolvePresentation(
+    historyEntry && historyEntry.eventId,
+    historyEntry && historyEntry.selectedOption
+  ) || {};
+  ui.eventStateBadge.textContent = 'Status: Im Verlauf';
+  ui.eventTitle.textContent = String(resolvePresentation.title || 'Entscheidung ausgewertet');
+  ui.eventText.textContent = String(resolvePresentation.summary || 'Deine Entscheidung wurde verarbeitet und im Verlauf gespeichert.');
+  ui.eventMeta.textContent = String(resolvePresentation.badge || 'Verlauf');
+
+  if (ui.eventOptionList.childElementCount > 0 || ui.eventOptionList.dataset.signature !== 'v2:resolved') {
+    ui.eventOptionList.dataset.signature = 'v2:resolved';
+    ui.eventOptionList.replaceChildren();
+  }
+}
+
 function renderEventSheet() {
   if (isModernEventPresentationExclusiveActive()) {
     if (ui.eventSheet) {
@@ -2017,6 +2129,17 @@ function renderEventSheet() {
   if (ui.eventSheet) {
     ui.eventSheet.classList.remove('event-sheet--legacy-suppressed');
     ui.eventSheet.removeAttribute('data-legacy-render-suppressed');
+  }
+
+  const v2PilotView = getEventCenterV2PilotViewModel();
+  const v2PilotHistory = getLatestEventCenterV2PilotHistoryEntry();
+  if (state.ui.openSheet === 'event' && v2PilotView && v2PilotView.hasPilotEvent) {
+    renderEventCenterV2PilotActiveEvent(v2PilotView);
+    return;
+  }
+  if (state.ui.openSheet === 'event' && v2PilotHistory && !['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState)) {
+    renderEventCenterV2PilotResolvedFeedback(v2PilotHistory);
+    return;
   }
 
   if (state.ui.openSheet !== 'event' && !['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState)) {
@@ -2522,6 +2645,7 @@ function openMenuDialog({ title, message, cancelLabel = 'Abbrechen', confirmLabe
   }
 
   state.ui.menuDialogOpen = true;
+  state.ui.menuOpen = true;
   renderGameMenu();
 }
 
@@ -2928,6 +3052,11 @@ function dismissActiveEvent() {
     resolvedAfterMs: resolveTimeMs
   };
   state.events.resolvedOutcome = null;
+  recordEventV1WriteTelemetryHit('W5', {
+    source: 'ui.js:legacy_dismiss_fallback',
+    eventId,
+    notes: ['ui_fallback_write']
+  });
 
   addLog('choice', `Ereignis geschlossen ohne Auswahl: ${eventId}`, {
     choiceId: '__dismiss__'

@@ -1,0 +1,222 @@
+﻿[
+    {
+        "source":  "indoor_dry_rootball.png",
+        "eventId":  "indoor_dry_rootball",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_dry_rootball\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "28188C6A2D1CDCBE4B7730079EF1CE1ED883B091483E76B108554FBE210CA94C",
+        "targetHash":  "28188C6A2D1CDCBE4B7730079EF1CE1ED883B091483E76B108554FBE210CA94C"
+    },
+    {
+        "source":  "indoor_fan_failure_airflow_drop.png",
+        "eventId":  "indoor_fan_failure_airflow_drop",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_fan_failure_airflow_drop\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "F451447B77B6BCA76AD382C7BC41DEC546EA59DD8B1C887394BEEE6306C01BAA",
+        "targetHash":  "F451447B77B6BCA76AD382C7BC41DEC546EA59DD8B1C887394BEEE6306C01BAA"
+    },
+    {
+        "source":  "indoor_heat_stress_air.png",
+        "eventId":  "indoor_heat_stress_air",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_heat_stress_air\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "0EAC2BF20D19B2445DA3C0108A39CB6396367A5934E6ED619D1C12F13A5A2369",
+        "targetHash":  "0EAC2BF20D19B2445DA3C0108A39CB6396367A5934E6ED619D1C12F13A5A2369"
+    },
+    {
+        "source":  "indoor_light_burn_canopy_top.png",
+        "eventId":  "indoor_light_burn_canopy_top",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_light_burn_canopy_top\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "D855C26131BAC329EF01BE73B02CB70B4E2D406BD0D5D8EDD9515F27BD33B040",
+        "targetHash":  "D855C26131BAC329EF01BE73B02CB70B4E2D406BD0D5D8EDD9515F27BD33B040"
+    },
+    {
+        "source":  "indoor_light_nutrient_tox_early.png",
+        "eventId":  "indoor_light_nutrient_tox_early",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_light_nutrient_tox_early\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "5C5DB01764BAB80C7D4608991A9566F30E4C4B8BDDC048A26A880383E25EE3DB",
+        "targetHash":  "5C5DB01764BAB80C7D4608991A9566F30E4C4B8BDDC048A26A880383E25EE3DB"
+    },
+    {
+        "source":  "indoor_overtraining_stall_mild.png",
+        "eventId":  "indoor_overtraining_stall_mild",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_overtraining_stall_mild\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "B9E3EDCBB71131332476219E6AF0819556A956638F728E851994C7C8FB2A8A0D",
+        "targetHash":  "B9E3EDCBB71131332476219E6AF0819556A956638F728E851994C7C8FB2A8A0D"
+    },
+    {
+        "source":  "indoor_overwatering_early.png",
+        "eventId":  "indoor_overwatering_early",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_overwatering_early\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "8AD9CCFEB3DC37E921740DEF6FB409DA9EEB9571FF91E85D13995D4E9B361471",
+        "targetHash":  "8AD9CCFEB3DC37E921740DEF6FB409DA9EEB9571FF91E85D13995D4E9B361471"
+    },
+    {
+        "source":  "indoor_rootzone_airless_medium.png",
+        "eventId":  "indoor_rootzone_airless_medium",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_rootzone_airless_medium\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "18ED3F990D29F2CBD66B33D4B5564F473F2C2B15A3DFD99792391B0630191470",
+        "targetHash":  "18ED3F990D29F2CBD66B33D4B5564F473F2C2B15A3DFD99792391B0630191470"
+    },
+    {
+        "source":  "indoor_soil_ph_out_of_range.png",
+        "eventId":  "indoor_soil_ph_out_of_range",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_soil_ph_out_of_range\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "89B669479840D32191C0B2BF12C05FFDB958BEA3CB5F120FB4F61BD51740812D",
+        "targetHash":  "89B669479840D32191C0B2BF12C05FFDB958BEA3CB5F120FB4F61BD51740812D"
+    },
+    {
+        "source":  "indoor_vpd_mismatch_veg__candidate_01.png",
+        "eventId":  "indoor_vpd_mismatch_veg",
+        "candidate":  1,
+        "mappingStatus":  "mapped_exact",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\indoor_vpd_mismatch_veg\\candidate_full_scene_01.png",
+        "note":  "",
+        "srcHash":  "8182508180B72CC63BF240F988160CDA7B77B15E6060CBAD49912C5B0C141C59",
+        "targetHash":  "8182508180B72CC63BF240F988160CDA7B77B15E6060CBAD49912C5B0C141C59"
+    },
+    {
+        "source":  "outdoor_cold_night_stress.png",
+        "eventId":  "outdoor_cold_night_stress",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\outdoor_cold_night_stress\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "627B109741723680BB6A4528770CD83E8F7CC31ADADDBAC100D52560C2C3A2E2",
+        "targetHash":  "627B109741723680BB6A4528770CD83E8F7CC31ADADDBAC100D52560C2C3A2E2"
+    },
+    {
+        "source":  "outdoor_early_pest_pressure_leaf_underside.png",
+        "eventId":  "outdoor_early_pest_pressure_leaf_underside",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\outdoor_early_pest_pressure_leaf_underside\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "A5ED4E2935D6BB39FDA6A2F28CA8C526C2CE790B638B8B5D9D0C00073BDC1814",
+        "targetHash":  "A5ED4E2935D6BB39FDA6A2F28CA8C526C2CE790B638B8B5D9D0C00073BDC1814"
+    },
+    {
+        "source":  "outdoor_heatwave_dry_wind (revision).png",
+        "eventId":  "outdoor_heatwave_dry_wind",
+        "candidate":  2,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "conflict_target_exists_different_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\outdoor_heatwave_dry_wind\\candidate_full_scene_02.png",
+        "note":  "revision_parenthesis_mapped_to_candidate_02",
+        "srcHash":  "F6C43F4E6A34CD3AD1EE37F9D9B10D3AA93DF8747B453AFE9DDF174CA64D9FEC",
+        "targetHash":  "6BE6817DAEE0948DDDA317E9A87FBB9BEAC730A68D5B70659AF3936FEBE5F5F8"
+    },
+    {
+        "source":  "outdoor_heavy_rain_waterlogging_risk.png",
+        "eventId":  "outdoor_heavy_rain_waterlogging_risk",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\outdoor_heavy_rain_waterlogging_risk\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "114767E6F6B5AA44BE8A315104C670FD10EB1D9D1780F3046CADB21798B67961",
+        "targetHash":  "114767E6F6B5AA44BE8A315104C670FD10EB1D9D1780F3046CADB21798B67961"
+    },
+    {
+        "source":  "outdoor_pot_dries_by_afternoon.png",
+        "eventId":  "outdoor_pot_dries_by_afternoon",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\outdoor_pot_dries_by_afternoon\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "D08F95351FD71C13152993D3D431E416571097A59DC4D527131621CB844B5C63",
+        "targetHash":  "D08F95351FD71C13152993D3D431E416571097A59DC4D527131621CB844B5C63"
+    },
+    {
+        "source":  "outdoor_wind_exposure_stem_stress.png",
+        "eventId":  "outdoor_wind_exposure_stem_stress",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\outdoor_wind_exposure_stem_stress\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "4EC7FC27B7F7BFB016983003E98C34F07CAAD7B5878279C58B9CEE88BD4E5233",
+        "targetHash":  "4EC7FC27B7F7BFB016983003E98C34F07CAAD7B5878279C58B9CEE88BD4E5233"
+    },
+    {
+        "source":  "shared_light_distance_error.png",
+        "eventId":  "shared_light_distance_error",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\shared_light_distance_error\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "AA2DF8A3240B3BA10730F0771829EC64D7B4F9E6542601CE5E875B9BD9ABE08F",
+        "targetHash":  "AA2DF8A3240B3BA10730F0771829EC64D7B4F9E6542601CE5E875B9BD9ABE08F"
+    },
+    {
+        "source":  "shared_observation_recovery_after_stress.png",
+        "eventId":  "shared_observation_recovery_after_stress",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\shared_observation_recovery_after_stress\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "74C330B5FA608A223F184929D4FE2E33C5B07D1F87F9CAD97B9224E6BAF4A5CB",
+        "targetHash":  "74C330B5FA608A223F184929D4FE2E33C5B07D1F87F9CAD97B9224E6BAF4A5CB"
+    },
+    {
+        "source":  "shared_panic_watering_misread.png",
+        "eventId":  "shared_panic_watering_misread",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\shared_panic_watering_misread\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "3733D358A3C2AE995EFDE940A15184417F1713313326C17CC55775EA52F0C184",
+        "targetHash":  "3733D358A3C2AE995EFDE940A15184417F1713313326C17CC55775EA52F0C184"
+    },
+    {
+        "source":  "shared_substrate_drainage_compaction.png",
+        "eventId":  "shared_substrate_drainage_compaction",
+        "candidate":  1,
+        "mappingStatus":  "mapped_tolerant_filename",
+        "result":  "already_imported_same_hash",
+        "target":  "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\assets\\events\\v2\\_generated\\full-scene\\review\\shared_substrate_drainage_compaction\\candidate_full_scene_01.png",
+        "note":  "candidate_suffix_missing_assumed_01",
+        "srcHash":  "874769D4C6E278F59C34E44FF743F5C29CBD0758847F89ECE8C4324E8846EB18",
+        "targetHash":  "874769D4C6E278F59C34E44FF743F5C29CBD0758847F89ECE8C4324E8846EB18"
+    }
+]

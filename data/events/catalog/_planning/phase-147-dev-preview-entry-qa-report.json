@@ -1,0 +1,54 @@
+﻿{
+  "phase": "147",
+  "entryQaStatus": "entry_qa_pass_with_watch",
+  "softActivationWiringStatus": "soft_activation_wiring_ready_with_watch",
+  "watchpoints": [
+    {
+      "id": "scoring_watch_vpd_vs_dry_rootball",
+      "blocking": false,
+      "notes": "fixture_indoor_veg_vpd_mismatch keeps indoor_vpd_mismatch_veg in top cluster (top-5)."
+    }
+  ],
+  "entryQa": {
+    "modeVisible": true,
+    "candidateFeedReachable": true,
+    "fixturesVisible": 3,
+    "candidateItemsVisible": 15,
+    "validImages": 15,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": 0,
+    "safetyLabelsVisible": true,
+    "actionsPresent": 0,
+    "selectedCandidateNull": true,
+    "mobileReadability": "pass",
+    "cardQuality": "pass_with_watch"
+  },
+  "softActivationReadiness": {
+    "defaultSafeOff": true,
+    "explicitDevEnableOnly": true,
+    "runtimeWrite": false,
+    "productionDefault": false,
+    "saveWrites": 0,
+    "storageWrites": 0,
+    "realActions": 0,
+    "rollbackClear": true
+  },
+  "appNearEntryRecommendation": {
+    "recommendedOption": "option_4_settings_or_debug_surface_hidden_entry",
+    "why": "best app-near testability with controlled blast radius and clean rollback via dev flags",
+    "requiresAppJsInPhase148": "likely_yes_minimal_dev_guarded_patch",
+    "forbiddenInPhase147": true
+  },
+  "phase148Recommendation": {
+    "title": "Event V2 Hidden Dev/Test Entry - App-Near Preview, No RuntimeWrite",
+    "go": true,
+    "conditions": [
+      "keep runtimeWrite disabled",
+      "keep production disabled",
+      "candidate-only UI",
+      "no save/storage writes",
+      "no resolve/reward/mutation actions"
+    ]
+  }
+}

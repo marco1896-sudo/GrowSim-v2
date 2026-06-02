@@ -1,0 +1,11 @@
+﻿Use case: illustration-story
+Asset type: event hero image for mobile game UI
+Primary request: shared_rootbound_warning event hero without text bubble
+Scene/backdrop: neutral indoor-outdoor shared context, clean and uncluttered
+Subject: cannabis plant in mild rootbound warning state, visible pot edge with constrained root room cues
+Style/medium: premium stylized game illustration, soft but clear shading
+Composition/framing: close-up focusing pot rim and root-zone clue, Buddy in root-check pose to the side, symptom not blocked
+Lighting/mood: calm coaching mood, readable warning tone, not catastrophic
+Color palette: natural plant greens, warm neutral background, Buddy green identity preserved
+Constraints: same Buddy identity, no mascot redesign, one main problem only, mobile-readable silhouette, no speech bubble text in image
+Avoid: root explosion gore, overwatering-only confusion, pest cues, logos, watermark, clutter, clipped Buddy or key symptom

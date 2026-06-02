@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "mode": "active",
+  "eventsChecked": 22,
+  "assetRefsChecked": 22,
+  "errors": [],
+  "warnings": [],
+  "infos": [],
+  "statusCounts": {
+    "ready": 8,
+    "usable_with_watch": 6,
+    "temporary_usable_needs_revision": 8
+  },
+  "catalog": {
+    "eventFilesChecked": 22,
+    "activeAssetRefsFound": 22,
+    "coverSrcFound": 22,
+    "coverFallbackFound": 22,
+    "coverWarnings": []
+  },
+  "input": "data/events/catalog/events",
+  "reportPath": "data/events/catalog/_planning/phase-129-active-assetref-validation-report.json",
+  "draftOnly": true,
+  "mutatesProductFiles": false,
+  "assetsCoverChanged": false,
+  "readyForPreview": true
+}

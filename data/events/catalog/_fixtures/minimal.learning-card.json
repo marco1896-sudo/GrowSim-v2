@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 3,
+  "id": "fixture_minimal_learning",
+  "type": "learning-card",
+  "title": { "key": "fixtures.learning.title" },
+  "subtitle": { "key": "fixtures.learning.subtitle" },
+  "content": {
+    "bullets": [{ "key": "fixtures.learning.bullet1" }]
+  },
+  "knowledgeProfile": {
+    "primaryDimension": "water_basics",
+    "gainOnFirstView": 0.01,
+    "gainOnLaterView": 0.0
+  },
+  "i18n": { "requiredKeys": ["fixtures.learning.title"], "supportedLocales": ["en"] }
+}

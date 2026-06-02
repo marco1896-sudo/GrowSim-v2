@@ -1,0 +1,234 @@
+﻿{
+    "ok":  true,
+    "phase":  "132",
+    "eventsChecked":  22,
+    "coverSrcFinalCount":  22,
+    "coverFallbackFinalCount":  22,
+    "finalHeroExistsCount":  22,
+    "finalFallbackExistsCount":  22,
+    "activeAssetRefsPresentCount":  22,
+    "missingFinalFilesCount":  0,
+    "allCoverFinal":  true,
+    "items":  [
+                  {
+                      "eventId":  "indoor_dry_rootball",
+                      "coverSrc":  "assets/events/v2/final/indoor_dry_rootball/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_dry_rootball/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_fan_failure_airflow_drop",
+                      "coverSrc":  "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_fan_failure_airflow_drop/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_heat_stress_air",
+                      "coverSrc":  "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_heat_stress_air/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_light_burn_canopy_top",
+                      "coverSrc":  "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_light_nutrient_tox_early",
+                      "coverSrc":  "assets/events/v2/final/indoor_light_nutrient_tox_early/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_light_nutrient_tox_early/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_overtraining_stall_mild",
+                      "coverSrc":  "assets/events/v2/final/indoor_overtraining_stall_mild/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_overtraining_stall_mild/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_overwatering_early",
+                      "coverSrc":  "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_overwatering_early/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_rootzone_airless_medium",
+                      "coverSrc":  "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_rootzone_airless_medium/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_soil_ph_out_of_range",
+                      "coverSrc":  "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_soil_ph_out_of_range/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "indoor_vpd_mismatch_veg",
+                      "coverSrc":  "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/indoor_vpd_mismatch_veg/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "outdoor_cold_night_stress",
+                      "coverSrc":  "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/outdoor_cold_night_stress/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "outdoor_early_pest_pressure_leaf_underside",
+                      "coverSrc":  "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "outdoor_heatwave_dry_wind",
+                      "coverSrc":  "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/outdoor_heatwave_dry_wind/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "outdoor_heavy_rain_waterlogging_risk",
+                      "coverSrc":  "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "outdoor_pot_dries_by_afternoon",
+                      "coverSrc":  "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/outdoor_pot_dries_by_afternoon/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "outdoor_wind_exposure_stem_stress",
+                      "coverSrc":  "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/outdoor_wind_exposure_stem_stress/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "shared_early_pest_signs_mild",
+                      "coverSrc":  "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "shared_light_distance_error",
+                      "coverSrc":  "assets/events/v2/final/shared_light_distance_error/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/shared_light_distance_error/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "shared_observation_recovery_after_stress",
+                      "coverSrc":  "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/shared_observation_recovery_after_stress/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "shared_panic_watering_misread",
+                      "coverSrc":  "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/shared_panic_watering_misread/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "shared_rootbound_warning",
+                      "coverSrc":  "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  },
+                  {
+                      "eventId":  "shared_substrate_drainage_compaction",
+                      "coverSrc":  "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+                      "coverFallback":  "assets/events/v2/final/shared_substrate_drainage_compaction/fallback.webp",
+                      "coverSrcIsFinal":  true,
+                      "coverFallbackIsFinal":  true,
+                      "coverSrcExists":  true,
+                      "coverFallbackExists":  true,
+                      "assetRefsPresent":  true
+                  }
+              ]
+}

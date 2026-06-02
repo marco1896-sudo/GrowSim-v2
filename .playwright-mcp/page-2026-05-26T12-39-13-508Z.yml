@@ -1,0 +1,125 @@
+- generic [active] [ref=e1]:
+  - main [ref=e5]:
+    - region "Home HUD" [ref=e6]:
+      - article "Spielerpanel" [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e9]:
+            - generic "Profil Level 9" [ref=e10]:
+              - generic [ref=e11]:
+                - img [ref=e12]
+                - img [ref=e13]
+              - generic [ref=e14]:
+                - img [ref=e15]
+                - generic [ref=e16]: LVL
+                - strong [ref=e17]: LVL 99
+            - generic [ref=e18]:
+              - generic [ref=e19]:
+                - strong [ref=e20]: Max Mustergrower
+                - generic [ref=e21]: Gärtner
+              - generic [ref=e22]: "XP: 7.350 / 8.650"
+              - generic [ref=e23]:
+                - img
+            - generic [ref=e25]:
+              - generic "Coins" [ref=e26]:
+                - img [ref=e27]
+                - img [ref=e29]
+                - strong [ref=e30]: "2.480"
+              - button "Menü öffnen" [ref=e31]:
+                - img [ref=e32]
+                - generic [ref=e33]: Menü öffnen
+          - generic [ref=e35]:
+            - 'status "Status: stabil" [ref=e36]'
+            - generic [ref=e37]:
+              - paragraph [ref=e38]:
+                - text: "RUN-ZIEL:"
+                - strong [ref=e39]: saubere Linie (Halte den Stress niedrig)
+              - paragraph [ref=e40]: "FORTSCHRITT: 28 / 30 Tage"
+      - button "Ernte-Analyse öffnen" [ref=e41] [cursor=pointer]:
+        - generic [ref=e42]:
+          - generic [ref=e43]: Ernte
+          - strong [ref=e44]: "--"
+        - generic [ref=e45]:
+          - strong [ref=e46]: "--"
+          - generic [ref=e47]: →
+      - generic:
+        - generic:
+          - img
+      - group "Klima-Controller" [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - generic [ref=e52]: AUTO
+            - generic [ref=e53]: Optimal
+          - generic [ref=e55]:
+            - strong [ref=e56]: "25.0"
+            - generic [ref=e57]: °C
+          - generic "Klima-Werte" [ref=e60]:
+            - strong [ref=e64]: 61%
+            - strong [ref=e68]: 1.2 kPa
+            - strong [ref=e72]: "720"
+          - generic [ref=e74]: TARGET
+        - button "Klimaübersicht öffnen" [ref=e76] [cursor=pointer]
+        - button "Aktiven Klimawert wechseln" [ref=e77] [cursor=pointer]
+        - button "Aktiven Klimawert erhöhen" [ref=e78] [cursor=pointer]
+        - button "Aktiven Klimawert verringern" [ref=e79] [cursor=pointer]
+        - generic [ref=e80]: Temperatur
+        - generic [ref=e81]: 25.3°C
+        - generic [ref=e82]: Luftfeuchte
+        - generic [ref=e83]: PPFD
+        - generic [ref=e84]: Luftstrom
+        - generic [ref=e85]: Good
+      - generic [ref=e86]:
+        - article [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - generic [ref=e90]: WACHSTUM
+              - strong [ref=e91]: Vegetativ
+            - generic [ref=e92]: Tag 14
+          - generic [ref=e93]:
+            - generic [ref=e94]:
+              - strong [ref=e95]: 42%
+              - generic [ref=e96]: Zielphase
+            - generic [ref=e97]: Stress
+            - strong [ref=e98]: +0.80x
+            - button "Diagnose öffnen" [ref=e99]
+          - progressbar "Fortschritt in aktueller Phase" [ref=e100]
+          - generic [ref=e103]:
+            - generic [ref=e104]:
+              - img [ref=e105]
+              - generic "Tageszyklus": D
+              - generic [ref=e106]: Zeit
+              - strong [ref=e107]: 09:18
+            - generic [ref=e109]: Boost x24 Bereit
+            - generic [ref=e110]:
+              - img [ref=e111]
+              - generic [ref=e112]: Ereignis
+              - strong [ref=e113]: 11:43
+        - region "Kernwerte" [ref=e114]:
+          - button "Wasser anzeigen" [ref=e115] [cursor=pointer]:
+            - strong [ref=e117]: 70%
+            - generic [ref=e120]: Wasser
+          - button "Nährstoffe anzeigen" [ref=e121] [cursor=pointer]:
+            - strong [ref=e123]: 65%
+            - generic [ref=e126]: Nährstoffe
+          - button "Stress anzeigen" [ref=e127] [cursor=pointer]:
+            - strong [ref=e129]: 15%
+            - generic [ref=e132]: Stress
+          - button "Risiko anzeigen" [ref=e133] [cursor=pointer]:
+            - strong [ref=e135]: 20%
+            - generic [ref=e138]: Risiko
+      - region "Schnellaktionen":
+        - button "Boost aktivieren" [ref=e139]:
+          - img [ref=e140]
+          - generic [ref=e141]: Boost
+        - button "Night Shift aktivieren" [ref=e142]:
+          - img [ref=e143]
+          - generic [ref=e144]: Night Shift
+        - button "Events öffnen" [ref=e145]:
+          - img [ref=e146]
+          - generic [ref=e147]: Events
+        - button "Analyse öffnen" [ref=e148]:
+          - img [ref=e149]
+          - generic [ref=e150]: Analyse
+        - button "Pflege öffnen" [ref=e151]:
+          - img [ref=e152]
+          - generic [ref=e153]: Pflege
+  - text: ◠ ◠ ◠ ◠ ✦ ✦ ✦ ⌂ ⌂ ▰ ▰ ☼ ☼ ◇ ◠ ✦ ⌂ ▰ ☼ › › › › › › › › › › ›

@@ -1,0 +1,329 @@
+{
+  "schemaVersion": 3,
+  "id": "indoor_fan_failure_airflow_drop",
+  "type": "event",
+  "category": "environment",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mini_catalog_batch_1",
+    "mode_indoor"
+  ],
+  "title": {
+    "key": "events.v2.indoor_fan_failure_airflow_drop.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.indoor_fan_failure_airflow_drop.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.indoor_fan_failure_airflow_drop.description"
+  },
+  "cause": {
+    "kind": "airflow_breakdown_canopy_stagnation",
+    "explanation": {
+      "key": "events.v2.indoor_fan_failure_airflow_drop.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.indoor_fan_failure_airflow_drop.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.indoor_fan_failure_airflow_drop.coach.actions.0"
+      },
+      {
+        "key": "events.v2.indoor_fan_failure_airflow_drop.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.indoor_fan_failure_airflow_drop.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.canopy_air_still_humid"
+      },
+      "weight": 1,
+      "id": "canopy_air_still_humid",
+      "spriteOverlay": "indoor_fan_failure_airflow_drop_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "airflow_check": {
+        "label": {
+          "key": "diagnostics.airflow_check.dead_zone_stale_air"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "airflow_breakdown_canopy_stagnation"
+        ]
+      }
+    },
+    "available": [
+      "airflow_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "improve_airflow_canopy",
+      "label": {
+        "key": "options.improve_airflow_canopy"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ]
+    },
+    {
+      "id": "open_canopy_air_channel",
+      "label": {
+        "key": "options.open_canopy_air_channel"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "raise_humidity_without_airflow",
+      "label": {
+        "key": "options.raise_humidity_without_airflow"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "env.humidityPercent",
+        "op": ">=",
+        "value": 62
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 14
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 6
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower"
+    ]
+  },
+  "pressure": {
+    "weight": 0.96,
+    "polarity": "negative",
+    "primaryPressure": "airflow_drop_stagnation"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "indoor_fan_failure_airflow_drop_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "indoor_fan_failure_airflow_drop_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "indoor_fan_failure_airflow_drop_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "airflow_drop_stagnation": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "airflow_drop_stagnation": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.indoor_fan_failure_airflow_drop.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "improve_airflow_canopy",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.indoor_fan_failure_airflow_drop.cover",
+      "src": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+      "fallback": "assets/events/v2/final/indoor_fan_failure_airflow_drop/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "indoor_fan_failure_airflow_drop_overlay_warn": "assets/events/event-stress-recovery.png",
+      "indoor_fan_failure_airflow_drop_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "indoor_fan_failure_airflow_drop_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_canopy_air_still_humid",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.indoor_fan_failure_airflow_drop.title",
+      "events.v2.indoor_fan_failure_airflow_drop.symptom",
+      "events.v2.indoor_fan_failure_airflow_drop.description",
+      "events.v2.indoor_fan_failure_airflow_drop.cause",
+      "events.v2.indoor_fan_failure_airflow_drop.coach.summary",
+      "events.v2.indoor_fan_failure_airflow_drop.coach.why",
+      "events.v2.indoor_fan_failure_airflow_drop.coach.actions.0",
+      "events.v2.indoor_fan_failure_airflow_drop.coach.actions.1",
+      "events.v2.indoor_fan_failure_airflow_drop.aftermath.lesson",
+      "options.improve_airflow_canopy",
+      "options.open_canopy_air_channel",
+      "options.raise_humidity_without_airflow",
+      "alt.events.v2.indoor_fan_failure_airflow_drop.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_environment"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "environment",
+      "symptom_canopy_air_still_humid"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_airflow_fundamentals"
+  },
+  "chainHooks": {
+    "startsChain": "airflow_climate_chain",
+    "advancesChainsOnOutcome": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-71 Batch-1 data-only expansion event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-16",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+    "fallback": "assets/events/v2/final/indoor_fan_failure_airflow_drop/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_fan_failure_airflow_drop/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "temporary_usable_needs_revision",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

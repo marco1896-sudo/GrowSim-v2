@@ -1,0 +1,290 @@
+{
+  "ok": true,
+  "defaultMode": {
+    "disabled": true,
+    "reason": "dev_preview_disabled"
+  },
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cardsInitial": 15,
+      "fixturesInitial": 3,
+      "cardsFinal": 15,
+      "fixturesFinal": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "actionsFound": false,
+      "steps": [
+        {
+          "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+          "action": "open",
+          "itemId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+          "action": "open",
+          "itemId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_outdoor_heat_dry_wind",
+          "action": "open",
+          "itemId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+          "flowState": "view=detail;active=fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_stable_healthy_baseline",
+          "action": "open",
+          "itemId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+          "flowState": "view=detail;active=fixture_stable_healthy_baseline:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        }
+      ]
+    },
+    {
+      "viewport": 390,
+      "cardsInitial": 15,
+      "fixturesInitial": 3,
+      "cardsFinal": 15,
+      "fixturesFinal": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "actionsFound": false,
+      "steps": [
+        {
+          "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+          "action": "open",
+          "itemId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+          "action": "open",
+          "itemId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_outdoor_heat_dry_wind",
+          "action": "open",
+          "itemId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+          "flowState": "view=detail;active=fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_stable_healthy_baseline",
+          "action": "open",
+          "itemId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+          "flowState": "view=detail;active=fixture_stable_healthy_baseline:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        }
+      ]
+    },
+    {
+      "viewport": 430,
+      "cardsInitial": 15,
+      "fixturesInitial": 3,
+      "cardsFinal": 15,
+      "fixturesFinal": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "actionsFound": false,
+      "steps": [
+        {
+          "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+          "action": "open",
+          "itemId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+          "action": "open",
+          "itemId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_outdoor_heat_dry_wind",
+          "action": "open",
+          "itemId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+          "flowState": "view=detail;active=fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_stable_healthy_baseline",
+          "action": "open",
+          "itemId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+          "flowState": "view=detail;active=fixture_stable_healthy_baseline:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        }
+      ]
+    },
+    {
+      "viewport": 768,
+      "cardsInitial": 15,
+      "fixturesInitial": 3,
+      "cardsFinal": 15,
+      "fixturesFinal": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "actionsFound": false,
+      "steps": [
+        {
+          "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+          "action": "open",
+          "itemId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+          "action": "open",
+          "itemId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_outdoor_heat_dry_wind",
+          "action": "open",
+          "itemId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+          "flowState": "view=detail;active=fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        },
+        {
+          "fixtureId": "fixture_stable_healthy_baseline",
+          "action": "open",
+          "itemId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+          "flowState": "view=detail;active=fixture_stable_healthy_baseline:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "safetyLabelsVisible": true,
+          "noResolveVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": true
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "viewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "candidateListVisible": true,
+    "fixturesVisible": true,
+    "detailsOpened": 4,
+    "detailImagesValid": true,
+    "safetyLabelsVisible": true,
+    "noResolveVisible": true,
+    "backWorks": true,
+    "closeWorks": true,
+    "anotherCandidateOpens": true,
+    "actionsEmpty": true,
+    "canResolveFalse": true,
+    "selectedCandidateNull": true,
+    "persistedSelectedCandidateNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": [],
+    "openedCandidateIds": [
+      "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+      "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+      "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+      "fixture_stable_healthy_baseline:1:indoor_dry_rootball"
+    ]
+  }
+}

@@ -2,7 +2,10 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 const path = require('path');
 const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
-const { installAuthHarness: setupAuthHarness } = require('./support/browserRuntime');
+const {
+  installAuthHarness: setupAuthHarness,
+  advanceOnboardingToStart
+} = require('./support/browserRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
 const HOST = '127.0.0.1';
@@ -52,6 +55,7 @@ async function startFreshRun(page) {
   await clearPersistence(page);
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('#landing:not(.hidden)');
+  await advanceOnboardingToStart(page);
   await page.click('#startRunBtn');
   await page.waitForFunction(() => {
     const node = document.getElementById('landing');

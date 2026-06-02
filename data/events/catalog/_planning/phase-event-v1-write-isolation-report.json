@@ -1,0 +1,213 @@
+{
+  "ok": true,
+  "reportType": "event-v1-write-isolation-report",
+  "generatedAt": "2026-05-31T13:50:05.769Z",
+  "summary": {
+    "totalFindings": 11,
+    "productiveWrites": 8,
+    "categoryCounts": {
+      "W1": 1,
+      "W2": 2,
+      "W3": 3,
+      "W4": 2,
+      "W5": 2,
+      "W6": 1
+    },
+    "stageCounts": {
+      "R1.2": 2,
+      "R1.3": 1,
+      "R1.4": 5,
+      "R1.5": 3
+    },
+    "blockabilityCounts": {
+      "yes": 1,
+      "no": 2,
+      "later": 5,
+      "needs-adapter": 3
+    }
+  },
+  "findings": [
+    {
+      "id": "events-create-active-event",
+      "file": "events.js",
+      "category": "W1",
+      "purpose": "Produktiver V1-Create setzt activeEvent State-Machine-Felder.",
+      "anchor": "state.events.machineState = 'activeEvent';",
+      "risk": "high",
+      "writeType": "runtime_productive",
+      "isolationStage": "R1.3",
+      "blockability": "later",
+      "requiredBeforeBlock": [
+        "V2 muss Event-Create fuer alle runtime-enabled Events stabil uebernehmen.",
+        "Bridge/Create-Gate muss in allen Tick-Eintrittspfaden verbindlich sein."
+      ],
+      "line": 2269
+    },
+    {
+      "id": "events-resolve-enter-resolving",
+      "file": "events.js",
+      "category": "W2",
+      "purpose": "Produktiver V1-Resolve setzt resolving/pendingOutcome.",
+      "anchor": "state.events.machineState = 'resolving';",
+      "risk": "high",
+      "writeType": "runtime_productive",
+      "isolationStage": "R1.4",
+      "blockability": "later",
+      "requiredBeforeBlock": [
+        "V2-Resolve muss fuer aktive V2-Events vollstaendig und reload-idempotent sein.",
+        "Legacy-Events muessen defensiv read-only bleiben."
+      ],
+      "line": 2963
+    },
+    {
+      "id": "events-resolve-finalize",
+      "file": "events.js",
+      "category": "W2",
+      "purpose": "Produktiver V1-Resolve finalisiert history/resolvedOutcome.",
+      "anchor": "state.events.history.push(historyEntry);",
+      "risk": "high",
+      "writeType": "runtime_productive",
+      "isolationStage": "R1.4",
+      "blockability": "later",
+      "requiredBeforeBlock": [
+        "V2-History-Struktur muss fuer alle live Events vorhanden sein.",
+        "Tests fuer Resolve/History muessen auf V2-First umgestellt sein."
+      ],
+      "line": 1383
+    },
+    {
+      "id": "events-cooldown-write",
+      "file": "events.js",
+      "category": "W3",
+      "purpose": "V1 schreibt Cooldown- und Timer-Felder produktiv.",
+      "anchor": "state.events.machineState = 'cooldown';",
+      "risk": "high",
+      "writeType": "runtime_productive",
+      "isolationStage": "R1.4",
+      "blockability": "needs-adapter",
+      "requiredBeforeBlock": [
+        "V2 muss eigenen Cooldown/Timing-Kanal besitzen.",
+        "UI und sim Tick duerfen nicht mehr auf V1-Cooldown angewiesen sein."
+      ],
+      "line": 2797
+    },
+    {
+      "id": "events-scheduler-projection",
+      "file": "events.js",
+      "category": "W3",
+      "purpose": "V1 synchronisiert eventCooldowns/eventCooldownsSim und Deadlines.",
+      "anchor": "scheduler.eventCooldowns = Object.fromEntries(",
+      "risk": "high",
+      "writeType": "runtime_productive",
+      "isolationStage": "R1.5",
+      "blockability": "needs-adapter",
+      "requiredBeforeBlock": [
+        "Save/Restore darf Legacy-Cooldown nur noch als Read-Mirror behandeln.",
+        "Migration-Gate fuer alte Saves muss definiert sein."
+      ],
+      "line": 2080
+    },
+    {
+      "id": "storage-legacy-migration",
+      "file": "storage.js",
+      "category": "W4",
+      "purpose": "Save/Restore erzeugt und normalisiert V1-Felder fuer alte Saves.",
+      "anchor": "function migrateLegacyStateIntoCanonical(saved, targetState) {",
+      "risk": "high",
+      "writeType": "persistence_compat",
+      "isolationStage": "R1.5",
+      "blockability": "no",
+      "requiredBeforeBlock": [
+        "Versionierte Save-Migration mit klaren Backward-Regeln.",
+        "Alt-Save Testmatrix (fresh/old/missing-fields) muss gruen sein."
+      ],
+      "line": 1507
+    },
+    {
+      "id": "storage-legacy-mirror-sync",
+      "file": "storage.js",
+      "category": "W4",
+      "purpose": "Canonical->Legacy Spiegel fuer Kompatibilitaet im Save-Zyklus.",
+      "anchor": "function syncLegacyMirrorsFromCanonical(snapshot) {",
+      "risk": "high",
+      "writeType": "persistence_compat",
+      "isolationStage": "R1.5",
+      "blockability": "later",
+      "requiredBeforeBlock": [
+        "Alle produktiven Leser muessen auf eventV2/canonical umgestellt sein.",
+        "Legacy-Read darf nur noch fuer explizite Alt-Save-Pfade bestehen."
+      ],
+      "line": 2687
+    },
+    {
+      "id": "ui-fallback-resolve-write",
+      "file": "ui.js",
+      "category": "W5",
+      "purpose": "UI-Fallback schreibt V1-Resolving-State bei Legacy-Pfad.",
+      "anchor": "state.events.machineState = 'resolving';",
+      "risk": "medium",
+      "writeType": "ui_fallback",
+      "isolationStage": "R1.4",
+      "blockability": "later",
+      "requiredBeforeBlock": [
+        "V2-Sheet muss fuer alle runtime-enabled Events als primaerer Action-Pfad aktiv sein.",
+        "Legacy UI fallback nur noch read-only."
+      ],
+      "line": 3026
+    },
+    {
+      "id": "sim-event-timer-write",
+      "file": "sim.js",
+      "category": "W3",
+      "purpose": "Sim aktualisiert V1 Event-Timer/Cooldown bei Zeitbooster-Pfaden.",
+      "anchor": "state.events.scheduler.nextEventRealTimeMs = Math.max(nowMs, state.events.scheduler.nextEventRealTimeMs - BOOST_ADVANCE_MS);",
+      "risk": "medium",
+      "writeType": "runtime_productive",
+      "isolationStage": "R1.4",
+      "blockability": "needs-adapter",
+      "requiredBeforeBlock": [
+        "Timer-Quelle muss zentral auf V2/canonical verlagert sein.",
+        "Boost-/Offline-Regressionen muessen danach weiterhin gruen sein."
+      ],
+      "line": 2645
+    },
+    {
+      "id": "app-legacy-reset-write",
+      "file": "app.js",
+      "category": "W5",
+      "purpose": "App-Resetpfade setzen V1 Event-Felder explizit zurueck.",
+      "anchor": "state.events.machineState = 'idle';",
+      "risk": "medium",
+      "writeType": "ui_runtime_fallback",
+      "isolationStage": "R1.2",
+      "blockability": "yes",
+      "requiredBeforeBlock": [
+        "Nur in dev/reporting beobachten, noch nicht blockieren.",
+        "Vor produktiver Sperre klaeren, ob noch Legacy-UI-Zweige davon leben."
+      ],
+      "line": 10916
+    },
+    {
+      "id": "tests-and-dev-v1-writes",
+      "file": "test/event-flow-integration.test.js",
+      "category": "W6",
+      "purpose": "Tests/Dev schreiben V1 absichtlich fuer Kompatibilitaetsabdeckung.",
+      "anchor": "state.events",
+      "risk": "low",
+      "writeType": "test_dev_only",
+      "isolationStage": "R1.2",
+      "blockability": "no",
+      "requiredBeforeBlock": [
+        "Testmigration auf V2-first Assertions vorbereiten.",
+        "Legacy-Kompatibilitaet bis zur finalen Migrationsphase weiterhin pruefen."
+      ],
+      "line": 114
+    }
+  ],
+  "warnings": [],
+  "recommendation": {
+    "deleteV1Now": false,
+    "blockWritesNow": false,
+    "nextPhase": "R1.2 dev-only write observability and targeted gate contract draft"
+  }
+}

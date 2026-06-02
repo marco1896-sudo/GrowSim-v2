@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "assertionSetId": "default-assertions",
+  "createdAt": "2026-05-12T00:00:00.000Z",
+  "reason": "Initial deterministic assertion set",
+  "compatibilityNotes": "Phase 13+",
+  "assertions": [
+    "examplesOnlyDevelopment",
+    "fixturesDevelopment",
+    "fixturesBeta",
+    "fullCatalogEmptyDevelopment",
+    "fullCatalogReleaseCandidate"
+  ]
+}

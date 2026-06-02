@@ -1,0 +1,321 @@
+{
+  "schemaVersion": 3,
+  "id": "shared_observation_recovery_after_stress",
+  "type": "event",
+  "category": "positive",
+  "tags": [
+    "learning_beat",
+    "recovery_beat",
+    "mini_catalog_startset",
+    "mini_catalog_batch_2",
+    "mode_shared"
+  ],
+  "title": {
+    "key": "events.v2.shared_observation_recovery_after_stress.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.shared_observation_recovery_after_stress.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.shared_observation_recovery_after_stress.description"
+  },
+  "cause": {
+    "kind": "recovery_visible_after_correct_stabilization",
+    "explanation": {
+      "key": "events.v2.shared_observation_recovery_after_stress.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.shared_observation_recovery_after_stress.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.shared_observation_recovery_after_stress.coach.actions.0"
+      },
+      {
+        "key": "events.v2.shared_observation_recovery_after_stress.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.shared_observation_recovery_after_stress.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.recovery_posture_returning"
+      },
+      "weight": 1,
+      "id": "recovery_posture_returning",
+      "spriteOverlay": "shared_observation_recovery_after_stress_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "recovery_posture_check": {
+        "label": {
+          "key": "diagnostics.recovery_posture_check.returning_tension"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "recovery_visible_after_correct_stabilization"
+        ]
+      }
+    },
+    "available": [
+      "recovery_posture_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "observe_24h_without_new_action",
+      "label": {
+        "key": "options.observe_24h_without_new_action"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -2
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ]
+    },
+    {
+      "id": "note_recovery_signs_and_hold",
+      "label": {
+        "key": "options.note_recovery_signs_and_hold"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "water_again_just_in_case",
+      "label": {
+        "key": "options.water_again_just_in_case"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 10
+      },
+      {
+        "field": "status.stress",
+        "op": "<=",
+        "value": 35
+      },
+      {
+        "field": "status.water",
+        "op": ">=",
+        "value": 22
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor",
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 5
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 5,
+      "minDay": 2,
+      "maxDay": 55
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower"
+    ]
+  },
+  "pressure": {
+    "weight": 0.18,
+    "polarity": "positive",
+    "primaryPressure": "recovery_window_visible"
+  },
+  "severity": {
+    "level": "info"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 2,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "shared_observation_recovery_after_stress_overlay_warn"
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -2,
+          "stress": -3
+        },
+        "knowledgeProfileGains": {
+          "recovery_observation": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 0,
+          "stress": -1
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -1
+        },
+        "knowledgeProfileGains": {
+          "recovery_observation": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 3,
+          "stress": 2
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.shared_observation_recovery_after_stress.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 35,
+      "no_action": 10,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "observe_24h_without_new_action",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.shared_observation_recovery_after_stress.cover",
+      "src": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+      "fallback": "assets/events/v2/final/shared_observation_recovery_after_stress/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "shared_observation_recovery_after_stress_overlay_warn": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_recovery_posture_returning",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.shared_observation_recovery_after_stress.title",
+      "events.v2.shared_observation_recovery_after_stress.symptom",
+      "events.v2.shared_observation_recovery_after_stress.description",
+      "events.v2.shared_observation_recovery_after_stress.cause",
+      "events.v2.shared_observation_recovery_after_stress.coach.summary",
+      "events.v2.shared_observation_recovery_after_stress.coach.why",
+      "events.v2.shared_observation_recovery_after_stress.coach.actions.0",
+      "events.v2.shared_observation_recovery_after_stress.coach.actions.1",
+      "events.v2.shared_observation_recovery_after_stress.aftermath.lesson",
+      "options.observe_24h_without_new_action",
+      "options.note_recovery_signs_and_hold",
+      "options.water_again_just_in_case",
+      "alt.events.v2.shared_observation_recovery_after_stress.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_recovery"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "positive",
+      "symptom_recovery_posture_returning"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "after_outcome",
+    "ref": "lc_recovery_observation_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-74 remap to dedicated recovery observation learning card."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-16",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+    "fallback": "assets/events/v2/final/shared_observation_recovery_after_stress/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_observation_recovery_after_stress/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "usable_with_watch",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

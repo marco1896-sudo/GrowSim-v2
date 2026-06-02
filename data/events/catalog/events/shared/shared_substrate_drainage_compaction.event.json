@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 3,
+  "id": "shared_substrate_drainage_compaction",
+  "type": "event",
+  "category": "water",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mini_catalog_batch_1",
+    "mode_shared"
+  ],
+  "title": {
+    "key": "events.v2.shared_substrate_drainage_compaction.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.shared_substrate_drainage_compaction.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.shared_substrate_drainage_compaction.description"
+  },
+  "cause": {
+    "kind": "substrate_compaction_poor_drainage",
+    "explanation": {
+      "key": "events.v2.shared_substrate_drainage_compaction.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.shared_substrate_drainage_compaction.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.shared_substrate_drainage_compaction.coach.actions.0"
+      },
+      {
+        "key": "events.v2.shared_substrate_drainage_compaction.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.shared_substrate_drainage_compaction.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.runoff_slow_surface_seals"
+      },
+      "weight": 1,
+      "id": "runoff_slow_surface_seals",
+      "spriteOverlay": "shared_substrate_drainage_compaction_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "drainage_check": {
+        "label": {
+          "key": "diagnostics.drainage_check.compacted_slow_runoff"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "substrate_compaction_poor_drainage"
+        ]
+      }
+    },
+    "available": [
+      "drainage_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "improve_drainage_surface",
+      "label": {
+        "key": "options.improve_drainage_surface"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_substrate_drainage_compaction.options.improve_drainage_surface.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ]
+    },
+    {
+      "id": "plan_repot_next_window",
+      "label": {
+        "key": "options.plan_repot_next_window"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_substrate_drainage_compaction.options.plan_repot_next_window.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "keep_watering_same_volume",
+      "label": {
+        "key": "options.keep_watering_same_volume"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_substrate_drainage_compaction.options.keep_watering_same_volume.detail"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.water",
+        "op": ">=",
+        "value": 70
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 14
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor",
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 6
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower",
+      "flowering"
+    ]
+  },
+  "pressure": {
+    "weight": 0.99,
+    "polarity": "negative",
+    "primaryPressure": "substrate_compaction_drainage"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "shared_substrate_drainage_compaction_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "shared_substrate_drainage_compaction_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "shared_substrate_drainage_compaction_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "substrate_compaction_drainage": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "substrate_compaction_drainage": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.shared_substrate_drainage_compaction.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "improve_drainage_surface",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.shared_substrate_drainage_compaction.cover",
+      "src": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+      "fallback": "assets/events/v2/final/shared_substrate_drainage_compaction/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "shared_substrate_drainage_compaction_overlay_warn": "assets/events/event-stress-recovery.png",
+      "shared_substrate_drainage_compaction_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "shared_substrate_drainage_compaction_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_runoff_slow_surface_seals",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.shared_substrate_drainage_compaction.title",
+      "events.v2.shared_substrate_drainage_compaction.symptom",
+      "events.v2.shared_substrate_drainage_compaction.description",
+      "events.v2.shared_substrate_drainage_compaction.cause",
+      "events.v2.shared_substrate_drainage_compaction.coach.summary",
+      "events.v2.shared_substrate_drainage_compaction.coach.why",
+      "events.v2.shared_substrate_drainage_compaction.coach.actions.0",
+      "events.v2.shared_substrate_drainage_compaction.coach.actions.1",
+      "events.v2.shared_substrate_drainage_compaction.aftermath.lesson",
+      "options.improve_drainage_surface",
+      "options.plan_repot_next_window",
+      "options.keep_watering_same_volume",
+      "alt.events.v2.shared_substrate_drainage_compaction.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_water"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "water",
+      "symptom_runoff_slow_surface_seals"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_rootzone_oxygen_basics"
+  },
+  "chainHooks": {
+    "startsChain": null,
+    "advancesChainsOnOutcome": {
+      "partial_mitigation": [
+        "chain.watering_rootzone_chain@step_rootzone_oxygen_drop"
+      ],
+      "poor_outcome": [
+        "chain.watering_rootzone_chain@step_rootzone_oxygen_drop"
+      ],
+      "no_action": [
+        "chain.watering_rootzone_chain@step_rootzone_oxygen_drop"
+      ]
+    }
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-71 Batch-1 data-only expansion event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-18",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+    "fallback": "assets/events/v2/final/shared_substrate_drainage_compaction/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_substrate_drainage_compaction/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "ready",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

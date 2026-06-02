@@ -1,0 +1,139 @@
+{
+  "ok": true,
+  "mode": "runtime_shadow_dev_enabled",
+  "enabled": true,
+  "reason": "runtime_shadow_dev_test_enabled",
+  "summary": {
+    "fixtures": 3,
+    "shadowEvaluations": 66,
+    "candidateItems": 15,
+    "validImages": 15,
+    "brokenPaths": 0,
+    "selectedCandidateNull": true,
+    "actionsEmpty": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0
+  },
+  "fixtures": [
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "fixtureLabel": "Indoor Veg VPD Mismatch"
+    },
+    {
+      "fixtureId": "fixture_outdoor_heat_dry_wind",
+      "fixtureLabel": "Outdoor Heat Dry Wind"
+    },
+    {
+      "fixtureId": "fixture_stable_healthy_baseline",
+      "fixtureLabel": "Stable Healthy Baseline"
+    }
+  ],
+  "shadowResults": [
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "fixtureLabel": "Indoor Veg VPD Mismatch",
+      "eventsEvaluated": 22,
+      "snapshotWarnings": [],
+      "missingFields": [],
+      "canMutateState": false,
+      "canMutateSave": false,
+      "canActivateGameplay": false,
+      "topCandidateIds": [
+        "indoor_dry_rootball",
+        "indoor_vpd_mismatch_veg",
+        "outdoor_heatwave_dry_wind",
+        "indoor_rootzone_airless_medium",
+        "shared_rootbound_warning"
+      ]
+    },
+    {
+      "fixtureId": "fixture_outdoor_heat_dry_wind",
+      "fixtureLabel": "Outdoor Heat Dry Wind",
+      "eventsEvaluated": 22,
+      "snapshotWarnings": [],
+      "missingFields": [],
+      "canMutateState": false,
+      "canMutateSave": false,
+      "canActivateGameplay": false,
+      "topCandidateIds": [
+        "outdoor_heatwave_dry_wind",
+        "indoor_dry_rootball",
+        "outdoor_pot_dries_by_afternoon",
+        "outdoor_heavy_rain_waterlogging_risk",
+        "outdoor_wind_exposure_stem_stress"
+      ]
+    },
+    {
+      "fixtureId": "fixture_stable_healthy_baseline",
+      "fixtureLabel": "Stable Healthy Baseline",
+      "eventsEvaluated": 22,
+      "snapshotWarnings": [],
+      "missingFields": [],
+      "canMutateState": false,
+      "canMutateSave": false,
+      "canActivateGameplay": false,
+      "topCandidateIds": [
+        "indoor_dry_rootball",
+        "indoor_rootzone_airless_medium",
+        "outdoor_pot_dries_by_afternoon",
+        "shared_panic_watering_misread",
+        "shared_rootbound_warning"
+      ]
+    }
+  ],
+  "candidateItemsPreview": [
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "rank": 1,
+      "eventId": "indoor_dry_rootball",
+      "score": 155,
+      "imageSrc": "assets/events/v2/final/indoor_dry_rootball/hero.webp"
+    },
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "rank": 2,
+      "eventId": "indoor_vpd_mismatch_veg",
+      "score": 131.56,
+      "imageSrc": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp"
+    },
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "rank": 3,
+      "eventId": "outdoor_heatwave_dry_wind",
+      "score": 127.49,
+      "imageSrc": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp"
+    },
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "rank": 4,
+      "eventId": "indoor_rootzone_airless_medium",
+      "score": 127,
+      "imageSrc": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp"
+    },
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "rank": 5,
+      "eventId": "shared_rootbound_warning",
+      "score": 127,
+      "imageSrc": "assets/events/v2/final/shared_rootbound_warning/hero.webp"
+    }
+  ],
+  "contract": {
+    "selectedCandidate": null,
+    "actions": [],
+    "canActivateGameplay": false,
+    "canMutateState": false,
+    "canMutateSave": false,
+    "runtimeWriteEnabled": false,
+    "productionEnabled": false,
+    "diagnostics": {
+      "stateMutations": 0,
+      "saveWrites": 0,
+      "localStorageWrites": 0,
+      "indexedDbWrites": 0,
+      "uiActions": 0,
+      "gameplayActivations": 0
+    }
+  }
+}

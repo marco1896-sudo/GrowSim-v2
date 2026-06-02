@@ -1,0 +1,350 @@
+{
+  "ok": true,
+  "modelState": {
+    "disabled": {
+      "ok": true,
+      "mode": "event_v2_dev_test_no_write_mode",
+      "title": "Event V2 Dev/Test Mode",
+      "subtitle": "Event-Vorschau · Nur Vorschau · keine Entscheidung",
+      "status": "dev_test_soft_activation_ready_with_watch",
+      "enabled": false,
+      "reason": "dev_preview_disabled",
+      "productionEnabled": false,
+      "runtimeWriteEnabled": false,
+      "canActivateGameplay": false,
+      "canResolve": false,
+      "canMutateState": false,
+      "canMutateSave": false,
+      "selectedCandidate": null,
+      "persistedSelectedCandidate": null,
+      "actions": [],
+      "safetyLabels": [
+        "Testmodus",
+        "Event-Vorschau",
+        "Testauswertung im Hintergrund",
+        "Vorschlagskarte",
+        "Nur Vorschau · nichts wird gespeichert",
+        "Keine Entscheidung möglich",
+        "Kein Einfluss auf deinen Spielstand"
+      ],
+      "softPreview": {
+        "listAvailable": false,
+        "detailAvailable": false,
+        "multiCandidateSupported": false
+      },
+      "fixtures": [],
+      "candidateItems": [],
+      "diagnostics": {
+        "stateMutations": 0,
+        "saveWrites": 0,
+        "localStorageWrites": 0,
+        "indexedDbWrites": 0,
+        "uiActions": 0,
+        "gameplayActivations": 0
+      },
+      "watchpoints": [
+        "scoring_watch_vpd_vs_dry_rootball"
+      ]
+    },
+    "enabled": {
+      "mode": "event_v2_dev_test_no_write_mode",
+      "status": "dev_test_soft_activation_ready_with_watch",
+      "fixtures": 3,
+      "candidateItems": 15,
+      "runtimeWriteEnabled": false,
+      "productionEnabled": false,
+      "canResolve": false
+    }
+  },
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+      "finalStatusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "cardsInitial": 15,
+      "cardsFinal": 15,
+      "fixturesInitial": 3,
+      "fixturesFinal": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionsFound": false,
+      "opened": [
+        {
+          "itemId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_stable_healthy_baseline:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        }
+      ]
+    },
+    {
+      "viewport": 390,
+      "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+      "finalStatusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "cardsInitial": 15,
+      "cardsFinal": 15,
+      "fixturesInitial": 3,
+      "fixturesFinal": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionsFound": false,
+      "opened": [
+        {
+          "itemId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_stable_healthy_baseline:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        }
+      ]
+    },
+    {
+      "viewport": 430,
+      "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+      "finalStatusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "cardsInitial": 15,
+      "cardsFinal": 15,
+      "fixturesInitial": 3,
+      "fixturesFinal": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionsFound": false,
+      "opened": [
+        {
+          "itemId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_stable_healthy_baseline:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        }
+      ]
+    },
+    {
+      "viewport": 768,
+      "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+      "finalStatusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "cardsInitial": 15,
+      "cardsFinal": 15,
+      "fixturesInitial": 3,
+      "fixturesFinal": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionsFound": false,
+      "opened": [
+        {
+          "itemId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        },
+        {
+          "itemId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+          "statusText": "Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand",
+          "flowState": "view=detail;active=fixture_stable_healthy_baseline:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+          "detailOpen": true,
+          "detailImageLoaded": true,
+          "runtimeShadowVisible": true,
+          "noResolveVisible": true,
+          "safetyLabelsVisible": true,
+          "runtimeWriteFalseVisible": true,
+          "productionFalseVisible": false
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "viewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "defaultDisabled": true,
+    "devTestEnabled": true,
+    "modeReachable": true,
+    "eventCenterContextVisible": true,
+    "candidateListVisible": true,
+    "fixturesVisible": true,
+    "candidateItemsVisible": 15,
+    "candidateDetailsOpened": 4,
+    "backWorks": true,
+    "closeWorks": true,
+    "anotherCandidateOpens": true,
+    "runtimeShadowVisible": true,
+    "noResolveVisible": true,
+    "safetyLabelsVisible": true,
+    "actionsEmpty": true,
+    "canResolveFalse": true,
+    "selectedCandidateNull": true,
+    "persistedSelectedCandidateNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": [],
+    "eventV1Replaced": false
+  }
+}

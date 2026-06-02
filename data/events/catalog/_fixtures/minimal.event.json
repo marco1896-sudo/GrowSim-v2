@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 3,
+  "id": "fixture_minimal_event",
+  "type": "event",
+  "category": "water",
+  "tags": ["fixture", "indoor_only"],
+  "title": { "key": "fixtures.event.title" },
+  "shortSymptom": { "key": "fixtures.event.symptom" },
+  "options": [
+    {
+      "id": "observe",
+      "label": { "key": "fixtures.option.observe" },
+      "intent": "observe",
+      "contextFit": ["any"],
+      "effects": {}
+    }
+  ],
+  "triggers": {
+    "all": [{ "field": "plant.stageIndex", "op": ">=", "value": 2 }],
+    "stage": { "min": 2, "max": 3 },
+    "setup": { "modeIn": ["indoor"] }
+  },
+  "severity": { "level": "info" },
+  "i18n": { "requiredKeys": ["fixtures.event.title"], "supportedLocales": ["en"] }
+}

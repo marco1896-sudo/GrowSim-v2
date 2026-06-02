@@ -1,0 +1,93 @@
+﻿{
+    "phase":  159,
+    "report":  "dev_test_soft_activation_gate",
+    "overallStatus":  "dev_test_soft_activation_gate_pass_with_watch",
+    "readinessStatus":  "dev_test_ready",
+    "gateAreas":  {
+                      "assetCatalog":  {
+                                           "status":  "gate_pass",
+                                           "finalWebPCovers":  true,
+                                           "assetsCoverFinal":  true,
+                                           "assetRefsActiveValid":  true,
+                                           "fullCatalogValidation":  "green",
+                                           "adapterMatrix":  "green"
+                                       },
+                      "devTestSoftPreviewMode":  {
+                                                     "status":  "gate_pass_with_watch",
+                                                     "softPreviewModeReachable":  true,
+                                                     "candidateListVisible":  true,
+                                                     "fixtures":  3,
+                                                     "candidateItems":  15,
+                                                     "detailFlow":  "ok",
+                                                     "multiCandidateFlow":  "green",
+                                                     "runtimeShadowVisible":  true,
+                                                     "safetyLabelsVisible":  true
+                                                 },
+                      "detailFlow":  {
+                                         "status":  "gate_pass_with_watch",
+                                         "listToDetail":  true,
+                                         "backWorks":  true,
+                                         "closeWorks":  true,
+                                         "anotherCandidateOpens":  true,
+                                         "detailImagesValid":  true,
+                                         "noResolveVisible":  true,
+                                         "actionsEmpty":  true,
+                                         "selectedCandidateNull":  true,
+                                         "persistedSelectedCandidateNull":  true
+                                     },
+                      "runtimeShadow":  {
+                                            "status":  "gate_pass_with_watch",
+                                            "devRuntimeShadowToggle":  true,
+                                            "fixtures":  3,
+                                            "shadowEvaluations":  66,
+                                            "candidateItems":  15,
+                                            "runtimeWriteEnabled":  false,
+                                            "productionEnabled":  false,
+                                            "saveStorageWrites":  0
+                                        },
+                      "safety":  {
+                                     "status":  "gate_pass",
+                                     "runtimeWrite":  false,
+                                     "saveWrites":  0,
+                                     "eventTriggering":  false,
+                                     "eventV1Replaced":  false,
+                                     "rewardsMissionsNotificationsMutations":  0,
+                                     "storageWrites":  0,
+                                     "persistentFlags":  false,
+                                     "rollbackDocumented":  true
+                                 },
+                      "productReadiness":  {
+                                               "status":  "gate_pass_with_watch",
+                                               "devTestReady":  true,
+                                               "productionReady":  false,
+                                               "gapsDocumented":  true,
+                                               "vpdWatchBlocking":  false,
+                                               "copyLabelPolishP1":  true
+                                           }
+                  },
+    "priorityGaps":  {
+                         "P0":  [
+                                    "No RuntimeWrite remains mandatory",
+                                    "No real Resolve flow yet",
+                                    "No real Event V2 trigger yet",
+                                    "Rollback guard must stay strict"
+                                ],
+                         "P1":  [
+                                    "Copy/labels less technical",
+                                    "Score/Reason explanation for testers",
+                                    "Observe VPD vs Dry Rootball watch",
+                                    "Watch-assets polish pass"
+                                ],
+                         "P2":  [
+                                    "Asset/Buddy consistency polish",
+                                    "Mobile detail polish",
+                                    "Learning text polish"
+                                ]
+                     },
+    "watchpoints":  [
+                        "scoring_watch_vpd_vs_dry_rootball"
+                    ],
+    "rollbackAssessment":  "safe_guarded_rollback_available_without_migration",
+    "noWriteAssessment":  "green_no_write_contract_maintained",
+    "phase160Recommendation":  "Event V2 Dev/Test Soft Activation Candidate - Event Center No-Write Mode"
+}

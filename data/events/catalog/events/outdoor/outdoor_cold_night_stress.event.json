@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 3,
+  "id": "outdoor_cold_night_stress",
+  "type": "event",
+  "category": "environment",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_outdoor"
+  ],
+  "title": {
+    "key": "events.v2.outdoor_cold_night_stress.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.outdoor_cold_night_stress.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.outdoor_cold_night_stress.description"
+  },
+  "cause": {
+    "kind": "night_temp_drop",
+    "explanation": {
+      "key": "events.v2.outdoor_cold_night_stress.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.outdoor_cold_night_stress.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.outdoor_cold_night_stress.coach.actions.0"
+      },
+      {
+        "key": "events.v2.outdoor_cold_night_stress.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.outdoor_cold_night_stress.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.leaf_droop_cold_morning"
+      },
+      "weight": 1,
+      "id": "leaf_droop_cold_morning",
+      "spriteOverlay": "outdoor_cold_night_stress_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "overnight_temp_check": {
+        "label": {
+          "key": "diagnostics.overnight_temp_check.drop"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "night_temp_drop"
+        ]
+      }
+    },
+    "available": [
+      "overnight_temp_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "insulate_root_zone_night",
+      "label": {
+        "key": "options.insulate_root_zone_night"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "reduce_evening_watering",
+      "label": {
+        "key": "options.reduce_evening_watering"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "late_night_heavy_water",
+      "label": {
+        "key": "options.late_night_heavy_water"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "env.temperatureNightC",
+        "op": "<=",
+        "value": 12
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 16
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 8
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower"
+    ]
+  },
+  "pressure": {
+    "weight": 0.9,
+    "polarity": "negative",
+    "primaryPressure": "cold_night_drop"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "outdoor_cold_night_stress_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "outdoor_cold_night_stress_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "outdoor_cold_night_stress_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "cold_night_drop": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "cold_night_drop": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.outdoor_cold_night_stress.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "insulate_root_zone_night",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.outdoor_cold_night_stress.cover",
+      "src": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+      "fallback": "assets/events/v2/final/outdoor_cold_night_stress/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "outdoor_cold_night_stress_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "outdoor_cold_night_stress_overlay_critical": "assets/events/event-stress-recovery.png",
+      "outdoor_cold_night_stress_overlay_warn": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "climate_cold_night",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.outdoor_cold_night_stress.title",
+      "events.v2.outdoor_cold_night_stress.symptom",
+      "events.v2.outdoor_cold_night_stress.description",
+      "events.v2.outdoor_cold_night_stress.cause",
+      "events.v2.outdoor_cold_night_stress.coach.summary",
+      "events.v2.outdoor_cold_night_stress.coach.why",
+      "events.v2.outdoor_cold_night_stress.coach.actions.0",
+      "events.v2.outdoor_cold_night_stress.coach.actions.1",
+      "events.v2.outdoor_cold_night_stress.aftermath.lesson",
+      "options.insulate_root_zone_night",
+      "options.reduce_evening_watering",
+      "options.late_night_heavy_water",
+      "alt.events.v2.outdoor_cold_night_stress.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_environment"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "environment",
+      "climate_cold_night"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_climate_vpd_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-17 first real mini-catalog data-only event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-13",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+    "fallback": "assets/events/v2/final/outdoor_cold_night_stress/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_cold_night_stress/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "usable_with_watch",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "ok": true,
+  "phase": "128",
+  "eventsChecked": 22,
+  "patched": 22,
+  "alreadyPresentSameContent": 0,
+  "conflicts": 0,
+  "skipped": 0,
+  "items": [
+    {
+      "eventId": "indoor_dry_rootball",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_dry_rootball.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_fan_failure_airflow_drop",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_fan_failure_airflow_drop.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_heat_stress_air",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_heat_stress_air.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_light_burn_canopy_top",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_light_burn_canopy_top.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_light_nutrient_tox_early",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_light_nutrient_tox_early.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_overtraining_stall_mild",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_overtraining_stall_mild.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_overwatering_early",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_overwatering_early.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_rootzone_airless_medium",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_rootzone_airless_medium.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_soil_ph_out_of_range",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_soil_ph_out_of_range.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "indoor_vpd_mismatch_veg",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_vpd_mismatch_veg.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "outdoor_cold_night_stress",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_cold_night_stress.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "outdoor_early_pest_pressure_leaf_underside",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_early_pest_pressure_leaf_underside.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "outdoor_heatwave_dry_wind",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_heatwave_dry_wind.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "outdoor_heavy_rain_waterlogging_risk",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_heavy_rain_waterlogging_risk.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "outdoor_pot_dries_by_afternoon",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_pot_dries_by_afternoon.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "outdoor_wind_exposure_stem_stress",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_wind_exposure_stem_stress.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "shared_early_pest_signs_mild",
+      "targetEventFile": "data/events/catalog/events/shared/shared_early_pest_signs_mild.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "shared_light_distance_error",
+      "targetEventFile": "data/events/catalog/events/shared/shared_light_distance_error.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "shared_observation_recovery_after_stress",
+      "targetEventFile": "data/events/catalog/events/shared/shared_observation_recovery_after_stress.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "shared_panic_watering_misread",
+      "targetEventFile": "data/events/catalog/events/shared/shared_panic_watering_misread.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "shared_rootbound_warning",
+      "targetEventFile": "data/events/catalog/events/shared/shared_rootbound_warning.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    },
+    {
+      "eventId": "shared_substrate_drainage_compaction",
+      "targetEventFile": "data/events/catalog/events/shared/shared_substrate_drainage_compaction.event.json",
+      "patchStatus": "patched",
+      "heroExists": true,
+      "fallbackExists": true,
+      "sourceCandidateExists": true,
+      "assetsCoverUnchanged": true
+    }
+  ],
+  "errors": []
+}

@@ -13,7 +13,8 @@
     "check:i18n": "node scripts/i18n-audit.js"
   },
   "devDependencies": {
-    "playwright": "^1.58.2"
+    "playwright": "^1.58.2",
+    "sharp": "^0.34.5"
   },
   "dependencies": {
     "express": "^5.2.1"

@@ -1,0 +1,213 @@
+{
+  "ok": true,
+  "phase": "141",
+  "status": "runtime_shadow_ready_with_snapshot_scoring",
+  "summary": {
+    "fixturesChecked": 3,
+    "eventsPerFixture": 22,
+    "totalEvaluations": 66,
+    "totalBrokenPaths": 0,
+    "canMutateStateFalse": true,
+    "canMutateSaveFalse": true,
+    "canActivateGameplayFalse": true,
+    "stateMutations": 0,
+    "saveWrites": 0,
+    "uiActions": 0,
+    "gameplayActivations": 0,
+    "inputMutationDetected": false
+  },
+  "fixtures": [
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "fixtureLabel": "Indoor Veg VPD Mismatch",
+      "snapshotSource": "runtime_snapshot_readonly",
+      "snapshotWarnings": [],
+      "missingFields": [],
+      "eventsEvaluated": 22,
+      "validImages": 22,
+      "brokenPaths": 0,
+      "topCandidates": [
+        {
+          "eventId": "indoor_dry_rootball",
+          "score": 155,
+          "reason": "snapshot_shadow_score:environment_indoor_match|high_temperature_heat_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias",
+          "environment": "indoor",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/indoor_dry_rootball/hero.webp"
+        },
+        {
+          "eventId": "indoor_vpd_mismatch_veg",
+          "score": 131.56,
+          "reason": "snapshot_shadow_score:environment_indoor_match|high_vpd_climate_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias",
+          "environment": "indoor",
+          "category": "environment",
+          "imageSrc": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp"
+        },
+        {
+          "eventId": "outdoor_heatwave_dry_wind",
+          "score": 127.49,
+          "reason": "snapshot_shadow_score:high_temperature_heat_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias",
+          "environment": "outdoor",
+          "category": "environment",
+          "imageSrc": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp"
+        },
+        {
+          "eventId": "indoor_rootzone_airless_medium",
+          "score": 127,
+          "reason": "snapshot_shadow_score:environment_indoor_match|plant_stress_nonpositive_bias",
+          "environment": "indoor",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp"
+        },
+        {
+          "eventId": "shared_rootbound_warning",
+          "score": 127,
+          "reason": "snapshot_shadow_score:environment_indoor_match|plant_stress_nonpositive_bias",
+          "environment": "shared",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/shared_rootbound_warning/hero.webp"
+        }
+      ],
+      "expectedEventFamilyHit": true,
+      "noWriteContract": {
+        "canMutateState": false,
+        "canMutateSave": false,
+        "canActivateGameplay": false,
+        "stateMutations": 0,
+        "saveWrites": 0,
+        "uiActions": 0,
+        "gameplayActivations": 0
+      },
+      "inputMutationDetected": false,
+      "readinessStatus": "runtime_shadow_ready_with_snapshot_scoring"
+    },
+    {
+      "fixtureId": "fixture_outdoor_heat_dry_wind",
+      "fixtureLabel": "Outdoor Heat Dry Wind",
+      "snapshotSource": "runtime_snapshot_readonly",
+      "snapshotWarnings": [],
+      "missingFields": [],
+      "eventsEvaluated": 22,
+      "validImages": 22,
+      "brokenPaths": 0,
+      "topCandidates": [
+        {
+          "eventId": "outdoor_heatwave_dry_wind",
+          "score": 149.49,
+          "reason": "snapshot_shadow_score:environment_outdoor_match|high_temperature_heat_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias|low_water_bias",
+          "environment": "outdoor",
+          "category": "environment",
+          "imageSrc": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp"
+        },
+        {
+          "eventId": "indoor_dry_rootball",
+          "score": 149,
+          "reason": "snapshot_shadow_score:high_temperature_heat_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias|low_water_bias",
+          "environment": "indoor",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/indoor_dry_rootball/hero.webp"
+        },
+        {
+          "eventId": "outdoor_pot_dries_by_afternoon",
+          "score": 135,
+          "reason": "snapshot_shadow_score:environment_outdoor_match|plant_stress_nonpositive_bias|low_water_bias",
+          "environment": "outdoor",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp"
+        },
+        {
+          "eventId": "outdoor_heavy_rain_waterlogging_risk",
+          "score": 124.5,
+          "reason": "snapshot_shadow_score:environment_outdoor_match|plant_stress_nonpositive_bias|low_water_bias",
+          "environment": "outdoor",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp"
+        },
+        {
+          "eventId": "outdoor_wind_exposure_stem_stress",
+          "score": 124,
+          "reason": "snapshot_shadow_score:environment_outdoor_match|plant_stress_nonpositive_bias",
+          "environment": "outdoor",
+          "category": "environment",
+          "imageSrc": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp"
+        }
+      ],
+      "expectedEventFamilyHit": true,
+      "noWriteContract": {
+        "canMutateState": false,
+        "canMutateSave": false,
+        "canActivateGameplay": false,
+        "stateMutations": 0,
+        "saveWrites": 0,
+        "uiActions": 0,
+        "gameplayActivations": 0
+      },
+      "inputMutationDetected": false,
+      "readinessStatus": "runtime_shadow_ready_with_snapshot_scoring"
+    },
+    {
+      "fixtureId": "fixture_stable_healthy_baseline",
+      "fixtureLabel": "Stable Healthy Baseline",
+      "snapshotSource": "runtime_snapshot_readonly",
+      "snapshotWarnings": [],
+      "missingFields": [],
+      "eventsEvaluated": 22,
+      "validImages": 22,
+      "brokenPaths": 0,
+      "topCandidates": [
+        {
+          "eventId": "indoor_dry_rootball",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost",
+          "environment": "indoor",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/indoor_dry_rootball/hero.webp"
+        },
+        {
+          "eventId": "indoor_rootzone_airless_medium",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost",
+          "environment": "indoor",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp"
+        },
+        {
+          "eventId": "outdoor_pot_dries_by_afternoon",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost",
+          "environment": "outdoor",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp"
+        },
+        {
+          "eventId": "shared_panic_watering_misread",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost",
+          "environment": "shared",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/shared_panic_watering_misread/hero.webp"
+        },
+        {
+          "eventId": "shared_rootbound_warning",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost",
+          "environment": "shared",
+          "category": "water",
+          "imageSrc": "assets/events/v2/final/shared_rootbound_warning/hero.webp"
+        }
+      ],
+      "expectedEventFamilyHit": true,
+      "noWriteContract": {
+        "canMutateState": false,
+        "canMutateSave": false,
+        "canActivateGameplay": false,
+        "stateMutations": 0,
+        "saveWrites": 0,
+        "uiActions": 0,
+        "gameplayActivations": 0
+      },
+      "inputMutationDetected": false,
+      "readinessStatus": "runtime_shadow_ready_with_snapshot_scoring"
+    }
+  ]
+}

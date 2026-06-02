@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "changes": [
+    {
+      "scenarioId": "fullCatalogEmptyDevelopment",
+      "fromDecision": "blocked",
+      "toDecision": "warning",
+      "fromTrafficLight": "red",
+      "toTrafficLight": "yellow",
+      "reason": "Expected improvement after fixture quality tuning",
+      "approved": true
+    }
+  ]
+}

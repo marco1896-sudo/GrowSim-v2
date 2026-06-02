@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 3,
+  "id": "shared_rootbound_warning",
+  "type": "event",
+  "category": "water",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_indoor"
+  ],
+  "title": {
+    "key": "events.v2.shared_rootbound_warning.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.shared_rootbound_warning.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.shared_rootbound_warning.description"
+  },
+  "cause": {
+    "kind": "pot_size_limit_reached",
+    "explanation": {
+      "key": "events.v2.shared_rootbound_warning.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.shared_rootbound_warning.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.shared_rootbound_warning.coach.actions.0"
+      },
+      {
+        "key": "events.v2.shared_rootbound_warning.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.shared_rootbound_warning.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.growth_stall_mild"
+      },
+      "weight": 1,
+      "id": "growth_stall_mild",
+      "spriteOverlay": "shared_rootbound_warning_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "pot_edge_root_check": {
+        "label": {
+          "key": "diagnostics.pot_edge_root_check.dense_ring"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "pot_size_limit_reached"
+        ]
+      }
+    },
+    "available": [
+      "pot_edge_root_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "plan_repot_next_window",
+      "label": {
+        "key": "options.plan_repot_next_window"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_rootbound_warning.options.plan_repot_next_window.detail"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "optimize_watering_until_repot",
+      "label": {
+        "key": "options.optimize_watering_until_repot"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_rootbound_warning.options.optimize_watering_until_repot.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "force_heavy_feed_now",
+      "label": {
+        "key": "options.force_heavy_feed_now"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_rootbound_warning.options.force_heavy_feed_now.detail"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.rootMassRatio",
+        "op": ">=",
+        "value": 0.82
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 15
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor",
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 4,
+      "max": 10
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "vegetative",
+      "preflower",
+      "flowering"
+    ]
+  },
+  "pressure": {
+    "weight": 0.94,
+    "polarity": "negative",
+    "primaryPressure": "rootbound_pressure"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "shared_rootbound_warning_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "shared_rootbound_warning_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "shared_rootbound_warning_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "rootbound_pressure": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "rootbound_pressure": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.shared_rootbound_warning.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "plan_repot_next_window",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.shared_rootbound_warning.cover",
+      "src": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+      "fallback": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "shared_rootbound_warning_overlay_warn": "assets/events/event-stress-recovery.png",
+      "shared_rootbound_warning_overlay_critical": "assets/events/event-stress-recovery.png",
+      "shared_rootbound_warning_overlay_escalate": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "root_density_pressure",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.shared_rootbound_warning.title",
+      "events.v2.shared_rootbound_warning.symptom",
+      "events.v2.shared_rootbound_warning.description",
+      "events.v2.shared_rootbound_warning.cause",
+      "events.v2.shared_rootbound_warning.coach.summary",
+      "events.v2.shared_rootbound_warning.coach.why",
+      "events.v2.shared_rootbound_warning.coach.actions.0",
+      "events.v2.shared_rootbound_warning.coach.actions.1",
+      "events.v2.shared_rootbound_warning.aftermath.lesson",
+      "options.plan_repot_next_window",
+      "options.optimize_watering_until_repot",
+      "options.force_heavy_feed_now",
+      "alt.events.v2.shared_rootbound_warning.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_water"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "water",
+      "root_density_pressure"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_watering_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-17 first real mini-catalog data-only event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-13",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+    "fallback": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/review/shared_rootbound_warning/candidate_full_scene_02.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "ready",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

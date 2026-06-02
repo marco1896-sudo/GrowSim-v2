@@ -1,0 +1,68 @@
+{
+  "ok": true,
+  "phase": "137",
+  "browserSmokeExecuted": true,
+  "mode": "shadow_feed",
+  "pageUrl": "http://127.0.0.1:65199/dev/event-v2-preview-gallery.html",
+  "testedViewports": [
+    360,
+    390,
+    430,
+    768
+  ],
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 22,
+      "imagesTotal": 22,
+      "imagesLoaded": 22,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "gameplayFalseCount": 22,
+      "saveFalseCount": 22,
+      "feedLinesPresent": 22
+    },
+    {
+      "viewport": 390,
+      "cards": 22,
+      "imagesTotal": 22,
+      "imagesLoaded": 22,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "gameplayFalseCount": 22,
+      "saveFalseCount": 22,
+      "feedLinesPresent": 22
+    },
+    {
+      "viewport": 430,
+      "cards": 22,
+      "imagesTotal": 22,
+      "imagesLoaded": 22,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "gameplayFalseCount": 22,
+      "saveFalseCount": 22,
+      "feedLinesPresent": 22
+    },
+    {
+      "viewport": 768,
+      "cards": 22,
+      "imagesTotal": 22,
+      "imagesLoaded": 22,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "gameplayFalseCount": 22,
+      "saveFalseCount": 22,
+      "feedLinesPresent": 22
+    }
+  ],
+  "summary": {
+    "shadowFeedItemsChecked": 22,
+    "imagesLoaded": 22,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": [],
+    "canActivateGameplayFalse": 22,
+    "canMutateSaveFalse": 22
+  }
+}

@@ -1,0 +1,262 @@
+{
+  "ok": true,
+  "phase": "137",
+  "mode": "shadow_feed_visual_qa",
+  "eventsChecked": 22,
+  "counts": {
+    "shadow_visual_accept": 8,
+    "shadow_visual_accept_with_watch": 14,
+    "shadow_visual_ui_issue": 0,
+    "shadow_visual_blocked": 0
+  },
+  "globalFindings": {
+    "mobileReadable": true,
+    "noOverflow": true,
+    "noBrokenImages": true,
+    "shadowModeClearlyNonGameplay": true
+  },
+  "items": [
+    {
+      "eventId": "indoor_dry_rootball",
+      "feedStatus": "shadow_feed_ready",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/indoor_dry_rootball/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "indoor_fan_failure_airflow_drop",
+      "feedStatus": "shadow_feed_polish_later",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Asset spaeter polishen, Shadow-Preview jetzt nutzbar."
+    },
+    {
+      "eventId": "indoor_heat_stress_air",
+      "feedStatus": "shadow_feed_polish_later",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Asset spaeter polishen, Shadow-Preview jetzt nutzbar."
+    },
+    {
+      "eventId": "indoor_light_burn_canopy_top",
+      "feedStatus": "shadow_feed_polish_later",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Asset spaeter polishen, Shadow-Preview jetzt nutzbar."
+    },
+    {
+      "eventId": "indoor_light_nutrient_tox_early",
+      "feedStatus": "shadow_feed_polish_later",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_light_nutrient_tox_early/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Asset spaeter polishen, Shadow-Preview jetzt nutzbar."
+    },
+    {
+      "eventId": "indoor_overtraining_stall_mild",
+      "feedStatus": "shadow_feed_watch_asset",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/indoor_overtraining_stall_mild/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "indoor_overwatering_early",
+      "feedStatus": "shadow_feed_watch_asset",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "indoor_rootzone_airless_medium",
+      "feedStatus": "shadow_feed_ready",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "indoor_soil_ph_out_of_range",
+      "feedStatus": "shadow_feed_polish_later",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Asset spaeter polishen, Shadow-Preview jetzt nutzbar."
+    },
+    {
+      "eventId": "indoor_vpd_mismatch_veg",
+      "feedStatus": "shadow_feed_polish_later",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Asset spaeter polishen, Shadow-Preview jetzt nutzbar."
+    },
+    {
+      "eventId": "outdoor_cold_night_stress",
+      "feedStatus": "shadow_feed_watch_asset",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "outdoor_early_pest_pressure_leaf_underside",
+      "feedStatus": "shadow_feed_watch_asset",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "outdoor_heatwave_dry_wind",
+      "feedStatus": "shadow_feed_polish_later",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Asset spaeter polishen, Shadow-Preview jetzt nutzbar."
+    },
+    {
+      "eventId": "outdoor_heavy_rain_waterlogging_risk",
+      "feedStatus": "shadow_feed_watch_asset",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "outdoor_pot_dries_by_afternoon",
+      "feedStatus": "shadow_feed_ready",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "outdoor_wind_exposure_stem_stress",
+      "feedStatus": "shadow_feed_ready",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "shared_early_pest_signs_mild",
+      "feedStatus": "shadow_feed_ready",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "shared_light_distance_error",
+      "feedStatus": "shadow_feed_polish_later",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "imageSrc": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Asset spaeter polishen, Shadow-Preview jetzt nutzbar."
+    },
+    {
+      "eventId": "shared_observation_recovery_after_stress",
+      "feedStatus": "shadow_feed_watch_asset",
+      "revisionStatus": "usable_with_watch",
+      "imageSrc": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept_with_watch",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "shared_panic_watering_misread",
+      "feedStatus": "shadow_feed_ready",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "shared_rootbound_warning",
+      "feedStatus": "shadow_feed_ready",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept",
+      "notes": "Shadow-Karte lesbar und stabil."
+    },
+    {
+      "eventId": "shared_substrate_drainage_compaction",
+      "feedStatus": "shadow_feed_ready",
+      "revisionStatus": "ready",
+      "imageSrc": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+      "imageExists": true,
+      "canActivateGameplay": false,
+      "canMutateSave": false,
+      "status": "shadow_visual_accept",
+      "notes": "Shadow-Karte lesbar und stabil."
+    }
+  ]
+}

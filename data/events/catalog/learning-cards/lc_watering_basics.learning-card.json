@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 3,
+  "id": "lc_watering_basics",
+  "title": {
+    "key": "events.v2.learning.lc_watering_basics.title"
+  },
+  "subtitle": {
+    "key": "events.v2.learning.lc_watering_basics.subtitle"
+  },
+  "presentation": {
+    "estimatedReadSeconds": 45,
+    "preferredHeroAsset": "assets/events/event-stress-recovery.png",
+    "layout": "hero_then_bullets"
+  },
+  "content": {
+    "bullets": [
+      {
+        "key": "events.v2.learning.lc_watering_basics.bullets.0"
+      },
+      {
+        "key": "events.v2.learning.lc_watering_basics.bullets.1"
+      },
+      {
+        "key": "events.v2.learning.lc_watering_basics.bullets.2"
+      }
+    ],
+    "moreReadingRef": "library.v2.watering.basics",
+    "realWorldNoteKey": "events.v2.learning.lc_watering_basics.real_world_note"
+  },
+  "knowledgeProfile": {
+    "primaryDimension": "water_basics",
+    "gainOnFirstView": 0.05,
+    "gainOnLaterView": 0.01
+  },
+  "appearsIn": {
+    "linkedEventIds": [
+      "indoor_dry_rootball",
+      "indoor_overwatering_early",
+      "outdoor_heavy_rain_waterlogging_risk",
+      "outdoor_pot_dries_by_afternoon",
+      "shared_panic_watering_misread",
+      "shared_rootbound_warning"
+    ],
+    "minStage": 1,
+    "modes": [
+      "beginner",
+      "guided"
+    ]
+  },
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.learning.lc_watering_basics.title",
+      "events.v2.learning.lc_watering_basics.subtitle",
+      "events.v2.learning.lc_watering_basics.bullets.0",
+      "events.v2.learning.lc_watering_basics.bullets.1",
+      "events.v2.learning.lc_watering_basics.bullets.2",
+      "events.v2.learning.lc_watering_basics.real_world_note"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-16",
+    "owner": "design"
+  },
+  "severity": {
+    "level": "info"
+  }
+}

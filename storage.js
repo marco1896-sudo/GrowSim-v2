@@ -37,6 +37,56 @@ const STORAGE_BOOST_SIM_SPEED = Number.isFinite(Number(growSimStorageConfig.BOOS
   ? Number(growSimStorageConfig.BOOST_SIM_SPEED)
   : (Number.isFinite(Number(globalThis.BOOST_SIM_SPEED)) ? Number(globalThis.BOOST_SIM_SPEED) : 24);
 
+function isStorageDebugLoggingEnabled() {
+  try {
+    const root = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : null);
+    if (root && root.__GROWSIM_DEBUG_LOGS__ === true) {
+      return true;
+    }
+    const explicitEnv = root
+      ? String(root.__GROWSIM_ENV__ || (root.GrowSimBuild && root.GrowSimBuild.environment) || '').trim().toLowerCase()
+      : '';
+    if (explicitEnv === 'local' || explicitEnv === 'dev' || explicitEnv === 'staging') {
+      return true;
+    }
+    return STORAGE_MODE === 'dev';
+  } catch (_error) {
+    return STORAGE_MODE === 'dev';
+  }
+}
+
+function logStorageDebugInfo(...args) {
+  if (isStorageDebugLoggingEnabled()) {
+    console.info(...args);
+  }
+}
+
+function recordEventV1WriteTelemetryHit(type, context = {}) {
+  try {
+    const root = (typeof window !== 'undefined')
+      ? window
+      : ((typeof globalThis !== 'undefined') ? globalThis : null);
+    const api = root && root.GrowSimEventV1WriteTelemetry && typeof root.GrowSimEventV1WriteTelemetry.recordEventV1WriteHit === 'function'
+      ? root.GrowSimEventV1WriteTelemetry
+      : null;
+    if (!api) return;
+    const safeContext = context && typeof context === 'object' ? context : {};
+    const eventId = safeContext.eventId == null ? null : String(safeContext.eventId);
+    const hasEventV2 = safeContext.hasEventV2 === true
+      || (typeof state !== 'undefined' && state && state.eventV2 && typeof state.eventV2 === 'object');
+    api.recordEventV1WriteHit(type, {
+      ...safeContext,
+      eventId,
+      hasEventV2,
+      v2RuntimeEnabled: safeContext.v2RuntimeEnabled === true,
+      legacyFallback: safeContext.legacyFallback !== false,
+      mode: safeContext.mode || 'save-restore'
+    });
+  } catch (_error) {
+    // Telemetry must never impact runtime behavior.
+  }
+}
+
 const normalizeStorageBaseSimulationSpeed = typeof growSimStorageConfig.normalizeBaseSimulationSpeed === 'function'
   ? (value) => growSimStorageConfig.normalizeBaseSimulationSpeed(value)
   : ((typeof globalThis.normalizeBaseSimulationSpeed === 'function')
@@ -374,6 +424,22 @@ function stampStatePersistence(snapshot, savedAtRealMs = Date.now()) {
     : Date.now();
 }
 
+function createPersistableStateSnapshot(sourceState) {
+  const snapshot = {
+    ...sourceState
+  };
+  if (sourceState && sourceState.ui && typeof sourceState.ui === 'object') {
+    snapshot.ui = {
+      ...sourceState.ui,
+      menuOpen: false,
+      menuDialogOpen: false,
+      activeStatPopup: null,
+      statDetailKey: null
+    };
+  }
+  return snapshot;
+}
+
 function getRemoteApiFetch() {
   if (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function') {
     return window.GrowSimApi.apiFetch;
@@ -462,7 +528,7 @@ async function loadRemoteSave(options = {}) {
   }
   remoteSyncRuntime.loadAttempted = true;
 
-  console.info('[remote-load] requested');
+  logStorageDebugInfo('[remote-load] requested');
 
   try {
     const apiFetch = getRemoteApiFetch();
@@ -479,12 +545,12 @@ async function loadRemoteSave(options = {}) {
 
     if (response.status === 401 || response.status === 403) {
       remoteSyncRuntime.authBlocked = true;
-      console.info('[remote-load] fallback (auth required)');
+      logStorageDebugInfo('[remote-load] fallback (auth required)');
       return null;
     }
 
     if (response.status === 404) {
-      console.info('[remote-load] fallback (no remote save)');
+      logStorageDebugInfo('[remote-load] fallback (no remote save)');
       return null;
     }
 
@@ -497,18 +563,18 @@ async function loadRemoteSave(options = {}) {
     try {
       payload = await response.json();
     } catch (_error) {
-      console.info('[remote-load] fallback (invalid payload)');
+      logStorageDebugInfo('[remote-load] fallback (invalid payload)');
       return null;
     }
 
     const remoteState = extractStateFromRemotePayload(payload);
     if (!remoteState) {
-      console.info('[remote-load] fallback (state missing)');
+      logStorageDebugInfo('[remote-load] fallback (state missing)');
       return null;
     }
 
     remoteSyncRuntime.authBlocked = false;
-    console.info('[remote-load] success');
+    logStorageDebugInfo('[remote-load] success');
     return repairStoredTextEncoding(remoteState);
   } catch (error) {
     console.warn('[remote-load] failed', { message: error && error.message ? error.message : String(error) });
@@ -527,7 +593,7 @@ async function saveRemoteState(snapshot) {
   }
 
   if (remoteSyncRuntime.authBlocked) {
-    console.info('[remote-save] fallback (auth required)');
+    logStorageDebugInfo('[remote-save] fallback (auth required)');
     return false;
   }
 
@@ -540,7 +606,7 @@ async function saveRemoteState(snapshot) {
   }
 
   remoteSyncRuntime.lastSaveAttemptAtMs = nowMs;
-  console.info('[remote-save] requested');
+  logStorageDebugInfo('[remote-save] requested');
 
   const request = (async () => {
     try {
@@ -565,7 +631,7 @@ async function saveRemoteState(snapshot) {
 
       if (response.status === 401 || response.status === 403) {
         remoteSyncRuntime.authBlocked = true;
-        console.info('[remote-save] fallback (auth required)');
+        logStorageDebugInfo('[remote-save] fallback (auth required)');
         return false;
       }
 
@@ -574,7 +640,7 @@ async function saveRemoteState(snapshot) {
         return false;
       }
 
-      console.info('[remote-save] success');
+      logStorageDebugInfo('[remote-save] success');
       return true;
     } catch (error) {
       console.warn('[remote-save] failed', { message: error && error.message ? error.message : String(error) });
@@ -760,6 +826,7 @@ function getCanonicalPlant(snapshot) {
 function getCanonicalEvents(snapshot) {
   const s = snapshot || state;
   const sim = getCanonicalSimulation(s);
+  ensureEventV2BrowserPilotState(s);
   if (!s.events || typeof s.events !== 'object') {
     s.events = {};
   }
@@ -849,6 +916,58 @@ function getCanonicalEvents(snapshot) {
   if (s.events.shadowRuntime != null && typeof s.events.shadowRuntime !== 'object') s.events.shadowRuntime = null;
 
   return s.events;
+}
+
+function ensureEventV2BrowserPilotState(snapshot) {
+  const s = snapshot || state;
+  if (!s || typeof s !== 'object') {
+    return null;
+  }
+  const bridge = (typeof window !== 'undefined' && window.GrowSimEventSystemRuntimeBridge)
+    ? window.GrowSimEventSystemRuntimeBridge
+    : null;
+  if (bridge && typeof bridge.ensureEventV2StateInPlace === 'function') {
+    return bridge.ensureEventV2StateInPlace(s, {
+      eventSystemMode: 'v2-active-with-v1-legacy-read',
+      mode: 'active'
+    });
+  }
+  const existing = s.eventV2 && typeof s.eventV2 === 'object' && !Array.isArray(s.eventV2)
+    ? s.eventV2
+    : {};
+  const meta = existing.meta && typeof existing.meta === 'object' ? existing.meta : {};
+  const counters = meta.counters && typeof meta.counters === 'object' ? meta.counters : {};
+  s.eventV2 = {
+    ...existing,
+    schemaVersion: Number(existing.schemaVersion) === 1 ? 1 : 1,
+    mode: ['no-write', 'dry-run', 'active'].includes(existing.mode) ? existing.mode : 'active',
+    openEvents: Array.isArray(existing.openEvents) ? existing.openEvents : [],
+    history: Array.isArray(existing.history) ? existing.history : [],
+    meta: {
+      lastGeneratedAt: Object.prototype.hasOwnProperty.call(meta, 'lastGeneratedAt') ? meta.lastGeneratedAt : null,
+      lastResolvedAt: Object.prototype.hasOwnProperty.call(meta, 'lastResolvedAt') ? meta.lastResolvedAt : null,
+      lastAuditAt: Object.prototype.hasOwnProperty.call(meta, 'lastAuditAt') ? meta.lastAuditAt : null,
+      lastError: Object.prototype.hasOwnProperty.call(meta, 'lastError') ? meta.lastError : null,
+      ...meta,
+      eventSystemMode: 'v2-active-with-v1-legacy-read',
+      browserRuntimePilot: true,
+      counters: {
+        generated: Number.isFinite(Number(counters.generated)) ? Number(counters.generated) : 0,
+        resolved: Number.isFinite(Number(counters.resolved)) ? Number(counters.resolved) : 0,
+        rejected: Number.isFinite(Number(counters.rejected)) ? Number(counters.rejected) : 0,
+        expired: Number.isFinite(Number(counters.expired)) ? Number(counters.expired) : 0,
+        ...counters
+      }
+    }
+  };
+  return {
+    ok: true,
+    initialized: !existing.schemaVersion,
+    mutated: true,
+    eventV2: s.eventV2,
+    warnings: [],
+    errors: []
+  };
 }
 
 function getCanonicalHistory(snapshot) {
@@ -1229,21 +1348,21 @@ async function restoreState(options = {}) {
   globalThis.__gsStorageHasWrittenLocalState = selectedRestore.source === 'local';
 
   if (selectedRestore.source === 'local' && remoteSaved && localSaved) {
-    console.info('[restore] local save selected over remote', {
+    logStorageDebugInfo('[restore] local save selected over remote', {
       local: getStateFreshnessMetrics(localSaved),
       remote: getStateFreshnessMetrics(remoteSaved)
     });
   } else if (selectedRestore.source === 'remote') {
-    console.info('[restore] remote save selected', {
+    logStorageDebugInfo('[restore] remote save selected', {
       local: localSaved ? getStateFreshnessMetrics(localSaved) : null,
       remote: getStateFreshnessMetrics(remoteSaved)
     });
   } else if (selectedRestore.source === 'local') {
-    console.info('[restore] local save selected', {
+    logStorageDebugInfo('[restore] local save selected', {
       local: getStateFreshnessMetrics(localSaved)
     });
   }
-  console.info('[restore] applying snapshot', {
+  logStorageDebugInfo('[restore] applying snapshot', {
     source: selectedRestore.source,
     metrics: getStateFreshnessMetrics(saved),
     runStatus: saved && saved.run && saved.run.status ? String(saved.run.status) : null,
@@ -1282,6 +1401,28 @@ async function restoreState(options = {}) {
       scheduler: {
         ...events.scheduler,
         ...((saved.events && saved.events.scheduler) || {})
+      }
+    };
+  }
+
+  if (saved.eventV2 && typeof saved.eventV2 === 'object' && !Array.isArray(saved.eventV2)) {
+    const existingEventV2 = state.eventV2 && typeof state.eventV2 === 'object' && !Array.isArray(state.eventV2)
+      ? state.eventV2
+      : {};
+    const existingMeta = existingEventV2.meta && typeof existingEventV2.meta === 'object' ? existingEventV2.meta : {};
+    const savedMeta = saved.eventV2.meta && typeof saved.eventV2.meta === 'object' ? saved.eventV2.meta : {};
+    state.eventV2 = {
+      ...existingEventV2,
+      ...saved.eventV2,
+      openEvents: Array.isArray(saved.eventV2.openEvents) ? saved.eventV2.openEvents : (Array.isArray(existingEventV2.openEvents) ? existingEventV2.openEvents : []),
+      history: Array.isArray(saved.eventV2.history) ? saved.eventV2.history : (Array.isArray(existingEventV2.history) ? existingEventV2.history : []),
+      meta: {
+        ...existingMeta,
+        ...savedMeta,
+        counters: {
+          ...((existingMeta && existingMeta.counters && typeof existingMeta.counters === 'object') ? existingMeta.counters : {}),
+          ...((savedMeta && savedMeta.counters && typeof savedMeta.counters === 'object') ? savedMeta.counters : {})
+        }
       }
     };
   }
@@ -1404,6 +1545,11 @@ async function restoreState(options = {}) {
 }
 
 function migrateLegacyStateIntoCanonical(saved, targetState) {
+  recordEventV1WriteTelemetryHit('W4', {
+    source: 'storage.js:migrate_legacy_state_into_canonical',
+    eventId: saved && saved.event && saved.event.activeEventId ? String(saved.event.activeEventId) : null,
+    notes: ['save_normalization']
+  });
   const sim = getCanonicalSimulation(targetState);
   const plant = getCanonicalPlant(targetState);
   const events = getCanonicalEvents(targetState);
@@ -1414,8 +1560,8 @@ function migrateLegacyStateIntoCanonical(saved, targetState) {
     targetState.simulation = {
       ...sim,
       ...saved.sim,
-      startRealTimeMs: Number(saved.sim.startRealTimeMs || saved.sim.simEpochMs || sim.startRealTimeMs),
-      lastTickRealTimeMs: Number(saved.sim.lastTickAtMs || sim.lastTickRealTimeMs),
+      startRealTimeMs: Number.isFinite(Number(saved.sim.startRealTimeMs)) ? Number(saved.sim.startRealTimeMs) : sim.startRealTimeMs,
+      lastTickRealTimeMs: Number.isFinite(Number(saved.sim.lastTickAtMs)) ? Number(saved.sim.lastTickAtMs) : sim.lastTickRealTimeMs,
       simEpochMs: Number(saved.sim.simEpochMs || sim.simEpochMs),
       tickIntervalMs: Number(saved.sim.tickIntervalMs || sim.tickIntervalMs),
       baseSpeed: normalizeStorageBaseSimulationSpeed(saved.sim.baseSpeed || saved.sim.timeCompression || sim.baseSpeed),
@@ -1530,14 +1676,14 @@ async function persistState() {
   } catch (error) {
     console.warn('[storage] shadow runtime persist export ignored', error);
   }
-  console.info('[storage] persist_state', {
+  logStorageDebugInfo('[storage] persist_state', {
     run: getStateFreshnessMetrics(state),
     summaryOpen: Boolean(state.ui && state.ui.runSummaryOpen),
     openSheet: state.ui && state.ui.openSheet ? String(state.ui.openSheet) : null
   });
 
   try {
-    await storageAdapter.set(state);
+    await storageAdapter.set(createPersistableStateSnapshot(state));
     globalThis.__gsStorageHasWrittenLocalState = true;
   } catch (error) {
     console.warn('[storage] persist failed', error);
@@ -1740,6 +1886,7 @@ function resetStateToDefaults() {
     cooldownUntilSimTimeMs: 0,
     catalog: preservedEventCatalog
   };
+  ensureEventV2BrowserPilotState(state);
 
   state.status = {
     health: 85,
@@ -1828,7 +1975,7 @@ state.rewardActions = {
       selectedStudioTab: 'water',
       selectedCategory: null,
       selectedActionId: null,
-      feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' }
+      feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
     },
     analysis: {
       activeTab: 'overview'
@@ -2310,7 +2457,7 @@ function ensureStateIntegrity(nowMs) {
     state.ui.visibleOverlayIds = [];
   }
   if (!state.ui.care || typeof state.ui.care !== 'object') {
-    state.ui.care = { selectedStudioTab: 'water', selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' } };
+    state.ui.care = { selectedStudioTab: 'water', selectedCategory: null, selectedActionId: null, feedback: { kind: 'info', text: 'Wähle eine Aktion.' } };
   }
   if (!['water', 'feed', 'routine', 'diagnosis'].includes(String(state.ui.care.selectedStudioTab || ''))) {
     state.ui.care.selectedStudioTab = 'water';
@@ -2322,7 +2469,7 @@ function ensureStateIntegrity(nowMs) {
     state.ui.care.selectedActionId = null;
   }
   if (!state.ui.care.feedback || typeof state.ui.care.feedback !== 'object') {
-    state.ui.care.feedback = { kind: 'info', text: 'WÃ¤hle eine Aktion.' };
+    state.ui.care.feedback = { kind: 'info', text: 'Wähle eine Aktion.' };
   }
   if (!state.ui.analysis || typeof state.ui.analysis !== 'object') {
     state.ui.analysis = { activeTab: 'overview' };
@@ -2578,6 +2725,11 @@ function syncCanonicalStateShape() {
 }
 
 function syncLegacyMirrorsFromCanonical(snapshot) {
+  recordEventV1WriteTelemetryHit('W4', {
+    source: 'storage.js:sync_legacy_mirrors_from_canonical',
+    eventId: snapshot && snapshot.events && snapshot.events.activeEventId ? String(snapshot.events.activeEventId) : null,
+    notes: ['save_mirror_sync']
+  });
   const s = snapshot;
   const sim = getCanonicalSimulation(s);
   const plant = getCanonicalPlant(s);

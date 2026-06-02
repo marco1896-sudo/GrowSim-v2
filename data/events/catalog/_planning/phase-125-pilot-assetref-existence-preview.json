@@ -1,0 +1,65 @@
+{
+  "ok": true,
+  "phase": "125",
+  "pilotEvents": [
+    "shared_rootbound_warning",
+    "shared_early_pest_signs_mild",
+    "indoor_light_burn_canopy_top"
+  ],
+  "items": [
+    {
+      "eventId": "shared_rootbound_warning",
+      "wouldPatch": false,
+      "activationStatus": "dry_run_only_not_active",
+      "dryRunAssetRefs": {
+        "hero": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+        "fallback": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/review/shared_rootbound_warning/candidate_full_scene_02.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112"
+      },
+      "exists": {
+        "hero": true,
+        "fallback": true,
+        "sourceCandidate": true
+      }
+    },
+    {
+      "eventId": "shared_early_pest_signs_mild",
+      "wouldPatch": false,
+      "activationStatus": "dry_run_only_not_active",
+      "dryRunAssetRefs": {
+        "hero": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+        "fallback": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_early_pest_signs_mild/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112"
+      },
+      "exists": {
+        "hero": true,
+        "fallback": true,
+        "sourceCandidate": true
+      }
+    },
+    {
+      "eventId": "indoor_light_burn_canopy_top",
+      "wouldPatch": false,
+      "activationStatus": "dry_run_only_not_active",
+      "dryRunAssetRefs": {
+        "hero": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_light_burn_canopy_top/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112"
+      },
+      "exists": {
+        "hero": true,
+        "fallback": true,
+        "sourceCandidate": true
+      }
+    }
+  ]
+}

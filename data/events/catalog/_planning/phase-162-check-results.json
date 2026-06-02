@@ -1,0 +1,30 @@
+﻿{
+  "phase": 162,
+  "status": "ALL_OK_WITH_DOCUMENTED_DEVIATIONS",
+  "executed": [
+    "node --check src/events/v2/preview/EventV2PreviewCopyLabels.js",
+    "node --check src/events/v2/preview/EventV2DevTestNoWriteModeModel.js",
+    "node --check src/events/v2/preview/EventV2SoftPreviewModeModel.js",
+    "node --check src/events/v2/preview/EventV2SingleCandidateDetailPreviewModel.js",
+    "node --check src/events/v2/preview/EventV2EventCenterCandidatePreviewModel.js",
+    "node --check src/events/v2/ui-lab/EventV2PreviewGallery.js",
+    "node --check dev/run-event-v2-copy-label-polish-smoke.js",
+    "node dev/run-event-v2-copy-label-polish-smoke.js",
+    "node --check dev/run-event-v2-dev-test-no-write-mode-smoke.js",
+    "node dev/run-event-v2-dev-test-no-write-mode-smoke.js",
+    "node --check dev/run-event-v2-soft-preview-mode-smoke.js",
+    "node dev/run-event-v2-soft-preview-mode-smoke.js",
+    "node dev/run-event-v2-multi-candidate-flow-smoke.js",
+    "node dev/run-event-v2-candidate-list-to-detail-flow-smoke.js",
+    "node dev/run-event-v2-single-candidate-detail-preview-smoke.js",
+    "node dev/run-event-v2-event-center-context-browser-smoke.js"
+  ],
+  "documentedDeviations": [
+    {
+      "command": "node dev/run-event-v2-loading-safety-static-check.js",
+      "status": "not_ok",
+      "expected": true,
+      "reason": "legacy noAppHook=false check"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "examplesOnlyDevelopment",
+  "label": "Examples Only / Development",
+  "sourceMode": "examplesOnly",
+  "includeFixtures": false,
+  "readinessProfile": "development",
+  "gatePreset": "development",
+  "expectedDecision": "pass"
+}

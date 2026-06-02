@@ -1,0 +1,87 @@
+{
+  "ok": true,
+  "defaultMode": {
+    "disabled": true,
+    "reason": "dev_preview_disabled"
+  },
+  "devMode": {
+    "enabled": true,
+    "fixtures": 3,
+    "candidateItems": 15,
+    "shadowEvaluations": 66,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0
+  },
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "noWriteCount": 15,
+      "candidateOnlyCount": 15,
+      "safetyLabelsVisible": true
+    },
+    {
+      "viewport": 390,
+      "cards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "noWriteCount": 15,
+      "candidateOnlyCount": 15,
+      "safetyLabelsVisible": true
+    },
+    {
+      "viewport": 430,
+      "cards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "noWriteCount": 15,
+      "candidateOnlyCount": 15,
+      "safetyLabelsVisible": true
+    },
+    {
+      "viewport": 768,
+      "cards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "noWriteCount": 15,
+      "candidateOnlyCount": 15,
+      "safetyLabelsVisible": true
+    }
+  ],
+  "summary": {
+    "viewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "candidateItemsVisible": 15,
+    "fixturesVisible": 3,
+    "imagesLoaded": 15,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": [],
+    "actionsFound": 0,
+    "selectedCandidateMentions": 0,
+    "safetyLabelsVisible": true
+  }
+}

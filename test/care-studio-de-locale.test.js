@@ -30,6 +30,7 @@ assert.strictEqual(locale.careStudio.water.surface, 'Oberfl\u00E4che', 'surface 
 assert.strictEqual(locale.careStudio.diagnosis.next_focus, 'N\u00E4chster Fokus', 'next focus label should use proper umlauts');
 assert.strictEqual(locale.careStudio.diagnosis.next_observation, 'N\u00E4chste Beobachtung', 'next observation label should use proper umlauts');
 assert.strictEqual(locale.careStudio.diagnosis.next_check, 'Sp\u00E4ter pr\u00FCfen', 'follow-up label should stay human and use proper umlauts');
+assert.strictEqual(locale.careStudio.risk.elevated, 'Erh\u00F6ht', 'elevated risk label should use proper umlauts');
 
 const bannedAsciiForms = [
   'Giessen',

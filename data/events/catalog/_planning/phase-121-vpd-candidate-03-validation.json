@@ -1,0 +1,39 @@
+{
+  "phase": "121",
+  "eventId": "indoor_vpd_mismatch_veg",
+  "candidatePath": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_03.png",
+  "exists": true,
+  "sha256": "e2cddbda8ccf3b98fd0444ba18512377044fdfce1c44ecafb41ce3b0d9fbf43a",
+  "bytes": 2804289,
+  "width": 1659,
+  "height": 948,
+  "ratio": 1.75,
+  "wideHeroCompatible": true,
+  "formatChecks": {
+    "singleFullSceneImage": true,
+    "noCollage": true,
+    "noPanelLayout": true,
+    "notSquare": true,
+    "notPortrait": true
+  },
+  "contentQa": {
+    "vpdClimateMismatchReadable": true,
+    "indoorGrowTentVisible": true,
+    "plantStressMildToModerateRecoverable": true,
+    "notConfusedWithLightBurn": true,
+    "notConfusedWithNutrientToxicity": true,
+    "notConfusedWithDroughtDeath": true,
+    "noApocalypticDamage": true,
+    "buddyIntegratedNotStickerLike": true,
+    "buddyDiagnosticConcerned": true,
+    "buddyIdentityWatch": true,
+    "noSpeechBubbleOrLogos": true,
+    "noVisibleTextArtifacts": true,
+    "displayReadoutRisk": true
+  },
+  "status": "format_correction_success_with_watch",
+  "watchNotes": [
+    "Background climate device may imply readable display values on close inspection; keep no-text/no-values gate strict for later final export."
+  ],
+  "blockerResolved": true
+}

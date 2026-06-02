@@ -47,6 +47,37 @@ function appApiFetch(path, options = {}) {
   });
 }
 
+function recordEventV1WriteTelemetryHit(type, context = {}) {
+  try {
+    const root = (typeof window !== 'undefined')
+      ? window
+      : ((typeof globalThis !== 'undefined') ? globalThis : null);
+    const api = root && root.GrowSimEventV1WriteTelemetry && typeof root.GrowSimEventV1WriteTelemetry.recordEventV1WriteHit === 'function'
+      ? root.GrowSimEventV1WriteTelemetry
+      : null;
+    if (!api) return;
+    const safeContext = context && typeof context === 'object' ? context : {};
+    const eventId = safeContext.eventId == null ? null : String(safeContext.eventId);
+    const hasEventV2 = typeof state !== 'undefined' && state && state.eventV2 && typeof state.eventV2 === 'object';
+    const activationRegistry = root && root.GrowSimEventV2ActivationRegistry && typeof root.GrowSimEventV2ActivationRegistry === 'object'
+      ? root.GrowSimEventV2ActivationRegistry
+      : null;
+    const v2RuntimeEnabled = activationRegistry && typeof activationRegistry.isEventV2RuntimeEnabled === 'function' && eventId
+      ? activationRegistry.isEventV2RuntimeEnabled(eventId) === true
+      : false;
+    api.recordEventV1WriteHit(type, {
+      ...safeContext,
+      eventId,
+      hasEventV2,
+      v2RuntimeEnabled,
+      legacyFallback: safeContext.legacyFallback !== false,
+      mode: safeContext.mode || 'app-runtime'
+    });
+  } catch (_error) {
+    // Telemetry must never impact runtime behavior.
+  }
+}
+
 const CONFIG = Object.freeze({
   MODE: typeof growSimSharedConfig.MODE === 'string' ? growSimSharedConfig.MODE : 'prod',
   timing: Object.freeze({
@@ -70,6 +101,31 @@ const CONFIG = Object.freeze({
   actionDebounceMs: 450
 });
 const MODE = CONFIG.MODE === 'dev' ? 'dev' : 'prod';
+
+function isGrowSimRuntimeDebugLoggingEnabled() {
+  try {
+    if (typeof window === 'undefined') {
+      return MODE === 'dev';
+    }
+    if (window.__GROWSIM_DEBUG_LOGS__ === true) {
+      return true;
+    }
+    const explicitEnv = String(window.__GROWSIM_ENV__ || (window.GrowSimBuild && window.GrowSimBuild.environment) || '').trim().toLowerCase();
+    if (explicitEnv === 'local' || explicitEnv === 'dev' || explicitEnv === 'staging') {
+      return true;
+    }
+    return MODE === 'dev';
+  } catch (_error) {
+    return MODE === 'dev';
+  }
+}
+
+function logRuntimeDebugInfo(...args) {
+  if (isGrowSimRuntimeDebugLoggingEnabled()) {
+    console.info(...args);
+  }
+}
+
 const UI_TICK_INTERVAL_MS = CONFIG.timing.uiTickMs;
 const EVENT_ROLL_MIN_REAL_MS = CONFIG.timing.eventRollMinRealMs;
 const EVENT_ROLL_MAX_REAL_MS = CONFIG.timing.eventRollMaxRealMs;
@@ -858,7 +914,7 @@ function closeCurrentBootPhase(nowMs, options = {}) {
   if (markSuccessful) {
     bootDiagnostics.lastSuccessfulPhase = phase;
   }
-  console.info('[boot][timing][phase]', phase, `${durationMs}ms`);
+  logRuntimeDebugInfo('[boot][timing][phase]', phase, `${durationMs}ms`);
 }
 
 function trackBootPhaseTransition(nextPhase) {
@@ -882,7 +938,7 @@ function recordBootSubstepDuration(name, durationMs) {
   const key = String(name || 'unknown');
   const safeDurationMs = Math.max(0, Math.round(Number(durationMs) || 0));
   bootDiagnostics.substepDurationsMs[key] = safeDurationMs;
-  console.info('[boot][timing][substep]', key, `${safeDurationMs}ms`);
+  logRuntimeDebugInfo('[boot][timing][substep]', key, `${safeDurationMs}ms`);
 }
 
 async function runBootSubstep(name, task) {
@@ -926,7 +982,7 @@ function finalizeBootDiagnostics(options = {}) {
   }
 
   if (success) {
-    console.info('[boot][report:success]', report);
+    logRuntimeDebugInfo('[boot][report:success]', report);
   } else {
     console.error('[boot][report:failure]', report);
   }
@@ -1124,10 +1180,10 @@ function setBootStep(step, message = '') {
     message: String(message || getBootUserMessage(normalizedStep))
   };
 
-  console.info(`[boot] ${normalizedStep} (${progress}%) ${window.__gsBootState.message}`);
+  logRuntimeDebugInfo(`[boot] ${normalizedStep} (${progress}%) ${window.__gsBootState.message}`);
   if (normalizedStep === 'ready') {
     bootLoaderLifecycle.readyReached = true;
-    console.info('[boot][loader] ready phase reached');
+    logRuntimeDebugInfo('[boot][loader] ready phase reached');
   }
 
   window.dispatchEvent(new CustomEvent('boot:step', {
@@ -1141,12 +1197,12 @@ window.setBootStep = setBootStep;
 
 function hideLoadingScreen(options = {}) {
   if (loadingScreenState.hidden) {
-    console.info('[boot][loader] hide called but loader is already hidden');
+    logRuntimeDebugInfo('[boot][loader] hide called but loader is already hidden');
     return Promise.resolve();
   }
 
   if (loadingScreenState.hidePromise) {
-    console.info('[boot][loader] hide already in progress');
+    logRuntimeDebugInfo('[boot][loader] hide already in progress');
     return loadingScreenState.hidePromise;
   }
 
@@ -1163,7 +1219,7 @@ function hideLoadingScreen(options = {}) {
   const waitMs = immediate ? 0 : Math.max(0, LOADING_SCREEN_MIN_VISIBLE_MS - elapsedMs);
   bootLoaderLifecycle.hideCalled = true;
   bootLoaderLifecycle.lastHideCallAtMs = Date.now();
-  console.info('[boot][loader] hide requested', {
+  logRuntimeDebugInfo('[boot][loader] hide requested', {
     waitMs,
     elapsedMs,
     step: window.__gsBootState && window.__gsBootState.step ? window.__gsBootState.step : 'unknown'
@@ -1174,7 +1230,7 @@ function hideLoadingScreen(options = {}) {
       if (!overlay.isConnected) {
         loadingScreenState.hidden = true;
         bootLoaderLifecycle.overlayRemoved = true;
-        console.info('[boot][loader] overlay already detached before fade-out');
+        logRuntimeDebugInfo('[boot][loader] overlay already detached before fade-out');
         resolve();
         return;
       }
@@ -1186,7 +1242,7 @@ function hideLoadingScreen(options = {}) {
         }
         loadingScreenState.hidden = true;
         bootLoaderLifecycle.overlayRemoved = true;
-        console.info('[boot][loader] overlay removed after fade-out');
+        logRuntimeDebugInfo('[boot][loader] overlay removed after fade-out');
         resolve();
       }, LOADING_SCREEN_FADE_MS);
     }, waitMs);
@@ -1209,7 +1265,7 @@ function runGrowSimAppInit() {
     return;
   }
   appBootStartExecuted = true;
-  console.info('[boot] app init start');
+  logRuntimeDebugInfo('[boot] app init start');
 
   startBootDiagnostics();
   setBootStep('init', getBootUserMessage('init'));
@@ -1253,7 +1309,7 @@ function scheduleGrowSimAppInit() {
     return;
   }
   appBootStartScheduled = true;
-  console.info('[boot] app init scheduled');
+  logRuntimeDebugInfo('[boot] app init scheduled');
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -1440,7 +1496,7 @@ function getPushUiTextBundle() {
   return api && api.TEXT ? api.TEXT : null;
 }
 
-let i18nRuntimeInitialized = false;
+var i18nRuntimeInitialized = false;
 
 function getI18nApi() {
   const api = window.GrowSimI18n;
@@ -1455,6 +1511,7 @@ function i18nT(key, vars = null) {
     const warnings = i18nT.__missingWarnings || (i18nT.__missingWarnings = new Set());
     if (
       translated === safeKey
+      && i18nRuntimeInitialized
       && safeKey.includes('.')
       && /^[a-z0-9_.-]+$/i.test(safeKey)
       && !warnings.has(safeKey)
@@ -6139,7 +6196,7 @@ function initUiArchitecture() {
   if (controllerApi && typeof controllerApi.createUIController === 'function') {
     uiController = controllerApi.createUIController({
       applyAction: (actionId) => applyAction(actionId),
-      applyEventOption: (optionId) => callCanonicalEventsRuntime('onEventOptionClick', optionId),
+      applyEventOption: (optionId) => onEventOptionClick(optionId),
       openSheet: (sheetName) => openSheet(sheetName),
       closeSheet: () => closeSheet(),
       closeMenu: () => closeMenu(),
@@ -6322,6 +6379,8 @@ async function boot() {
     await runBootSubstep('bind_dev_helpers', () => {
       window.__applyAction = (id) => applyAction(id);
       window.__devSelfTest = () => runDevSelfTest();
+      const seedInstallResult = installEventV2PilotSeedDevTools();
+      window.__eventV2PilotSeedDevTools = seedInstallResult;
     });
 
     setBootStep('render_ui', getBootUserMessage('render_ui'));
@@ -6416,10 +6475,10 @@ function logBootStep(step, details) {
     window.__gsBootTrace.splice(0, window.__gsBootTrace.length - 80);
   }
   if (entry.details) {
-    console.info('[boot]', entry.step, entry.details);
+    logRuntimeDebugInfo('[boot]', entry.step, entry.details);
     return;
   }
-  console.info('[boot]', entry.step);
+  logRuntimeDebugInfo('[boot]', entry.step);
 }
 
 function applyOverlayAssets() {
@@ -6730,11 +6789,62 @@ function normalizeStageKey(rawStageKey) {
 }
 
 function runEventStateMachine(nowMs) {
+  runEventV2ShadowBridgeBrowserNoopPreflight();
+  const bridgePilot = consultEventSystemRuntimeBridgePilot(nowMs, { source: 'app.runEventStateMachine' });
+  if (bridgePilot && bridgePilot.activeEventSystem === 'v2') {
+    return bridgePilot;
+  }
   const eventEngine = window.GrowSimEventEngine;
   if (eventEngine && typeof eventEngine.routeTick === 'function') {
     return eventEngine.routeTick(nowMs, state).result;
   }
   return callCanonicalEventsRuntime('runEventStateMachine', nowMs);
+}
+
+function consultEventSystemRuntimeBridgePilot(nowMs, options) {
+  try {
+    const bridge = window.GrowSimEventSystemRuntimeBridge;
+    if (!bridge || typeof bridge.consultBrowserRuntimeBridge !== 'function') {
+      return null;
+    }
+    const result = bridge.consultBrowserRuntimeBridge(state, {
+      eventSystemMode: 'v2-active-with-v1-legacy-read',
+      now: Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now(),
+      eventId: 'indoor_dry_rootball',
+      source: options && options.source ? String(options.source) : 'app.event_runtime_bridge_pilot'
+    });
+    if (!state.eventV2.meta) {
+      state.eventV2.meta = {};
+    }
+    state.eventV2.meta.lastRuntimeBridgePilotAt = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+    state.eventV2.meta.lastRuntimeBridgePilotSource = options && options.source ? String(options.source) : 'app.event_runtime_bridge_pilot';
+    return result;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function runEventV2ShadowBridgeBrowserNoopPreflight() {
+  try {
+    const api = window.ShadowBridgeBrowserBridgeCandidate;
+    if (!api || typeof api.registerShadowBridgeBrowserBridgeCandidate !== 'function') {
+      return;
+    }
+
+    api.registerShadowBridgeBrowserBridgeCandidate(window, {
+      enabled: true,
+      allowGlobalRegistration: true
+    });
+
+    const bridge = window.ShadowBridgeGuardedEntry;
+    if (!bridge || typeof bridge.runShadowBridgeGuardedEntry !== 'function') {
+      return;
+    }
+
+    bridge.runShadowBridgeGuardedEntry(null, { enabled: false });
+  } catch (error) {
+    return;
+  }
 }
 
 function activateEvent(nowMs) {
@@ -7009,11 +7119,86 @@ function applyFoundationFollowUps(choice, eventId) {
 }
 
 function onEventOptionClick(optionId) {
+  const bridgePilot = consultEventSystemRuntimeBridgePilot(state && state.simulation ? state.simulation.nowMs : Date.now(), {
+    source: 'app.onEventOptionClick'
+  });
+  if (bridgePilot && bridgePilot.activeEventSystem === 'v2' && bridgePilot.shouldBlockLegacyResolve === true) {
+    const v2PilotResolve = resolveEventCenterV2PilotOption(optionId);
+    if (v2PilotResolve && v2PilotResolve.ok) {
+      return v2PilotResolve;
+    }
+    return {
+      ok: false,
+      blockedByEventV2Bridge: true,
+      reason: v2PilotResolve && v2PilotResolve.reason ? v2PilotResolve.reason : 'v1_resolve_disabled_by_v2_bridge_pilot',
+      optionId
+    };
+  }
   const eventEngine = window.GrowSimEventEngine;
   if (eventEngine && typeof eventEngine.routeChoice === 'function') {
     return eventEngine.routeChoice(optionId, state).result;
   }
   return callCanonicalEventsRuntime('onEventOptionClick', optionId);
+}
+
+function resolveEventCenterV2PilotOption(optionId) {
+  try {
+    const bridge = window.GrowSimEventSystemRuntimeBridge;
+    if (!bridge || typeof bridge.resolveEventCenterV2PilotEvent !== 'function') {
+      return null;
+    }
+    const result = bridge.resolveEventCenterV2PilotEvent(state, optionId, {
+      now: state && state.simulation && Number.isFinite(Number(state.simulation.nowMs))
+        ? Number(state.simulation.nowMs)
+        : Date.now(),
+      source: 'app.event_center_v2_resolve_pilot'
+    });
+    if (!result || !result.ok) {
+      return result;
+    }
+    if (typeof addLog === 'function') {
+      addLog('choice', `V2-Ereignis ausgewertet: ${result.eventId}/${result.selectedOption}`, {
+        eventId: result.eventId,
+        optionId: result.selectedOption,
+        pilot: true
+      });
+    }
+    if (typeof syncCanonicalStateShape === 'function') {
+      syncCanonicalStateShape();
+    }
+    if (typeof renderAll === 'function') {
+      renderAll();
+    }
+    if (typeof schedulePersistState === 'function') {
+      schedulePersistState(true);
+    }
+    return result;
+  } catch (error) {
+    return {
+      ok: false,
+      reason: 'event_center_v2_resolve_pilot_error',
+      errors: [error && error.message ? String(error.message) : 'unknown_error']
+    };
+  }
+}
+
+function installEventV2PilotSeedDevTools() {
+  try {
+    const api = window.EventV2PilotSeedDevTools;
+    if (!api || typeof api.installEventV2PilotDevTools !== 'function') {
+      return { ok: false, installed: false, reason: 'seed_devtools_api_missing' };
+    }
+    return api.installEventV2PilotDevTools(window, () => state, (nextState) => {
+      if (nextState && typeof nextState === 'object') {
+        window.__gsState = state;
+      }
+    }, {
+      devMode: Boolean(window.__GROWSIM_DEV_BYPASS__) || /\bdev=1\b/i.test(String(window.location && window.location.search || '')),
+      persistAfterMutation: true
+    });
+  } catch (_error) {
+    return { ok: false, installed: false, reason: 'seed_devtools_install_error' };
+  }
 }
 
 function onEventOptionClickCore(optionId) {
@@ -9748,6 +9933,11 @@ window.GrowSimRewardDebug = window.GrowSimRewardDebug || Object.freeze({
   clearFlags: () => clearRewardFeatureConfigOverride()
 });
 
+window.GrowSimEventV2DevPreviewEntry = window.GrowSimEventV2DevPreviewEntry || Object.freeze({
+  getState: () => buildEventV2DevPreviewEntryState(),
+  open: () => openEventV2DevPreviewEntry(),
+});
+
 function ensureRewardActionUsageRecord(type, snapshot = state) {
   const actionType = String(type || '').trim().toLowerCase();
   const runtime = ensureRewardActionRuntime(snapshot);
@@ -10772,6 +10962,11 @@ function clearEventStateForAuthoritativeActivation(nowMs) {
 
   scheduler.nextEventSimTimeMs = nowSimMs;
   scheduler.nextEventRealTimeMs = safeNowMs;
+  recordEventV1WriteTelemetryHit('W5', {
+    source: 'app.js:clear_event_state_for_authoritative_activation',
+    eventId: null,
+    notes: ['legacy_reset_write']
+  });
 }
 
 function buildAuthoritativeEventShopFailureResult(reason, extra = {}) {
@@ -13028,6 +13223,7 @@ function animateRingValue(ringNode, textNode, targetValue) {
     ringNode.style.setProperty('--value', roundedText);
     ringNode.dataset.value = roundedText;
     ringNode.dataset.animatedValue = String(target);
+    ringNode.dataset.animating = 'false';
     if (textNode.textContent !== roundedText) {
       textNode.textContent = roundedText;
     }
@@ -13042,6 +13238,7 @@ function animateRingValue(ringNode, textNode, targetValue) {
   const delta = Math.abs(target - previousAnimatedValue);
   const durationMs = clamp(Math.round(STAT_VALUE_TWEEN_MIN_MS + (delta * 8)), STAT_VALUE_TWEEN_MIN_MS, STAT_VALUE_TWEEN_MAX_MS);
   const startedAt = (typeof performance !== 'undefined' && typeof performance.now === 'function') ? performance.now() : Date.now();
+  ringNode.dataset.animating = 'true';
 
   const tick = (timestamp) => {
     const now = Number(timestamp) || ((typeof performance !== 'undefined' && typeof performance.now === 'function') ? performance.now() : Date.now());
@@ -13614,6 +13811,28 @@ function getCareStudioHeroProps(careViewModel = null, overallLevel = 'info', ris
   return { contextPropKey, statusPropKey };
 }
 
+function getCareStudioGlobalStatus(careViewModel = null) {
+  const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
+  const mappedStatus = careData.globalStatus && typeof careData.globalStatus === 'object' ? careData.globalStatus : null;
+  const water = Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.water != null ? mappedStatus.water : state.status && state.status.water || 0)));
+  const nutrition = Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.nutrition != null ? mappedStatus.nutrition : state.status && state.status.nutrition || 0)));
+  const stress = Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.stress != null ? mappedStatus.stress : state.status && state.status.stress || 0)));
+  const risk = Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.risk != null ? mappedStatus.risk : state.status && state.status.risk || 0)));
+  let riskLevel = String(mappedStatus && mappedStatus.riskLevel || '').trim();
+  if (!riskLevel) {
+    if (risk >= 75) {
+      riskLevel = 'high';
+    } else if (risk >= 50) {
+      riskLevel = 'elevated';
+    } else if (risk >= 25) {
+      riskLevel = 'medium';
+    } else {
+      riskLevel = 'low';
+    }
+  }
+  return { water, nutrition, stress, risk, riskLevel };
+}
+
 function renderCareCategoryButtons(categories) {
   const signature = categories.map((tab) => tab.id).join('|') + `|selected:${state.ui.care.selectedStudioTab}`;
   if (ui.careCategoryList.dataset.signature === signature) {
@@ -13727,34 +13946,31 @@ function renderCareStudioChrome(careViewModel = null) {
   }
 
   if (statusNode) {
-    const nutritionBars = Array.isArray(careData.nutrientBars) ? careData.nutrientBars : [];
-    const nutritionAverage = nutritionBars.length
-      ? Math.round(nutritionBars.reduce((sum, entry) => sum + Number(entry.value || 0), 0) / nutritionBars.length)
-      : Number(state.status && state.status.nutrition || 0);
+    const globalStatus = getCareStudioGlobalStatus(careViewModel);
     const chips = [
       {
         label: i18nT('careStudio.chips.moisture'),
-        value: `${Math.round(Number(careSummary.substrateMoisture || state.status.water || 0))}%`,
-        tone: moistureStatus === 'dry' ? 'warning' : (moistureStatus === 'wet' ? 'caution' : 'stable'),
-        detail: i18nT(`careStudio.state.${moistureStatus}`)
+        value: `${Math.round(globalStatus.water)}%`,
+        tone: globalStatus.water <= 40 ? 'warning' : (globalStatus.water >= 75 ? 'positive' : 'stable'),
+        detail: globalStatus.water <= 40 ? i18nT('careStudio.state.watch') : i18nT('careStudio.state.balanced')
       },
       {
         label: i18nT('careStudio.chips.nutrition'),
-        value: `${nutritionAverage}%`,
-        tone: nutritionAverage <= 42 ? 'warning' : (nutritionAverage >= 64 ? 'positive' : 'stable'),
-        detail: i18nT(nutritionAverage <= 42 ? 'careStudio.state.watch' : 'careStudio.state.balanced')
+        value: `${Math.round(globalStatus.nutrition)}%`,
+        tone: globalStatus.nutrition <= 42 ? 'warning' : (globalStatus.nutrition >= 64 ? 'positive' : 'stable'),
+        detail: i18nT(globalStatus.nutrition <= 42 ? 'careStudio.state.watch' : 'careStudio.state.balanced')
       },
       {
         label: i18nT('careStudio.chips.stress'),
-        value: `${Math.round(Number(state.status && state.status.stress || 0))}%`,
-        tone: Number(state.status && state.status.stress || 0) >= 60 ? 'warning' : 'stable',
-        detail: Number(state.status && state.status.stress || 0) >= 60 ? i18nT('careStudio.state.active') : i18nT('careStudio.state.low')
+        value: `${Math.round(globalStatus.stress)}%`,
+        tone: globalStatus.stress >= 60 ? 'warning' : 'stable',
+        detail: globalStatus.stress >= 60 ? i18nT('careStudio.state.active') : i18nT('careStudio.state.low')
       },
       {
         label: i18nT('careStudio.chips.risk'),
-        value: i18nT(`careStudio.risk.${riskLevel}`),
-        tone: riskLevel,
-        detail: i18nT(`careStudio.risk.${riskLevel}`)
+        value: `${Math.round(globalStatus.risk)}%`,
+        tone: globalStatus.riskLevel === 'high' ? 'warning' : (globalStatus.riskLevel === 'elevated' || globalStatus.riskLevel === 'medium' ? 'caution' : 'stable'),
+        detail: i18nT(`careStudio.risk.${globalStatus.riskLevel}`)
       }
     ];
     statusNode.replaceChildren();
@@ -15083,6 +15299,98 @@ function describeActiveEventContext(eventDef) {
 }
 
 function getEventUiViewModel() {
+  const v2PilotView = getAppEventCenterV2PilotViewModel();
+  if (v2PilotView && v2PilotView.hasPilotEvent) {
+    const normalizedPresentation = buildNormalizedEventV2Presentation(v2PilotView.eventId, {
+      title: v2PilotView.title,
+      description: v2PilotView.description,
+      category: v2PilotView.category,
+      severity: v2PilotView.severity,
+      options: Array.isArray(v2PilotView.options) ? v2PilotView.options : []
+    });
+    const resolvedTitle = normalizedPresentation && normalizedPresentation.title
+      ? String(normalizedPresentation.title)
+      : String(v2PilotView.title || 'Trockener Wurzelballen');
+    const resolvedDescription = normalizedPresentation && normalizedPresentation.description
+      ? String(normalizedPresentation.description)
+      : String(v2PilotView.description || 'Der Wurzelballen trocknet ungleichmaessig aus. Reagiere behutsam, statt hektisch zu giessen.');
+    const resolvedSubtitle = normalizedPresentation && normalizedPresentation.subtitle
+      ? String(normalizedPresentation.subtitle)
+      : 'Pflege · Warnung';
+    const resolvedOptions = normalizedPresentation && Array.isArray(normalizedPresentation.options)
+      ? normalizedPresentation.options.slice()
+      : (Array.isArray(v2PilotView.options) ? v2PilotView.options.slice() : []);
+    return {
+      popup: {
+        machineState: 'eventV2PilotActive',
+        title: resolvedTitle,
+        description: resolvedDescription,
+        category: String(v2PilotView.category || 'care'),
+        severity: String(v2PilotView.severity || 'warning'),
+        shadowSummary: { available: false, primaryState: 'active' }
+      },
+      detail: {
+        learningNote: 'Pruefe zuerst Substrat und Topfgewicht. Zu viel Wasser kann das Problem verschaerfen.',
+        options: resolvedOptions,
+        shadowSummary: { available: false }
+      },
+      media: {
+        kind: 'placeholder',
+        assetId: null,
+        src: null,
+        alt: `${resolvedTitle} – Ereignisvisual`,
+        label: null,
+        badge: 'Pflegehinweis',
+        fallbackOrigin: 'event_v2_pilot',
+        title: resolvedTitle,
+        subtitle: resolvedSubtitle
+      },
+      eventV2Pilot: v2PilotView,
+      eventV2Presentation: normalizedPresentation
+    };
+  }
+
+  const v2PilotHistory = getAppLatestEventCenterV2PilotHistoryEntry();
+  if (v2PilotHistory && !['activeEvent', 'resolving', 'resolved'].includes(String(state.events.machineState || 'idle'))) {
+    const resolvePresentation = getEventV2ResolvedPresentation(v2PilotHistory.eventId, v2PilotHistory.selectedOption) || {};
+    const resolvedTitle = resolvePresentation.title
+      ? String(resolvePresentation.title)
+      : 'Entscheidung ausgewertet';
+    const resolvedSummary = resolvePresentation.summary
+      ? String(resolvePresentation.summary)
+      : 'Deine Entscheidung wurde verarbeitet und im Verlauf gespeichert.';
+    const resolvedBadge = resolvePresentation.badge
+      ? String(resolvePresentation.badge)
+      : 'Verlauf';
+    return {
+      popup: {
+        machineState: 'eventV2PilotResolved',
+        title: resolvedTitle,
+        description: resolvedSummary,
+        category: 'care',
+        severity: 'resolved',
+        shadowSummary: { available: false, primaryState: 'resolved' }
+      },
+      detail: {
+        learningNote: resolvedSummary,
+        options: [],
+        shadowSummary: { available: false }
+      },
+      media: {
+        kind: 'placeholder',
+        assetId: null,
+        src: null,
+        alt: `${resolvedTitle} – Ereignisvisual`,
+        label: null,
+        badge: resolvedBadge,
+        fallbackOrigin: 'event_v2_pilot_history',
+        title: resolvedTitle,
+        subtitle: String(resolvePresentation.optionLabel || '')
+      },
+      eventV2PilotHistory: v2PilotHistory
+    };
+  }
+
   const eventEngine = window.GrowSimEventEngine;
   if (eventEngine && typeof eventEngine.getUiModel === 'function') {
     return eventEngine.getUiModel(state);
@@ -15114,6 +15422,53 @@ function getEventUiViewModel() {
       subtitle: ''
     }
   };
+}
+
+function getAppEventCenterV2PilotViewModel() {
+  const bridge = window.GrowSimEventSystemRuntimeBridge;
+  if (!bridge || typeof bridge.buildEventCenterV2PilotViewModel !== 'function') {
+    return null;
+  }
+  try {
+    return bridge.buildEventCenterV2PilotViewModel(state);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function getEventV2PresentationApi() {
+  return window.GrowSimEventV2PresentationMap && typeof window.GrowSimEventV2PresentationMap.normalizeEventV2Presentation === 'function'
+    ? window.GrowSimEventV2PresentationMap
+    : null;
+}
+
+function buildNormalizedEventV2Presentation(eventId, rawEvent) {
+  const api = getEventV2PresentationApi();
+  if (!api) {
+    return null;
+  }
+  try {
+    return api.normalizeEventV2Presentation(eventId, rawEvent);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function getEventV2ResolvedPresentation(eventId, optionId) {
+  const api = getEventV2PresentationApi();
+  if (!api || typeof api.getEventV2ResolvePresentation !== 'function') {
+    return null;
+  }
+  try {
+    return api.getEventV2ResolvePresentation(eventId, optionId);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function getAppLatestEventCenterV2PilotHistoryEntry() {
+  const history = state.eventV2 && Array.isArray(state.eventV2.history) ? state.eventV2.history : [];
+  return history.find((entry) => entry && entry.source === 'event-center-v2-resolve-pilot') || null;
 }
 
 function hasModernEventPresentationNodes() {
@@ -15220,6 +15575,8 @@ function deriveEventPresentationTone(viewModel, machineState, options = {}) {
 
   if (mode === 'history') return 'history';
   if (mode === 'resolved') return 'resolved';
+  if (machineState === 'eventV2PilotActive') return 'active';
+  if (machineState === 'eventV2PilotResolved') return 'resolved';
   if (machineState === 'resolved' && resolvedTone) return resolvedTone;
   if (machineState === 'resolving') return 'active';
   if (shadow.primaryState) return String(shadow.primaryState);
@@ -15609,6 +15966,51 @@ function buildEventPresentationSections(viewModel, machineState) {
     return sections;
   }
 
+  const v2Pilot = viewModel && viewModel.eventV2Pilot && typeof viewModel.eventV2Pilot === 'object' ? viewModel.eventV2Pilot : null;
+  const v2Presentation = viewModel && viewModel.eventV2Presentation && typeof viewModel.eventV2Presentation === 'object'
+    ? viewModel.eventV2Presentation
+    : null;
+  if (machineState === 'eventV2PilotActive' && v2Pilot && v2Presentation && Array.isArray(v2Presentation.insights) && v2Presentation.insights.length) {
+    const mappedSections = v2Presentation.insights
+      .map((entry, index) => {
+        const safeEntry = entry && typeof entry === 'object' ? entry : {};
+        const key = index === 0 ? 'situation' : (index === 1 ? 'tendency' : 'analysis');
+        return {
+          key,
+          title: String(safeEntry.label || 'Einschaetzung'),
+          body: String(safeEntry.text || ''),
+          tone: key === 'analysis' ? 'history' : tone
+        };
+      })
+      .filter((entry) => entry.body);
+    if (mappedSections.length) {
+      return mappedSections;
+    }
+  }
+
+  if (machineState === 'eventV2PilotActive' && v2Pilot && String(v2Pilot.eventId || '') === 'indoor_dry_rootball') {
+    return [
+      {
+        key: 'situation',
+        title: 'Situation',
+        body: 'Der Wurzelballen trocknet ungleichmaessig aus. Einzelne Bereiche koennen bereits zu trocken sein.',
+        tone
+      },
+      {
+        key: 'tendency',
+        title: 'Tendenz',
+        body: 'Die Pflanze zeigt erste Stresssignale. Eine ruhige, kontrollierte Reaktion ist sinnvoll.',
+        tone
+      },
+      {
+        key: 'analysis',
+        title: 'Einschaetzung',
+        body: 'Pruefe zuerst Substrat und Topfgewicht. Zu viel Wasser kann das Problem verschaerfen.',
+        tone: 'history'
+      }
+    ];
+  }
+
   const situationBody = shadow.causeSummary || popup.description || categoryLabel(String(popup.category || 'generic'));
   if (situationBody) {
     sections.push({
@@ -15955,20 +16357,22 @@ function buildEventMediaMarkup(mediaModel, tone = 'idle') {
   const badgeText = media.badge ? String(media.badge) : '';
   const originLabel = media.label ? String(media.label) : '';
   const inspectOrigin = isEventAssetInspectionEnabled();
+  const visualFallbackType = media.visualFallbackType ? String(media.visualFallbackType) : 'neutral-card';
+  const visualIcon = media.visualIcon ? String(media.visualIcon) : '';
   const imageMarkup = (kind === 'image' || kind === 'icon')
     ? `<img class="event-visual-image${kind === 'icon' ? ' event-visual-image--icon' : ''}" src="${escapeHtml(String(media.src || ''))}" alt="${escapeHtml(String(media.alt || ''))}">`
     : '<img class="event-visual-image hidden" alt="">';
   const placeholderMarkup = kind === 'placeholder'
     ? `
-      <div class="event-visual-placeholder" aria-hidden="false">
-        <span class="event-visual-placeholder-glyph">${escapeHtml(String(media.badge ? String(media.badge).slice(0, 1).toUpperCase() : 'E'))}</span>
+      <div class="event-visual-placeholder" aria-hidden="false" data-fallback-type="${escapeHtml(visualFallbackType)}" data-fallback-icon="${escapeHtml(visualIcon)}">
+        <span class="event-visual-placeholder-glyph">${escapeHtml(String(visualIcon || media.badge || 'event').replace(/_/g, ' ').slice(0, 22))}</span>
         <span class="event-visual-placeholder-label">${escapeHtml(String(media.title || 'Event'))}</span>
       </div>
     `
     : '<div class="event-visual-placeholder hidden" aria-hidden="true"></div>';
 
   return `
-    <div class="event-visual" aria-hidden="false" data-kind="${escapeHtml(kind)}" data-origin="${escapeHtml(String(media.fallbackOrigin || ''))}" data-tone="${escapeHtml(String(tone || 'idle'))}">
+    <div class="event-visual" aria-hidden="false" data-kind="${escapeHtml(kind)}" data-origin="${escapeHtml(String(media.fallbackOrigin || ''))}" data-tone="${escapeHtml(String(tone || 'idle'))}" data-event-visual-system="v2" data-image-path="${escapeHtml(String(media.src || ''))}" data-fallback-image-path="${escapeHtml(String(media.fallbackImagePath || ''))}">
       <div class="event-visual-frame">
         ${imageMarkup}
         ${placeholderMarkup}
@@ -15981,6 +16385,45 @@ function buildEventMediaMarkup(mediaModel, tone = 'idle') {
       </div>
     </div>
   `;
+}
+
+function bindEventVisualImageFallback(root) {
+  if (!root) {
+    return;
+  }
+  const visual = root.querySelector('.event-visual');
+  const image = root.querySelector('.event-visual-image');
+  const placeholder = root.querySelector('.event-visual-placeholder');
+  if (!visual || !image || !placeholder) {
+    return;
+  }
+
+  const initialImagePath = String(visual.getAttribute('data-image-path') || '').trim();
+  const fallbackImagePath = String(visual.getAttribute('data-fallback-image-path') || '').trim();
+  const toPremiumFallback = () => {
+    image.classList.add('hidden');
+    image.removeAttribute('src');
+    image.removeAttribute('data-fallback-attempted');
+    placeholder.classList.remove('hidden');
+    placeholder.setAttribute('aria-hidden', 'false');
+    visual.setAttribute('data-kind', 'placeholder');
+  };
+
+  if (!initialImagePath) {
+    toPremiumFallback();
+    return;
+  }
+
+  image.onerror = () => {
+    const fallbackTried = image.getAttribute('data-fallback-attempted') === '1';
+    if (!fallbackTried && fallbackImagePath) {
+      image.setAttribute('data-fallback-attempted', '1');
+      image.src = fallbackImagePath;
+      visual.setAttribute('data-kind', 'image-fallback');
+      return;
+    }
+    toPremiumFallback();
+  };
 }
 
 function buildEventInsightHtml(viewModel, machineState) {
@@ -16078,11 +16521,89 @@ function buildEventCenterMarkup(viewModel) {
 
 function getModernEventSheetContentState(viewModel, machineState) {
   const popup = viewModel && viewModel.popup && typeof viewModel.popup === 'object' ? viewModel.popup : {};
+  const v2Pilot = viewModel && viewModel.eventV2Pilot && typeof viewModel.eventV2Pilot === 'object' ? viewModel.eventV2Pilot : null;
+  const v2PilotHistory = viewModel && viewModel.eventV2PilotHistory && typeof viewModel.eventV2PilotHistory === 'object' ? viewModel.eventV2PilotHistory : null;
   const eventDef = Array.isArray(state.events.catalog)
     ? state.events.catalog.find((entry) => entry && entry.id === state.events.activeEventId)
     : null;
   const eventContext = describeActiveEventContext(eventDef);
   const fastForwardPresentation = getRewardActionPresentation(REWARD_ACTION_TYPES.FAST_FORWARD_EVENT, { state, context: 'event_sheet' });
+
+  if (machineState === 'eventV2PilotActive' && v2Pilot) {
+    const mappedPresentation = buildNormalizedEventV2Presentation(v2Pilot.eventId, {
+      title: v2Pilot.title,
+      description: v2Pilot.description,
+      category: v2Pilot.category,
+      severity: v2Pilot.severity,
+      options: Array.isArray(v2Pilot.options) ? v2Pilot.options : []
+    });
+    const pilotTitle = mappedPresentation && mappedPresentation.title
+      ? String(mappedPresentation.title)
+      : String(v2Pilot.title || 'V2 Ereignis');
+    const pilotDescription = mappedPresentation && mappedPresentation.description
+      ? String(mappedPresentation.description)
+      : String(v2Pilot.description || 'Dieses Ereignis wird ueber das neue Ereignissystem ausgewertet.');
+    const pilotCategoryLabel = mappedPresentation && mappedPresentation.categoryLabel
+      ? String(mappedPresentation.categoryLabel)
+      : (String(v2Pilot.category || 'care') === 'care' ? 'Pflege' : categoryLabel(String(v2Pilot.category || 'care')));
+    const pilotSeverityLabel = mappedPresentation && mappedPresentation.severityLabel
+      ? String(mappedPresentation.severityLabel)
+      : (String(v2Pilot.severity || 'warning') === 'warning' ? 'Warnung' : String(v2Pilot.severity || 'warning'));
+    const translatedOptions = mappedPresentation && Array.isArray(mappedPresentation.options)
+      ? mappedPresentation.options.slice()
+      : (Array.isArray(v2Pilot.options) ? v2Pilot.options.slice() : []);
+    const statusLabel = mappedPresentation && mappedPresentation.statusLabel
+      ? String(mappedPresentation.statusLabel)
+      : 'Aktives Ereignis';
+    return {
+      eventSystem: 'v2',
+      eventId: String(v2Pilot.eventId || 'indoor_dry_rootball'),
+      eventAuthority: 'v2',
+      title: pilotTitle,
+      description: pilotDescription,
+      meta: [
+        `Kategorie: ${pilotCategoryLabel}`,
+        `Schweregrad: ${pilotSeverityLabel}`
+      ].filter(Boolean).join(' · '),
+      options: translatedOptions,
+      statusLabel,
+      visualPresentation: mappedPresentation && mappedPresentation.visual ? mappedPresentation.visual : null,
+      rewardAction: null
+    };
+  }
+
+  if (machineState === 'eventV2PilotResolved' && v2PilotHistory) {
+    const resolvePresentation = getEventV2ResolvedPresentation(v2PilotHistory.eventId, v2PilotHistory.selectedOption) || {};
+    const resolvedTitle = resolvePresentation.title
+      ? String(resolvePresentation.title)
+      : 'Entscheidung ausgewertet';
+    const resolvedSummary = resolvePresentation.summary
+      ? String(resolvePresentation.summary)
+      : 'Deine Entscheidung wurde verarbeitet und im Verlauf gespeichert.';
+    const resolvedBadge = resolvePresentation.badge
+      ? String(resolvePresentation.badge)
+      : 'Verlauf';
+    const appliedDelta = v2PilotHistory.appliedDelta && typeof v2PilotHistory.appliedDelta === 'object'
+      ? v2PilotHistory.appliedDelta
+      : {};
+    const deltaReason = String(appliedDelta.reason || '');
+    const outcomeLine = deltaReason === 'stabilizing_action'
+      ? 'Wirkung: Stress und Risiko leicht gesenkt'
+      : (deltaReason === 'diagnostic_only' || deltaReason === 'diagnostic_weight_check' || deltaReason === 'diagnostic_rootzone_check'
+        ? 'Wirkung: Diagnose, keine Statusaenderung'
+        : 'Wirkung: Warnhinweis, keine Statusaenderung');
+    return {
+      eventSystem: 'v2',
+      eventId: String(v2PilotHistory.eventId || 'indoor_dry_rootball'),
+      eventAuthority: 'v2',
+      title: resolvedTitle,
+      description: resolvedSummary,
+      meta: `${resolvedBadge} · ${outcomeLine}`,
+      options: [],
+      statusLabel: 'Ausgewertet',
+      rewardAction: null
+    };
+  }
 
   if (machineState === 'activeEvent') {
     return {
@@ -16169,8 +16690,12 @@ function buildModernEventOptionListMarkup(options) {
   }
 
   return safeOptions.map((option) => `
-    <button class="event-option-btn" type="button" data-event-option-id="${escapeHtml(String(option.id || ''))}">
-      ${escapeHtml(String(option.label || option.id || i18nT('events.choose_option')))}
+    <button class="event-option-btn" type="button" data-event-option-id="${escapeHtml(String(option.id || ''))}" data-option-tone="${escapeHtml(String(option.tone || 'default'))}">
+      <span class="event-option-btn__label-row">
+        <span class="event-option-btn__label">${escapeHtml(String(option.label || option.id || i18nT('events.choose_option')))}</span>
+        ${option && option.badge ? `<span class="event-option-btn__badge">${escapeHtml(String(option.badge))}</span>` : ''}
+      </span>
+      ${option && option.description ? `<span class="event-option-btn__desc">${escapeHtml(String(option.description))}</span>` : ''}
     </button>
   `).join('');
 }
@@ -16208,6 +16733,11 @@ function bindModernEventSheetInteractions(root, options) {
         if (!optionId) {
           return;
         }
+        const v2PilotView = getAppEventCenterV2PilotViewModel();
+        if (v2PilotView && v2PilotView.hasPilotEvent) {
+          resolveEventCenterV2PilotOption(optionId);
+          return;
+        }
         const controller = getUiController();
         if (controller && typeof controller.handleEventOption === 'function') {
           controller.handleEventOption(optionId);
@@ -16242,41 +16772,97 @@ function renderModernEventSheetContent(viewModel, machineState) {
   const contentState = getModernEventSheetContentState(viewModel, machineState);
   const pendingOutcome = getPendingOutcomeView();
   const resolvedOutcome = getResolvedOutcomeView();
+  const isV2PilotSheet = machineState === 'eventV2PilotActive' || machineState === 'eventV2PilotResolved' || contentState.eventSystem === 'v2';
   const mediaModel = resolveSharedEventMediaModel({
-    eventId: (resolvedOutcome && resolvedOutcome.eventId) || (pendingOutcome && pendingOutcome.eventId) || state.events.activeEventId,
-    category: state.events.activeCategory || (viewModel && viewModel.popup && viewModel.popup.category) || 'generic',
+    eventId: isV2PilotSheet
+      ? contentState.eventId
+      : ((resolvedOutcome && resolvedOutcome.eventId) || (pendingOutcome && pendingOutcome.eventId) || state.events.activeEventId),
+    category: isV2PilotSheet
+      ? ((viewModel && viewModel.popup && viewModel.popup.category) || 'care')
+      : (state.events.activeCategory || (viewModel && viewModel.popup && viewModel.popup.category) || 'generic'),
     title: String(contentState.title || (viewModel && viewModel.popup && viewModel.popup.title) || 'Event'),
-    activeImagePath: state.events.activeImagePath,
+    activeImagePath: isV2PilotSheet ? '' : state.events.activeImagePath,
     stateTone: tone
   });
+  if (isV2PilotSheet && mediaModel && mediaModel.fallbackOrigin === 'legacy_active_image') {
+    mediaModel.kind = 'placeholder';
+    mediaModel.src = null;
+    mediaModel.fallbackOrigin = 'event_v2_pilot';
+    mediaModel.badge = 'V2';
+    mediaModel.title = String(contentState.title || 'V2 Ereignis');
+    mediaModel.subtitle = String(contentState.eventId || 'indoor_dry_rootball');
+  }
+  if (isV2PilotSheet && mediaModel) {
+    mediaModel.label = '';
+    mediaModel.title = String(contentState.title || mediaModel.title || 'V2 Ereignis');
+    mediaModel.subtitle = String(contentState.meta || contentState.eventId || '');
+  }
+  if (isV2PilotSheet && contentState.visualPresentation && typeof contentState.visualPresentation === 'object') {
+    const visual = contentState.visualPresentation;
+    const hasImagePath = Boolean(visual.imagePath && String(visual.imagePath).trim());
+    mediaModel.kind = hasImagePath ? 'image' : 'placeholder';
+    mediaModel.src = hasImagePath ? String(visual.imagePath) : null;
+    mediaModel.alt = String(visual.alt || contentState.title || 'Event');
+    mediaModel.fallbackOrigin = hasImagePath ? 'event_v2_pilot_image' : 'event_v2_pilot_fallback';
+    mediaModel.badge = String(contentState.statusLabel || 'Aktiv');
+    mediaModel.title = String(visual.label || contentState.title || 'V2 Ereignis');
+    mediaModel.subtitle = String(contentState.meta || contentState.eventId || 'event-v2');
+    mediaModel.visualFallbackType = String(visual.fallbackType || 'illustration-card');
+    mediaModel.visualIcon = String(visual.fallbackIcon || visual.icon || '');
+    mediaModel.fallbackImagePath = String(visual.fallbackImagePath || '');
+  }
   const inspect = isEventAssetInspectionEnabled();
+  const eventSystem = String(contentState.eventSystem || 'legacy');
+  const eventId = String(contentState.eventId || state.events.activeEventId || '');
+  const eventAuthority = String(contentState.eventAuthority || (eventSystem === 'v2' ? 'v2' : 'legacy'));
+  const topSubtitle = isV2PilotSheet
+    ? 'Neues Ereignissystem aktiv'
+    : 'Legacy-Ereignisse werden in der modernen Darstellung angezeigt.';
+  const historySlotMarkup = isV2PilotSheet
+    ? ''
+    : `<div class="event-history-slot" aria-hidden="false">${buildEventHistorySnapshotMarkup()}</div>`;
+  const isResolvedV2Pilot = machineState === 'eventV2PilotResolved';
+  const resolvedOutcomeMarkup = isResolvedV2Pilot
+    ? `<div class="event-resolve-outcome-card" data-tone="${escapeHtml(String(tone || 'resolved'))}">
+        <span class="event-resolve-outcome-card__label">Ausgewertet</span>
+        <p class="event-resolve-outcome-card__text">${escapeHtml(String(contentState.description || ''))}</p>
+      </div>`
+    : '';
   const template = document.createElement('template');
   template.innerHTML = `
     <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
       <div class="figma-top-player-title">Event-System</div>
-      <div class="figma-top-player-subtitle">Autoritativ bleibt Legacy, die Darstellung ist exklusiv modern.</div>
+      <div class="figma-top-player-subtitle">${escapeHtml(topSubtitle)}</div>
     </section>
-    <section class="figma-section-card figma-section-card--event event-sheet-modern-card" data-tone="${escapeHtml(String(tone || 'idle'))}">
+    <section class="figma-section-card figma-section-card--event event-sheet-modern-card${isResolvedV2Pilot ? ' event-sheet-modern-card--resolved' : ''}" data-tone="${escapeHtml(String(tone || 'idle'))}" data-event-system="${escapeHtml(eventSystem)}" data-event-id="${escapeHtml(eventId)}" data-event-authority="${escapeHtml(eventAuthority)}">
       <h3 class="figma-section-head">${escapeHtml(i18nT('events.focus'))}</h3>
-      <p class="sheet-badge" data-shadow="${escapeHtml(String(shadowSummary.primaryState || ''))}">${escapeHtml(i18nT('events.status', { state: translateEventState(machineState) }))}</p>
+      <p class="sheet-badge" data-shadow="${escapeHtml(String(shadowSummary.primaryState || ''))}">${escapeHtml(isV2PilotSheet ? String(contentState.statusLabel || 'Aktives Ereignis') : i18nT('events.status', { state: translateEventState(machineState) }))}</p>
       ${buildEventMediaMarkup(mediaModel, tone)}
       <h3 class="event-sheet-modern__title">${escapeHtml(String(contentState.title || 'Event'))}</h3>
       <p class="event-sheet-modern__text">${escapeHtml(String(contentState.description || ''))}</p>
       <p class="sheet-note event-sheet-modern__meta">${escapeHtml(String(contentState.meta || ''))}</p>
+      ${resolvedOutcomeMarkup}
       ${buildEventInsightHtml(viewModel, machineState)}
       <div class="event-option-list event-sheet-modern__options">${buildModernEventOptionListMarkup(contentState.options)}</div>
       ${buildModernEventRewardActionMarkup(contentState.rewardAction)}
-      <div class="event-history-slot" aria-hidden="false">${buildEventHistorySnapshotMarkup()}</div>
+      ${historySlotMarkup}
       ${inspect ? `<p class="event-sheet-modern__inspector">Root ownership: modern-exclusive</p>` : ''}
     </section>
   `;
 
   modernRoot.replaceChildren(template.content.cloneNode(true));
+  bindEventVisualImageFallback(modernRoot);
   bindModernEventSheetInteractions(modernRoot, contentState.options);
 }
 
 function renderEventSheet() {
-  const modernEventUiActive = state.ui.openSheet === 'event' || ['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState);
+  const v2PilotView = getAppEventCenterV2PilotViewModel();
+  const v2PilotHistory = getAppLatestEventCenterV2PilotHistoryEntry();
+  const hasV2PilotPresentation = Boolean(
+    (v2PilotView && v2PilotView.hasPilotEvent)
+    || (v2PilotHistory && !['activeEvent', 'resolving', 'resolved'].includes(String(state.events.machineState || 'idle')))
+  );
+  const modernEventUiActive = state.ui.openSheet === 'event' || hasV2PilotPresentation || ['activeEvent', 'resolving', 'resolved'].includes(state.events.machineState);
   setEventPresentationExclusiveState(modernEventUiActive);
 
   const modernRoot = typeof document !== 'undefined' ? document.getElementById('eventSheetModernRoot') : null;
@@ -16288,7 +16874,9 @@ function renderEventSheet() {
   }
 
   const viewModel = getEventUiViewModel();
-  const machineState = String(state.events.machineState || 'idle');
+  const machineState = viewModel && viewModel.popup && viewModel.popup.machineState
+    ? String(viewModel.popup.machineState)
+    : String(state.events.machineState || 'idle');
   renderModernEventSheetContent(viewModel, machineState);
 }
 
@@ -16334,6 +16922,80 @@ function renderAnalysisPanel(force = false) {
   renderAnalysisTimeline();
 }
 
+function canUseEventV2DevPreviewEntry() {
+  const env = detectRewardEnvironmentName();
+  if (env !== 'local' && env !== 'staging') {
+    return false;
+  }
+  try {
+    const params = new URLSearchParams(window.location && window.location.search ? window.location.search : '');
+    const raw = String(params.get('gs_event_v2_dev_preview') || '').trim().toLowerCase();
+    return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on' || raw === 'unlock';
+  } catch (_error) {
+    return false;
+  }
+}
+
+function buildEventV2DevPreviewEntryState() {
+  const visible = canUseEventV2DevPreviewEntry();
+  return {
+    visible,
+    reason: visible ? 'query_dev_enable' : 'dev_preview_entry_disabled_by_default',
+    canActivateGameplay: false,
+    canMutateSave: false,
+    runtimeWriteEnabled: false,
+    productionEnabled: false,
+    safetyLabels: ['Dev Preview', 'Candidate Only', 'No Write', 'No Gameplay Activation'],
+    entryHref: 'dev/event-v2-preview-gallery.html?mode=event_center_context',
+  };
+}
+
+function openEventV2DevPreviewEntry() {
+  const entryState = buildEventV2DevPreviewEntryState();
+  if (!entryState.visible) {
+    return { ok: false, reason: entryState.reason };
+  }
+  const targetUrl = new URL(entryState.entryHref, window.location.href).toString();
+  window.open(targetUrl, '_blank', 'noopener');
+  return { ok: true, url: targetUrl };
+}
+
+function renderEventV2DevPreviewEntry() {
+  if (!ui.diagnosisSheet) {
+    return;
+  }
+  const entryState = buildEventV2DevPreviewEntryState();
+  const sectionId = 'eventV2DevPreviewEntry';
+  let container = document.getElementById(sectionId);
+
+  if (!entryState.visible) {
+    if (container) {
+      container.remove();
+    }
+    return;
+  }
+
+  if (!container) {
+    container = document.createElement('section');
+    container.id = sectionId;
+    container.className = 'settings-group';
+    ui.diagnosisSheet.appendChild(container);
+  }
+
+  container.innerHTML = [
+    '<h3>Event V2 Dev Preview</h3>',
+    '<p class="sheet-note">Dev Preview · Candidate Only · No Write · No Gameplay Activation</p>',
+    '<button id="eventV2DevPreviewOpenBtn" type="button" class="menu-link">Event V2 Candidate Feed öffnen</button>',
+  ].join('');
+
+  const openBtn = document.getElementById('eventV2DevPreviewOpenBtn');
+  if (openBtn) {
+    openBtn.onclick = () => {
+      openEventV2DevPreviewEntry();
+    };
+  }
+}
+
 function renderSettingsSheet() {
   if (!ui.diagnosisSheet || state.ui.openSheet !== 'diagnosis') {
     return;
@@ -16343,6 +17005,7 @@ function renderSettingsSheet() {
   renderPushToggle();
   void refreshPushStatus({ skipRender: false, force: false });
   updateSettingsUI();
+  renderEventV2DevPreviewEntry();
 }
 
 function getPushManagerApi() {
@@ -18262,6 +18925,7 @@ function openMenuDialog({ title, message, cancelLabel = i18nT('common.cancel'), 
   }
 
   state.ui.menuDialogOpen = true;
+  state.ui.menuOpen = true;
   renderGameMenu();
 }
 
@@ -18978,10 +19642,6 @@ function renderDeathOverlay() {
   ui.deathOverlay.classList.toggle('hidden', !visible);
   ui.deathOverlay.setAttribute('aria-hidden', String(!visible));
 
-  if (visible && state.ui.menuDialogOpen) {
-    closeMenuDialog();
-  }
-
   if (!visible) {
     return;
   }
@@ -19034,8 +19694,10 @@ function renderDeathOverlay() {
     ui.deathRescueBtn.textContent = safePresentation.disabled === true
       ? `${String(safePresentation.label || 'Notfallrettung')} gesperrt`
       : String(safePresentation.label || 'Notfallrettung');
-    ui.deathRescueSubtext.textContent = String(safePresentation.subtext || '');
-    ui.deathRescueFeedback.textContent = meta.rescue.lastResult ? String(meta.rescue.lastResult) : '';
+    const rescueSubtext = String(safePresentation.subtext || '');
+    const rescueLastResult = meta.rescue.lastResult ? String(meta.rescue.lastResult) : '';
+    ui.deathRescueSubtext.textContent = rescueSubtext;
+    ui.deathRescueFeedback.textContent = rescueLastResult && rescueLastResult !== rescueSubtext ? rescueLastResult : '';
   }
 }
 
@@ -19529,6 +20191,11 @@ function dismissActiveEvent() {
     observationText: 'Die Folgen des Nichtstuns werden jetzt über einen kurzen Zeitraum beobachtet.'
   };
   state.events.resolvedOutcome = null;
+  recordEventV1WriteTelemetryHit('W2', {
+    source: 'app.js:dismiss_active_event_legacy_resolve',
+    eventId,
+    notes: ['legacy_resolve_start']
+  });
 
   addLog('choice', `Ereignis geschlossen ohne Auswahl: ${eventId}`, {
     choiceId: '__dismiss__',
@@ -19674,6 +20341,10 @@ function translateEventState(machineState) {
       return i18nT('events.state_resolved');
     case 'cooldown':
       return i18nT('events.state_cooldown');
+    case 'eventV2PilotActive':
+      return 'Aktiv';
+    case 'eventV2PilotResolved':
+      return 'Ausgewertet';
     default:
       return machineState;
   }
@@ -20739,7 +21410,7 @@ async function loadActionsCatalog() {
       state.actions.catalog = normalized;
       state.actions.byId = Object.fromEntries(normalized.map((action) => [action.id, action]));
 
-      console.log('[care] actions catalog loaded', {
+      logRuntimeDebugInfo('[care] actions catalog loaded', {
         url: request.url,
         count: normalized.length
       });

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "assertions": [
+    {
+      "scenarioId": "examplesOnlyDevelopment",
+      "expectedDecision": "blocked",
+      "expectedTrafficLight": "red",
+      "assertionMode": "mustBlock"
+    },
+    {
+      "scenarioId": "fixturesDevelopment",
+      "expectedDecision": "blocked",
+      "expectedTrafficLight": "red",
+      "assertionMode": "mustBlock"
+    },
+    {
+      "scenarioId": "fixturesBeta",
+      "expectedDecision": "blocked",
+      "expectedTrafficLight": "red",
+      "assertionMode": "mustBlock"
+    },
+    {
+      "scenarioId": "fullCatalogEmptyDevelopment",
+      "expectedDecision": "warning",
+      "expectedTrafficLight": "yellow",
+      "assertionMode": "mustWarn"
+    },
+    {
+      "scenarioId": "fullCatalogReleaseCandidate",
+      "expectedDecision": "warning",
+      "expectedTrafficLight": "yellow",
+      "assertionMode": "mustWarn"
+    }
+  ]
+}

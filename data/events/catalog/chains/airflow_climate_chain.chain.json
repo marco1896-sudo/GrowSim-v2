@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 3,
+  "id": "airflow_climate_chain",
+  "title": {
+    "key": "chains.airflow_climate_chain.title"
+  },
+  "summary": {
+    "key": "chains.airflow_climate_chain.summary"
+  },
+  "expectedSpanSimHours": {
+    "min": 8,
+    "max": 36
+  },
+  "preconditions": {
+    "anySetup": true,
+    "stageIn": [
+      "seedling",
+      "vegetative",
+      "preflower",
+      "flowering"
+    ]
+  },
+  "steps": [
+    {
+      "id": "step_airflow_drop",
+      "eventId": "indoor_fan_failure_airflow_drop",
+      "role": "trigger",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": null,
+          "endsChainAs": "success",
+          "delaySimHours": 0
+        },
+        "partial_mitigation": {
+          "to": "step_vpd_drift",
+          "delaySimHours": 8
+        },
+        "poor_outcome": {
+          "to": "step_vpd_drift",
+          "delaySimHours": 6
+        },
+        "no_action": {
+          "to": "step_vpd_drift",
+          "delaySimHours": 4
+        }
+      }
+    },
+    {
+      "id": "step_vpd_drift",
+      "eventId": "indoor_vpd_mismatch_veg",
+      "role": "escalation",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": null,
+          "endsChainAs": "neutral",
+          "delaySimHours": 0
+        },
+        "partial_mitigation": {
+          "to": "step_heat_pressure",
+          "delaySimHours": 8
+        },
+        "poor_outcome": {
+          "to": "step_heat_pressure",
+          "delaySimHours": 6
+        },
+        "no_action": {
+          "to": "step_heat_pressure",
+          "delaySimHours": 4
+        }
+      }
+    },
+    {
+      "id": "step_heat_pressure",
+      "eventId": "indoor_heat_stress_air",
+      "role": "critical",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": null,
+          "endsChainAs": "neutral",
+          "delaySimHours": 0
+        },
+        "partial_mitigation": {
+          "to": "step_outdoor_exposure_branch",
+          "delaySimHours": 10
+        },
+        "poor_outcome": {
+          "to": "step_outdoor_dry_wind",
+          "delaySimHours": 6
+        },
+        "no_action": {
+          "to": "step_outdoor_dry_wind",
+          "delaySimHours": 4
+        }
+      }
+    },
+    {
+      "id": "step_outdoor_exposure_branch",
+      "eventId": "outdoor_wind_exposure_stem_stress",
+      "role": "branch",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": null,
+          "endsChainAs": "success",
+          "delaySimHours": 0
+        },
+        "partial_mitigation": {
+          "to": "step_outdoor_dry_wind",
+          "delaySimHours": 8
+        },
+        "poor_outcome": {
+          "to": "step_outdoor_dry_wind",
+          "delaySimHours": 6
+        },
+        "no_action": {
+          "to": "step_outdoor_dry_wind",
+          "delaySimHours": 6
+        }
+      }
+    },
+    {
+      "id": "step_outdoor_dry_wind",
+      "eventId": "outdoor_heatwave_dry_wind",
+      "role": "critical",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": null,
+          "endsChainAs": "neutral",
+          "delaySimHours": 0
+        },
+        "partial_mitigation": {
+          "to": null,
+          "endsChainAs": "neutral",
+          "delaySimHours": 0
+        },
+        "poor_outcome": {
+          "to": null,
+          "endsChainAs": "failure",
+          "delaySimHours": 0
+        },
+        "no_action": {
+          "to": null,
+          "endsChainAs": "failure",
+          "delaySimHours": 0
+        }
+      }
+    }
+  ],
+  "uiBanner": {
+    "presentWhileActive": true,
+    "labelKey": "chains.airflow_climate_chain.banner",
+    "tone": "warning"
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_airflow_climate_chain"
+    ],
+    "logSteps": true
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-18"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "i18n": {
+    "requiredKeys": [
+      "chains.airflow_climate_chain.title",
+      "chains.airflow_climate_chain.summary",
+      "chains.airflow_climate_chain.banner"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "assets": {
+    "cover": {
+      "kind": "image",
+      "src": "assets/events/event-stress-recovery.png",
+      "altKey": "alt.chains.airflow_climate_chain.cover",
+      "fallback": "assets/events/event-stress-recovery.png"
+    }
+  }
+}

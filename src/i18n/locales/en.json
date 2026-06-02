@@ -426,6 +426,584 @@
       "environment_cold": "Temperatures dropped too far and slowed metabolism and water uptake.",
       "environment_light": "Light intensity and canopy distance were too aggressive for the current condition.",
       "generic": "Multiple stressors built up over time and created the current pressure."
+    },
+    "v2": {
+      "indoor_dry_rootball": {
+        "title": "Dry rootball with uneven moisture recovery",
+        "symptom": "The surface looks dry, leaf tension drops, and water runs unevenly. The core lacks moisture while edge zones react faster than the rest of the pot.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Rehydrate in small steps instead of flooding. This gives the dry core time to reconnect with moisture without overloading the pot.",
+          "why": "When the rootball core dries out, water often bypasses it along the sides. Split watering restores contact in the substrate and lowers the risk of symptom-only fixes.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "After a calm rehydration, moisture spreads more evenly again. Leaf tension improves, pot behavior becomes predictable, and panic rewatering is less likely."
+        }
+      },
+      "indoor_heat_stress_air": {
+        "title": "Heat load above the canopy",
+        "symptom": "Leaf edges curl slightly and the canopy looks tense. Warm air and dry flow pull more water from the leaf than roots can calmly replace.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Cool the air and canopy zone first instead of watering on reflex. Temperature, airflow, and light load need to work together again.",
+          "why": "The stress sits in the air and leaf surface, not automatically in the pot. When the canopy runs too hot, transpiration outruns supply.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "Once the heat peak drops, leaf posture often relaxes quickly. Water demand and follow-up corrections become easier to read again."
+        },
+        "options": {
+          "lower_canopy_temp": {
+            "detail": "Cuts direct load from the canopy and relieves the plant faster than another watering reflex."
+          },
+          "increase_air_exchange": {
+            "detail": "Helps dump warm air as long as the airflow does not turn even drier and harsher."
+          },
+          "raise_light_intensity": {
+            "detail": "More light raises load on an already hot canopy and pushes the diagnosis the wrong way."
+          }
+        }
+      },
+      "indoor_light_nutrient_tox_early": {
+        "title": "Early nutrient stress from light and feed load",
+        "symptom": "Leaf tips show first overload signs. Light pressure and feed strength are out of balance, pushing the plant into avoidable stress early in the cycle.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Lower pressure briefly and recalibrate light and feed in small steps. This restores uptake stability without harsh counter-moves.",
+          "why": "When light intensity and nutrient strength do not match, metabolic pressure rises faster than the plant can process. Small corrections work better than extreme reversals.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "After a gentle correction, new growth usually settles quickly. Efficiency improves and the next adjustment becomes much clearer."
+        }
+      },
+      "indoor_overwatering_early": {
+        "title": "Early overwatering in the root zone",
+        "symptom": "Leaves hang softly while the pot is still heavy. The root zone stays too wet and gets too little air, so uptake slows down even though enough water is present.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Do not water again yet. Bring air back into the root zone, stabilize the rhythm, and watch the trend before your next correction.",
+          "why": "In early overwatering, the core issue is often oxygen shortage in the substrate, not missing water. If the pot stays wet too long, roots respond slowly and thirst-like signals still appear.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "With a short watering pause and better airflow, root stress usually drops. New leaves recover a steadier posture and your watering rhythm becomes easier to."
+        }
+      },
+      "indoor_soil_ph_out_of_range": {
+        "title": "pH is slowing nutrient uptake",
+        "symptom": "Leaves look deficient even though nutrients are still in the medium. pH has drifted away from target and is blocking part of the uptake.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Measure pH first and correct it in small steps. More feed helps little if the plant cannot take it up well right now.",
+          "why": "pH is not just a lab number. It helps decide which nutrients stay available at the root zone.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "Once pH returns to range, follow-up corrections work better. New growth looks calmer and the trend is easier to read."
+        },
+        "options": {
+          "adjust_ph_gradual": {
+            "detail": "Targets the cause directly and eases uptake without a hard swing."
+          },
+          "verify_runoff_then_adjust": {
+            "detail": "Confirms the reading first so you do not push pH the wrong way."
+          },
+          "add_more_nutrients_now": {
+            "detail": "More feed without measurement often raises pressure while uptake stays blocked."
+          }
+        }
+      },
+      "indoor_vpd_mismatch_veg": {
+        "title": "Climate is off for early veg",
+        "symptom": "Leaves look slack one moment and tense the next, even with decent watering and feed. Temperature and humidity are not pulling together.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Stabilize climate first instead of chasing the issue with water or feed. Veg growth needs a calm range for transpiration and uptake.",
+          "why": "VPD describes how hard the air pulls water from the leaf. When it swings too high or too low, temperature, humidity, and transpiration stop working together.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "With calmer climate, the plant works more evenly again. Leaf tension and growth are easier to read."
+        },
+        "options": {
+          "rebalance_temp_humidity": {
+            "detail": "Brings temperature and humidity back into a calmer working range."
+          },
+          "stabilize_then_monitor": {
+            "detail": "Prevents overreaction and shows whether one small climate change is already enough."
+          },
+          "chase_with_random_changes": {
+            "detail": "Too many quick climate changes blur the cause and often push stress higher."
+          }
+        }
+      },
+      "outdoor_cold_night_stress": {
+        "title": "Cold nights visibly slow plant metabolism",
+        "symptom": "After cold nights, morning growth response looks sluggish and slightly droopy. Uptake slows down while daytime demand rises again, creating an unstable daily pattern.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Buffer night conditions and avoid rushed morning overreactions. Give the plant time to return to a stable temperature flow.",
+          "why": "Low night temperature reduces enzyme activity and root speed. If daytime pressure rises too fast, demand and root delivery fall out of sync.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "With better night buffering, the daily start becomes smoother. The plant reacts less abruptly and climate-care tuning gets easier."
+        }
+      },
+      "outdoor_heatwave_dry_wind": {
+        "title": "Heatwave plus dry wind",
+        "symptom": "Leaves lose tension even when some moisture may still be in the pot. Heat and dry wind pull water from the leaf faster than roots can replace it.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Take load off the spot before pouring in more water. Shade, wind cover, and calmer timing help more here than panic push.",
+          "why": "Hot air and dry wind raise transpiration together. The balance between leaf demand and root supply can break fast even while some water remains in the pot.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "With shade and calmer airflow, leaf tension usually returns step by step. Water timing and follow-up moves become clearer."
+        },
+        "options": {
+          "shade_and_windbreak": {
+            "detail": "Cuts direct load from sun and airflow without rebuilding the whole outdoor setup."
+          },
+          "water_timing_adjust_dawn": {
+            "detail": "Builds reserve before the hottest part of the day, but works best with site relief."
+          },
+          "defoliate_midday": {
+            "detail": "Removes leaf area right inside the stress peak and slows recovery."
+          }
+        }
+      },
+      "outdoor_heavy_rain_waterlogging_risk": {
+        "title": "Heavy rain raises waterlogging risk in pots",
+        "symptom": "After strong rain, pots stay heavy and leaves lose tension. The root zone remains saturated too long, reducing oxygen and slowing uptake despite high moisture.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Prioritize drainage now and allow a dry window. Adding more water would be counterproductive because roots need air and structure first.",
+          "why": "During prolonged saturation, pore space fills with water instead of air. Root function drops and stress signals appear even though water is not lacking.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "With better drainage and patience, root pressure drops. Plants often recover posture and the risk of follow-up stress stays manageable."
+        }
+      },
+      "shared_early_pest_signs_mild": {
+        "title": "Early pest traces",
+        "symptom": "Fine traces are showing on leaf undersides and a few small spots. It is still mild, which makes this the best moment for calm control.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Inspect carefully and stay calm instead of treating everything at once. Early signs reward observation, clean control, and small steps.",
+          "why": "Mild pest signs are not a panic alarm, but they are a strong diagnosis window. Reading undersides and patterns early saves the plant later blanket treatment.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "Early control usually keeps pressure small. You keep the overview and need harsh follow-up treatment less often."
+        },
+        "options": {
+          "targeted_inspection_isolation": {
+            "detail": "Checks hotspots directly and keeps the response small before spread grows."
+          },
+          "increase_monitoring_frequency": {
+            "detail": "Tightens checks for a few days and quickly shows whether pressure is really rising."
+          },
+          "spray_everything_blindly": {
+            "detail": "Broad spraying without a target stresses the plant and blurs your diagnosis."
+          }
+        }
+      },
+      "shared_light_distance_error": {
+        "title": "Light distance error with avoidable stress",
+        "symptom": "Early stress signals appear because distance to the light source is off. Too close or too far reduces efficiency and can amplify side stress in other systems.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Adjust distance in small controlled steps. This stabilizes light load without triggering new stress peaks from oversized corrections.",
+          "why": "Large distance jumps change load abruptly and make plant responses harder to read. Gradual adjustments keep cause and effect clearer.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "With cleaner distance tuning, leaf behavior calms down. Light use improves and follow-up issues in water or climate appear less often."
+        }
+      },
+      "shared_rootbound_warning": {
+        "title": "Root space is getting too tight",
+        "symptom": "The pot dries at the edge first but stays heavy inside. Roots have little room left, so uptake and growth respond more slowly.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "Several small factors are interacting.",
+        "coach": {
+          "summary": "Check the pot now instead of only adding more water. When root space is full, a planned transition helps more than extra rescue feeding.",
+          "why": "In a rootbound pot, roots circle the wall, water spreads unevenly, and the plant reacts more slowly even with decent care. Earlier action is easier than late rescue.",
+          "actions": {
+            "0": "Measure and observe first, then correct.",
+            "1": "Apply only one change per cycle."
+          }
+        },
+        "aftermath": {
+          "lesson": "With more root space, moisture evens out again. Uptake and growth calm down, and you spend less time chasing symptoms."
+        },
+        "options": {
+          "plan_repot_next_window": {
+            "detail": "Sets up the next larger pot in time and relieves the crowded root zone cleanly."
+          },
+          "optimize_watering_until_repot": {
+            "detail": "Keeps the plant steadier until the repot, but does not solve the space limit itself."
+          },
+          "force_heavy_feed_now": {
+            "detail": "More feed does not fix a space problem and can raise pressure inside the full pot."
+          }
+        }
+      },
+      "learning": {
+        "lc_climate_vpd_basics": {
+          "title": "Climate & VPD basics",
+          "subtitle": "Think temperature and humidity together",
+          "bullets": {
+            "0": "VPD describes transpiration pressure.",
+            "1": "Small climate corrections are usually more stable.",
+            "2": "Check leaf posture after each change."
+          },
+          "real_world_note": "Good climate is a balance of temperature, RH, and airflow."
+        },
+        "lc_ph_nutrient_uptake_basics": {
+          "title": "pH & nutrient uptake",
+          "subtitle": "Not only what you feed, but what is absorbed",
+          "bullets": {
+            "0": "Proper pH improves uptake.",
+            "1": "More fertilizer does not solve uptake lockouts.",
+            "2": "Correct in small steps and read trends."
+          },
+          "real_world_note": "Uptake issues often look like deficiency."
+        },
+        "lc_watering_basics": {
+          "title": "Read watering correctly",
+          "subtitle": "Water by signal, not by panic",
+          "bullets": {
+            "0": "Pot weight is a strong indicator.",
+            "1": "Wet soil plus droop can mean overwatering.",
+            "2": "Slow rehydration is usually more stable."
+          },
+          "real_world_note": "Root-zone oxygen is key for stable uptake."
+        },
+        "lc_rootzone_oxygen_basics": {
+          "title": "Roots need air",
+          "subtitle": "Why wet dense medium can stress a plant anyway",
+          "bullets": {
+            "0": "Roots work best when enough oxygen is still available in the medium.",
+            "1": "If substrate stays wet or dense, gas exchange drops and stress rises quickly.",
+            "2": "Dryback, structure, and drainage are all part of watering practice."
+          },
+          "real_world_note": "A wet heavy pot can look well supplied while the root zone is actually running short on air."
+        },
+        "lc_airflow_fundamentals": {
+          "title": "Airflow shapes climate",
+          "subtitle": "Gentle movement helps, hard wind stresses",
+          "bullets": {
+            "0": "Gentle airflow moves moisture away and breaks up warm pockets in the canopy.",
+            "1": "Good airflow supports transpiration and stronger stems, but it is not hard wind.",
+            "2": "Solve stale air and harsh exposure separately: air path indoors, shelter outdoors."
+          },
+          "real_world_note": "The right amount of air movement feels stable, not aggressive. Plants should be able to breathe, not fight all day."
+        },
+        "lc_light_intensity_distance_basics": {
+          "title": "Read light distance calmly",
+          "subtitle": "Think intensity, distance, and leaf signal together",
+          "bullets": {
+            "0": "Bright tops often mean the canopy is getting too much direct light.",
+            "1": "Raise distance or lower intensity step by step instead of reacting hard.",
+            "2": "Pale upper leaves do not automatically mean a nutrient problem."
+          },
+          "real_world_note": "Light stress is usually corrected at the setup. More feed rarely fixes bleached tops."
+        },
+        "lc_pest_observation_basics": {
+          "title": "Read early pest signs",
+          "subtitle": "Check leaf undersides, monitor, then act with intent",
+          "bullets": {
+            "0": "Mild specks or eggs often show up under leaves first.",
+            "1": "Early monitoring is usually stronger than late panic treatment.",
+            "2": "Targeted inspection helps more than spraying everything blindly."
+          },
+          "real_world_note": "Pests found early can usually be slowed down with calmer, cleaner decisions."
+        },
+        "lc_training_recovery_basics": {
+          "title": "Training needs recovery",
+          "subtitle": "Stress stacks faster than a plant can bounce back",
+          "bullets": {
+            "0": "Bending, pruning, and reshaping all cost recovery energy.",
+            "1": "Stacked interventions often slow new growth more than expected.",
+            "2": "Stabilize first, read the response, then decide on the next step."
+          },
+          "real_world_note": "Strong training routines include quiet windows where the plant can rebuild tension and rhythm."
+        },
+        "lc_recovery_observation_basics": {
+          "title": "Observe recovery first",
+          "subtitle": "Sometimes waiting is the next smart care move",
+          "bullets": {
+            "0": "If posture and tension are returning, you may not need another correction yet.",
+            "1": "After a good fix, observation often helps more than a second reaction.",
+            "2": "Recovery becomes clearer when you give the plant a little time."
+          },
+          "real_world_note": "Plants often improve with a delay. Correcting again too early can interrupt that recovery."
+        }
+      },
+      "indoor_fan_failure_airflow_drop": {
+        "title": "Airflow drops out",
+        "symptom": "Air feels still and heavy around the top of the canopy.",
+        "description": "Air movement is too weak or has dropped away. Warm humid pockets stay between the leaves and the room stops breathing well around the plant.",
+        "cause": "Without gentle air movement, leaf moisture dries off more slowly. That raises microclimate stress and makes weak tissue more likely.",
+        "coach": {
+          "summary": "This is not a feed issue. Restore the air path through the canopy first.",
+          "actions": [
+            "Bring airflow back to plant height and break up dead zones in the canopy.",
+            "After the fix, watch humidity and leaf response calmly for a few hours."
+          ],
+          "why": "Airflow moves moisture away, supports transpiration, and keeps warm humid pockets from sitting right on the leaves."
+        },
+        "aftermath": {
+          "lesson": "Airflow is part of the plant climate. Too little movement can stress a plant even before temperatures look extreme."
+        }
+      },
+      "indoor_light_burn_canopy_top": {
+        "title": "Light sits too close to the top",
+        "symptom": "Upper leaves, edges, or tips start paling while the rest still looks calm. That points more to excess light at the top than to missing feed.",
+        "description": "The plant shows early signs of a manageable problem.",
+        "cause": "The uppermost zone is taking more light or heat than it can buffer right now. The reaction sits at the top, not evenly through the whole plant.",
+        "coach": {
+          "summary": "Check distance or intensity before feeding harder. Small light corrections are cleaner here than a reflex on nutrients.",
+          "actions": [
+            "Raise the lamp a little or lower intensity in a moderate step.",
+            "Mark the affected tips and compare only the new growth after 24 hours."
+          ],
+          "why": "When only the top zone brightens, the cause often sits in light load. More nutrients do not fix overwhelmed leaf tips."
+        },
+        "aftermath": {
+          "lesson": "With better distance, the top settles down again. New tips come in more evenly and light stress is easier to separate from real deficiency signals."
+        },
+        "options": {
+          "adjust_light_distance_stepwise": {
+            "detail": "Lowers light load in a controlled way and gives you a cleaner read on recovery."
+          },
+          "measure_then_wait_24h": {
+            "detail": "Prevents overcorrection and makes the next response from the top easier to read."
+          },
+          "feed_more_for_pale_top": {
+            "detail": "Extra feed confuses light stress with deficiency and hides the real cause."
+          }
+        }
+      },
+      "indoor_rootzone_airless_medium": {
+        "title": "Root zone runs out of air",
+        "symptom": "The medium stays dense, heavy, and cool for too long.",
+        "description": "The root zone is too wet or too compact. Water is present, but gas exchange in the medium is too weak and the roots start responding slowly.",
+        "cause": "Roots need oxygen. When pore space stays filled with water, root respiration drops and stress rises even though the pot looks fully supplied.",
+        "coach": {
+          "summary": "This needs air more than water. Restore a dryback window and better structure first.",
+          "actions": [
+            "Wait before the next watering so the root zone can breathe again.",
+            "Loosen the surface or improve the drainage path without panic-repotting the plant."
+          ],
+          "why": "A wet dense root zone blocks water movement and gas exchange at the same time. To the plant that feels like a poorly functioning root system."
+        },
+        "aftermath": {
+          "lesson": "Water only helps when the root zone can still breathe."
+        }
+      },
+      "outdoor_pot_dries_by_afternoon": {
+        "title": "Outdoor pot crashes by afternoon",
+        "symptom": "The plant dips in the warm half of the day even though morning moisture looked decent. Sun, wind, and limited pot volume drain the reserve faster than expected.",
+        "description": "Outdoors, the pot loses water through sun, wind, and small volume faster than the morning can buffer. The pattern is rhythmic more than permanent.",
+        "cause": "A small or exposed pot drops into deficit faster through the day. This is often timing and volume, not instant proof of bad care overall.",
+        "coach": {
+          "summary": "Stabilize timing and site instead of pouring in more water during the heat. Water timing, light cover, and pot volume matter more here than panic.",
+          "actions": [
+            "Move watering earlier so the pot enters the hot part of the day with reserve.",
+            "Use mulch, light cover, or more volume to soften the evaporation peak."
+          ],
+          "why": "With outdoor pots, the issue is not only how much water goes in, but when it goes in and how fast it leaves again. Chasing the midday drop often only treats the symptom."
+        },
+        "aftermath": {
+          "lesson": "When timing and site fit better, the plant stays steadier through the day. Then it becomes clearer whether later mulch or more volume is really needed."
+        },
+        "options": {
+          "water_timing_adjust_dawn": {
+            "detail": "Builds reserve before the heat and supports the harder second half of the day more cleanly."
+          },
+          "shade_and_windbreak": {
+            "detail": "Lowers evaporative pressure through site relief when sun and wind are pulling together."
+          },
+          "double_feed_in_heat": {
+            "detail": "More feed does not replace missing water and can make the dry daytime stress harsher."
+          }
+        }
+      },
+      "outdoor_early_pest_pressure_leaf_underside": {
+        "title": "Early pest pressure under leaves",
+        "symptom": "Mild specks or traces show up on leaf undersides.",
+        "description": "The damage is still light, but it already sits where people often look too rarely. Outside, that early signal can disappear into the routine very quickly.",
+        "cause": "Early pressure often begins small: a few specks, faint traces, first activity under protected leaf surfaces. The key move right now is observation, not panic action.",
+        "coach": {
+          "summary": "Not a panic case yet. Check cleanly and respond with precision.",
+          "actions": [
+            "Inspect undersides carefully and keep the affected areas on a short watch.",
+            "Reduce pressure mechanically or with a narrow response instead of blanket treatment."
+          ],
+          "why": "The earlier the pattern is identified, the smaller the intervention can stay. Overreaction often stresses the plant more than the first signal did."
+        },
+        "aftermath": {
+          "lesson": "Early pest signals are usually small. The difference comes from calm follow-up and better looking."
+        }
+      },
+      "outdoor_wind_exposure_stem_stress": {
+        "title": "Wind stresses stems and shoots",
+        "symptom": "Shoots lean hard and begin to show rub or pressure marks.",
+        "description": "The site is too exposed or the plant was moved into stronger airflow too quickly. The stimulus is no longer gentle movement but constant mechanical load.",
+        "cause": "Light movement strengthens tissue, but steady gusts or abrupt exposure cost stability and water. Young plants can slide into stress fast under that load.",
+        "coach": {
+          "summary": "Stabilize first and harden off more slowly.",
+          "actions": [
+            "Support the shoots or reduce sway until the plant stands cleanly again.",
+            "Use shelter and build new exposure only step by step."
+          ],
+          "why": "Hardening off means measured exposure. Too much wind at once drains water and strains tissue instead of building resilience."
+        },
+        "aftermath": {
+          "lesson": "Air movement helps, but constant drag is not training. Outdoor exposure has to be built."
+        }
+      },
+      "shared_panic_watering_misread": {
+        "title": "Droop is not a watering answer yet",
+        "symptom": "Leaves hang, but that can mean too wet or too dry. Without pot weight, timing, and substrate feel, the water picture is still open.",
+        "description": "Drooping leaves quickly trigger the reflex to water again. That is the trap: the same picture can mean too wet, too dry, or simply time-of-day pressure.",
+        "cause": "If you react only to leaf posture, you skip the real diagnosis. Weight, substrate feel, and timing tell you whether water is missing or already too much is there.",
+        "coach": {
+          "summary": "Check the pot first, then act. One short check saves you from covering an unclear signal with even more water.",
+          "actions": [
+            "Check real pot weight or moisture before adding new water.",
+            "If the picture stays unclear, wait briefly and factor in root zone plus time of day."
+          ],
+          "why": "The same droop signal can come from opposite causes. Good care separates observation from reaction instead of mixing both in one panic move."
+        },
+        "aftermath": {
+          "lesson": "When you read first and water second, droop signals become useful again. That is how you learn the difference between real thirst and wet-root stress."
+        },
+        "options": {
+          "check_weight_before_watering": {
+            "detail": "Separates instinct from diagnosis and gives you a better chance to choose correctly."
+          },
+          "inspect_rootzone_then_wait": {
+            "detail": "Helps with mixed signals when you still need to judge whether wetness or dryness is leading."
+          },
+          "water_on_panic_signal": {
+            "detail": "Can push an already wet root zone further and make the signal even harder to read afterward."
+          }
+        }
+      },
+      "shared_substrate_drainage_compaction": {
+        "title": "Drainage is collapsing in the mix",
+        "symptom": "Water enters slowly and the surface starts sealing over. Lower in the pot, the root zone stays wet long after the top already invites another move.",
+        "description": "The substrate is losing structure. Water stands longer, air pores disappear, and the root-zone rhythm becomes sluggish.",
+        "cause": "Compacted or weak-draining medium slows runoff and gas exchange at the same time. It looks like a watering mistake, but the real problem sits in the substrate build.",
+        "coach": {
+          "summary": "Fix structure and runoff first instead of only watering more or less. The problem sits in the medium, not only in the volume.",
+          "actions": [
+            "Improve drainage at the surface and along the runoff path.",
+            "Plan a repot or substrate correction at the next sensible window."
+          ],
+          "why": "When air pores collapse, water moves poorly and oxygen moves in poorly. That is why every watering cycle starts to feel messy."
+        },
+        "aftermath": {
+          "lesson": "With looser structure, the root zone runs calmer. Water drains more predictably and you spend less time correcting swampy spots or dry pockets."
+        },
+        "options": {
+          "improve_drainage_surface": {
+            "detail": "Reopens the upper choke point and helps water plus air move through the medium more cleanly."
+          },
+          "plan_repot_next_window": {
+            "detail": "Makes sense if compaction sits deeper and a later clean reset helps more than patching."
+          },
+          "keep_watering_same_volume": {
+            "detail": "Keeps the same pattern alive and only pushes a structure problem into the next cycle."
+          }
+        }
+      },
+      "indoor_overtraining_stall_mild": {
+        "title": "Training got stacked too fast",
+        "symptom": "Fresh growth stalls after several interventions in a short window.",
+        "description": "The plant has taken too many training signals without enough recovery space. Instead of building forward, it shifts energy into stress handling and repair.",
+        "cause": "Every bend, cut, and correction needs recovery time. When those actions stack, the plant loses the clean pause it needs to answer well.",
+        "coach": {
+          "summary": "No more shaping right now. Give stability and quiet back first.",
+          "actions": [
+            "Pause all training for a few days and observe instead of correcting again.",
+            "Keep climate steady so the plant can spend energy on recovery instead of defense."
+          ],
+          "why": "More intervention will not fix the stall. Wait until tension and fresh growth return before you touch structure again."
+        },
+        "aftermath": {
+          "lesson": "Recovery is part of training. Good structure comes from rhythm, not nonstop intervention."
+        }
+      },
+      "shared_observation_recovery_after_stress": {
+        "title": "Recovery becomes visible",
+        "symptom": "The plant is lifting again and looks noticeably calmer.",
+        "description": "After a clean correction, the plant starts to show clear recovery signs. This is the moment where observation is worth more than one more action.",
+        "cause": "The last correction worked and the plant is regulating for itself again. Jumping in too quickly often interrupts that rebound.",
+        "coach": {
+          "summary": "It is coming back. Watch now and do not stack new actions.",
+          "actions": [
+            "Observe calmly for 24 hours and do not interrupt the rebound with another correction.",
+            "Read leaf tension and fresh growth speed before reaching for water again."
+          ],
+          "why": "Recovery teaches as much as stress does. If you learn to read this phase, later decisions get calmer and cleaner."
+        },
+        "aftermath": {
+          "lesson": "Improvement is a signal too. Not every positive shift needs an immediate follow-up action."
+        }
+      }
     }
   },
   "settings": {
@@ -829,29 +1407,29 @@
         "riskRaised": "Risk climbed",
         "riskSettled": "Risk settled"
       },
-        "goodCare": "Clean care choice. The plant should settle well.",
-        "goodFeeding": "Good call. The plant looks ready to take in feed without extra pressure.",
-        "goodWatering": "Good watering call. The root zone should stay calmer now.",
-        "hygieneSettled": "Good call. The space feels calmer now and the background risk eases a little.",
-        "grade": {
-          "bad": "Bad",
-          "good": "Good",
-          "okay": "Okay",
-          "perfect": "Perfect",
-          "risky": "Risky"
-        },
-        "okayCare": "The action landed, but timing was only average.",
-        "perfectCare": "Excellent call. The plant is responding cleanly.",
-        "perfectWatering": "Perfect dryback timing. That was a premium watering call.",
-        "rootZoneRelief": "Good call. The root zone is being eased carefully without turning into a full watering pass.",
-        "rootZoneReliefLimited": "That relief move can only do so much here. Keep watching whether the root zone is really under pressure.",
-        "riskyCare": "The action worked, but it pushed extra risk.",
-        "riskyFeeding": "Supply rises, but so does salt pressure. Go a little lighter next time.",
-        "riskyWatering": "That was a bit early. Watch the root zone before watering again.",
-        "uptakeLimited": "Uptake is still limited. Calm the root zone and salt pressure a bit more first.",
-        "uptakeStabilized": "Good call. Uptake feels steadier now without pushing salt load too hard.",
-        "title": "Aftercare"
+      "goodCare": "Clean care choice. The plant should settle well.",
+      "goodFeeding": "Good call. The plant looks ready to take in feed without extra pressure.",
+      "goodWatering": "Good watering call. The root zone should stay calmer now.",
+      "hygieneSettled": "Good call. The space feels calmer now and the background risk eases a little.",
+      "grade": {
+        "bad": "Bad",
+        "good": "Good",
+        "okay": "Okay",
+        "perfect": "Perfect",
+        "risky": "Risky"
       },
+      "okayCare": "The action landed, but timing was only average.",
+      "perfectCare": "Excellent call. The plant is responding cleanly.",
+      "perfectWatering": "Perfect dryback timing. That was a premium watering call.",
+      "rootZoneRelief": "Good call. The root zone is being eased carefully without turning into a full watering pass.",
+      "rootZoneReliefLimited": "That relief move can only do so much here. Keep watching whether the root zone is really under pressure.",
+      "riskyCare": "The action worked, but it pushed extra risk.",
+      "riskyFeeding": "Supply rises, but so does salt pressure. Go a little lighter next time.",
+      "riskyWatering": "That was a bit early. Watch the root zone before watering again.",
+      "uptakeLimited": "Uptake is still limited. Calm the root zone and salt pressure a bit more first.",
+      "uptakeStabilized": "Good call. Uptake feels steadier now without pushing salt load too hard.",
+      "title": "Aftercare"
+    },
     "aftercare": {
       "grade": "Grade",
       "title": "Aftercare"
@@ -958,6 +1536,7 @@
       }
     },
     "risk": {
+      "elevated": "Elevated",
       "high": "High",
       "low": "Low",
       "medium": "Medium"
@@ -1350,6 +1929,314 @@
         "description": "Helps ease pressure early instead of reacting too late.",
         "success": "Gentle stress check done. The plant feels a little calmer now."
       }
+    }
+  },
+  "alt": {
+    "events": {
+      "v2": {
+        "indoor_dry_rootball": {
+          "cover": "Illustration for event indoor_dry_rootball"
+        },
+        "indoor_heat_stress_air": {
+          "cover": "Illustration for event indoor_heat_stress_air"
+        },
+        "indoor_light_nutrient_tox_early": {
+          "cover": "Illustration for event indoor_light_nutrient_tox_early"
+        },
+        "indoor_overwatering_early": {
+          "cover": "Illustration for event indoor_overwatering_early"
+        },
+        "indoor_soil_ph_out_of_range": {
+          "cover": "Illustration for event indoor_soil_ph_out_of_range"
+        },
+        "indoor_vpd_mismatch_veg": {
+          "cover": "Illustration for event indoor_vpd_mismatch_veg"
+        },
+        "outdoor_cold_night_stress": {
+          "cover": "Illustration for event outdoor_cold_night_stress"
+        },
+        "outdoor_heatwave_dry_wind": {
+          "cover": "Illustration for event outdoor_heatwave_dry_wind"
+        },
+        "outdoor_heavy_rain_waterlogging_risk": {
+          "cover": "Illustration for event outdoor_heavy_rain_waterlogging_risk"
+        },
+        "shared_early_pest_signs_mild": {
+          "cover": "Illustration for event shared_early_pest_signs_mild"
+        },
+        "shared_light_distance_error": {
+          "cover": "Illustration for event shared_light_distance_error"
+        },
+        "shared_rootbound_warning": {
+          "cover": "Illustration for event shared_rootbound_warning"
+        },
+        "indoor_fan_failure_airflow_drop": {
+          "cover": "Indoor plant with stagnant humid air inside a dense canopy"
+        },
+        "indoor_light_burn_canopy_top": {
+          "cover": "Indoor canopy with pale top leaves under too much light pressure"
+        },
+        "indoor_rootzone_airless_medium": {
+          "cover": "Wet dense medium with a stressed root zone"
+        },
+        "outdoor_pot_dries_by_afternoon": {
+          "cover": "Outdoor pot drying hard through a warm day"
+        },
+        "outdoor_early_pest_pressure_leaf_underside": {
+          "cover": "Leaf underside showing early mild pest pressure"
+        },
+        "outdoor_wind_exposure_stem_stress": {
+          "cover": "Outdoor plant in open wind with stressed shoots"
+        },
+        "shared_panic_watering_misread": {
+          "cover": "Drooping plant with unclear moisture status before a watering choice"
+        },
+        "shared_substrate_drainage_compaction": {
+          "cover": "Compacted substrate with slow runoff and a wet sealing surface"
+        },
+        "indoor_overtraining_stall_mild": {
+          "cover": "Indoor plant with slowed growth after stacked training stress"
+        },
+        "shared_observation_recovery_after_stress": {
+          "cover": "Plant standing back up after stress with visible recovery"
+        }
+      }
+    },
+    "chains": {
+      "watering_rootzone_chain": {
+        "cover": "Illustration for watering-root-zone chain"
+      },
+      "airflow_climate_chain": {
+        "cover": "Illustration for airflow-climate chain"
+      }
+    }
+  },
+  "options": {
+    "slow_rehydrate_split": "Slow Rehydrate Split",
+    "check_pot_weight_then_wait": "Check Pot Weight Then Wait",
+    "flood_pot_fast": "Flood Pot Fast Aktion",
+    "lower_canopy_temp": "Lower Canopy Temp Aktion",
+    "increase_air_exchange": "Increase Air Exchange",
+    "raise_light_intensity": "Raise Light Intensity",
+    "reduce_feed_strength": "Feed-Staerke sanft senken",
+    "observe_24h_then_rebalance": "24h beobachten, dann justieren",
+    "increase_feed_again": "Feed erneut erhoehen",
+    "pause_watering_24h": "Pause watering for 24h",
+    "improve_airflow_canopy": "Stabilize canopy airflow",
+    "water_again_immediately": "Water Again Immediately",
+    "adjust_ph_gradual": "Adjust Ph Gradual Aktion",
+    "verify_runoff_then_adjust": "Verify Runoff Then Adjust",
+    "add_more_nutrients_now": "Add More Nutrients Now",
+    "rebalance_temp_humidity": "Temp und Feuchte ausgleichen",
+    "stabilize_then_monitor": "Stabilisieren und eng monitoren",
+    "chase_with_random_changes": "Zufaellige Klimawechsel jagen",
+    "insulate_root_zone_night": "Wurzelzone nachts isolieren",
+    "reduce_evening_watering": "Abendgabe bewusst reduzieren",
+    "late_night_heavy_water": "Spaet nachts stark giessen",
+    "shade_and_windbreak": "Add shade plus windbreak",
+    "water_timing_adjust_dawn": "Move watering to dawn",
+    "defoliate_midday": "Mittags entlauben",
+    "improve_drainage_surface": "Improve drainage flow",
+    "pause_watering_monitor": "Pause Watering Monitor",
+    "water_extra_after_rain": "Water Extra After Rain",
+    "targeted_inspection_isolation": "Inspect and isolate early",
+    "increase_monitoring_frequency": "Tighten follow-up checks",
+    "spray_everything_blindly": "Spray everything blindly now",
+    "adjust_light_distance_stepwise": "Fine-tune light distance",
+    "measure_then_wait_24h": "Mark it and watch 24h",
+    "move_light_extreme": "Move Light Extreme",
+    "plan_repot_next_window": "Plan the next repot",
+    "optimize_watering_until_repot": "Wasserfuehrung bis Umtopfen",
+    "force_heavy_feed_now": "Jetzt stark nachduengen",
+    "reduce_feed_strength_temp": "Reduce Feed Strength Temp",
+    "flush_light_and_rebalance": "Flush Light And Rebalance",
+    "increase_feed_now": "Increase Feed Now Aktion",
+    "adjust_temp_humidity_stepwise": "Adjust Temp Humidity Stepwise",
+    "reduce_exhaust_for_balance": "Reduce Exhaust For Balance",
+    "ignore_climate_signal": "Ignore Climate Signal",
+    "add_midday_shade_windbreak": "Add Midday Shade Windbreak",
+    "water_small_dawn_cycle": "Water Small Dawn Cycle",
+    "defoliate_in_heat_peak": "Defoliate In Heat Peak",
+    "protect_root_zone_night": "Protect Root Zone Night",
+    "reduce_night_exposure": "Reduce Night Exposure",
+    "late_evening_heavy_feed": "Late Evening Heavy Feed",
+    "plan_upsize_root_space": "Plan Upsize Root Space",
+    "topdress_surface_only": "Topdress Surface Only",
+    "increase_feed_without_root_check": "Increase Feed Without Root Che",
+    "open_canopy_air_channel": "Open an air lane through the canopy",
+    "raise_humidity_without_airflow": "Raise humidity only",
+    "feed_more_for_pale_top": "Feed harder for pale top growth",
+    "feed_through_the_soggy_medium": "Feed into soggy medium",
+    "double_feed_in_heat": "Double-feed in heat",
+    "stake_and_reduce_sway": "Stake and calm the sway",
+    "harden_off_in_steps": "Build wind exposure in steps",
+    "strip_leaves_during_gusts": "Strip leaves in gusts",
+    "check_weight_before_watering": "Check weight before watering",
+    "inspect_rootzone_then_wait": "Check root zone, then wait",
+    "water_on_panic_signal": "Water immediately on panic",
+    "keep_watering_same_volume": "Keep watering the same volume",
+    "pause_training_for_recovery_window": "Pause training for recovery",
+    "stabilize_climate_then_wait": "Stabilize climate and wait",
+    "stack_more_training_now": "Add more training now",
+    "observe_24h_without_new_action": "Observe for 24h only",
+    "note_recovery_signs_and_hold": "Note recovery and hold",
+    "water_again_just_in_case": "Water again just in case"
+  },
+  "symptoms": {
+    "leaf_curl_light": "Observe symptom",
+    "leaf_edge_taco": "Observe symptom",
+    "leaf_glossy_claw": "Observe symptom",
+    "leaf_droop_soft": "Observe symptom",
+    "leaf_interveinal_mild": "Observe symptom",
+    "leaf_posture_mixed": "Observe symptom",
+    "leaf_droop_cold_morning": "Observe symptom",
+    "leaf_curl_up_dry_edge": "Observe symptom",
+    "leaf_droop_after_rain": "Observe symptom",
+    "leaf_spotting_mild": "Observe symptom",
+    "leaf_pray_or_bleach_hint": "Observe symptom",
+    "growth_stall_mild": "Observe symptom",
+    "canopy_air_still_humid": "Still humid air sitting in the canopy",
+    "canopy_top_bleach_edge": "Paling edges at the canopy top",
+    "medium_stays_dense_cool": "Medium stays dense, heavy, and cool",
+    "midday_droop_recovers_late": "Midday droop with late recovery",
+    "underside_specks_mild": "Fine specks under the leaves",
+    "stem_lean_rub_marks": "Leaning stems with rub marks",
+    "droop_signal_unclear": "Droop signal with unclear cause",
+    "runoff_slow_surface_seals": "Slow runoff with a sealing surface",
+    "new_growth_stalls_after_bending": "Fresh growth stalls after repeated training",
+    "recovery_posture_returning": "Leaf posture is returning and tension is coming back"
+  },
+  "diagnostics": {
+    "soil_probe_check": {
+      "dry_core": "Check diagnostic hint"
+    },
+    "canopy_temp_check": {
+      "hotspot": "Check diagnostic hint"
+    },
+    "ec_trend_check": {
+      "early_tox_signs": "Check diagnostic hint"
+    },
+    "pot_weight_check": {
+      "heavy_when_wet": "Check diagnostic hint",
+      "light_by_afternoon": "The pot already feels too light by afternoon",
+      "needs_real_check": "Without a weight check the leaf signal stays ambiguous"
+    },
+    "ph_strip_check": {
+      "out_of_range": "Check diagnostic hint"
+    },
+    "vpd_snapshot_check": {
+      "off_target": "Check diagnostic hint"
+    },
+    "overnight_temp_check": {
+      "drop": "Check diagnostic hint"
+    },
+    "microclimate_check": {
+      "dry_wind": "Check diagnostic hint"
+    },
+    "drainage_check": {
+      "saturation": "Check diagnostic hint",
+      "slow_airless_runoff": "Water sinks in slowly and the medium stays heavy",
+      "compacted_slow_runoff": "Runoff slows early and the surface starts sealing"
+    },
+    "underside_leaf_check": {
+      "mild_activity": "Check diagnostic hint",
+      "specks_or_eggs_early": "Leaf undersides show early specks or tiny egg clusters"
+    },
+    "canopy_light_check": {
+      "too_near_or_far": "Check diagnostic hint",
+      "top_hotspot": "The strongest pressure sits only in the top zone"
+    },
+    "pot_edge_root_check": {
+      "dense_ring": "Check diagnostic hint"
+    },
+    "airflow_check": {
+      "dead_zone_stale_air": "One canopy zone feels still, damp, and stale"
+    },
+    "exposure_check": {
+      "constant_wind_lane": "The plant sits in a constant open wind lane"
+    },
+    "training_recovery_check": {
+      "stress_stack": "Multiple interventions are visible without enough recovery space"
+    },
+    "recovery_posture_check": {
+      "returning_tension": "Leaf tension and posture are returning cleanly"
+    }
+  },
+  "options_details": {
+    "pause_watering_24h": "Gives air back to the root zone and slows the soggy pattern.",
+    "improve_airflow_canopy": "Restores movement around the leaves and takes moisture out of stagnant canopy pockets.",
+    "water_again_immediately": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "slow_rehydrate_split": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "check_pot_weight_then_wait": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "flood_pot_fast": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "adjust_ph_gradual": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "verify_runoff_then_adjust": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "add_more_nutrients_now": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "reduce_feed_strength_temp": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "flush_light_and_rebalance": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "increase_feed_now": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "lower_canopy_temp": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "increase_air_exchange": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "raise_light_intensity": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "adjust_temp_humidity_stepwise": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "reduce_exhaust_for_balance": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "ignore_climate_signal": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "improve_drainage_surface": "Reopens surface runoff so water and air can cycle through the medium more cleanly.",
+    "pause_watering_monitor": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "water_extra_after_rain": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "add_midday_shade_windbreak": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "water_small_dawn_cycle": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "defoliate_in_heat_peak": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "protect_root_zone_night": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "reduce_night_exposure": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "late_evening_heavy_feed": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "adjust_light_distance_stepwise": "Lowers light pressure in a controlled way and makes new growth easier to read.",
+    "measure_then_wait_24h": "Prevents stacked corrections and makes the next day of growth easier to compare.",
+    "move_light_extreme": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "targeted_inspection_isolation": "Keeps the response narrow and avoids stressing the whole plant for an early pattern.",
+    "increase_monitoring_frequency": "Early pest signs stay manageable when follow-up checks get temporarily tighter.",
+    "spray_everything_blindly": "Action without diagnosis adds stress and hides what is actually happening on the leaf.",
+    "plan_upsize_root_space": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "topdress_surface_only": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "increase_feed_without_root_check": "Targets the cause, stabilizes the trend, and lowers unnecessary extra stress for the plant.",
+    "reduce_feed_strength": "Nimmt Ueberschussdruck aus dem System und stabilisiert Aufnahme plus Blattreaktion.",
+    "observe_24h_then_rebalance": "Sichert eine klare Trendbasis, bevor du den naechsten Schritt gezielt nachziehst.",
+    "increase_feed_again": "Erhoeht Last in sensibler Phase und verstaerkt Stress statt Ursache zu korrigieren.",
+    "rebalance_temp_humidity": "Bringt VPD in einen ruhigeren Bereich und stabilisiert Verdunstung plus Aufnahme.",
+    "stabilize_then_monitor": "Verhindert Aktionismus und zeigt dir klar, ob die letzte Korrektur schon ausreicht.",
+    "chase_with_random_changes": "Erzeugt unruhige Lastwechsel und verschlechtert die Lesbarkeit der Reaktion.",
+    "insulate_root_zone_night": "Puffert Kaeltespitzen im Topf und haelt die Wurzelaktivitaet bis morgens stabiler.",
+    "reduce_evening_watering": "Senkt Naesse in kalten Nachtphasen und entlastet die Wurzelzone bei niedriger Aktivitaet.",
+    "late_night_heavy_water": "Fuehrt bei kalten Wurzeln oft zu Traegheit und unruhigen Stresssignalen am Folgetag.",
+    "shade_and_windbreak": "Lowers evaporation spikes without breaking the outdoor routine completely.",
+    "water_timing_adjust_dawn": "Builds reserve before the hot half of the day and reduces afternoon deficits.",
+    "defoliate_midday": "Erhoeht Zusatzstress im falschen Zeitfenster und verlangsamt die Erholung unter Hitzelast.",
+    "plan_repot_next_window": "Makes sense when structure is the issue, without forcing a badly timed emergency repot.",
+    "optimize_watering_until_repot": "Haelt den Verlauf stabil bis zur Loesung und reduziert Schwankungen ohne Verdr?ngen.",
+    "force_heavy_feed_now": "Steigert Last im engen Wurzelraum und verschiebt die Ursache statt sie zu entlasten.",
+    "open_canopy_air_channel": "Helps break dead zones without changing the whole room aggressively at once.",
+    "raise_humidity_without_airflow": "More humidity without air movement usually leaves the leaf-zone problem exactly where it is.",
+    "feed_more_for_pale_top": "Confuses light burn with deficiency and raises risk for the rest of the plant.",
+    "feed_through_the_soggy_medium": "More food does not solve oxygen shortage and can overload the root zone even further.",
+    "double_feed_in_heat": "More salts do not replace missing water and can make a dry pot harsher.",
+    "stake_and_reduce_sway": "Takes load off the tissue before movement turns into real structural stress.",
+    "harden_off_in_steps": "Builds tolerance instead of throwing a young plant straight into constant drag.",
+    "strip_leaves_during_gusts": "Removes working leaf area under stress and adds wounds without solving exposure.",
+    "check_weight_before_watering": "Separates reflex from diagnosis and stops classic panic top-ups.",
+    "inspect_rootzone_then_wait": "Creates room for a clean read when the signal is still ambiguous.",
+    "water_on_panic_signal": "Can instantly worsen a too-wet situation even if the droop looked thirsty.",
+    "keep_watering_same_volume": "Ignores the structure problem and lets the root zone stay stuck in the same pattern."
+  },
+  "chains": {
+    "watering_rootzone_chain": {
+      "title": "From misread watering to air-starved roots",
+      "summary": "This chain links misread thirst signals, fast outdoor dryback, weak drainage, and oxygen-poor medium into one clear watering-to-root-zone story.",
+      "banner": "Watering-root-zone chain active"
+    },
+    "airflow_climate_chain": {
+      "title": "From airflow loss to climate stress",
+      "summary": "This chain starts with stale indoor air, escalates through VPD and heat pressure, and uses the outdoor branch to show how exposure and dry wind extend the same microclimate problem.",
+      "banner": "Airflow-climate chain active"
     }
   }
 }

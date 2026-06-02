@@ -1,0 +1,106 @@
+﻿[
+  {
+    "id": "fixture_indoor_veg_vpd_mismatch",
+    "label": "Indoor Veg VPD Mismatch",
+    "state": {
+      "run": {
+        "day": 24,
+        "stage": "veg",
+        "environment": "indoor",
+        "mode": "tent"
+      },
+      "plant": {
+        "health": 63,
+        "stress": 58,
+        "water": 49,
+        "nutrients": 57,
+        "rootzone": 62,
+        "growthStage": "vegetative"
+      },
+      "climate": {
+        "temperature": 31.2,
+        "humidity": 34,
+        "vpd": 1.58,
+        "light": 610,
+        "airflow": 41
+      },
+      "context": {
+        "indoor": true,
+        "outdoor": false
+      },
+      "events": {
+        "active": [
+          "shared_rootbound_warning"
+        ]
+      }
+    }
+  },
+  {
+    "id": "fixture_outdoor_heat_dry_wind",
+    "label": "Outdoor Heat Dry Wind",
+    "state": {
+      "run": {
+        "day": 42,
+        "stage": "flower_pre",
+        "environment": "outdoor",
+        "mode": "garden"
+      },
+      "plant": {
+        "health": 52,
+        "stress": 66,
+        "water": 33,
+        "nutrients": 61,
+        "rootzone": 55,
+        "growthStage": "early_flower"
+      },
+      "climate": {
+        "temperature": 33.8,
+        "humidity": 28,
+        "vpd": 1.72,
+        "light": 780,
+        "airflow": 64
+      },
+      "context": {
+        "indoor": false,
+        "outdoor": true
+      },
+      "events": {
+        "active": []
+      }
+    }
+  },
+  {
+    "id": "fixture_stable_healthy_baseline",
+    "label": "Stable Healthy Baseline",
+    "state": {
+      "run": {
+        "day": 18,
+        "stage": "veg",
+        "environment": "shared",
+        "mode": "balanced"
+      },
+      "plant": {
+        "health": 84,
+        "stress": 19,
+        "water": 68,
+        "nutrients": 72,
+        "rootzone": 45,
+        "growthStage": "vegetative"
+      },
+      "climate": {
+        "temperature": 25.6,
+        "humidity": 58,
+        "vpd": 0.95,
+        "light": 520,
+        "airflow": 39
+      },
+      "context": {
+        "indoor": null,
+        "outdoor": null
+      },
+      "events": {
+        "active": []
+      }
+    }
+  }
+]

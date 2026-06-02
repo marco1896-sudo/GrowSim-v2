@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 3,
+  "id": "fixture_minimal_chain",
+  "type": "chain",
+  "steps": [
+    {
+      "id": "step1",
+      "eventId": "fixture_minimal_event",
+      "transitionsOnOutcome": {
+        "no_action": { "to": null, "endsChainAs": "neutral", "delaySimHours": 0 }
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+﻿Use case: illustration-story
+Asset type: event hero image for mobile game UI
+Primary request: outdoor_heatwave_dry_wind event hero without text bubble
+Scene/backdrop: outdoor garden with visible sun and dry wind context
+Subject: potted cannabis plant showing plausible hot dry wind stress, Buddy warning pose nearby
+Style/medium: premium stylized game illustration, consistent with Buddy identity
+Composition/framing: plant foreground, wind and heat cues readable, Buddy secondary, one dominant stress signal
+Lighting/mood: hot afternoon light, dry atmosphere, still believable and not apocalyptic
+Color palette: warm sun tones with controlled contrast, clear leaf detail
+Constraints: same Buddy identity, no speech bubble text in image, mobile-first readability, no dramatic disaster damage
+Avoid: storm chaos, rain or flooding cues, dead plant collapse, logos, watermark, text clutter, style drift

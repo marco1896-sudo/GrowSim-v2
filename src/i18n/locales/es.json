@@ -426,6 +426,584 @@
       "environment_cold": "La temperatura bajo demasiado y freno metabolismo y absorcion de agua.",
       "environment_light": "La intensidad de luz y la distancia del dosel fueron demasiado agresivas para el estado actual.",
       "generic": "Varios factores de estres se acumularon con el tiempo y causaron la presion actual."
+    },
+    "v2": {
+      "indoor_dry_rootball": {
+        "title": "Cepellon seco con humedad desequilibrada",
+        "symptom": "La superficie se ve seca, baja la turgencia y el agua corre de forma irregular. Al centro le falta humedad y los bordes reaccionan antes que el resto.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Rehidrata en pasos pequenos en lugar de inundar. Asi el nucleo seco recupera contacto con el agua sin sobrecargar toda la maceta.",
+          "why": "Cuando el centro del cepellon se seca, el agua suele pasar por los lados. El riego fraccionado recupera contacto en el sustrato y evita correcciones apresuradas.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con una rehidratacion tranquila, la humedad vuelve a repartirse mejor. La planta recupera tension y el comportamiento de la maceta es mas predecible."
+        }
+      },
+      "indoor_heat_stress_air": {
+        "title": "Calor fuerte sobre la copa",
+        "symptom": "Los bordes se curvan un poco y la copa se ve tensa. El aire caliente y seco saca mas agua de la hoja de la que la raiz puede reponer con calma.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Enfria primero el aire y la zona de la copa en vez de regar por reflejo. Temperatura, aire y carga de luz tienen que volver a encajar.",
+          "why": "Aqui el estres vive en el aire y en la hoja, no automaticamente en la maceta. Si la copa va demasiado caliente, la transpiracion corre por delante del suministro.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Cuando baja el pico de calor, la postura foliar suele relajarse rapido. Luego es mas facil leer la demanda de agua y los siguientes ajustes."
+        },
+        "options": {
+          "lower_canopy_temp": {
+            "detail": "Quita carga directa de la copa y alivia a la planta mas rapido que otro riego por reflejo."
+          },
+          "increase_air_exchange": {
+            "detail": "Ayuda a sacar aire caliente si el flujo no se vuelve aun mas seco y duro."
+          },
+          "raise_light_intensity": {
+            "detail": "Mas luz sube la carga de una copa caliente y lleva el diagnostico al lado equivocado."
+          }
+        }
+      },
+      "indoor_light_nutrient_tox_early": {
+        "title": "Sobrecarga temprana por luz y nutricion",
+        "symptom": "Las puntas muestran primeras senales de exceso. La presion de luz y la carga nutricional no estan bien alineadas y empujan a la planta a estres evitable.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Baja la presion un momento y recalibra luz y abonado en pasos pequenos. Asi recuperas estabilidad sin cambios bruscos.",
+          "why": "Si intensidad de luz y nutricion no encajan, la presion metabolica sube mas rapido de lo que la planta puede procesar. Ajustes suaves funcionan mejor que giros extremos.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Tras una correccion suave, los brotes nuevos suelen calmarse pronto. Mejora la eficiencia y el siguiente ajuste se vuelve mas claro."
+        }
+      },
+      "indoor_overwatering_early": {
+        "title": "Sobreriego temprano en la zona radicular",
+        "symptom": "Las hojas caen suaves mientras la maceta sigue pesada. La zona radicular queda demasiado humeda y con poco aire, por eso baja la absorcion aunque haya agua suficiente.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "No riegues otra vez por ahora. Devuelve aire a la raiz, estabiliza el ritmo y observa la tendencia antes de la siguiente correccion.",
+          "why": "En el sobreriego temprano, el problema suele ser falta de oxigeno en el sustrato, no falta de agua. Si la maceta queda mojada mucho tiempo, la raiz responde lento y aparecen senales de sed.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con una pausa corta de riego y mejor flujo de aire, el estres radicular suele bajar. Las hojas nuevas se estabilizan y el ritmo de riego se vuelve mas claro."
+        }
+      },
+      "indoor_soil_ph_out_of_range": {
+        "title": "El pH frena la absorcion",
+        "symptom": "Las hojas parecen faltas de nutrientes aunque el sustrato aun los tenga. El pH se salio del rango y bloquea parte de la absorcion.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Primero mide el pH y corrigelo en pasos pequenos. Mas abono ayuda poco si la planta no puede absorber bien ahora.",
+          "why": "El pH no es solo un numero de laboratorio. Tambien decide que nutrientes siguen realmente disponibles en la raiz.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Cuando el pH vuelve al rango, las correcciones siguientes funcionan mejor. El crecimiento nuevo se ve mas calmado y la lectura es mas clara."
+        },
+        "options": {
+          "adjust_ph_gradual": {
+            "detail": "Corrige la causa directa y alivia la absorcion sin un cambio brusco."
+          },
+          "verify_runoff_then_adjust": {
+            "detail": "Confirma primero la lectura para no empujar el pH hacia el lado equivocado."
+          },
+          "add_more_nutrients_now": {
+            "detail": "Mas abono sin medir suele subir la presion mientras la absorcion sigue bloqueada."
+          }
+        }
+      },
+      "indoor_vpd_mismatch_veg": {
+        "title": "El clima no encaja con la veg",
+        "symptom": "Las hojas se ven flojas a ratos y tensas despues, aunque riego y abono no esten mal. Temperatura y humedad no trabajan juntas.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Estabiliza primero el clima en vez de perseguir el problema con riego o abono. En veg la planta necesita un rango tranquilo para transpirar y absorber.",
+          "why": "El VPD describe cuanto tira el aire del agua en la hoja. Si sube o baja demasiado, temperatura, humedad y transpiracion dejan de coordinarse.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con un clima mas tranquilo, la planta vuelve a trabajar de forma mas pareja. La tension foliar y el crecimiento se leen mejor."
+        },
+        "options": {
+          "rebalance_temp_humidity": {
+            "detail": "Vuelve a acercar temperatura y humedad a una zona de trabajo mas estable."
+          },
+          "stabilize_then_monitor": {
+            "detail": "Evita reaccionar de mas y muestra si un pequeno ajuste ya alcanza."
+          },
+          "chase_with_random_changes": {
+            "detail": "Muchos cambios climaticos rapidos tapan la causa y suelen subir mas el estres."
+          }
+        }
+      },
+      "outdoor_cold_night_stress": {
+        "title": "Noches frias frenan el metabolismo visible",
+        "symptom": "Tras noches frias, la respuesta matinal se ve lenta y algo caida. La absorcion baja por la noche y de dia la demanda sube, creando un patron inestable.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Amortigua la noche y evita reacciones bruscas al amanecer. Dale tiempo a la planta para volver a un flujo termico estable.",
+          "why": "La temperatura nocturna baja reduce actividad enzimatica y ritmo radicular. Si la carga diurna sube muy rapido, demanda y suministro quedan desfasados.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con mejor amortiguacion nocturna, el inicio del dia se vuelve mas parejo. La planta reacciona menos brusca y el ajuste clima-cuidado es mas claro."
+        }
+      },
+      "outdoor_heatwave_dry_wind": {
+        "title": "Calor fuerte y viento seco",
+        "symptom": "Las hojas pierden tension aunque la maceta aun guarde algo de humedad. El calor y el viento seco sacan agua de la hoja mas rapido de lo que la raiz repone.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Quita carga del sitio antes de echar mas agua con prisa. Sombra, corte de viento y mejor horario ayudan mas aqui que el empuje rapido.",
+          "why": "El aire caliente y el viento seco elevan juntos la transpiracion. La hoja pide mas agua de la que la raiz puede reponer aunque aun quede humedad en la maceta.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con sombra y aire mas suave, la tension foliar suele volver poco a poco. Luego es mas facil ajustar riego y siguientes pasos."
+        },
+        "options": {
+          "shade_and_windbreak": {
+            "detail": "Recorta la carga directa de sol y viento sin rehacer todo el manejo exterior."
+          },
+          "water_timing_adjust_dawn": {
+            "detail": "Aporta reserva antes de la parte mas dura del dia, pero funciona mejor con alivio del lugar."
+          },
+          "defoliate_midday": {
+            "detail": "Quita superficie justo en el pico de estres y frena la recuperacion."
+          }
+        }
+      },
+      "outdoor_heavy_rain_waterlogging_risk": {
+        "title": "Lluvia intensa y riesgo de encharcamiento",
+        "symptom": "Tras lluvia fuerte, la maceta queda pesada y baja la tension de hojas. La zona radicular sigue saturada demasiado tiempo y falta aire para absorber bien.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Prioriza drenaje y deja una ventana de secado. Agregar mas agua ahora seria contraproducente porque la raiz necesita aire primero.",
+          "why": "Con saturacion prolongada, los poros del sustrato se llenan de agua en vez de aire. La raiz rinde menos y aparecen sintomas de estres aunque no falte agua.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con mejor drenaje y paciencia, baja la presion radicular. La planta suele recuperar postura y el riesgo de estres secundario se mantiene bajo control."
+        }
+      },
+      "shared_early_pest_signs_mild": {
+        "title": "Primeras huellas de plaga",
+        "symptom": "Aparecen marcas finas en enves y zonas concretas. Sigue siendo algo leve, y por eso este es el mejor momento para revisar con calma.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Revisa con cuidado y mantente calmado en vez de tratar todo de golpe. Las senales tempranas premian observacion, control limpio y pasos cortos.",
+          "why": "Las senales leves no son una alarma total, pero si una buena ventana de diagnostico. Leer enves y patrones a tiempo evita rondas mas duras despues.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con control temprano la presion suele mantenerse baja. Conservas el panorama claro y rara vez necesitas medidas mas duras despues."
+        },
+        "options": {
+          "targeted_inspection_isolation": {
+            "detail": "Revisa focos concretos y mantiene la respuesta pequena antes de que el problema se abra."
+          },
+          "increase_monitoring_frequency": {
+            "detail": "Aprieta la observacion unos dias y muestra rapido si la presion de verdad sube."
+          },
+          "spray_everything_blindly": {
+            "detail": "Pulverizar sin objetivo anade estres y vuelve borrosa la diagnostica."
+          }
+        }
+      },
+      "shared_light_distance_error": {
+        "title": "Error de distancia de luz con estres evitable",
+        "symptom": "Aparecen senales tempranas de estres porque la distancia a la luz no es correcta. Muy cerca o muy lejos reduce eficiencia y puede sumar estres lateral.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Ajusta la distancia en pasos pequenos y controlados. Asi estabilizas la carga de luz sin crear picos nuevos por cambios exagerados.",
+          "why": "Los saltos grandes de distancia cambian la carga de golpe y dificultan leer la respuesta. Ajustes graduales mantienen causa y efecto mas claros.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con distancia mejor calibrada, el comportamiento foliar se calma. La luz se usa mejor y aparecen menos problemas secundarios de agua o clima."
+        }
+      },
+      "shared_rootbound_warning": {
+        "title": "La raiz ya no tiene espacio",
+        "symptom": "La maceta se seca primero por el borde pero sigue pesada por dentro. La raiz casi no tiene sitio y por eso absorcion y crecimiento reaccionan mas lentos.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "Varios factores pequeños actúan juntos.",
+        "coach": {
+          "summary": "Revisa la maceta ahora en vez de limitarte a dar mas agua. Si el espacio radicular esta lleno, un cambio planificado ayuda mas que una ayuda rapida.",
+          "why": "En una maceta rootbound la raiz gira contra la pared, el agua se reparte peor y la planta responde mas lenta aunque la cuides bien. Actuar antes siempre es mas facil.",
+          "actions": {
+            "0": "Primero mide y observa, luego corrige.",
+            "1": "Haz solo un cambio por ciclo."
+          }
+        },
+        "aftermath": {
+          "lesson": "Con mas espacio radicular, la humedad vuelve a repartirse mejor. Absorcion y crecimiento se calman y necesitas menos correcciones por sintomas."
+        },
+        "options": {
+          "plan_repot_next_window": {
+            "detail": "Prepara a tiempo una maceta mayor y libera la zona radicular de forma limpia."
+          },
+          "optimize_watering_until_repot": {
+            "detail": "Mantiene la planta mas estable hasta el trasplante, pero no resuelve el limite de espacio."
+          },
+          "force_heavy_feed_now": {
+            "detail": "Mas abono no arregla la falta de espacio y puede subir la presion dentro de la maceta llena."
+          }
+        }
+      },
+      "learning": {
+        "lc_climate_vpd_basics": {
+          "title": "Clima y VPD básico",
+          "subtitle": "Piensa temperatura y humedad en conjunto",
+          "bullets": {
+            "0": "VPD describe la presión de transpiración.",
+            "1": "Ajustes pequeños suelen ser más estables.",
+            "2": "Revisa postura de hojas tras cada cambio."
+          },
+          "real_world_note": "Buen clima es equilibrio entre temperatura, HR y aire."
+        },
+        "lc_ph_nutrient_uptake_basics": {
+          "title": "pH y absorción",
+          "subtitle": "Importa lo que absorbe, no solo lo que aplicas",
+          "bullets": {
+            "0": "Un pH correcto mejora la absorción.",
+            "1": "Más abono no resuelve bloqueos de absorción.",
+            "2": "Corrige en pasos pequeños y mira tendencias."
+          },
+          "real_world_note": "Bloqueos de absorción suelen parecer carencias."
+        },
+        "lc_watering_basics": {
+          "title": "Leer bien el riego",
+          "subtitle": "Riega por señal, no por pánico",
+          "bullets": {
+            "0": "El peso de la maceta es un indicador clave.",
+            "1": "Suelo húmedo con caída puede ser sobre-riego.",
+            "2": "La rehidratación lenta suele ser más estable."
+          },
+          "real_world_note": "El oxígeno radicular es clave para absorción estable."
+        },
+        "lc_rootzone_oxygen_basics": {
+          "title": "La raiz necesita aire",
+          "subtitle": "Por que un medio humedo y denso tambien estresa",
+          "bullets": {
+            "0": "La raiz trabaja mejor cuando el medio todavia tiene suficiente oxigeno.",
+            "1": "Si el sustrato sigue humedo o denso, baja el intercambio y el estres sube rapido.",
+            "2": "Secado, estructura y drenaje forman parte directa del riego."
+          },
+          "real_world_note": "Una maceta pesada y humeda puede parecer bien servida mientras la zona radicular se esta quedando corta de aire."
+        },
+        "lc_airflow_fundamentals": {
+          "title": "El airflow cambia el clima",
+          "subtitle": "Movimiento suave ayuda, viento duro estresa",
+          "bullets": {
+            "0": "Un flujo suave saca humedad y rompe bolsas calientes dentro del canopy.",
+            "1": "Un buen airflow ayuda a transpirar y a fortalecer tallos, pero no es viento duro.",
+            "2": "Aire estancado y exposicion dura se corrigen aparte: paso dentro, abrigo fuera."
+          },
+          "real_world_note": "La cantidad correcta de movimiento se siente estable, no agresiva. La planta debe poder respirar, no pelear todo el dia."
+        },
+        "lc_light_intensity_distance_basics": {
+          "title": "Leer bien la distancia de luz",
+          "subtitle": "Une intensidad, distancia y senal de hoja",
+          "bullets": {
+            "0": "Las puntas claras arriba suelen indicar demasiada luz directa en el canopy.",
+            "1": "Sube distancia o baja intensidad paso a paso, sin reaccion brusca.",
+            "2": "Las hojas palidas arriba no significan siempre falta de nutrientes."
+          },
+          "real_world_note": "El estres por luz suele corregirse en el setup. Mas fertilizante rara vez arregla puntas blanqueadas."
+        },
+        "lc_pest_observation_basics": {
+          "title": "Leer senales tempranas de plaga",
+          "subtitle": "Revisa el env?s, observa y actua con calma",
+          "bullets": {
+            "0": "Puntos suaves o huevos suelen aparecer primero bajo la hoja.",
+            "1": "El monitoreo temprano suele funcionar mejor que el panico tardio.",
+            "2": "La inspeccion dirigida ayuda mas que rociar todo sin mirar."
+          },
+          "real_world_note": "Cuando detectas la plaga temprano, normalmente puedes frenarla con decisiones mas limpias y suaves."
+        },
+        "lc_training_recovery_basics": {
+          "title": "El training necesita recuperacion",
+          "subtitle": "El estres se acumula mas rapido que la recuperacion",
+          "bullets": {
+            "0": "Doblar, podar y reordenar consumen energia de recuperacion.",
+            "1": "Apilar intervenciones suele frenar el crecimiento nuevo.",
+            "2": "Primero estabiliza, mira respuesta y luego decide el siguiente paso."
+          },
+          "real_world_note": "Una rutina fuerte de training deja ventanas tranquilas para que la planta recupere tension y ritmo."
+        },
+        "lc_recovery_observation_basics": {
+          "title": "Primero observa la recuperacion",
+          "subtitle": "A veces esperar es la mejor siguiente accion",
+          "bullets": {
+            "0": "Si postura y tension vuelven, quizas no hace falta otra correccion todavia.",
+            "1": "Despues de un buen ajuste, observar ayuda mas que reaccionar otra vez.",
+            "2": "La recuperacion se entiende mejor cuando das un poco de tiempo."
+          },
+          "real_world_note": "Muchas plantas mejoran con retraso. Corregir de nuevo demasiado pronto puede cortar esa recuperacion."
+        }
+      },
+      "indoor_fan_failure_airflow_drop": {
+        "title": "Falla el movimiento de aire",
+        "symptom": "El aire se siente quieto y pesado en la parte alta del canopy.",
+        "description": "El movimiento de aire es demasiado debil o se ha perdido. El aire humedo y caliente queda atrapado entre las hojas y el espacio deja de respirar bien alrededor de la planta.",
+        "cause": "Sin una circulacion suave, la humedad sobre la hoja tarda mas en salir. Eso aumenta el estres del microclima y deja tejido mas vulnerable.",
+        "coach": {
+          "summary": "No parece un tema de fertilizante. Primero recupera el paso de aire en el canopy.",
+          "actions": [
+            "Devuelve el flujo de aire a la altura de la planta y rompe las zonas muertas del canopy.",
+            "Despues del ajuste, observa con calma humedad y respuesta de las hojas durante unas horas."
+          ],
+          "why": "El flujo de aire saca humedad, ayuda a la transpiracion y evita bolsas humedas y calientes pegadas a la hoja."
+        },
+        "aftermath": {
+          "lesson": "El airflow forma parte del clima de la planta. Muy poco movimiento puede estresar aunque la temperatura no parezca extrema."
+        }
+      },
+      "indoor_light_burn_canopy_top": {
+        "title": "La luz queda demasiado cerca arriba",
+        "symptom": "Las hojas, bordes o puntas de arriba se aclaran mientras el resto aun se ve estable. Eso apunta mas a exceso de luz que a falta de abono.",
+        "description": "La planta muestra signos tempranos de un problema manejable.",
+        "cause": "La zona mas alta recibe mas luz o calor del que puede amortiguar ahora. La reaccion se queda arriba, no repartida por toda la planta.",
+        "coach": {
+          "summary": "Primero revisa distancia o intensidad antes de abonar mas. Aqui los pequenos ajustes de luz son mas limpios que un reflejo con fertilizante.",
+          "actions": [
+            "Sube un poco la lampara o baja intensidad en un paso moderado.",
+            "Marca las puntas afectadas y compara solo el crecimiento nuevo tras 24 horas."
+          ],
+          "why": "Cuando solo se aclara la zona alta, la causa suele estar en la carga de luz. Mas nutrientes no arreglan puntas sobrecargadas."
+        },
+        "aftermath": {
+          "lesson": "Con mejor distancia, la parte alta se calma otra vez. Las puntas nuevas salen mas parejas y el estres de luz se separa mejor de una carencia real."
+        },
+        "options": {
+          "adjust_light_distance_stepwise": {
+            "detail": "Baja la carga de luz con control y deja leer mejor la recuperacion."
+          },
+          "measure_then_wait_24h": {
+            "detail": "Evita pasarte de correccion y hace mas clara la respuesta siguiente del top."
+          },
+          "feed_more_for_pale_top": {
+            "detail": "Mas abono confunde estres de luz con carencia y tapa la causa real."
+          }
+        }
+      },
+      "indoor_rootzone_airless_medium": {
+        "title": "La raiz se queda sin aire",
+        "symptom": "El sustrato sigue denso, pesado y frio demasiado tiempo.",
+        "description": "La zona radicular esta demasiado humeda o compacta. Hay agua, pero el intercambio de gases es pobre y la raiz responde con lentitud.",
+        "cause": "Las raices necesitan oxigeno. Si los poros siguen llenos de agua, la respiracion baja y el estres sube aunque la maceta parezca bien cargada.",
+        "coach": {
+          "summary": "Aqui falta mas aire que agua. Primero recupera secado y estructura.",
+          "actions": [
+            "Espera antes del siguiente riego para que la zona radicular vuelva a respirar.",
+            "Afloja la superficie o mejora el drenaje sin trasplantar en panico."
+          ],
+          "why": "Una raiz en medio muy humedo pierde intercambio de aire y agua a la vez. Para la planta eso se siente como una raiz poco funcional."
+        },
+        "aftermath": {
+          "lesson": "El agua solo ayuda cuando la raiz todavia puede respirar."
+        }
+      },
+      "outdoor_pot_dries_by_afternoon": {
+        "title": "La maceta cae por la tarde",
+        "symptom": "La planta baja en la mitad calida del dia aunque por la manana parecia ir bien. Sol, viento y poco volumen vacian la reserva mas rapido de lo esperado.",
+        "description": "Fuera, la maceta pierde agua por sol, viento y poco volumen mas rapido de lo que la manana puede amortiguar. La reaccion es ritmica mas que permanente.",
+        "cause": "Una maceta pequena o muy expuesta cae antes en deficit durante el dia. Muchas veces es un tema de horario y volumen, no una prueba inmediata de mal cuidado general.",
+        "coach": {
+          "summary": "Ajusta horario y lugar en vez de echar mas agua en plena calor. El horario, algo de proteccion y el volumen de maceta pesan mas aqui que el panico.",
+          "actions": [
+            "Mueve el riego mas temprano para llegar al tramo duro del dia con reserva.",
+            "Usa mulch, algo de corte de viento o mas volumen para suavizar el pico de evaporacion."
+          ],
+          "why": "En exterior no importa solo cuanto agua entra, sino cuando entra y lo rapido que vuelve a salir. Perseguir la caida del mediodia suele tratar solo el sintoma."
+        },
+        "aftermath": {
+          "lesson": "Cuando horario y lugar encajan mejor, la planta aguanta el dia con mas calma. Entonces se ve mejor si despues hace falta mas volumen o algo de mulch."
+        },
+        "options": {
+          "water_timing_adjust_dawn": {
+            "detail": "Deja reserva antes del calor y sostiene mejor la segunda mitad dura del dia."
+          },
+          "shade_and_windbreak": {
+            "detail": "Baja la presion de evaporacion cuando sol y viento tiran a la vez."
+          },
+          "double_feed_in_heat": {
+            "detail": "Mas abono no sustituye el agua que falta y puede endurecer el estres seco del dia."
+          }
+        }
+      },
+      "outdoor_early_pest_pressure_leaf_underside": {
+        "title": "Senales tempranas bajo la hoja",
+        "symptom": "Aparecen puntos leves o rastros en el envés de la hoja.",
+        "description": "El dano aun es suave, pero ya esta en la zona que se revisa poco. En exterior esa senal temprana puede perderse muy rapido en la rutina.",
+        "cause": "La presion temprana suele empezar pequena: algunos puntos, rastros finos, primera actividad en superficies protegidas. Ahora manda la observacion, no el panico.",
+        "coach": {
+          "summary": "Todavia no es para entrar en panico. Revisa bien y responde con precision.",
+          "actions": [
+            "Mira el envés con cuidado y deja la zona afectada bajo seguimiento cercano.",
+            "Reduce la presion de forma mecanica o con una respuesta estrecha en lugar de tratarlo todo."
+          ],
+          "why": "Cuanto antes se reconoce el patron, mas pequeno puede quedar el gesto. Reaccionar de mas suele estresar mas que la primera senal."
+        },
+        "aftermath": {
+          "lesson": "Las primeras senales de plagas son pequenas. La diferencia la crea mirar mejor y volver a comprobar con calma."
+        }
+      },
+      "outdoor_wind_exposure_stem_stress": {
+        "title": "El viento castiga tallos y brotes",
+        "symptom": "Los brotes se inclinan mucho y ya muestran roces o marcas.",
+        "description": "El lugar esta demasiado abierto o la planta paso demasiado rapido a un viento mas fuerte. El estimulo ya no es movimiento suave sino carga mecanica constante.",
+        "cause": "Un poco de movimiento fortalece tejido, pero las rafagas constantes o una exposicion brusca cuestan estabilidad y agua. Las plantas jovenes pueden entrar en estres rapido.",
+        "coach": {
+          "summary": "Primero estabiliza y endurece mas despacio.",
+          "actions": [
+            "Sujeta los brotes o reduce la oscilacion hasta que la planta vuelva a estar firme.",
+            "Usa abrigo y construye la nueva exposicion paso a paso."
+          ],
+          "why": "Endurecer significa exposicion medida. Demasiado viento de golpe drena agua y castiga tejido en lugar de crear tolerancia."
+        },
+        "aftermath": {
+          "lesson": "El movimiento de aire ayuda, pero el arrastre constante no es entrenamiento. La exposicion exterior se construye."
+        }
+      },
+      "shared_panic_watering_misread": {
+        "title": "Caer no es una orden de riego",
+        "symptom": "Las hojas caen, pero eso puede significar demasiada o muy poca agua. Sin peso de maceta, tiempo y tacto del sustrato, la lectura sigue abierta.",
+        "description": "La caida de hojas dispara rapido el reflejo de regar otra vez. Ahi esta la trampa: la misma imagen puede significar exceso, falta o solo presion del momento del dia.",
+        "cause": "Si reaccionas solo a la postura de la hoja, saltas la diagnostica real. Peso, sustrato y timing dicen si de verdad falta agua o ya sobra.",
+        "coach": {
+          "summary": "Primero revisa la maceta y luego actua. Un chequeo corto evita tapar una senal confusa con mas agua.",
+          "actions": [
+            "Mira de verdad el peso o la humedad antes de anadir agua nueva.",
+            "Si la lectura sigue confusa, espera un poco y mete en la ecuacion zona radicular y hora del dia."
+          ],
+          "why": "La misma caida puede venir de causas opuestas. Un buen cuidado separa observacion y reaccion en vez de mezclarlas en un momento de panico."
+        },
+        "aftermath": {
+          "lesson": "Cuando primero lees y luego riegas, la caida vuelve a ser una senal util. Asi aprendes la diferencia entre sed real y estres con raiz demasiado humeda."
+        },
+        "options": {
+          "check_weight_before_watering": {
+            "detail": "Separa reflejo y diagnostico y te da la mejor opcion de elegir bien."
+          },
+          "inspect_rootzone_then_wait": {
+            "detail": "Ayuda con senales mezcladas cuando todavia debes juzgar si manda la humedad o la sequedad."
+          },
+          "water_on_panic_signal": {
+            "detail": "Puede empujar mas una raiz ya humeda y volver aun mas borrosa la lectura despues."
+          }
+        }
+      },
+      "shared_substrate_drainage_compaction": {
+        "title": "El drenaje se cae en el sustrato",
+        "symptom": "El agua entra lenta y la superficie empieza a sellarse. Abajo la raiz queda humeda mucho tiempo, aunque arriba ya invite a mover otra vez.",
+        "description": "El sustrato pierde estructura. El agua se queda mas tiempo, desaparecen poros de aire y el ritmo de la zona radicular se vuelve pesado.",
+        "cause": "Un medio compactado o con mal drenaje frena a la vez salida y intercambio de gases. Parece un fallo de riego, pero el problema real vive en el armado del sustrato.",
+        "coach": {
+          "summary": "Primero mejora estructura y salida en vez de regar solo mas o menos. El problema vive en el medio, no solo en la cantidad.",
+          "actions": [
+            "Mejora drenaje en la superficie y en la salida del recorrido del agua.",
+            "Planifica una correccion de sustrato o trasplante en la siguiente ventana sensata."
+          ],
+          "why": "Cuando los poros de aire se pierden, el agua entra mal y el oxigeno tambien. Por eso cada riego empieza a sentirse torpe."
+        },
+        "aftermath": {
+          "lesson": "Con una estructura mas suelta, la raiz trabaja mas tranquila. El agua sale de forma mas predecible y corriges menos charcos o bolsas secas."
+        },
+        "options": {
+          "improve_drainage_surface": {
+            "detail": "Reabre el cuello de botella de arriba y ayuda a que agua y aire vuelvan a moverse mejor."
+          },
+          "plan_repot_next_window": {
+            "detail": "Tiene sentido si la compactacion esta mas abajo y un reinicio limpio ayuda mas que un parche."
+          },
+          "keep_watering_same_volume": {
+            "detail": "Mantiene vivo el mismo patron y solo empuja el problema al siguiente ciclo."
+          }
+        }
+      },
+      "indoor_overtraining_stall_mild": {
+        "title": "El training se apilo demasiado",
+        "symptom": "El crecimiento nuevo se frena tras varios toques en poco tiempo.",
+        "description": "La planta recibio demasiadas senales de training sin una pausa limpia. En vez de seguir construyendo, gasta energia en reparar y bajar estres.",
+        "cause": "Cada corte, doblado y correccion necesita tiempo de recuperacion. Si los apilas, la planta pierde la ventana limpia que necesita para responder bien.",
+        "coach": {
+          "summary": "No la formes mas ahora. Primero devuelve calma y estabilidad.",
+          "actions": [
+            "Pausa el training unos dias y observa antes de corregir otra vez.",
+            "Manten el clima estable para que la planta use energia en recuperarse y no en defenderse."
+          ],
+          "why": "Mas intervencion no arregla el frenazo. Espera a que vuelvan tension y brote nuevo antes de tocar la estructura otra vez."
+        },
+        "aftermath": {
+          "lesson": "La recuperacion forma parte del training. La buena estructura sale del ritmo, no de intervenir sin parar."
+        }
+      },
+      "shared_observation_recovery_after_stress": {
+        "title": "La recuperacion ya se ve",
+        "symptom": "La planta vuelve a levantarse y se nota mas tranquila.",
+        "description": "Tras una correccion limpia, la planta empieza a mostrar senales claras de recuperacion. Aqui observar vale mas que otra accion rapida.",
+        "cause": "La ultima correccion funciono y la planta vuelve a regularse sola. Si entras demasiado pronto, rompes ese rebote.",
+        "coach": {
+          "summary": "Esta volviendo. Ahora observa y no apiles otra accion.",
+          "actions": [
+            "Observa con calma 24 horas y no interrumpas la mejora con otra correccion.",
+            "Lee tension de hoja y ritmo del brote nuevo antes de volver a regar."
+          ],
+          "why": "La recuperacion ensena tanto como el estres. Si aprendes esta fase, despues decides con mas calma y mas claridad."
+        },
+        "aftermath": {
+          "lesson": "La mejora tambien es una senal. No todo movimiento positivo pide una accion inmediata."
+        }
+      }
     }
   },
   "settings": {
@@ -829,29 +1407,29 @@
         "riskRaised": "El riesgo subio",
         "riskSettled": "El riesgo se calmo"
       },
-        "goodCare": "Buena decision de cuidado. La planta deberia reaccionar mejor.",
-        "goodFeeding": "Buena decision. La planta parece capaz de absorber nutrientes sin sumar demasiada presion.",
-        "goodWatering": "Buen riego. La zona radicular deberia estar mas tranquila.",
-        "hygieneSettled": "Buena decision. El entorno se siente mas tranquilo y la presion de riesgo baja un poco.",
-        "grade": {
-          "bad": "Malo",
-          "good": "Bueno",
-          "okay": "Okay",
-          "perfect": "Perfecto",
-          "risky": "Arriesgado"
-        },
-        "okayCare": "La accion funciono, pero el timing fue solo medio.",
-        "perfectCare": "Muy buena decision. La planta responde limpia.",
-        "perfectWatering": "Ventana de dryback perfecta. Fue un riego premium.",
-        "rootZoneRelief": "Buena decision. La zona radicular se alivia con cuidado sin convertirse en un riego completo.",
-        "rootZoneReliefLimited": "Ese alivio tiene efecto limitado aqui. Observa mejor si la zona radicular realmente esta bajo presion.",
-        "riskyCare": "La accion funciono, pero sumo riesgo.",
-        "riskyFeeding": "La nutricion sube, pero tambien la carga de sales. La proxima vez conviene ir mas suave.",
-        "riskyWatering": "Fue un poco pronto. Observa la zona radicular antes de volver a regar.",
-        "uptakeLimited": "La absorcion sigue limitada. Primero conviene calmar un poco mas la zona radicular y la carga de sales.",
-        "uptakeStabilized": "Buena decision. La absorcion se siente mas estable sin empujar demasiado la carga de sales.",
-        "title": "Resultado"
+      "goodCare": "Buena decision de cuidado. La planta deberia reaccionar mejor.",
+      "goodFeeding": "Buena decision. La planta parece capaz de absorber nutrientes sin sumar demasiada presion.",
+      "goodWatering": "Buen riego. La zona radicular deberia estar mas tranquila.",
+      "hygieneSettled": "Buena decision. El entorno se siente mas tranquilo y la presion de riesgo baja un poco.",
+      "grade": {
+        "bad": "Malo",
+        "good": "Bueno",
+        "okay": "Okay",
+        "perfect": "Perfecto",
+        "risky": "Arriesgado"
       },
+      "okayCare": "La accion funciono, pero el timing fue solo medio.",
+      "perfectCare": "Muy buena decision. La planta responde limpia.",
+      "perfectWatering": "Ventana de dryback perfecta. Fue un riego premium.",
+      "rootZoneRelief": "Buena decision. La zona radicular se alivia con cuidado sin convertirse en un riego completo.",
+      "rootZoneReliefLimited": "Ese alivio tiene efecto limitado aqui. Observa mejor si la zona radicular realmente esta bajo presion.",
+      "riskyCare": "La accion funciono, pero sumo riesgo.",
+      "riskyFeeding": "La nutricion sube, pero tambien la carga de sales. La proxima vez conviene ir mas suave.",
+      "riskyWatering": "Fue un poco pronto. Observa la zona radicular antes de volver a regar.",
+      "uptakeLimited": "La absorcion sigue limitada. Primero conviene calmar un poco mas la zona radicular y la carga de sales.",
+      "uptakeStabilized": "Buena decision. La absorcion se siente mas estable sin empujar demasiado la carga de sales.",
+      "title": "Resultado"
+    },
     "aftercare": {
       "grade": "Nota",
       "title": "Resultado"
@@ -958,6 +1536,7 @@
       }
     },
     "risk": {
+      "elevated": "Elevado",
       "high": "Alto",
       "low": "Bajo",
       "medium": "Medio"
@@ -1350,6 +1929,314 @@
         "description": "Ayuda a aliviar presi?n temprano en lugar de reaccionar tarde.",
         "success": "Control suave realizado. La planta se siente un poco m?s tranquila."
       }
+    }
+  },
+  "alt": {
+    "events": {
+      "v2": {
+        "indoor_dry_rootball": {
+          "cover": "Ilustración para evento indoor_dry_rootball"
+        },
+        "indoor_heat_stress_air": {
+          "cover": "Ilustración para evento indoor_heat_stress_air"
+        },
+        "indoor_light_nutrient_tox_early": {
+          "cover": "Ilustración para evento indoor_light_nutrient_tox_early"
+        },
+        "indoor_overwatering_early": {
+          "cover": "Ilustración para evento indoor_overwatering_early"
+        },
+        "indoor_soil_ph_out_of_range": {
+          "cover": "Ilustración para evento indoor_soil_ph_out_of_range"
+        },
+        "indoor_vpd_mismatch_veg": {
+          "cover": "Ilustración para evento indoor_vpd_mismatch_veg"
+        },
+        "outdoor_cold_night_stress": {
+          "cover": "Ilustración para evento outdoor_cold_night_stress"
+        },
+        "outdoor_heatwave_dry_wind": {
+          "cover": "Ilustración para evento outdoor_heatwave_dry_wind"
+        },
+        "outdoor_heavy_rain_waterlogging_risk": {
+          "cover": "Ilustración para evento outdoor_heavy_rain_waterlogging_risk"
+        },
+        "shared_early_pest_signs_mild": {
+          "cover": "Ilustración para evento shared_early_pest_signs_mild"
+        },
+        "shared_light_distance_error": {
+          "cover": "Ilustración para evento shared_light_distance_error"
+        },
+        "shared_rootbound_warning": {
+          "cover": "Ilustración para evento shared_rootbound_warning"
+        },
+        "indoor_fan_failure_airflow_drop": {
+          "cover": "Planta interior con aire humedo estancado en un canopy denso"
+        },
+        "indoor_light_burn_canopy_top": {
+          "cover": "Canopy interior con hojas altas aclaradas por exceso de luz"
+        },
+        "indoor_rootzone_airless_medium": {
+          "cover": "Sustrato humedo y denso con raiz estresada"
+        },
+        "outdoor_pot_dries_by_afternoon": {
+          "cover": "Maceta exterior que se seca con fuerza durante un dia calido"
+        },
+        "outdoor_early_pest_pressure_leaf_underside": {
+          "cover": "Envés de hoja con senales tempranas y leves de plaga"
+        },
+        "outdoor_wind_exposure_stem_stress": {
+          "cover": "Planta exterior expuesta al viento con brotes estresados"
+        },
+        "shared_panic_watering_misread": {
+          "cover": "Planta caida con humedad dudosa antes de decidir regar"
+        },
+        "shared_substrate_drainage_compaction": {
+          "cover": "Sustrato compacto con salida lenta y superficie humeda"
+        },
+        "indoor_overtraining_stall_mild": {
+          "cover": "Planta interior con crecimiento frenado tras training acumulado"
+        },
+        "shared_observation_recovery_after_stress": {
+          "cover": "Planta volviendo a levantarse con recuperacion visible tras estres"
+        }
+      }
+    },
+    "chains": {
+      "watering_rootzone_chain": {
+        "cover": "Ilustracion para cadena agua-zona radicular"
+      },
+      "airflow_climate_chain": {
+        "cover": "Ilustracion para cadena airflow-clima"
+      }
+    }
+  },
+  "options": {
+    "slow_rehydrate_split": "Slow Rehydrate Split",
+    "check_pot_weight_then_wait": "Check Pot Weight Then Wait",
+    "flood_pot_fast": "Flood Pot Fast Aktion",
+    "lower_canopy_temp": "Lower Canopy Temp Aktion",
+    "increase_air_exchange": "Increase Air Exchange",
+    "raise_light_intensity": "Raise Light Intensity",
+    "reduce_feed_strength": "Feed-Staerke sanft senken",
+    "observe_24h_then_rebalance": "24h beobachten, dann justieren",
+    "increase_feed_again": "Feed erneut erhoehen",
+    "pause_watering_24h": "Pausar riego 24h",
+    "improve_airflow_canopy": "Recuperar flujo en canopy",
+    "water_again_immediately": "Water Again Immediately",
+    "adjust_ph_gradual": "Adjust Ph Gradual Aktion",
+    "verify_runoff_then_adjust": "Verify Runoff Then Adjust",
+    "add_more_nutrients_now": "Add More Nutrients Now",
+    "rebalance_temp_humidity": "Temp und Feuchte ausgleichen",
+    "stabilize_then_monitor": "Stabilisieren und eng monitoren",
+    "chase_with_random_changes": "Zufaellige Klimawechsel jagen",
+    "insulate_root_zone_night": "Wurzelzone nachts isolieren",
+    "reduce_evening_watering": "Abendgabe bewusst reduzieren",
+    "late_night_heavy_water": "Spaet nachts stark giessen",
+    "shade_and_windbreak": "Sombra mas corta-viento",
+    "water_timing_adjust_dawn": "Mover riego al amanecer",
+    "defoliate_midday": "Mittags entlauben",
+    "improve_drainage_surface": "Mejorar flujo de drenaje",
+    "pause_watering_monitor": "Pause Watering Monitor",
+    "water_extra_after_rain": "Water Extra After Rain",
+    "targeted_inspection_isolation": "Revisar y aislar temprano",
+    "increase_monitoring_frequency": "Revisar con mas frecuencia",
+    "spray_everything_blindly": "Pulverizar todo sin mirar",
+    "adjust_light_distance_stepwise": "Ajustar distancia de luz",
+    "measure_then_wait_24h": "Marcar y observar 24h",
+    "move_light_extreme": "Move Light Extreme",
+    "plan_repot_next_window": "Planear el siguiente trasplante",
+    "optimize_watering_until_repot": "Wasserfuehrung bis Umtopfen",
+    "force_heavy_feed_now": "Jetzt stark nachduengen",
+    "reduce_feed_strength_temp": "Reduce Feed Strength Temp",
+    "flush_light_and_rebalance": "Flush Light And Rebalance",
+    "increase_feed_now": "Increase Feed Now Aktion",
+    "adjust_temp_humidity_stepwise": "Adjust Temp Humidity Stepwise",
+    "reduce_exhaust_for_balance": "Reduce Exhaust For Balance",
+    "ignore_climate_signal": "Ignore Climate Signal",
+    "add_midday_shade_windbreak": "Add Midday Shade Windbreak",
+    "water_small_dawn_cycle": "Water Small Dawn Cycle",
+    "defoliate_in_heat_peak": "Defoliate In Heat Peak",
+    "protect_root_zone_night": "Protect Root Zone Night",
+    "reduce_night_exposure": "Reduce Night Exposure",
+    "late_evening_heavy_feed": "Late Evening Heavy Feed",
+    "plan_upsize_root_space": "Plan Upsize Root Space",
+    "topdress_surface_only": "Topdress Surface Only",
+    "increase_feed_without_root_check": "Increase Feed Without Root Che",
+    "open_canopy_air_channel": "Abrir un canal de aire en el canopy",
+    "raise_humidity_without_airflow": "Subir solo la humedad",
+    "feed_more_for_pale_top": "Dar mas fertilizante arriba",
+    "feed_through_the_soggy_medium": "Fertilizar medio encharcado",
+    "double_feed_in_heat": "Doblar fertilizante con calor",
+    "stake_and_reduce_sway": "Tutorar y bajar balanceo",
+    "harden_off_in_steps": "Subir viento poco a poco",
+    "strip_leaves_during_gusts": "Quitar hojas con rafagas",
+    "check_weight_before_watering": "Mirar peso antes de regar",
+    "inspect_rootzone_then_wait": "Revisar raiz y luego esperar",
+    "water_on_panic_signal": "Regar enseguida por panico",
+    "keep_watering_same_volume": "Seguir con el mismo volumen",
+    "pause_training_for_recovery_window": "Pausar training para recuperar",
+    "stabilize_climate_then_wait": "Estabilizar clima y esperar",
+    "stack_more_training_now": "Meter mas training ya",
+    "observe_24h_without_new_action": "Observar 24h sin tocar",
+    "note_recovery_signs_and_hold": "Anotar recuperacion",
+    "water_again_just_in_case": "Regar otra vez por si acaso"
+  },
+  "symptoms": {
+    "leaf_curl_light": "Observar síntoma",
+    "leaf_edge_taco": "Observar síntoma",
+    "leaf_glossy_claw": "Observar síntoma",
+    "leaf_droop_soft": "Observar síntoma",
+    "leaf_interveinal_mild": "Observar síntoma",
+    "leaf_posture_mixed": "Observar síntoma",
+    "leaf_droop_cold_morning": "Observar síntoma",
+    "leaf_curl_up_dry_edge": "Observar síntoma",
+    "leaf_droop_after_rain": "Observar síntoma",
+    "leaf_spotting_mild": "Observar síntoma",
+    "leaf_pray_or_bleach_hint": "Observar síntoma",
+    "growth_stall_mild": "Observar síntoma",
+    "canopy_air_still_humid": "Aire quieto y humedo en el canopy",
+    "canopy_top_bleach_edge": "Bordes claros en la parte alta",
+    "medium_stays_dense_cool": "Sustrato denso, pesado y frio",
+    "midday_droop_recovers_late": "Caida al mediodia con recuperacion tardia",
+    "underside_specks_mild": "Puntos finos bajo la hoja",
+    "stem_lean_rub_marks": "Tallos inclinados con roces",
+    "droop_signal_unclear": "Caida de hoja con causa poco clara",
+    "runoff_slow_surface_seals": "Salida lenta con superficie sellada",
+    "new_growth_stalls_after_bending": "El brote nuevo se frena tras repetir training",
+    "recovery_posture_returning": "La postura vuelve y la tension de hoja regresa"
+  },
+  "diagnostics": {
+    "soil_probe_check": {
+      "dry_core": "Revisar pista de diagnóstico"
+    },
+    "canopy_temp_check": {
+      "hotspot": "Revisar pista de diagnóstico"
+    },
+    "ec_trend_check": {
+      "early_tox_signs": "Revisar pista de diagnóstico"
+    },
+    "pot_weight_check": {
+      "heavy_when_wet": "Revisar pista de diagnóstico",
+      "light_by_afternoon": "La maceta ya esta demasiado ligera por la tarde",
+      "needs_real_check": "Sin pesar, la senal de la hoja sigue siendo ambigua"
+    },
+    "ph_strip_check": {
+      "out_of_range": "Revisar pista de diagnóstico"
+    },
+    "vpd_snapshot_check": {
+      "off_target": "Revisar pista de diagnóstico"
+    },
+    "overnight_temp_check": {
+      "drop": "Revisar pista de diagnóstico"
+    },
+    "microclimate_check": {
+      "dry_wind": "Revisar pista de diagnóstico"
+    },
+    "drainage_check": {
+      "saturation": "Revisar pista de diagnóstico",
+      "slow_airless_runoff": "El agua entra lenta y el medio sigue pesado",
+      "compacted_slow_runoff": "La salida frena pronto y la superficie se cierra"
+    },
+    "underside_leaf_check": {
+      "mild_activity": "Revisar pista de diagnóstico",
+      "specks_or_eggs_early": "El envés muestra puntos tempranos o huevos pequenos"
+    },
+    "canopy_light_check": {
+      "too_near_or_far": "Revisar pista de diagnóstico",
+      "top_hotspot": "La mayor presion esta solo en la zona superior"
+    },
+    "pot_edge_root_check": {
+      "dense_ring": "Revisar pista de diagnóstico"
+    },
+    "airflow_check": {
+      "dead_zone_stale_air": "Una zona del canopy se siente quieta, humeda y cargada"
+    },
+    "exposure_check": {
+      "constant_wind_lane": "La planta queda en una calle de viento constante"
+    },
+    "training_recovery_check": {
+      "stress_stack": "Se ven varias intervenciones sin una ventana limpia de recuperacion"
+    },
+    "recovery_posture_check": {
+      "returning_tension": "La tension y la postura vuelven de forma clara"
+    }
+  },
+  "options_details": {
+    "pause_watering_24h": "Devuelve aire a la raiz y frena el patron de exceso.",
+    "improve_airflow_canopy": "Devuelve movimiento alrededor de la hoja y saca humedad de las zonas quietas del canopy.",
+    "water_again_immediately": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "slow_rehydrate_split": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "check_pot_weight_then_wait": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "flood_pot_fast": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "adjust_ph_gradual": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "verify_runoff_then_adjust": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "add_more_nutrients_now": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "reduce_feed_strength_temp": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "flush_light_and_rebalance": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "increase_feed_now": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "lower_canopy_temp": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "increase_air_exchange": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "raise_light_intensity": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "adjust_temp_humidity_stepwise": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "reduce_exhaust_for_balance": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "ignore_climate_signal": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "improve_drainage_surface": "Reabre salida y superficie para que agua y aire vuelvan a alternar con mas limpieza.",
+    "pause_watering_monitor": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "water_extra_after_rain": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "add_midday_shade_windbreak": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "water_small_dawn_cycle": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "defoliate_in_heat_peak": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "protect_root_zone_night": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "reduce_night_exposure": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "late_evening_heavy_feed": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "adjust_light_distance_stepwise": "Baja la presion de luz con control y deja leer mejor el crecimiento nuevo.",
+    "measure_then_wait_24h": "Evita varias correcciones seguidas y facilita comparar el crecimiento del dia siguiente.",
+    "move_light_extreme": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "targeted_inspection_isolation": "Mantiene la respuesta estrecha y evita castigar toda la planta por una senal temprana.",
+    "increase_monitoring_frequency": "Las primeras senales se controlan mejor cuando la observacion se aprieta por un tiempo.",
+    "spray_everything_blindly": "Actuar sin diagnostico anade estres y tapa lo que de verdad pasa en la hoja.",
+    "plan_upsize_root_space": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "topdress_surface_only": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "increase_feed_without_root_check": "Apunta a la causa, estabiliza la tendencia y reduce estres adicional innecesario para la.",
+    "reduce_feed_strength": "Nimmt Ueberschussdruck aus dem System und stabilisiert Aufnahme plus Blattreaktion.",
+    "observe_24h_then_rebalance": "Sichert eine klare Trendbasis, bevor du den naechsten Schritt gezielt nachziehst.",
+    "increase_feed_again": "Erhoeht Last in sensibler Phase und verstaerkt Stress statt Ursache zu korrigieren.",
+    "rebalance_temp_humidity": "Bringt VPD in einen ruhigeren Bereich und stabilisiert Verdunstung plus Aufnahme.",
+    "stabilize_then_monitor": "Verhindert Aktionismus und zeigt dir klar, ob die letzte Korrektur schon ausreicht.",
+    "chase_with_random_changes": "Erzeugt unruhige Lastwechsel und verschlechtert die Lesbarkeit der Reaktion.",
+    "insulate_root_zone_night": "Puffert Kaeltespitzen im Topf und haelt die Wurzelaktivitaet bis morgens stabiler.",
+    "reduce_evening_watering": "Senkt Naesse in kalten Nachtphasen und entlastet die Wurzelzone bei niedriger Aktivitaet.",
+    "late_night_heavy_water": "Fuehrt bei kalten Wurzeln oft zu Traegheit und unruhigen Stresssignalen am Folgetag.",
+    "shade_and_windbreak": "Reduce picos de evaporacion sin romper del todo la rutina exterior.",
+    "water_timing_adjust_dawn": "Aporta reserva antes de la parte mas dura del dia y baja deficit por la tarde.",
+    "defoliate_midday": "Erhoeht Zusatzstress im falschen Zeitfenster und verlangsamt die Erholung unter Hitzelast.",
+    "plan_repot_next_window": "Tiene sentido si la estructura es el problema, sin forzar un trasplante mal cronometrado.",
+    "optimize_watering_until_repot": "Haelt den Verlauf stabil bis zur Loesung und reduziert Schwankungen ohne Verdr?ngen.",
+    "force_heavy_feed_now": "Steigert Last im engen Wurzelraum und verschiebt die Ursache statt sie zu entlasten.",
+    "open_canopy_air_channel": "Rompe bolsas muertas sin cambiar de golpe todo el entorno.",
+    "raise_humidity_without_airflow": "Mas humedad sin paso de aire suele dejar el mismo problema pegado a la hoja.",
+    "feed_more_for_pale_top": "Confunde quemadura de luz con carencia y aumenta riesgo para el resto de la planta.",
+    "feed_through_the_soggy_medium": "Mas comida no arregla falta de oxigeno y puede cargar mas la raiz.",
+    "double_feed_in_heat": "Mas sales no sustituyen el agua que falta y pueden endurecer una maceta seca.",
+    "stake_and_reduce_sway": "Quita carga al tejido antes de que el movimiento se convierta en dano real.",
+    "harden_off_in_steps": "Construye tolerancia sin lanzar una planta joven directo al arrastre constante.",
+    "strip_leaves_during_gusts": "Quita area util bajo estres y abre heridas sin resolver la exposicion.",
+    "check_weight_before_watering": "Separa reflejo de diagnostico y corta el clasico riego por susto.",
+    "inspect_rootzone_then_wait": "Da espacio a una lectura limpia cuando la senal todavia es ambigua.",
+    "water_on_panic_signal": "Puede empeorar en un momento un problema ya demasiado humedo.",
+    "keep_watering_same_volume": "Ignora el problema de estructura y deja la raiz atrapada en el mismo patron."
+  },
+  "chains": {
+    "watering_rootzone_chain": {
+      "title": "De un riego mal leido a una raiz sin aire",
+      "summary": "Esta cadena une senales de sed mal leidas, secado rapido en exterior, drenaje debil y falta de oxigeno en el sustrato dentro de una sola historia agua-raiz.",
+      "banner": "Cadena agua-zona radicular activa"
+    },
+    "airflow_climate_chain": {
+      "title": "Del airflow perdido al estres climatico",
+      "summary": "La cadena empieza con aire quieto en interior, sube a presion VPD y calor, y usa la rama exterior para mostrar como exposicion y viento seco prolongan el mismo problema de microclima.",
+      "banner": "Cadena airflow-clima activa"
     }
   }
 }

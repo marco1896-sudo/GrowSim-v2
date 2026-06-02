@@ -1,0 +1,51 @@
+{
+  "phase": "120",
+  "eventId": "indoor_vpd_mismatch_veg",
+  "status": "format_correction_pending_manual_generation",
+  "strategy": "manual_regeneration_required",
+  "localPathNote": "Phase 119 normalized draft points to candidate_full_scene_01.png. The Phase 120 prompt named candidate_full_scene_02.png as current input, but that file is not present locally.",
+  "currentCandidates": [
+    {
+      "path": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_01.png",
+      "exists": true,
+      "bytes": 2598066,
+      "sha256": "8182508180b72cc63bf240f988160cda7b77b15e6060cbad49912c5b0c141c59",
+      "width": 1448,
+      "height": 1086,
+      "ratio": 1.3333,
+      "wideHeroCompatible": false,
+      "formatStatus": "blocked_invalid_format"
+    },
+    {
+      "path": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_02.png",
+      "exists": false,
+      "wideHeroCompatible": false,
+      "formatStatus": "missing"
+    },
+    {
+      "path": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_03.png",
+      "exists": false,
+      "wideHeroCompatible": false,
+      "formatStatus": "pending_manual_generation"
+    }
+  ],
+  "candidate03": {
+    "path": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_03.png",
+    "exists": false,
+    "ratio": null,
+    "wideHeroCompatible": false,
+    "qaStatus": "not_available"
+  },
+  "correctionAssessment": {
+    "canvasExtendOrRecropViable": false,
+    "reason": "The existing 4:3 image is compositionally filled. Cropping to 16:9 would remove meaningful top/bottom context; padding or stretching would create a lower-quality fake hero composition and risk Buddy/plant readability.",
+    "recommendedAction": "Generate a new wide 16:9 image manually with active Buddy and style references."
+  },
+  "manualPromptAvailable": true,
+  "readinessAfterPhase120": {
+    "wideHeroCompatibleCount": 21,
+    "targetWideHeroCompatibleCount": 22,
+    "exportReadinessReached": false,
+    "blockingEventId": "indoor_vpd_mismatch_veg"
+  }
+}

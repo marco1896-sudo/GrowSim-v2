@@ -8,7 +8,8 @@ const { startStaticServer, closeBrowser, closeServer } = require('./support/serv
 const {
   installAuthHarness: setupAuthHarness,
   waitForBoot: waitForBootReady,
-  clearClientStorage: resetClientStorage
+  clearClientStorage: resetClientStorage,
+  advanceOnboardingToStart
 } = require('./support/browserRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -21,6 +22,7 @@ async function startFreshRun(page, baseUrl) {
   await resetClientStorage(page, { preserveLocalStorageKeys: [AUTH_TOKEN_KEY] });
   await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
   await waitForBootReady(page, 25000);
+  await advanceOnboardingToStart(page);
   await page.click('#startRunBtn');
   await page.waitForFunction(() => {
     const node = document.getElementById('landing');

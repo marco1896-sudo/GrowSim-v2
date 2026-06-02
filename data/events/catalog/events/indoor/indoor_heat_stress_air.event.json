@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 3,
+  "id": "indoor_heat_stress_air",
+  "type": "event",
+  "category": "environment",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_indoor"
+  ],
+  "title": {
+    "key": "events.v2.indoor_heat_stress_air.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.indoor_heat_stress_air.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.indoor_heat_stress_air.description"
+  },
+  "cause": {
+    "kind": "air_temp_peak",
+    "explanation": {
+      "key": "events.v2.indoor_heat_stress_air.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.indoor_heat_stress_air.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.indoor_heat_stress_air.coach.actions.0"
+      },
+      {
+        "key": "events.v2.indoor_heat_stress_air.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.indoor_heat_stress_air.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.leaf_edge_taco"
+      },
+      "weight": 1,
+      "id": "leaf_edge_taco",
+      "spriteOverlay": "indoor_heat_stress_air_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "canopy_temp_check": {
+        "label": {
+          "key": "diagnostics.canopy_temp_check.hotspot"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "air_temp_peak"
+        ]
+      }
+    },
+    "available": [
+      "canopy_temp_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "lower_canopy_temp",
+      "label": {
+        "key": "options.lower_canopy_temp"
+      },
+      "uiDetail": {
+        "key": "events.v2.indoor_heat_stress_air.options.lower_canopy_temp.detail"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "increase_air_exchange",
+      "label": {
+        "key": "options.increase_air_exchange"
+      },
+      "uiDetail": {
+        "key": "events.v2.indoor_heat_stress_air.options.increase_air_exchange.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "raise_light_intensity",
+      "label": {
+        "key": "options.raise_light_intensity"
+      },
+      "uiDetail": {
+        "key": "events.v2.indoor_heat_stress_air.options.raise_light_intensity.detail"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "env.temperatureC",
+        "op": ">=",
+        "value": 29
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 20
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor"
+      ]
+    },
+    "stage": {
+      "min": 3,
+      "max": 10
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "vegetative",
+      "preflower",
+      "flowering"
+    ]
+  },
+  "pressure": {
+    "weight": 1.02,
+    "polarity": "negative",
+    "primaryPressure": "heat_air_stress"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "indoor_heat_stress_air_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "indoor_heat_stress_air_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "indoor_heat_stress_air_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "heat_air_stress": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "heat_air_stress": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.indoor_heat_stress_air.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "lower_canopy_temp",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.indoor_heat_stress_air.cover",
+      "src": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+      "fallback": "assets/events/v2/final/indoor_heat_stress_air/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "indoor_heat_stress_air_overlay_warn": "assets/events/event-stress-recovery.png",
+      "indoor_heat_stress_air_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "indoor_heat_stress_air_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_leaf_curl_up",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.indoor_heat_stress_air.title",
+      "events.v2.indoor_heat_stress_air.symptom",
+      "events.v2.indoor_heat_stress_air.description",
+      "events.v2.indoor_heat_stress_air.cause",
+      "events.v2.indoor_heat_stress_air.coach.summary",
+      "events.v2.indoor_heat_stress_air.coach.why",
+      "events.v2.indoor_heat_stress_air.coach.actions.0",
+      "events.v2.indoor_heat_stress_air.coach.actions.1",
+      "events.v2.indoor_heat_stress_air.aftermath.lesson",
+      "options.lower_canopy_temp",
+      "options.increase_air_exchange",
+      "options.raise_light_intensity",
+      "alt.events.v2.indoor_heat_stress_air.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_environment"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "environment",
+      "symptom_leaf_curl_up"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_climate_vpd_basics"
+  },
+  "chainHooks": {
+    "startsChain": null,
+    "advancesChainsOnOutcome": {
+      "partial_mitigation": [
+        "chain.airflow_climate_chain@step_outdoor_exposure_branch"
+      ],
+      "poor_outcome": [
+        "chain.airflow_climate_chain@step_outdoor_dry_wind"
+      ],
+      "no_action": [
+        "chain.airflow_climate_chain@step_outdoor_dry_wind"
+      ]
+    }
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-17 first real mini-catalog data-only event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-18",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+    "fallback": "assets/events/v2/final/indoor_heat_stress_air/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_heat_stress_air/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "temporary_usable_needs_revision",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

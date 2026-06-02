@@ -1,0 +1,57 @@
+﻿{
+    "ok":  true,
+    "phase":  "131",
+    "pilotEventsChecked":  3,
+    "patched":  3,
+    "already_final_cover":  0,
+    "skipped":  0,
+    "conflicts":  0,
+    "unaffectedEventFiles":  19,
+    "items":  [
+                  {
+                      "eventId":  "shared_rootbound_warning",
+                      "targetEventFile":  "data/events/catalog/events/shared/shared_rootbound_warning.event.json",
+                      "previousCover":  {
+                                            "src":  "assets/events/root_bound_warning.png",
+                                            "fallback":  "assets/events/event-stress-recovery.png"
+                                        },
+                      "newCover":  {
+                                       "src":  "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+                                       "fallback":  "assets/events/v2/final/shared_rootbound_warning/fallback.webp"
+                                   },
+                      "heroExists":  true,
+                      "fallbackExists":  true,
+                      "patchStatus":  "patched"
+                  },
+                  {
+                      "eventId":  "shared_early_pest_signs_mild",
+                      "targetEventFile":  "data/events/catalog/events/shared/shared_early_pest_signs_mild.event.json",
+                      "previousCover":  {
+                                            "src":  "assets/events/thrips_early.png",
+                                            "fallback":  "assets/events/event-stress-recovery.png"
+                                        },
+                      "newCover":  {
+                                       "src":  "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+                                       "fallback":  "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp"
+                                   },
+                      "heroExists":  true,
+                      "fallbackExists":  true,
+                      "patchStatus":  "patched"
+                  },
+                  {
+                      "eventId":  "indoor_light_burn_canopy_top",
+                      "targetEventFile":  "data/events/catalog/events/indoor/indoor_light_burn_canopy_top.event.json",
+                      "previousCover":  {
+                                            "src":  "assets/events/event-light-burn.png",
+                                            "fallback":  "assets/events/event-stress-recovery.png"
+                                        },
+                      "newCover":  {
+                                       "src":  "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+                                       "fallback":  "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp"
+                                   },
+                      "heroExists":  true,
+                      "fallbackExists":  true,
+                      "patchStatus":  "patched"
+                  }
+              ]
+}

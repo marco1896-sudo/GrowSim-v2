@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 3,
+  "id": "indoor_overwatering_early",
+  "type": "event",
+  "category": "water",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_indoor"
+  ],
+  "title": {
+    "key": "events.v2.indoor_overwatering_early.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.indoor_overwatering_early.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.indoor_overwatering_early.description"
+  },
+  "cause": {
+    "kind": "watering_too_frequent",
+    "explanation": {
+      "key": "events.v2.indoor_overwatering_early.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.indoor_overwatering_early.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.indoor_overwatering_early.coach.actions.0"
+      },
+      {
+        "key": "events.v2.indoor_overwatering_early.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.indoor_overwatering_early.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.leaf_droop_soft"
+      },
+      "weight": 1,
+      "id": "leaf_droop_soft",
+      "spriteOverlay": "indoor_overwatering_early_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "pot_weight_check": {
+        "label": {
+          "key": "diagnostics.pot_weight_check.heavy_when_wet"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "watering_too_frequent"
+        ]
+      }
+    },
+    "available": [
+      "pot_weight_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "pause_watering_24h",
+      "label": {
+        "key": "options.pause_watering_24h"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "improve_airflow_canopy",
+      "label": {
+        "key": "options.improve_airflow_canopy"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "water_again_immediately",
+      "label": {
+        "key": "options.water_again_immediately"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.water",
+        "op": ">=",
+        "value": 75
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 20
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 6
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower"
+    ]
+  },
+  "pressure": {
+    "weight": 0.95,
+    "polarity": "negative",
+    "primaryPressure": "water_wet"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "indoor_overwatering_early_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "indoor_overwatering_early_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "indoor_overwatering_early_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "water_wet": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "water_wet": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.indoor_overwatering_early.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "pause_watering_24h",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.indoor_overwatering_early.cover",
+      "src": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+      "fallback": "assets/events/v2/final/indoor_overwatering_early/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "indoor_overwatering_early_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "indoor_overwatering_early_overlay_warn": "assets/events/event-stress-recovery.png",
+      "indoor_overwatering_early_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_leaf_droop",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.indoor_overwatering_early.title",
+      "events.v2.indoor_overwatering_early.symptom",
+      "events.v2.indoor_overwatering_early.description",
+      "events.v2.indoor_overwatering_early.cause",
+      "events.v2.indoor_overwatering_early.coach.summary",
+      "events.v2.indoor_overwatering_early.coach.why",
+      "events.v2.indoor_overwatering_early.coach.actions.0",
+      "events.v2.indoor_overwatering_early.coach.actions.1",
+      "events.v2.indoor_overwatering_early.aftermath.lesson",
+      "options.pause_watering_24h",
+      "options.improve_airflow_canopy",
+      "options.water_again_immediately",
+      "alt.events.v2.indoor_overwatering_early.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_water"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "water",
+      "symptom_leaf_droop"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_watering_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-17 first real mini-catalog data-only event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-13",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+    "fallback": "assets/events/v2/final/indoor_overwatering_early/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_overwatering_early/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "usable_with_watch",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

@@ -1,0 +1,362 @@
+{
+  "ok": true,
+  "mode": "event_v2_resolve_preview_no_write",
+  "sourceModeEnabled": true,
+  "summary": {
+    "candidatesChecked": 3,
+    "optionsMin": 3,
+    "optionsMax": 3,
+    "questionPresent": true,
+    "feedbackPreviewPresent": true,
+    "plannedEffectsPreviewPresent": true,
+    "canResolveFalse": true,
+    "canApplyEffectsFalse": true,
+    "actionsEmpty": true,
+    "selectedCandidateNull": true,
+    "persistedSelectedCandidateNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0
+  },
+  "previews": [
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "candidateId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+      "eventId": "indoor_dry_rootball",
+      "preview": {
+        "ok": true,
+        "mode": "event_v2_resolve_preview_no_write",
+        "eventId": "indoor_dry_rootball",
+        "candidateId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+        "title": "indoor_dry_rootball",
+        "question": "Was möchtest du tun?",
+        "options": [
+          {
+            "optionId": "inspect",
+            "label": "Erst genauer prüfen",
+            "intent": "inspect",
+            "expectedQuality": "good",
+            "feedbackPreview": "Gute Wahl: Erst Feuchteverlauf prüfen, bevor du nachgießt.",
+            "plannedEffectsPreview": {
+              "stress": 0,
+              "risk": -1,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "Ein trockener Rootball braucht oft gestufte Rehydrierung statt hektischer Sofortmaßnahmen.",
+            "feedbackSource": "event_specific_draft",
+            "feedbackContext": "dry_rootball"
+          },
+          {
+            "optionId": "stabilize",
+            "label": "Bedingungen vorsichtig stabilisieren",
+            "intent": "stabilize",
+            "expectedQuality": "good",
+            "feedbackPreview": "Gut: Vorsichtig stabilisieren statt überkorrigieren.",
+            "plannedEffectsPreview": {
+              "stress": -1,
+              "risk": -1,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "Kleine, kontrollierte Anpassungen helfen, Wasseraufnahme wieder ins Gleichgewicht zu bringen.",
+            "feedbackSource": "event_specific_draft",
+            "feedbackContext": "dry_rootball"
+          },
+          {
+            "optionId": "overreact",
+            "label": "Sofort stark eingreifen",
+            "intent": "overreact",
+            "expectedQuality": "bad",
+            "feedbackPreview": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "plannedEffectsPreview": {
+              "stress": 2,
+              "risk": 1,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "Überreaktionen führen oft zu Wechselstress zwischen Trockenheit und Überversorgung.",
+            "feedbackSource": "event_specific_draft",
+            "feedbackContext": "dry_rootball"
+          }
+        ],
+        "safetyLabels": [
+          "Testmodus",
+          "Nur Vorschau · nichts wird gespeichert",
+          "Keine Entscheidung möglich",
+          "Kein Einfluss auf deinen Spielstand"
+        ],
+        "actions": [],
+        "selectedCandidate": null,
+        "persistedSelectedCandidate": null,
+        "canResolve": false,
+        "canApplyEffects": false,
+        "canActivateGameplay": false,
+        "canMutateState": false,
+        "canMutateSave": false,
+        "runtimeWriteEnabled": false,
+        "productionEnabled": false,
+        "diagnostics": {
+          "stateMutations": 0,
+          "saveWrites": 0,
+          "localStorageWrites": 0,
+          "indexedDbWrites": 0,
+          "uiActions": 0,
+          "gameplayActivations": 0
+        }
+      },
+      "checks": {
+        "ok": true,
+        "questionPresent": true,
+        "optionCount": 3,
+        "optionCountValid": true,
+        "optionsValid": true,
+        "actionsEmpty": true,
+        "selectedCandidateNull": true,
+        "persistedSelectedCandidateNull": true,
+        "canResolveFalse": true,
+        "canApplyEffectsFalse": true,
+        "runtimeWriteFalse": true,
+        "productionFalse": true,
+        "saveWrites": 0,
+        "localStorageWrites": 0,
+        "indexedDbWrites": 0
+      }
+    },
+    {
+      "fixtureId": "fixture_outdoor_heat_dry_wind",
+      "candidateId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+      "eventId": "outdoor_heatwave_dry_wind",
+      "preview": {
+        "ok": true,
+        "mode": "event_v2_resolve_preview_no_write",
+        "eventId": "outdoor_heatwave_dry_wind",
+        "candidateId": "fixture_outdoor_heat_dry_wind:1:outdoor_heatwave_dry_wind",
+        "title": "outdoor_heatwave_dry_wind",
+        "question": "Was möchtest du tun?",
+        "options": [
+          {
+            "optionId": "inspect",
+            "label": "Erst genauer prüfen",
+            "intent": "inspect",
+            "expectedQuality": "good",
+            "feedbackPreview": "Gute Wahl: Hitze und Wind zuerst sauber einschätzen.",
+            "plannedEffectsPreview": {
+              "stress": 0,
+              "risk": -1,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "Bei Hitzeereignissen entscheidet das Mikroklima über die richtige Reaktion.",
+            "feedbackSource": "event_specific_draft",
+            "feedbackContext": "outdoor_heat_dry_wind"
+          },
+          {
+            "optionId": "stabilize",
+            "label": "Bedingungen vorsichtig stabilisieren",
+            "intent": "stabilize",
+            "expectedQuality": "good",
+            "feedbackPreview": "Sinnvoll: Schutz und Klima sanft stabilisieren.",
+            "plannedEffectsPreview": {
+              "stress": -1,
+              "risk": -1,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "Schrittweise Entlastung reduziert Transpirationsdruck ohne neuen Schock.",
+            "feedbackSource": "event_specific_draft",
+            "feedbackContext": "outdoor_heat_dry_wind"
+          },
+          {
+            "optionId": "overreact",
+            "label": "Sofort stark eingreifen",
+            "intent": "overreact",
+            "expectedQuality": "bad",
+            "feedbackPreview": "Riskant: Harte Gegenmaßnahmen können zusätzliche Instabilität auslösen.",
+            "plannedEffectsPreview": {
+              "stress": 2,
+              "risk": 1,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "Extremreaktionen bei Hitze/Wind verschlechtern oft die Regenerationsfähigkeit.",
+            "feedbackSource": "event_specific_draft",
+            "feedbackContext": "outdoor_heat_dry_wind"
+          }
+        ],
+        "safetyLabels": [
+          "Testmodus",
+          "Nur Vorschau · nichts wird gespeichert",
+          "Keine Entscheidung möglich",
+          "Kein Einfluss auf deinen Spielstand"
+        ],
+        "actions": [],
+        "selectedCandidate": null,
+        "persistedSelectedCandidate": null,
+        "canResolve": false,
+        "canApplyEffects": false,
+        "canActivateGameplay": false,
+        "canMutateState": false,
+        "canMutateSave": false,
+        "runtimeWriteEnabled": false,
+        "productionEnabled": false,
+        "diagnostics": {
+          "stateMutations": 0,
+          "saveWrites": 0,
+          "localStorageWrites": 0,
+          "indexedDbWrites": 0,
+          "uiActions": 0,
+          "gameplayActivations": 0
+        }
+      },
+      "checks": {
+        "ok": true,
+        "questionPresent": true,
+        "optionCount": 3,
+        "optionCountValid": true,
+        "optionsValid": true,
+        "actionsEmpty": true,
+        "selectedCandidateNull": true,
+        "persistedSelectedCandidateNull": true,
+        "canResolveFalse": true,
+        "canApplyEffectsFalse": true,
+        "runtimeWriteFalse": true,
+        "productionFalse": true,
+        "saveWrites": 0,
+        "localStorageWrites": 0,
+        "indexedDbWrites": 0
+      }
+    },
+    {
+      "fixtureId": "fixture_stable_healthy_baseline",
+      "candidateId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+      "eventId": "indoor_dry_rootball",
+      "preview": {
+        "ok": true,
+        "mode": "event_v2_resolve_preview_no_write",
+        "eventId": "indoor_dry_rootball",
+        "candidateId": "fixture_stable_healthy_baseline:1:indoor_dry_rootball",
+        "title": "indoor_dry_rootball",
+        "question": "Was möchtest du tun?",
+        "options": [
+          {
+            "optionId": "observe",
+            "label": "Weiter beobachten",
+            "intent": "observe",
+            "expectedQuality": "good",
+            "feedbackPreview": "Gute Entscheidung: Beobachtung hält die Lage stabil und vermeidet Übersteuerung.",
+            "plannedEffectsPreview": {
+              "stress": 0,
+              "risk": -1,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "",
+            "feedbackSource": "generic_fallback",
+            "feedbackContext": null
+          },
+          {
+            "optionId": "wait",
+            "label": "Noch nichts ändern",
+            "intent": "wait",
+            "expectedQuality": "good",
+            "feedbackPreview": "Plausibel: Bei stabiler Lage ist kontrolliertes Abwarten oft sinnvoll.",
+            "plannedEffectsPreview": {
+              "stress": 0,
+              "risk": 0,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "",
+            "feedbackSource": "generic_fallback",
+            "feedbackContext": null
+          },
+          {
+            "optionId": "overreact",
+            "label": "Unnötig eingreifen",
+            "intent": "overreact",
+            "expectedQuality": "bad",
+            "feedbackPreview": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "plannedEffectsPreview": {
+              "stress": 2,
+              "risk": 1,
+              "notes": [
+                "preview_only_no_write"
+              ]
+            },
+            "canApply": false,
+            "canResolve": false,
+            "learningPreview": "Überreaktionen führen oft zu Wechselstress zwischen Trockenheit und Überversorgung.",
+            "feedbackSource": "event_specific_draft",
+            "feedbackContext": "dry_rootball"
+          }
+        ],
+        "safetyLabels": [
+          "Testmodus",
+          "Nur Vorschau · nichts wird gespeichert",
+          "Keine Entscheidung möglich",
+          "Kein Einfluss auf deinen Spielstand"
+        ],
+        "actions": [],
+        "selectedCandidate": null,
+        "persistedSelectedCandidate": null,
+        "canResolve": false,
+        "canApplyEffects": false,
+        "canActivateGameplay": false,
+        "canMutateState": false,
+        "canMutateSave": false,
+        "runtimeWriteEnabled": false,
+        "productionEnabled": false,
+        "diagnostics": {
+          "stateMutations": 0,
+          "saveWrites": 0,
+          "localStorageWrites": 0,
+          "indexedDbWrites": 0,
+          "uiActions": 0,
+          "gameplayActivations": 0
+        }
+      },
+      "checks": {
+        "ok": true,
+        "questionPresent": true,
+        "optionCount": 3,
+        "optionCountValid": true,
+        "optionsValid": true,
+        "actionsEmpty": true,
+        "selectedCandidateNull": true,
+        "persistedSelectedCandidateNull": true,
+        "canResolveFalse": true,
+        "canApplyEffectsFalse": true,
+        "runtimeWriteFalse": true,
+        "productionFalse": true,
+        "saveWrites": 0,
+        "localStorageWrites": 0,
+        "indexedDbWrites": 0
+      }
+    }
+  ]
+}

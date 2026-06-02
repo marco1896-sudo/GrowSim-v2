@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "traces": [
+    {
+      "traceId": "trace_fullCatalogEmptyDevelopment_1",
+      "targetType": "expectedChange",
+      "targetId": "fullCatalogEmptyDevelopment",
+      "targetVersion": "v1",
+      "approvedByRole": "owner",
+      "approvalProfile": "soloDevelopment",
+      "approvedAt": "2026-05-12T00:00:00.000Z",
+      "reason": "Expected improvement approved",
+      "status": "approved"
+    }
+  ]
+}

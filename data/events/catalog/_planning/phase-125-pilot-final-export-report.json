@@ -1,0 +1,204 @@
+{
+  "ok": true,
+  "generatedAt": "2026-05-22T06:17:26.451Z",
+  "mode": "write",
+  "wouldWrite": true,
+  "overwrite": false,
+  "include2x": false,
+  "eventFilter": [
+    "shared_rootbound_warning",
+    "shared_early_pest_signs_mild",
+    "indoor_light_burn_canopy_top"
+  ],
+  "draft": "data/events/catalog/_planning/phase-122-safe-assetref-draft-normalized-v2.json",
+  "out": "assets/events/v2/final",
+  "sharpVersion": "0.34.5",
+  "eventsChecked": 3,
+  "sourceCandidatesChecked": 3,
+  "counts": {
+    "plannedHero": 3,
+    "plannedFallback": 3,
+    "plannedHero2x": 0,
+    "skippedHero2x": 0,
+    "writtenFiles": 6,
+    "conflicts": 0,
+    "missingSources": 0,
+    "invalidFormats": 0
+  },
+  "totalPlannedOutputBytesEstimate": 4773957,
+  "missingSources": [],
+  "invalidFormats": [],
+  "conflicts": [],
+  "errors": [],
+  "warnings": [],
+  "items": [
+    {
+      "eventId": "indoor_light_burn_canopy_top",
+      "revisionStatus": "temporary_usable_needs_revision",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_light_burn_canopy_top/candidate_full_scene_01.png",
+      "source": {
+        "exists": true,
+        "bytes": 2686931,
+        "sha256": "d855c26131bac329ef01be73b02cb70b4e2d406bd0d5d8edd9515f27bd33b040",
+        "width": 1659,
+        "height": 948,
+        "ratio": 1.75,
+        "format": "png",
+        "wideHeroCompatible": true
+      },
+      "status": "written_or_planned",
+      "plannedOutputs": [
+        {
+          "key": "hero",
+          "path": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+          "quality": 84,
+          "width": 1280,
+          "estimatedBytes": 957772,
+          "exists": false,
+          "action": "written",
+          "outputBytes": 208486,
+          "outputSha256": "61dd64232abd682837d50889f779b9400cd2ecb2f0b70b860570b00b8fa00d13",
+          "outputWidth": 1280,
+          "outputHeight": 731
+        },
+        {
+          "key": "fallback",
+          "path": "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp",
+          "quality": 78,
+          "width": 960,
+          "estimatedBytes": 667020,
+          "exists": false,
+          "action": "written",
+          "outputBytes": 105914,
+          "outputSha256": "1838ad0d4cac67c043c2e41a1d9ac258f0e7c0d2402e613993c8ea13c124d414",
+          "outputWidth": 960,
+          "outputHeight": 549
+        }
+      ],
+      "skippedOutputs": [],
+      "writtenOutputs": [
+        {
+          "key": "hero",
+          "path": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp"
+        },
+        {
+          "key": "fallback",
+          "path": "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp"
+        }
+      ],
+      "conflicts": []
+    },
+    {
+      "eventId": "shared_early_pest_signs_mild",
+      "revisionStatus": "ready",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_early_pest_signs_mild/candidate_full_scene_01.png",
+      "source": {
+        "exists": true,
+        "bytes": 2498688,
+        "sha256": "bcd55b8e054f83342d2b165557eee2afa0fbea9401ab02b7e40759f6c02643f8",
+        "width": 1692,
+        "height": 929,
+        "ratio": 1.8213,
+        "format": "png",
+        "wideHeroCompatible": true
+      },
+      "status": "written_or_planned",
+      "plannedOutputs": [
+        {
+          "key": "hero",
+          "path": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+          "quality": 84,
+          "width": 1280,
+          "estimatedBytes": 873300,
+          "exists": false,
+          "action": "written",
+          "outputBytes": 166918,
+          "outputSha256": "b6a013f0004f2e97a0f522522130b92e74057438ea150e22e41b71f90a6a2bdb",
+          "outputWidth": 1280,
+          "outputHeight": 703
+        },
+        {
+          "key": "fallback",
+          "path": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+          "quality": 78,
+          "width": 960,
+          "estimatedBytes": 608191,
+          "exists": false,
+          "action": "written",
+          "outputBytes": 86030,
+          "outputSha256": "6dd4190efdf60d7662e6e9012ea283e14f41525fdf98ca146e68bce6e2710b8f",
+          "outputWidth": 960,
+          "outputHeight": 527
+        }
+      ],
+      "skippedOutputs": [],
+      "writtenOutputs": [
+        {
+          "key": "hero",
+          "path": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp"
+        },
+        {
+          "key": "fallback",
+          "path": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp"
+        }
+      ],
+      "conflicts": []
+    },
+    {
+      "eventId": "shared_rootbound_warning",
+      "revisionStatus": "ready",
+      "sourceCandidate": "assets/events/v2/_generated/review/shared_rootbound_warning/candidate_full_scene_02.png",
+      "source": {
+        "exists": true,
+        "bytes": 2812703,
+        "sha256": "f906e88d17c9a47170e6217b057fa4fd0f4da988449d0060a922d185a438595d",
+        "width": 1692,
+        "height": 930,
+        "ratio": 1.8194,
+        "format": "png",
+        "wideHeroCompatible": true
+      },
+      "status": "written_or_planned",
+      "plannedOutputs": [
+        {
+          "key": "hero",
+          "path": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+          "quality": 84,
+          "width": 1280,
+          "estimatedBytes": 983050,
+          "exists": false,
+          "action": "written",
+          "outputBytes": 232754,
+          "outputSha256": "561a52941906d7e3944ff01030dd1caa10836c5bc295a35c749c96d6770d2cce",
+          "outputWidth": 1280,
+          "outputHeight": 704
+        },
+        {
+          "key": "fallback",
+          "path": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+          "quality": 78,
+          "width": 960,
+          "estimatedBytes": 684624,
+          "exists": false,
+          "action": "written",
+          "outputBytes": 119828,
+          "outputSha256": "9fe19b0e9d56b45fa94dcd43ba30424eb4a32690c3bf62e9da13dc9da3e2630e",
+          "outputWidth": 960,
+          "outputHeight": 528
+        }
+      ],
+      "skippedOutputs": [],
+      "writtenOutputs": [
+        {
+          "key": "hero",
+          "path": "assets/events/v2/final/shared_rootbound_warning/hero.webp"
+        },
+        {
+          "key": "fallback",
+          "path": "assets/events/v2/final/shared_rootbound_warning/fallback.webp"
+        }
+      ],
+      "conflicts": []
+    }
+  ]
+}

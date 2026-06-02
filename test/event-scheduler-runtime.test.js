@@ -3,7 +3,8 @@ const assert = require('assert');
 const path = require('path');
 const { startStaticServer, closeBrowser, closeServer } = require('./support/serverRuntime');
 const {
-  installAuthHarness: setupAuthHarness
+  installAuthHarness: setupAuthHarness,
+  advanceOnboardingToStart
 } = require('./support/browserRuntime');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -55,6 +56,7 @@ async function startFreshRun(page) {
   await clearPersistence(page);
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('#landing:not(.hidden)');
+  await advanceOnboardingToStart(page);
   await page.click('#startRunBtn');
   await page.waitForFunction(() => {
     const node = document.getElementById('landing');

@@ -1,0 +1,132 @@
+﻿{
+  "status": "draft_no_write",
+  "sourcePhase": "phase-168",
+  "items": [
+    {
+      "eventId": "indoor_vpd_mismatch_veg",
+      "context": "vpd_mismatch",
+      "feedback": {
+        "inspect": {
+          "quality": "good",
+          "short": "Gute Wahl: Erst prüfen verhindert unnötigen Aktionismus.",
+          "learning": "Bei VPD-Problemen sehen Symptome schnell wie Wasserstress aus. Prüfe Klima und Substrat, bevor du eingreifst."
+        },
+        "stabilize": {
+          "quality": "good",
+          "short": "Sinnvoll: Kleine Klima-Korrekturen sind sicherer als harte Eingriffe.",
+          "learning": "VPD wird am besten schrittweise stabilisiert, damit die Pflanze nicht zusätzlich gestresst wird."
+        },
+        "overreact": {
+          "quality": "bad",
+          "short": "Riskant: Zu starke Eingriffe können den Stress erhöhen.",
+          "learning": "Wenn du ohne Prüfung stark reagierst, kann aus einem leichten Klima-Hinweis schnell ein echtes Problem werden."
+        }
+      }
+    },
+    {
+      "eventId": "indoor_dry_rootball",
+      "context": "dry_rootball",
+      "feedback": {
+        "inspect": {
+          "quality": "good",
+          "short": "Gute Wahl: Erst Feuchteverlauf prüfen, bevor du nachgießt.",
+          "learning": "Ein trockener Rootball braucht oft gestufte Rehydrierung statt hektischer Sofortmaßnahmen."
+        },
+        "stabilize": {
+          "quality": "good",
+          "short": "Gut: Vorsichtig stabilisieren statt überkorrigieren.",
+          "learning": "Kleine, kontrollierte Anpassungen helfen, Wasseraufnahme wieder ins Gleichgewicht zu bringen."
+        },
+        "overreact": {
+          "quality": "bad",
+          "short": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+          "learning": "Überreaktionen führen oft zu Wechselstress zwischen Trockenheit und Überversorgung."
+        }
+      }
+    },
+    {
+      "eventId": "outdoor_heatwave_dry_wind",
+      "context": "outdoor_heat_dry_wind",
+      "feedback": {
+        "inspect": {
+          "quality": "good",
+          "short": "Gute Wahl: Hitze und Wind zuerst sauber einschätzen.",
+          "learning": "Bei Hitzeereignissen entscheidet das Mikroklima über die richtige Reaktion."
+        },
+        "stabilize": {
+          "quality": "good",
+          "short": "Sinnvoll: Schutz und Klima sanft stabilisieren.",
+          "learning": "Schrittweise Entlastung reduziert Transpirationsdruck ohne neuen Schock."
+        },
+        "overreact": {
+          "quality": "bad",
+          "short": "Riskant: Harte Gegenmaßnahmen können zusätzliche Instabilität auslösen.",
+          "learning": "Extremreaktionen bei Hitze/Wind verschlechtern oft die Regenerationsfähigkeit."
+        }
+      }
+    },
+    {
+      "eventId": "shared_panic_watering_misread",
+      "context": "panic_watering",
+      "feedback": {
+        "inspect": {
+          "quality": "good",
+          "short": "Gute Wahl: Erst Ursache prüfen statt reflexartig zu gießen.",
+          "learning": "Nicht jedes Hängen ist Durst. Kontextcheck verhindert Fehlentscheidungen."
+        },
+        "stabilize": {
+          "quality": "good",
+          "short": "Gut: Ruhig stabilisieren statt hektisch handeln.",
+          "learning": "Bei Fehlinterpretationen hilft ein kurzer Diagnose-Schritt mehr als schnelle Aktion."
+        },
+        "overreact": {
+          "quality": "bad",
+          "short": "Riskant: Panikreaktionen verstärken oft das Problem.",
+          "learning": "Blindes Nachgießen kann aus Stressanzeichen schnell Überwässerung machen."
+        }
+      }
+    },
+    {
+      "eventId": "indoor_overwatering_early",
+      "context": "overwatering_early",
+      "feedback": {
+        "inspect": {
+          "quality": "good",
+          "short": "Gute Wahl: Substrat und Drainage zuerst prüfen.",
+          "learning": "Frühe Überwässerung erkennt man besser über Muster als über Einzelzeichen."
+        },
+        "stabilize": {
+          "quality": "good",
+          "short": "Sinnvoll: Wasserregime vorsichtig beruhigen.",
+          "learning": "Ein ruhiger Rhythmus stabilisiert Wurzelraum besser als starke Gegenkorrekturen."
+        },
+        "overreact": {
+          "quality": "bad",
+          "short": "Riskant: Harte Korrekturen können Wurzeln zusätzlich belasten.",
+          "learning": "Zu starke Gegensteuerung erzeugt oft Folgestress statt Entlastung."
+        }
+      }
+    },
+    {
+      "eventId": "healthy_baseline_generic",
+      "context": "healthy_baseline",
+      "feedback": {
+        "observe": {
+          "quality": "good",
+          "short": "Gute Wahl: Bei stabiler Lage ist Beobachten oft optimal.",
+          "learning": "Baseline-Phasen profitieren von Konstanz und ruhiger Verlaufskontrolle."
+        },
+        "wait": {
+          "quality": "good",
+          "short": "Plausibel: Noch nichts ändern hält die Ruhe im System.",
+          "learning": "Nicht jede Lage braucht Aktion. Stabilität ist hier ein Qualitätsmerkmal."
+        },
+        "overreact": {
+          "quality": "bad",
+          "short": "Riskant: Unnötiger Eingriff stört einen gesunden Zustand.",
+          "learning": "Bei stabiler Basis kann Übersteuerung neue Probleme erst erzeugen."
+        }
+      }
+    }
+  ]
+}

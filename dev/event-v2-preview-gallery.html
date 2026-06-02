@@ -1,0 +1,401 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Event V2 Preview Gallery</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .status { margin: 8px 0 14px; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0b1220; font-size: 12px; color: #cbd5e1; }
+    select { padding: 8px; border-radius: 8px; border: 1px solid #334155; background: #111827; color: #e2e8f0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .event-v2-preview-card { background: #111827; border: 1px solid #334155; border-radius: 12px; overflow: hidden; }
+    .event-v2-preview-image { width: 100%; display: block; aspect-ratio: 16 / 9; object-fit: cover; background: #1f2937; }
+    .event-v2-preview-content { padding: 10px; }
+    .event-v2-preview-title { margin: 0 0 4px; font-size: 14px; }
+    .event-v2-preview-subtitle { margin: 0 0 4px; font-size: 12px; color: #94a3b8; word-break: break-all; }
+    .event-v2-preview-meta { margin: 0 0 2px; font-size: 12px; color: #cbd5e1; }
+    .detail-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.84); display: flex; align-items: center; justify-content: center; padding: 12px; z-index: 20; }
+    .detail-overlay.hidden { display: none; }
+    .detail-panel { width: min(860px, 100%); max-height: 92vh; overflow: auto; background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 14px; }
+    .detail-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .detail-actions { display: flex; gap: 8px; }
+    .detail-btn { padding: 8px 10px; border: 1px solid #334155; border-radius: 8px; background: #111827; color: #e2e8f0; cursor: pointer; }
+    .detail-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .detail-image { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 10px; background: #1f2937; }
+    .detail-labels { display: flex; flex-wrap: wrap; gap: 6px; }
+    .detail-pill { border: 1px solid #334155; border-radius: 999px; padding: 3px 8px; font-size: 11px; color: #cbd5e1; }
+    .detail-meta { font-size: 12px; color: #cbd5e1; margin: 2px 0; }
+    .resolve-preview-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid #334155; }
+    .resolve-option-list { display: grid; gap: 8px; margin: 8px 0; }
+    .resolve-option-btn { text-align: left; }
+    .resolve-badge { margin-left: 6px; border: 1px solid #334155; border-radius: 999px; padding: 2px 7px; font-size: 10px; color: #94a3b8; }
+    .resolve-feedback-box { margin-top: 8px; padding: 8px; border: 1px solid #334155; border-radius: 8px; background: #111827; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Event V2 Preview Gallery</h1>
+    <div class="controls">
+      <select id="filter-mode">
+        <option value="preview">Preview Items</option>
+        <option value="shadow">Shadow Feed</option>
+        <option value="candidate">Candidate Feed</option>
+        <option value="dev_candidate">Dev/Test Candidate Feed</option>
+        <option value="event_center_context">Event V2 Dev/Test Mode</option>
+      </select>
+      <select id="filter-revision">
+        <option value="all">All</option>
+        <option value="ready">ready</option>
+        <option value="usable_with_watch">usable_with_watch</option>
+        <option value="temporary_usable_needs_revision">temporary_usable_needs_revision</option>
+      </select>
+      <select id="filter-feed">
+        <option value="all">all feed statuses</option>
+        <option value="shadow_feed_ready">shadow_feed_ready</option>
+        <option value="shadow_feed_watch_asset">shadow_feed_watch_asset</option>
+        <option value="shadow_feed_polish_later">shadow_feed_polish_later</option>
+      </select>
+      <select id="filter-env">
+        <option value="all">all</option>
+        <option value="indoor">indoor</option>
+        <option value="outdoor">outdoor</option>
+        <option value="shared">shared</option>
+      </select>
+      <select id="filter-fixture">
+        <option value="all">all fixtures</option>
+        <option value="fixture_indoor_veg_vpd_mismatch">Indoor VPD Mismatch</option>
+        <option value="fixture_outdoor_heat_dry_wind">Outdoor Heat Dry Wind</option>
+        <option value="fixture_stable_healthy_baseline">Stable Healthy Baseline</option>
+      </select>
+    </div>
+    <div id="status-bar" class="status">Mode: Preview</div>
+    <div id="gallery" class="grid"></div>
+  </div>
+  <div id="candidate-detail-overlay" class="detail-overlay hidden" aria-hidden="true">
+    <div class="detail-panel">
+      <div class="detail-header">
+        <strong>Vorschlagskarten-Detail</strong>
+        <div class="detail-actions">
+          <button id="candidate-detail-back" type="button" class="detail-btn">Zurück</button>
+          <button id="candidate-detail-close" type="button" class="detail-btn">Schließen</button>
+        </div>
+      </div>
+      <div id="candidate-detail-content"></div>
+    </div>
+  </div>
+  <script src="../src/events/v2/preview/EventV2PreviewCopyLabels.js"></script>
+  <script src="../src/events/v2/ui-lab/EventV2PreviewGallery.js"></script>
+  <script src="../src/events/v2/preview/EventV2SingleCandidateDetailPreviewModel.js"></script>
+  <script src="../src/events/v2/preview/EventV2CandidateDetailFlowController.js"></script>
+  <script src="../src/events/v2/preview/EventV2ResolveFeedbackCopy.js"></script>
+  <script src="../src/events/v2/preview/EventV2ResolvePreviewModel.js"></script>
+  <script src="../src/events/v2/preview/EventV2ResolvePreviewUiModel.js"></script>
+  <script src="../src/events/v2/preview/EventV2ResolvePreviewInteractionController.js"></script>
+  <script>
+    function escapeHtml(input) {
+      return String(input == null ? '' : input)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderResolvePreviewSection(resolveUiModel, interactionSnapshot) {
+      if (!resolveUiModel || resolveUiModel.ok !== true) return '';
+      const options = Array.isArray(resolveUiModel.options) ? resolveUiModel.options : [];
+      const activeId = interactionSnapshot && interactionSnapshot.activePreviewOptionId
+        ? String(interactionSnapshot.activePreviewOptionId)
+        : '';
+      const activeOption = options.find((option) => String(option.optionId || '') === activeId) || null;
+      const effects = activeOption && activeOption.plannedEffectsPreview && typeof activeOption.plannedEffectsPreview === 'object'
+        ? activeOption.plannedEffectsPreview
+        : null;
+      const effectsText = effects
+        ? ('stress: ' + String(effects.stress) + ' · risk: ' + String(effects.risk) + ' · notes: ' + String(Array.isArray(effects.notes) ? effects.notes.join(', ') : 'preview_only_no_write'))
+        : 'stress: 0 · risk: 0 · notes: preview_only_no_write';
+
+      return [
+        '<section class="resolve-preview-section" data-resolve-preview-section="true">',
+        '<h4>' + escapeHtml(resolveUiModel.title || 'Entscheidungsvorschau') + '</h4>',
+        '<p class="detail-meta">' + escapeHtml(resolveUiModel.previewHint || 'Nur Vorschau · nichts wird gespeichert') + '</p>',
+        '<p class="detail-meta"><strong>' + escapeHtml(resolveUiModel.question || 'Was möchtest du tun?') + '</strong></p>',
+        '<div class="resolve-option-list">',
+        options.map((option) => (
+          '<button type="button" class="detail-btn resolve-option-btn" data-resolve-option-id="' + escapeHtml(option.optionId) + '">' +
+          escapeHtml(option.label) +
+          '<span class="resolve-badge">' + escapeHtml(option.badge || 'empfohlen') + '</span>' +
+          '</button>'
+        )).join(''),
+        '</div>',
+        '<div class="detail-labels">' + (resolveUiModel.safetyLabels || []).map((label) => '<span class="detail-pill">' + escapeHtml(label) + '</span>').join('') + '</div>',
+        '<div class="resolve-feedback-box" data-resolve-feedback-box="true">',
+        '<p class="detail-meta"><strong>Vorschau-Feedback</strong></p>',
+        activeOption
+          ? ('<p class="detail-meta" data-resolve-feedback-text="true">' + escapeHtml(activeOption.feedbackPreview || '') + '</p>' +
+            '<p class="detail-meta" data-resolve-learning-text="true">Lernhinweis: ' + escapeHtml(activeOption.learningPreview || 'Noch kein zusätzlicher Lernhinweis vorhanden.') + '</p>' +
+            '<p class="detail-meta" data-resolve-feedback-source="true">Feedback-Quelle: ' + escapeHtml(activeOption.feedbackSource || 'generic_fallback') + '</p>' +
+            '<p class="detail-meta" data-resolve-effects-text="true">Geplante Effekte (nur Vorschau): ' + escapeHtml(effectsText) + '</p>')
+          : '<p class="detail-meta" data-resolve-feedback-text="true">Wähle eine Option, um Vorschau-Feedback zu sehen.</p>',
+        '</div>',
+        '<p class="detail-meta">Keine Entscheidung möglich: true · Apply möglich: false · Persisted Resolve Choice: null</p>',
+        '</section>'
+      ].join('');
+    }
+
+    function renderDetailContent(detail, resolveUiModel, interactionSnapshot) {
+      return [
+        '<div class="detail-grid">',
+        '<img class="detail-image" src="' + normalizeDetailImageSrc(detail.imageSrc || detail.imageFallback || '') + '" alt="' + escapeHtml(detail.title || detail.eventId || 'candidate') + '">',
+        '<div class="detail-labels">' + detail.safetyLabels.map((label) => '<span class="detail-pill">' + escapeHtml(label) + '</span>').join('') + '</div>',
+        '<h3>' + escapeHtml(detail.title || detail.eventId || 'Candidate') + '</h3>',
+        '<p class="detail-meta">' + escapeHtml(detail.eventId || '') + ' · ' + escapeHtml(detail.subtitle || '') + '</p>',
+        '<p class="detail-meta">Kategorie: ' + escapeHtml(detail.category || 'unknown') + ' · Umgebung: ' + escapeHtml(detail.environment || 'shared') + ' · Schweregrad: ' + escapeHtml(detail.severity || 'unknown') + '</p>',
+        '<p class="detail-meta">Trefferstärke: ' + escapeHtml(String(detail.score)) + ' · revision: ' + escapeHtml(detail.revisionStatus || 'unknown') + '</p>',
+        '<p class="detail-meta">Warum dieser Hinweis erscheint: ' + escapeHtml(detail.reason || 'unknown') + '</p>',
+        '<p class="detail-meta">Diese Vorschlagskarte passt laut Testauswertung zu den aktuellen Bedingungen.</p>',
+        '<p class="detail-meta"><strong>Diagnosis:</strong> ' + escapeHtml(detail.learningPreview && detail.learningPreview.diagnosis || '') + '</p>',
+        '<p class="detail-meta"><strong>Why it matters:</strong> ' + escapeHtml(detail.learningPreview && detail.learningPreview.whyItMatters || '') + '</p>',
+        '<p class="detail-meta"><strong>Observation hint:</strong> ' + escapeHtml(detail.learningPreview && detail.learningPreview.observationHint || '') + '</p>',
+        '<p class="detail-meta">Keine Entscheidung möglich: ' + String(detail.canResolve === false) + ' · Nur Vorschau gespeichert: ' + String(detail.runtimeWriteEnabled === false) + ' · Production: ' + String(detail.productionEnabled === false) + '</p>',
+        renderResolvePreviewSection(resolveUiModel, interactionSnapshot),
+        '</div>'
+      ].join('');
+    }
+
+    function normalizeDetailImageSrc(input) {
+      const src = typeof input === 'string' ? input.trim() : '';
+      if (!src) return '';
+      if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:') || src.startsWith('/') || src.startsWith('../')) {
+        return src;
+      }
+      if (src.startsWith('assets/')) {
+        return '../' + src;
+      }
+      return src;
+    }
+
+    async function boot() {
+      const [previewResp, shadowResp] = await Promise.all([
+        fetch('../data/events/catalog/_planning/phase-134-event-center-preview-report.json'),
+        fetch('../data/events/catalog/_planning/phase-136-shadow-feed-readiness-report.json'),
+      ]);
+      const candidateResp = await fetch('../data/events/catalog/_planning/phase-142-soft-activation-candidate-gate-report.json');
+      const devCandidateResp = await fetch('../data/events/catalog/_planning/phase-145-dev-test-candidate-feed-report.json');
+      const eventCenterContextResp = await fetch('../data/events/catalog/_planning/phase-152-event-center-context-source.json').catch(() => null);
+      const previewReport = await previewResp.json();
+      const shadowReport = await shadowResp.json();
+      const candidateReport = await candidateResp.json();
+      const devCandidateReport = await devCandidateResp.json();
+      const eventCenterContext = eventCenterContextResp && eventCenterContextResp.ok ? await eventCenterContextResp.json() : null;
+      const previewItems = Array.isArray(previewReport.items) ? previewReport.items : [];
+      const shadowItems = Array.isArray(shadowReport.items) ? shadowReport.items : [];
+      const candidateItems = Array.isArray(candidateReport.fixtures)
+        ? candidateReport.fixtures.flatMap((fixture) => {
+          const list = Array.isArray(fixture.candidatesTop5) ? fixture.candidatesTop5 : [];
+          const watch = fixture.plausibility && Array.isArray(fixture.plausibility.watch) ? fixture.plausibility.watch : [];
+          return list.map((entry) => ({
+            id: fixture.fixtureId + ':' + String(entry.rank || 0) + ':' + String(entry.eventId || 'unknown'),
+            fixtureId: fixture.fixtureId,
+            fixtureLabel: fixture.fixtureLabel || fixture.fixtureId,
+            rank: entry.rank,
+            eventId: entry.eventId,
+            title: entry.title || entry.eventId,
+            subtitle: entry.eventId || '',
+            category: entry.category || 'unknown',
+            environment: entry.environment || 'shared',
+            severity: entry.severity || 'unknown',
+            score: entry.score,
+            reason: entry.reason,
+            imageSrc: entry.imageSrc,
+            imageFallback: 'assets/events/event-stress-recovery.png',
+            revisionStatus: entry.revisionStatus || 'unknown',
+            activationStatus: 'candidate_only',
+            previewReady: true,
+            isEventV2Candidate: true,
+            isShadowOnly: true,
+            canActivateGameplay: false,
+            canMutateState: false,
+            canMutateSave: false,
+            runtimeWriteEnabled: false,
+            productionEnabled: false,
+            actions: [],
+            watchpoints: watch,
+          }));
+        })
+        : [];
+      const devCandidateItems = Array.isArray(devCandidateReport.items) ? devCandidateReport.items : [];
+      const eventCenterContextItems = eventCenterContext && Array.isArray(eventCenterContext.flatItems)
+        ? eventCenterContext.flatItems
+        : devCandidateItems;
+      const params = new URLSearchParams(window.location.search || '');
+      const requestedMode = String(params.get('mode') || '').trim().toLowerCase();
+      let mode = requestedMode === 'shadow'
+        ? 'shadow'
+        : (requestedMode === 'candidate'
+          ? 'candidate'
+          : (requestedMode === 'dev_candidate'
+            ? 'dev_candidate'
+            : (requestedMode === 'event_center_context' ? 'event_center_context' : 'preview')));
+      const controller = window.EventV2PreviewGallery.mount('#gallery', previewItems);
+      const statusBar = document.getElementById('status-bar');
+      const galleryRoot = document.getElementById('gallery');
+      const detailOverlay = document.getElementById('candidate-detail-overlay');
+      const detailContent = document.getElementById('candidate-detail-content');
+      const detailBack = document.getElementById('candidate-detail-back');
+      const detailClose = document.getElementById('candidate-detail-close');
+      const flowApi = window.EventV2CandidateDetailFlowController;
+      const flowController = flowApi && typeof flowApi.createCandidateDetailFlowController === 'function'
+        ? flowApi.createCandidateDetailFlowController({})
+        : null;
+      const resolvePreviewApi = window.EventV2ResolvePreviewModel;
+      const resolveUiApi = window.EventV2ResolvePreviewUiModel;
+      const resolveInteractionApi = window.EventV2ResolvePreviewInteractionController;
+      let resolvePreviewDetail = null;
+      let resolvePreviewUiModel = null;
+      let resolvePreviewController = null;
+
+      function renderFlowState() {
+        if (!flowController) return;
+        const snapshot = flowController.getState();
+        const active = snapshot.activePreviewCandidateId ? snapshot.activePreviewCandidateId : 'none';
+        const persisted = snapshot.persistedSelectedCandidate === null ? 'null' : String(snapshot.persistedSelectedCandidate);
+        statusBar.setAttribute(
+          'data-flow-state',
+          'view=' + snapshot.currentView +
+          ';active=' + active +
+          ';persisted=' + persisted +
+          ';canResolve=' + String(snapshot.canResolve) +
+          ';runtimeWrite=' + String(snapshot.runtimeWriteEnabled) +
+          ';production=' + String(snapshot.productionEnabled)
+        );
+      }
+
+      function openDetailForItem(itemId) {
+        const visibleItems = typeof controller.getVisibleItems === 'function' ? controller.getVisibleItems() : [];
+        const target = visibleItems.find((entry) => String(entry.id || '') === String(itemId || ''));
+        if (!target) return;
+        if (flowController) flowController.openCandidate(itemId);
+        const modelApi = window.EventV2SingleCandidateDetailPreviewModel;
+        const detail = modelApi && typeof modelApi.createSingleCandidateDetailPreviewModel === 'function'
+          ? modelApi.createSingleCandidateDetailPreviewModel(target)
+          : null;
+        if (!detail || detail.ok !== true) return;
+
+        resolvePreviewDetail = detail;
+        const resolvePreview = resolvePreviewApi && typeof resolvePreviewApi.buildEventV2ResolvePreview === 'function'
+          ? resolvePreviewApi.buildEventV2ResolvePreview(target)
+          : null;
+        resolvePreviewUiModel = resolveUiApi && typeof resolveUiApi.buildResolvePreviewUiModel === 'function'
+          ? resolveUiApi.buildResolvePreviewUiModel(resolvePreview)
+          : null;
+        resolvePreviewController = resolveInteractionApi && typeof resolveInteractionApi.createResolvePreviewInteractionController === 'function'
+          ? resolveInteractionApi.createResolvePreviewInteractionController()
+          : null;
+        const interactionSnapshot = resolvePreviewController && typeof resolvePreviewController.getState === 'function'
+          ? resolvePreviewController.getState()
+          : null;
+
+        detailContent.innerHTML = renderDetailContent(detail, resolvePreviewUiModel, interactionSnapshot);
+
+        detailOverlay.classList.remove('hidden');
+        detailOverlay.setAttribute('aria-hidden', 'false');
+        renderFlowState();
+      }
+
+      function closeDetail() {
+        if (flowController) flowController.closeDetail();
+        detailOverlay.classList.add('hidden');
+        detailOverlay.setAttribute('aria-hidden', 'true');
+        renderFlowState();
+      }
+      function applyMode() {
+        if (mode === 'shadow') {
+          controller.setItems(shadowItems);
+          statusBar.textContent = 'Modus: Shadow Feed | Vorschlagskarte: nein | Nur Vorschau · nichts wird gespeichert: ja | Kein Einfluss auf deinen Spielstand: ja';
+        } else if (mode === 'dev_candidate') {
+          controller.setItems(devCandidateItems);
+          statusBar.textContent = 'Modus: Testmodus Candidate Feed | Testmodus | Vorschlagskarte | Nur Vorschau · nichts wird gespeichert | Kein Einfluss auf deinen Spielstand';
+        } else if (mode === 'event_center_context') {
+          controller.setItems(eventCenterContextItems);
+          statusBar.textContent = 'Modus: Event V2 Testmodus | Event-Vorschau | Nur Vorschau · nichts wird gespeichert | Keine Entscheidung möglich | Testmodus | Testauswertung im Hintergrund | Vorschlagskarte | Kein Einfluss auf deinen Spielstand';
+        } else if (mode === 'candidate') {
+          controller.setItems(candidateItems);
+          statusBar.textContent = 'Modus: Candidate Feed | Vorschlagskarte | Nur Vorschau · nichts wird gespeichert | Kein Einfluss auf deinen Spielstand';
+        } else {
+          controller.setItems(previewItems);
+          statusBar.textContent = 'Mode: Preview Items';
+        }
+        controller.setMode((mode === 'dev_candidate' || mode === 'event_center_context') ? 'candidate' : mode);
+        renderFlowState();
+      }
+      const modeSelect = document.getElementById('filter-mode');
+      const revisionSelect = document.getElementById('filter-revision');
+      const feedSelect = document.getElementById('filter-feed');
+      const fixtureSelect = document.getElementById('filter-fixture');
+
+      modeSelect.addEventListener('change', (e) => {
+        mode = e.target.value === 'shadow'
+          ? 'shadow'
+          : (e.target.value === 'candidate'
+            ? 'candidate'
+            : (e.target.value === 'dev_candidate'
+              ? 'dev_candidate'
+              : (e.target.value === 'event_center_context' ? 'event_center_context' : 'preview')));
+        revisionSelect.disabled = mode !== 'preview';
+        feedSelect.disabled = mode !== 'shadow';
+        fixtureSelect.disabled = !(mode === 'candidate' || mode === 'dev_candidate' || mode === 'event_center_context');
+        applyMode();
+      });
+      document.getElementById('filter-revision').addEventListener('change', (e) => {
+        controller.setRevisionStatus(e.target.value);
+      });
+      document.getElementById('filter-feed').addEventListener('change', (e) => {
+        controller.setFeedStatus(e.target.value);
+      });
+      document.getElementById('filter-env').addEventListener('change', (e) => {
+        controller.setEnvironment(e.target.value);
+      });
+      fixtureSelect.addEventListener('change', (e) => {
+        controller.setFixtureId(e.target.value);
+      });
+      galleryRoot.addEventListener('click', (event) => {
+        const card = event.target.closest('.event-v2-preview-card');
+        if (!card) return;
+        const itemId = card.getAttribute('data-item-id');
+        if (!itemId) return;
+        openDetailForItem(itemId);
+      });
+      detailContent.addEventListener('click', (event) => {
+        const optionButton = event.target.closest('[data-resolve-option-id]');
+        if (!optionButton || !resolvePreviewController || !resolvePreviewDetail) return;
+        const optionId = optionButton.getAttribute('data-resolve-option-id');
+        if (!optionId) return;
+        const interactionSnapshot = resolvePreviewController.selectOption(optionId);
+        detailContent.innerHTML = renderDetailContent(resolvePreviewDetail, resolvePreviewUiModel, interactionSnapshot);
+      });
+      detailClose.addEventListener('click', closeDetail);
+      detailOverlay.addEventListener('click', (event) => {
+        if (event.target === detailOverlay) closeDetail();
+      });
+      detailBack.addEventListener('click', () => {
+        if (flowController) flowController.backToList();
+        detailOverlay.classList.add('hidden');
+        detailOverlay.setAttribute('aria-hidden', 'true');
+        renderFlowState();
+      });
+      modeSelect.value = mode;
+      revisionSelect.disabled = mode !== 'preview';
+      feedSelect.disabled = mode !== 'shadow';
+      fixtureSelect.disabled = !(mode === 'candidate' || mode === 'dev_candidate' || mode === 'event_center_context');
+      applyMode();
+      renderFlowState();
+    }
+    boot();
+  </script>
+</body>
+</html>
+

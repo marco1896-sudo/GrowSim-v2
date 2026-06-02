@@ -411,7 +411,7 @@
       "guidance": {
         "improved": "Halte die Korrektur ruhig und beobachte, ob die Werte stabil bleiben.",
         "stabilized": "Die Lage wurde abgefangen, braucht aber noch 1 bis 2 Zyklen saubere Nachkontrolle.",
-        "worsened": "Der Druck ist noch nicht sauber gel?st. Kleine gezielte Gegenma?nahmen sind sinnvoller als Hektik.",
+        "worsened": "Der Druck ist noch nicht sauber gelöst. Kleine gezielte Gegenmaßnahmen sind sinnvoller als Hektik.",
         "escalated": "Die Situation kippt weiter. Priorit?t hat jetzt Schadensbegrenzung statt Wachstumspush.",
         "unresolved": "Beobachte die n?chsten Zyklen und korrigiere nur den eigentlichen Ausl?ser."
       }
@@ -419,13 +419,591 @@
     "problem_source": {
       "water_wet": "Das Medium blieb zu lange nass. Dadurch bekam die Wurzelzone weniger Sauerstoff.",
       "water_dry": "Der Wurzelballen lief zu weit trocken und die Pflanze musste Wasserstress ausgleichen.",
-      "nutrition_lockout": "Die Aufnahme war instabil. Hohe EC- oder pH-Abweichungen haben die N?hrstoffverf?gbarkeit verschoben.",
-      "nutrition_deficit": "Der aktuelle N?hrstoffpuffer reichte f?r die Entwicklungsphase nicht mehr sauber aus.",
+      "nutrition_lockout": "Die Aufnahme war instabil. Hohe EC- oder pH-Abweichungen haben die Nährstoffverfügbarkeit verschoben.",
+      "nutrition_deficit": "Der aktuelle Nährstoffpuffer reichte für die Entwicklungsphase nicht mehr sauber aus.",
       "disease_mold": "Feuchte, geringe Luftbewegung oder dichter Wuchs haben das Mikroklima belastet.",
-      "environment_heat_dry": "Hitze und ein zu trockener Luftzug haben den Verdunstungsdruck erh?ht.",
+      "environment_heat_dry": "Hitze und ein zu trockener Luftzug haben den Verdunstungsdruck erhöht.",
       "environment_cold": "Das Klima wich zu stark nach unten ab und bremste Stoffwechsel sowie Wasseraufnahme.",
       "environment_light": "Lichtintensit?t und Blattabstand waren f?r den aktuellen Zustand zu aggressiv.",
       "generic": "Mehrere Stressfaktoren haben sich ?ber Zeit aufgebaut und den aktuellen Druck ausgel?st."
+    },
+    "v2": {
+      "indoor_dry_rootball": {
+        "title": "Trockener Rootball mit ungleichmaessiger Feuchte",
+        "symptom": "Die Oberflaeche wirkt trocken, die Pflanze verliert sichtbar Spannung und Wasser laeuft ungleichmaessig ab. Im Kern fehlt Feuchte, waehrend Randbereiche schon schneller reagieren.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Rehydriere jetzt in kleinen Schritten statt zu fluten. So gibst du dem trockenen Kern Zeit, wieder Wasser aufzunehmen, ohne den Topf direkt zu ueberlasten.",
+          "why": "Wenn ein Rootball im Kern austrocknet, perlt Wasser oft seitlich vorbei. Eine gestufte Gabe stellt den Kontakt im Substrat wieder her und reduziert das Risiko, dass du mit einer grossen Menge nur kurzfristig Symptome drueckst.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit einer ruhigen Rehydrierung verteilt sich Feuchte wieder gleichmaessiger. Die Pflanze gewinnt Spannung zurueck, der Topf reagiert berechenbarer und."
+        }
+      },
+      "indoor_heat_stress_air": {
+        "title": "Hitzedruck ueber der Krone",
+        "symptom": "Die Blattkanten rollen sich leicht ein und die Krone wirkt unter Zug. Warme Luft und trockener Luftstrom ziehen mehr Wasser aus dem Blatt, als die Wurzel ruhig nachliefern kann.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Kuehle erst Luft und Kronenzone ab, statt blind mehr zu giessen. Temperatur, Luftbewegung und Lichtlast muessen wieder zusammenpassen.",
+          "why": "Hier sitzt der Stress in Luft und Blatt, nicht automatisch im Topf. Wenn die Krone zu heiss laeuft, steigt Verdunstung schneller als die Nachlieferung.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Sinkt die Spitzenhitze, entspannt sich die Blattstellung oft schnell. Danach lassen sich Wasserbedarf und weitere Korrekturen wieder klarer lesen."
+        },
+        "options": {
+          "lower_canopy_temp": {
+            "detail": "Nimmt Last aus der Krone und entlastet schneller als ein reflexhaftes Nachgiessen."
+          },
+          "increase_air_exchange": {
+            "detail": "Hilft, warme Luft abzubauen, wenn der Luftstrom dabei nicht noch trockener und haerter wird."
+          },
+          "raise_light_intensity": {
+            "detail": "Mehr Licht erhoeht die Kronenlast und fuehrt bei Hitze noch weiter von der Ursache weg."
+          }
+        }
+      },
+      "indoor_light_nutrient_tox_early": {
+        "title": "Fruehe Naehrstoffspitze durch Licht und Feed",
+        "symptom": "An Blattspitzen zeigen sich erste Ueberlastungszeichen. Lichtdruck und Naehrstoffangebot passen nicht sauber zusammen, wodurch die Pflanze frueh in einen unnoetigen.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Nimm den Druck kurz raus und kalibriere Licht plus Feed in kleinen Schritten. So stabilisierst du die Aufnahme, ohne die Pflanze mit harten Gegenbewegungen zu stressen.",
+          "why": "Wenn Lichtleistung und Naehrstoffstaerke nicht zusammenpassen, steigt der Stoffwechseldruck schneller als die Pflanze ihn verarbeiten kann. Kleine Korrekturen sind hier wirksamer als extreme Richtungswechsel.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Nach einer sanften Korrektur beruhigen sich neue Triebe meist schnell. Die Pflanze arbeitet wieder effizienter, und du bekommst ein klareres Signal, welche."
+        }
+      },
+      "indoor_overwatering_early": {
+        "title": "Fruehes Ueberwaessern in der Wurzelzone",
+        "symptom": "Die Blaetter haengen weich, obwohl der Topf noch schwer ist. Die Wurzelzone wirkt zu nass und bekommt zu wenig Luft. Dadurch sinkt die Aufnahme, auch wenn genug Wasser im Substrat.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Bitte jetzt nicht nachgiessen. Gib der Wurzelzone Luft, stabilisiere den Rhythmus und beobachte erst den Verlauf, bevor du die naechste Korrektur setzt.",
+          "why": "Bei fruehem Ueberwaessern ist meist nicht Wasser das Problem, sondern Sauerstoffmangel im Substrat. Wenn der Topf zu lange nass bleibt, reagieren Wurzeln traege und die Pflanze zeigt Durstsignale trotz voller Erde.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit einer kurzen Giesspause und besserer Luftbewegung beruhigt sich die Wurzelzone. Der Stress nimmt ab, neue Blaetter stehen wieder stabiler und dein."
+        }
+      },
+      "indoor_soil_ph_out_of_range": {
+        "title": "pH bremst die Aufnahme",
+        "symptom": "Die Blaetter sehen nach Mangel aus, obwohl im Substrat noch Naehrstoffe stecken. Der pH liegt neben dem Zielbereich und blockiert einen Teil der Aufnahme.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Miss zuerst den pH und korrigiere ihn in kleinen Schritten. Mehr Duenger hilft wenig, wenn die Pflanze gerade schlecht aufnehmen kann.",
+          "why": "Der pH ist kein Laborwert fuer die Statistik. Er entscheidet mit, welche Naehrstoffe an der Wurzel wirklich verfuegbar bleiben.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Liegt der pH wieder im Zielbereich, greifen weitere Korrekturen besser. Neue Blaetter wirken ruhiger und der Verlauf wird klarer."
+        },
+        "options": {
+          "adjust_ph_gradual": {
+            "detail": "Korrigiert die Ursache direkt und entlastet die Aufnahme ohne harten Sprung."
+          },
+          "verify_runoff_then_adjust": {
+            "detail": "Sichert erst den Messwert ab, damit du den pH nicht in die falsche Richtung schiebst."
+          },
+          "add_more_nutrients_now": {
+            "detail": "Mehr Duenger ohne Messung erhoeht oft nur Druck, waehrend die Aufnahme weiter blockiert bleibt."
+          }
+        }
+      },
+      "indoor_vpd_mismatch_veg": {
+        "title": "Klima passt nicht zur Vegi",
+        "symptom": "Die Blaetter wirken mal schlaff, mal gespannt, obwohl Wasser und Feed halbwegs passen. Temperatur und Luftfeuchte ziehen nicht sauber zusammen.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Stabilisiere erst das Klima statt Wasser oder Duenger nachzuschieben. In der Vegi braucht die Pflanze einen ruhigen Bereich fuer Verdunstung und Aufnahme.",
+          "why": "VPD beschreibt, wie stark die Luft Wasser aus dem Blatt zieht. Ist der Wert zu hoch oder zu niedrig, geraten Temperatur, Luftfeuchte und Transpiration aus dem Takt.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit ruhigerem Klima arbeitet die Pflanze gleichmaessiger. Blattspannung und Wachstum lassen sich wieder leichter lesen."
+        },
+        "options": {
+          "rebalance_temp_humidity": {
+            "detail": "Bringt Temperatur und Luftfeuchte naeher zusammen und beruhigt die Verdunstung."
+          },
+          "stabilize_then_monitor": {
+            "detail": "Vermeidet Aktionismus und zeigt, ob eine kleine Klimakorrektur schon reicht."
+          },
+          "chase_with_random_changes": {
+            "detail": "Viele spontane Klimawechsel machen die Ursache unklar und treiben den Stress oft weiter hoch."
+          }
+        }
+      },
+      "outdoor_cold_night_stress": {
+        "title": "Kalte Naechte bremsen den Stoffwechsel sichtbar",
+        "symptom": "Nach kalten Naechten wirkt die Pflanze am Morgen traege und leicht haengend. Die Aufnahme laeuft reduziert, waehrend tagsueber wieder Last aufgebaut wird, was den Tagesverlauf.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Puffere die Nachtbedingungen und vermeide hektische Gegenreaktionen am Morgen. Gib der Pflanze Zeit, in einen stabilen Temperaturverlauf zurueckzukommen.",
+          "why": "Bei niedrigen Nachttemperaturen sinken Enzymaktivitaet und Wurzeltempo. Wenn tagsueber dann sofort hoher Druck anliegt, entsteht ein Ungleichgewicht zwischen Bedarf und Nachlieferung.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit einem besseren Nachtpuffer wird der Start in den Tag gleichmaessiger. Die Pflanze reagiert weniger sprunghaft und du kannst Klima und Pflege wieder ruhiger."
+        }
+      },
+      "outdoor_heatwave_dry_wind": {
+        "title": "Hitzewelle plus trockener Wind",
+        "symptom": "Die Blaetter verlieren Spannung, obwohl im Topf noch Restfeuchte stecken kann. Hitze und trockener Wind ziehen Wasser schneller aus dem Blatt als die Wurzel nachliefert.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Nimm zuerst Last aus dem Standort statt hektisch mehr zu giessen. Schatten, Windschutz und ein ruhigeres Zeitfenster helfen hier mehr als Push.",
+          "why": "Heisse Luft und trockener Wind treiben die Verdunstung gemeinsam hoch. Dann kippt die Balance zwischen Blatt und Wurzel schnell, auch wenn noch Wasser im Topf ist.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit Schatten und ruhigerem Luftzug normalisiert sich die Blattspannung schrittweise. Danach lassen sich Giesszeitpunkt und weitere Schritte klarer planen."
+        },
+        "options": {
+          "shade_and_windbreak": {
+            "detail": "Nimmt direkte Spitzenlast aus Sonne und Luftzug, ohne den Outdoor-Rhythmus ganz umzubauen."
+          },
+          "water_timing_adjust_dawn": {
+            "detail": "Bringt Reserve vor die heisse Tageshaelfte, hilft aber nur zusammen mit Standortentlastung."
+          },
+          "defoliate_midday": {
+            "detail": "Entzieht der Pflanze mitten in der Hitzespitze weitere Flaeche und bremst die Erholung."
+          }
+        }
+      },
+      "outdoor_heavy_rain_waterlogging_risk": {
+        "title": "Starkregen erhoeht Staunaesse-Risiko im Topf",
+        "symptom": "Nach starkem Regen bleibt der Topf lange schwer und Blaetter verlieren Spannung. Die Wurzelzone ist ueberlaengere Zeit gesaettigt, wodurch Luft fehlt und die Aufnahme trotz.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Setze jetzt auf Drainage und lass ein Trockenfenster zu. Mehr Wasser waere aktuell kontra-produktiv, weil die Wurzelzone zuerst wieder Sauerstoff und Struktur braucht.",
+          "why": "Bei anhaltender Naesse wird das Porenvolumen im Substrat mit Wasser statt Luft gefuellt. Dann koennen Wurzeln schlechter arbeiten und typische Stresssignale treten auf, obwohl genug Wasser vorhanden ist.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit besserem Abfluss und etwas Geduld entlastest du die Wurzelzone. Der Druck sinkt, die Pflanze richtet sich meist wieder auf und das Risiko fuer Folgestress."
+        }
+      },
+      "shared_early_pest_signs_mild": {
+        "title": "Fruehe Schaedlingsspuren",
+        "symptom": "Auf Blattunterseiten und an einzelnen Flaechen tauchen erste feine Spuren auf. Noch ist das mild, aber jetzt ist der beste Moment fuer ruhige Kontrolle.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Pruefe gezielt und bleib ruhig statt sofort alles zu behandeln. Bei fruehen Zeichen zaehlen Beobachtung, saubere Kontrolle und kleine Schritte.",
+          "why": "Milde Schaedsignale sind kein Alarmfall, aber ein gutes Diagnosefenster. Wer Blattunterseiten und Muster frueh liest, spart der Pflanze spaetere Rundumschritte.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit frueher Kontrolle bleibt der Druck meist klein. Du behaeltst den Ueberblick und musst seltener mit harten Mitteln nachlegen."
+        },
+        "options": {
+          "targeted_inspection_isolation": {
+            "detail": "Prueft Hotspots gezielt und haelt den Eingriff klein, bevor sich der Befall verteilt."
+          },
+          "increase_monitoring_frequency": {
+            "detail": "Verdichtet die Kontrolle fuer ein paar Tage und zeigt schnell, ob der Druck wirklich zunimmt."
+          },
+          "spray_everything_blindly": {
+            "detail": "Breites Spruehen ohne klares Ziel stresst die Pflanze und verrauscht deine Diagnose."
+          }
+        }
+      },
+      "shared_light_distance_error": {
+        "title": "Lichtdistanz-Fehler mit vermeidbarem Stress",
+        "symptom": "Die Blattoberflaeche zeigt fruehe Stresszeichen, weil die Distanz zur Lichtquelle nicht sauber passt. Zu nah oder zu fern kostet Effizienz und verstaerkt Nebenstress in anderen.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Passe den Abstand kontrolliert in kleinen Schritten an. So stabilisierst du die Lichtlast, ohne neue Stressspitzen durch zu starke Korrekturen zu erzeugen.",
+          "why": "Grosse Distanzspruenge aendern die Belastung abrupt und machen Reaktionen schwer lesbar. Eine graduelle Anpassung hilft dir, Ursache und Wirkung klar zuzuordnen.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit einer sauber eingestellten Distanz beruhigt sich das Blattbild. Die Pflanze nutzt Licht wieder effizienter, und Folgeprobleme bei Wasser oder Klima treten."
+        }
+      },
+      "shared_rootbound_warning": {
+        "title": "Wurzelraum wird zu knapp",
+        "symptom": "Der Topf trocknet erst am Rand und bleibt innen lange schwer. Die Wurzeln haben kaum Platz, darum reagieren Wasseraufnahme und Wachstum traeger.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Mehrere kleine Faktoren wirken zusammen.",
+        "coach": {
+          "summary": "Pruefe jetzt den Topf statt nur mehr zu giessen. Wenn der Wurzelraum voll ist, hilft ein geplanter Uebergang mehr als hektische Nachhilfe.",
+          "why": "Bei Rootbound kreisen Wurzeln am Topfrand, Wasser verteilt sich ungleichmaessig und die Pflanze reagiert trotz Pflege traeger. Fruehes Gegensteuern ist leichter als spaetes Retten.",
+          "actions": {
+            "0": "Erst messen und beobachten, dann korrigieren.",
+            "1": "Nur eine Änderung pro Zyklus vornehmen."
+          }
+        },
+        "aftermath": {
+          "lesson": "Mit mehr Wurzelraum wird die Feuchte wieder gleichmaessiger. Aufnahme und Wachstum beruhigen sich, und du musst weniger gegen Symptome arbeiten."
+        },
+        "options": {
+          "plan_repot_next_window": {
+            "detail": "Plant den naechsten groesseren Topf sauber ein und entlastet den Wurzelraum rechtzeitig."
+          },
+          "optimize_watering_until_repot": {
+            "detail": "Haelt die Pflanze bis zum geplanten Umtopfen stabil, loest aber die Topfgrenze noch nicht."
+          },
+          "force_heavy_feed_now": {
+            "detail": "Mehr Duenger loest Platzmangel nicht und kann den Druck im vollen Topf sogar erhoehen."
+          }
+        }
+      },
+      "learning": {
+        "lc_climate_vpd_basics": {
+          "title": "Klima & VPD kompakt",
+          "subtitle": "Temperatur und Luftfeuchte zusammen denken",
+          "bullets": {
+            "0": "VPD beschreibt den Verdunstungsdruck.",
+            "1": "Kleine Klima-Korrekturen sind meist stabiler.",
+            "2": "Nach jeder Änderung Blattstellung prüfen."
+          },
+          "real_world_note": "Gutes Klima ist Balance aus Temperatur, RLF und Luftbewegung."
+        },
+        "lc_ph_nutrient_uptake_basics": {
+          "title": "pH & Nährstoffaufnahme",
+          "subtitle": "Nicht nur was du gibst, sondern was ankommt",
+          "bullets": {
+            "0": "Passender pH verbessert die Aufnahme.",
+            "1": "Mehr Dünger hilft nicht bei Aufnahmeblockade.",
+            "2": "In kleinen Schritten korrigieren und Trend lesen."
+          },
+          "real_world_note": "Aufnahmeprobleme sehen oft wie Mangel aus."
+        },
+        "lc_watering_basics": {
+          "title": "Gießen richtig lesen",
+          "subtitle": "Wasser nach Signal, nicht nach Panik",
+          "bullets": {
+            "0": "Topfgewicht ist ein starker Indikator.",
+            "1": "Nasse Erde plus hängende Blätter kann Überwässerung sein.",
+            "2": "Langsame Rehydrierung ist meist stabiler."
+          },
+          "real_world_note": "Sauerstoff in der Wurzelzone ist zentral für stabile Aufnahme."
+        },
+        "lc_rootzone_oxygen_basics": {
+          "title": "Wurzeln brauchen Luft",
+          "subtitle": "Warum nasses dichtes Medium trotz Wasser stresst",
+          "bullets": {
+            "0": "Wurzeln arbeiten nur gut, wenn im Medium noch genug Sauerstoff verfuegbar ist.",
+            "1": "Bleibt Substrat nass oder dicht, sinkt der Gasaustausch und Stress steigt schnell.",
+            "2": "Trockenfenster, Struktur und Drainage gehoeren direkt zum Giessmanagement."
+          },
+          "real_world_note": "Zu nasse oder dichte Toepfe fuehlen sich oft gut versorgt an, waehrend die Wurzelzone in Wirklichkeit zu wenig Luft bekommt."
+        },
+        "lc_airflow_fundamentals": {
+          "title": "Airflow ist Mikroklima",
+          "subtitle": "Luftbewegung hilft, Dauerwind stresst",
+          "bullets": {
+            "0": "Sanfte Luftbewegung traegt Feuchte ab und verhindert warme Taschen im Canopy.",
+            "1": "Guter Airflow stuetzt Transpiration und Staerke, ist aber kein harter Wind.",
+            "2": "Stauende Luft und harte Exposition loest man getrennt: Luftweg innen, Schutz draussen."
+          },
+          "real_world_note": "Die richtige Menge Luftbewegung fuehlt sich stabil an, nicht aggressiv. Pflanzen sollen atmen koennen, nicht permanent kaempfen."
+        },
+        "lc_light_intensity_distance_basics": {
+          "title": "Lichtabstand ruhig lesen",
+          "subtitle": "Intensitaet, Abstand und Blattsignal zusammen denken",
+          "bullets": {
+            "0": "Helle Spitzen oben bedeuten oft zu viel Licht direkt am Canopy.",
+            "1": "Erhoehe Abstand oder reduziere Intensitaet schrittweise statt hektisch.",
+            "2": "Pale Tops sehen nicht automatisch nach Naehrstoffmangel aus."
+          },
+          "real_world_note": "Lichtstress korrigiert man am Setup. Mehr Duenger macht gebleichte Spitzen meist nicht besser."
+        },
+        "lc_pest_observation_basics": {
+          "title": "Fruehe Schaedsignale lesen",
+          "subtitle": "Unterseiten pruefen, beobachten, dann gezielt handeln",
+          "bullets": {
+            "0": "Milde Punkte oder Eier sitzen oft zuerst auf Blattunterseiten.",
+            "1": "Fruehes Monitoring ist oft staerker als spaete Panikbehandlung.",
+            "2": "Gezielte Kontrolle hilft mehr als blind alles zu spruehen."
+          },
+          "real_world_note": "Frueh erkannte Schaedlinge lassen sich meist ruhiger und pflanzenschonender bremsen."
+        },
+        "lc_training_recovery_basics": {
+          "title": "Training braucht Pausen",
+          "subtitle": "Stress stapelt sich schneller als Erholung",
+          "bullets": {
+            "0": "Biegen, schneiden und umbauen kosten die Pflanze Erholungsenergie.",
+            "1": "Mehrere Eingriffe direkt nacheinander bremsen oft neues Wachstum.",
+            "2": "Nach Training erst stabilisieren und Reaktion lesen, dann weitermachen."
+          },
+          "real_world_note": "Eine gute Trainingsroutine hat bewusst ruhige Fenster, in denen die Pflanze wieder Spannung aufbaut."
+        },
+        "lc_recovery_observation_basics": {
+          "title": "Erholung erst beobachten",
+          "subtitle": "Ruhe kann die beste naechste Pflegeentscheidung sein",
+          "bullets": {
+            "0": "Wenn Haltung und Spannung zurueckkommen, muss nicht sofort neu eingegriffen werden.",
+            "1": "Nach einer guten Korrektur hilft Beobachten oft mehr als eine zweite Gegenreaktion.",
+            "2": "Erholung wird klarer, wenn du dem System etwas Zeit gibst."
+          },
+          "real_world_note": "Viele Pflanzen zeigen Verbesserung mit Verzoegerung. Zu fruehes Nachkorrigieren stoert diese Erholung oft."
+        }
+      },
+      "indoor_fan_failure_airflow_drop": {
+        "title": "Airflow faellt weg",
+        "symptom": "Die Luft steht spuerbar im oberen Canopy-Bereich.",
+        "description": "Der Luftstrom ist zu schwach oder ausgefallen. Feuchte warme Luft bleibt zwischen den Blaettern stehen und der Pflanzenraum atmet schlechter.",
+        "cause": "Ohne sanfte Luftbewegung trocknet Blattfeuchte schlechter ab. Das erhoeht Stauwaerme, Mikroklima-Stress und das Risiko fuer schwaechere Gewebe.",
+        "coach": {
+          "summary": "Das ist kein Duengeproblem. Erst den Luftweg im Canopy wiederherstellen.",
+          "actions": [
+            "Luftstrom zur Pflanzenhoehe zurueckbringen und tote Ecken im Canopy aufbrechen.",
+            "Nach der Korrektur Feuchte und Blattreaktion fuer einige Stunden ruhig beobachten."
+          ],
+          "why": "Airflow transportiert Feuchte weg, stuetzt Transpiration und verhindert, dass sich warme feuchte Taschen direkt am Blatt halten."
+        },
+        "aftermath": {
+          "lesson": "Airflow ist Teil des Mikroklimas. Zu wenig Bewegung stresst Pflanzen auch ohne extreme Temperaturwerte."
+        }
+      },
+      "indoor_light_burn_canopy_top": {
+        "title": "Licht zu nah am Canopy-Top",
+        "symptom": "Oben hellen Blaetter, Kanten oder Spitzen auf, waehrend der Rest noch ruhig wirkt. Das spricht eher fuer zu viel Licht am Top als fuer fehlenden Duenger.",
+        "description": "Die Pflanze zeigt frühe Anzeichen eines beeinflussbaren Problems.",
+        "cause": "Die oberste Pflanzenzone bekommt mehr Licht oder Hitze ab, als sie gerade abpuffern kann. Die Reaktion sitzt oben, nicht gleichmaessig in der ganzen Pflanze.",
+        "coach": {
+          "summary": "Pruefe erst Abstand oder Intensitaet statt nachzuduengen. Kleine Lichtkorrekturen sind hier sauberer als ein Reflex am Feed.",
+          "actions": [
+            "Lampe etwas hoeher haengen oder Intensitaet moderat senken.",
+            "Betroffene Spitzen markieren und nur das neue Wachstum nach 24 Stunden vergleichen."
+          ],
+          "why": "Wenn nur die oberste Zone aufhellt, sitzt die Ursache oft an der Lichtlast. Mehr Naehrstoffe loesen ueberforderte Blattspitzen nicht."
+        },
+        "aftermath": {
+          "lesson": "Mit passender Distanz beruhigt sich das Top-Wachstum. Neue Spitzen kommen gleichmaessiger nach und du trennst Lichtstress besser von echten Mangelbildern."
+        },
+        "options": {
+          "adjust_light_distance_stepwise": {
+            "detail": "Senkt die Lichtlast kontrolliert und zeigt dir sauberer, wie schnell sich das Top erholt."
+          },
+          "measure_then_wait_24h": {
+            "detail": "Verhindert Ueberkorrektur und macht die Reaktion der neuen Blattspitzen besser lesbar."
+          },
+          "feed_more_for_pale_top": {
+            "detail": "Mehr Futter verwechselt Lichtstress mit Mangel und drueckt die eigentliche Ursache nur weg."
+          }
+        }
+      },
+      "indoor_rootzone_airless_medium": {
+        "title": "Wurzelzone bekommt zu wenig Luft",
+        "symptom": "Das Medium bleibt dicht, schwer und ungewoehnlich lange kuehl.",
+        "description": "Die Wurzelzone ist zu nass oder zu verdichtet. Wasser ist da, aber der Luftaustausch im Medium ist zu schwach und die Wurzeln reagieren traege.",
+        "cause": "Wurzeln brauchen Sauerstoff. Wenn Poren dauerhaft mit Wasser gefuellt bleiben, sinkt die Atmung im Medium und Stress steigt trotz scheinbar voller Versorgung.",
+        "coach": {
+          "summary": "Hier fehlt eher Luft als Wasser. Erst Trockenfenster und Oberflaechenstruktur verbessern.",
+          "actions": [
+            "Mit dem naechsten Giessen warten und der Wurzelzone wieder Luft geben.",
+            "Oberflaeche lockern oder Drainagepfad verbessern, ohne panisch komplett umzutopfen."
+          ],
+          "why": "Eine nasse dichte Wurzelzone blockiert nicht nur Wasserbewegung, sondern auch Gaswechsel. Das fuehlt sich fuer die Pflanze wie ein unterversorgter Wurzelraum an."
+        },
+        "aftermath": {
+          "lesson": "Wasser hilft nur, wenn die Wurzelzone auch noch atmen kann."
+        }
+      },
+      "outdoor_pot_dries_by_afternoon": {
+        "title": "Outdoor-Topf kippt am Nachmittag",
+        "symptom": "Zur warmen Tageshaelfte sackt die Pflanze kurz ab, obwohl morgens noch genug drin schien. Sonne, Wind und wenig Topfvolumen ziehen den Vorrat schneller leer.",
+        "description": "Draussen verliert der Topf durch Sonne, Wind und kleines Volumen schneller Wasser, als der Vormittag puffern kann. Die Reaktion ist eher rhythmisch als dauerhaft.",
+        "cause": "Ein kleiner oder frei exponierter Topf kippt im Tagesverlauf schneller ins Defizit. Das ist oft Timing und Volumen, nicht sofort ein generelles Pflegeversagen.",
+        "coach": {
+          "summary": "Stabilisiere Rhythmus und Standort statt in der Hitze hektisch nachzuschuetten. Giesszeitpunkt, etwas Schutz und Topfvolumen entscheiden hier mehr als Panik.",
+          "actions": [
+            "Giesszeitpunkt frueher legen, damit der Topf mit Reserve in den heissen Teil des Tages geht.",
+            "Mit Mulch, Windschutz oder mehr Volumen die Verdunstungsspitze abflachen."
+          ],
+          "why": "Bei Outdoor-Toepfen zaehlt nicht nur wie viel Wasser du gibst, sondern wann und wie schnell es wieder verschwindet. Wer nur den Einbruch mittags jagt, behandelt oft nur das Symptom."
+        },
+        "aftermath": {
+          "lesson": "Wenn Timing und Standort besser passen, bleibt die Pflanze ueber den Tag ruhiger. Dann wird auch klarer, ob spaeter mehr Volumen oder Mulch noetig ist."
+        },
+        "options": {
+          "water_timing_adjust_dawn": {
+            "detail": "Baut Reserve vor der Hitze auf und stuetzt die zweite Tageshaelfte sauberer ab."
+          },
+          "shade_and_windbreak": {
+            "detail": "Senkt Verdunstungsdruck ueber den Standort, wenn Sonne und Luftzug zusammenziehen."
+          },
+          "double_feed_in_heat": {
+            "detail": "Mehr Feed ersetzt kein Wasser und macht trockenen Tagesstress oft noch haerter."
+          }
+        }
+      },
+      "outdoor_early_pest_pressure_leaf_underside": {
+        "title": "Fruehe Schaedigungszeichen unten am Blatt",
+        "symptom": "An Blattunterseiten zeigen sich erste feine Punkte oder Spuren.",
+        "description": "Die Schaeden sind noch mild, aber sie sitzen schon da, wo man im Alltag leicht zu selten hinschaut. Gerade draussen kann so ein Fruehsignal schnell uebersehen werden.",
+        "cause": "Frueher Druck beginnt oft klein: wenige Punkte, leichte Spuren, erste Aktivitaet an geschuetzten Blattunterseiten. Der wichtigste Hebel ist jetzt Beobachtung statt Aktionismus.",
+        "coach": {
+          "summary": "Noch kein Panikfall. Erst sauber kontrollieren und gezielt reagieren.",
+          "actions": [
+            "Unterseiten gezielt pruefen und betroffene Bereiche eng im Blick behalten.",
+            "Mechanisch entlasten oder isoliert handeln, statt die ganze Pflanze blind zu behandeln."
+          ],
+          "why": "Je frueher das Muster erkannt wird, desto kleiner bleibt der Eingriff. Ueberreaktion stresst die Pflanze oft mehr als das erste Fruehsignal."
+        },
+        "aftermath": {
+          "lesson": "Fruehe Pest-Hinweise sind oft klein. Der Unterschied entsteht durch gutes Hinschauen und ruhige Folgekontrolle."
+        }
+      },
+      "outdoor_wind_exposure_stem_stress": {
+        "title": "Wind stresst Stamm und Triebe",
+        "symptom": "Triebe lehnen stark und zeigen erste Reib- oder Druckspuren.",
+        "description": "Der Standort ist zu offen oder die Pflanze wurde zu schnell in staerkeren Luftzug gestellt. Der Reiz ist nicht mehr sanfte Bewegung, sondern dauernde mechanische Belastung.",
+        "cause": "Leichte Bewegung staerkt Gewebe, aber konstante Boeen oder abrupte Exposition kosten Stabilitaet und Wasser. Besonders junge Pflanzen koennen so schnell in Stress kippen.",
+        "coach": {
+          "summary": "Stabilisieren und langsam anpassen, nicht heroisch haerten.",
+          "actions": [
+            "Triebe stuetzen oder Schwingung reduzieren, bis die Pflanze wieder sauber steht.",
+            "Windschutz nutzen und neue Exposition nur schrittweise aufbauen."
+          ],
+          "why": "Abhaerten bedeutet dosierte Reize. Zu viel Wind auf einmal kostet Wasser, belastet Triebe und bremst sauberen Aufbau."
+        },
+        "aftermath": {
+          "lesson": "Airflow hilft, aber Dauerzug ist kein Trainingsplan. Outdoor-Exposition muss aufgebaut werden."
+        }
+      },
+      "shared_panic_watering_misread": {
+        "title": "Haengen ist noch keine Giessantwort",
+        "symptom": "Die Blaetter haengen, aber das kann zu nass oder zu trocken bedeuten. Ohne Topfgewicht, Timing und Substratgefuehl ist die Wasserlage noch offen.",
+        "description": "Haengende Blaetter loesen schnell den Reflex aus, sofort wieder zu giessen. Genau hier liegt der Fehler: Das gleiche Bild kann zu nass, zu trocken oder nur tagesabhaengig sein.",
+        "cause": "Wer nur auf die Blattstellung reagiert, ueberspringt die eigentliche Diagnose. Erst Gewicht, Substrat und Timing sagen, ob wirklich Wasser fehlt oder schon zu viel da ist.",
+        "coach": {
+          "summary": "Pruefe erst den Topf, dann handle. Ein kurzer Check spart dir den typischen Reflex, ein unklares Signal mit noch mehr Wasser zu ueberdecken.",
+          "actions": [
+            "Topfgewicht oder Feuchte wirklich pruefen, bevor neues Wasser dazukommt.",
+            "Wenn das Bild unklar bleibt, lieber kurz warten und Wurzelzone plus Tageszeit mitdenken."
+          ],
+          "why": "Dasselbe Hangesignal kann aus gegensaetzlichen Ursachen kommen. Gute Pflege trennt Beobachtung und Reaktion, statt beides in einem Panikmoment zu vermischen."
+        },
+        "aftermath": {
+          "lesson": "Wenn du erst pruefst und dann giesst, werden Hangesignale wieder brauchbar. So erkennst du Trockenheit besser als nassen Wurzelstress."
+        },
+        "options": {
+          "check_weight_before_watering": {
+            "detail": "Trennt Gefuehl und Diagnose und gibt dir die beste Chance auf die richtige Richtung."
+          },
+          "inspect_rootzone_then_wait": {
+            "detail": "Hilft bei Mischsignalen, wenn du erst klaeren musst, ob Naesse oder Trockenheit fuehrt."
+          },
+          "water_on_panic_signal": {
+            "detail": "Kann eine nasse Wurzelzone weiter belasten und macht das Signal danach noch unklarer."
+          }
+        }
+      },
+      "shared_substrate_drainage_compaction": {
+        "title": "Drainage sackt im Substrat ab",
+        "symptom": "Wasser zieht nur langsam ein und die Oberflaeche verschliesst sich. Unten bleibt die Wurzelzone lange nass, obwohl oben schon wieder Aktion lockt.",
+        "description": "Das Substrat verliert Struktur. Wasser bleibt laenger stehen, Luftporen gehen verloren und der Rootzone-Rhythmus wird zaeh.",
+        "cause": "Verdichtetes oder schlecht drainierendes Medium bremst Abfluss und Gasaustausch gleichzeitig. Das Problem wirkt wie ein Giessfehler, sitzt aber im Aufbau des Substrats.",
+        "coach": {
+          "summary": "Verbessere zuerst Struktur und Abfluss statt nur mehr oder weniger zu giessen. Das Problem sitzt im Medium, nicht allein in der Menge.",
+          "actions": [
+            "Drainage an der Oberflaeche und im Abflussweg verbessern.",
+            "Bei naechster Gelegenheit Umtopf- oder Substratkorrektur mit einplanen."
+          ],
+          "why": "Wenn Luftporen verloren gehen, kommt Wasser schlecht durch und Sauerstoff schlecht hinein. Dann fuehlt sich jeder Giessvorgang unsauber an."
+        },
+        "aftermath": {
+          "lesson": "Mit offenerer Struktur arbeitet die Wurzelzone ruhiger. Wasser laeuft berechenbarer ab und du musst weniger gegen Stau oder Trockeninseln korrigieren."
+        },
+        "options": {
+          "improve_drainage_surface": {
+            "detail": "Lockert den oberen Engpass und hilft Wasser und Luft wieder sauberer durch das Medium."
+          },
+          "plan_repot_next_window": {
+            "detail": "Sinnvoll, wenn die Verdichtung tiefer sitzt und ein spaeteres Reset mehr bringt."
+          },
+          "keep_watering_same_volume": {
+            "detail": "Laesst das Problem weiterlaufen und schiebt es nur in den naechsten Giesszyklus."
+          }
+        }
+      },
+      "indoor_overtraining_stall_mild": {
+        "title": "Training zu dicht getaktet",
+        "symptom": "Neues Wachstum stockt nach mehreren Eingriffen sichtbar.",
+        "description": "Die Pflanze hat mehrere Trainingsreize zu dicht hintereinander bekommen. Statt neu aufzubauen, schiebt sie erst Stress und Reparatur in den Vordergrund.",
+        "cause": "Jeder Eingriff kostet Regenerationszeit. Wenn Training, Biegen und Nachkorrigieren gestapelt werden, fehlt der Pflanze ein sauberes Erholungsfenster.",
+        "coach": {
+          "summary": "Jetzt keine weitere Formkorrektur. Erst Stabilitaet und Ruhe zurueckgeben.",
+          "actions": [
+            "Training fuer mehrere Tage komplett pausieren und nur beobachten.",
+            "Klima ruhig halten, damit die Pflanze Energie in Erholung statt in Abwehr steckt."
+          ],
+          "why": "Mehr Eingriffe loesen das Stocken nicht. Erst wenn neue Spannung und frischer Austrieb zurueckkommen, ist weiteres Training wieder fair."
+        },
+        "aftermath": {
+          "lesson": "Erholung ist ein aktiver Teil von Training. Gute Struktur entsteht im Rhythmus aus Reiz und Pause."
+        }
+      },
+      "shared_observation_recovery_after_stress": {
+        "title": "Erholung wird sichtbar",
+        "symptom": "Die Pflanze richtet sich wieder auf und wirkt deutlich entspannter.",
+        "description": "Nach einer sauberen Korrektur zeigt die Pflanze erste klare Erholungssignale. Genau jetzt ist Beobachtung wertvoller als der naechste Aktionismus.",
+        "cause": "Die letzte Korrektur hat gegriffen und die Pflanze arbeitet wieder fuer sich. Wer jetzt erneut eingreift, stoert oft nur den beginnenden Ausgleich.",
+        "coach": {
+          "summary": "Sie kommt zurueck. Jetzt beobachten und nichts stapeln.",
+          "actions": [
+            "24 Stunden ruhig beobachten und die Erholung nicht mit einer neuen Korrektur unterbrechen.",
+            "Achte auf Blattspannung und Tempo des neuen Austriebs statt sofort erneut zu giessen."
+          ],
+          "why": "Erholung zeigt dir genauso viel wie ein Stresssymptom. Wer diese Phase lesen lernt, trifft spaeter ruhigere Entscheidungen."
+        },
+        "aftermath": {
+          "lesson": "Besserung ist ebenfalls ein Signal. Nicht jede positive Bewegung braucht sofort eine weitere Aktion."
+        }
+      }
     }
   },
   "settings": {
@@ -580,7 +1158,7 @@
       "empty_drivers": "Noch kein dominanter Treiber sichtbar.",
       "empty_recommendations": "Aktuell reicht ruhig weiterf?hren.",
       "recommendation_water": "Wasserwert stabilisieren",
-      "recommendation_nutrients": "N?hrstofflage gl?tten",
+      "recommendation_nutrients": "Nährstofflage glätten",
       "recommendation_stress": "Stress zuerst senken",
       "recommendation_climate": "Klima im Zielbereich halten",
       "recommendation_stable": "Stabile Linie beibehalten"
@@ -594,7 +1172,7 @@
     "local_ready": "Lokale Harvest-Auswertung bereit.",
     "motivation": {
       "verified": "Das Ergebnis ist best?tigt. Ein noch ruhigerer n?chster Run kann diese Marke weiter anheben.",
-      "rejected": "Die lokale Auswertung bleibt wertvoll. Ein saubererer n?chster Run erh?ht die Chance auf ein best?tigtes Ergebnis.",
+      "rejected": "Die lokale Auswertung bleibt wertvoll. Ein saubererer nächster Run erhöht die Chance auf ein bestätigtes Ergebnis.",
       "under_review": "Dein Ergebnis wird noch gepr?ft. Parallel lohnt sich schon der Blick auf den n?chsten sauberen Run."
     },
     "best": {
@@ -647,19 +1225,19 @@
     "unlocks_none": "In diesem Run wurde noch nichts Neues freigeschaltet.",
     "unlock_default_title": "Unlock",
     "unlock_default_effect": "Neue Startoption freigeschaltet.",
-    "complete_and_new_run": "Abschlie?en & neuen Run starten",
+    "complete_and_new_run": "Abschließen & neuen Run starten",
     "start_new_run": "Neuen Run starten",
-    "finalize": "Abschlie?en"
+    "finalize": "Abschließen"
   },
   "analysis": {
-    "no_activity_yet": "Noch keine Aktivit?ten",
-    "open_analysis": "Analyse ?ffnen",
+    "no_activity_yet": "Noch keine Aktivitäten",
+    "open_analysis": "Analyse öffnen",
     "no_actions_or_events": "Keine Aktionen oder Ereignisse protokolliert.",
     "action": "Aktion",
     "emergency_rescue": "Notfallrettung",
     "learning_note": "Lernhinweis",
     "local_forecast_updated": "Lokale Prognose aktualisiert.",
-    "no_net_change": "Keine Netto?nderung",
+    "no_net_change": "Keine Nettoänderung",
     "reanimation": "Reanimation",
     "sim_stamp": "Tag {day} ? {hour}:00",
     "stabilization": "Stabilisierung",
@@ -829,29 +1407,29 @@
         "riskRaised": "Risiko gestiegen",
         "riskSettled": "Risiko beruhigt"
       },
-        "goodCare": "Saubere Pflegeentscheidung. Die Pflanze sollte ruhiger reagieren.",
-        "goodWatering": "Gute Entscheidung. Die Feuchte stabilisiert sich, ohne die Wurzelzone stark zu belasten.",
-        "grade": {
-          "bad": "Schlecht",
-          "good": "Gut",
+      "goodCare": "Saubere Pflegeentscheidung. Die Pflanze sollte ruhiger reagieren.",
+      "goodWatering": "Gute Entscheidung. Die Feuchte stabilisiert sich, ohne die Wurzelzone stark zu belasten.",
+      "grade": {
+        "bad": "Schlecht",
+        "good": "Gut",
         "okay": "Okay",
         "perfect": "Perfekt",
         "risky": "Riskant"
       },
-        "goodFeeding": "Gute Entscheidung. Die Pflanze wirkt aufnahmefähig und die Versorgung steigt kontrolliert.",
-        "hygieneSettled": "Gute Entscheidung. Die Umgebung wirkt ruhiger und der Risikodruck sinkt leicht.",
-        "okayCare": "Die Aktion passt, aber das Timing war noch nicht ganz sauber.",
-        "perfectCare": "Sehr starke Entscheidung. Die Pflanze reagiert sauber.",
-        "perfectWatering": "Perfektes Dryback-Fenster. Das Gießen passt sehr sauber zum aktuellen Zustand.",
-        "rootZoneRelief": "Gute Entscheidung. Die Wurzelzone wird vorsichtig entlastet, ohne wie ein neuer Gießdurchgang zu wirken.",
-        "rootZoneReliefLimited": "Die Entlastung greift nur begrenzt. Beobachte weiter, ob die Wurzelzone wirklich Druck zeigt.",
-        "riskyCare": "Die Aktion war machbar, baut aber zusätzlichen Druck auf. Beobachte die Reaktion genau.",
-        "riskyFeeding": "Die Versorgung steigt, aber auch die Salzlast. Beim nächsten Mal vorsichtiger dosieren.",
-        "riskyWatering": "Das war etwas früh. Beobachte die Wurzelzone, bevor du erneut gießt.",
-        "uptakeLimited": "Die Aufnahme bleibt noch begrenzt. Erst Wurzelzone und Salzlast weiter beruhigen.",
-        "uptakeStabilized": "Gute Entscheidung. Die Aufnahme wirkt ruhiger, ohne die Salzlast stark zu erhöhen.",
-        "title": "Nachwirkung"
-      },
+      "goodFeeding": "Gute Entscheidung. Die Pflanze wirkt aufnahmefähig und die Versorgung steigt kontrolliert.",
+      "hygieneSettled": "Gute Entscheidung. Die Umgebung wirkt ruhiger und der Risikodruck sinkt leicht.",
+      "okayCare": "Die Aktion passt, aber das Timing war noch nicht ganz sauber.",
+      "perfectCare": "Sehr starke Entscheidung. Die Pflanze reagiert sauber.",
+      "perfectWatering": "Perfektes Dryback-Fenster. Das Gießen passt sehr sauber zum aktuellen Zustand.",
+      "rootZoneRelief": "Gute Entscheidung. Die Wurzelzone wird vorsichtig entlastet, ohne wie ein neuer Gießdurchgang zu wirken.",
+      "rootZoneReliefLimited": "Die Entlastung greift nur begrenzt. Beobachte weiter, ob die Wurzelzone wirklich Druck zeigt.",
+      "riskyCare": "Die Aktion war machbar, baut aber zusätzlichen Druck auf. Beobachte die Reaktion genau.",
+      "riskyFeeding": "Die Versorgung steigt, aber auch die Salzlast. Beim nächsten Mal vorsichtiger dosieren.",
+      "riskyWatering": "Das war etwas früh. Beobachte die Wurzelzone, bevor du erneut gießt.",
+      "uptakeLimited": "Die Aufnahme bleibt noch begrenzt. Erst Wurzelzone und Salzlast weiter beruhigen.",
+      "uptakeStabilized": "Gute Entscheidung. Die Aufnahme wirkt ruhiger, ohne die Salzlast stark zu erhöhen.",
+      "title": "Nachwirkung"
+    },
     "aftercare": {
       "grade": "Note",
       "title": "Nachwirkung"
@@ -958,6 +1536,7 @@
       }
     },
     "risk": {
+      "elevated": "Erhöht",
       "high": "Hoch",
       "low": "Niedrig",
       "medium": "Mittel"
@@ -1068,7 +1647,7 @@
   "popup": {
     "nutrition": {
       "primary": {
-        "demand_up": "N?hrstoffbedarf steigt.",
+        "demand_up": "Nährstoffbedarf steigt.",
         "low": "Versorgung wird knapp.",
         "stable": "Versorgung aktuell stabil."
       },
@@ -1077,7 +1656,7 @@
         "slowly_up": "Bedarf nimmt langsam zu.",
         "watch": "Werte sollten beobachtet werden."
       },
-      "title": "N?hrstoffbalance"
+      "title": "Nährstoffbalance"
     },
     "risk": {
       "primary": {
@@ -1111,7 +1690,7 @@
         "stable": "Wasserhaushalt stabil."
       },
       "secondary": {
-        "consumption_up": "Verbrauch leicht erh?ht.",
+        "consumption_up": "Verbrauch leicht erhöht.",
         "demand_up": "Bedarf steigt.",
         "intake_calm": "Aufnahme aktuell ruhig."
       },
@@ -1126,7 +1705,7 @@
         "solid": "Das Wachstum entwickelt sich solide. Impuls: {impulse}."
       },
       "rec": {
-        "low": "Empfehlung: Analyse ?ffnen und Wasser-/N?hrstofftreiber pr?fen.",
+        "low": "Empfehlung: Analyse öffnen und Wasser-/Nährstofftreiber prüfen.",
         "ok": "Empfehlung: Kurs halten und per Analyse auf Limitierungen achten."
       },
       "status": {
@@ -1138,13 +1717,13 @@
     },
     "nutrition": {
       "expl": {
-        "low": "N?hrstoffmangel begrenzt Entwicklung und erh?ht Stresspotenzial.",
-        "ok": "N?hrstoffe unterst?tzen das Wachstum aktuell noch ausreichend.",
-        "watch": "Sinkende N?hrstoffe k?nnen das Wachstum bald bremsen."
+        "low": "Nährstoffmangel begrenzt Entwicklung und erhöht Stresspotenzial.",
+        "ok": "Nährstoffe unterstützen das Wachstum aktuell noch ausreichend.",
+        "watch": "Sinkende Nährstoffe können das Wachstum bald bremsen."
       },
       "rec": {
-        "low": "Empfehlung: Pflege ?ffnen und eine passende D?ngungsma?nahme pr?fen.",
-        "ok": "Empfehlung: N?hrstoffniveau halten und regelm??ig kontrollieren."
+        "low": "Empfehlung: Pflege öffnen und eine passende Düngungsmaßnahme prüfen.",
+        "ok": "Empfehlung: Nährstoffniveau halten und regelmäßig kontrollieren."
       }
     },
     "recommendation_prefix": "Empfehlung: {text}",
@@ -1154,8 +1733,8 @@
         "low": "Aktuell besteht nur geringes Risiko."
       },
       "rec": {
-        "high": "Empfehlung: Analyse ?ffnen und Gegenma?nahmen priorisieren.",
-        "low": "Empfehlung: Entwicklung beobachten und Risikoquellen fr?h pr?fen."
+        "high": "Empfehlung: Analyse öffnen und Gegenmaßnahmen priorisieren.",
+        "low": "Empfehlung: Entwicklung beobachten und Risikoquellen früh prüfen."
       }
     },
     "status": {
@@ -1180,7 +1759,7 @@
         "watch": "Wasser wird knapper und sollte beobachtet werden."
       },
       "rec": {
-        "low": "Empfehlung: Pflege ?ffnen und zeitnah gie?en.",
+        "low": "Empfehlung: Pflege öffnen und zeitnah gießen.",
         "stable": "Empfehlung: Feuchtigkeit halten und den Verlauf beobachten."
       }
     }
@@ -1350,6 +1929,314 @@
         "description": "Hilft, Druck früh zu entschärfen statt erst spät zu reagieren.",
         "success": "Sanfte Stresskontrolle durchgeführt. Die Pflanze wirkt etwas ruhiger."
       }
+    }
+  },
+  "alt": {
+    "events": {
+      "v2": {
+        "indoor_dry_rootball": {
+          "cover": "Illustration für Event indoor_dry_rootball"
+        },
+        "indoor_heat_stress_air": {
+          "cover": "Illustration für Event indoor_heat_stress_air"
+        },
+        "indoor_light_nutrient_tox_early": {
+          "cover": "Illustration für Event indoor_light_nutrient_tox_early"
+        },
+        "indoor_overwatering_early": {
+          "cover": "Illustration für Event indoor_overwatering_early"
+        },
+        "indoor_soil_ph_out_of_range": {
+          "cover": "Illustration für Event indoor_soil_ph_out_of_range"
+        },
+        "indoor_vpd_mismatch_veg": {
+          "cover": "Illustration für Event indoor_vpd_mismatch_veg"
+        },
+        "outdoor_cold_night_stress": {
+          "cover": "Illustration für Event outdoor_cold_night_stress"
+        },
+        "outdoor_heatwave_dry_wind": {
+          "cover": "Illustration für Event outdoor_heatwave_dry_wind"
+        },
+        "outdoor_heavy_rain_waterlogging_risk": {
+          "cover": "Illustration für Event outdoor_heavy_rain_waterlogging_risk"
+        },
+        "shared_early_pest_signs_mild": {
+          "cover": "Illustration für Event shared_early_pest_signs_mild"
+        },
+        "shared_light_distance_error": {
+          "cover": "Illustration für Event shared_light_distance_error"
+        },
+        "shared_rootbound_warning": {
+          "cover": "Illustration für Event shared_rootbound_warning"
+        },
+        "indoor_fan_failure_airflow_drop": {
+          "cover": "Indoor-Pflanze mit stagnierender Luft im dichten Canopy"
+        },
+        "indoor_light_burn_canopy_top": {
+          "cover": "Indoor-Canopy mit aufgehellten Spitzen unter zu nahem Licht"
+        },
+        "indoor_rootzone_airless_medium": {
+          "cover": "Nasses dichtes Medium mit gestresster Wurzelzone"
+        },
+        "outdoor_pot_dries_by_afternoon": {
+          "cover": "Outdoor-Topf mit stark austrocknender Oberflaeche am warmen Tag"
+        },
+        "outdoor_early_pest_pressure_leaf_underside": {
+          "cover": "Blattunterseite mit fruehen milden Schaedigungszeichen"
+        },
+        "outdoor_wind_exposure_stem_stress": {
+          "cover": "Outdoor-Pflanze in offenem Wind mit belasteten Trieben"
+        },
+        "shared_panic_watering_misread": {
+          "cover": "Haengende Pflanze mit unklarer Wasserlage vor einer Giessentscheidung"
+        },
+        "shared_substrate_drainage_compaction": {
+          "cover": "Verdichtetes Substrat mit langsamem Ablauf und nasser Oberflaeche"
+        },
+        "indoor_overtraining_stall_mild": {
+          "cover": "Indoor-Pflanze mit Trainingsstau und verlangsamtem Austrieb"
+        },
+        "shared_observation_recovery_after_stress": {
+          "cover": "Pflanze richtet sich nach Stress sichtbar wieder auf"
+        }
+      }
+    },
+    "chains": {
+      "watering_rootzone_chain": {
+        "cover": "Illustration fuer Wasser-Wurzelzonen-Kette"
+      },
+      "airflow_climate_chain": {
+        "cover": "Illustration fuer Airflow-Klimakette"
+      }
+    }
+  },
+  "options": {
+    "slow_rehydrate_split": "Slow Rehydrate Split",
+    "check_pot_weight_then_wait": "Check Pot Weight Then Wait",
+    "flood_pot_fast": "Flood Pot Fast Aktion",
+    "lower_canopy_temp": "Lower Canopy Temp Aktion",
+    "increase_air_exchange": "Increase Air Exchange",
+    "raise_light_intensity": "Raise Light Intensity",
+    "reduce_feed_strength": "Feed-Staerke sanft senken",
+    "observe_24h_then_rebalance": "24h beobachten, dann justieren",
+    "increase_feed_again": "Feed erneut erhoehen",
+    "pause_watering_24h": "Giessen fuer 24h pausieren",
+    "improve_airflow_canopy": "Airflow im Canopy sichern",
+    "water_again_immediately": "Water Again Immediately",
+    "adjust_ph_gradual": "Adjust Ph Gradual Aktion",
+    "verify_runoff_then_adjust": "Verify Runoff Then Adjust",
+    "add_more_nutrients_now": "Add More Nutrients Now",
+    "rebalance_temp_humidity": "Temp und Feuchte ausgleichen",
+    "stabilize_then_monitor": "Stabilisieren und eng monitoren",
+    "chase_with_random_changes": "Zufaellige Klimawechsel jagen",
+    "insulate_root_zone_night": "Wurzelzone nachts isolieren",
+    "reduce_evening_watering": "Abendgabe bewusst reduzieren",
+    "late_night_heavy_water": "Spaet nachts stark giessen",
+    "shade_and_windbreak": "Schatten plus Windschutz",
+    "water_timing_adjust_dawn": "Giessen auf Morgen legen",
+    "defoliate_midday": "Mittags entlauben",
+    "improve_drainage_surface": "Drainagefluss verbessern",
+    "pause_watering_monitor": "Pause Watering Monitor",
+    "water_extra_after_rain": "Water Extra After Rain",
+    "targeted_inspection_isolation": "Gezielt pruefen und trennen",
+    "increase_monitoring_frequency": "Kontrollen enger takten",
+    "spray_everything_blindly": "Alles sofort blind einspruehen",
+    "adjust_light_distance_stepwise": "Lichtabstand fein anpassen",
+    "measure_then_wait_24h": "Markieren und 24h beobachten",
+    "move_light_extreme": "Move Light Extreme",
+    "plan_repot_next_window": "Umtopfen einplanen",
+    "optimize_watering_until_repot": "Wasserfuehrung bis Umtopfen",
+    "force_heavy_feed_now": "Jetzt stark nachduengen",
+    "reduce_feed_strength_temp": "Reduce Feed Strength Temp",
+    "flush_light_and_rebalance": "Flush Light And Rebalance",
+    "increase_feed_now": "Increase Feed Now Aktion",
+    "adjust_temp_humidity_stepwise": "Adjust Temp Humidity Stepwise",
+    "reduce_exhaust_for_balance": "Reduce Exhaust For Balance",
+    "ignore_climate_signal": "Ignore Climate Signal",
+    "add_midday_shade_windbreak": "Add Midday Shade Windbreak",
+    "water_small_dawn_cycle": "Water Small Dawn Cycle",
+    "defoliate_in_heat_peak": "Defoliate In Heat Peak",
+    "protect_root_zone_night": "Protect Root Zone Night",
+    "reduce_night_exposure": "Reduce Night Exposure",
+    "late_evening_heavy_feed": "Late Evening Heavy Feed",
+    "plan_upsize_root_space": "Plan Upsize Root Space",
+    "topdress_surface_only": "Topdress Surface Only",
+    "increase_feed_without_root_check": "Increase Feed Without Root Che",
+    "open_canopy_air_channel": "Luftkanal im Canopy oeffnen",
+    "raise_humidity_without_airflow": "Nur Luftfeuchte hochziehen",
+    "feed_more_for_pale_top": "Mehr Duenger gegen helle Spitzen",
+    "feed_through_the_soggy_medium": "Ins nasse Medium fuettern",
+    "double_feed_in_heat": "Bei Hitze doppelt nachduengen",
+    "stake_and_reduce_sway": "Stuetzen und Schwingen daempfen",
+    "harden_off_in_steps": "Wind langsam aufbauen",
+    "strip_leaves_during_gusts": "Blaetter bei Boeen entfernen",
+    "check_weight_before_watering": "Vorher Topfgewicht pruefen",
+    "inspect_rootzone_then_wait": "Wurzelzone pruefen, dann warten",
+    "water_on_panic_signal": "Sofort auf Verdacht nachgiessen",
+    "keep_watering_same_volume": "Weiter exakt gleich viel giessen",
+    "pause_training_for_recovery_window": "Training mehrere Tage pausieren",
+    "stabilize_climate_then_wait": "Klima stabilisieren und warten",
+    "stack_more_training_now": "Noch mehr Training jetzt",
+    "observe_24h_without_new_action": "24h nur beobachten",
+    "note_recovery_signs_and_hold": "Erholung notieren",
+    "water_again_just_in_case": "Aus Vorsicht nochmal giessen"
+  },
+  "symptoms": {
+    "leaf_curl_light": "Symptom beobachten",
+    "leaf_edge_taco": "Symptom beobachten",
+    "leaf_glossy_claw": "Symptom beobachten",
+    "leaf_droop_soft": "Symptom beobachten",
+    "leaf_interveinal_mild": "Symptom beobachten",
+    "leaf_posture_mixed": "Symptom beobachten",
+    "leaf_droop_cold_morning": "Symptom beobachten",
+    "leaf_curl_up_dry_edge": "Symptom beobachten",
+    "leaf_droop_after_rain": "Symptom beobachten",
+    "leaf_spotting_mild": "Symptom beobachten",
+    "leaf_pray_or_bleach_hint": "Symptom beobachten",
+    "growth_stall_mild": "Symptom beobachten",
+    "canopy_air_still_humid": "Stauende feuchte Luft im Canopy",
+    "canopy_top_bleach_edge": "Helle Kanten direkt am Top-Canopy",
+    "medium_stays_dense_cool": "Medium bleibt dicht, schwer und kuehl",
+    "midday_droop_recovers_late": "Nachmittagsdroop bei spaeter Erholung",
+    "underside_specks_mild": "Feine Punkte an Blattunterseiten",
+    "stem_lean_rub_marks": "Lehnen und Reibspuren an Trieben",
+    "droop_signal_unclear": "Haengendes Blattbild ohne klare Ursache",
+    "runoff_slow_surface_seals": "Langsamer Ablauf mit verschliessender Oberflaeche",
+    "new_growth_stalls_after_bending": "Neuer Austrieb stockt nach Trainingsstress",
+    "recovery_posture_returning": "Blaetter heben sich wieder und Spannung kommt zurueck"
+  },
+  "diagnostics": {
+    "soil_probe_check": {
+      "dry_core": "Diagnose-Hinweis prüfen"
+    },
+    "canopy_temp_check": {
+      "hotspot": "Diagnose-Hinweis prüfen"
+    },
+    "ec_trend_check": {
+      "early_tox_signs": "Diagnose-Hinweis prüfen"
+    },
+    "pot_weight_check": {
+      "heavy_when_wet": "Diagnose-Hinweis prüfen",
+      "light_by_afternoon": "Topf ist bis zum Nachmittag deutlich zu leicht",
+      "needs_real_check": "Ohne Gewichtstest bleibt das Blattsignal zweideutig"
+    },
+    "ph_strip_check": {
+      "out_of_range": "Diagnose-Hinweis prüfen"
+    },
+    "vpd_snapshot_check": {
+      "off_target": "Diagnose-Hinweis prüfen"
+    },
+    "overnight_temp_check": {
+      "drop": "Diagnose-Hinweis prüfen"
+    },
+    "microclimate_check": {
+      "dry_wind": "Diagnose-Hinweis prüfen"
+    },
+    "drainage_check": {
+      "saturation": "Diagnose-Hinweis prüfen",
+      "slow_airless_runoff": "Wasser zieht zaeh ein und das Medium bleibt schwer",
+      "compacted_slow_runoff": "Runoff bremst frueh und die Oberflaeche dichtet ab"
+    },
+    "underside_leaf_check": {
+      "mild_activity": "Diagnose-Hinweis prüfen",
+      "specks_or_eggs_early": "Unterseiten zeigen erste Specks oder kleine Gelege"
+    },
+    "canopy_light_check": {
+      "too_near_or_far": "Diagnose-Hinweis prüfen",
+      "top_hotspot": "Nur die Spitzenzone zeigt den staerksten Druck"
+    },
+    "pot_edge_root_check": {
+      "dense_ring": "Diagnose-Hinweis prüfen"
+    },
+    "airflow_check": {
+      "dead_zone_stale_air": "Canopy wirkt in einer Zone spuerbar still und feucht"
+    },
+    "exposure_check": {
+      "constant_wind_lane": "Standort liegt dauerhaft in einer offenen Windbahn"
+    },
+    "training_recovery_check": {
+      "stress_stack": "Mehrere Eingriffe ohne Erholungsfenster sichtbar"
+    },
+    "recovery_posture_check": {
+      "returning_tension": "Blattspannung und Haltung kommen sauber zurueck"
+    }
+  },
+  "options_details": {
+    "pause_watering_24h": "Gibt der Wurzelzone Luft zurueck und bremst das Festfahren im nassen Medium.",
+    "improve_airflow_canopy": "Stellt Luftbewegung im Blattbereich wieder her und nimmt Feuchte aus stehenden Canopy-Zonen.",
+    "water_again_immediately": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "slow_rehydrate_split": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "check_pot_weight_then_wait": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "flood_pot_fast": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "adjust_ph_gradual": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "verify_runoff_then_adjust": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "add_more_nutrients_now": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "reduce_feed_strength_temp": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "flush_light_and_rebalance": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "increase_feed_now": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "lower_canopy_temp": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "increase_air_exchange": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "raise_light_intensity": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "adjust_temp_humidity_stepwise": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "reduce_exhaust_for_balance": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "ignore_climate_signal": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "improve_drainage_surface": "Oeffnet Ablauf und Oberflaeche, damit Wasser und Luft wieder sauberer wechseln.",
+    "pause_watering_monitor": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "water_extra_after_rain": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "add_midday_shade_windbreak": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "water_small_dawn_cycle": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "defoliate_in_heat_peak": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "protect_root_zone_night": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "reduce_night_exposure": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "late_evening_heavy_feed": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "adjust_light_distance_stepwise": "Senkt Lichtdruck kontrolliert und macht die Reaktion im Neuwuchs klarer lesbar.",
+    "measure_then_wait_24h": "Verhindert Ueberkorrekturen und macht neues Wachstum nach der Anpassung besser lesbar.",
+    "move_light_extreme": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "targeted_inspection_isolation": "Konzentriert Eingriffe auf das fruehe Muster und spart der Pflanze unnoetige Rundumbehandlung.",
+    "increase_monitoring_frequency": "Fruehe Pestsignale bleiben kontrollierbar, wenn die Beobachtung kurzzeitig dichter wird.",
+    "spray_everything_blindly": "Aktion ohne Diagnose stresst die Pflanze und verschleiert, was wirklich am Blatt passiert.",
+    "plan_upsize_root_space": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "topdress_surface_only": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "increase_feed_without_root_check": "Wirkt gezielt auf die Ursache, stabilisiert den Verlauf und senkt unnoetigen Zusatzstress.",
+    "reduce_feed_strength": "Nimmt Ueberschussdruck aus dem System und stabilisiert Aufnahme plus Blattreaktion.",
+    "observe_24h_then_rebalance": "Sichert eine klare Trendbasis, bevor du den naechsten Schritt gezielt nachziehst.",
+    "increase_feed_again": "Erhoeht Last in sensibler Phase und verstaerkt Stress statt Ursache zu korrigieren.",
+    "rebalance_temp_humidity": "Bringt VPD in einen ruhigeren Bereich und stabilisiert Verdunstung plus Aufnahme.",
+    "stabilize_then_monitor": "Verhindert Aktionismus und zeigt dir klar, ob die letzte Korrektur schon ausreicht.",
+    "chase_with_random_changes": "Erzeugt unruhige Lastwechsel und verschlechtert die Lesbarkeit der Reaktion.",
+    "insulate_root_zone_night": "Puffert Kaeltespitzen im Topf und haelt die Wurzelaktivitaet bis morgens stabiler.",
+    "reduce_evening_watering": "Senkt Naesse in kalten Nachtphasen und entlastet die Wurzelzone bei niedriger Aktivitaet.",
+    "late_night_heavy_water": "Fuehrt bei kalten Wurzeln oft zu Traegheit und unruhigen Stresssignalen am Folgetag.",
+    "shade_and_windbreak": "Senkt Verdunstungsspitzen, ohne den Outdoor-Rhythmus komplett umzubauen.",
+    "water_timing_adjust_dawn": "Bringt Reserve vor die heisse Tageshaelfte und reduziert Nachmittagsdefizite.",
+    "defoliate_midday": "Erhoeht Zusatzstress im falschen Zeitfenster und verlangsamt die Erholung unter Hitzelast.",
+    "plan_repot_next_window": "Ist sinnvoll, wenn Struktur dauerhaft fehlt, ohne jetzt hektisch im falschen Moment umzutopfen.",
+    "optimize_watering_until_repot": "Haelt den Verlauf stabil bis zur Loesung und reduziert Schwankungen ohne Verdr?ngen.",
+    "force_heavy_feed_now": "Steigert Last im engen Wurzelraum und verschiebt die Ursache statt sie zu entlasten.",
+    "open_canopy_air_channel": "Hilft toten Lufttaschen, ohne die ganze Umgebung sofort aggressiver einzustellen.",
+    "raise_humidity_without_airflow": "Mehr Feuchte ohne Luftweg laesst das Problem im Blattbereich meist nur stehen.",
+    "feed_more_for_pale_top": "Verwechselt Lichtbrand mit Mangel und erhoeht nur das Risiko fuer den Rest der Pflanze.",
+    "feed_through_the_soggy_medium": "Mehr Nahrung loest Sauerstoffmangel nicht und kann die Wurzelzone weiter ueberladen.",
+    "double_feed_in_heat": "Mehr Salz ersetzt keine fehlende Wasserversorgung und kann trockene Toepfe noch haerter machen.",
+    "stake_and_reduce_sway": "Nimmt Last vom Gewebe und verhindert, dass aus Bewegung echter Strukturstress wird.",
+    "harden_off_in_steps": "Baut Toleranz auf, ohne junge Triebe direkt in Dauerzug zu stellen.",
+    "strip_leaves_during_gusts": "Entfernt Flaeche unter Stress und schafft neue Wunden, ohne die Exposition zu loesen.",
+    "check_weight_before_watering": "Trennt Reflex von Diagnose und verhindert das klassische Nachgiessen auf Verdacht.",
+    "inspect_rootzone_then_wait": "Laesst Raum fuer eine saubere Einordnung, wenn das Signal nicht eindeutig ist.",
+    "water_on_panic_signal": "Kann ein zu nasses Problem direkt verstaerken, obwohl die Blaetter nur aehnlich aussehen.",
+    "keep_watering_same_volume": "Ignoriert das Strukturproblem und laesst die Wurzelzone weiter im gleichen Muster festhaengen."
+  },
+  "chains": {
+    "watering_rootzone_chain": {
+      "title": "Vom Fehlguss zur luftarmen Wurzelzone",
+      "summary": "Diese Kette verbindet falsch gelesene Durstsignale, trockene Outdoor-Tage, schwache Drainage und Sauerstoffmangel im Medium zu einer klaren Wasser-Wurzelzonen-Geschichte.",
+      "banner": "Wasser-Wurzelzonen-Kette aktiv"
+    },
+    "airflow_climate_chain": {
+      "title": "Vom Luftweg in den Klimastress",
+      "summary": "Die Kette startet mit stehender Indoor-Luft, kippt in VPD- und Hitzedruck und zeigt ueber den Outdoor-Zweig, wie Exposition und trockener Wind dasselbe Mikroklima-Thema weiterziehen.",
+      "banner": "Airflow-Klimakette aktiv"
     }
   }
 }

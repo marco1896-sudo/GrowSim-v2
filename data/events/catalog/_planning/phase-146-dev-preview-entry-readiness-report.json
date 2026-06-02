@@ -1,0 +1,35 @@
+{
+  "phase": "146",
+  "status": "dev_preview_entry_ready_with_watch",
+  "entryPointPresent": true,
+  "devOnly": true,
+  "usesController": true,
+  "fixtures": 3,
+  "candidateItems": 15,
+  "validImages": 15,
+  "brokenPaths": 0,
+  "actionsEmpty": true,
+  "selectedCandidateNull": true,
+  "canActivateGameplayFalse": true,
+  "canMutateStateFalse": true,
+  "canMutateSaveFalse": true,
+  "runtimeWriteFalse": true,
+  "productionFalse": true,
+  "saveWrites": 0,
+  "stateMutations": 0,
+  "uiActions": 0,
+  "gameplayActivations": 0,
+  "localStorageWrites": 0,
+  "indexedDbWrites": 0,
+  "safetyLabelsVisible": true,
+  "noWriteLabelVisible": true,
+  "candidateOnlyLabelVisible": true,
+  "noGameplayLabelVisible": true,
+  "watchpoints": [
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "watch": "scoring_watch_vpd_vs_dry_rootball"
+    }
+  ],
+  "browserSmokeOk": true
+}

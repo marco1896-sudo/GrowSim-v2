@@ -1,0 +1,77 @@
+{
+  "ok": true,
+  "phase": "135",
+  "browserSmokeExecuted": true,
+  "pageUrl": "http://127.0.0.1:51534/dev/event-v2-preview-gallery.html",
+  "summary": {
+    "testedViewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "cardsExpected": 22,
+    "cardsAtLargestViewport": 22,
+    "minCardsAcrossViewports": 22,
+    "maxCardsAcrossViewports": 22,
+    "imagesLoadedAtLargestViewport": 22,
+    "brokenImagesAtLargestViewport": 0,
+    "anyHorizontalOverflow": false,
+    "anyBrokenImages": false,
+    "jsErrors": []
+  },
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 22,
+      "imagesTotal": 22,
+      "imagesLoaded": 22,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "filterControls": {
+        "revision": true,
+        "environment": true
+      }
+    },
+    {
+      "viewport": 390,
+      "cards": 22,
+      "imagesTotal": 22,
+      "imagesLoaded": 22,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "filterControls": {
+        "revision": true,
+        "environment": true
+      }
+    },
+    {
+      "viewport": 430,
+      "cards": 22,
+      "imagesTotal": 22,
+      "imagesLoaded": 22,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "filterControls": {
+        "revision": true,
+        "environment": true
+      }
+    },
+    {
+      "viewport": 768,
+      "cards": 22,
+      "imagesTotal": 22,
+      "imagesLoaded": 22,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "filterControls": {
+        "revision": true,
+        "environment": true
+      }
+    }
+  ],
+  "filterStatus": {
+    "revisionFilterPresent": true,
+    "environmentFilterPresent": true
+  }
+}

@@ -1,0 +1,348 @@
+{
+  "schemaVersion": 3,
+  "id": "outdoor_pot_dries_by_afternoon",
+  "type": "event",
+  "category": "water",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mini_catalog_batch_1",
+    "mode_outdoor"
+  ],
+  "title": {
+    "key": "events.v2.outdoor_pot_dries_by_afternoon.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.outdoor_pot_dries_by_afternoon.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.outdoor_pot_dries_by_afternoon.description"
+  },
+  "cause": {
+    "kind": "pot_volume_evaporation_mismatch",
+    "explanation": {
+      "key": "events.v2.outdoor_pot_dries_by_afternoon.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.outdoor_pot_dries_by_afternoon.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.outdoor_pot_dries_by_afternoon.coach.actions.0"
+      },
+      {
+        "key": "events.v2.outdoor_pot_dries_by_afternoon.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.outdoor_pot_dries_by_afternoon.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.midday_droop_recovers_late"
+      },
+      "weight": 1,
+      "id": "midday_droop_recovers_late",
+      "spriteOverlay": "outdoor_pot_dries_by_afternoon_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "pot_weight_check": {
+        "label": {
+          "key": "diagnostics.pot_weight_check.light_by_afternoon"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "pot_volume_evaporation_mismatch"
+        ]
+      }
+    },
+    "available": [
+      "pot_weight_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "water_timing_adjust_dawn",
+      "label": {
+        "key": "options.water_timing_adjust_dawn"
+      },
+      "uiDetail": {
+        "key": "events.v2.outdoor_pot_dries_by_afternoon.options.water_timing_adjust_dawn.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ]
+    },
+    {
+      "id": "shade_and_windbreak",
+      "label": {
+        "key": "options.shade_and_windbreak"
+      },
+      "uiDetail": {
+        "key": "events.v2.outdoor_pot_dries_by_afternoon.options.shade_and_windbreak.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "double_feed_in_heat",
+      "label": {
+        "key": "options.double_feed_in_heat"
+      },
+      "uiDetail": {
+        "key": "events.v2.outdoor_pot_dries_by_afternoon.options.double_feed_in_heat.detail"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.water",
+        "op": "<=",
+        "value": 35
+      },
+      {
+        "field": "env.temperatureC",
+        "op": ">=",
+        "value": 25
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 5
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower"
+    ]
+  },
+  "pressure": {
+    "weight": 0.97,
+    "polarity": "negative",
+    "primaryPressure": "pot_dries_fast_outdoor"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "outdoor_pot_dries_by_afternoon_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "outdoor_pot_dries_by_afternoon_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "outdoor_pot_dries_by_afternoon_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "pot_dries_fast_outdoor": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "pot_dries_fast_outdoor": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.outdoor_pot_dries_by_afternoon.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "water_timing_adjust_dawn",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.outdoor_pot_dries_by_afternoon.cover",
+      "src": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+      "fallback": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "outdoor_pot_dries_by_afternoon_overlay_warn": "assets/events/event-stress-recovery.png",
+      "outdoor_pot_dries_by_afternoon_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "outdoor_pot_dries_by_afternoon_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_midday_droop_recovers_late",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.outdoor_pot_dries_by_afternoon.title",
+      "events.v2.outdoor_pot_dries_by_afternoon.symptom",
+      "events.v2.outdoor_pot_dries_by_afternoon.description",
+      "events.v2.outdoor_pot_dries_by_afternoon.cause",
+      "events.v2.outdoor_pot_dries_by_afternoon.coach.summary",
+      "events.v2.outdoor_pot_dries_by_afternoon.coach.why",
+      "events.v2.outdoor_pot_dries_by_afternoon.coach.actions.0",
+      "events.v2.outdoor_pot_dries_by_afternoon.coach.actions.1",
+      "events.v2.outdoor_pot_dries_by_afternoon.aftermath.lesson",
+      "options.water_timing_adjust_dawn",
+      "options.shade_and_windbreak",
+      "options.double_feed_in_heat",
+      "alt.events.v2.outdoor_pot_dries_by_afternoon.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_water"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "water",
+      "symptom_midday_droop_recovers_late"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_watering_basics"
+  },
+  "chainHooks": {
+    "startsChain": null,
+    "advancesChainsOnOutcome": {
+      "partial_mitigation": [
+        "chain.watering_rootzone_chain@step_drainage_lock"
+      ],
+      "poor_outcome": [
+        "chain.watering_rootzone_chain@step_drainage_lock"
+      ],
+      "no_action": [
+        "chain.watering_rootzone_chain@step_drainage_lock"
+      ]
+    }
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-71 Batch-1 data-only expansion event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-18",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+    "fallback": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_pot_dries_by_afternoon/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "ready",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

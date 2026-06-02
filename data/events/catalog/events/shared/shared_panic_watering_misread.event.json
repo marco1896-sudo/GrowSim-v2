@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 3,
+  "id": "shared_panic_watering_misread",
+  "type": "event",
+  "category": "water",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mini_catalog_batch_1",
+    "mode_shared"
+  ],
+  "title": {
+    "key": "events.v2.shared_panic_watering_misread.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.shared_panic_watering_misread.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.shared_panic_watering_misread.description"
+  },
+  "cause": {
+    "kind": "hanging_leaves_misread_without_check",
+    "explanation": {
+      "key": "events.v2.shared_panic_watering_misread.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.shared_panic_watering_misread.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.shared_panic_watering_misread.coach.actions.0"
+      },
+      {
+        "key": "events.v2.shared_panic_watering_misread.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.shared_panic_watering_misread.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.droop_signal_unclear"
+      },
+      "weight": 1,
+      "id": "droop_signal_unclear",
+      "spriteOverlay": "shared_panic_watering_misread_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "pot_weight_check": {
+        "label": {
+          "key": "diagnostics.pot_weight_check.needs_real_check"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "hanging_leaves_misread_without_check"
+        ]
+      }
+    },
+    "available": [
+      "pot_weight_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "check_weight_before_watering",
+      "label": {
+        "key": "options.check_weight_before_watering"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_panic_watering_misread.options.check_weight_before_watering.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ]
+    },
+    {
+      "id": "inspect_rootzone_then_wait",
+      "label": {
+        "key": "options.inspect_rootzone_then_wait"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_panic_watering_misread.options.inspect_rootzone_then_wait.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "water_on_panic_signal",
+      "label": {
+        "key": "options.water_on_panic_signal"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_panic_watering_misread.options.water_on_panic_signal.detail"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 16
+      },
+      {
+        "field": "status.water",
+        "op": ">=",
+        "value": 25
+      },
+      {
+        "field": "status.water",
+        "op": "<=",
+        "value": 85
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor",
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 5
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower"
+    ]
+  },
+  "pressure": {
+    "weight": 0.98,
+    "polarity": "negative",
+    "primaryPressure": "watering_signal_misread"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "shared_panic_watering_misread_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "shared_panic_watering_misread_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "shared_panic_watering_misread_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "watering_signal_misread": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "watering_signal_misread": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.shared_panic_watering_misread.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "check_weight_before_watering",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.shared_panic_watering_misread.cover",
+      "src": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+      "fallback": "assets/events/v2/final/shared_panic_watering_misread/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "shared_panic_watering_misread_overlay_warn": "assets/events/event-stress-recovery.png",
+      "shared_panic_watering_misread_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "shared_panic_watering_misread_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_droop_signal_unclear",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.shared_panic_watering_misread.title",
+      "events.v2.shared_panic_watering_misread.symptom",
+      "events.v2.shared_panic_watering_misread.description",
+      "events.v2.shared_panic_watering_misread.cause",
+      "events.v2.shared_panic_watering_misread.coach.summary",
+      "events.v2.shared_panic_watering_misread.coach.why",
+      "events.v2.shared_panic_watering_misread.coach.actions.0",
+      "events.v2.shared_panic_watering_misread.coach.actions.1",
+      "events.v2.shared_panic_watering_misread.aftermath.lesson",
+      "options.check_weight_before_watering",
+      "options.inspect_rootzone_then_wait",
+      "options.water_on_panic_signal",
+      "alt.events.v2.shared_panic_watering_misread.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_water"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "water",
+      "symptom_droop_signal_unclear"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_watering_basics"
+  },
+  "chainHooks": {
+    "startsChain": "watering_rootzone_chain",
+    "advancesChainsOnOutcome": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-71 Batch-1 data-only expansion event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-16",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+    "fallback": "assets/events/v2/final/shared_panic_watering_misread/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_panic_watering_misread/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "ready",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

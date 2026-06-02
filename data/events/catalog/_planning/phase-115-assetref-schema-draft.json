@@ -1,0 +1,56 @@
+﻿{
+    "schemaVersion":  "event_v2_assetrefs_draft_v1",
+    "activation":  "planning_only_not_active",
+    "placement":  "root.assetRefs (new optional block), keep assets.cover as runtime legacy/source of truth until activation phase",
+    "fields":  {
+                   "hero":  {
+                                "type":  "string",
+                                "required":  true,
+                                "example":  "assets/events/v2/final/{eventId}/hero.webp"
+                            },
+                   "fallback":  {
+                                    "type":  "string",
+                                    "required":  true,
+                                    "example":  "assets/events/v2/final/{eventId}/fallback.webp"
+                                },
+                   "sourceCandidate":  {
+                                           "type":  "string",
+                                           "required":  true,
+                                           "example":  "assets/events/v2/_generated/full-scene/review/{eventId}/candidate_full_scene_01.png"
+                                       },
+                   "status":  {
+                                  "type":  "string",
+                                  "required":  true,
+                                  "enum":  [
+                                               "trial_asset_set_v1"
+                                           ]
+                              },
+                   "revisionStatus":  {
+                                          "type":  "string",
+                                          "required":  true,
+                                          "enum":  [
+                                                       "ready",
+                                                       "usable_with_watch",
+                                                       "temporary_usable_needs_revision"
+                                                   ]
+                                      },
+                   "sourcePhase":  {
+                                       "type":  "string",
+                                       "required":  true,
+                                       "enum":  [
+                                                    "phase-112"
+                                                ]
+                                   },
+                   "notes":  {
+                                 "type":  "array",
+                                 "required":  false,
+                                 "items":  "string"
+                             },
+                   "hero2x":  {
+                                  "type":  "string",
+                                  "required":  false,
+                                  "example":  "assets/events/v2/final/{eventId}/hero@2x.webp",
+                                  "note":  "optional only; no product schema dependency yet"
+                              }
+               }
+}

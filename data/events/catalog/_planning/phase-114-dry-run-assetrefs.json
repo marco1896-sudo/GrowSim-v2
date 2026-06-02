@@ -1,0 +1,32 @@
+﻿[
+    {
+        "eventId":  "shared_rootbound_warning",
+        "dryRunAssetRefs":  {
+                                "hero":  "assets/events/v2/_trial_export/phase-114/shared_rootbound_warning/hero.webp",
+                                "hero2x":  "assets/events/v2/_trial_export/phase-114/shared_rootbound_warning/hero@2x.webp",
+                                "fallback":  "assets/events/v2/_trial_export/phase-114/shared_rootbound_warning/fallback.webp",
+                                "sourceCandidate":  "assets/events/v2/_generated/review/shared_rootbound_warning/candidate_full_scene_02.png"
+                            },
+        "activationStatus":  "dry_run_only_not_active"
+    },
+    {
+        "eventId":  "shared_early_pest_signs_mild",
+        "dryRunAssetRefs":  {
+                                "hero":  "assets/events/v2/_trial_export/phase-114/shared_early_pest_signs_mild/hero.webp",
+                                "hero2x":  "assets/events/v2/_trial_export/phase-114/shared_early_pest_signs_mild/hero@2x.webp",
+                                "fallback":  "assets/events/v2/_trial_export/phase-114/shared_early_pest_signs_mild/fallback.webp",
+                                "sourceCandidate":  "assets/events/v2/_generated/full-scene/review/shared_early_pest_signs_mild/candidate_full_scene_01.png"
+                            },
+        "activationStatus":  "dry_run_only_not_active"
+    },
+    {
+        "eventId":  "indoor_light_burn_canopy_top",
+        "dryRunAssetRefs":  {
+                                "hero":  "assets/events/v2/_trial_export/phase-114/indoor_light_burn_canopy_top/hero.webp",
+                                "hero2x":  "assets/events/v2/_trial_export/phase-114/indoor_light_burn_canopy_top/hero@2x.webp",
+                                "fallback":  "assets/events/v2/_trial_export/phase-114/indoor_light_burn_canopy_top/fallback.webp",
+                                "sourceCandidate":  "assets/events/v2/_generated/full-scene/review/indoor_light_burn_canopy_top/candidate_full_scene_01.png"
+                            },
+        "activationStatus":  "dry_run_only_not_active"
+    }
+]

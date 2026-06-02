@@ -1,0 +1,333 @@
+{
+  "schemaVersion": 3,
+  "id": "indoor_rootzone_airless_medium",
+  "type": "event",
+  "category": "water",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mini_catalog_batch_1",
+    "mode_indoor"
+  ],
+  "title": {
+    "key": "events.v2.indoor_rootzone_airless_medium.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.indoor_rootzone_airless_medium.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.indoor_rootzone_airless_medium.description"
+  },
+  "cause": {
+    "kind": "rootzone_oxygen_drop_dense_medium",
+    "explanation": {
+      "key": "events.v2.indoor_rootzone_airless_medium.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.indoor_rootzone_airless_medium.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.indoor_rootzone_airless_medium.coach.actions.0"
+      },
+      {
+        "key": "events.v2.indoor_rootzone_airless_medium.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.indoor_rootzone_airless_medium.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.medium_stays_dense_cool"
+      },
+      "weight": 1,
+      "id": "medium_stays_dense_cool",
+      "spriteOverlay": "indoor_rootzone_airless_medium_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "drainage_check": {
+        "label": {
+          "key": "diagnostics.drainage_check.slow_airless_runoff"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "rootzone_oxygen_drop_dense_medium"
+        ]
+      }
+    },
+    "available": [
+      "drainage_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "pause_watering_24h",
+      "label": {
+        "key": "options.pause_watering_24h"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ]
+    },
+    {
+      "id": "improve_drainage_surface",
+      "label": {
+        "key": "options.improve_drainage_surface"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "feed_through_the_soggy_medium",
+      "label": {
+        "key": "options.feed_through_the_soggy_medium"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.water",
+        "op": ">=",
+        "value": 78
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 16
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 5
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower"
+    ]
+  },
+  "pressure": {
+    "weight": 1.02,
+    "polarity": "negative",
+    "primaryPressure": "rootzone_oxygen_drop"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "indoor_rootzone_airless_medium_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "indoor_rootzone_airless_medium_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "indoor_rootzone_airless_medium_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "rootzone_oxygen_drop": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "rootzone_oxygen_drop": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.indoor_rootzone_airless_medium.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "pause_watering_24h",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.indoor_rootzone_airless_medium.cover",
+      "src": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+      "fallback": "assets/events/v2/final/indoor_rootzone_airless_medium/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "indoor_rootzone_airless_medium_overlay_warn": "assets/events/event-stress-recovery.png",
+      "indoor_rootzone_airless_medium_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "indoor_rootzone_airless_medium_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_medium_stays_dense_cool",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.indoor_rootzone_airless_medium.title",
+      "events.v2.indoor_rootzone_airless_medium.symptom",
+      "events.v2.indoor_rootzone_airless_medium.description",
+      "events.v2.indoor_rootzone_airless_medium.cause",
+      "events.v2.indoor_rootzone_airless_medium.coach.summary",
+      "events.v2.indoor_rootzone_airless_medium.coach.why",
+      "events.v2.indoor_rootzone_airless_medium.coach.actions.0",
+      "events.v2.indoor_rootzone_airless_medium.coach.actions.1",
+      "events.v2.indoor_rootzone_airless_medium.aftermath.lesson",
+      "options.pause_watering_24h",
+      "options.improve_drainage_surface",
+      "options.feed_through_the_soggy_medium",
+      "alt.events.v2.indoor_rootzone_airless_medium.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_water"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "water",
+      "symptom_medium_stays_dense_cool"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_rootzone_oxygen_basics"
+  },
+  "chainHooks": {
+    "startsChain": null,
+    "advancesChainsOnOutcome": {
+      "strong_recovery": [
+        "chain.watering_rootzone_chain@step_recovery_hold"
+      ]
+    }
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-71 Batch-1 data-only expansion event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-18",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+    "fallback": "assets/events/v2/final/indoor_rootzone_airless_medium/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_rootzone_airless_medium/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "ready",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

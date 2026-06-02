@@ -1,0 +1,581 @@
+{
+  "ok": true,
+  "phase": "127",
+  "eventsChecked": 22,
+  "heroPresent": 22,
+  "fallbackPresent": 22,
+  "items": [
+    {
+      "eventId": "indoor_dry_rootball",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_dry_rootball/hero.webp",
+        "bytes": 205874,
+        "sha256": "e3a3599bbcb124239c9423f1a1870f7179da9dab188164ef3356c28dbf485ffb",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_dry_rootball/fallback.webp",
+        "bytes": 105144,
+        "sha256": "5cd97584e9517e7c7707d2b062900ba79059bb49469bbe1382978848c8f27ff3",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_fan_failure_airflow_drop",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+        "bytes": 200434,
+        "sha256": "073788cb2e1560e1082d496666aaeeffd50b0f1a0679885b0ad8f33ddffda482",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_fan_failure_airflow_drop/fallback.webp",
+        "bytes": 100760,
+        "sha256": "01cdd016893cba76e6d2e9170668b3f3bbf88acdd81f1c9b039ae49be0befc8d",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_heat_stress_air",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+        "bytes": 223706,
+        "sha256": "9803c7a9ea55c5fa18980dfb22114bc33e5604a58381e67d1537eaf678a560b3",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_heat_stress_air/fallback.webp",
+        "bytes": 114190,
+        "sha256": "e2595652a13381340a61c7cdcc1ad5578986262d165362d88d29892cf53c40cd",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_light_burn_canopy_top",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+        "bytes": 208486,
+        "sha256": "61dd64232abd682837d50889f779b9400cd2ecb2f0b70b860570b00b8fa00d13",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp",
+        "bytes": 105914,
+        "sha256": "1838ad0d4cac67c043c2e41a1d9ac258f0e7c0d2402e613993c8ea13c124d414",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_light_nutrient_tox_early",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_light_nutrient_tox_early/hero.webp",
+        "bytes": 191676,
+        "sha256": "60a8be497d3aba32fe130c20ac22379075d0515b3848dd39645afe0ba19eae45",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_light_nutrient_tox_early/fallback.webp",
+        "bytes": 102246,
+        "sha256": "e71e28fadad2ec831a2ee282f816517e439db8516869a7ebad26980161cc5f8e",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_overtraining_stall_mild",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_overtraining_stall_mild/hero.webp",
+        "bytes": 198364,
+        "sha256": "f18a4857342626c04ac5f0433cabebf10e0f8ef36d340518637cf896b9eb1989",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_overtraining_stall_mild/fallback.webp",
+        "bytes": 106346,
+        "sha256": "2351ec6a2181ce2601e914c3ab0e729a778f47e3b9124198fa0637bcdc38f1da",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_overwatering_early",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+        "bytes": 196024,
+        "sha256": "10017f6b6eb7b38b3ae205ea967daa5ff87bd78fcabc246316f849d84fd6a54f",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_overwatering_early/fallback.webp",
+        "bytes": 101042,
+        "sha256": "0a91c74a3008a3c59cd4b325e9097feae6dc4a0af7aeb2d4e4ba66b5a8b305a3",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_rootzone_airless_medium",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+        "bytes": 240122,
+        "sha256": "bd88d9d953d6efe63c7178548ab6f4a971a748e3a1453f47ddd068eef93c1773",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_rootzone_airless_medium/fallback.webp",
+        "bytes": 118616,
+        "sha256": "94a1087e8161f0508a6f9dbde81a4eca920883c4f3029bada666c89e287efed7",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_soil_ph_out_of_range",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+        "bytes": 236326,
+        "sha256": "9a56257cf410f1241613b5bed5d27f109f2cea45ec37c38acfa06226cc709ad8",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_soil_ph_out_of_range/fallback.webp",
+        "bytes": 118030,
+        "sha256": "2ec8b6ed25da8ad7dde3c2fe3eef8aaa4bca46f2125c37c480de2f324722bf62",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "indoor_vpd_mismatch_veg",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp",
+        "bytes": 225912,
+        "sha256": "0b92f6ce7e4b466f49753a150cd044bb86e7047bd20acaf0371971bfaa1a77c5",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/indoor_vpd_mismatch_veg/fallback.webp",
+        "bytes": 114042,
+        "sha256": "63d58fe696b838d906d6bc48c9a21a70259f7bc52b31ea307aa2bcbafb545b74",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "outdoor_cold_night_stress",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+        "bytes": 176602,
+        "sha256": "64ca408a8c1cacecbd87ec4691f6d87ee7dd62f1189f0483b1035ce17fa6533a",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_cold_night_stress/fallback.webp",
+        "bytes": 88244,
+        "sha256": "505346db09ddc9b31c9dfff035059679af8844de5d5ac11e7ebb558eeb841c4e",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "outdoor_early_pest_pressure_leaf_underside",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero.webp",
+        "bytes": 210074,
+        "sha256": "11ec55d5d138cc588aef8661ae287ea0d289c8bbccb35aa90568dea8d4a350c5",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/fallback.webp",
+        "bytes": 108646,
+        "sha256": "b1bc72d8169e42a8bd2e5ac780369f7c3e8ceb32ff33d3d571f8fa0e23ae8954",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "outdoor_heatwave_dry_wind",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+        "bytes": 170232,
+        "sha256": "8bccdd93a917a40593c75ca367346a8ce642040de585e182b522bbdc12e3f229",
+        "width": 1280,
+        "height": 704,
+        "ratio": 1.8182,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_heatwave_dry_wind/fallback.webp",
+        "bytes": 87012,
+        "sha256": "9cdd6c3bb3b5cf1d829bec52856e0a44aa47a046870013acbd36181817ec0620",
+        "width": 960,
+        "height": 528,
+        "ratio": 1.8182,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "outdoor_heavy_rain_waterlogging_risk",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+        "bytes": 219844,
+        "sha256": "6e156a43554381425a6afa0162e4311f885e6e2c777d1cb8f435036e52eac359",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/fallback.webp",
+        "bytes": 112344,
+        "sha256": "a68b7c2b1aed5a5c68b4c6a3b3474f510a5037047118ffd07258a5fbd6ab3c20",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "outdoor_pot_dries_by_afternoon",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+        "bytes": 188842,
+        "sha256": "0920383bc2ba6f8ad7eda6a9dc6b5bd166888378571766931edcca1e0c272e7e",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/fallback.webp",
+        "bytes": 100142,
+        "sha256": "abcfa7ab892f778b277bc8603caef037ffda9b6a31a59baab0faa4ef4412c08a",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "outdoor_wind_exposure_stem_stress",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp",
+        "bytes": 170534,
+        "sha256": "63efebbfdf1d3a32a7e1085d39dbec0d21970e0bf65e4123a75429f23e2742e2",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/fallback.webp",
+        "bytes": 88938,
+        "sha256": "7cf9b4b96c1ac8bcced1210baecd290298f4da30349cf76546c0c2621d57a3cc",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "shared_early_pest_signs_mild",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+        "bytes": 166918,
+        "sha256": "b6a013f0004f2e97a0f522522130b92e74057438ea150e22e41b71f90a6a2bdb",
+        "width": 1280,
+        "height": 703,
+        "ratio": 1.8208,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+        "bytes": 86030,
+        "sha256": "6dd4190efdf60d7662e6e9012ea283e14f41525fdf98ca146e68bce6e2710b8f",
+        "width": 960,
+        "height": 527,
+        "ratio": 1.8216,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "shared_light_distance_error",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+        "bytes": 185644,
+        "sha256": "ec6f0dbb05878d476db520a8d8a165b5e907d6a1a5e3de00a13d5bd546f7155d",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_light_distance_error/fallback.webp",
+        "bytes": 96366,
+        "sha256": "9a48020c24dd165e2f62238eb5e8e1d54532fe0feea524649ae0be7f19fb2609",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "shared_observation_recovery_after_stress",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+        "bytes": 200104,
+        "sha256": "7e32fa31f2f676fb05a0e2f6d4fb7f958608a12966a43e19cd6b87a907eff629",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_observation_recovery_after_stress/fallback.webp",
+        "bytes": 103896,
+        "sha256": "cedcd0acb8f3625f0a18948e77d77b471390ed1209f2c75fc8b209cad4fc7a73",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "shared_panic_watering_misread",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+        "bytes": 190244,
+        "sha256": "c4701928e9f4b87bec9c7a45d51597053f7f65f8ab237ba83f00e5c957a3ed4b",
+        "width": 1280,
+        "height": 720,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_panic_watering_misread/fallback.webp",
+        "bytes": 97244,
+        "sha256": "ae31ba7a5d69cdf0faef7b686c28aee3accf4aa19e924ea952bb8e7ff53fa74d",
+        "width": 960,
+        "height": 540,
+        "ratio": 1.7778,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "shared_rootbound_warning",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+        "bytes": 232754,
+        "sha256": "561a52941906d7e3944ff01030dd1caa10836c5bc295a35c749c96d6770d2cce",
+        "width": 1280,
+        "height": 704,
+        "ratio": 1.8182,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+        "bytes": 119828,
+        "sha256": "9fe19b0e9d56b45fa94dcd43ba30424eb4a32690c3bf62e9da13dc9da3e2630e",
+        "width": 960,
+        "height": 528,
+        "ratio": 1.8182,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    },
+    {
+      "eventId": "shared_substrate_drainage_compaction",
+      "hero": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+        "bytes": 217604,
+        "sha256": "99fd8910a35e9759a7b5663afd948923b9d3510ae0a635c7013180b06b2b0902",
+        "width": 1280,
+        "height": 731,
+        "ratio": 1.751,
+        "format": "webp",
+        "webpValid": true
+      },
+      "fallback": {
+        "exists": true,
+        "path": "assets/events/v2/final/shared_substrate_drainage_compaction/fallback.webp",
+        "bytes": 111900,
+        "sha256": "13765f21d747ed4e673ebf2af5b48a1385136d28ca080191a47fa552fa0e5deb",
+        "width": 960,
+        "height": 549,
+        "ratio": 1.7486,
+        "format": "webp",
+        "webpValid": true
+      },
+      "activationReady": true
+    }
+  ]
+}

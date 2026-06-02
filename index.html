@@ -7,7 +7,7 @@
   <title>Grow-Simulator</title>
   <script>
     (function initBuildMeta() {
-      const buildId = '20260426-115352';
+      const buildId = '20260601-event-v2-playable-pwa';
       const appVersion = `growsim-${buildId}`;
       window.GrowSimBuild = Object.freeze({
         id: buildId,
@@ -1780,6 +1780,7 @@
       { src: 'src/config/simulation.js' },
       { src: 'src/utils/textEncoding.js' },
       { src: 'src/i18n/index.js' },
+      { src: 'src/events/legacy/EventV1WriteTelemetry.js' },
       { src: 'sim.js' },
       { src: 'src/simulation/plantState.js' },
       { src: 'src/simulation/careModel.js' },
@@ -1803,6 +1804,9 @@
       { src: 'src/events/eventAnalysisRuntime.js' },
       { src: 'src/events/eventPersistenceAdapter.js' },
       { src: 'src/events/eventEngine.js' },
+      { src: 'src/events/v2/runtime/EventV2ActivationRegistry.js' },
+      { src: 'src/events/v2/runtime/EventV2OutcomePolicy.js' },
+      { src: 'src/events/EventSystemRuntimeBridge.js' },
       { src: 'events.js' },
       { src: 'ui.js' },
       { src: 'src/harvest/harvestModel.js' },
@@ -1823,6 +1827,9 @@
       { src: 'src/monetization/googleAdPlacementRewardProvider.js' },
       { src: 'src/monetization/coinPackCatalog.js' },
       { src: 'src/monetization/purchaseServiceAdapter.js' },
+      { src: 'src/events/v2/ui/EventV2PresentationMap.js' },
+      { src: 'src/events/v2/dev/EventV2PilotSeedDevTools.js' },
+      { src: 'src/events/v2/shadow-bridge/ShadowBridgeBrowserBridgeCandidate.js' },
       { src: 'app.js' }
     ];
 

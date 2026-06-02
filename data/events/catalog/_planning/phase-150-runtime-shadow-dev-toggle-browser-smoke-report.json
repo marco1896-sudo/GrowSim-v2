@@ -1,0 +1,88 @@
+{
+  "ok": false,
+  "browserSmokeExecuted": true,
+  "defaultMode": {
+    "disabled": true,
+    "reason": "runtime_shadow_toggle_disabled_by_default"
+  },
+  "devMode": {
+    "enabled": true,
+    "fixtures": 3,
+    "shadowEvaluations": 66,
+    "candidateItems": 15,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0
+  },
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "noWriteCount": 15,
+      "candidateOnlyCount": 0,
+      "safetyLabelsVisible": false
+    },
+    {
+      "viewport": 390,
+      "cards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "noWriteCount": 15,
+      "candidateOnlyCount": 0,
+      "safetyLabelsVisible": false
+    },
+    {
+      "viewport": 430,
+      "cards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "noWriteCount": 15,
+      "candidateOnlyCount": 0,
+      "safetyLabelsVisible": false
+    },
+    {
+      "viewport": 768,
+      "cards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "noWriteCount": 15,
+      "candidateOnlyCount": 0,
+      "safetyLabelsVisible": false
+    }
+  ],
+  "summary": {
+    "viewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "candidateItemsVisible": 15,
+    "fixturesVisible": 3,
+    "imagesLoaded": 15,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": [],
+    "actionsFound": 0,
+    "selectedCandidateMentions": 0,
+    "safetyLabelsVisible": false
+  }
+}

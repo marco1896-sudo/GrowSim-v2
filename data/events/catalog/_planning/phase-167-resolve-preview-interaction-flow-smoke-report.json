@@ -1,0 +1,1846 @@
+{
+  "ok": true,
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "candidateItems": 15,
+      "fixtureCount": 3,
+      "detailRuns": [
+        {
+          "cardIndex": 0,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "inspect",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Wahl: Erst Feuchteverlauf prüfen, bevor du nachgießt.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        },
+        {
+          "cardIndex": 5,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "inspect",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Wahl: Hitze und Wind zuerst sauber einschätzen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Harte Gegenmaßnahmen können zusätzliche Instabilität auslösen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        },
+        {
+          "cardIndex": 10,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "observe",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Entscheidung: Beobachtung hält die Lage stabil und vermeidet Übersteuerung.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        }
+      ],
+      "reopenState": {
+        "resolveSectionVisible": true,
+        "questionVisible": true,
+        "optionCount": 3,
+        "optionsMeta": [
+          {
+            "optionId": "inspect",
+            "label": "erst genauer prüfenvorsichtig",
+            "badge": "vorsichtig",
+            "isRisky": false,
+            "isCautiousOrGood": true
+          },
+          {
+            "optionId": "stabilize",
+            "label": "bedingungen vorsichtig stabilisierenempfohlen",
+            "badge": "empfohlen",
+            "isRisky": false,
+            "isCautiousOrGood": true
+          },
+          {
+            "optionId": "overreact",
+            "label": "sofort stark eingreifenriskant",
+            "badge": "riskant",
+            "isRisky": true,
+            "isCautiousOrGood": false
+          }
+        ],
+        "feedbackVisible": true,
+        "plannedEffectsVisible": false,
+        "noApplyVisible": true,
+        "noResolveVisible": true,
+        "canResolveFalse": true,
+        "canApplyEffectsFalse": true,
+        "persistedResolveChoiceNull": true,
+        "actionsEmpty": true,
+        "selectedCandidateNull": true,
+        "detailImageLoaded": true,
+        "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+        "effectsText": "",
+        "persistedSelectedCandidateNull": true,
+        "runtimeWriteFalse": true,
+        "productionFalse": true
+      },
+      "brokenImages": 0,
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": 390,
+      "candidateItems": 15,
+      "fixtureCount": 3,
+      "detailRuns": [
+        {
+          "cardIndex": 0,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "inspect",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Wahl: Erst Feuchteverlauf prüfen, bevor du nachgießt.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        },
+        {
+          "cardIndex": 5,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "inspect",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Wahl: Hitze und Wind zuerst sauber einschätzen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Harte Gegenmaßnahmen können zusätzliche Instabilität auslösen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        },
+        {
+          "cardIndex": 10,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "observe",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Entscheidung: Beobachtung hält die Lage stabil und vermeidet Übersteuerung.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        }
+      ],
+      "reopenState": {
+        "resolveSectionVisible": true,
+        "questionVisible": true,
+        "optionCount": 3,
+        "optionsMeta": [
+          {
+            "optionId": "inspect",
+            "label": "erst genauer prüfenvorsichtig",
+            "badge": "vorsichtig",
+            "isRisky": false,
+            "isCautiousOrGood": true
+          },
+          {
+            "optionId": "stabilize",
+            "label": "bedingungen vorsichtig stabilisierenempfohlen",
+            "badge": "empfohlen",
+            "isRisky": false,
+            "isCautiousOrGood": true
+          },
+          {
+            "optionId": "overreact",
+            "label": "sofort stark eingreifenriskant",
+            "badge": "riskant",
+            "isRisky": true,
+            "isCautiousOrGood": false
+          }
+        ],
+        "feedbackVisible": true,
+        "plannedEffectsVisible": false,
+        "noApplyVisible": true,
+        "noResolveVisible": true,
+        "canResolveFalse": true,
+        "canApplyEffectsFalse": true,
+        "persistedResolveChoiceNull": true,
+        "actionsEmpty": true,
+        "selectedCandidateNull": true,
+        "detailImageLoaded": true,
+        "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+        "effectsText": "",
+        "persistedSelectedCandidateNull": true,
+        "runtimeWriteFalse": true,
+        "productionFalse": true
+      },
+      "brokenImages": 0,
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": 430,
+      "candidateItems": 15,
+      "fixtureCount": 3,
+      "detailRuns": [
+        {
+          "cardIndex": 0,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "inspect",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Wahl: Erst Feuchteverlauf prüfen, bevor du nachgießt.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        },
+        {
+          "cardIndex": 5,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "inspect",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Wahl: Hitze und Wind zuerst sauber einschätzen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Harte Gegenmaßnahmen können zusätzliche Instabilität auslösen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        },
+        {
+          "cardIndex": 10,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "observe",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Entscheidung: Beobachtung hält die Lage stabil und vermeidet Übersteuerung.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        }
+      ],
+      "reopenState": {
+        "resolveSectionVisible": true,
+        "questionVisible": true,
+        "optionCount": 3,
+        "optionsMeta": [
+          {
+            "optionId": "inspect",
+            "label": "erst genauer prüfenvorsichtig",
+            "badge": "vorsichtig",
+            "isRisky": false,
+            "isCautiousOrGood": true
+          },
+          {
+            "optionId": "stabilize",
+            "label": "bedingungen vorsichtig stabilisierenempfohlen",
+            "badge": "empfohlen",
+            "isRisky": false,
+            "isCautiousOrGood": true
+          },
+          {
+            "optionId": "overreact",
+            "label": "sofort stark eingreifenriskant",
+            "badge": "riskant",
+            "isRisky": true,
+            "isCautiousOrGood": false
+          }
+        ],
+        "feedbackVisible": true,
+        "plannedEffectsVisible": false,
+        "noApplyVisible": true,
+        "noResolveVisible": true,
+        "canResolveFalse": true,
+        "canApplyEffectsFalse": true,
+        "persistedResolveChoiceNull": true,
+        "actionsEmpty": true,
+        "selectedCandidateNull": true,
+        "detailImageLoaded": true,
+        "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+        "effectsText": "",
+        "persistedSelectedCandidateNull": true,
+        "runtimeWriteFalse": true,
+        "productionFalse": true
+      },
+      "brokenImages": 0,
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": 768,
+      "candidateItems": 15,
+      "fixtureCount": 3,
+      "detailRuns": [
+        {
+          "cardIndex": 0,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "inspect",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Wahl: Erst Feuchteverlauf prüfen, bevor du nachgießt.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        },
+        {
+          "cardIndex": 5,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "inspect",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Wahl: Hitze und Wind zuerst sauber einschätzen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "inspect",
+                "label": "erst genauer prüfenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "stabilize",
+                "label": "bedingungen vorsichtig stabilisierenempfohlen",
+                "badge": "empfohlen",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "sofort stark eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Harte Gegenmaßnahmen können zusätzliche Instabilität auslösen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        },
+        {
+          "cardIndex": 10,
+          "initial": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": false,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+            "effectsText": "",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "cautiousClicked": "observe",
+          "afterCautious": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Gute Entscheidung: Beobachtung hält die Lage stabil und vermeidet Übersteuerung.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 0 · risk: -1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          },
+          "riskyClicked": "overreact",
+          "afterRisky": {
+            "resolveSectionVisible": true,
+            "questionVisible": true,
+            "optionCount": 3,
+            "optionsMeta": [
+              {
+                "optionId": "observe",
+                "label": "weiter beobachtenvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "wait",
+                "label": "noch nichts ändernvorsichtig",
+                "badge": "vorsichtig",
+                "isRisky": false,
+                "isCautiousOrGood": true
+              },
+              {
+                "optionId": "overreact",
+                "label": "unnötig eingreifenriskant",
+                "badge": "riskant",
+                "isRisky": true,
+                "isCautiousOrGood": false
+              }
+            ],
+            "feedbackVisible": true,
+            "plannedEffectsVisible": true,
+            "noApplyVisible": true,
+            "noResolveVisible": true,
+            "canResolveFalse": true,
+            "canApplyEffectsFalse": true,
+            "persistedResolveChoiceNull": true,
+            "actionsEmpty": true,
+            "selectedCandidateNull": true,
+            "detailImageLoaded": true,
+            "feedbackText": "Riskant: Zu viel auf einmal kann Wurzelstress verschärfen.",
+            "effectsText": "Geplante Effekte (nur Vorschau): stress: 2 · risk: 1 · notes: preview_only_no_write",
+            "persistedSelectedCandidateNull": true,
+            "runtimeWriteFalse": true,
+            "productionFalse": true
+          }
+        }
+      ],
+      "reopenState": {
+        "resolveSectionVisible": true,
+        "questionVisible": true,
+        "optionCount": 3,
+        "optionsMeta": [
+          {
+            "optionId": "inspect",
+            "label": "erst genauer prüfenvorsichtig",
+            "badge": "vorsichtig",
+            "isRisky": false,
+            "isCautiousOrGood": true
+          },
+          {
+            "optionId": "stabilize",
+            "label": "bedingungen vorsichtig stabilisierenempfohlen",
+            "badge": "empfohlen",
+            "isRisky": false,
+            "isCautiousOrGood": true
+          },
+          {
+            "optionId": "overreact",
+            "label": "sofort stark eingreifenriskant",
+            "badge": "riskant",
+            "isRisky": true,
+            "isCautiousOrGood": false
+          }
+        ],
+        "feedbackVisible": true,
+        "plannedEffectsVisible": false,
+        "noApplyVisible": true,
+        "noResolveVisible": true,
+        "canResolveFalse": true,
+        "canApplyEffectsFalse": true,
+        "persistedResolveChoiceNull": true,
+        "actionsEmpty": true,
+        "selectedCandidateNull": true,
+        "detailImageLoaded": true,
+        "feedbackText": "Wähle eine Option, um Vorschau-Feedback zu sehen.",
+        "effectsText": "",
+        "persistedSelectedCandidateNull": true,
+        "runtimeWriteFalse": true,
+        "productionFalse": true
+      },
+      "brokenImages": 0,
+      "horizontalOverflow": false
+    }
+  ],
+  "summary": {
+    "candidateItems": 15,
+    "fixturesVisible": true,
+    "detailsOpened": 3,
+    "cautiousAndRiskyCheckedPerDetail": true,
+    "feedbackSwitches": true,
+    "plannedEffectsSwitches": true,
+    "feedbackVisible": true,
+    "plannedEffectsVisible": true,
+    "noPersistenceLeak": true,
+    "backAndCloseWorked": true,
+    "noApplyOrResolve": true,
+    "actionsEmpty": true,
+    "canResolveFalse": true,
+    "canApplyEffectsFalse": true,
+    "selectedCandidateNull": true,
+    "persistedSelectedCandidateNull": true,
+    "persistedResolveChoiceNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": []
+  }
+}

@@ -1,0 +1,11 @@
+﻿Use case: illustration-story
+Asset type: event hero image for mobile game UI
+Primary request: shared_early_pest_signs_mild event hero without text bubble
+Scene/backdrop: clean close-up inspection scene with underside leaf visibility
+Subject: cannabis leaf underside with mild early pest traces, Buddy with magnifier as secondary guide
+Style/medium: premium stylized game illustration, close-up clarity priority
+Composition/framing: underside evidence primary, Buddy secondary, mobile-readable small-detail contrast
+Lighting/mood: calm diagnostic mood, early-stage warning not panic
+Color palette: natural greens with subtle contrast accents for trace visibility
+Constraints: same Buddy identity, no speech bubble text in image, mild stage only, one dominant problem
+Avoid: monster insects, heavy infestation drama, hidden underside cue, logos, watermark, text clutter, clipped key details

@@ -1,6 +1,19 @@
 'use strict';
 
 (function attachCareMapping(globalScope) {
+  function clampPercent(value) {
+    const numeric = Number.isFinite(Number(value)) ? Number(value) : 0;
+    return Math.max(0, Math.min(100, numeric));
+  }
+
+  function deriveGlobalRiskLevel(riskValue) {
+    const safeRisk = clampPercent(riskValue);
+    if (safeRisk >= 75) return 'high';
+    if (safeRisk >= 50) return 'elevated';
+    if (safeRisk >= 25) return 'medium';
+    return 'low';
+  }
+
   function mapPhaseLabel(stageIndex, plantPhase) {
     const safePhase = String(plantPhase || '').trim().toLowerCase();
     const safeStageIndex = Number.isFinite(Number(stageIndex)) ? Number(stageIndex) : 0;
@@ -150,6 +163,13 @@
       const lastFeedback = normalizedCare && normalizedCare.feedback && typeof normalizedCare.feedback === 'object'
         ? normalizedCare.feedback
         : {};
+      const globalStatus = Object.freeze({
+        water: clampPercent(status.water),
+        nutrition: clampPercent(status.nutrition),
+        stress: clampPercent(status.stress),
+        risk: clampPercent(status.risk),
+        riskLevel: deriveGlobalRiskLevel(status.risk)
+      });
 
       return {
         open: ui.openSheet === 'care',
@@ -168,6 +188,7 @@
         care: {
           model: normalizedCare,
           summary: careSummary,
+          globalStatus,
           readiness: careReadiness,
           moistureStatus: careSummary.moistureBand || 'stable',
           rootZoneHint: careSummary.rootZoneHint || 'care.hint.root_zone_balanced',

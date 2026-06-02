@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 3,
+  "id": "lc_climate_vpd_basics",
+  "title": {
+    "key": "events.v2.learning.lc_climate_vpd_basics.title"
+  },
+  "subtitle": {
+    "key": "events.v2.learning.lc_climate_vpd_basics.subtitle"
+  },
+  "presentation": {
+    "estimatedReadSeconds": 50,
+    "preferredHeroAsset": "assets/events/event-stress-recovery.png",
+    "layout": "hero_then_bullets"
+  },
+  "content": {
+    "bullets": [
+      {
+        "key": "events.v2.learning.lc_climate_vpd_basics.bullets.0"
+      },
+      {
+        "key": "events.v2.learning.lc_climate_vpd_basics.bullets.1"
+      },
+      {
+        "key": "events.v2.learning.lc_climate_vpd_basics.bullets.2"
+      }
+    ],
+    "moreReadingRef": "library.v2.climate.vpd_intro",
+    "realWorldNoteKey": "events.v2.learning.lc_climate_vpd_basics.real_world_note"
+  },
+  "knowledgeProfile": {
+    "primaryDimension": "climate_vpd_basics",
+    "gainOnFirstView": 0.05,
+    "gainOnLaterView": 0.01
+  },
+  "appearsIn": {
+    "linkedEventIds": [
+      "indoor_heat_stress_air",
+      "indoor_vpd_mismatch_veg",
+      "outdoor_cold_night_stress",
+      "outdoor_heatwave_dry_wind"
+    ],
+    "minStage": 2,
+    "modes": [
+      "beginner",
+      "guided"
+    ]
+  },
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.learning.lc_climate_vpd_basics.title",
+      "events.v2.learning.lc_climate_vpd_basics.subtitle",
+      "events.v2.learning.lc_climate_vpd_basics.bullets.0",
+      "events.v2.learning.lc_climate_vpd_basics.bullets.1",
+      "events.v2.learning.lc_climate_vpd_basics.bullets.2",
+      "events.v2.learning.lc_climate_vpd_basics.real_world_note"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-16",
+    "owner": "design"
+  },
+  "severity": {
+    "level": "info"
+  }
+}

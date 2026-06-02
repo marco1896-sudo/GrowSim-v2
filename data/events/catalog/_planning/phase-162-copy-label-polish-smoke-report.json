@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "baseSmokeSource": "C:\\Users\\Marco\\Desktop\\Entwicklung\\GrowSim-v2-main\\data\\events\\catalog\\_planning\\phase-160-dev-test-no-write-mode-smoke-report.json",
+  "summary": {
+    "modeReachable": true,
+    "candidateListVisible": true,
+    "detailOpenFlow": true,
+    "friendlyLabelsVisible": true,
+    "techLabelsReduced": true,
+    "actionsEmpty": true,
+    "canResolveFalse": true,
+    "selectedCandidateNull": true,
+    "persistedSelectedCandidateNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": 0
+  }
+}

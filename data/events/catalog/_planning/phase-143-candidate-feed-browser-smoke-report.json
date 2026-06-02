@@ -1,0 +1,73 @@
+{
+  "ok": false,
+  "browserSmokeExecuted": true,
+  "mode": "candidate_feed",
+  "pageUrl": "http://127.0.0.1:53660/dev/event-v2-preview-gallery.html",
+  "testedViewports": [
+    360,
+    390,
+    430,
+    768
+  ],
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "candidateOnlyCount": 0,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "fixtureLineCount": 0,
+      "watchLineCount": 5
+    },
+    {
+      "viewport": 390,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "candidateOnlyCount": 0,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "fixtureLineCount": 0,
+      "watchLineCount": 5
+    },
+    {
+      "viewport": 430,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "candidateOnlyCount": 0,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "fixtureLineCount": 0,
+      "watchLineCount": 5
+    },
+    {
+      "viewport": 768,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "candidateOnlyCount": 0,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "fixtureLineCount": 0,
+      "watchLineCount": 5
+    }
+  ],
+  "summary": {
+    "candidateItems": 15,
+    "imagesLoaded": 15,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": [],
+    "fixturesVisible": 0,
+    "candidateOnlyVisible": 0,
+    "noWriteVisible": 15,
+    "watchVisible": 5
+  }
+}

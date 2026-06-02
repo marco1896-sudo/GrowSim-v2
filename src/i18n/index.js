@@ -156,6 +156,10 @@
       return interpolate(fallbackValue, vars);
     }
 
+    if (!localeCache[DEFAULT_LANGUAGE]) {
+      return null;
+    }
+
     warnMissingTranslation(activeLang, safeKey);
     warnMissingTranslation(DEFAULT_LANGUAGE, safeKey);
     return null;

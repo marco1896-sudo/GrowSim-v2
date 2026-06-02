@@ -210,7 +210,7 @@ function createRemoteState({ simTimeMs, savedAtRealMs, displayName = 'Cloud Save
       care: {
         selectedCategory: null,
         selectedActionId: null,
-        feedback: { kind: 'info', text: 'WÃ¤hle eine Aktion.' }
+        feedback: { kind: 'info', text: 'Wähle eine Aktion.' }
       },
       analysis: {
         activeTab: 'overview'

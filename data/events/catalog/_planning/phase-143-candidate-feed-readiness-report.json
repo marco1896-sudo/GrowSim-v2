@@ -1,0 +1,130 @@
+{
+  "status": "candidate_feed_ready_with_scoring_watch",
+  "fixturesChecked": 3,
+  "candidateFeedsGenerated": 3,
+  "top5ByFixture": [
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "top5": [
+        {
+          "rank": 1,
+          "eventId": "indoor_dry_rootball",
+          "score": 155,
+          "reason": "snapshot_shadow_score:environment_indoor_match|high_temperature_heat_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias"
+        },
+        {
+          "rank": 2,
+          "eventId": "indoor_vpd_mismatch_veg",
+          "score": 131.56,
+          "reason": "snapshot_shadow_score:environment_indoor_match|high_vpd_climate_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias"
+        },
+        {
+          "rank": 3,
+          "eventId": "outdoor_heatwave_dry_wind",
+          "score": 127.49,
+          "reason": "snapshot_shadow_score:high_temperature_heat_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias"
+        },
+        {
+          "rank": 4,
+          "eventId": "indoor_rootzone_airless_medium",
+          "score": 127,
+          "reason": "snapshot_shadow_score:environment_indoor_match|plant_stress_nonpositive_bias"
+        },
+        {
+          "rank": 5,
+          "eventId": "shared_rootbound_warning",
+          "score": 127,
+          "reason": "snapshot_shadow_score:environment_indoor_match|plant_stress_nonpositive_bias"
+        }
+      ]
+    },
+    {
+      "fixtureId": "fixture_outdoor_heat_dry_wind",
+      "top5": [
+        {
+          "rank": 1,
+          "eventId": "outdoor_heatwave_dry_wind",
+          "score": 149.49,
+          "reason": "snapshot_shadow_score:environment_outdoor_match|high_temperature_heat_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias|low_water_bias"
+        },
+        {
+          "rank": 2,
+          "eventId": "indoor_dry_rootball",
+          "score": 149,
+          "reason": "snapshot_shadow_score:high_temperature_heat_signal|low_humidity_dry_signal|plant_stress_nonpositive_bias|low_water_bias"
+        },
+        {
+          "rank": 3,
+          "eventId": "outdoor_pot_dries_by_afternoon",
+          "score": 135,
+          "reason": "snapshot_shadow_score:environment_outdoor_match|plant_stress_nonpositive_bias|low_water_bias"
+        },
+        {
+          "rank": 4,
+          "eventId": "outdoor_heavy_rain_waterlogging_risk",
+          "score": 124.5,
+          "reason": "snapshot_shadow_score:environment_outdoor_match|plant_stress_nonpositive_bias|low_water_bias"
+        },
+        {
+          "rank": 5,
+          "eventId": "outdoor_wind_exposure_stem_stress",
+          "score": 124,
+          "reason": "snapshot_shadow_score:environment_outdoor_match|plant_stress_nonpositive_bias"
+        }
+      ]
+    },
+    {
+      "fixtureId": "fixture_stable_healthy_baseline",
+      "top5": [
+        {
+          "rank": 1,
+          "eventId": "indoor_dry_rootball",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost"
+        },
+        {
+          "rank": 2,
+          "eventId": "indoor_rootzone_airless_medium",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost"
+        },
+        {
+          "rank": 3,
+          "eventId": "outdoor_pot_dries_by_afternoon",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost"
+        },
+        {
+          "rank": 4,
+          "eventId": "shared_panic_watering_misread",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost"
+        },
+        {
+          "rank": 5,
+          "eventId": "shared_rootbound_warning",
+          "score": 105,
+          "reason": "snapshot_shadow_score:no_specific_boost"
+        }
+      ]
+    }
+  ],
+  "candidateItemsTotal": 15,
+  "validImages": 15,
+  "brokenPaths": 0,
+  "watchpoints": [
+    {
+      "fixtureId": "fixture_indoor_veg_vpd_mismatch",
+      "watch": "scoring_watch_vpd_vs_dry_rootball"
+    }
+  ],
+  "contract": {
+    "selectedCandidateNull": true,
+    "actionsEmpty": true,
+    "canActivateGameplayFalse": true,
+    "canMutateStateFalse": true,
+    "canMutateSaveFalse": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true
+  }
+}

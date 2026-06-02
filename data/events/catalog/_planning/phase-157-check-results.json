@@ -1,0 +1,146 @@
+﻿[
+    {
+        "command":  "node --check src/events/v2/preview/EventV2CandidateDetailFlowController.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check src/events/v2/preview/EventV2SingleCandidateDetailPreviewModel.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check src/events/v2/preview/EventV2EventCenterCandidatePreviewModel.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check src/events/v2/preview/EventV2RuntimeShadowDevController.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check src/events/v2/ui-lab/EventV2PreviewGallery.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check dev/run-event-v2-multi-candidate-flow-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-multi-candidate-flow-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-candidate-list-to-detail-flow-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check src/events/v2/preview/EventV2SoftPreviewModeModel.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check dev/run-event-v2-soft-preview-mode-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-soft-preview-mode-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-single-candidate-detail-preview-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-event-center-context-browser-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-runtime-shadow-dev-toggle-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-runtime-shadow-dev-toggle-report.js --enable-runtime-shadow-dev",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-runtime-shadow-dev-toggle-browser-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-app-near-entry-browser-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-dev-test-candidate-feed-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-dev-test-candidate-feed-report.js --enable-dev-preview",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-candidate-feed-browser-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-soft-activation-candidate-gate.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-runtime-snapshot-shadow-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-event-center-preview-bridge-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-shadow-feed-readiness-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-shadow-feed-browser-smoke.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-activation-readiness-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check dev/run-event-v2-final-asset-export.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node --check dev/run-event-v2-assetref-validation.draft.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-assetref-validation.draft.js --active --events data/events/catalog/events --stdout-only",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-shadow-runtime-boundary-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-noop-hook-diagnostics-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-hook-safety-static-check.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-shadow-bridge-combined-report.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-guarded-entry-contract-tests.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/run-event-v2-browser-bridge-candidate-tests.js",
+        "exitCode":  0
+    },
+    {
+        "command":  "node dev/verify_pending_chain_lifecycle.js",
+        "exitCode":  0
+    }
+]

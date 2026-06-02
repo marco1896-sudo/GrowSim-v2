@@ -1,0 +1,315 @@
+{
+  "ok": true,
+  "phase": "127",
+  "wouldPatchProductiveFiles": false,
+  "items": [
+    {
+      "eventId": "indoor_dry_rootball",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_dry_rootball.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_dry_rootball/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_dry_rootball/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_dry_rootball/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_fan_failure_airflow_drop",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_fan_failure_airflow_drop.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_fan_failure_airflow_drop/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_fan_failure_airflow_drop/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_heat_stress_air",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_heat_stress_air.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_heat_stress_air/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_heat_stress_air/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_light_burn_canopy_top",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_light_burn_canopy_top.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_light_burn_canopy_top/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_light_nutrient_tox_early",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_light_nutrient_tox_early.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_light_nutrient_tox_early/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_light_nutrient_tox_early/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_light_nutrient_tox_early/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_overtraining_stall_mild",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_overtraining_stall_mild.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_overtraining_stall_mild/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_overtraining_stall_mild/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_overtraining_stall_mild/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "usable_with_watch",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_overwatering_early",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_overwatering_early.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_overwatering_early/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_overwatering_early/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "usable_with_watch",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_rootzone_airless_medium",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_rootzone_airless_medium.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_rootzone_airless_medium/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_rootzone_airless_medium/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_soil_ph_out_of_range",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_soil_ph_out_of_range.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_soil_ph_out_of_range/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_soil_ph_out_of_range/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "indoor_vpd_mismatch_veg",
+      "targetEventFile": "data/events/catalog/events/indoor/indoor_vpd_mismatch_veg.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_vpd_mismatch_veg/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_03.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "outdoor_cold_night_stress",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_cold_night_stress.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_cold_night_stress/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_cold_night_stress/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "usable_with_watch",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "outdoor_early_pest_pressure_leaf_underside",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_early_pest_pressure_leaf_underside.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_early_pest_pressure_leaf_underside/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "usable_with_watch",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "outdoor_heatwave_dry_wind",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_heatwave_dry_wind.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_heatwave_dry_wind/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_heatwave_dry_wind/candidate_full_scene_02.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "outdoor_heavy_rain_waterlogging_risk",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_heavy_rain_waterlogging_risk.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_heavy_rain_waterlogging_risk/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "usable_with_watch",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "outdoor_pot_dries_by_afternoon",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_pot_dries_by_afternoon.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_pot_dries_by_afternoon/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "outdoor_wind_exposure_stem_stress",
+      "targetEventFile": "data/events/catalog/events/outdoor/outdoor_wind_exposure_stem_stress.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_wind_exposure_stem_stress/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "shared_early_pest_signs_mild",
+      "targetEventFile": "data/events/catalog/events/shared/shared_early_pest_signs_mild.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+        "fallback": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_early_pest_signs_mild/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "shared_light_distance_error",
+      "targetEventFile": "data/events/catalog/events/shared/shared_light_distance_error.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+        "fallback": "assets/events/v2/final/shared_light_distance_error/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_light_distance_error/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "temporary_usable_needs_revision",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "shared_observation_recovery_after_stress",
+      "targetEventFile": "data/events/catalog/events/shared/shared_observation_recovery_after_stress.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+        "fallback": "assets/events/v2/final/shared_observation_recovery_after_stress/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_observation_recovery_after_stress/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "usable_with_watch",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "shared_panic_watering_misread",
+      "targetEventFile": "data/events/catalog/events/shared/shared_panic_watering_misread.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+        "fallback": "assets/events/v2/final/shared_panic_watering_misread/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_panic_watering_misread/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "shared_rootbound_warning",
+      "targetEventFile": "data/events/catalog/events/shared/shared_rootbound_warning.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+        "fallback": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/review/shared_rootbound_warning/candidate_full_scene_02.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    },
+    {
+      "eventId": "shared_substrate_drainage_compaction",
+      "targetEventFile": "data/events/catalog/events/shared/shared_substrate_drainage_compaction.event.json",
+      "wouldPatch": false,
+      "assetRefs": {
+        "hero": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+        "fallback": "assets/events/v2/final/shared_substrate_drainage_compaction/fallback.webp",
+        "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_substrate_drainage_compaction/candidate_full_scene_01.png",
+        "status": "trial_asset_set_v1",
+        "revisionStatus": "ready",
+        "sourcePhase": "phase-112",
+        "notes": []
+      }
+    }
+  ]
+}

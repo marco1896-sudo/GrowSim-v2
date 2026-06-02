@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 3,
+  "id": "outdoor_heavy_rain_waterlogging_risk",
+  "type": "event",
+  "category": "water",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_outdoor"
+  ],
+  "title": {
+    "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.description"
+  },
+  "cause": {
+    "kind": "repeated_rain_saturation",
+    "explanation": {
+      "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.coach.actions.0"
+      },
+      {
+        "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.leaf_droop_after_rain"
+      },
+      "weight": 1,
+      "id": "leaf_droop_after_rain",
+      "spriteOverlay": "outdoor_heavy_rain_waterlogging_risk_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "drainage_check": {
+        "label": {
+          "key": "diagnostics.drainage_check.saturation"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "repeated_rain_saturation"
+        ]
+      }
+    },
+    "available": [
+      "drainage_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "improve_drainage_surface",
+      "label": {
+        "key": "options.improve_drainage_surface"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "pause_watering_monitor",
+      "label": {
+        "key": "options.pause_watering_monitor"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "water_extra_after_rain",
+      "label": {
+        "key": "options.water_extra_after_rain"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "env.rainIntensity",
+        "op": ">=",
+        "value": 0.7
+      },
+      {
+        "field": "status.water",
+        "op": ">=",
+        "value": 78
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 3,
+      "max": 10
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "vegetative",
+      "preflower",
+      "flowering"
+    ]
+  },
+  "pressure": {
+    "weight": 0.98,
+    "polarity": "negative",
+    "primaryPressure": "waterlogging_risk"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "outdoor_heavy_rain_waterlogging_risk_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "outdoor_heavy_rain_waterlogging_risk_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "outdoor_heavy_rain_waterlogging_risk_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "waterlogging_risk": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "waterlogging_risk": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.outdoor_heavy_rain_waterlogging_risk.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "improve_drainage_surface",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.outdoor_heavy_rain_waterlogging_risk.cover",
+      "src": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+      "fallback": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "outdoor_heavy_rain_waterlogging_risk_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "outdoor_heavy_rain_waterlogging_risk_overlay_critical": "assets/events/event-stress-recovery.png",
+      "outdoor_heavy_rain_waterlogging_risk_overlay_warn": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "root_wet_soil_compaction",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.title",
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.symptom",
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.description",
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.cause",
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.coach.summary",
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.coach.why",
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.coach.actions.0",
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.coach.actions.1",
+      "events.v2.outdoor_heavy_rain_waterlogging_risk.aftermath.lesson",
+      "options.improve_drainage_surface",
+      "options.pause_watering_monitor",
+      "options.water_extra_after_rain",
+      "alt.events.v2.outdoor_heavy_rain_waterlogging_risk.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_water"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "water",
+      "root_wet_soil_compaction"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_watering_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-17 first real mini-catalog data-only event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-13",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+    "fallback": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_heavy_rain_waterlogging_risk/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "usable_with_watch",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

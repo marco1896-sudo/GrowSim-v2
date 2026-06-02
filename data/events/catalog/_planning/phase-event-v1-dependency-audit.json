@@ -1,0 +1,509 @@
+{
+  "ok": true,
+  "reportType": "event-v1-dependency-audit",
+  "generatedAt": "2026-05-31T13:49:59.394Z",
+  "scannedFileCount": 528,
+  "filesWithFindings": 124,
+  "totalPatternHits": 2119,
+  "categoryCounts": {
+    "A": 11,
+    "B": 62,
+    "C": 23,
+    "D": 56,
+    "E": 90,
+    "F": 0
+  },
+  "topFindings": [
+    {
+      "file": "app.js",
+      "hitCount": 360,
+      "sampleLines": [
+        6299,
+        6307,
+        6343,
+        6349,
+        6573,
+        6573,
+        6573,
+        6835,
+        6842,
+        7024,
+        7026,
+        7027
+      ],
+      "categories": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "events.js",
+      "hitCount": 318,
+      "sampleLines": [
+        191,
+        191,
+        194,
+        566,
+        567,
+        742,
+        870,
+        1139,
+        1236,
+        1255,
+        1255,
+        1256
+      ],
+      "categories": [
+        "B",
+        "C"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "storage.js",
+      "hitCount": 169,
+      "sampleLines": [
+        1358,
+        1359,
+        1495,
+        1495,
+        1495,
+        1496,
+        1497,
+        1499,
+        1691,
+        1691,
+        1692,
+        1715
+      ],
+      "categories": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "ui.js",
+      "hitCount": 96,
+      "sampleLines": [
+        1688,
+        2140,
+        2145,
+        2150,
+        2150,
+        2153,
+        2153,
+        2164,
+        2166,
+        2167,
+        2168,
+        2169
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "src/events/eventEngine.js",
+      "hitCount": 77,
+      "sampleLines": [
+        926,
+        927,
+        928,
+        1023,
+        1023,
+        2263,
+        2264,
+        2265,
+        2266,
+        2267,
+        2268,
+        2269
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "dev/run-event-v1-write-isolation-report.js",
+      "hitCount": 46,
+      "sampleLines": [
+        33,
+        48,
+        63,
+        78,
+        138,
+        153,
+        153,
+        168,
+        183,
+        63,
+        32,
+        33
+      ],
+      "categories": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "test/event-flow-integration.test.js",
+      "hitCount": 45,
+      "sampleLines": [
+        114,
+        115,
+        117,
+        117,
+        117,
+        122,
+        126,
+        133,
+        138,
+        139,
+        142,
+        143
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "test/event-flow-persistence.test.js",
+      "hitCount": 43,
+      "sampleLines": [
+        208,
+        209,
+        211,
+        211,
+        211,
+        216,
+        221,
+        228,
+        258,
+        259,
+        260,
+        262
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "test/event-shop-transaction-runtime.test.js",
+      "hitCount": 42,
+      "sampleLines": [
+        131,
+        161,
+        189,
+        218,
+        219,
+        92,
+        100,
+        101,
+        102,
+        131,
+        131,
+        138
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "dev/run-event-system-v2-browser-runtime-bridge-pilot-smoke.js",
+      "hitCount": 34,
+      "sampleLines": [
+        56,
+        66,
+        186,
+        186,
+        16,
+        17,
+        18,
+        19,
+        99,
+        178,
+        178,
+        186
+      ],
+      "categories": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "dev/run-event-center-v2-resolve-pilot-smoke.js",
+      "hitCount": 33,
+      "sampleLines": [
+        51,
+        59,
+        86,
+        139,
+        59,
+        127,
+        51,
+        86,
+        139,
+        24,
+        25,
+        26
+      ],
+      "categories": [
+        "A",
+        "B",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "test/event-resume-reconciliation-runtime.test.js",
+      "hitCount": 33,
+      "sampleLines": [
+        135,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        228,
+        249,
+        250,
+        251,
+        252
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "src/events/EventSystemRuntimeBridge.js",
+      "hitCount": 29,
+      "sampleLines": [
+        863,
+        863,
+        864,
+        954,
+        954,
+        955,
+        863,
+        864,
+        954,
+        955,
+        276,
+        458
+      ],
+      "categories": [
+        "A",
+        "D"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "sim.js",
+      "hitCount": 27,
+      "sampleLines": [
+        1214,
+        1214,
+        1214,
+        1227,
+        1227,
+        1227,
+        1315,
+        1316,
+        1323,
+        1324,
+        1325,
+        1325
+      ],
+      "categories": [
+        "A",
+        "B",
+        "C"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "dev/run-event-center-v2-mobile-qa-smoke.js",
+      "hitCount": 24,
+      "sampleLines": [
+        174,
+        174,
+        213,
+        39,
+        40,
+        41,
+        40,
+        41,
+        43,
+        241,
+        241,
+        246
+      ],
+      "categories": [
+        "B",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "test/event-phase7-shadow-persistence.test.js",
+      "hitCount": 24,
+      "sampleLines": [
+        350,
+        360,
+        383,
+        350,
+        355,
+        360,
+        383,
+        67,
+        326,
+        327,
+        350,
+        355
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "src/events/eventPersistenceAdapter.js",
+      "hitCount": 23,
+      "sampleLines": [
+        38,
+        38,
+        39,
+        40,
+        41,
+        42,
+        42,
+        43,
+        44,
+        45,
+        46,
+        46
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "test/event-flow-multi-chain-persistence.test.js",
+      "hitCount": 22,
+      "sampleLines": [
+        207,
+        213,
+        220,
+        246,
+        257,
+        258,
+        263,
+        264,
+        266,
+        270,
+        274,
+        275
+      ],
+      "categories": [
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    },
+    {
+      "file": "test/event-phase10-soft-cutover.test.js",
+      "hitCount": 22,
+      "sampleLines": [
+        109,
+        111,
+        63,
+        138,
+        139,
+        193,
+        194,
+        76,
+        78,
+        100,
+        101,
+        106
+      ],
+      "categories": [
+        "B",
+        "E"
+      ],
+      "risk": "medium"
+    },
+    {
+      "file": "dev/run-event-center-v2-apply-delta-pilot-smoke.js",
+      "hitCount": 21,
+      "sampleLines": [
+        92,
+        102,
+        92,
+        102,
+        31,
+        32,
+        33,
+        34,
+        33,
+        35,
+        33,
+        35
+      ],
+      "categories": [
+        "B",
+        "D",
+        "E"
+      ],
+      "risk": "high"
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "ok": true,
+  "defaultMode": {
+    "disabled": true,
+    "reason": "dev_preview_disabled"
+  },
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 15,
+      "initialCards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "firstCandidateId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+      "secondCandidateId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+      "firstOpen": {
+        "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+        "detailOpen": true,
+        "detailImageLoaded": true,
+        "safetyLabelsVisible": true,
+        "noResolveVisible": true,
+        "runtimeWriteFalseVisible": true,
+        "productionFalseVisible": true
+      },
+      "secondCandidateOpened": true,
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "actionsFound": false
+    },
+    {
+      "viewport": 390,
+      "cards": 15,
+      "initialCards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "firstCandidateId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+      "secondCandidateId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+      "firstOpen": {
+        "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+        "detailOpen": true,
+        "detailImageLoaded": true,
+        "safetyLabelsVisible": true,
+        "noResolveVisible": true,
+        "runtimeWriteFalseVisible": true,
+        "productionFalseVisible": true
+      },
+      "secondCandidateOpened": true,
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "actionsFound": false
+    },
+    {
+      "viewport": 430,
+      "cards": 15,
+      "initialCards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "firstCandidateId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+      "secondCandidateId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+      "firstOpen": {
+        "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+        "detailOpen": true,
+        "detailImageLoaded": true,
+        "safetyLabelsVisible": true,
+        "noResolveVisible": true,
+        "runtimeWriteFalseVisible": true,
+        "productionFalseVisible": true
+      },
+      "secondCandidateOpened": true,
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "actionsFound": false
+    },
+    {
+      "viewport": 768,
+      "cards": 15,
+      "initialCards": 15,
+      "fixturesVisible": 3,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "firstCandidateId": "fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball",
+      "secondCandidateId": "fixture_indoor_veg_vpd_mismatch:2:indoor_vpd_mismatch_veg",
+      "firstOpen": {
+        "flowState": "view=detail;active=fixture_indoor_veg_vpd_mismatch:1:indoor_dry_rootball;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+        "detailOpen": true,
+        "detailImageLoaded": true,
+        "safetyLabelsVisible": true,
+        "noResolveVisible": true,
+        "runtimeWriteFalseVisible": true,
+        "productionFalseVisible": true
+      },
+      "secondCandidateOpened": true,
+      "finalFlowState": "view=list;active=none;persisted=null;canResolve=false;runtimeWrite=false;production=false",
+      "actionsFound": false
+    }
+  ],
+  "summary": {
+    "viewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "candidateListVisible": true,
+    "fixturesVisible": true,
+    "detailOpens": true,
+    "detailImageValid": true,
+    "backWorks": true,
+    "closeWorks": true,
+    "anotherCandidateOpens": true,
+    "safetyLabelsVisible": true,
+    "noResolveVisible": true,
+    "actionsEmpty": true,
+    "canResolveFalse": true,
+    "selectedCandidateNull": true,
+    "persistedSelectedCandidateNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": []
+  }
+}

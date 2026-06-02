@@ -58,6 +58,42 @@ async function waitForBoot(page, timeoutMs = 15000) {
   await page.waitForFunction(() => window.__gsBootOk === true, null, { timeout: timeoutMs });
 }
 
+async function advanceOnboardingToStart(page, options = {}) {
+  const maxSteps = Number.isFinite(Number(options.maxSteps)) ? Number(options.maxSteps) : 8;
+
+  for (let index = 0; index < maxSteps; index += 1) {
+    const startVisible = await page.locator('#startRunBtn').evaluate((node) => (
+      !node.classList.contains('hidden')
+      && node.getAttribute('aria-hidden') !== 'true'
+      && !node.disabled
+    ));
+    if (startVisible) {
+      return;
+    }
+
+    const nextVisible = await page.locator('#setupNextBtn').evaluate((node) => (
+      !node.classList.contains('hidden')
+      && node.getAttribute('aria-hidden') !== 'true'
+      && !node.disabled
+    ));
+    if (!nextVisible) {
+      break;
+    }
+
+    await page.click('#setupNextBtn');
+  }
+
+  await page.waitForFunction(() => {
+    const startButton = document.getElementById('startRunBtn');
+    return Boolean(
+      startButton
+      && !startButton.classList.contains('hidden')
+      && startButton.getAttribute('aria-hidden') !== 'true'
+      && !startButton.disabled
+    );
+  }, null, { timeout: 5000 });
+}
+
 async function clearClientStorage(page, options = {}) {
   const preserveKeys = Array.isArray(options.preserveLocalStorageKeys)
     ? options.preserveLocalStorageKeys.map((key) => String(key))
@@ -104,6 +140,7 @@ async function clearClientStorage(page, options = {}) {
 }
 
 module.exports = {
+  advanceOnboardingToStart,
   clearClientStorage,
   installAuthHarness,
   waitForBoot

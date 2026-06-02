@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "gate": "go",
+  "reportType": "event-v2-release-gate-snapshot",
+  "livePilotEvents": [
+    "indoor_dry_rootball",
+    "shared_panic_watering_misread"
+  ],
+  "liveOutcomeModes": [
+    "apply_delta",
+    "no_delta",
+    "guardrail_only"
+  ],
+  "visibleCoverage": {
+    "browser": true,
+    "mobile": true,
+    "reload": true
+  },
+  "safety": {
+    "reloadIdempotent": true,
+    "noDoubleApply": true,
+    "noUnexpectedStatusMutation": true,
+    "v1ParallelWriteBlocked": true,
+    "noLegacyCopyVisible": true
+  },
+  "knownNonCriticalNoise": [
+    "service-worker-register-log",
+    "dev-404-resource-log"
+  ],
+  "blockers": [],
+  "warnings": [],
+  "nextAllowedSteps": [
+    "prepare V2 release checkpoint",
+    "plan cautious V1 dependency audit",
+    "plan next event activation only after approval"
+  ],
+  "notAllowedYet": [
+    "delete V1 files",
+    "activate broad V2 catalog",
+    "add negative status deltas broadly",
+    "remove legacy save fields"
+  ]
+}

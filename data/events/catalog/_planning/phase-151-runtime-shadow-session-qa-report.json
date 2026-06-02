@@ -1,0 +1,41 @@
+﻿{
+  "phase": "151",
+  "status": "runtime_shadow_session_qa_pass_with_watch",
+  "defaultMode": {
+    "disabled": true,
+    "reason": "runtime_shadow_toggle_disabled_by_default",
+    "runtimeWrite": false,
+    "production": false,
+    "saveStorageWrites": 0
+  },
+  "devMode": {
+    "enabled": true,
+    "reason": "runtime_shadow_dev_test_enabled",
+    "fixtures": 3,
+    "candidateItems": 15,
+    "shadowEvaluations": 66,
+    "validImages": 15,
+    "brokenPaths": 0,
+    "actionsEmpty": true,
+    "selectedCandidateNull": true,
+    "runtimeWrite": false,
+    "production": false,
+    "saveStorageWrites": 0
+  },
+  "browserSmoke": {
+    "viewports": [360, 390, 430, 768],
+    "imagesLoaded": 15,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": 0,
+    "safetyLabelsVisible": true
+  },
+  "watchpoints": [
+    {
+      "id": "scoring_watch_vpd_vs_dry_rootball",
+      "blocking": false,
+      "note": "indoor_vpd_mismatch_veg remains top-5; watch kept for backlog calibration."
+    }
+  ],
+  "recommendation": "phase_152_event_center_context_candidate_integration_no_write"
+}

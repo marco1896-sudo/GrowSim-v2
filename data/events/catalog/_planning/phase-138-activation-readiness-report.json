@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "phase": "138",
+  "mode": "dev_only_activation_readiness",
+  "readinessStatus": "ready_for_dev_soft_activation",
+  "checks": {
+    "previewBrowserSmokeOk": true,
+    "shadowFeedReadinessOk": true,
+    "shadowFeedBrowserSmokeOk": true,
+    "shadowVisualQaOk": true,
+    "shadowFeedItems22": true,
+    "shadowImages22": true,
+    "noBrokenPaths": true,
+    "noGameplayActivation": true,
+    "noSaveMutation": true,
+    "bridgeCompatible22": true
+  },
+  "passCount": 10,
+  "totalChecks": 10,
+  "notes": {
+    "gameplayActivationExecuted": false,
+    "runtimeCutoverExecuted": false,
+    "saveMutationExecuted": false,
+    "productionUiSwitchExecuted": false
+  }
+}

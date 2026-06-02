@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "profiles": [
+    "soloDevelopment",
+    "internalReview",
+    "releaseCandidateReview",
+    "productionReview"
+  ]
+}

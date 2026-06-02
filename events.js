@@ -20,6 +20,56 @@ function getI18nApi() {
   return api && typeof api.t === 'function' ? api : null;
 }
 
+function getEventV1WriteTelemetryApi() {
+  const root = (typeof window !== 'undefined')
+    ? window
+    : ((typeof globalThis !== 'undefined') ? globalThis : null);
+  if (!root || !root.GrowSimEventV1WriteTelemetry) {
+    return null;
+  }
+  const api = root.GrowSimEventV1WriteTelemetry;
+  return api && typeof api.recordEventV1WriteHit === 'function' ? api : null;
+}
+
+function isEventV2RuntimeEnabledForTelemetry(eventId) {
+  const root = (typeof window !== 'undefined')
+    ? window
+    : ((typeof globalThis !== 'undefined') ? globalThis : null);
+  const registry = root && root.GrowSimEventV2ActivationRegistry && typeof root.GrowSimEventV2ActivationRegistry === 'object'
+    ? root.GrowSimEventV2ActivationRegistry
+    : null;
+  if (!registry || typeof registry.isEventV2RuntimeEnabled !== 'function') {
+    return false;
+  }
+  try {
+    return registry.isEventV2RuntimeEnabled(String(eventId || '')) === true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function recordEventV1WriteTelemetryHit(type, context = {}) {
+  try {
+    const api = getEventV1WriteTelemetryApi();
+    if (!api) return;
+    const safeContext = context && typeof context === 'object' ? context : {};
+    const hasEventV2 = typeof state !== 'undefined' && state && state.eventV2 && typeof state.eventV2 === 'object';
+    const eventId = safeContext.eventId == null ? null : String(safeContext.eventId);
+    api.recordEventV1WriteHit(type, {
+      ...safeContext,
+      eventId,
+      hasEventV2,
+      v2RuntimeEnabled: safeContext.v2RuntimeEnabled === true
+        ? true
+        : isEventV2RuntimeEnabledForTelemetry(eventId),
+      legacyFallback: safeContext.legacyFallback !== false,
+      mode: safeContext.mode || 'event-runtime'
+    });
+  } catch (_error) {
+    // Telemetry must never impact runtime behavior.
+  }
+}
+
 function resolveI18nText(key, fallbackText, vars = null) {
   const api = getI18nApi();
   if (!api || !key) {
@@ -1344,6 +1394,11 @@ function resolvePendingEventOutcome(nowMs) {
   state.events.pendingResolution = null;
   state.events.pendingOutcome = null;
   state.events.machineState = 'resolved';
+  recordEventV1WriteTelemetryHit('W2', {
+    source: 'events.js:resolve_finalize_history',
+    eventId: historyEntry.eventId,
+    notes: ['legacy_resolve_history_write']
+  });
 
   addLog('choice', `Ereignis ausgewertet: ${eventDef.id}/${pendingResolution.optionId}`, {
     outcomeStatus: resolutionModel.outcomeStatus,
@@ -2243,6 +2298,11 @@ function activateEvent(nowMs) {
     learningNote: eventDef.learningNote || ''
   };
 
+  recordEventV1WriteTelemetryHit('W1', {
+    source: 'events.js:activate_event',
+    eventId: eventDef.id,
+    notes: ['legacy_create_path']
+  });
   addLog('event_shown', `Ereignis ausgewählt: ${eventDef.id}`, {
     title: eventDef.title,
     severity: state.events.activeSeverity,
@@ -2758,6 +2818,11 @@ function enterEventCooldown(nowMs) {
     : EVENT_COOLDOWN_MS;
   const categoryCooldownSimMs = projectEventRealDurationToSimMs(categoryCooldownRealMs, nowRealMs);
   state.events.scheduler.categoryCooldownsSim[categoryKey] = nowSimMs + categoryCooldownSimMs;
+  recordEventV1WriteTelemetryHit('W3', {
+    source: 'events.js:enter_cooldown',
+    eventId: activeEventId,
+    notes: ['legacy_cooldown_write']
+  });
 
   state.events.active = null;
   if (state.ui.openSheet === 'event') {
@@ -2915,6 +2980,11 @@ function startEventResolution(choice) {
   };
   state.events.pendingOutcome = buildPendingResolutionPreview(eventDef, choice, resolveTimeRealMs);
   state.events.resolvedOutcome = null;
+  recordEventV1WriteTelemetryHit('W2', {
+    source: 'events.js:resolve_enter_resolving',
+    eventId: state.events.activeEventId,
+    notes: ['legacy_resolve_start']
+  });
   incrementAuditMap(ensureEventAuditState().totals, 'resolvingStarted');
   if (choice && choice.id === '__dismiss__') {
     incrementAuditMap(ensureEventAuditState().totals, 'ignored');

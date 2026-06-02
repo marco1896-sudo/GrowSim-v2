@@ -1,0 +1,60 @@
+{
+  "ok": true,
+  "reportType": "event-v2-branch-readiness-matrix",
+  "candidateEventId": "shared_panic_watering_misread",
+  "comparedAgainst": "indoor_dry_rootball",
+  "candidateReason": "three-option-shared-event-with-clear-correct-neutral-mistake-paths",
+  "readiness": "ready",
+  "branchCount": 3,
+  "branches": [
+    {
+      "branchId": "recommended",
+      "optionId": "check_weight_before_watering",
+      "semanticRole": "recommended",
+      "hasApplyPreviewPath": true,
+      "hasHistoryPreviewPath": true,
+      "hasPersistPayloadPath": true,
+      "expectedDeltaType": "beneficial",
+      "readyForWriteSimulation": true,
+      "warnings": [],
+      "errors": [],
+      "order": 0
+    },
+    {
+      "branchId": "neutral",
+      "optionId": "inspect_rootzone_then_wait",
+      "semanticRole": "neutral",
+      "hasApplyPreviewPath": true,
+      "hasHistoryPreviewPath": true,
+      "hasPersistPayloadPath": true,
+      "expectedDeltaType": "neutral",
+      "readyForWriteSimulation": true,
+      "warnings": [
+        "semantic_role_adjusted_to_neutral"
+      ],
+      "errors": [],
+      "order": 1
+    },
+    {
+      "branchId": "negative",
+      "optionId": "water_on_panic_signal",
+      "semanticRole": "negative",
+      "hasApplyPreviewPath": true,
+      "hasHistoryPreviewPath": true,
+      "hasPersistPayloadPath": true,
+      "expectedDeltaType": "negative",
+      "readyForWriteSimulation": true,
+      "warnings": [],
+      "errors": [],
+      "order": 2
+    }
+  ],
+  "safety": {
+    "productiveWrite": false,
+    "usedProductiveStorage": false,
+    "mutatedInputState": false,
+    "productiveCutover": false
+  },
+  "warnings": [],
+  "errors": []
+}

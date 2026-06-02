@@ -1,0 +1,116 @@
+﻿[
+  {
+    "eventId": "indoor_vpd_mismatch_veg",
+    "resolvePreview": {
+      "status": "draft_no_write",
+      "questionKey": "event.indoor_vpd_mismatch_veg.question",
+      "questionFallback": "Was möchtest du tun?",
+      "options": [
+        {
+          "optionId": "observe",
+          "labelKey": "event.indoor_vpd_mismatch_veg.option.observe",
+          "labelFallback": "Erst beobachten",
+          "intent": "cautious",
+          "expectedQuality": "good",
+          "previewFeedbackKey": "event.indoor_vpd_mismatch_veg.feedback.observe",
+          "previewFeedbackFallback": "Gute Entscheidung: Erst beobachten verhindert unnötigen Stress.",
+          "plannedEffects": {
+            "stress": 0,
+            "risk": -1,
+            "notes": ["no_write_preview_only"]
+          }
+        },
+        {
+          "optionId": "overreact",
+          "labelKey": "event.indoor_vpd_mismatch_veg.option.overreact",
+          "labelFallback": "Sofort stark eingreifen",
+          "intent": "aggressive",
+          "expectedQuality": "bad",
+          "previewFeedbackKey": "event.indoor_vpd_mismatch_veg.feedback.overreact",
+          "previewFeedbackFallback": "Das wäre wahrscheinlich zu viel und könnte zusätzlichen Stress erzeugen.",
+          "plannedEffects": {
+            "stress": 2,
+            "risk": 1,
+            "notes": ["no_write_preview_only"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "outdoor_heatwave_dry_wind",
+    "resolvePreview": {
+      "status": "draft_no_write",
+      "questionKey": "event.outdoor_heatwave_dry_wind.question",
+      "questionFallback": "Was möchtest du tun?",
+      "options": [
+        {
+          "optionId": "stabilize",
+          "labelKey": "event.outdoor_heatwave_dry_wind.option.stabilize",
+          "labelFallback": "Bedingungen stabilisieren",
+          "intent": "stabilizing",
+          "expectedQuality": "good",
+          "previewFeedbackKey": "event.outdoor_heatwave_dry_wind.feedback.stabilize",
+          "previewFeedbackFallback": "Gut: Eine stabile Umgebung reduziert die akute Belastung.",
+          "plannedEffects": {
+            "stress": -1,
+            "risk": -1,
+            "notes": ["no_write_preview_only"]
+          }
+        },
+        {
+          "optionId": "ignore",
+          "labelKey": "event.outdoor_heatwave_dry_wind.option.ignore",
+          "labelFallback": "Ignorieren",
+          "intent": "passive",
+          "expectedQuality": "bad",
+          "previewFeedbackKey": "event.outdoor_heatwave_dry_wind.feedback.ignore",
+          "previewFeedbackFallback": "Riskant: Ohne Gegenmaßnahme kann der Druck weiter steigen.",
+          "plannedEffects": {
+            "stress": 2,
+            "risk": 2,
+            "notes": ["no_write_preview_only"]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "eventId": "indoor_dry_rootball",
+    "resolvePreview": {
+      "status": "draft_no_write",
+      "questionKey": "event.indoor_dry_rootball.question",
+      "questionFallback": "Was möchtest du tun?",
+      "options": [
+        {
+          "optionId": "adjust_watering",
+          "labelKey": "event.indoor_dry_rootball.option.adjust_watering",
+          "labelFallback": "Gezielt bewässern",
+          "intent": "targeted",
+          "expectedQuality": "good",
+          "previewFeedbackKey": "event.indoor_dry_rootball.feedback.adjust_watering",
+          "previewFeedbackFallback": "Plausibel: Zielgerichtetes Gießen entschärft Trockenstress.",
+          "plannedEffects": {
+            "stress": -1,
+            "risk": -1,
+            "notes": ["no_write_preview_only"]
+          }
+        },
+        {
+          "optionId": "overreact",
+          "labelKey": "event.indoor_dry_rootball.option.overreact",
+          "labelFallback": "Zu stark eingreifen",
+          "intent": "aggressive",
+          "expectedQuality": "bad",
+          "previewFeedbackKey": "event.indoor_dry_rootball.feedback.overreact",
+          "previewFeedbackFallback": "Zu viel auf einmal kann neue Probleme auslösen.",
+          "plannedEffects": {
+            "stress": 1,
+            "risk": 1,
+            "notes": ["no_write_preview_only"]
+          }
+        }
+      ]
+    }
+  }
+]

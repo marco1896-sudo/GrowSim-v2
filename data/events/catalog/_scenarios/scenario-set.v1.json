@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "scenarioSetId": "default-scenarios",
+  "createdAt": "2026-05-12T00:00:00.000Z",
+  "reason": "Initial deterministic scenario set",
+  "compatibilityNotes": "Phase 12+",
+  "scenarios": [
+    "examplesOnlyDevelopment",
+    "fixturesDevelopment",
+    "fixturesBeta",
+    "fullCatalogEmptyDevelopment",
+    "fullCatalogReleaseCandidate"
+  ]
+}

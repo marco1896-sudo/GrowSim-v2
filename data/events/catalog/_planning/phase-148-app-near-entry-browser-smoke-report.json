@@ -1,0 +1,113 @@
+{
+  "ok": false,
+  "browserSmokeExecuted": true,
+  "defaultState": {
+    "ok": true,
+    "visible": false,
+    "reason": "dev_preview_entry_disabled_by_default",
+    "runtimeWriteEnabled": false,
+    "productionEnabled": false,
+    "canActivateGameplay": false,
+    "canMutateSave": false,
+    "safetyLabels": [
+      "Dev Preview",
+      "Candidate Only",
+      "No Write",
+      "No Gameplay Activation"
+    ]
+  },
+  "devState": {
+    "ok": true,
+    "visible": true,
+    "reason": "query_dev_enable",
+    "runtimeWriteEnabled": false,
+    "productionEnabled": false,
+    "canActivateGameplay": false,
+    "canMutateSave": false,
+    "safetyLabels": [
+      "Dev Preview",
+      "Candidate Only",
+      "No Write",
+      "No Gameplay Activation"
+    ]
+  },
+  "openResult": {
+    "ok": true,
+    "url": "http://127.0.0.1:60688/dev/event-v2-preview-gallery.html?mode=event_center_context"
+  },
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "fixturesVisible": 3,
+      "candidateOnlyCount": 0,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "safetyLabelsVisible": false,
+      "statusText": "Modus: Testmodus Candidate Feed | Testmodus | Vorschlagskarte | Nur Vorschau · nichts wird gespeichert | Kein Einfluss auf deinen Spielstand"
+    },
+    {
+      "viewport": 390,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "fixturesVisible": 3,
+      "candidateOnlyCount": 0,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "safetyLabelsVisible": false,
+      "statusText": "Modus: Testmodus Candidate Feed | Testmodus | Vorschlagskarte | Nur Vorschau · nichts wird gespeichert | Kein Einfluss auf deinen Spielstand"
+    },
+    {
+      "viewport": 430,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "fixturesVisible": 3,
+      "candidateOnlyCount": 0,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "safetyLabelsVisible": false,
+      "statusText": "Modus: Testmodus Candidate Feed | Testmodus | Vorschlagskarte | Nur Vorschau · nichts wird gespeichert | Kein Einfluss auf deinen Spielstand"
+    },
+    {
+      "viewport": 768,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "fixturesVisible": 3,
+      "candidateOnlyCount": 0,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "safetyLabelsVisible": false,
+      "statusText": "Modus: Testmodus Candidate Feed | Testmodus | Vorschlagskarte | Nur Vorschau · nichts wird gespeichert | Kein Einfluss auf deinen Spielstand"
+    }
+  ],
+  "summary": {
+    "viewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "candidateItemsVisible": 15,
+    "fixturesVisible": 3,
+    "imagesLoaded": 15,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": [],
+    "actionsFound": 0,
+    "selectedCandidateMentions": 0,
+    "safetyLabelsVisible": false
+  }
+}

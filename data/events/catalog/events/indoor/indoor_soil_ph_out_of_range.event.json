@@ -1,0 +1,337 @@
+{
+  "schemaVersion": 3,
+  "id": "indoor_soil_ph_out_of_range",
+  "type": "event",
+  "category": "nutrition",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_indoor"
+  ],
+  "title": {
+    "key": "events.v2.indoor_soil_ph_out_of_range.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.indoor_soil_ph_out_of_range.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.indoor_soil_ph_out_of_range.description"
+  },
+  "cause": {
+    "kind": "soil_ph_drift",
+    "explanation": {
+      "key": "events.v2.indoor_soil_ph_out_of_range.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.indoor_soil_ph_out_of_range.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.indoor_soil_ph_out_of_range.coach.actions.0"
+      },
+      {
+        "key": "events.v2.indoor_soil_ph_out_of_range.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.indoor_soil_ph_out_of_range.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.leaf_interveinal_mild"
+      },
+      "weight": 1,
+      "id": "leaf_interveinal_mild",
+      "spriteOverlay": "indoor_soil_ph_out_of_range_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "ph_strip_check": {
+        "label": {
+          "key": "diagnostics.ph_strip_check.out_of_range"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "soil_ph_drift"
+        ]
+      }
+    },
+    "available": [
+      "ph_strip_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "adjust_ph_gradual",
+      "label": {
+        "key": "options.adjust_ph_gradual"
+      },
+      "uiDetail": {
+        "key": "events.v2.indoor_soil_ph_out_of_range.options.adjust_ph_gradual.detail"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "verify_runoff_then_adjust",
+      "label": {
+        "key": "options.verify_runoff_then_adjust"
+      },
+      "uiDetail": {
+        "key": "events.v2.indoor_soil_ph_out_of_range.options.verify_runoff_then_adjust.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "add_more_nutrients_now",
+      "label": {
+        "key": "options.add_more_nutrients_now"
+      },
+      "uiDetail": {
+        "key": "events.v2.indoor_soil_ph_out_of_range.options.add_more_nutrients_now.detail"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.ph",
+        "op": "<",
+        "value": 5.9
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 15
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor"
+      ]
+    },
+    "stage": {
+      "min": 3,
+      "max": 9
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "vegetative",
+      "preflower",
+      "flowering"
+    ]
+  },
+  "pressure": {
+    "weight": 0.9,
+    "polarity": "negative",
+    "primaryPressure": "ph_mismatch"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "indoor_soil_ph_out_of_range_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "indoor_soil_ph_out_of_range_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "indoor_soil_ph_out_of_range_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "ph_mismatch": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "ph_mismatch": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.indoor_soil_ph_out_of_range.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "adjust_ph_gradual",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.indoor_soil_ph_out_of_range.cover",
+      "src": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+      "fallback": "assets/events/v2/final/indoor_soil_ph_out_of_range/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "indoor_soil_ph_out_of_range_overlay_warn": "assets/events/event-stress-recovery.png",
+      "indoor_soil_ph_out_of_range_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "indoor_soil_ph_out_of_range_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_leaf_interveinal",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.indoor_soil_ph_out_of_range.title",
+      "events.v2.indoor_soil_ph_out_of_range.symptom",
+      "events.v2.indoor_soil_ph_out_of_range.description",
+      "events.v2.indoor_soil_ph_out_of_range.cause",
+      "events.v2.indoor_soil_ph_out_of_range.coach.summary",
+      "events.v2.indoor_soil_ph_out_of_range.coach.why",
+      "events.v2.indoor_soil_ph_out_of_range.coach.actions.0",
+      "events.v2.indoor_soil_ph_out_of_range.coach.actions.1",
+      "events.v2.indoor_soil_ph_out_of_range.aftermath.lesson",
+      "options.adjust_ph_gradual",
+      "options.verify_runoff_then_adjust",
+      "options.add_more_nutrients_now",
+      "alt.events.v2.indoor_soil_ph_out_of_range.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_nutrition"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "nutrition",
+      "symptom_leaf_interveinal"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_ph_nutrient_uptake_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-17 first real mini-catalog data-only event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-13",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+    "fallback": "assets/events/v2/final/indoor_soil_ph_out_of_range/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_soil_ph_out_of_range/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "temporary_usable_needs_revision",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

@@ -117,7 +117,13 @@ async function main() {
         text: waterValue ? waterValue.textContent : ''
       };
 
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      const settleDeadline = Date.now() + 2200;
+      while (Date.now() < settleDeadline) {
+        if (!waterRing || waterRing.dataset.animating === 'false') {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
 
       return {
         immediate,

@@ -1,0 +1,42 @@
+﻿{
+  "phase": "149",
+  "entryQaStatus": "app_near_entry_qa_pass_with_watch",
+  "browserSmoke": {
+    "executed": true,
+    "reportPath": "data/events/catalog/_planning/phase-148-app-near-entry-browser-smoke-report.json",
+    "defaultDisabled": true,
+    "devModeVisible": true,
+    "viewports": [360, 390, 430, 768],
+    "fixturesVisible": 3,
+    "candidateItemsVisible": 15,
+    "imagesLoaded": 15,
+    "brokenPaths": 0,
+    "horizontalOverflow": false,
+    "jsErrors": 0,
+    "safetyLabelsVisible": true,
+    "actionsEmpty": true,
+    "selectedCandidateNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0
+  },
+  "visualFunctionalAssessment": {
+    "defaultMode": "entry hidden/disabled; no normal user confusion detected",
+    "devMode": "entry visible and opens candidate preview reliably",
+    "mobileReadability": "pass",
+    "labelClarity": "pass",
+    "candidateFeedTestability": "pass",
+    "appNearConfidence": "pass_with_watch"
+  },
+  "watchpoints": [
+    {
+      "id": "scoring_watch_vpd_vs_dry_rootball",
+      "blocking": false,
+      "note": "VPD family remains in top cluster; ranking watch kept for calibration backlog."
+    }
+  ],
+  "phase150Recommendation": {
+    "title": "Event V2 Runtime Shadow Dev/Test Toggle - Still No Write",
+    "reason": "Entry is app-near, stable and no-write safe; next step is runtime-nearer dev/test control without writes."
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "ok": true,
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "detailOpen": true,
+      "detailImageLoaded": true,
+      "safetyLabelsVisible": true,
+      "noResolveVisible": true,
+      "runtimeWriteFalseVisible": true,
+      "productionFalseVisible": true,
+      "actionsFound": false,
+      "selectedCandidateMention": false,
+      "closeBackPresent": true
+    },
+    {
+      "viewport": 390,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "detailOpen": true,
+      "detailImageLoaded": true,
+      "safetyLabelsVisible": true,
+      "noResolveVisible": true,
+      "runtimeWriteFalseVisible": true,
+      "productionFalseVisible": true,
+      "actionsFound": false,
+      "selectedCandidateMention": false,
+      "closeBackPresent": true
+    },
+    {
+      "viewport": 430,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "detailOpen": true,
+      "detailImageLoaded": true,
+      "safetyLabelsVisible": true,
+      "noResolveVisible": true,
+      "runtimeWriteFalseVisible": true,
+      "productionFalseVisible": true,
+      "actionsFound": false,
+      "selectedCandidateMention": false,
+      "closeBackPresent": true
+    },
+    {
+      "viewport": 768,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "detailOpen": true,
+      "detailImageLoaded": true,
+      "safetyLabelsVisible": true,
+      "noResolveVisible": true,
+      "runtimeWriteFalseVisible": true,
+      "productionFalseVisible": true,
+      "actionsFound": false,
+      "selectedCandidateMention": false,
+      "closeBackPresent": true
+    }
+  ],
+  "summary": {
+    "viewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "detailPreviewReachable": true,
+    "detailImageValid": true,
+    "safetyLabelsVisible": true,
+    "noResolveVisible": true,
+    "actionsEmpty": true,
+    "selectedCandidateNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "backCloseWorks": true,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": []
+  }
+}

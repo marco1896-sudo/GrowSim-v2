@@ -1,0 +1,36 @@
+﻿{
+    "phase":  154,
+    "status":  "detail_qa_pass_with_watch",
+    "detailOpen":  true,
+    "detailImageValid":  true,
+    "safetyLabelsVisible":  true,
+    "noResolveVisible":  true,
+    "actionsEmpty":  true,
+    "canResolve":  false,
+    "selectedCandidate":  null,
+    "selectedCandidateNull":  true,
+    "runtimeWriteFalse":  true,
+    "productionFalse":  true,
+    "saveStorageWrites":  0,
+    "backCloseWorks":  true,
+    "brokenImages":  0,
+    "horizontalOverflow":  false,
+    "jsErrors":  [
+
+                 ],
+    "viewports":  [
+                      360,
+                      390,
+                      430,
+                      768
+                  ],
+    "watchpoints":  [
+                        "scoring_watch_vpd_vs_dry_rootball"
+                    ],
+    "notes":  [
+                  "Detail Preview startet stabil aus dem Candidate Context.",
+                  "Safety- und No-Resolve-Hinweise sind sichtbar und eindeutig.",
+                  "Back/Close bleibt lokal-ephemeral und erzeugt keine Persistenzmutation."
+              ]
+}
+

@@ -32,6 +32,25 @@ async function main() {
     await page.waitForFunction(() => window.__gsState && window.__gsState.run && window.__gsState.run.status === 'active');
 
     const result = await page.evaluate(async () => {
+      const deriveRiskLabel = (riskValue) => {
+        const safeRisk = Math.max(0, Math.min(100, Number(riskValue || 0)));
+        if (safeRisk >= 75) return 'Hoch';
+        if (safeRisk >= 50) return 'Erhöht';
+        if (safeRisk >= 25) return 'Mittel';
+        return 'Niedrig';
+      };
+      const readStatusChips = () => {
+        const chips = Array.from(document.querySelectorAll('#careStudioStatusChips .care-studio-chip'));
+        const map = {};
+        for (const chip of chips) {
+          const label = String(chip.querySelector('.care-studio-chip__label')?.textContent || '').trim();
+          map[label] = {
+            value: String(chip.querySelector('.care-studio-chip__value')?.textContent || '').trim(),
+            detail: String(chip.querySelector('.care-studio-chip__detail')?.textContent || '').trim()
+          };
+        }
+        return map;
+      };
       window.__gsState.care = window.__gsState.care || {};
       window.__gsState.care.summary = null;
       window.__gsState.ui.openSheet = 'care';
@@ -67,11 +86,25 @@ async function main() {
       const previewText = String(document.getElementById('careDecisionZone')?.textContent || '');
       const previewDeltaChipCount = document.querySelectorAll('#careDecisionZone .care-studio-delta-chip').length;
       const previewDecisionCardCount = document.querySelectorAll('#careDecisionZone .care-studio-decision-card').length;
+      const initialStatusSnapshot = {
+        water: Number(window.__gsState.status.water || 0),
+        nutrition: Number(window.__gsState.status.nutrition || 0),
+        stress: Number(window.__gsState.status.stress || 0),
+        risk: Number(window.__gsState.status.risk || 0)
+      };
+      const initialStatusChips = readStatusChips();
 
       const beforeWater = Number(window.__gsState.status.water || 0);
       window.onCareExecuteAction();
       await waitForCareImages();
       const afterWater = Number(window.__gsState.status.water || 0);
+      const waterStatusSnapshot = {
+        water: Number(window.__gsState.status.water || 0),
+        nutrition: Number(window.__gsState.status.nutrition || 0),
+        stress: Number(window.__gsState.status.stress || 0),
+        risk: Number(window.__gsState.status.risk || 0)
+      };
+      const waterStatusChips = readStatusChips();
       const afterDecisionText = String(document.getElementById('careDecisionZone')?.textContent || '');
       const aftercareCardCount = document.querySelectorAll('#careDecisionZone .care-studio-aftercare-card').length;
       const directWaterMethodCooldownSet = Number(window.__gsState.actions?.cooldowns?.water_moisten_surface || 0) > 0;
@@ -86,10 +119,54 @@ async function main() {
       const propOverlayCount = document.querySelectorAll('#careSheet .care-studio-buddy-overlay').length;
 
       window.__gsState.ui.care.selectedStudioTab = 'feed';
+      window.__gsState.ui.care.selectedCategory = 'fertilizing';
       window.__gsState.ui.care.selectedActionId = null;
+      window.__gsState.actions = window.__gsState.actions || {};
+      window.__gsState.actions.cooldowns = window.__gsState.actions.cooldowns || {};
+      delete window.__gsState.actions.cooldowns.feed_light_base;
+      window.__gsState.plant = window.__gsState.plant || {};
+      window.__gsState.plant.stageIndex = 4;
+      window.__gsState.plant.phase = 'vegetative';
+      window.__gsState.status.nutrition = 34;
+      window.__gsState.status.water = 62;
+      window.__gsState.status.stress = 8;
+      window.__gsState.status.risk = 12;
+      window.__gsState.care = window.__gsState.care || {};
+      window.__gsState.care.water = {
+        ...(window.__gsState.care.water || {}),
+        substrateMoisture: 62,
+        surfaceMoisture: 52,
+        rootZoneMoisture: 60,
+        drybackRatePerHour: 0.6,
+        overwateringPressure: 8,
+        dryStressPressure: 8
+      };
+      window.__gsState.care.nutrients = {
+        ...(window.__gsState.care.nutrients || {}),
+        n: 28,
+        p: 30,
+        k: 32,
+        micro: 34,
+        saltLoad: 18
+      };
       window.renderCareSheet(true);
       await waitForCareImages();
       const feedMethodLabels = collectActionTexts();
+      const beforeFeed = Number(window.__gsState.status.nutrition || 0);
+      window.__gsState.ui.care.selectedActionId = 'feed_light_base';
+      window.renderCareSheet(true);
+      window.onCareExecuteAction();
+      await waitForCareImages();
+      const afterFeed = Number(window.__gsState.status.nutrition || 0);
+      const feedStatusSnapshot = {
+        water: Number(window.__gsState.status.water || 0),
+        nutrition: Number(window.__gsState.status.nutrition || 0),
+        stress: Number(window.__gsState.status.stress || 0),
+        risk: Number(window.__gsState.status.risk || 0)
+      };
+      const feedStatusChips = readStatusChips();
+      const directFeedMethodCooldownSet = Number(window.__gsState.actions?.cooldowns?.feed_light_base || 0) > 0;
+      const directFeedMethodId = String(window.__gsState.actions?.lastResult?.careMethodId || '');
 
       window.__gsState.ui.care.selectedStudioTab = 'routine';
       window.__gsState.ui.care.selectedActionId = null;
@@ -130,9 +207,18 @@ async function main() {
         aftercareCardCount,
         executeDisabled: Boolean(document.getElementById('careExecuteButton')?.disabled),
         feedback: String(document.getElementById('careFeedback')?.textContent || '').trim(),
+        initialStatusSnapshot,
+        initialStatusChips,
         waterChanged: afterWater !== beforeWater,
+        waterStatusSnapshot,
+        waterStatusChips,
         waterMethodLabels,
         feedMethodLabels,
+        feedChanged: afterFeed !== beforeFeed,
+        feedStatusSnapshot,
+        feedStatusChips,
+        directFeedMethodCooldownSet,
+        directFeedMethodId,
         routineMethodLabels,
         routineInsightText,
         routinePanelTitle,
@@ -163,7 +249,10 @@ async function main() {
         }).length,
         decisionIconImageCount: decisionFrames.length,
         decorativeAltEmpty: decorativeImages.every((img) => img.getAttribute('alt') === ''),
-        diagnosisText
+        diagnosisText,
+        expectedInitialRiskLabel: deriveRiskLabel(initialStatusSnapshot.risk),
+        expectedWaterRiskLabel: deriveRiskLabel(waterStatusSnapshot.risk),
+        expectedFeedRiskLabel: deriveRiskLabel(feedStatusSnapshot.risk)
       };
     });
 
@@ -178,12 +267,28 @@ async function main() {
     assert.ok(/Decision|Auswahl|Selection|Delta|Feuchte|Moisture/.test(result.previewText), 'care studio should render a decision forecast for the selected action');
     assert.ok(result.aftercareCardCount >= 1, 'care studio should render stored after-action feedback');
     assert.ok(result.feedback.length > 0, 'care studio should keep feedback visible after execution');
+    assert.strictEqual(result.initialStatusChips.Feuchte.value, `${Math.round(result.initialStatusSnapshot.water)}%`, 'care header moisture should mirror the global water status');
+    assert.strictEqual(result.initialStatusChips['Versorg.'].value, `${Math.round(result.initialStatusSnapshot.nutrition)}%`, 'care header nutrition should mirror the global nutrition status');
+    assert.strictEqual(result.initialStatusChips.Stress.value, `${Math.round(result.initialStatusSnapshot.stress)}%`, 'care header stress should mirror the global stress status');
+    assert.strictEqual(result.initialStatusChips.Risiko.value, `${Math.round(result.initialStatusSnapshot.risk)}%`, 'care header risk should mirror the global risk status');
+    assert.strictEqual(result.initialStatusChips.Risiko.detail, result.expectedInitialRiskLabel, 'care header risk label should be derived from the global risk value');
     assert.strictEqual(result.waterChanged, true, 'existing care actions should remain executable');
+    assert.strictEqual(result.waterStatusChips.Feuchte.value, `${Math.round(result.waterStatusSnapshot.water)}%`, 'care header moisture should stay synced after a watering method');
+    assert.strictEqual(result.waterStatusChips['Versorg.'].value, `${Math.round(result.waterStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a watering method');
+    assert.strictEqual(result.waterStatusChips.Stress.value, `${Math.round(result.waterStatusSnapshot.stress)}%`, 'care header stress should stay synced after a watering method');
+    assert.strictEqual(result.waterStatusChips.Risiko.value, `${Math.round(result.waterStatusSnapshot.risk)}%`, 'care header risk should stay synced after a watering method');
+    assert.strictEqual(result.waterStatusChips.Risiko.detail, result.expectedWaterRiskLabel, 'care header risk label should stay derived from the global risk value after a watering method');
     assert.ok(result.waterMethodLabels.includes('Topfgewicht pr\u00FCfen'), 'water tab should expose the new care methods');
     assert.ok(result.waterMethodLabels.includes('Oberfl\u00E4che befeuchten'), 'water tab should replace the legacy water labels');
     assert.ok(!result.waterMethodLabels.some((label) => /Klarwasser|Nährlösung gießen/.test(label)), 'water tab should not expose the old legacy water labels');
     assert.ok(result.feedMethodLabels.includes('Leichte Basisversorgung'), 'feed tab should expose the new feed methods');
     assert.ok(!result.feedMethodLabels.some((label) => /Fütterung|CalMag/.test(label)), 'feed tab should not expose the old legacy feed labels');
+    assert.strictEqual(result.feedChanged, true, 'feed methods should remain executable');
+    assert.strictEqual(result.feedStatusChips.Feuchte.value, `${Math.round(result.feedStatusSnapshot.water)}%`, 'care header moisture should stay synced after a feed method');
+    assert.strictEqual(result.feedStatusChips['Versorg.'].value, `${Math.round(result.feedStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a feed method');
+    assert.strictEqual(result.feedStatusChips.Stress.value, `${Math.round(result.feedStatusSnapshot.stress)}%`, 'care header stress should stay synced after a feed method');
+    assert.strictEqual(result.feedStatusChips.Risiko.value, `${Math.round(result.feedStatusSnapshot.risk)}%`, 'care header risk should stay synced after a feed method');
+    assert.strictEqual(result.feedStatusChips.Risiko.detail, result.expectedFeedRiskLabel, 'care header risk label should stay derived from the global risk value after a feed method');
     assert.ok(result.routineMethodLabels.includes('Bl\u00E4tter pr\u00FCfen'), 'routine tab should expose the new routine methods');
     assert.ok(!/careStudio\.routine\.note\.|careMethod\./.test(result.routineInsightText), 'routine tab should not leak raw i18n keys');
     assert.ok(!/careStudio\.|careMethod\./.test(result.diagnosisText), 'diagnosis tab should not leak raw i18n keys');

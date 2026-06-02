@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 3,
+  "id": "watering_rootzone_chain",
+  "title": {
+    "key": "chains.watering_rootzone_chain.title"
+  },
+  "summary": {
+    "key": "chains.watering_rootzone_chain.summary"
+  },
+  "expectedSpanSimHours": {
+    "min": 8,
+    "max": 40
+  },
+  "preconditions": {
+    "anySetup": true,
+    "stageIn": [
+      "seedling",
+      "vegetative",
+      "preflower"
+    ]
+  },
+  "steps": [
+    {
+      "id": "step_misread_signal",
+      "eventId": "shared_panic_watering_misread",
+      "role": "trigger",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": "step_recovery_hold",
+          "delaySimHours": 6
+        },
+        "partial_mitigation": {
+          "to": "step_drainage_lock",
+          "delaySimHours": 8
+        },
+        "poor_outcome": {
+          "to": "step_drainage_lock",
+          "delaySimHours": 6
+        },
+        "no_action": {
+          "to": "step_outdoor_dryback",
+          "delaySimHours": 6
+        }
+      }
+    },
+    {
+      "id": "step_outdoor_dryback",
+      "eventId": "outdoor_pot_dries_by_afternoon",
+      "role": "branch",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": "step_recovery_hold",
+          "delaySimHours": 8
+        },
+        "partial_mitigation": {
+          "to": "step_drainage_lock",
+          "delaySimHours": 6
+        },
+        "poor_outcome": {
+          "to": "step_drainage_lock",
+          "delaySimHours": 4
+        },
+        "no_action": {
+          "to": "step_drainage_lock",
+          "delaySimHours": 4
+        }
+      }
+    },
+    {
+      "id": "step_drainage_lock",
+      "eventId": "shared_substrate_drainage_compaction",
+      "role": "escalation",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": "step_recovery_hold",
+          "delaySimHours": 10
+        },
+        "partial_mitigation": {
+          "to": "step_rootzone_oxygen_drop",
+          "delaySimHours": 8
+        },
+        "poor_outcome": {
+          "to": "step_rootzone_oxygen_drop",
+          "delaySimHours": 6
+        },
+        "no_action": {
+          "to": "step_rootzone_oxygen_drop",
+          "delaySimHours": 6
+        }
+      }
+    },
+    {
+      "id": "step_rootzone_oxygen_drop",
+      "eventId": "indoor_rootzone_airless_medium",
+      "role": "critical",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": "step_recovery_hold",
+          "delaySimHours": 12
+        },
+        "partial_mitigation": {
+          "to": null,
+          "endsChainAs": "neutral",
+          "delaySimHours": 0
+        },
+        "poor_outcome": {
+          "to": null,
+          "endsChainAs": "failure",
+          "delaySimHours": 0
+        },
+        "no_action": {
+          "to": null,
+          "endsChainAs": "failure",
+          "delaySimHours": 0
+        }
+      }
+    },
+    {
+      "id": "step_recovery_hold",
+      "eventId": "shared_observation_recovery_after_stress",
+      "role": "resolution",
+      "transitionsOnOutcome": {
+        "strong_recovery": {
+          "to": null,
+          "endsChainAs": "success",
+          "delaySimHours": 0
+        },
+        "no_action": {
+          "to": null,
+          "endsChainAs": "neutral",
+          "delaySimHours": 0
+        }
+      }
+    }
+  ],
+  "uiBanner": {
+    "presentWhileActive": true,
+    "labelKey": "chains.watering_rootzone_chain.banner",
+    "tone": "warning"
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_watering_rootzone_chain"
+    ],
+    "logSteps": true
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-18"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "i18n": {
+    "requiredKeys": [
+      "chains.watering_rootzone_chain.title",
+      "chains.watering_rootzone_chain.summary",
+      "chains.watering_rootzone_chain.banner"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "assets": {
+    "cover": {
+      "kind": "image",
+      "src": "assets/events/event-stress-recovery.png",
+      "altKey": "alt.chains.watering_rootzone_chain.cover",
+      "fallback": "assets/events/event-stress-recovery.png"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Buddy Asset Skill"
+  short_description: "Reference-locked Grow Simulator Buddy asset workflow"
+  default_prompt: "Use the official Buddy references to plan or review reference-locked Buddy assets for Grow Simulator."

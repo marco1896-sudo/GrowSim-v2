@@ -3785,21 +3785,79 @@ body.panelized-ready :is(
 }
 
 .event-option-btn {
-  border-radius: 0;
-  border: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: transparent;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 190, 162, 0.26);
+  background:
+    linear-gradient(180deg, rgba(15, 25, 20, 0.94), rgba(12, 20, 17, 0.98)),
+    radial-gradient(circle at top left, rgba(106, 186, 146, 0.1), rgba(106, 186, 146, 0) 44%);
   color: #dfeadd;
-  min-height: 28px;
-  padding: 6px 0;
+  min-height: 52px;
+  padding: 10px 12px;
   text-align: left;
   font-size: 12px;
   line-height: 1.2;
   overflow-wrap: anywhere;
+  display: grid;
+  gap: 4px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 18px rgba(0, 0, 0, 0.2);
+  transition: transform 140ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.event-option-btn:last-child {
-  border-bottom: 0;
+.event-option-btn[data-option-tone="recommended"] {
+  border-color: rgba(126, 212, 161, 0.4);
+}
+
+.event-option-btn[data-option-tone="diagnostic"] {
+  border-color: rgba(143, 190, 217, 0.34);
+}
+
+.event-option-btn[data-option-tone="risky"] {
+  border-color: rgba(214, 154, 122, 0.42);
+}
+
+.event-option-btn:hover,
+.event-option-btn:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(171, 220, 191, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 12px 22px rgba(0, 0, 0, 0.24);
+}
+
+.event-option-btn__label {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #eff7f1;
+}
+
+.event-option-btn__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.event-option-btn__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 241, 235, 0.24);
+  background: rgba(10, 18, 16, 0.62);
+  color: rgba(231, 241, 235, 0.92);
+  font-size: 10px;
+  line-height: 1;
+  padding: 4px 8px;
+}
+
+.event-option-btn__desc {
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(211, 228, 218, 0.82);
 }
 
 .event-reward-action-btn {
@@ -3938,8 +3996,8 @@ body.panelized-ready :is(
 
 .figma-sheet-event .event-visual-frame {
   position: relative;
-  aspect-ratio: 1 / 1;
-  border-radius: 16px;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(119, 184, 143, 0.18);
   background:
@@ -4001,32 +4059,36 @@ body.panelized-ready :is(
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 8px;
-  padding: 18px;
+  gap: 6px;
+  padding: 14px;
   text-align: center;
   background:
-    radial-gradient(circle at 50% 36%, rgba(215, 175, 69, 0.14), rgba(215, 175, 69, 0) 46%),
-    linear-gradient(180deg, rgba(9, 17, 14, 0.96), rgba(16, 24, 20, 0.98));
+    radial-gradient(circle at 20% 24%, rgba(118, 191, 150, 0.2), rgba(118, 191, 150, 0) 42%),
+    radial-gradient(circle at 78% 70%, rgba(222, 171, 95, 0.16), rgba(222, 171, 95, 0) 40%),
+    linear-gradient(170deg, rgba(10, 18, 16, 0.98), rgba(17, 26, 22, 0.98));
 }
 
 .figma-sheet-event .event-visual-placeholder-glyph {
-  display: inline-grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(215, 175, 69, 0.28);
-  background: rgba(215, 175, 69, 0.08);
-  color: #f1d58f;
+  border: 1px solid rgba(144, 206, 169, 0.32);
+  background: rgba(111, 178, 143, 0.14);
+  color: #e3f5e8;
   font-family: "Exo 2", "Trebuchet MS", sans-serif;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .figma-sheet-event .event-visual-placeholder-label {
   color: rgba(237, 245, 239, 0.9);
   font-family: "Exo 2", "Trebuchet MS", sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -4075,6 +4137,40 @@ body.panelized-ready :is(
   color: rgba(216, 228, 220, 0.64);
   font-size: 10px;
   line-height: 1.35;
+}
+
+.event-sheet-modern-card--resolved .event-visual-frame {
+  border-color: rgba(128, 187, 214, 0.35);
+}
+
+.event-resolve-outcome-card {
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(168, 203, 184, 0.26);
+  background:
+    linear-gradient(180deg, rgba(14, 24, 21, 0.9), rgba(11, 20, 16, 0.94)),
+    radial-gradient(circle at top left, rgba(117, 188, 151, 0.16), rgba(117, 188, 151, 0) 46%);
+  padding: 10px 12px;
+}
+
+.event-resolve-outcome-card__label {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(192, 217, 203, 0.25);
+  background: rgba(8, 14, 12, 0.52);
+  color: rgba(223, 236, 229, 0.88);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  padding: 5px 8px;
+}
+
+.event-resolve-outcome-card__text {
+  margin: 8px 0 0;
+  color: rgba(226, 237, 231, 0.9);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .figma-sheet-event .figma-section-card--event-positive {
@@ -7005,7 +7101,7 @@ body.panelized-ready :is(
   margin-left: auto; /* Align to the right within its column */
 }
 .figma-onboarding-actions #setupBackBtn {
-  grid-column: 1; /* Force ZurÃ¼ck button to first column */
+  grid-column: 1; /* Force Zurück button to first column */
   margin-right: auto; /* Align to the left within its column */
 }
 .figma-onboarding-actions #setupPresetBtn {

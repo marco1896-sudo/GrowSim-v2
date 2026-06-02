@@ -22,11 +22,19 @@ function appPath(relativePath) {
 }
 
 const OFFLINE_FALLBACK_URL = appPath('index.html');
-const PRECACHE_URLS = [
+const APP_SHELL_FILES = [
   OFFLINE_FALLBACK_URL,
   appPath('manifest.webmanifest'),
   appPath('icons/icon-192.png'),
-  appPath('icons/icon-512.png')
+  appPath('icons/icon-512.png'),
+  appPath('styles.css'),
+  appPath('src/utils/textEncoding.js'),
+  appPath('src/ui/components/primitives.js'),
+  appPath('src/ui/controller/uiController.js'),
+  appPath('src/ui/runtime/screenRuntimeManager.js'),
+  appPath('src/ui/mappings/homeMapping.js'),
+  appPath('src/ui/mappings/careMapping.js'),
+  appPath('src/ui/screens/screenModules.js')
 ];
 
 const CORE_DATA_PATHS = new Set([
@@ -100,7 +108,7 @@ self.addEventListener('install', (event) => {
   console.info('[sw] install', SW_VERSION);
   event.waitUntil(
     caches.open(SHELL_CACHE)
-      .then((cache) => cachePreloadFiles(cache, PRECACHE_URLS))
+      .then((cache) => cachePreloadFiles(cache, APP_SHELL_FILES))
   );
 });
 

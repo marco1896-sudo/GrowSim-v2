@@ -1,0 +1,27 @@
+﻿{
+  "status": "single_candidate_detail_preview_ready_with_watch",
+  "checks": {
+    "detailPreviewReachable": true,
+    "candidateDetailOpens": true,
+    "detailImageValid": true,
+    "safetyLabelsVisible": true,
+    "noResolveVisible": true,
+    "actionsEmpty": true,
+    "canResolve": false,
+    "selectedCandidateNull": true,
+    "runtimeWriteFalse": true,
+    "productionFalse": true,
+    "saveStorageWrites": 0,
+    "backCloseWorks": true,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": 0
+  },
+  "watchpoints": [
+    "scoring_watch_vpd_vs_dry_rootball"
+  ],
+  "decision": {
+    "phase154Recommendation": "Event V2 Single Candidate Detail QA + Manual Test Session",
+    "watchIsBlocking": false
+  }
+}

@@ -1,0 +1,426 @@
+{
+  "phase": "123",
+  "generatedAt": "2026-05-21",
+  "draftSource": "data/events/catalog/_planning/phase-122-safe-assetref-draft-normalized-v2.json",
+  "eventsCount": 22,
+  "exportParameters": {
+    "hero": {
+      "maxWidth": 1280,
+      "quality": 84,
+      "format": "webp",
+      "upscale": false
+    },
+    "fallback": {
+      "maxWidth": 960,
+      "quality": 78,
+      "format": "webp",
+      "upscale": false
+    },
+    "hero2x": {
+      "optional": true,
+      "maxWidth": 2560,
+      "quality": 86,
+      "format": "webp",
+      "upscale": false,
+      "minSourceWidth": 2560
+    }
+  },
+  "events": [
+    {
+      "eventId": "indoor_dry_rootball",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_dry_rootball/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "ready",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_dry_rootball/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_dry_rootball/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_dry_rootball/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_fan_failure_airflow_drop",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_fan_failure_airflow_drop/candidate_full_scene_01.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "temporary_usable_needs_revision",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_fan_failure_airflow_drop/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_fan_failure_airflow_drop/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_heat_stress_air",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_heat_stress_air/candidate_full_scene_01.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "temporary_usable_needs_revision",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_heat_stress_air/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_heat_stress_air/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_heat_stress_air/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_light_burn_canopy_top",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_light_burn_canopy_top/candidate_full_scene_01.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "temporary_usable_needs_revision",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_light_burn_canopy_top/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_light_burn_canopy_top/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_light_burn_canopy_top/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_light_nutrient_tox_early",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_light_nutrient_tox_early/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "temporary_usable_needs_revision",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_light_nutrient_tox_early/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_light_nutrient_tox_early/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_light_nutrient_tox_early/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_overtraining_stall_mild",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_overtraining_stall_mild/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "usable_with_watch",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_overtraining_stall_mild/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_overtraining_stall_mild/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_overtraining_stall_mild/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_overwatering_early",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_overwatering_early/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "usable_with_watch",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_overwatering_early/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_overwatering_early/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_overwatering_early/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_rootzone_airless_medium",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_rootzone_airless_medium/candidate_full_scene_01.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "ready",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_rootzone_airless_medium/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_rootzone_airless_medium/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_rootzone_airless_medium/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_soil_ph_out_of_range",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_soil_ph_out_of_range/candidate_full_scene_01.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "temporary_usable_needs_revision",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_soil_ph_out_of_range/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_soil_ph_out_of_range/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "indoor_vpd_mismatch_veg",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/indoor_vpd_mismatch_veg/candidate_full_scene_03.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "temporary_usable_needs_revision",
+      "outputs": {
+        "hero": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero.webp",
+        "fallback": "assets/events/v2/final/indoor_vpd_mismatch_veg/fallback.webp",
+        "hero2x": "assets/events/v2/final/indoor_vpd_mismatch_veg/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "outdoor_cold_night_stress",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_cold_night_stress/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "usable_with_watch",
+      "outputs": {
+        "hero": "assets/events/v2/final/outdoor_cold_night_stress/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_cold_night_stress/fallback.webp",
+        "hero2x": "assets/events/v2/final/outdoor_cold_night_stress/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "outdoor_early_pest_pressure_leaf_underside",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_early_pest_pressure_leaf_underside/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "usable_with_watch",
+      "outputs": {
+        "hero": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/fallback.webp",
+        "hero2x": "assets/events/v2/final/outdoor_early_pest_pressure_leaf_underside/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "outdoor_heatwave_dry_wind",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_heatwave_dry_wind/candidate_full_scene_02.png",
+      "sourceWidth": 1692,
+      "sourceHeight": 930,
+      "sourceRatio": 1.8194,
+      "revisionStatus": "temporary_usable_needs_revision",
+      "outputs": {
+        "hero": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_heatwave_dry_wind/fallback.webp",
+        "hero2x": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "outdoor_heavy_rain_waterlogging_risk",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_heavy_rain_waterlogging_risk/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "usable_with_watch",
+      "outputs": {
+        "hero": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/fallback.webp",
+        "hero2x": "assets/events/v2/final/outdoor_heavy_rain_waterlogging_risk/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "outdoor_pot_dries_by_afternoon",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_pot_dries_by_afternoon/candidate_full_scene_01.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "ready",
+      "outputs": {
+        "hero": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/fallback.webp",
+        "hero2x": "assets/events/v2/final/outdoor_pot_dries_by_afternoon/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "outdoor_wind_exposure_stem_stress",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_wind_exposure_stem_stress/candidate_full_scene_01.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "ready",
+      "outputs": {
+        "hero": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero.webp",
+        "fallback": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/fallback.webp",
+        "hero2x": "assets/events/v2/final/outdoor_wind_exposure_stem_stress/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "shared_early_pest_signs_mild",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_early_pest_signs_mild/candidate_full_scene_01.png",
+      "sourceWidth": 1692,
+      "sourceHeight": 929,
+      "sourceRatio": 1.8213,
+      "revisionStatus": "ready",
+      "outputs": {
+        "hero": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+        "fallback": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+        "hero2x": "assets/events/v2/final/shared_early_pest_signs_mild/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "shared_light_distance_error",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_light_distance_error/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "temporary_usable_needs_revision",
+      "outputs": {
+        "hero": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+        "fallback": "assets/events/v2/final/shared_light_distance_error/fallback.webp",
+        "hero2x": "assets/events/v2/final/shared_light_distance_error/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "shared_observation_recovery_after_stress",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_observation_recovery_after_stress/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "usable_with_watch",
+      "outputs": {
+        "hero": "assets/events/v2/final/shared_observation_recovery_after_stress/hero.webp",
+        "fallback": "assets/events/v2/final/shared_observation_recovery_after_stress/fallback.webp",
+        "hero2x": "assets/events/v2/final/shared_observation_recovery_after_stress/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "shared_panic_watering_misread",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_panic_watering_misread/candidate_full_scene_01.png",
+      "sourceWidth": 1672,
+      "sourceHeight": 941,
+      "sourceRatio": 1.7768,
+      "revisionStatus": "ready",
+      "outputs": {
+        "hero": "assets/events/v2/final/shared_panic_watering_misread/hero.webp",
+        "fallback": "assets/events/v2/final/shared_panic_watering_misread/fallback.webp",
+        "hero2x": "assets/events/v2/final/shared_panic_watering_misread/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "shared_rootbound_warning",
+      "sourceCandidate": "assets/events/v2/_generated/review/shared_rootbound_warning/candidate_full_scene_02.png",
+      "sourceWidth": 1692,
+      "sourceHeight": 930,
+      "sourceRatio": 1.8194,
+      "revisionStatus": "ready",
+      "outputs": {
+        "hero": "assets/events/v2/final/shared_rootbound_warning/hero.webp",
+        "fallback": "assets/events/v2/final/shared_rootbound_warning/fallback.webp",
+        "hero2x": "assets/events/v2/final/shared_rootbound_warning/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    },
+    {
+      "eventId": "shared_substrate_drainage_compaction",
+      "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_substrate_drainage_compaction/candidate_full_scene_01.png",
+      "sourceWidth": 1659,
+      "sourceHeight": 948,
+      "sourceRatio": 1.75,
+      "revisionStatus": "ready",
+      "outputs": {
+        "hero": "assets/events/v2/final/shared_substrate_drainage_compaction/hero.webp",
+        "fallback": "assets/events/v2/final/shared_substrate_drainage_compaction/fallback.webp",
+        "hero2x": "assets/events/v2/final/shared_substrate_drainage_compaction/hero@2x.webp"
+      },
+      "hero2x": {
+        "optional": true,
+        "eligibleWithoutUpscale": false,
+        "rule": "only when source width >= 2560 and no upscale"
+      }
+    }
+  ]
+}

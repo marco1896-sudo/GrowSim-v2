@@ -1,0 +1,21 @@
+﻿# Phase 164 - No-Write Resolve Preview Verification
+
+- Resolve Preview zeigt Optionen.
+- Resolve Preview zeigt Feedback-Vorschau.
+- Resolve Preview zeigt geplante Effekte nur als Vorschau (`plannedEffectsPreview`).
+- Kein RuntimeWrite.
+- Keine Save Writes.
+- Keine localStorage Writes.
+- Keine IndexedDB Writes.
+- Keine echte Eventauslösung.
+- Kein Eventstatus geändert.
+- Keine Event-V1-Ersetzung.
+- Keine Missions-/Reward-/Notification-Mutation.
+- `selectedCandidate`: null.
+- `persistedSelectedCandidate`: null.
+- `actions`: empty.
+- `canResolve`: false.
+- `canApplyEffects`: false.
+- `productionEnabled`: false.
+- Kein Production Default.
+- Keine Migration nötig.

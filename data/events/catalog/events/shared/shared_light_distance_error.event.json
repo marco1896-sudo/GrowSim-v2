@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 3,
+  "id": "shared_light_distance_error",
+  "type": "event",
+  "category": "environment",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_indoor"
+  ],
+  "title": {
+    "key": "events.v2.shared_light_distance_error.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.shared_light_distance_error.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.shared_light_distance_error.description"
+  },
+  "cause": {
+    "kind": "distance_or_intensity_mismatch",
+    "explanation": {
+      "key": "events.v2.shared_light_distance_error.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.shared_light_distance_error.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.shared_light_distance_error.coach.actions.0"
+      },
+      {
+        "key": "events.v2.shared_light_distance_error.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.shared_light_distance_error.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.leaf_pray_or_bleach_hint"
+      },
+      "weight": 1,
+      "id": "leaf_pray_or_bleach_hint",
+      "spriteOverlay": "shared_light_distance_error_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "canopy_light_check": {
+        "label": {
+          "key": "diagnostics.canopy_light_check.too_near_or_far"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "distance_or_intensity_mismatch"
+        ]
+      }
+    },
+    "available": [
+      "canopy_light_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "adjust_light_distance_stepwise",
+      "label": {
+        "key": "options.adjust_light_distance_stepwise"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "measure_then_wait_24h",
+      "label": {
+        "key": "options.measure_then_wait_24h"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "move_light_extreme",
+      "label": {
+        "key": "options.move_light_extreme"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.lightStress",
+        "op": ">=",
+        "value": 20
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 15
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor",
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 2,
+      "max": 10
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "seedling",
+      "vegetative",
+      "preflower",
+      "flowering"
+    ]
+  },
+  "pressure": {
+    "weight": 0.92,
+    "polarity": "negative",
+    "primaryPressure": "light_distance_mismatch"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "shared_light_distance_error_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "shared_light_distance_error_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "shared_light_distance_error_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "light_distance_mismatch": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "light_distance_mismatch": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.shared_light_distance_error.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "adjust_light_distance_stepwise",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.shared_light_distance_error.cover",
+      "src": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+      "fallback": "assets/events/v2/final/shared_light_distance_error/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "shared_light_distance_error_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "shared_light_distance_error_overlay_warn": "assets/events/event-stress-recovery.png",
+      "shared_light_distance_error_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "light_distance_signal",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.shared_light_distance_error.title",
+      "events.v2.shared_light_distance_error.symptom",
+      "events.v2.shared_light_distance_error.description",
+      "events.v2.shared_light_distance_error.cause",
+      "events.v2.shared_light_distance_error.coach.summary",
+      "events.v2.shared_light_distance_error.coach.why",
+      "events.v2.shared_light_distance_error.coach.actions.0",
+      "events.v2.shared_light_distance_error.coach.actions.1",
+      "events.v2.shared_light_distance_error.aftermath.lesson",
+      "options.adjust_light_distance_stepwise",
+      "options.measure_then_wait_24h",
+      "options.move_light_extreme",
+      "alt.events.v2.shared_light_distance_error.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_environment"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "environment",
+      "light_distance_signal"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_light_intensity_distance_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-74 remap to dedicated light intensity and distance learning card."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-16",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/shared_light_distance_error/hero.webp",
+    "fallback": "assets/events/v2/final/shared_light_distance_error/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_light_distance_error/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "temporary_usable_needs_revision",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

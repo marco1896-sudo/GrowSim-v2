@@ -1,0 +1,81 @@
+{
+  "ok": true,
+  "browserSmokeExecuted": true,
+  "mode": "dev_candidate_entry",
+  "pageUrl": "http://127.0.0.1:53151/dev/event-v2-preview-gallery.html",
+  "viewportResults": [
+    {
+      "viewport": 360,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "fixturesVisible": 3,
+      "candidateOnlyCount": 15,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "safetyLabelVisible": true,
+      "statusText": "Mode: Dev Preview Candidate Feed | Dev Preview | Candidate Only | No Write | No Gameplay Activation"
+    },
+    {
+      "viewport": 390,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "fixturesVisible": 3,
+      "candidateOnlyCount": 15,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "safetyLabelVisible": true,
+      "statusText": "Mode: Dev Preview Candidate Feed | Dev Preview | Candidate Only | No Write | No Gameplay Activation"
+    },
+    {
+      "viewport": 430,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "fixturesVisible": 3,
+      "candidateOnlyCount": 15,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "safetyLabelVisible": true,
+      "statusText": "Mode: Dev Preview Candidate Feed | Dev Preview | Candidate Only | No Write | No Gameplay Activation"
+    },
+    {
+      "viewport": 768,
+      "cards": 15,
+      "imagesLoaded": 15,
+      "brokenImages": 0,
+      "horizontalOverflow": false,
+      "fixturesVisible": 3,
+      "candidateOnlyCount": 15,
+      "noWriteCount": 15,
+      "actionHintCount": 0,
+      "selectedCandidateMentions": 0,
+      "safetyLabelVisible": true,
+      "statusText": "Mode: Dev Preview Candidate Feed | Dev Preview | Candidate Only | No Write | No Gameplay Activation"
+    }
+  ],
+  "summary": {
+    "viewports": [
+      360,
+      390,
+      430,
+      768
+    ],
+    "candidateItemsVisible": 15,
+    "fixturesVisible": 3,
+    "imagesLoaded": 15,
+    "brokenImages": 0,
+    "horizontalOverflow": false,
+    "jsErrors": [],
+    "actionsFound": 0,
+    "selectedCandidateMentions": 0,
+    "safetyLabelsVisible": true
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "id": "fullCatalogEmptyDevelopment",
+  "label": "Full Catalog Empty / Development",
+  "sourceMode": "fullCatalog",
+  "includeFixtures": false,
+  "readinessProfile": "development",
+  "gatePreset": "development",
+  "expectedDecision": "warning"
+}

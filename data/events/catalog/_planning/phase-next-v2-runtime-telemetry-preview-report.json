@@ -1,0 +1,840 @@
+{
+  "ok": true,
+  "reportType": "event-v2-runtime-telemetry-preview",
+  "mode": "dev-only",
+  "eventId": "indoor_dry_rootball",
+  "status": "preview-stable",
+  "readiness": "write-simulation-ready",
+  "steps": {
+    "context": {
+      "ok": true
+    },
+    "prepareEvent": {
+      "ok": true,
+      "eventId": "indoor_dry_rootball",
+      "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001"
+    },
+    "saveShapeBefore": {
+      "ok": true
+    },
+    "writeGate": {
+      "ok": true,
+      "gateMode": "v2-dry-run",
+      "authority": "v1",
+      "v2CanWrite": false,
+      "v2CanDryRun": true
+    },
+    "resolveApply": {
+      "ok": true,
+      "wouldWrite": false,
+      "reason": "apply_preview_created_no_write"
+    },
+    "saveShapeAfter": {
+      "ok": true
+    },
+    "roundtrip": {
+      "ok": true,
+      "usedProductiveStorage": false
+    },
+    "finalValidation": {
+      "ok": true
+    }
+  },
+  "safety": {
+    "wouldWrite": false,
+    "usedProductiveStorage": false,
+    "mutatedInputState": false,
+    "productiveCutover": false
+  },
+  "blockers": [],
+  "warnings": [],
+  "errors": [],
+  "nextRecommendedStep": "single-event-write-simulation-dev-flag",
+  "runtimeResult": {
+    "ok": true,
+    "mode": "dev-only-runtime-preview",
+    "eventId": "indoor_dry_rootball",
+    "gate": {
+      "ok": true,
+      "authority": "v1",
+      "gateMode": "v2-dry-run",
+      "v1CanWrite": true,
+      "v2CanWrite": false,
+      "v2CanPreview": true,
+      "v2CanDryRun": true,
+      "wouldWrite": false,
+      "usedProductiveStorage": false,
+      "noWriteDefault": true,
+      "contextSnapshot": {
+        "mode": "event_v2_write_gate_preview_context",
+        "gateMode": "v2-dry-run",
+        "hasEventV2": true,
+        "eventV2Mode": "dry-run",
+        "eventV2SchemaVersion": 1,
+        "eventV2Validation": {
+          "ok": true,
+          "warnings": [
+            "meta_counters_would_initialize"
+          ],
+          "errors": [],
+          "entryResults": {
+            "openEvents": [
+              {
+                "ok": true,
+                "kind": "event_v2_open_event",
+                "index": 0,
+                "warnings": [],
+                "errors": []
+              }
+            ],
+            "history": []
+          },
+          "normalizedShape": {
+            "schemaVersion": 1,
+            "mode": "dry-run",
+            "openEvents": [
+              {
+                "eventId": "indoor_dry_rootball",
+                "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001",
+                "eventVersion": 3,
+                "createdAt": 1760000000000,
+                "stage": "vegetative",
+                "category": "care",
+                "severity": "warning",
+                "source": "event-v2-runtime-adapter-preview",
+                "options": [
+                  "inspect",
+                  "stabilize",
+                  "overreact"
+                ],
+                "status": "preview",
+                "previewPayload": {
+                  "runtimeTickId": "dev-runtime-preview-001",
+                  "noWrite": true
+                }
+              }
+            ],
+            "history": [],
+            "meta": {
+              "lastGeneratedAt": null,
+              "lastResolvedAt": null,
+              "lastAuditAt": null,
+              "lastError": null,
+              "counters": {
+                "generated": 0,
+                "resolved": 0,
+                "rejected": 0,
+                "expired": 0
+              }
+            }
+          },
+          "wouldNormalize": true
+        },
+        "v1Enabled": true,
+        "v1WouldWrite": true,
+        "v2PreviewRequested": true,
+        "v2DryRunRequested": true,
+        "allowV2ActiveWriteAuthority": false,
+        "forceV2WriteIntent": false,
+        "forceV1WriteIntent": false,
+        "allowV1WriteWhenV2Active": false,
+        "reason": "unspecified",
+        "source": "event_v2_write_gate_preview"
+      },
+      "warnings": [],
+      "errors": [],
+      "diagnostics": {
+        "stateMutations": 0,
+        "saveWrites": 0,
+        "localStorageWrites": 0,
+        "indexedDbWrites": 0,
+        "usedProductiveStorage": false
+      },
+      "singleAuthority": true
+    },
+    "resolveApply": {
+      "ok": true,
+      "accepted": true,
+      "mode": "event_v2_resolve_apply_contract_dev_only",
+      "contractVersion": 1,
+      "reason": "apply_preview_created_no_write",
+      "eventId": "indoor_dry_rootball",
+      "optionId": "stabilize",
+      "eventVersion": 3,
+      "requestedWriteMode": "no_write",
+      "allowedStateTargets": [
+        "status.stress",
+        "status.risk",
+        "status.health"
+      ],
+      "forbiddenStateTargets": [
+        "coins",
+        "xp",
+        "profile",
+        "daily",
+        "retention",
+        "push",
+        "monetization",
+        "storage",
+        "events.activeEventId",
+        "events.openEvents",
+        "events.history",
+        "eventV2.openEvents",
+        "eventV2.history"
+      ],
+      "expectedMutations": [
+        {
+          "target": "status.stress",
+          "delta": -1,
+          "reason": "gentle_stabilization"
+        },
+        {
+          "target": "status.risk",
+          "delta": -1,
+          "reason": "gentle_stabilization"
+        }
+      ],
+      "appliedMutations": [],
+      "previewResult": {
+        "expectedQuality": "good",
+        "mutationPreview": [
+          {
+            "target": "status.stress",
+            "delta": -1,
+            "before": 24,
+            "after": 23,
+            "reason": "gentle_stabilization",
+            "applied": false,
+            "previewOnly": true
+          },
+          {
+            "target": "status.risk",
+            "delta": -1,
+            "before": 20,
+            "after": 19,
+            "reason": "gentle_stabilization",
+            "applied": false,
+            "previewOnly": true
+          }
+        ],
+        "stateAfterPreview": {
+          "eventV2": {
+            "schemaVersion": 1,
+            "mode": "dry-run",
+            "openEvents": [],
+            "history": [],
+            "meta": {}
+          },
+          "simulation": {
+            "simTimeMs": 1760000000000
+          },
+          "status": {
+            "stress": 23,
+            "risk": 19,
+            "health": 78
+          },
+          "events": {
+            "activeEventId": "legacy_event_runtime_authority"
+          }
+        },
+        "historyPreview": {
+          "kind": "event_v2_resolve_history_preview",
+          "eventId": "indoor_dry_rootball",
+          "optionId": "stabilize",
+          "eventVersion": 3,
+          "contractVersion": 1,
+          "expectedQuality": "good",
+          "mutationTargets": [
+            "status.stress",
+            "status.risk"
+          ],
+          "previewOnly": true,
+          "persisted": false,
+          "createdAtSimTimeMs": 1760000000000
+        }
+      },
+      "stateAfterPreview": {
+        "eventV2": {
+          "schemaVersion": 1,
+          "mode": "dry-run",
+          "openEvents": [],
+          "history": [],
+          "meta": {}
+        },
+        "simulation": {
+          "simTimeMs": 1760000000000
+        },
+        "status": {
+          "stress": 23,
+          "risk": 19,
+          "health": 78
+        },
+        "events": {
+          "activeEventId": "legacy_event_runtime_authority"
+        }
+      },
+      "historyPreview": {
+        "kind": "event_v2_resolve_history_preview",
+        "eventId": "indoor_dry_rootball",
+        "optionId": "stabilize",
+        "eventVersion": 3,
+        "contractVersion": 1,
+        "expectedQuality": "good",
+        "mutationTargets": [
+          "status.stress",
+          "status.risk"
+        ],
+        "previewOnly": true,
+        "persisted": false,
+        "createdAtSimTimeMs": 1760000000000
+      },
+      "canMutateState": false,
+      "canMutateSave": false,
+      "canApplyNow": false,
+      "laterWriteMode": {
+        "requiredMode": "dev_write_explicit_after_save_contract",
+        "currentlyEnabled": false,
+        "blocker": "save_load_and_v1_v2_write_gate_missing"
+      },
+      "noWriteDefault": true,
+      "safetyLabels": [
+        "dev-only",
+        "no-write default",
+        "preview mutations only",
+        "no save migration",
+        "no V1 replacement"
+      ],
+      "diagnostics": {
+        "stateMutations": 0,
+        "saveWrites": 0,
+        "localStorageWrites": 0,
+        "indexedDbWrites": 0,
+        "uiActions": 0,
+        "gameplayActivations": 0,
+        "validationErrors": [],
+        "originalStateMutated": false
+      }
+    },
+    "saveShape": {
+      "before": {
+        "ok": true,
+        "warnings": [
+          "meta_counters_would_initialize"
+        ],
+        "errors": [],
+        "entryResults": {
+          "openEvents": [
+            {
+              "ok": true,
+              "kind": "event_v2_open_event",
+              "index": 0,
+              "warnings": [],
+              "errors": []
+            }
+          ],
+          "history": []
+        },
+        "normalizedShape": {
+          "schemaVersion": 1,
+          "mode": "dry-run",
+          "openEvents": [
+            {
+              "eventId": "indoor_dry_rootball",
+              "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001",
+              "eventVersion": 3,
+              "createdAt": 1760000000000,
+              "stage": "vegetative",
+              "category": "care",
+              "severity": "warning",
+              "source": "event-v2-runtime-adapter-preview",
+              "options": [
+                "inspect",
+                "stabilize",
+                "overreact"
+              ],
+              "status": "preview",
+              "previewPayload": {
+                "runtimeTickId": "dev-runtime-preview-001",
+                "noWrite": true
+              }
+            }
+          ],
+          "history": [],
+          "meta": {
+            "lastGeneratedAt": null,
+            "lastResolvedAt": null,
+            "lastAuditAt": null,
+            "lastError": null,
+            "counters": {
+              "generated": 0,
+              "resolved": 0,
+              "rejected": 0,
+              "expired": 0
+            }
+          }
+        },
+        "wouldNormalize": true
+      },
+      "after": {
+        "ok": true,
+        "warnings": [
+          "meta_counters_would_initialize"
+        ],
+        "errors": [],
+        "entryResults": {
+          "openEvents": [
+            {
+              "ok": true,
+              "kind": "event_v2_open_event",
+              "index": 0,
+              "warnings": [],
+              "errors": []
+            }
+          ],
+          "history": [
+            {
+              "ok": true,
+              "kind": "event_v2_history_entry",
+              "index": 0,
+              "warnings": [],
+              "errors": []
+            }
+          ]
+        },
+        "normalizedShape": {
+          "schemaVersion": 1,
+          "mode": "dry-run",
+          "openEvents": [
+            {
+              "eventId": "indoor_dry_rootball",
+              "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001",
+              "eventVersion": 3,
+              "createdAt": 1760000000000,
+              "stage": "vegetative",
+              "category": "care",
+              "severity": "warning",
+              "source": "event-v2-runtime-adapter-preview",
+              "options": [
+                "inspect",
+                "stabilize",
+                "overreact"
+              ],
+              "status": "preview",
+              "previewPayload": {
+                "runtimeTickId": "dev-runtime-preview-001",
+                "noWrite": true
+              }
+            }
+          ],
+          "history": [
+            {
+              "eventId": "indoor_dry_rootball",
+              "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001",
+              "resolvedAt": 1760000030000,
+              "selectedOption": "stabilize",
+              "result": "preview",
+              "applyPreview": {
+                "expectedQuality": "good",
+                "mutationPreview": [
+                  {
+                    "target": "status.stress",
+                    "delta": -1,
+                    "before": 24,
+                    "after": 23,
+                    "reason": "gentle_stabilization",
+                    "applied": false,
+                    "previewOnly": true
+                  },
+                  {
+                    "target": "status.risk",
+                    "delta": -1,
+                    "before": 20,
+                    "after": 19,
+                    "reason": "gentle_stabilization",
+                    "applied": false,
+                    "previewOnly": true
+                  }
+                ],
+                "stateAfterPreview": {
+                  "eventV2": {
+                    "schemaVersion": 1,
+                    "mode": "dry-run",
+                    "openEvents": [],
+                    "history": [],
+                    "meta": {}
+                  },
+                  "simulation": {
+                    "simTimeMs": 1760000000000
+                  },
+                  "status": {
+                    "stress": 23,
+                    "risk": 19,
+                    "health": 78
+                  },
+                  "events": {
+                    "activeEventId": "legacy_event_runtime_authority"
+                  }
+                },
+                "historyPreview": {
+                  "kind": "event_v2_resolve_history_preview",
+                  "eventId": "indoor_dry_rootball",
+                  "optionId": "stabilize",
+                  "eventVersion": 3,
+                  "contractVersion": 1,
+                  "expectedQuality": "good",
+                  "mutationTargets": [
+                    "status.stress",
+                    "status.risk"
+                  ],
+                  "previewOnly": true,
+                  "persisted": false,
+                  "createdAtSimTimeMs": 1760000000000
+                }
+              },
+              "writeMode": "no-write",
+              "schemaVersion": 1,
+              "source": "event-v2-runtime-adapter-preview"
+            }
+          ],
+          "meta": {
+            "lastGeneratedAt": 1760000000000,
+            "lastResolvedAt": 1760000030000,
+            "lastAuditAt": 1760000060000,
+            "lastError": null,
+            "counters": {
+              "generated": 0,
+              "resolved": 0,
+              "rejected": 0,
+              "expired": 0
+            }
+          }
+        },
+        "wouldNormalize": true
+      }
+    },
+    "roundtrip": {
+      "ok": true,
+      "usedProductiveStorage": false,
+      "serialize": {
+        "ok": true,
+        "mode": "dev-only-roundtrip",
+        "step": "serialize",
+        "wouldWrite": false,
+        "usedProductiveStorage": false,
+        "serialized": "{\"schemaVersion\":1,\"mode\":\"dry-run\",\"openEvents\":[{\"eventId\":\"indoor_dry_rootball\",\"instanceId\":\"evt_v2_runtime_preview_indoor_dry_rootball_001\",\"eventVersion\":3,\"createdAt\":1760000000000,\"stage\":\"vegetative\",\"category\":\"care\",\"severity\":\"warning\",\"source\":\"event-v2-runtime-adapter-preview\",\"options\":[\"inspect\",\"stabilize\",\"overreact\"],\"status\":\"preview\",\"previewPayload\":{\"runtimeTickId\":\"dev-runtime-preview-001\",\"noWrite\":true}}],\"history\":[{\"eventId\":\"indoor_dry_rootball\",\"instanceId\":\"evt_v2_runtime_preview_indoor_dry_rootball_001\",\"resolvedAt\":1760000030000,\"selectedOption\":\"stabilize\",\"result\":\"preview\",\"applyPreview\":{\"expectedQuality\":\"good\",\"mutationPreview\":[{\"target\":\"status.stress\",\"delta\":-1,\"before\":24,\"after\":23,\"reason\":\"gentle_stabilization\",\"applied\":false,\"previewOnly\":true},{\"target\":\"status.risk\",\"delta\":-1,\"before\":20,\"after\":19,\"reason\":\"gentle_stabilization\",\"applied\":false,\"previewOnly\":true}],\"stateAfterPreview\":{\"eventV2\":{\"schemaVersion\":1,\"mode\":\"dry-run\",\"openEvents\":[],\"history\":[],\"meta\":{}},\"simulation\":{\"simTimeMs\":1760000000000},\"status\":{\"stress\":23,\"risk\":19,\"health\":78},\"events\":{\"activeEventId\":\"legacy_event_runtime_authority\"}},\"historyPreview\":{\"kind\":\"event_v2_resolve_history_preview\",\"eventId\":\"indoor_dry_rootball\",\"optionId\":\"stabilize\",\"eventVersion\":3,\"contractVersion\":1,\"expectedQuality\":\"good\",\"mutationTargets\":[\"status.stress\",\"status.risk\"],\"previewOnly\":true,\"persisted\":false,\"createdAtSimTimeMs\":1760000000000}},\"writeMode\":\"no-write\",\"schemaVersion\":1,\"source\":\"event-v2-runtime-adapter-preview\"}],\"meta\":{\"lastGeneratedAt\":1760000000000,\"lastResolvedAt\":1760000030000,\"lastAuditAt\":1760000060000,\"lastError\":null}}",
+        "warnings": [
+          "meta_counters_would_initialize"
+        ],
+        "errors": [],
+        "diagnostics": {
+          "stateMutations": 0,
+          "saveWrites": 0,
+          "localStorageWrites": 0,
+          "indexedDbWrites": 0,
+          "usedProductiveStorage": false
+        }
+      },
+      "deserialize": {
+        "ok": true,
+        "mode": "dev-only-roundtrip",
+        "step": "deserialize",
+        "wouldWrite": false,
+        "usedProductiveStorage": false,
+        "shape": {
+          "schemaVersion": 1,
+          "mode": "dry-run",
+          "openEvents": [
+            {
+              "eventId": "indoor_dry_rootball",
+              "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001",
+              "eventVersion": 3,
+              "createdAt": 1760000000000,
+              "stage": "vegetative",
+              "category": "care",
+              "severity": "warning",
+              "source": "event-v2-runtime-adapter-preview",
+              "options": [
+                "inspect",
+                "stabilize",
+                "overreact"
+              ],
+              "status": "preview",
+              "previewPayload": {
+                "runtimeTickId": "dev-runtime-preview-001",
+                "noWrite": true
+              }
+            }
+          ],
+          "history": [
+            {
+              "eventId": "indoor_dry_rootball",
+              "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001",
+              "resolvedAt": 1760000030000,
+              "selectedOption": "stabilize",
+              "result": "preview",
+              "applyPreview": {
+                "expectedQuality": "good",
+                "mutationPreview": [
+                  {
+                    "target": "status.stress",
+                    "delta": -1,
+                    "before": 24,
+                    "after": 23,
+                    "reason": "gentle_stabilization",
+                    "applied": false,
+                    "previewOnly": true
+                  },
+                  {
+                    "target": "status.risk",
+                    "delta": -1,
+                    "before": 20,
+                    "after": 19,
+                    "reason": "gentle_stabilization",
+                    "applied": false,
+                    "previewOnly": true
+                  }
+                ],
+                "stateAfterPreview": {
+                  "eventV2": {
+                    "schemaVersion": 1,
+                    "mode": "dry-run",
+                    "openEvents": [],
+                    "history": [],
+                    "meta": {}
+                  },
+                  "simulation": {
+                    "simTimeMs": 1760000000000
+                  },
+                  "status": {
+                    "stress": 23,
+                    "risk": 19,
+                    "health": 78
+                  },
+                  "events": {
+                    "activeEventId": "legacy_event_runtime_authority"
+                  }
+                },
+                "historyPreview": {
+                  "kind": "event_v2_resolve_history_preview",
+                  "eventId": "indoor_dry_rootball",
+                  "optionId": "stabilize",
+                  "eventVersion": 3,
+                  "contractVersion": 1,
+                  "expectedQuality": "good",
+                  "mutationTargets": [
+                    "status.stress",
+                    "status.risk"
+                  ],
+                  "previewOnly": true,
+                  "persisted": false,
+                  "createdAtSimTimeMs": 1760000000000
+                }
+              },
+              "writeMode": "no-write",
+              "schemaVersion": 1,
+              "source": "event-v2-runtime-adapter-preview"
+            }
+          ],
+          "meta": {
+            "lastGeneratedAt": 1760000000000,
+            "lastResolvedAt": 1760000030000,
+            "lastAuditAt": 1760000060000,
+            "lastError": null,
+            "counters": {
+              "generated": 0,
+              "resolved": 0,
+              "rejected": 0,
+              "expired": 0
+            }
+          }
+        },
+        "warnings": [
+          "meta_counters_would_initialize"
+        ],
+        "errors": [],
+        "validation": {
+          "ok": true,
+          "warnings": [
+            "meta_counters_would_initialize"
+          ],
+          "errors": [],
+          "wouldNormalize": true
+        },
+        "diagnostics": {
+          "stateMutations": 0,
+          "saveWrites": 0,
+          "localStorageWrites": 0,
+          "indexedDbWrites": 0,
+          "usedProductiveStorage": false,
+          "validationErrors": 0,
+          "validationWarnings": 1
+        }
+      },
+      "validation": {
+        "ok": true,
+        "mode": "dev-only-roundtrip",
+        "wouldWrite": false,
+        "usedProductiveStorage": false,
+        "beforeValidation": {
+          "ok": true,
+          "warnings": [
+            "meta_counters_would_initialize"
+          ],
+          "errors": []
+        },
+        "afterValidation": {
+          "ok": true,
+          "warnings": [],
+          "errors": []
+        },
+        "warnings": [
+          "roundtrip_used_normalized_shape"
+        ],
+        "errors": [],
+        "diagnostics": {
+          "stateMutations": 0,
+          "saveWrites": 0,
+          "localStorageWrites": 0,
+          "indexedDbWrites": 0,
+          "usedProductiveStorage": false
+        }
+      }
+    },
+    "previewShape": {
+      "schemaVersion": 1,
+      "mode": "dry-run",
+      "openEvents": [
+        {
+          "eventId": "indoor_dry_rootball",
+          "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001",
+          "eventVersion": 3,
+          "createdAt": 1760000000000,
+          "stage": "vegetative",
+          "category": "care",
+          "severity": "warning",
+          "source": "event-v2-runtime-adapter-preview",
+          "options": [
+            "inspect",
+            "stabilize",
+            "overreact"
+          ],
+          "status": "preview",
+          "previewPayload": {
+            "runtimeTickId": "dev-runtime-preview-001",
+            "noWrite": true
+          }
+        }
+      ],
+      "history": [
+        {
+          "eventId": "indoor_dry_rootball",
+          "instanceId": "evt_v2_runtime_preview_indoor_dry_rootball_001",
+          "resolvedAt": 1760000030000,
+          "selectedOption": "stabilize",
+          "result": "preview",
+          "applyPreview": {
+            "expectedQuality": "good",
+            "mutationPreview": [
+              {
+                "target": "status.stress",
+                "delta": -1,
+                "before": 24,
+                "after": 23,
+                "reason": "gentle_stabilization",
+                "applied": false,
+                "previewOnly": true
+              },
+              {
+                "target": "status.risk",
+                "delta": -1,
+                "before": 20,
+                "after": 19,
+                "reason": "gentle_stabilization",
+                "applied": false,
+                "previewOnly": true
+              }
+            ],
+            "stateAfterPreview": {
+              "eventV2": {
+                "schemaVersion": 1,
+                "mode": "dry-run",
+                "openEvents": [],
+                "history": [],
+                "meta": {}
+              },
+              "simulation": {
+                "simTimeMs": 1760000000000
+              },
+              "status": {
+                "stress": 23,
+                "risk": 19,
+                "health": 78
+              },
+              "events": {
+                "activeEventId": "legacy_event_runtime_authority"
+              }
+            },
+            "historyPreview": {
+              "kind": "event_v2_resolve_history_preview",
+              "eventId": "indoor_dry_rootball",
+              "optionId": "stabilize",
+              "eventVersion": 3,
+              "contractVersion": 1,
+              "expectedQuality": "good",
+              "mutationTargets": [
+                "status.stress",
+                "status.risk"
+              ],
+              "previewOnly": true,
+              "persisted": false,
+              "createdAtSimTimeMs": 1760000000000
+            }
+          },
+          "writeMode": "no-write",
+          "schemaVersion": 1,
+          "source": "event-v2-runtime-adapter-preview"
+        }
+      ],
+      "meta": {
+        "lastGeneratedAt": 1760000000000,
+        "lastResolvedAt": 1760000030000,
+        "lastAuditAt": 1760000060000,
+        "lastError": null
+      }
+    },
+    "wouldWrite": false,
+    "usedProductiveStorage": false,
+    "mutatedInputState": false,
+    "warnings": [],
+    "errors": [],
+    "diagnostics": {
+      "stateMutations": 0,
+      "saveWrites": 0,
+      "localStorageWrites": 0,
+      "indexedDbWrites": 0,
+      "usedProductiveStorage": false,
+      "resultValidationErrors": 0,
+      "mutatedInputState": false
+    },
+    "resultValidation": {
+      "ok": true,
+      "mode": "dev-only-runtime-preview-validation",
+      "wouldWrite": false,
+      "usedProductiveStorage": false,
+      "warnings": [],
+      "errors": [],
+      "diagnostics": {
+        "stateMutations": 0,
+        "saveWrites": 0,
+        "localStorageWrites": 0,
+        "indexedDbWrites": 0,
+        "usedProductiveStorage": false
+      }
+    }
+  },
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "warnings": []
+  }
+}

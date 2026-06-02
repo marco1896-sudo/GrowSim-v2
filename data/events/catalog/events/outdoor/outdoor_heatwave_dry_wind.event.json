@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 3,
+  "id": "outdoor_heatwave_dry_wind",
+  "type": "event",
+  "category": "environment",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_outdoor"
+  ],
+  "title": {
+    "key": "events.v2.outdoor_heatwave_dry_wind.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.outdoor_heatwave_dry_wind.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.outdoor_heatwave_dry_wind.description"
+  },
+  "cause": {
+    "kind": "heatwave_with_low_rh",
+    "explanation": {
+      "key": "events.v2.outdoor_heatwave_dry_wind.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.outdoor_heatwave_dry_wind.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.outdoor_heatwave_dry_wind.coach.actions.0"
+      },
+      {
+        "key": "events.v2.outdoor_heatwave_dry_wind.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.outdoor_heatwave_dry_wind.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.leaf_curl_up_dry_edge"
+      },
+      "weight": 1,
+      "id": "leaf_curl_up_dry_edge",
+      "spriteOverlay": "outdoor_heatwave_dry_wind_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "microclimate_check": {
+        "label": {
+          "key": "diagnostics.microclimate_check.dry_wind"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "heatwave_with_low_rh"
+        ]
+      }
+    },
+    "available": [
+      "microclimate_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "shade_and_windbreak",
+      "label": {
+        "key": "options.shade_and_windbreak"
+      },
+      "uiDetail": {
+        "key": "events.v2.outdoor_heatwave_dry_wind.options.shade_and_windbreak.detail"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "water_timing_adjust_dawn",
+      "label": {
+        "key": "options.water_timing_adjust_dawn"
+      },
+      "uiDetail": {
+        "key": "events.v2.outdoor_heatwave_dry_wind.options.water_timing_adjust_dawn.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "defoliate_midday",
+      "label": {
+        "key": "options.defoliate_midday"
+      },
+      "uiDetail": {
+        "key": "events.v2.outdoor_heatwave_dry_wind.options.defoliate_midday.detail"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "env.temperatureC",
+        "op": ">=",
+        "value": 32
+      },
+      {
+        "field": "env.humidityPercent",
+        "op": "<=",
+        "value": 38
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 4,
+      "max": 11
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "vegetative",
+      "preflower",
+      "flowering",
+      "ripening"
+    ]
+  },
+  "pressure": {
+    "weight": 1.05,
+    "polarity": "negative",
+    "primaryPressure": "heat_dry_wind"
+  },
+  "severity": {
+    "level": "critical"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "outdoor_heatwave_dry_wind_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "outdoor_heatwave_dry_wind_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "outdoor_heatwave_dry_wind_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "heat_dry_wind": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "heat_dry_wind": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.outdoor_heatwave_dry_wind.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "shade_and_windbreak",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.outdoor_heatwave_dry_wind.cover",
+      "src": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+      "fallback": "assets/events/v2/final/outdoor_heatwave_dry_wind/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "outdoor_heatwave_dry_wind_overlay_warn": "assets/events/event-stress-recovery.png",
+      "outdoor_heatwave_dry_wind_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "outdoor_heatwave_dry_wind_overlay_critical": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "climate_hot_wind",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.outdoor_heatwave_dry_wind.title",
+      "events.v2.outdoor_heatwave_dry_wind.symptom",
+      "events.v2.outdoor_heatwave_dry_wind.description",
+      "events.v2.outdoor_heatwave_dry_wind.cause",
+      "events.v2.outdoor_heatwave_dry_wind.coach.summary",
+      "events.v2.outdoor_heatwave_dry_wind.coach.why",
+      "events.v2.outdoor_heatwave_dry_wind.coach.actions.0",
+      "events.v2.outdoor_heatwave_dry_wind.coach.actions.1",
+      "events.v2.outdoor_heatwave_dry_wind.aftermath.lesson",
+      "options.shade_and_windbreak",
+      "options.water_timing_adjust_dawn",
+      "options.defoliate_midday",
+      "alt.events.v2.outdoor_heatwave_dry_wind.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_environment"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "environment",
+      "climate_hot_wind"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_climate_vpd_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-17 first real mini-catalog data-only event."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-13",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/outdoor_heatwave_dry_wind/hero.webp",
+    "fallback": "assets/events/v2/final/outdoor_heatwave_dry_wind/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/outdoor_heatwave_dry_wind/candidate_full_scene_02.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "temporary_usable_needs_revision",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 3,
+  "id": "shared_early_pest_signs_mild",
+  "type": "event",
+  "category": "pest",
+  "tags": [
+    "learning_beat",
+    "mini_catalog_startset",
+    "mode_indoor"
+  ],
+  "title": {
+    "key": "events.v2.shared_early_pest_signs_mild.title"
+  },
+  "shortSymptom": {
+    "key": "events.v2.shared_early_pest_signs_mild.symptom"
+  },
+  "longDescription": {
+    "key": "events.v2.shared_early_pest_signs_mild.description"
+  },
+  "cause": {
+    "kind": "early_pest_activity",
+    "explanation": {
+      "key": "events.v2.shared_early_pest_signs_mild.cause"
+    }
+  },
+  "coach": {
+    "summary": {
+      "key": "events.v2.shared_early_pest_signs_mild.coach.summary"
+    },
+    "actions": [
+      {
+        "key": "events.v2.shared_early_pest_signs_mild.coach.actions.0"
+      },
+      {
+        "key": "events.v2.shared_early_pest_signs_mild.coach.actions.1"
+      }
+    ],
+    "why": {
+      "key": "events.v2.shared_early_pest_signs_mild.coach.why"
+    }
+  },
+  "symptoms": [
+    {
+      "label": {
+        "key": "symptoms.leaf_spotting_mild"
+      },
+      "weight": 1,
+      "id": "leaf_spotting_mild",
+      "spriteOverlay": "shared_early_pest_signs_mild_overlay_warn"
+    }
+  ],
+  "diagnostics": {
+    "rations": {
+      "guided": {
+        "perSimDay": 2
+      }
+    },
+    "modeAvailability": {
+      "pro": "tools_only",
+      "guided": "rationed",
+      "beginner": "always"
+    },
+    "results": {
+      "underside_leaf_check": {
+        "label": {
+          "key": "diagnostics.underside_leaf_check.mild_activity"
+        },
+        "informationValue": "high",
+        "revealsCauseHints": [
+          "early_pest_activity"
+        ]
+      }
+    },
+    "available": [
+      "underside_leaf_check",
+      "quick_visual_scan"
+    ]
+  },
+  "options": [
+    {
+      "id": "targeted_inspection_isolation",
+      "label": {
+        "key": "options.targeted_inspection_isolation"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_early_pest_signs_mild.options.targeted_inspection_isolation.detail"
+      },
+      "recommendedIn": [
+        "beginner",
+        "guided"
+      ],
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "corrective_action",
+      "effects": {
+        "risk": -2,
+        "stress": -3
+      }
+    },
+    {
+      "id": "increase_monitoring_frequency",
+      "label": {
+        "key": "options.increase_monitoring_frequency"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_early_pest_signs_mild.options.increase_monitoring_frequency.detail"
+      },
+      "contextFit": [
+        "primary"
+      ],
+      "isDeliberateMistake": false,
+      "intent": "partial_action",
+      "effects": {
+        "risk": -1,
+        "stress": -1
+      }
+    },
+    {
+      "id": "spray_everything_blindly",
+      "label": {
+        "key": "options.spray_everything_blindly"
+      },
+      "uiDetail": {
+        "key": "events.v2.shared_early_pest_signs_mild.options.spray_everything_blindly.detail"
+      },
+      "contextFit": [
+        "any"
+      ],
+      "isDeliberateMistake": true,
+      "intent": "misread_signal",
+      "effects": {
+        "risk": 3,
+        "health": -1,
+        "stress": 2
+      }
+    }
+  ],
+  "triggers": {
+    "all": [
+      {
+        "field": "status.pestRisk",
+        "op": ">=",
+        "value": 25
+      },
+      {
+        "field": "status.stress",
+        "op": ">=",
+        "value": 14
+      }
+    ],
+    "setup": {
+      "modeIn": [
+        "indoor",
+        "outdoor"
+      ]
+    },
+    "stage": {
+      "min": 3,
+      "max": 10
+    }
+  },
+  "eligibility": {
+    "constraints": {
+      "minPlantSize": 6,
+      "minDay": 2,
+      "maxDay": 65
+    },
+    "allowedPhases": [
+      "vegetative",
+      "preflower",
+      "flowering"
+    ]
+  },
+  "pressure": {
+    "weight": 0.96,
+    "polarity": "negative",
+    "primaryPressure": "pest_early_signs"
+  },
+  "severity": {
+    "level": "warning"
+  },
+  "warningProfile": {
+    "leadTimeSimHours": 3,
+    "cadence": "early_visible"
+  },
+  "escalationProfile": {
+    "stages": [
+      {
+        "afterSimHours": 0,
+        "id": "warning",
+        "spriteOverlay": "shared_early_pest_signs_mild_overlay_warn"
+      },
+      {
+        "afterSimHours": 8,
+        "addsRiskPerHour": 0.8,
+        "id": "escalating",
+        "spriteOverlay": "shared_early_pest_signs_mild_overlay_escalate"
+      },
+      {
+        "afterSimHours": 16,
+        "addsHealthLossPerHour": 0.4,
+        "id": "critical",
+        "spriteOverlay": "shared_early_pest_signs_mild_overlay_critical",
+        "deathPathEligible": false
+      }
+    ]
+  },
+  "aftermathProfile": {
+    "perOutcomeQuality": {
+      "strong_recovery": {
+        "plantStateMutations": {
+          "risk": -3,
+          "stress": -4
+        },
+        "knowledgeProfileGains": {
+          "pest_early_signs": 0.05
+        }
+      },
+      "no_action": {
+        "plantStateMutations": {
+          "risk": 7,
+          "stress": 6
+        }
+      },
+      "partial_mitigation": {
+        "plantStateMutations": {
+          "risk": -1,
+          "stress": -2
+        },
+        "knowledgeProfileGains": {
+          "pest_early_signs": 0.02
+        }
+      },
+      "poor_outcome": {
+        "plantStateMutations": {
+          "risk": 5,
+          "stress": 4
+        }
+      }
+    },
+    "lesson": {
+      "key": "events.v2.shared_early_pest_signs_mild.aftermath.lesson"
+    }
+  },
+  "rewards": {
+    "score": {
+      "strong_recovery": 50,
+      "no_action": -15,
+      "partial_mitigation": 20,
+      "poor_outcome": -5
+    }
+  },
+  "ui": {
+    "recommendedOptionId": "targeted_inspection_isolation",
+    "modalDismissPolicy": "after_outcome",
+    "audioCue": "soft_alert_v2",
+    "showRiskRewardChips": true,
+    "modalLayout": "symptom_first",
+    "haptic": "single_pulse",
+    "presentation": "modal"
+  },
+  "assets": {
+    "cover": {
+      "altKey": "alt.events.v2.shared_early_pest_signs_mild.cover",
+      "src": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+      "fallback": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+      "kind": "image"
+    },
+    "spriteOverlays": {
+      "shared_early_pest_signs_mild_overlay_escalate": "assets/events/event-stress-recovery.png",
+      "shared_early_pest_signs_mild_overlay_critical": "assets/events/event-stress-recovery.png",
+      "shared_early_pest_signs_mild_overlay_warn": "assets/events/event-stress-recovery.png"
+    }
+  },
+  "assetTag": "symptom_leaf_spots_mild",
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.shared_early_pest_signs_mild.title",
+      "events.v2.shared_early_pest_signs_mild.symptom",
+      "events.v2.shared_early_pest_signs_mild.description",
+      "events.v2.shared_early_pest_signs_mild.cause",
+      "events.v2.shared_early_pest_signs_mild.coach.summary",
+      "events.v2.shared_early_pest_signs_mild.coach.why",
+      "events.v2.shared_early_pest_signs_mild.coach.actions.0",
+      "events.v2.shared_early_pest_signs_mild.coach.actions.1",
+      "events.v2.shared_early_pest_signs_mild.aftermath.lesson",
+      "options.targeted_inspection_isolation",
+      "options.increase_monitoring_frequency",
+      "options.spray_everything_blindly",
+      "alt.events.v2.shared_early_pest_signs_mild.cover"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "telemetry": {
+    "kpiBuckets": [
+      "mini_pest"
+    ],
+    "tags": [
+      "v2-mini-catalog",
+      "pest",
+      "symptom_leaf_spots_mild"
+    ],
+    "eventName": "event_impression"
+  },
+  "learningCard": {
+    "presentation": "before_decision_first_time_only",
+    "ref": "lc_pest_observation_basics"
+  },
+  "chainHooks": {
+    "advancesChainsOnOutcome": null,
+    "startsChain": null
+  },
+  "migration": {
+    "supersedes": [],
+    "mappingNotes": "Phase-74 remap to dedicated pest observation learning card."
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-16",
+    "owner": "design",
+    "qualityChecklistVersion": 1
+  },
+  "assetRefs": {
+    "hero": "assets/events/v2/final/shared_early_pest_signs_mild/hero.webp",
+    "fallback": "assets/events/v2/final/shared_early_pest_signs_mild/fallback.webp",
+    "sourceCandidate": "assets/events/v2/_generated/full-scene/review/shared_early_pest_signs_mild/candidate_full_scene_01.png",
+    "status": "trial_asset_set_v1",
+    "revisionStatus": "ready",
+    "sourcePhase": "phase-112",
+    "notes": []
+  }
+}

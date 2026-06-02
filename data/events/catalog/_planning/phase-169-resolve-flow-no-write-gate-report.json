@@ -1,0 +1,146 @@
+{
+  "phase": 169,
+  "name": "Event V2 Resolve Flow No-Write Gate",
+  "overallStatus": "resolve_flow_no_write_gate_pass_with_watch",
+  "statusScale": [
+    "resolve_flow_no_write_gate_pass",
+    "resolve_flow_no_write_gate_pass_with_watch",
+    "resolve_flow_no_write_gate_blocked"
+  ],
+  "areas": [
+    {
+      "id": "resolve_preview_model",
+      "status": "gate_pass",
+      "checks": {
+        "candidatesChecked": 3,
+        "optionsPerCandidateRange": "3",
+        "feedbackPreviewPresent": true,
+        "plannedEffectsPreviewPresent": true,
+        "canResolveFalse": true,
+        "canApplyEffectsFalse": true
+      },
+      "evidence": [
+        "phase-164-resolve-preview-model-report.json",
+        "phase-168-resolve-feedback-copy-report.json"
+      ]
+    },
+    {
+      "id": "resolve_preview_ui",
+      "status": "gate_pass",
+      "checks": {
+        "questionVisible": true,
+        "optionsVisible": true,
+        "optionClickShowsFeedback": true,
+        "plannedEffectsPreviewVisible": true,
+        "backCloseWorks": true,
+        "noApplyResolveVisible": true
+      },
+      "evidence": [
+        "phase-165-resolve-preview-ui-smoke-report.json",
+        "phase-168-resolve-feedback-copy-smoke-report.json"
+      ]
+    },
+    {
+      "id": "multi_candidate_flow",
+      "status": "gate_pass",
+      "checks": {
+        "multiCandidateOpen": true,
+        "noCrossCandidatePersistence": true,
+        "feedbackSelectionNotCarriedOver": true,
+        "saveStorageWrites": 0
+      },
+      "evidence": [
+        "phase-166-resolve-preview-multi-candidate-smoke-report.json"
+      ]
+    },
+    {
+      "id": "interaction_flow",
+      "status": "gate_pass_with_watch",
+      "checks": {
+        "goodOrCautiousOptionChecked": true,
+        "riskyOptionChecked": true,
+        "feedbackSwitches": true,
+        "plannedEffectsSwitches": true,
+        "noRealEffectsApplied": true
+      },
+      "watchpoints": [
+        "plannedEffectsPreview bleibt teilweise technisch"
+      ],
+      "evidence": [
+        "phase-167-resolve-preview-interaction-flow-smoke-report.json"
+      ]
+    },
+    {
+      "id": "event_specific_feedback",
+      "status": "gate_pass_with_watch",
+      "checks": {
+        "feedbackContexts": 6,
+        "candidatesWithEventSpecificDraftAtLeast3": true,
+        "goodBadFeedbackDifferentiated": true,
+        "learningPreviewPresent": true,
+        "genericFallbackWorks": true
+      },
+      "watchpoints": [
+        "Baseline-Candidates nutzen teils generischen Fallback",
+        "Event-spezifische Lernhinweise noch nicht flächendeckend"
+      ],
+      "evidence": [
+        "phase-168-resolve-feedback-copy-report.json",
+        "phase-168-resolve-feedback-copy-smoke-report.json"
+      ]
+    },
+    {
+      "id": "safety",
+      "status": "gate_pass",
+      "checks": {
+        "runtimeWriteFalse": true,
+        "saveWrites": 0,
+        "localStorageWrites": 0,
+        "indexedDbWrites": 0,
+        "noEventTrigger": true,
+        "noEventStatusMutation": true,
+        "noEventV1Replacement": true,
+        "noMissionRewardNotificationMutation": true,
+        "actionsEmpty": true,
+        "selectedCandidateNull": true,
+        "persistedSelectedCandidateNull": true,
+        "persistedResolveChoiceNull": true,
+        "productionFalse": true
+      },
+      "evidence": [
+        "phase-168-no-write-feedback-copy-verification.md",
+        "phase-168-resolve-feedback-copy-smoke-report.json"
+      ]
+    },
+    {
+      "id": "product_readiness",
+      "status": "gate_pass_with_watch",
+      "checks": {
+        "resolvePreviewUnderstandableAsLearningMechanic": true,
+        "feedbackWatchNonBlocking": true,
+        "plannedEffectsPotentiallyTechnical": true,
+        "productionReady": false
+      },
+      "watchpoints": [
+        "Apply-/Write-Risiken noch ungeplant in Code",
+        "Legacy Label Smokes weiterhin rot",
+        "Event V1/V2 Parallelbetrieb vor Write kritisch"
+      ],
+      "evidence": [
+        "phase-168-resolve-feedback-copy-qa.md"
+      ]
+    }
+  ],
+  "watchpoints": [
+    "plannedEffectsPreview für breite Tester teilweise zu technisch",
+    "Event-spezifisches Feedback ist noch nicht für alle Events ausgebaut",
+    "Legacy Label-Smokes bleiben als bekannte Alt-Abweichung"
+  ],
+  "legacyDeviations": [
+    "dev/run-event-v2-runtime-shadow-dev-toggle-browser-smoke.js",
+    "dev/run-event-v2-app-near-entry-browser-smoke.js",
+    "dev/run-event-v2-candidate-feed-browser-smoke.js",
+    "dev/run-event-v2-loading-safety-static-check.js (Legacy noAppHook=false)"
+  ],
+  "recommendationPhase170": "Event V2 Resolve Apply Planning – Still No Write"
+}

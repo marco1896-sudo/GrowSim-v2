@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 3,
+  "id": "lc_airflow_fundamentals",
+  "title": {
+    "key": "events.v2.learning.lc_airflow_fundamentals.title"
+  },
+  "subtitle": {
+    "key": "events.v2.learning.lc_airflow_fundamentals.subtitle"
+  },
+  "presentation": {
+    "estimatedReadSeconds": 45,
+    "preferredHeroAsset": "assets/events/event-stress-recovery.png",
+    "layout": "hero_then_bullets"
+  },
+  "content": {
+    "bullets": [
+      {
+        "key": "events.v2.learning.lc_airflow_fundamentals.bullets.0"
+      },
+      {
+        "key": "events.v2.learning.lc_airflow_fundamentals.bullets.1"
+      },
+      {
+        "key": "events.v2.learning.lc_airflow_fundamentals.bullets.2"
+      }
+    ],
+    "moreReadingRef": "library.v2.climate.airflow_intro",
+    "realWorldNoteKey": "events.v2.learning.lc_airflow_fundamentals.real_world_note"
+  },
+  "knowledgeProfile": {
+    "primaryDimension": "airflow_fundamentals",
+    "gainOnFirstView": 0.05,
+    "gainOnLaterView": 0.01
+  },
+  "appearsIn": {
+    "linkedEventIds": [
+      "indoor_fan_failure_airflow_drop",
+      "outdoor_wind_exposure_stem_stress"
+    ],
+    "minStage": 2,
+    "modes": [
+      "beginner",
+      "guided"
+    ]
+  },
+  "i18n": {
+    "requiredKeys": [
+      "events.v2.learning.lc_airflow_fundamentals.title",
+      "events.v2.learning.lc_airflow_fundamentals.subtitle",
+      "events.v2.learning.lc_airflow_fundamentals.bullets.0",
+      "events.v2.learning.lc_airflow_fundamentals.bullets.1",
+      "events.v2.learning.lc_airflow_fundamentals.bullets.2",
+      "events.v2.learning.lc_airflow_fundamentals.real_world_note"
+    ],
+    "supportedLocales": [
+      "de",
+      "en",
+      "es"
+    ]
+  },
+  "authoring": {
+    "status": "draft",
+    "lastReviewed": "2026-05-16",
+    "owner": "design"
+  },
+  "severity": {
+    "level": "info"
+  }
+}

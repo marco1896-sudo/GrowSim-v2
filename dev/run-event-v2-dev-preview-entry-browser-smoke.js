@@ -1,0 +1,173 @@
+#!/usr/bin/env node
+/* eslint-env node */
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+const { spawnSync } = require('child_process');
+const { chromium } = require('playwright');
+
+const ROOT = process.cwd();
+const PAGE_PATH = '/dev/event-v2-preview-gallery.html';
+const OUT_JSON = path.join(ROOT, 'data', 'events', 'catalog', '_planning', 'phase-146-dev-preview-entry-browser-smoke-report.json');
+const OUT_MD = path.join(ROOT, 'data', 'events', 'catalog', '_planning', 'phase-146-dev-preview-entry-browser-smoke-report.md');
+const VIEWPORTS = [360, 390, 430, 768];
+
+function contentType(filePath) {
+  const lower = filePath.toLowerCase();
+  if (lower.endsWith('.html')) return 'text/html; charset=utf-8';
+  if (lower.endsWith('.js')) return 'application/javascript; charset=utf-8';
+  if (lower.endsWith('.json')) return 'application/json; charset=utf-8';
+  if (lower.endsWith('.css')) return 'text/css; charset=utf-8';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  return 'application/octet-stream';
+}
+
+function createStaticServer(rootDir) {
+  const server = http.createServer((req, res) => {
+    const reqUrl = new URL(req.url, 'http://localhost');
+    let relPath = decodeURIComponent(reqUrl.pathname);
+    if (relPath === '/') relPath = PAGE_PATH;
+    const abs = path.join(rootDir, relPath);
+    const norm = path.normalize(abs);
+    if (!norm.startsWith(path.normalize(rootDir))) {
+      res.writeHead(403); res.end('Forbidden'); return;
+    }
+    fs.stat(norm, (err, stats) => {
+      if (err || !stats.isFile()) { res.writeHead(404); res.end('Not Found'); return; }
+      res.writeHead(200, { 'Content-Type': contentType(norm) });
+      fs.createReadStream(norm).pipe(res);
+    });
+  });
+  return new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', () => resolve({ server, port: server.address().port }));
+    server.on('error', reject);
+  });
+}
+
+async function inspect(page, viewport) {
+  await page.setViewportSize({ width: viewport, height: 900 });
+  await page.waitForTimeout(120);
+  return page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll('.event-v2-preview-card'));
+    const imgs = Array.from(document.querySelectorAll('.event-v2-preview-image'));
+    const loaded = imgs.filter((img) => img.complete && img.naturalWidth > 0).length;
+    const broken = imgs.filter((img) => img.complete && img.naturalWidth === 0).length;
+    const text = cards.map((card) => card.textContent || '');
+    const fixtures = new Set(
+      cards
+        .map((card) => card.getAttribute('data-fixture-id'))
+        .filter((value) => typeof value === 'string' && value.trim())
+    );
+    const horizontalOverflow = document.documentElement.scrollWidth > window.innerWidth;
+    const status = document.getElementById('status-bar');
+    const statusText = status ? status.textContent || '' : '';
+    return {
+      cards: cards.length,
+      imagesLoaded: loaded,
+      brokenImages: broken,
+      horizontalOverflow,
+      fixturesVisible: fixtures.size,
+      candidateOnlyCount: text.filter((t) => t.includes('candidate: candidate_only')).length,
+      noWriteCount: text.filter((t) => t.includes('runtimeWrite: false') && t.includes('production: false')).length,
+      actionHintCount: text.filter((t) => /resolve|reward|trigger|apply|choose/i.test(t)).length,
+      selectedCandidateMentions: text.filter((t) => /selectedCandidate/i.test(t)).length,
+      safetyLabelVisible: /Dev Preview|Candidate Only|No Write|No Gameplay Activation/i.test(statusText),
+      statusText,
+    };
+  });
+}
+
+async function main() {
+  // Ensure dev-preview data is explicitly generated before opening the page.
+  const preflight = spawnSync(process.execPath, ['dev/run-event-v2-dev-test-candidate-feed-report.js', '--enable-dev-preview'], {
+    cwd: ROOT,
+    stdio: 'pipe',
+    encoding: 'utf8',
+  });
+  if (preflight.status !== 0) {
+    console.error('Failed to prepare dev preview feed report.');
+    console.error(preflight.stderr || preflight.stdout || '');
+    process.exit(1);
+  }
+
+  const { server, port } = await createStaticServer(ROOT);
+  const pageUrl = `http://127.0.0.1:${port}${PAGE_PATH}`;
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  const jsErrors = [];
+  page.on('pageerror', (err) => jsErrors.push(String(err.message || err)));
+
+  try {
+    await page.goto(pageUrl, { waitUntil: 'networkidle' });
+    await page.waitForSelector('.event-v2-preview-card', { timeout: 15000 });
+    await page.selectOption('#filter-mode', 'dev_candidate');
+    await page.waitForTimeout(180);
+
+    const viewportResults = [];
+    for (const vp of VIEWPORTS) viewportResults.push({ viewport: vp, ...(await inspect(page, vp)) });
+
+    const largest = viewportResults.find((v) => v.viewport === 768) || viewportResults[viewportResults.length - 1];
+    const summary = {
+      viewports: VIEWPORTS,
+      candidateItemsVisible: largest.cards,
+      fixturesVisible: largest.fixturesVisible,
+      imagesLoaded: largest.imagesLoaded,
+      brokenImages: largest.brokenImages,
+      horizontalOverflow: viewportResults.some((v) => v.horizontalOverflow),
+      jsErrors,
+      actionsFound: largest.actionHintCount,
+      selectedCandidateMentions: largest.selectedCandidateMentions,
+      safetyLabelsVisible: largest.safetyLabelVisible,
+    };
+
+    const report = {
+      ok: largest.cards === 15
+        && largest.fixturesVisible === 3
+        && largest.imagesLoaded === 15
+        && largest.brokenImages === 0
+        && summary.horizontalOverflow === false
+        && jsErrors.length === 0
+        && largest.actionHintCount === 0
+        && largest.candidateOnlyCount === 15
+        && largest.noWriteCount === 15
+        && largest.safetyLabelVisible === true,
+      browserSmokeExecuted: true,
+      mode: 'dev_candidate_entry',
+      pageUrl,
+      viewportResults,
+      summary,
+    };
+
+    fs.mkdirSync(path.dirname(OUT_JSON), { recursive: true });
+    fs.writeFileSync(OUT_JSON, JSON.stringify(report, null, 2) + '\n', 'utf8');
+    const md = [
+      '# Phase 146 - Dev Preview Entry Browser Smoke',
+      '',
+      `- browserSmokeExecuted: ${report.browserSmokeExecuted}`,
+      `- viewports: ${VIEWPORTS.join(', ')}`,
+      `- fixturesVisible: ${summary.fixturesVisible}`,
+      `- candidateItemsVisible: ${summary.candidateItemsVisible}`,
+      `- imagesLoaded: ${summary.imagesLoaded}`,
+      `- brokenImages: ${summary.brokenImages}`,
+      `- horizontalOverflow: ${summary.horizontalOverflow}`,
+      `- jsErrors: ${summary.jsErrors.length}`,
+      `- actionsFound: ${summary.actionsFound}`,
+      `- safetyLabelsVisible: ${summary.safetyLabelsVisible}`,
+      `- ok: ${report.ok}`,
+    ].join('\n') + '\n';
+    fs.writeFileSync(OUT_MD, md, 'utf8');
+    console.log(JSON.stringify(report, null, 2));
+    process.exit(report.ok ? 0 : 1);
+  } finally {
+    await browser.close();
+    server.close();
+  }
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

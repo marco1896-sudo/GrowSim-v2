@@ -1,0 +1,9 @@
+{
+  "id": "fixturesDevelopment",
+  "label": "Fixtures / Development",
+  "sourceMode": "fullCatalog",
+  "includeFixtures": true,
+  "readinessProfile": "development",
+  "gatePreset": "development",
+  "expectedDecision": "warning"
+}
