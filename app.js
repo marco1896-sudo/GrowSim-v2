@@ -13951,8 +13951,8 @@ function renderCareStudioChrome(careViewModel = null) {
       {
         label: i18nT('careStudio.chips.moisture'),
         value: `${Math.round(globalStatus.water)}%`,
-        tone: globalStatus.water <= 40 ? 'warning' : (globalStatus.water >= 75 ? 'positive' : 'stable'),
-        detail: globalStatus.water <= 40 ? i18nT('careStudio.state.watch') : i18nT('careStudio.state.balanced')
+        tone: moistureStatus === 'wet' || moistureStatus === 'dry' ? 'warning' : (globalStatus.water >= 75 ? 'positive' : 'stable'),
+        detail: moistureStatus === 'wet' || moistureStatus === 'dry' ? i18nT('careStudio.state.watch') : i18nT('careStudio.state.balanced')
       },
       {
         label: i18nT('careStudio.chips.nutrition'),
@@ -14485,7 +14485,7 @@ function renderCareEffectsPanel(careViewModel = null) {
       </div>
       <div class="care-studio-water-mini-grid">
         <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.dryback'))}</small><strong>${escapeHtml(`${round2(Number(careData.drybackRatePerHour || careWater.drybackRatePerHour || 0))}/h`)}</strong></span>
-        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.overwatering'))}</small><strong>${escapeHtml(`${Math.round(Number(careWater.overwateringPressure || 0))}%`)}</strong></span>
+        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.overwatering'))}</small><strong>${escapeHtml(`${Math.round(Number(careSummary.rootZoneRiskScore != null ? careSummary.rootZoneRiskScore : careWater.overwateringPressure || 0))}%`)}</strong></span>
         <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.dry_stress'))}</small><strong>${escapeHtml(`${Math.round(Number(careWater.dryStressPressure || 0))}%`)}</strong></span>
       </div>
       <div class="care-studio-meta-row care-studio-meta-row--stacked">

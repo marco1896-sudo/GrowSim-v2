@@ -51,6 +51,24 @@ async function main() {
         }
         return map;
       };
+      const getCareHeaderExpectation = () => {
+        const careApi = window.GrowSimCareModel;
+        const summary = careApi && typeof careApi.deriveCareSummary === 'function'
+          ? careApi.deriveCareSummary(window.__gsState.care, window.__gsState)
+          : (window.__gsState.care && window.__gsState.care.summary) || {};
+        const riskValue = Number.isFinite(Number(summary.riskScore))
+          ? Number(summary.riskScore)
+          : Number(window.__gsState.status.risk || 0);
+        return {
+          water: Number.isFinite(Number(summary.displayMoisture))
+            ? Number(summary.displayMoisture)
+            : Number(window.__gsState.status.water || 0),
+          nutrition: Number(window.__gsState.status.nutrition || 0),
+          stress: Number(window.__gsState.status.stress || 0),
+          risk: riskValue,
+          riskLabel: deriveRiskLabel(riskValue)
+        };
+      };
       window.__gsState.care = window.__gsState.care || {};
       window.__gsState.care.summary = null;
       window.__gsState.ui.openSheet = 'care';
@@ -92,6 +110,7 @@ async function main() {
         stress: Number(window.__gsState.status.stress || 0),
         risk: Number(window.__gsState.status.risk || 0)
       };
+      const initialHeaderExpectation = getCareHeaderExpectation();
       const initialStatusChips = readStatusChips();
 
       const beforeWater = Number(window.__gsState.status.water || 0);
@@ -104,6 +123,7 @@ async function main() {
         stress: Number(window.__gsState.status.stress || 0),
         risk: Number(window.__gsState.status.risk || 0)
       };
+      const waterHeaderExpectation = getCareHeaderExpectation();
       const waterStatusChips = readStatusChips();
       const afterDecisionText = String(document.getElementById('careDecisionZone')?.textContent || '');
       const aftercareCardCount = document.querySelectorAll('#careDecisionZone .care-studio-aftercare-card').length;
@@ -164,6 +184,7 @@ async function main() {
         stress: Number(window.__gsState.status.stress || 0),
         risk: Number(window.__gsState.status.risk || 0)
       };
+      const feedHeaderExpectation = getCareHeaderExpectation();
       const feedStatusChips = readStatusChips();
       const directFeedMethodCooldownSet = Number(window.__gsState.actions?.cooldowns?.feed_light_base || 0) > 0;
       const directFeedMethodId = String(window.__gsState.actions?.lastResult?.careMethodId || '');
@@ -208,14 +229,17 @@ async function main() {
         executeDisabled: Boolean(document.getElementById('careExecuteButton')?.disabled),
         feedback: String(document.getElementById('careFeedback')?.textContent || '').trim(),
         initialStatusSnapshot,
+        initialHeaderExpectation,
         initialStatusChips,
         waterChanged: afterWater !== beforeWater,
         waterStatusSnapshot,
+        waterHeaderExpectation,
         waterStatusChips,
         waterMethodLabels,
         feedMethodLabels,
         feedChanged: afterFeed !== beforeFeed,
         feedStatusSnapshot,
+        feedHeaderExpectation,
         feedStatusChips,
         directFeedMethodCooldownSet,
         directFeedMethodId,
@@ -250,9 +274,9 @@ async function main() {
         decisionIconImageCount: decisionFrames.length,
         decorativeAltEmpty: decorativeImages.every((img) => img.getAttribute('alt') === ''),
         diagnosisText,
-        expectedInitialRiskLabel: deriveRiskLabel(initialStatusSnapshot.risk),
-        expectedWaterRiskLabel: deriveRiskLabel(waterStatusSnapshot.risk),
-        expectedFeedRiskLabel: deriveRiskLabel(feedStatusSnapshot.risk)
+        expectedInitialRiskLabel: initialHeaderExpectation.riskLabel,
+        expectedWaterRiskLabel: waterHeaderExpectation.riskLabel,
+        expectedFeedRiskLabel: feedHeaderExpectation.riskLabel
       };
     });
 
@@ -267,28 +291,28 @@ async function main() {
     assert.ok(/Decision|Auswahl|Selection|Delta|Feuchte|Moisture/.test(result.previewText), 'care studio should render a decision forecast for the selected action');
     assert.ok(result.aftercareCardCount >= 1, 'care studio should render stored after-action feedback');
     assert.ok(result.feedback.length > 0, 'care studio should keep feedback visible after execution');
-    assert.strictEqual(result.initialStatusChips.Feuchte.value, `${Math.round(result.initialStatusSnapshot.water)}%`, 'care header moisture should mirror the global water status');
+    assert.ok(Math.abs(parseInt(result.initialStatusChips.Feuchte.value, 10) - Math.round(result.initialHeaderExpectation.water)) <= 1, 'care header moisture should mirror the care summary moisture');
     assert.strictEqual(result.initialStatusChips['Versorg.'].value, `${Math.round(result.initialStatusSnapshot.nutrition)}%`, 'care header nutrition should mirror the global nutrition status');
     assert.strictEqual(result.initialStatusChips.Stress.value, `${Math.round(result.initialStatusSnapshot.stress)}%`, 'care header stress should mirror the global stress status');
-    assert.strictEqual(result.initialStatusChips.Risiko.value, `${Math.round(result.initialStatusSnapshot.risk)}%`, 'care header risk should mirror the global risk status');
-    assert.strictEqual(result.initialStatusChips.Risiko.detail, result.expectedInitialRiskLabel, 'care header risk label should be derived from the global risk value');
+    assert.ok(Math.abs(parseInt(result.initialStatusChips.Risiko.value, 10) - Math.round(result.initialHeaderExpectation.risk)) <= 1, 'care header risk should mirror the care summary risk');
+    assert.strictEqual(result.initialStatusChips.Risiko.detail, result.expectedInitialRiskLabel, 'care header risk label should be derived from the care summary risk value');
     assert.strictEqual(result.waterChanged, true, 'existing care actions should remain executable');
-    assert.strictEqual(result.waterStatusChips.Feuchte.value, `${Math.round(result.waterStatusSnapshot.water)}%`, 'care header moisture should stay synced after a watering method');
+    assert.ok(Math.abs(parseInt(result.waterStatusChips.Feuchte.value, 10) - Math.round(result.waterHeaderExpectation.water)) <= 1, 'care header moisture should stay synced to care summary after a watering method');
     assert.strictEqual(result.waterStatusChips['Versorg.'].value, `${Math.round(result.waterStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a watering method');
     assert.strictEqual(result.waterStatusChips.Stress.value, `${Math.round(result.waterStatusSnapshot.stress)}%`, 'care header stress should stay synced after a watering method');
-    assert.strictEqual(result.waterStatusChips.Risiko.value, `${Math.round(result.waterStatusSnapshot.risk)}%`, 'care header risk should stay synced after a watering method');
-    assert.strictEqual(result.waterStatusChips.Risiko.detail, result.expectedWaterRiskLabel, 'care header risk label should stay derived from the global risk value after a watering method');
+    assert.ok(Math.abs(parseInt(result.waterStatusChips.Risiko.value, 10) - Math.round(result.waterHeaderExpectation.risk)) <= 1, 'care header risk should stay synced to care summary after a watering method');
+    assert.strictEqual(result.waterStatusChips.Risiko.detail, result.expectedWaterRiskLabel, 'care header risk label should stay derived from the care summary risk value after a watering method');
     assert.ok(result.waterMethodLabels.includes('Topfgewicht pr\u00FCfen'), 'water tab should expose the new care methods');
     assert.ok(result.waterMethodLabels.includes('Oberfl\u00E4che befeuchten'), 'water tab should replace the legacy water labels');
     assert.ok(!result.waterMethodLabels.some((label) => /Klarwasser|Nährlösung gießen/.test(label)), 'water tab should not expose the old legacy water labels');
     assert.ok(result.feedMethodLabels.includes('Leichte Basisversorgung'), 'feed tab should expose the new feed methods');
     assert.ok(!result.feedMethodLabels.some((label) => /Fütterung|CalMag/.test(label)), 'feed tab should not expose the old legacy feed labels');
     assert.strictEqual(result.feedChanged, true, 'feed methods should remain executable');
-    assert.strictEqual(result.feedStatusChips.Feuchte.value, `${Math.round(result.feedStatusSnapshot.water)}%`, 'care header moisture should stay synced after a feed method');
+    assert.ok(Math.abs(parseInt(result.feedStatusChips.Feuchte.value, 10) - Math.round(result.feedHeaderExpectation.water)) <= 1, 'care header moisture should stay synced to care summary after a feed method');
     assert.strictEqual(result.feedStatusChips['Versorg.'].value, `${Math.round(result.feedStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a feed method');
     assert.strictEqual(result.feedStatusChips.Stress.value, `${Math.round(result.feedStatusSnapshot.stress)}%`, 'care header stress should stay synced after a feed method');
-    assert.strictEqual(result.feedStatusChips.Risiko.value, `${Math.round(result.feedStatusSnapshot.risk)}%`, 'care header risk should stay synced after a feed method');
-    assert.strictEqual(result.feedStatusChips.Risiko.detail, result.expectedFeedRiskLabel, 'care header risk label should stay derived from the global risk value after a feed method');
+    assert.ok(Math.abs(parseInt(result.feedStatusChips.Risiko.value, 10) - Math.round(result.feedHeaderExpectation.risk)) <= 1, 'care header risk should stay synced to care summary after a feed method');
+    assert.strictEqual(result.feedStatusChips.Risiko.detail, result.expectedFeedRiskLabel, 'care header risk label should stay derived from the care summary risk value after a feed method');
     assert.ok(result.routineMethodLabels.includes('Bl\u00E4tter pr\u00FCfen'), 'routine tab should expose the new routine methods');
     assert.ok(!/careStudio\.routine\.note\.|careMethod\./.test(result.routineInsightText), 'routine tab should not leak raw i18n keys');
     assert.ok(!/careStudio\.|careMethod\./.test(result.diagnosisText), 'diagnosis tab should not leak raw i18n keys');

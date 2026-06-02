@@ -546,6 +546,37 @@
     return 'low';
   }
 
+  function buildCareSummaryRootZoneRiskScore(water) {
+    const safeWater = water && typeof water === 'object' ? water : {};
+    const overwatering = clamp(toFiniteNumber(safeWater.overwateringPressure, 0), 0, 100);
+    const rootZone = clamp(toFiniteNumber(safeWater.rootZoneMoisture, 0), 0, 100);
+    const surface = clamp(toFiniteNumber(safeWater.surfaceMoisture, 0), 0, 100);
+    const rootWetPressure = rootZone >= 82 ? 42 + ((rootZone - 82) * 2.2) : 0;
+    const unevenDrybackPressure = surface <= 34 && rootZone >= 64 ? 28 + ((rootZone - 64) * 0.9) : 0;
+    const rootDryPressure = rootZone <= 36 ? 42 + ((36 - rootZone) * 1.2) : 0;
+    return clampInt(Math.max(overwatering, rootWetPressure, unevenDrybackPressure, rootDryPressure), 0, 100);
+  }
+
+  function buildCareSummaryRiskScore(water, nutrients) {
+    const safeWater = water && typeof water === 'object' ? water : {};
+    const safeNutrients = nutrients && typeof nutrients === 'object' ? nutrients : {};
+    const dryStress = clamp(toFiniteNumber(safeWater.dryStressPressure, 0), 0, 100);
+    const saltLoad = clamp(toFiniteNumber(safeNutrients.saltLoad, 0), 0, 100);
+    const rootZoneRisk = buildCareSummaryRootZoneRiskScore(safeWater);
+    return clampInt(Math.max(
+      dryStress,
+      saltLoad * 0.82,
+      rootZoneRisk
+    ), 0, 100);
+  }
+
+  function buildCareSummaryRiskLevel(riskScore) {
+    const safeScore = clampInt(riskScore, 0, 100);
+    if (safeScore >= 72) return 'high';
+    if (safeScore >= 42) return 'medium';
+    return 'low';
+  }
+
   function severityRank(severity) {
     if (severity === 'high') return 4;
     if (severity === 'medium') return 3;
@@ -949,10 +980,14 @@
     const moisture = normalizedCare.water.substrateMoisture;
     const rootZone = normalizedCare.water.rootZoneMoisture;
     const surface = normalizedCare.water.surfaceMoisture;
+    const displayMoisture = clampInt((moisture * 0.35) + (surface * 0.25) + (rootZone * 0.4), 0, 100);
+    const rootZoneRiskScore = buildCareSummaryRootZoneRiskScore(normalizedCare.water);
+    const riskScore = buildCareSummaryRiskScore(normalizedCare.water, normalizedCare.nutrients);
+    const riskLevel = buildCareSummaryRiskLevel(riskScore);
     let moistureBand = 'stable';
-    if (moisture <= 34) {
+    if (displayMoisture <= 34 && rootZone <= 58) {
       moistureBand = 'dry';
-    } else if (moisture >= 78 || rootZone >= 82) {
+    } else if (displayMoisture >= 78 || rootZone >= 82) {
       moistureBand = 'wet';
     }
 
@@ -970,7 +1005,9 @@
       rootZoneHint,
       wateringRecommendation: readiness.watering,
       feedingRecommendation: readiness.feeding,
-      riskLevel: readiness.riskLevel,
+      riskLevel,
+      riskScore,
+      rootZoneRiskScore,
       nextCareFocus: readiness.nextFocus,
       buddyHintKey: wateringVsFeedingBuddyHint(readiness),
       diagnosis: readiness.diagnosis || getCareDiagnosis({
@@ -983,7 +1020,8 @@
       }),
       surfaceMoisture: Math.round(surface),
       rootZoneMoisture: Math.round(rootZone),
-      substrateMoisture: Math.round(moisture)
+      substrateMoisture: Math.round(moisture),
+      displayMoisture
     };
   }
 

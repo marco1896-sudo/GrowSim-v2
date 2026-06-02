@@ -163,12 +163,25 @@
       const lastFeedback = normalizedCare && normalizedCare.feedback && typeof normalizedCare.feedback === 'object'
         ? normalizedCare.feedback
         : {};
+      const summaryDisplayMoisture = careSummary && Number.isFinite(Number(careSummary.displayMoisture))
+        ? Number(careSummary.displayMoisture)
+        : (careSummary && Number.isFinite(Number(careSummary.substrateMoisture))
+          ? Number(careSummary.substrateMoisture)
+          : (normalizedCare && normalizedCare.water && Number.isFinite(Number(normalizedCare.water.substrateMoisture))
+            ? Number(normalizedCare.water.substrateMoisture)
+            : Number(status.water || 0)));
+      const summaryRiskScore = careSummary && Number.isFinite(Number(careSummary.riskScore))
+        ? Number(careSummary.riskScore)
+        : Number(status.risk || 0);
+      const summaryRiskLevel = careSummary && typeof careSummary.riskLevel === 'string' && careSummary.riskLevel.trim()
+        ? careSummary.riskLevel.trim()
+        : deriveGlobalRiskLevel(summaryRiskScore);
       const globalStatus = Object.freeze({
-        water: clampPercent(status.water),
+        water: clampPercent(summaryDisplayMoisture),
         nutrition: clampPercent(status.nutrition),
         stress: clampPercent(status.stress),
-        risk: clampPercent(status.risk),
-        riskLevel: deriveGlobalRiskLevel(status.risk)
+        risk: clampPercent(summaryRiskScore),
+        riskLevel: summaryRiskLevel
       });
 
       return {
