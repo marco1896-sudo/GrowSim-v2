@@ -1,10 +1,44 @@
 'use strict';
 
 (function attachHomeMapping(globalScope) {
+  function clampPercent(value) {
+    const numeric = Number.isFinite(Number(value)) ? Number(value) : 0;
+    return Math.max(0, Math.min(100, numeric));
+  }
+
+  function getPlayerFacingStatus(state) {
+    const safeState = state && typeof state === 'object' ? state : {};
+    const status = safeState.status || {};
+    const careApi = globalScope.GrowSimCareModel;
+    const rawCare = safeState.care && typeof safeState.care === 'object' ? safeState.care : {};
+    const normalizedCare = careApi && typeof careApi.normalizeCareState === 'function'
+      ? careApi.normalizeCareState(rawCare, safeState)
+      : rawCare;
+    const careSummary = careApi && typeof careApi.deriveCareSummary === 'function'
+      ? careApi.deriveCareSummary(normalizedCare, safeState)
+      : (normalizedCare.summary || {});
+
+    return {
+      water: clampPercent(
+        Number.isFinite(Number(careSummary && careSummary.displayMoisture))
+          ? Number(careSummary.displayMoisture)
+          : Number(status.water || 0)
+      ),
+      nutrition: clampPercent(status.nutrition),
+      stress: clampPercent(status.stress),
+      risk: clampPercent(
+        Number.isFinite(Number(careSummary && careSummary.riskScore))
+          ? Number(careSummary.riskScore)
+          : Number(status.risk || 0)
+      )
+    };
+  }
+
   function fallbackHomeViewModel(state) {
     const safeState = state && typeof state === 'object' ? state : {};
     const simulation = safeState.simulation || {};
     const status = safeState.status || {};
+    const playerFacingStatus = getPlayerFacingStatus(safeState);
     const plant = safeState.plant || {};
     const events = safeState.events || {};
     const scheduler = events.scheduler || {};
@@ -34,11 +68,11 @@
       isDaytime: Boolean(simulation.isDaytime),
       rings: {
         health: Number(status.health || 0),
-        stress: Number(status.stress || 0),
-        water: Number(status.water || 0),
-        nutrition: Number(status.nutrition || 0),
+        stress: Number(playerFacingStatus.stress || 0),
+        water: Number(playerFacingStatus.water || 0),
+        nutrition: Number(playerFacingStatus.nutrition || 0),
         growth: Number(status.growth || 0),
-        risk: Number(status.risk || 0)
+        risk: Number(playerFacingStatus.risk || 0)
       },
       panel: {
         playerName: 'Max Mustergrower',
@@ -86,6 +120,7 @@
       'status.nutrition',
       'status.growth',
       'status.risk',
+      'care',
       'plant.isDead',
       'plant.phase',
       'plant.stageKey',

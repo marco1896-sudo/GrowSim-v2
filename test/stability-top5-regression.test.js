@@ -406,18 +406,6 @@ async function evaluateAfterStableBoot(page, expression) {
   throw new Error('evaluateAfterStableBoot exhausted retries');
 }
 
-async function waitForGate(page) {
-  await page.waitForFunction(() => {
-    const modal = document.getElementById('authModal');
-    return Boolean(
-      modal &&
-      !modal.classList.contains('hidden') &&
-      modal.dataset &&
-      modal.dataset.gate === 'required'
-    );
-  }, null, { timeout: 15000 });
-}
-
 async function seedValidAuthSession(page) {
   await page.addInitScript((authTokenKey) => {
     localStorage.setItem(authTokenKey, 'test-token');
@@ -438,6 +426,26 @@ async function loginThroughGate(page) {
 
 async function startRun(page) {
   await page.waitForSelector('#landing:not(.hidden)', { timeout: 15000 });
+  for (let index = 0; index < 8; index += 1) {
+    const startVisible = await page.locator('#startRunBtn').evaluate((node) => (
+      !node.classList.contains('hidden')
+      && node.getAttribute('aria-hidden') !== 'true'
+      && !node.disabled
+    ));
+    if (startVisible) {
+      break;
+    }
+
+    const nextVisible = await page.locator('#setupNextBtn').evaluate((node) => (
+      !node.classList.contains('hidden')
+      && node.getAttribute('aria-hidden') !== 'true'
+      && !node.disabled
+    ));
+    if (!nextVisible) {
+      break;
+    }
+    await page.click('#setupNextBtn');
+  }
   await page.click('#startRunBtn');
   await page.waitForFunction(() => {
     const landing = document.getElementById('landing');
@@ -536,7 +544,10 @@ async function scenarioCloudRetryAfterLogin(page) {
   });
 
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await waitForGate(page);
+  await waitForBootReady(page);
+  await page.evaluate(() => {
+    openCloudAuthModal();
+  });
   await loginThroughGate(page);
   await waitForBootReady(page);
 
@@ -588,44 +599,6 @@ async function scenarioFreshnessArbitration(page) {
   assert.strictEqual(restored.displayName, 'Newer Local', 'freshness arbitration should preserve newer local profile data');
 }
 
-async function scenarioAuthGateFreeze(page) {
-  await installApiMocks(page, {
-    allowAuthSession: true,
-    remoteState: createRemoteState({
-      simTimeMs: 6_000_000,
-      savedAtRealMs: Date.now() + 20_000,
-      displayName: 'Post Gate Resume'
-    })
-  });
-
-  await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await waitForGate(page);
-
-  const before = await page.evaluate(() => ({
-    simTimeMs: Number(window.__gsState.simulation.simTimeMs),
-    lastTickRealTimeMs: Number(window.__gsState.simulation.lastTickRealTimeMs)
-  }));
-  await page.waitForTimeout(2500);
-  const duringGate = await page.evaluate(() => ({
-    simTimeMs: Number(window.__gsState.simulation.simTimeMs),
-    lastTickRealTimeMs: Number(window.__gsState.simulation.lastTickRealTimeMs)
-  }));
-
-  assert.strictEqual(duringGate.simTimeMs, before.simTimeMs, 'simulation time should stay frozen while the required auth gate is active');
-  assert.strictEqual(duringGate.lastTickRealTimeMs >= before.lastTickRealTimeMs, true, 'auth gate freeze should keep runtime clocks sane');
-
-  await loginThroughGate(page);
-  const resumed = await evaluateAfterStableBoot(page, () => ({
-    bootOk: window.__gsBootOk === true,
-    authGateActive: Boolean(window.__gsState.ui && window.__gsState.ui.authGateActive),
-    lastTickRealTimeMs: Number(window.__gsState.simulation.lastTickRealTimeMs)
-  }));
-
-  assert.strictEqual(resumed.bootOk, true, 'boot should complete after the startup auth gate is cleared');
-  assert.strictEqual(resumed.authGateActive, false, 'auth gate should clear after a successful login');
-  assert.strictEqual(resumed.lastTickRealTimeMs >= duringGate.lastTickRealTimeMs, true, 'post-login runtime clocks should remain sane after the auth gate resumes boot');
-}
-
 async function scenarioWatchdogTerminalState(page) {
   await installApiMocks(page, {
     allowAuthSession: true,
@@ -654,29 +627,38 @@ async function scenarioWatchdogTerminalState(page) {
   assert.strictEqual(result.bannerVisible, false, 'watchdog should not raise a false runtime halt banner in terminal states');
 }
 
-async function scenarioStartupGateImmediate(page) {
+async function scenarioGuestStartupWithoutSession(page) {
   await installApiMocks(page, { allowAuthSession: false });
   const startedAtMs = Date.now();
-  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
-  await waitForGate(page);
+  await page.goto(APP_URL, { waitUntil: 'networkidle' });
+  await waitForBootReady(page);
   const elapsedMs = Date.now() - startedAtMs;
 
   const state = await page.evaluate(() => {
     const modal = document.getElementById('authModal');
     const primaryBtn = document.getElementById('authModalPrimaryBtn');
+    const landing = document.getElementById('landing');
     return {
       bootOk: window.__gsBootOk === true,
       authGateActive: Boolean(window.__gsState && window.__gsState.ui && window.__gsState.ui.authGateActive),
       modalVisible: Boolean(modal && !modal.classList.contains('hidden')),
-      primaryVisible: Boolean(primaryBtn && !primaryBtn.disabled)
+      primaryVisible: Boolean(primaryBtn && !primaryBtn.disabled),
+      landingVisible: Boolean(landing && !landing.classList.contains('hidden')),
+      hasSimulation: Boolean(window.__gsState && window.__gsState.simulation && Number.isFinite(Number(window.__gsState.simulation.simTimeMs))),
+      hasLocalProfile: Boolean(window.__gsState && window.__gsState.profile),
+      authenticated: Boolean(window.GrowSimAuth && window.GrowSimAuth.isAuthenticated())
     };
   });
 
-  assert(elapsedMs < 4000, `startup auth gate should appear promptly for signed-out users (observed ${elapsedMs}ms)`);
-  assert.strictEqual(state.bootOk, false, 'boot should pause behind the required startup auth gate until login succeeds');
-  assert.strictEqual(state.authGateActive, true, 'startup should activate the auth gate immediately when no valid session exists');
-  assert.strictEqual(state.modalVisible, true, 'startup should show the auth modal without opening Settings');
-  assert.strictEqual(state.primaryVisible, true, 'startup auth modal should expose a direct login action');
+  assert(elapsedMs < 15000, `guest startup should complete within the normal boot budget for signed-out users (observed ${elapsedMs}ms)`);
+  assert.strictEqual(state.bootOk, true, 'signed-out startup should complete as a local guest');
+  assert.strictEqual(state.authGateActive, false, 'signed-out startup should not activate the blocking auth gate');
+  assert.strictEqual(state.modalVisible, false, 'signed-out startup should not show the auth modal automatically');
+  assert.strictEqual(state.primaryVisible, true, 'auth modal controls may remain available for optional login');
+  assert.strictEqual(state.landingVisible, true, 'fresh guest startup should expose the local run setup');
+  assert.strictEqual(state.hasSimulation, true, 'guest startup should initialize local simulation state');
+  assert.strictEqual(state.hasLocalProfile, true, 'guest startup should initialize local profile state');
+  assert.strictEqual(state.authenticated, false, 'guest startup should not create an auth session');
 }
 
 async function scenarioValidSessionStartupSkipsGate(page) {
@@ -716,13 +698,12 @@ async function main() {
 
   const browser = await chromium.launch({ headless: true });
   try {
-    await runScenario(browser, 'startup shows required auth gate immediately when signed out', scenarioStartupGateImmediate);
+    await runScenario(browser, 'signed-out startup enters local guest mode', scenarioGuestStartupWithoutSession);
     await runScenario(browser, 'valid authenticated startup skips forced auth gate', scenarioValidSessionStartupSkipsGate);
     await runScenario(browser, 'reset path rebuild is valid', scenarioResetPath);
     await runScenario(browser, 'canonical ownership stays wired after boot', scenarioCanonicalOwnership);
     await runScenario(browser, 'cloud save retries after login', scenarioCloudRetryAfterLogin);
     await runScenario(browser, 'restore prefers newer local snapshot', scenarioFreshnessArbitration);
-    await runScenario(browser, 'auth gate freezes and resumes simulation', scenarioAuthGateFreeze);
     await runScenario(browser, 'watchdog ignores valid terminal render loop', scenarioWatchdogTerminalState);
   } finally {
     await closeBrowser(browser);

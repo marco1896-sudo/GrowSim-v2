@@ -1468,6 +1468,7 @@ async function restoreState(options = {}) {
   }
   if (saved.ui && typeof saved.ui === 'object') {
     Object.assign(state.ui, saved.ui);
+    state.ui.authGateActive = false;
     state.ui.openSheet = null;
     state.ui.menuOpen = false;
     state.ui.menuDialogOpen = false;

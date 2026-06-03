@@ -102,12 +102,25 @@ async function main() {
         stress: 18,
         risk: 14
       });
+      window.__gsState.care = window.__gsState.care || {};
+      window.__gsState.care.water = {
+        ...(window.__gsState.care.water || {}),
+        substrateMoisture: 74,
+        surfaceMoisture: 74,
+        rootZoneMoisture: 74
+      };
       window.__gsState.simulation.growthImpulse = 0.98;
       window.renderHud();
 
       await new Promise((resolve) => setTimeout(resolve, 60));
 
       window.__gsState.status.water = 28;
+      window.__gsState.care.water = {
+        ...(window.__gsState.care.water || {}),
+        substrateMoisture: 28,
+        surfaceMoisture: 28,
+        rootZoneMoisture: 28
+      };
       window.renderHud();
 
       const waterRing = document.getElementById('waterRing');

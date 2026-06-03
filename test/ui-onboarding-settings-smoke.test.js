@@ -35,6 +35,7 @@ async function waitForTransientUiSettled(page, timeoutMs = 12000) {
     lastSnapshot = await page.evaluate(() => {
       const menu = document.getElementById('gameMenu');
       const dialog = document.getElementById('menuDialog');
+      const dialogKicker = document.getElementById('menuDialogKicker');
       const uiState = window.__gsState && window.__gsState.ui && typeof window.__gsState.ui === 'object'
         ? window.__gsState.ui
         : {};
@@ -45,8 +46,25 @@ async function waitForTransientUiSettled(page, timeoutMs = 12000) {
         menuAriaHidden: menu ? menu.getAttribute('aria-hidden') : null,
         dialogHidden: Boolean(dialog && dialog.classList.contains('hidden')),
         dialogAriaHidden: dialog ? dialog.getAttribute('aria-hidden') : null,
+        dialogVariant: dialog ? dialog.dataset.variant || '' : '',
+        dialogKickerText: dialogKicker ? dialogKicker.textContent.trim() : '',
         uiMenuOpen: Boolean(uiState.menuOpen),
-        uiMenuDialogOpen: Boolean(uiState.menuDialogOpen)
+        uiMenuDialogOpen: Boolean(uiState.menuDialogOpen),
+        uiOpenSheet: uiState.openSheet || null,
+        storedUi: (() => {
+          try {
+            const raw = localStorage.getItem('grow-sim-state-v2');
+            const parsed = raw ? JSON.parse(raw) : null;
+            return parsed && parsed.ui ? {
+              menuOpen: Boolean(parsed.ui.menuOpen),
+              menuDialogOpen: Boolean(parsed.ui.menuDialogOpen),
+              openSheet: parsed.ui.openSheet || null
+            } : null;
+          } catch (error) {
+            return { error: String(error && error.message ? error.message : error) };
+          }
+        })(),
+        bootTraceTail: Array.isArray(window.__gsBootTrace) ? window.__gsBootTrace.slice(-8).map((entry) => entry.step || '') : []
       };
     });
 
@@ -58,6 +76,33 @@ async function waitForTransientUiSettled(page, timeoutMs = 12000) {
 
     if (lastSnapshot.bootOk && domSettled && stateSettled) {
       return lastSnapshot;
+    }
+
+    const storedTransientOpen = Boolean(lastSnapshot.storedUi && (
+      lastSnapshot.storedUi.menuOpen
+      || lastSnapshot.storedUi.menuDialogOpen
+      || lastSnapshot.storedUi.openSheet
+    ));
+    const runtimeMissionRewardDialog = lastSnapshot.bootOk
+      && !storedTransientOpen
+      && lastSnapshot.dialogVariant === 'mission-reward'
+      && /Mission geschafft/i.test(lastSnapshot.dialogKickerText || '');
+    if (runtimeMissionRewardDialog) {
+      await page.click('#menuDialogCancelBtn');
+      await page.waitForTimeout(120);
+      const menuStillOpen = await page.evaluate(() => {
+        const menu = document.getElementById('gameMenu');
+        return Boolean(menu && !menu.classList.contains('hidden'));
+      });
+      if (menuStillOpen) {
+        await page.evaluate(() => {
+          if (typeof closeMenu === 'function') {
+            closeMenu();
+          }
+        });
+        await page.waitForTimeout(120);
+      }
+      continue;
     }
 
     await page.waitForTimeout(120);
@@ -117,19 +162,31 @@ async function main() {
     await expectDisabled(page, '#setupBackBtn');
     await expectDisabled(page, '#setupPresetBtn');
 
-    const initialBuilderState = await page.evaluate(() => ({
-      stepLabel: document.getElementById('onboardingStepLabel')?.textContent.trim() || null,
-      activeTitle: document.querySelector('.run-builder-step.is-active h3')?.textContent.trim() || null,
-      activePot: Boolean(document.querySelector('[data-setup-select="setupPotSize"].is-active')),
-      buddySrc: document.querySelector('.run-builder-step.is-active .onboarding-buddy-tip img')?.getAttribute('src') || null,
-      potIconSrc: document.querySelector('[data-setup-select="setupPotSize"][data-setup-value="small"] .onboarding-option-media__image')?.getAttribute('src') || null,
-      nextHidden: document.getElementById('setupNextBtn')?.classList.contains('hidden') || false,
-      startHidden: document.getElementById('startRunBtn')?.classList.contains('hidden') || false,
-      outdoorDisabled: Boolean(document.querySelector('[data-setup-select="setupMode"][data-setup-value="outdoor"]')?.disabled),
-      highLightDisabled: Boolean(document.querySelector('[data-setup-select="setupLight"][data-setup-value="high"]')?.disabled)
-    }));
+    const initialBuilderState = await page.evaluate(() => {
+      const guestWelcomeNode = document.querySelector('[data-guest-welcome-note]');
+      const guestWelcomeVisible = Boolean(
+        guestWelcomeNode
+        && !guestWelcomeNode.classList.contains('hidden')
+        && guestWelcomeNode.getAttribute('aria-hidden') !== 'true'
+      );
+      return {
+        stepLabel: document.getElementById('onboardingStepLabel')?.textContent.trim() || null,
+        activeTitle: document.querySelector('.run-builder-step.is-active h3')?.textContent.trim() || null,
+        guestWelcomeText: guestWelcomeVisible ? guestWelcomeNode.textContent.replace(/\s+/g, ' ').trim() : '',
+        guestWelcomeVisible,
+        activePot: Boolean(document.querySelector('[data-setup-select="setupPotSize"].is-active')),
+        buddySrc: document.querySelector('.run-builder-step.is-active .onboarding-buddy-tip img')?.getAttribute('src') || null,
+        potIconSrc: document.querySelector('[data-setup-select="setupPotSize"][data-setup-value="small"] .onboarding-option-media__image')?.getAttribute('src') || null,
+        nextHidden: document.getElementById('setupNextBtn')?.classList.contains('hidden') || false,
+        startHidden: document.getElementById('startRunBtn')?.classList.contains('hidden') || false,
+        outdoorDisabled: Boolean(document.querySelector('[data-setup-select="setupMode"][data-setup-value="outdoor"]')?.disabled),
+        highLightDisabled: Boolean(document.querySelector('[data-setup-select="setupLight"][data-setup-value="high"]')?.disabled)
+      };
+    });
     assert.strictEqual(initialBuilderState.stepLabel, 'Schritt 1 von 6', 'run builder should start directly at step 1');
-    assert.strictEqual(initialBuilderState.activeTitle, 'Topfgröße', 'first onboarding step should be pot size');
+    assert.strictEqual(initialBuilderState.activeTitle, 'Dein erster Grow-Run', 'first onboarding step should welcome the player into the local run setup');
+    assert.strictEqual(initialBuilderState.guestWelcomeVisible, false, 'signed-in first run setup should hide the guest-mode welcome note');
+    assert.strictEqual(initialBuilderState.guestWelcomeText, '', 'signed-in first run setup should not show the guest-mode welcome note');
     assert.strictEqual(initialBuilderState.activePot, true, 'first step should have an active default pot selection');
     assert.strictEqual(initialBuilderState.buddySrc, 'assets/onboarding/buddy_pot.png', 'pot step should use the pot Buddy asset');
     assert.strictEqual(initialBuilderState.potIconSrc, 'assets/onboarding/pot_s.png', 'small pot card should use the small pot PNG asset');
@@ -260,7 +317,92 @@ async function main() {
     }));
     assert.strictEqual(cloudSync.text, 'onboarding@test.local', 'settings should reflect the connected cloud identity from the auth session');
     assert.ok(cloudSync.className.includes('value_green'), 'connected cloud sync should be styled as active');
-    assert.strictEqual(cloudSync.title, 'Cloud Sync aktiv. Klick öffnet Account-Optionen.', 'cloud status should explain the connected account path');
+    assert.strictEqual(cloudSync.title, 'Cloud Sync ist verbunden. Hier kannst du dein Konto verwalten oder dich wieder abmelden.', 'cloud status should explain the connected account path without pressuring startup login');
+
+    await page.click('#settingsCloudSyncRow');
+    await page.waitForFunction(() => {
+      const modal = document.getElementById('authModal');
+      const loggedInView = document.getElementById('authModalLoggedInView');
+      return Boolean(
+        modal
+        && loggedInView
+        && !modal.classList.contains('hidden')
+        && !loggedInView.classList.contains('hidden')
+      );
+    }, null, { timeout: 10000 });
+    const loggedInAuthModalState = await page.evaluate(() => ({
+      title: document.getElementById('authModalTitle')?.textContent.trim() || '',
+      statusLabel: document.querySelector('#authModalLoggedInView .figma-static-row span')?.textContent.trim() || '',
+      note: document.querySelector('#authModalLoggedInView .auth-modal-note')?.textContent.replace(/\s+/g, ' ').trim() || ''
+    }));
+    assert.strictEqual(loggedInAuthModalState.title, 'Konto & Cloud', 'connected cloud sheet should use the optional account framing');
+    assert.strictEqual(loggedInAuthModalState.statusLabel, 'Status', 'connected cloud sheet should use localized status labels');
+    assert.match(loggedInAuthModalState.note, /Cloud Sync bleibt optional/i, 'connected cloud sheet should keep cloud sync optional even while signed in');
+    await page.click('#authModalLogoutBtn');
+    await page.waitForFunction(() => {
+      const modal = document.getElementById('authModal');
+      return Boolean(
+        modal
+        && modal.classList.contains('hidden')
+        && window.GrowSimAuth
+        && typeof window.GrowSimAuth.isAuthenticated === 'function'
+        && !window.GrowSimAuth.isAuthenticated()
+      );
+    }, null, { timeout: 10000 });
+
+    const logoutState = await page.evaluate((authTokenKey) => {
+      const modal = document.getElementById('authModal');
+      const landing = document.getElementById('landing');
+      return {
+        authGateActive: Boolean(window.__gsState && window.__gsState.ui && window.__gsState.ui.authGateActive),
+        modalVisible: Boolean(modal && !modal.classList.contains('hidden')),
+        cloudValue: document.getElementById('settingsCloudSyncValue')?.textContent.trim() || '',
+        cloudTitle: document.getElementById('settingsCloudSyncValue')?.getAttribute('title') || '',
+        landingVisible: Boolean(landing && !landing.classList.contains('hidden')),
+        token: localStorage.getItem(authTokenKey)
+      };
+    }, AUTH_TOKEN_KEY);
+    assert.strictEqual(logoutState.authGateActive, false, 'logout should not reactivate the auth gate');
+    assert.strictEqual(logoutState.modalVisible, false, 'logout should close the account modal');
+    assert.strictEqual(logoutState.cloudValue, 'Lokal auf diesem Gerät', 'logout should fall back to local device save wording');
+    assert.match(logoutState.cloudTitle, /optional/i, 'logout cloud status should keep cloud sync optional');
+    assert.strictEqual(logoutState.landingVisible, false, 'logout should keep the active local run visible');
+    assert.strictEqual(logoutState.token, null, 'logout should remove the auth token');
+
+    await page.selectOption('#settingsLanguageSelect', 'en');
+    await page.waitForFunction(() => document.documentElement.lang === 'en');
+    const englishRuntimeTexts = await page.evaluate(() => ({
+      title: document.querySelector('#diagnosisSheet h2')?.textContent.trim() || '',
+      simSpeed: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || '',
+      eventWindow: document.getElementById('settingsEventFrequencyValue')?.textContent.trim() || '',
+      pushSupport: document.getElementById('settingsPushSupportValue')?.textContent.trim() || '',
+      pushFeedback: document.getElementById('settingsPushFeedback')?.textContent.trim() || ''
+    }));
+    assert.strictEqual(englishRuntimeTexts.title, 'Settings', 'settings sheet should translate its title to English');
+    assert.strictEqual(englishRuntimeTexts.simSpeed, 'Base 12x · Active 12x', 'simulation speed summary should translate to English');
+    assert.strictEqual(englishRuntimeTexts.eventWindow, 'approx. 30-90 min', 'event window should translate to English');
+    assert.strictEqual(englishRuntimeTexts.pushSupport, 'Yes', 'push support label should translate to English');
+    assert.match(englishRuntimeTexts.pushFeedback, /browser or system/i, 'push feedback should translate to English');
+    assert.doesNotMatch(englishRuntimeTexts.pushFeedback, /Erinnerungen|Browser\/System|weiterspielen/i, 'English push feedback should not fall back to German');
+
+    await page.selectOption('#settingsLanguageSelect', 'es');
+    await page.waitForFunction(() => document.documentElement.lang === 'es');
+    const spanishRuntimeTexts = await page.evaluate(() => ({
+      title: document.querySelector('#diagnosisSheet h2')?.textContent.trim() || '',
+      simSpeed: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || '',
+      eventWindow: document.getElementById('settingsEventFrequencyValue')?.textContent.trim() || '',
+      pushSupport: document.getElementById('settingsPushSupportValue')?.textContent.trim() || '',
+      pushFeedback: document.getElementById('settingsPushFeedback')?.textContent.trim() || ''
+    }));
+    assert.strictEqual(spanishRuntimeTexts.title, 'Ajustes', 'settings sheet should translate its title to Spanish');
+    assert.strictEqual(spanishRuntimeTexts.simSpeed, 'Base 12x · Activo 12x', 'simulation speed summary should translate to Spanish');
+    assert.strictEqual(spanishRuntimeTexts.eventWindow, 'aprox. 30-90 min', 'event window should translate to Spanish');
+    assert.strictEqual(spanishRuntimeTexts.pushSupport, 'Si', 'push support label should translate to Spanish');
+    assert.match(spanishRuntimeTexts.pushFeedback, /navegador o el sistema/i, 'push feedback should translate to Spanish');
+    assert.doesNotMatch(spanishRuntimeTexts.pushFeedback, /Erinnerungen|Browser\/System|weiterspielen/i, 'Spanish push feedback should not fall back to German');
+
+    await page.selectOption('#settingsLanguageSelect', 'de');
+    await page.waitForFunction(() => document.documentElement.lang === 'de');
 
     const runtimeSettings = await page.evaluate(() => ({
       simSpeed: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null,
@@ -273,10 +415,10 @@ async function main() {
       runtimeSettings.simSpeed === 'Basis 12x · Aktiv 12x' || runtimeSettings.simSpeed === 'Basis 12x Â· Aktiv 12x',
       `simulation speed should reflect base and active runtime state, got: ${runtimeSettings.simSpeed}`
     );
-    assert.strictEqual(runtimeSettings.eventWindow, 'Fix 30-90m', 'event frequency should reflect the fixed runtime window');
-    assert.strictEqual(runtimeSettings.tutorial, 'Nicht aktiv', 'tutorial setting should describe its current inactive state honestly');
-    assert.strictEqual(runtimeSettings.autosave, 'Lokal 3s', 'autosave should reflect the local persistence interval');
-    assert.strictEqual(runtimeSettings.volume, 'Nicht aktiv', 'audio setting should describe its current inactive state honestly');
+    assert.strictEqual(runtimeSettings.eventWindow, 'ca. 30-90 Min.', 'event frequency should describe the calm event window without technical wording');
+    assert.strictEqual(runtimeSettings.tutorial, 'Vorbereitet', 'tutorial setting should avoid unfinished technical wording');
+    assert.strictEqual(runtimeSettings.autosave, 'Lokal alle 3s', 'autosave should explain local persistence');
+    assert.strictEqual(runtimeSettings.volume, 'Vorbereitet', 'audio setting should avoid unfinished technical wording');
 
     await page.click('#diagnosisSheet [data-close-sheet]');
     await page.click('#menuToggleBtn');
@@ -288,6 +430,12 @@ async function main() {
       rescueTitle: document.getElementById('menuRescueBtn')?.getAttribute('title') || null,
       statsTitle: document.getElementById('menuStatsBtn')?.getAttribute('title') || null,
       missionsSubtitle: document.querySelector('#menuMissionsBtn small')?.textContent.trim() || null,
+      leaderboardSubtitle: document.querySelector('#menuLeaderboardBtn small')?.textContent.trim() || null,
+      coinShopSubtitle: document.querySelector('#menuCoinShopBtn small')?.textContent.trim() || null,
+      supportSubtitle: document.querySelector('#menuSupportBtn small')?.textContent.trim() || null,
+      settingsSubtitle: document.querySelector('#menuLanguageBtn small')?.textContent.trim() || null,
+      sectionLabels: Array.from(document.querySelectorAll('.menu-section-label')).map((node) => node.textContent.trim()),
+      visibleText: document.getElementById('gameMenu')?.textContent.replace(/\s+/g, ' ').trim() || '',
       aboutLabel: document.querySelector('#menuAboutBtn span')?.textContent.trim() || null,
       quickHomeDisabled: Boolean(document.getElementById('menuAchievementsBtn')?.disabled),
       quickOpsDisabled: Boolean(document.getElementById('menuLeaderboardBtn')?.disabled),
@@ -295,15 +443,21 @@ async function main() {
       resetTitle: document.getElementById('analysisResetBtn')?.getAttribute('title') || null
     }));
     assert.strictEqual(menuState.statsLabel, 'Analyse', 'menu analysis entry should describe the actual dashboard path');
-    assert.strictEqual(menuState.statsTitle, 'Öffnet denselben Analyse-Report wie Analyse-Button und Death-Flow.', 'menu analysis entry should explain the shared report path');
+    assert.strictEqual(menuState.statsTitle, 'Oeffnet Analyse, Verlauf und Run-Statistik.', 'menu analysis entry should explain the report path');
     assert.strictEqual(menuState.rescueLabel, 'Notfallrettung', 'menu rescue entry should describe the actual rescue mechanic');
     assert.strictEqual(menuState.rescueSubtitle, 'Notfallrettung ist aktuell nicht erforderlich.', 'menu rescue subtitle should describe the actual current state honestly');
-    assert.strictEqual(menuState.rescueTitle, 'Kein Inventarsystem. Startet dieselbe einmalige Notfallrettung wie im Death-Overlay.', 'menu rescue entry should explain that it is the same rescue path');
-    assert.strictEqual(menuState.missionsSubtitle, 'Missionen & Fortschritt', 'missions entry should describe the real missions sheet');
+    assert.strictEqual(menuState.rescueTitle, 'Einmalige Hilfe fuer kritische Situationen im aktiven Run.', 'menu rescue entry should explain its real scope');
+    assert.strictEqual(menuState.missionsSubtitle, 'Tagesziele & Fortschritt', 'missions entry should describe the real missions sheet');
+    assert.strictEqual(menuState.leaderboardSubtitle, 'Verifizierte Ergebnisse mit Konto', 'leaderboard should explain the account-bound verified path');
+    assert.strictEqual(menuState.coinShopSubtitle, 'Optionale Komfortaktionen', 'coin shop should be framed as optional');
+    assert.strictEqual(menuState.supportSubtitle, 'Freiwilliger Support', 'support should be framed as voluntary');
+    assert.strictEqual(menuState.settingsSubtitle, 'Tempo, Sprache, Cloud', 'settings entry should describe its real scope');
+    assert.deepStrictEqual(menuState.sectionLabels, ['Run', 'Fortschritt', 'Optional', 'Info'], 'menu should show small logical groups');
+    assert.doesNotMatch(menuState.visibleText, /(MVP|Dev|Legacy|Runtime|AuthGate|Debug|Local Dev|DEFAULT|SAVE|Pflicht|onboarding\.)/i, 'menu should avoid internal or pressure wording');
     assert.strictEqual(menuState.aboutLabel, 'Projektinfo', 'about entry should not pretend to be a full tutorial');
     assert.strictEqual(menuState.quickHomeDisabled, true, 'prepared quick action should be non-interactive');
     assert.strictEqual(menuState.quickOpsDisabled, false, 'leaderboard entry should stay available in the current build');
-    assert.strictEqual(menuState.quickHomeTitle, 'Im aktuellen Build noch nicht freigeschaltet.', 'hidden quick action should explain its availability honestly');
+    assert.strictEqual(menuState.quickHomeTitle, 'Aktuell nicht verfuegbar.', 'hidden quick action should explain its availability calmly');
     assert.strictEqual(menuState.resetTitle, 'Setzt den aktuellen Run nach Bestätigung vollständig zurück.', 'reset action should describe its destructive scope');
 
     await page.click('#menuStatsBtn');
@@ -318,16 +472,16 @@ async function main() {
       timelineLabel: document.getElementById('analysisTabTimeline')?.textContent.trim() || null,
       timelineTitle: document.getElementById('analysisTabTimeline')?.getAttribute('title') || null
     }));
-    assert.strictEqual(analysisState.subtitle, 'Run-Report & Verlauf', 'analysis sheet should describe the real report scope');
-    assert.strictEqual(analysisState.overviewLabel, 'Report', 'overview tab should remain the report entry');
-    assert.strictEqual(analysisState.diagnosisLabel, 'Treiber', 'diagnosis tab should describe driver analysis instead of filters');
-    assert.strictEqual(analysisState.timelineLabel, 'Verlauf', 'timeline tab should not promise export');
-    assert.strictEqual(analysisState.timelineTitle, 'Kein Dateiexport. Zeigt den letzten protokollierten Run-Verlauf.', 'timeline tab should explain its real scope');
+    assert.strictEqual(analysisState.subtitle, 'Erst das Wichtigste, dann Details und Verlauf.', 'analysis sheet should lead with the new coach framing');
+    assert.strictEqual(analysisState.overviewLabel, 'Kurzcheck', 'overview tab should prioritize the quick coach summary');
+    assert.strictEqual(analysisState.diagnosisLabel, 'Coach', 'diagnosis tab should read like coaching instead of diagnostics');
+    assert.strictEqual(analysisState.timelineLabel, 'Verlauf', 'timeline tab should stay focused on history');
+    assert.strictEqual(analysisState.timelineTitle, 'Zeigt den letzten protokollierten Verlauf aus Pflege und Ereignissen.', 'timeline tab should explain the player-facing history view');
 
     await page.click('#analysisTabTimeline');
     await page.waitForFunction(() => document.getElementById('analysisPanelTimeline') && !document.getElementById('analysisPanelTimeline').classList.contains('hidden'));
     const timelinePanelTitle = await page.evaluate(() => document.getElementById('analysisPanelTimeline')?.getAttribute('title') || null);
-    assert.strictEqual(timelinePanelTitle, 'Zeigt die letzten protokollierten Aktionen, Ereignisse und Systemeintraege. Kein Dateiexport.', 'timeline panel should describe the real history view');
+    assert.strictEqual(timelinePanelTitle, 'Zeigt den letzten protokollierten Verlauf aus Pflege, Ereignissen und Run-Updates.', 'timeline panel should describe the calmer player-facing history view');
     await page.click('#dashboardSheet [data-close-sheet]');
 
     await page.click('#menuToggleBtn');

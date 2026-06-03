@@ -27,8 +27,26 @@ async function main() {
     await page.waitForFunction(() => window.__gsState && window.__gsState.run && window.__gsState.run.status === 'active');
 
     async function collectCase(input) {
-      return page.evaluate((nextInput) => {
+      return page.evaluate(async (nextInput) => {
         const clamp = (value) => Math.max(0, Math.min(100, Number(value || 0)));
+        const parsePercent = (value) => Number(String(value || '').replace('%', '').trim());
+        const parseRingValue = (id) => parsePercent(document.getElementById(id)?.textContent || '');
+        const waitForHomeRings = () => new Promise((resolve) => {
+          let attempts = 0;
+          const tick = () => {
+            const waterRing = document.getElementById('waterRing');
+            const riskRing = document.getElementById('riskRing');
+            const waterDone = !waterRing || waterRing.dataset.animating === 'false';
+            const riskDone = !riskRing || riskRing.dataset.animating === 'false';
+            if ((waterDone && riskDone) || attempts >= 20) {
+              resolve();
+              return;
+            }
+            attempts += 1;
+            requestAnimationFrame(tick);
+          };
+          tick();
+        });
         const readStatusChips = () => {
           const chips = Array.from(document.querySelectorAll('#careStudioStatusChips .care-studio-chip'));
           const map = {};
@@ -41,7 +59,6 @@ async function main() {
           }
           return map;
         };
-        const parsePercent = (value) => Number(String(value || '').replace('%', '').trim());
         const state = window.__gsState;
         state.status.water = clamp(nextInput.statusWater);
         state.status.risk = clamp(nextInput.statusRisk);
@@ -66,7 +83,9 @@ async function main() {
         state.ui.care.selectedStudioTab = 'water';
         state.ui.care.selectedCategory = 'watering';
         state.ui.care.selectedActionId = null;
+        window.renderHud();
         window.renderCareSheet(true);
+        await waitForHomeRings();
 
         const careApi = window.GrowSimCareModel;
         const summary = careApi.deriveCareSummary(state.care, state);
@@ -80,6 +99,12 @@ async function main() {
           value: String(node.querySelector('strong')?.textContent || '').trim()
         }));
         const rootRisk = miniStats.find((entry) => /Wurzel|Root|Over|Über|Ueber/i.test(entry.label)) || null;
+        const homeRings = {
+          water: parseRingValue('waterValue'),
+          nutrition: parseRingValue('nutritionValue'),
+          stress: parseRingValue('stressValue'),
+          risk: parseRingValue('riskValue')
+        };
         return {
           summary,
           chips,
@@ -90,7 +115,8 @@ async function main() {
           rootRiskValue: rootRisk ? parsePercent(rootRisk.value) : null,
           moistureValue: parsePercent(chips.Feuchte && chips.Feuchte.value),
           riskValue: parsePercent(chips.Risiko && chips.Risiko.value),
-          riskDetail: chips.Risiko && chips.Risiko.detail
+          riskDetail: chips.Risiko && chips.Risiko.detail,
+          homeRings
         };
       }, input);
     }
@@ -105,6 +131,14 @@ async function main() {
       dryStressPressure: 0,
       drybackRatePerHour: 0.5
     });
+    assert.ok(Math.abs(Number(wetWet.summary.displayMoisture) - 81) <= 1, `expected derived display moisture around 81, got ${wetWet.summary.displayMoisture}`);
+    assert.ok(Math.abs(Number(wetWet.summary.riskScore) - 46) <= 1, `expected derived risk score around 46, got ${wetWet.summary.riskScore}`);
+    assert.strictEqual(wetWet.homeRings.water, Math.round(wetWet.summary.displayMoisture), 'homescreen water ring should use the same derived display moisture as Care Studio');
+    assert.strictEqual(wetWet.homeRings.nutrition, 58, 'homescreen nutrition ring should stay aligned with the visible supply status');
+    assert.strictEqual(wetWet.homeRings.stress, 10, 'homescreen stress ring should stay aligned with the visible stress status');
+    assert.strictEqual(wetWet.homeRings.risk, Math.round(wetWet.summary.riskScore), 'homescreen risk ring should use the same derived risk score as Care Studio');
+    assert.strictEqual(wetWet.homeRings.water, wetWet.moistureValue, 'homescreen water ring and care studio moisture chip should match');
+    assert.strictEqual(wetWet.homeRings.risk, wetWet.riskValue, 'homescreen risk ring and care studio risk chip should match');
     assert(wetWet.moistureValue >= 76, 'wet/wet header moisture should follow the care moisture profile, not stale global water');
     assert(wetWet.riskValue >= 42, 'wet root zone should raise the care risk chip above low');
     assert(wetWet.rootRiskValue >= 42, 'wet root zone should raise root-zone risk');

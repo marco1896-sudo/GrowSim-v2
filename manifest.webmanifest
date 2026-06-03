@@ -1,8 +1,8 @@
 {
-  "name": "Grow Simulator MVP",
+  "name": "Grow Simulator",
   "short_name": "GrowSim",
   "id": "./",
-  "description": "Offline-capable soil growth simulation MVP",
+  "description": "Offline-capable plant growth simulation with local saves and optional cloud features",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

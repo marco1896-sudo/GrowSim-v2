@@ -1,6 +1,6 @@
-# GrowSim-v1
+# Grow Simulator
 
-Phase 1 mobile-first PWA prototype for soil-based plant simulation.
+Mobile-first PWA for grounded plant growth simulation with local saves and optional cloud-connected features.
 
 ## Visual Target
 
@@ -21,5 +21,3 @@ Optional:
 ```bash
 PORT=5180 npm run dev
 ```
-# GrowSim-v2
-

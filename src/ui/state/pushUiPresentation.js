@@ -8,7 +8,7 @@
     }),
     permission: Object.freeze({
       granted: 'Erlaubt',
-      denied: 'Blockiert',
+      denied: 'Im Browser/System aus',
       default: 'Nicht entschieden',
       unsupported: 'Nicht unterstützt'
     }),
@@ -16,30 +16,30 @@
       active: 'Aktiv',
       inactive: 'Nicht aktiviert',
       loading: 'Wird aktualisiert',
-      denied: 'Blockiert',
+      denied: 'Im Browser/System aus',
       unsupported: 'Nicht verfügbar',
       missingPermission: 'Berechtigung fehlt'
     }),
     feedback: Object.freeze({
       loading: 'Push-Status wird aktualisiert.',
-      unsupported: 'Dieser Browser unterstützt Push-Benachrichtigungen aktuell nicht.',
-      denied: 'Push ist blockiert. Bitte erlaube Benachrichtigungen in deinen Browser- oder OS-Einstellungen.',
-      inactive: 'Aktiviere Push-Benachrichtigungen, um wichtige Ereignisse deiner Pflanze nicht zu verpassen.',
-      active: 'Push ist aktiv. Du wirst bei wichtigen Gameplay-Ereignissen informiert.',
-      unauthenticated: 'Melde dich an, um Push-Benachrichtigungen für deinen Run zu aktivieren.',
-      localOnly: 'Push ist lokal aktiv. Für verknüpfte Tests bitte einloggen.'
+      unsupported: 'Erinnerungen sind in diesem Browser aktuell nicht verfuegbar.',
+      denied: 'Erinnerungen sind im Browser oder System ausgeschaltet. Du kannst lokal weiterspielen.',
+      inactive: 'Erinnerungen sind optional. Du kannst sie spaeter aktivieren, wenn du Hinweise zu wichtigen Momenten moechtest.',
+      active: 'Erinnerungen sind aktiv. Du bekommst Hinweise zu wichtigen Gameplay-Ereignissen.',
+      unauthenticated: 'Erinnerungen mit Cloud-Bezug brauchen ein Konto. Dein lokaler Run bleibt spielbar.',
+      localOnly: 'Erinnerungen sind lokal vorgemerkt. Cloud-Verknuepfung ist optional.'
     }),
     action: Object.freeze({
-      enabled: 'Benachrichtigungen aktiviert.',
-      disabled: 'Benachrichtigungen deaktiviert.',
-      unsupported: 'Benachrichtigungen werden in diesem Browser nicht unterstützt.',
-      permissionDenied: 'Berechtigung nicht erteilt. Bitte Benachrichtigungen im Browser erlauben.',
-      reloadRequired: 'Service Worker noch nicht aktiv. Bitte einmal normal neu laden.',
-      statusReadError: 'Push-Status konnte nicht gelesen werden.'
+      enabled: 'Erinnerungen aktiviert.',
+      disabled: 'Erinnerungen deaktiviert.',
+      unsupported: 'Erinnerungen sind in diesem Browser aktuell nicht verfuegbar.',
+      permissionDenied: 'Erinnerungen sind im Browser oder System ausgeschaltet.',
+      reloadRequired: 'Bitte einmal neu laden, damit Erinnerungen bereitstehen.',
+      statusReadError: 'Status der Erinnerungen konnte nicht gelesen werden.'
     }),
     menu: Object.freeze({
-      label: 'Benachrichtigungen',
-      title: 'Öffnet die Push-Einstellungen und den aktuellen Status.',
+      label: 'Erinnerungen',
+      title: 'Oeffnet optionale Erinnerungen und den aktuellen Status.',
       enabledBadge: 'An'
     }),
     toggle: Object.freeze({
@@ -52,6 +52,20 @@
       push: 'push'
     })
   });
+
+  function resolveTextBundle(overrides = {}) {
+    const root = overrides && typeof overrides === 'object' ? overrides : {};
+    return {
+      support: { ...TEXT.support, ...(root.support && typeof root.support === 'object' ? root.support : {}) },
+      permission: { ...TEXT.permission, ...(root.permission && typeof root.permission === 'object' ? root.permission : {}) },
+      status: { ...TEXT.status, ...(root.status && typeof root.status === 'object' ? root.status : {}) },
+      feedback: { ...TEXT.feedback, ...(root.feedback && typeof root.feedback === 'object' ? root.feedback : {}) },
+      action: { ...TEXT.action, ...(root.action && typeof root.action === 'object' ? root.action : {}) },
+      menu: { ...TEXT.menu, ...(root.menu && typeof root.menu === 'object' ? root.menu : {}) },
+      toggle: { ...TEXT.toggle, ...(root.toggle && typeof root.toggle === 'object' ? root.toggle : {}) },
+      sourceMode: { ...TEXT.sourceMode, ...(root.sourceMode && typeof root.sourceMode === 'object' ? root.sourceMode : {}) }
+    };
+  }
 
   function normalizeHintTone(value) {
     const tone = String(value || '').trim().toLowerCase();
@@ -74,45 +88,45 @@
     };
   }
 
-  function mapPermissionLabel(permission) {
+  function mapPermissionLabel(permission, text = TEXT) {
     const value = String(permission || 'unsupported');
     if (value === 'granted') {
-      return TEXT.permission.granted;
+      return text.permission.granted;
     }
     if (value === 'denied') {
-      return TEXT.permission.denied;
+      return text.permission.denied;
     }
     if (value === 'default') {
-      return TEXT.permission.default;
+      return text.permission.default;
     }
-    return TEXT.permission.unsupported;
+    return text.permission.unsupported;
   }
 
-  function mapStatusLabel(statusCode, busy) {
+  function mapStatusLabel(statusCode, busy, text = TEXT) {
     if (busy === true) {
-      return TEXT.status.loading;
+      return text.status.loading;
     }
     const status = String(statusCode || 'unsupported');
     if (status === 'granted_subscribed') {
-      return TEXT.status.active;
+      return text.status.active;
     }
     if (status === 'denied') {
-      return TEXT.status.denied;
+      return text.status.denied;
     }
     if (status === 'unsupported') {
-      return TEXT.status.unsupported;
+      return text.status.unsupported;
     }
     if (status === 'supported_but_not_granted') {
-      return TEXT.status.missingPermission;
+      return text.status.missingPermission;
     }
-    return TEXT.status.inactive;
+    return text.status.inactive;
   }
 
   function isPushActive(statusCode) {
     return String(statusCode || '') === 'granted_subscribed';
   }
 
-  function resolveFeedback(runtime, options = {}) {
+  function resolveFeedback(runtime, options = {}, text = TEXT) {
     const authed = options.authed === true;
     const errorMessage = String(runtime.error || '').trim();
     if (errorMessage) {
@@ -126,52 +140,53 @@
     if (runtimeMessage) {
       return {
         message: runtimeMessage,
-        hintTone: runtimeMessage === TEXT.feedback.localOnly ? 'warning' : 'neutral'
+        hintTone: runtimeMessage === text.feedback.localOnly ? 'warning' : 'neutral'
       };
     }
 
     if (runtime.busy === true) {
       return {
-        message: TEXT.feedback.loading,
+        message: text.feedback.loading,
         hintTone: 'neutral'
       };
     }
 
     if (runtime.supported !== true || String(runtime.status || '') === 'unsupported') {
       return {
-        message: TEXT.feedback.unsupported,
+        message: text.feedback.unsupported,
         hintTone: 'warning'
       };
     }
 
     if (String(runtime.permission || '') === 'denied' || String(runtime.status || '') === 'denied') {
       return {
-        message: TEXT.feedback.denied,
+        message: text.feedback.denied,
         hintTone: 'warning'
       };
     }
 
     if (!authed) {
       return {
-        message: TEXT.feedback.unauthenticated,
+        message: text.feedback.unauthenticated,
         hintTone: 'neutral'
       };
     }
 
     if (isPushActive(runtime.status)) {
       return {
-        message: TEXT.feedback.active,
+        message: text.feedback.active,
         hintTone: 'positive'
       };
     }
 
     return {
-      message: TEXT.feedback.inactive,
+      message: text.feedback.inactive,
       hintTone: 'neutral'
     };
   }
 
   function resolvePushPresentation(_sourceState, runtimeCtx = {}) {
+    const text = resolveTextBundle(runtimeCtx.translations);
     const runtime = runtimeCtx.pushUiRuntime && typeof runtimeCtx.pushUiRuntime === 'object'
       ? runtimeCtx.pushUiRuntime
       : {};
@@ -190,21 +205,21 @@
       permission,
       status: statusCode,
       busy
-    }, { authed });
+    }, { authed }, text);
     const toggleFeedback = String(runtime.error || runtime.message || notifications.lastMessage || feedback.message || '').trim();
     const notificationsTypes = notifications.types && typeof notifications.types === 'object'
       ? notifications.types
       : {};
 
     const menuEntry = buildPresentation({
-      label: TEXT.menu.label,
+      label: text.menu.label,
       subtext: feedback.message,
-      title: TEXT.menu.title,
+      title: text.menu.title,
       disabled: busy || !supported,
       disabledReason: !supported ? 'unsupported' : (busy ? 'busy' : ''),
-      badge: enabled ? TEXT.menu.enabledBadge : null,
+      badge: enabled ? text.menu.enabledBadge : null,
       hintTone: feedback.hintTone,
-      sourceMode: TEXT.sourceMode.push
+      sourceMode: text.sourceMode.push
     });
 
     return {
@@ -217,8 +232,8 @@
       active: enabled,
       menuEntry,
       toggle: Object.freeze({
-        buttonLabel: enabled ? TEXT.toggle.enabled : TEXT.toggle.disabled,
-        statusLabel: enabled ? TEXT.toggle.statusEnabled : TEXT.toggle.statusDisabled,
+        buttonLabel: enabled ? text.toggle.enabled : text.toggle.disabled,
+        statusLabel: enabled ? text.toggle.statusEnabled : text.toggle.statusDisabled,
         feedback: toggleFeedback,
         disabled: busy || !supported,
         disabledReason: !supported ? 'unsupported' : (busy ? 'busy' : ''),
@@ -231,9 +246,9 @@
         })
       }),
       settings: Object.freeze({
-        supportLabel: supported ? TEXT.support.supported : TEXT.support.unsupported,
-        permissionLabel: mapPermissionLabel(permission),
-        statusLabel: mapStatusLabel(statusCode, busy),
+        supportLabel: supported ? text.support.supported : text.support.unsupported,
+        permissionLabel: mapPermissionLabel(permission, text),
+        statusLabel: mapStatusLabel(statusCode, busy, text),
         feedback: feedback.message,
         enableVisible: !enabled && permission !== 'denied' && supported,
         enableDisabled: busy || !authed || !supported || permission === 'denied' || enabled,
@@ -247,6 +262,7 @@
 
   const api = Object.freeze({
     TEXT,
+    resolveTextBundle,
     isPushActive,
     mapPermissionLabel,
     mapStatusLabel,

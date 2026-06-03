@@ -4,8 +4,8 @@
   const TEXT = Object.freeze({
     rescue: Object.freeze({
       label: 'Notfallrettung',
-      menuTitle: 'Kein Inventarsystem. Startet dieselbe einmalige Notfallrettung wie im Death-Overlay.',
-      overlayTitle: 'Einmalige Notfallhilfe für kritische Situationen im aktiven Run.',
+      menuTitle: 'Einmalige Hilfe fuer kritische Situationen im aktiven Run.',
+      overlayTitle: 'Einmalige Hilfe fuer kritische Situationen im aktiven Run.',
       readySubtext: '1× pro Run bei kritischem Zustand.',
       pending: 'Notfallrettung wird gerade vorbereitet.',
       used: 'Rettungsaktion ist nur 1× pro Run verfügbar.',
@@ -15,28 +15,28 @@
       unavailable: 'Notfallrettung ist aktuell nicht verfügbar.'
     }),
     reward: Object.freeze({
-      direct: 'Lokaler Direct-Modus aktiv. Reward wird ohne Provider simuliert.',
-      debug: 'Debug-Reward aktiv.',
-      preparing: 'Rewarded wird gerade vorbereitet.',
-      error: 'Rewarded ist aktuell technisch nicht bereit.',
-      unavailable: 'Rewarded ist gerade nicht verfügbar.',
-      ready: 'Rewarded ist verfügbar.'
+      direct: 'Lokale Komfortaktion bereit.',
+      debug: 'Optionale Komfortaktion bereit.',
+      preparing: 'Optionale Belohnung wird vorbereitet.',
+      error: 'Optionale Belohnung ist gerade nicht bereit.',
+      unavailable: 'Optionale Belohnung ist gerade nicht verfuegbar.',
+      ready: 'Optionale Belohnung ist verfuegbar.'
     }),
     menu: Object.freeze({
-      statsTitle: 'Öffnet denselben Analyse-Report wie Analyse-Button und Death-Flow.',
-      supportTitle: 'Öffnet den freiwilligen Support-Flow für GrowSim.',
-      supportSubtext: 'Freiwilliger Support für neue Features',
+      statsTitle: 'Oeffnet Analyse, Verlauf und Run-Statistik.',
+      supportTitle: 'Oeffnet freiwilligen Support fuer GrowSim.',
+      supportSubtext: 'Freiwilliger Support',
       missionsTitle: 'Öffnet Missionen und den aktuellen Fortschritt.',
-      missionsSubtext: 'Missionen & Fortschritt',
-      aboutTitle: 'Zeigt den aktuellen Projektstatus. Weitere Hilfe folgt später.',
-      aboutSubtext: 'Status & Hinweise',
-      languageTitle: 'Öffnet die lokal verfügbaren Einstellungen.',
-      languageSubtext: 'Einstellungen öffnen',
-      achievementsTitle: 'Im aktuellen Build noch nicht freigeschaltet.',
-      leaderboardTitle: 'Öffnet das Weekly-Leaderboard.',
-      leaderboardSubtext: 'Nur verifizierte Ergebnisse',
+      missionsSubtext: 'Tagesziele & Fortschritt',
+      aboutTitle: 'Erklaert lokalen Start, optionale Cloud-Funktionen und den aktuellen Produktstand.',
+      aboutSubtext: 'Lokaler Start & Cloud',
+      languageTitle: 'Oeffnet Tempo, Sprache, Cloud und Erinnerungen.',
+      languageSubtext: 'Tempo, Sprache, Cloud',
+      achievementsTitle: 'Aktuell nicht verfuegbar.',
+      leaderboardTitle: 'Leaderboard nutzt verifizierte Ergebnisse. Lokales Spielen bleibt ohne Login moeglich.',
+      leaderboardSubtext: 'Verifizierte Ergebnisse mit Konto',
       pushEnabled: 'Aktiviert',
-      pushDisabled: 'Deaktiviert'
+      pushDisabled: 'Optional aus'
     })
   });
 
@@ -111,7 +111,7 @@
       title: subtext,
       disabled: rewardControl.disabled === true,
       disabledReason: String(rewardControl.reason || providerState || ''),
-      badge: sourceMode === 'provider_rewarded' ? 'Rewarded' : (sourceMode === 'debug_rewarded' ? 'Debug' : 'Direct'),
+      badge: sourceMode === 'provider_rewarded' ? 'Optional' : 'Lokal',
       hintTone,
       sourceMode
     });
@@ -212,7 +212,8 @@
         pushUiRuntime: runtimeCtx.pushUiRuntime,
         pushEnabled: runtimeCtx.pushEnabled === true,
         notifications: runtimeCtx.notifications,
-        authed: runtimeCtx.authed === true
+        authed: runtimeCtx.authed === true,
+        translations: runtimeCtx.pushTranslations
       })
       : null;
 

@@ -73,6 +73,7 @@ function buildRuntime(overrides = {}) {
   assert.strictEqual(presentation.settings.enableDisabled, true, 'enable control stays disabled while unauthenticated');
   assert.strictEqual(presentation.settings.feedback, pushUiPresentation.TEXT.feedback.unauthenticated);
   assert.strictEqual(presentation.toggle.statusLabel, 'Deaktiviert');
+  assert.match(presentation.settings.feedback, /lokaler Run bleibt spielbar/, 'signed-out reminder copy should not pressure login');
 }
 
 {

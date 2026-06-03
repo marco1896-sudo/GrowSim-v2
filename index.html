@@ -742,8 +742,8 @@
       <div id="eventSheetModernRoot" class="event-sheet-modern-root hidden" aria-hidden="true"></div>
       <div id="eventSheetLegacyRoot" class="event-sheet-legacy-root" aria-hidden="false">
         <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-          <div class="figma-top-player-title">Event-System</div>
-          <div class="figma-top-player-subtitle">Positive &amp; negative Varianten</div>
+          <div class="figma-top-player-title" data-i18n="events.sheet_top_title">Grow-Lage</div>
+          <div class="figma-top-player-subtitle" data-i18n="events.sheet_top_subtitle">Buddy ordnet kurz ein, was gerade Aufmerksamkeit braucht.</div>
         </section>
 
         <section class="figma-section-card figma-section-card--event">
@@ -791,8 +791,8 @@
     </header>
     <div class="sheet-content analysis-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-        <div class="figma-top-player-title">Analysezentrum</div>
-        <div class="figma-top-player-subtitle">Run-Report &amp; Verlauf</div>
+        <div class="figma-top-player-title" data-i18n="analysis.sheet_top_title">Run-Coach</div>
+        <div class="figma-top-player-subtitle" data-i18n="analysis.sheet_top_subtitle">Erst das Wichtigste, dann Details und Verlauf.</div>
       </section>
 
       <section id="analysisPanelOverview" class="gs-analysis-panel gs-analysis-overview figma-section-card" aria-live="polite"></section>
@@ -800,9 +800,9 @@
       <section id="analysisPanelTimeline" class="gs-analysis-panel gs-analysis-timeline figma-section-card hidden" aria-live="polite"></section>
 
       <div class="gs-analysis-tabs figma-bottom-actions" role="tablist" aria-label="Analyse-Aktionen">
-        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button" title="Zeigt den aktuellen Run-Report mit Status, Trend und Verlaufskurve.">Report</button>
-        <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button" title="Zeigt aktuelle Diagnose-Treiber und die empfohlene nächste Pflege.">Treiber</button>
-        <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button" title="Kein Dateiexport. Zeigt den letzten protokollierten Run-Verlauf.">Verlauf</button>
+        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button" title="Zeigt die aktuelle Kurzlage mit naechster Empfehlung." data-i18n="analysis.tab_overview">Kurzcheck</button>
+        <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button" title="Zeigt, was den Run gerade stuetzt oder bremst." data-i18n="analysis.tab_diagnosis">Coach</button>
+        <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button" title="Zeigt den letzten protokollierten Verlauf aus Pflege und Ereignissen." data-i18n="analysis.tab_timeline">Verlauf</button>
       </div>
     </div>
   </section>
@@ -884,22 +884,22 @@
 
     <section id="diagnosisSheet" class="bottom-sheet figma-sheet figma-sheet-settings hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
-      <h2 data-i18n="settings.title">Settings</h2>
+      <h2 data-i18n="settings.title">Einstellungen</h2>
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-        <div class="figma-top-player-title">System</div>
-        <div class="figma-top-player-subtitle">Simulationseinstellungen</div>
+        <div class="figma-top-player-title" data-i18n="settings.header_title">App</div>
+        <div class="figma-top-player-subtitle" data-i18n="settings.header_subtitle">Tempo, Speicher und Cloud</div>
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--gameplay">
-        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;" data-i18n="settings.gameplay">GAMEPLAY</h3>
+        <h3 class="figma-section-head" data-i18n="settings.gameplay">SPIEL</h3>
         <div class="figma-static-row figma-static-row--stacked figma-static-row--sim-speed">
-          <span class="settings-speed-label">Simulationstempo</span>
+          <span class="settings-speed-label" data-i18n="settings.sim_speed">Simulationstempo</span>
           <div id="settingsSimSpeedControl" class="settings-speed-control settings-speed-control--block">
             <strong id="settingsSimSpeedValue" class="value_gold settings-speed-summary">Basis 12x · Aktiv 12x</strong>
-            <div class="settings-speed-segmented" role="group" aria-label="Basis-Simulationstempo auswählen">
+            <div class="settings-speed-segmented" role="group" aria-label="Simulationstempo auswählen" data-i18n-aria-label="settings.sim_speed_aria">
               <button type="button" class="settings-speed-btn" data-sim-speed-option="4" aria-pressed="false" title="x4 — Entspannt">x4</button>
               <button type="button" class="settings-speed-btn" data-sim-speed-option="8" aria-pressed="false" title="x8 — Langsam">x8</button>
               <button type="button" class="settings-speed-btn" data-sim-speed-option="12" aria-pressed="false" title="x12 — Standard">x12</button>
@@ -908,9 +908,9 @@
             <small id="settingsSimSpeedHint" class="sheet-note settings-speed-hint hidden" aria-hidden="true"></small>
           </div>
         </div>
-        <div class="figma-static-row"><span data-i18n="settings.event_frequency">Event-Häufigkeit</span><span id="settingsEventFrequencyValue" class="subtitle">Normal</span></div>
+        <div class="figma-static-row"><span data-i18n="settings.event_frequency">Ereignisse</span><span id="settingsEventFrequencyValue" class="subtitle">Ruhiges Fenster</span></div>
         <div class="figma-static-row"><span data-i18n="settings.tutorial_hints">Tutorial Hinweise</span><strong id="settingsTutorialValue" class="value_green">An</strong></div>
-        <div class="figma-static-row"><span data-i18n="settings.autosave">Auto Save</span><strong id="settingsAutosaveValue" class="value_green">Alle 5m</strong></div>
+        <div class="figma-static-row"><span data-i18n="settings.autosave">Lokaler Spielstand</span><strong id="settingsAutosaveValue" class="value_green">Automatisch</strong></div>
         <div class="figma-static-row figma-static-row--stacked">
           <span id="settingsLanguageLabel" data-i18n="settings.language">Sprache</span>
           <div>
@@ -925,7 +925,7 @@
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--audio">
-        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;" data-i18n="settings.audio_graphics">AUDIO & GRAFIK</h3>
+        <h3 class="figma-section-head" data-i18n="settings.audio_graphics">AUDIO & GRAFIK</h3>
         <div class="figma-static-row"><span data-i18n="settings.master_volume">Master Lautstärke</span><strong id="settingsVolumeValue" class="value_gold">84%</strong></div>
         <div class="figma-static-row"><span data-i18n="settings.effects">Effekte</span><span id="settingsEffectsValue" class="subtitle">Hoch</span></div>
         <div class="figma-static-row"><span data-i18n="settings.battery_mode">Batterie-Modus</span><span id="settingsBatteryValue" class="subtitle">Aus</span></div>
@@ -933,31 +933,31 @@
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--account">
-        <h3 class="figma-section-head" style="color:#D4AF37; margin-bottom: 8px;" data-i18n="settings.account">ACCOUNT</h3>
-        <div id="settingsCloudSyncRow" class="figma-static-row settings-link-row" role="button" tabindex="0" aria-label="Cloud Sync öffnen">
-          <span data-i18n="settings.cloud_sync">Cloud Sync</span>
-          <strong id="settingsCloudSyncValue" class="value_gold">Nicht verbunden</strong>
+        <h3 class="figma-section-head" data-i18n="settings.account">LOKAL & CLOUD</h3>
+        <div id="settingsCloudSyncRow" class="figma-static-row settings-link-row settings-link-row--stacked" role="button" tabindex="0" aria-label="Cloud Sync öffnen" data-i18n-aria-label="settings.cloud_sync_aria">
+          <span><strong data-i18n="settings.cloud_sync">Cloud Sync</strong><small data-i18n="settings.cloud_sync_hint">Optionales Backup, lokales Spielen bleibt möglich.</small></span>
+          <strong id="settingsCloudSyncValue" class="value_gold">Lokal auf diesem Gerät</strong>
         </div>
-        <div class="settings-push-block" aria-label="Push Einstellungen">
+        <div class="settings-push-block" aria-label="Erinnerungen" data-i18n-aria-label="settings.push_aria">
           <div class="settings-push-status-list">
-            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_supported">Push unterstützt</span><strong id="settingsPushSupportValue" class="settings-push-value value_gold">-</strong></div>
-            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_permission">Berechtigung</span><strong id="settingsPushPermissionValue" class="settings-push-value value_gold">-</strong></div>
-            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_status">Status</span><strong id="settingsPushStatusValue" class="settings-push-value value_gold">-</strong></div>
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_supported">Erinnerungen möglich</span><strong id="settingsPushSupportValue" class="settings-push-value value_gold">-</strong></div>
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_permission">Systemfreigabe</span><strong id="settingsPushPermissionValue" class="settings-push-value value_gold">-</strong></div>
+            <div class="figma-static-row settings-push-row"><span class="settings-push-label" data-i18n="settings.push_status">Erinnerungen</span><strong id="settingsPushStatusValue" class="settings-push-value value_gold">-</strong></div>
           </div>
-          <p id="settingsPushFeedback" class="sheet-note settings-push-feedback" aria-live="polite">Push ist noch nicht eingerichtet.</p>
+          <p id="settingsPushFeedback" class="sheet-note settings-push-feedback" aria-live="polite">Erinnerungen sind optional und aktuell aus.</p>
         </div>
         <div class="menu-dialog-actions settings-push-actions">
-          <button id="settingsPushEnableBtn" class="action-btn action-primary" type="button" data-i18n="settings.push_enable">Push aktivieren</button>
+          <button id="settingsPushEnableBtn" class="action-btn action-primary" type="button" data-i18n="settings.push_enable">Erinnerungen aktivieren</button>
           <button id="settingsPushDisableBtn" class="ghost-btn" type="button" data-i18n="settings.push_disable">Push deaktivieren</button>
         </div>
         <div class="menu-dialog-actions settings-push-actions settings-push-actions--secondary">
-          <button id="settingsPushTestBtn" class="ghost-btn" type="button" data-i18n="settings.push_test">Test-Benachrichtigung senden</button>
+          <button id="settingsPushTestBtn" class="ghost-btn" type="button" data-i18n="settings.push_test">Test senden</button>
         </div>
         
-        <div class="figma-settings-actions" style="display: flex; justify-content: space-between; margin-top: 20px;">
-          <button id="analysisResetBtn" class="action-btn action-secondary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;" data-i18n="settings.reset">RESET</button>
-          <button id="settingsDefaultBtn" class="action-btn action-primary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;" data-i18n="settings.default">DEFAULT</button>
-          <button id="settingsSaveBtn" class="action-btn action-primary" type="button" style="color: #D4AF37; background: transparent; border: none; font-weight: bold; cursor: pointer;" data-i18n="settings.save">SAVE</button>
+        <div class="figma-settings-actions">
+          <button id="analysisResetBtn" class="ghost-btn" type="button" data-i18n="settings.reset">Zurücksetzen</button>
+          <button id="settingsDefaultBtn" class="ghost-btn" type="button" data-i18n="settings.default">Empfohlen</button>
+          <button id="settingsSaveBtn" class="action-btn action-primary" type="button" data-i18n="settings.save">Sichern</button>
         </div>
       </section>
     </div>
@@ -1023,7 +1023,7 @@
       <section class="figma-section-card shop-sheet-panel">
         <div class="shop-sheet-head">
           <strong>Coin-Packs</strong>
-          <small id="coinPackStatusText" class="sheet-note">Optional. Für Tests nur im Debug-Modus direkt aktivierbar.</small>
+          <small id="coinPackStatusText" class="sheet-note">Optional. Käufe werden nur genutzt, wenn du sie bewusst auswählst.</small>
         </div>
         <div id="coinPackList" class="coin-pack-list"></div>
       </section>
@@ -1038,7 +1038,7 @@
     <div class="sheet-content figma-sheet-content insufficient-coins-content">
       <section class="figma-section-card shop-sheet-panel">
         <div class="shop-sheet-head">
-          <strong>Aktion blockiert</strong>
+          <strong>Coins fehlen</strong>
           <small id="insufficientCoinsHintText" class="sheet-note" data-i18n="shop.insufficient_hint">Für diese Aktion fehlen noch Coins.</small>
         </div>
         <div class="insufficient-coins-metrics" aria-live="polite">
@@ -1143,7 +1143,7 @@
 
         <section class="legal-section">
           <h4>1. Allgemeine Hinweise</h4>
-          <p>Der Schutz deiner persönlichen Daten ist uns ein wichtiges Anliegen. Diese Datenschutzerklärung informiert darüber, welche Daten in der App „GrowSim“ erhoben und wie sie verwendet werden.</p>
+          <p>Der Schutz deiner persoenlichen Daten ist uns wichtig. Grow Simulator kann grundsaetzlich lokal ohne Konto gespielt werden. Diese Datenschutzerklaerung beschreibt, welche Daten lokal auf diesem Geraet bleiben und welche Daten nur bei optionalen Konto- oder Cloud-Funktionen verarbeitet werden.</p>
         </section>
 
         <section class="legal-section">
@@ -1153,13 +1153,13 @@
 
         <section class="legal-section">
           <h4>3. Erhebung und Speicherung personenbezogener Daten</h4>
-          <p>Wir erheben und verarbeiten personenbezogene Daten nur, soweit dies zur Bereitstellung der App erforderlich ist.</p>
+          <p>Wir erheben und verarbeiten personenbezogene Daten nur, soweit dies fuer die Bereitstellung der App oder fuer von dir aktiv genutzte Zusatzfunktionen erforderlich ist.</p>
           <p>Dies umfasst insbesondere:</p>
           <ul>
-            <li>E-Mail-Adresse bei Registrierung und Login</li>
-            <li>Kontodaten im Rahmen der Authentifizierung</li>
-            <li>Spielstände, Einstellungen und appbezogene Nutzungsdaten im Rahmen der Cloud-Synchronisierung</li>
-            <li>lokal gespeicherte Daten innerhalb der App</li>
+            <li>lokal gespeicherte Spielstaende, Einstellungen und appnahe Nutzungsdaten auf diesem Geraet</li>
+            <li>E-Mail-Adresse und Kontodaten nur, wenn du freiwillig ein Konto erstellst oder dich anmeldest</li>
+            <li>Cloud-gesicherte Spielstaende, Einstellungen oder verifizierte Ergebnisdaten nur, wenn du optionale Konto- oder Cloud-Funktionen nutzt</li>
+            <li>Statusdaten fuer Erinnerungen nur, wenn du Erinnerungen aktivierst und Browser- oder Systemfreigaben erteilst</li>
           </ul>
         </section>
 
@@ -1167,16 +1167,16 @@
           <h4>4. Zweck der Verarbeitung</h4>
           <p>Die Daten werden verwendet für:</p>
           <ul>
-            <li>Bereitstellung und Funktion der App</li>
-            <li>Speicherung und Synchronisierung von Spielständen</li>
-            <li>Anmeldung und Kontoverwaltung</li>
-            <li>technische Stabilität und Weiterentwicklung der App</li>
+            <li>lokales Spielen und Speichern auf diesem Geraet</li>
+            <li>optionale Cloud-Sicherung oder Geraetewechsel, wenn du ein Konto nutzt</li>
+            <li>verifizierte Ergebnisse, Leaderboard-Funktionen oder kontoabhängige Dienste, wenn du sie aktiv verwendest</li>
+            <li>technische Stabilitaet und Weiterentwicklung der App</li>
           </ul>
         </section>
 
         <section class="legal-section">
           <h4>5. Speicherung der Daten</h4>
-          <p>Daten können lokal auf dem Gerät sowie auf Servern zur Bereitstellung der App gespeichert werden. Es werden technische und organisatorische Maßnahmen getroffen, um die Daten zu schützen.</p>
+          <p>Ohne Konto bleibt dein Spielstand grundsaetzlich lokal auf diesem Geraet. Wenn Browserdaten geloescht werden, kann dieser lokale Spielstand verloren gehen. Wenn du optionale Cloud-Funktionen nutzt, koennen ausgewaehlte Daten zusaetzlich auf Servern gespeichert werden.</p>
         </section>
 
         <section class="legal-section">
@@ -1190,7 +1190,7 @@
 
         <section class="legal-section">
           <h4>7. Lokale Speicherung</h4>
-          <p>Die App nutzt lokale Speichertechnologien, insbesondere LocalStorage und/oder IndexedDB, um Daten auf dem Gerät zu speichern.</p>
+          <p>Die App nutzt lokale Speichertechnologien wie LocalStorage und/oder IndexedDB, um deinen Run ohne Konto auf diesem Geraet zu speichern. Ohne Cloud Sync bleibt dieser lokale Spielstand an diesen Browser bzw. dieses Geraet gebunden und kann beim Loeschen von Browserdaten verloren gehen.</p>
         </section>
 
         <section class="legal-section">
@@ -1302,13 +1302,17 @@
       <div id="onboardingStepPanels" class="run-builder-content">
         <section class="run-builder-step is-active" data-onboarding-step-panel="0" data-step-title="Topfgröße">
           <div class="run-builder-copy">
-            <span class="run-builder-eyebrow">Schritt 1</span>
-            <h3>Topfgröße</h3>
-            <p>Wähle den Wurzelraum für deinen ersten Run.</p>
+            <span class="run-builder-eyebrow" data-i18n="onboarding.guest.eyebrow">Lokaler Start</span>
+            <h3 data-i18n="onboarding.guest.title">Dein erster Grow-Run</h3>
+            <p data-i18n="onboarding.guest.subtitle">Du kannst sofort lokal spielen. Dein Spielstand bleibt auf diesem Gerät gespeichert.</p>
+          </div>
+          <div class="run-builder-local-note" data-guest-welcome-note>
+            <span class="run-builder-local-note__status" data-i18n="onboarding.guest.status">Gastmodus aktiv</span>
+            <p data-i18n="onboarding.guest.cloud_hint">Cloud Sync kannst du spaeter optional in den Einstellungen verbinden, wenn du deinen Run zusaetzlich sichern oder auf ein anderes Geraet mitnehmen moechtest.</p>
           </div>
           <aside class="onboarding-buddy-tip" data-buddy-key="pot">
             <img alt="Buddy erklärt die Topfgröße" loading="eager">
-            <p>Mehr Wurzelraum gibt dir mehr Puffer, braucht aber etwas mehr Zeit.</p>
+            <p data-i18n="onboarding.guest.buddy">Ich begleite dich Schritt für Schritt. Wähle zuerst den Wurzelraum; alles Weitere bauen wir ruhig darauf auf.</p>
           </aside>
           <div class="onboarding-option-grid">
             <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupPotSize" data-setup-value="small" data-title="2 Liter (S)" data-badge="Frühspiel" data-description="Kleiner Start mit schnellem Feedback." data-effect="Schnell · eng · direkt" data-icon="pot">
@@ -1620,26 +1624,30 @@
       </section>
 
       <section class="figma-section-card figma-menu-list">
-        <button id="menuStatsBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.analysis">Analyse</span><small>Report &amp; Run-Statistik</small></button>
+        <p class="menu-section-label" data-i18n="menu.group_core">Run</p>
+        <button id="menuStatsBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.analysis">Analyse</span><small data-i18n="menu.analysis_hint">Report &amp; Run-Statistik</small></button>
+        <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span id="menuRescueLabel" data-i18n="menu.rescue">Notfallrettung</span><small id="menuRescueSubtext">1× pro Run bei kritischem Zustand.</small></button>
+        <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.new_run">Speichern und Beenden</span><small data-i18n="menu.new_run_hint">Aktuellen Run sichern und neu starten</small></button>
+        <p class="menu-section-label" data-i18n="menu.group_progress">Fortschritt</p>
+        <button id="menuMissionsBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.missions">Missionen</span><small data-i18n="menu.missions_hint">Tagesziele &amp; Fortschritt</small></button>
         <button id="menuLeaderboardBtn" class="menu-entry figma-menu-entry" type="button" aria-disabled="false" aria-hidden="false" title="Öffnet das Weekly-Leaderboard.">
           <span id="menuLeaderboardLabel" class="menu-entry-main">Leaderboard<span id="menuLeaderboardRewardHint" class="reward-hint-dot reward-hint-dot--entry hidden" aria-hidden="true"></span></span>
-          <small id="menuLeaderboardSubtext">Nur verifizierte Ergebnisse</small>
+          <small id="menuLeaderboardSubtext">Verifizierte Ergebnisse mit Konto</small>
         </button>
-        <button id="menuRescueBtn" class="menu-entry figma-menu-entry" type="button"><span id="menuRescueLabel" data-i18n="menu.rescue">Notfallrettung</span><small id="menuRescueSubtext">1× pro Run bei kritischem Zustand.</small></button>
-        <button id="menuCoinShopBtn" class="menu-entry figma-menu-entry figma-menu-entry--shop" type="button"><span data-i18n="menu.coin_shop">Coin-Shop</span><small>Zeit, Komfort und Kontrolle direkt kaufen</small></button>
-        <button id="menuSupportBtn" class="menu-entry figma-menu-entry figma-menu-entry--support" type="button"><span data-i18n="menu.support">GrowSim unterstützen</span><small>Freiwilliger Support für neue Features</small></button>
-        <button id="menuMissionsBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.missions">Missionen</span><small>Missionen &amp; Fortschritt</small></button>
-        <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.about">Projektinfo</span><small>Status &amp; Hinweise</small></button>
-        <button id="menuImprintBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.imprint">Impressum</span><small>Anbieterkennzeichnung</small></button>
-        <button id="menuPrivacyBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.privacy">Datenschutz</span><small>Datenschutzerklärung</small></button>
-        <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.settings">Einstellungen</span><small>Einstellungen öffnen</small></button>
-        <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.new_run">Speichern und Beenden</span><small>Neuen Run starten</small></button>
+        <p class="menu-section-label" data-i18n="menu.group_optional">Optional</p>
+        <button id="menuCoinShopBtn" class="menu-entry figma-menu-entry figma-menu-entry--shop" type="button"><span data-i18n="menu.coin_shop">Coin-Shop</span><small data-i18n="menu.coin_shop_hint">Optionale Komfortaktionen</small></button>
+        <button id="menuSupportBtn" class="menu-entry figma-menu-entry figma-menu-entry--support" type="button"><span data-i18n="menu.support">GrowSim unterstützen</span><small data-i18n="menu.support_hint">Freiwilliger Support</small></button>
+        <button id="menuLanguageBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.settings">Einstellungen</span><small data-i18n="menu.settings_hint">Tempo, Sprache, Cloud</small></button>
+        <p class="menu-section-label" data-i18n="menu.group_info">Info</p>
+        <button id="menuAboutBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.about">Projektinfo</span><small data-i18n="menu.about_hint">Status &amp; Hinweise</small></button>
+        <button id="menuPrivacyBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.privacy">Datenschutz</span><small data-i18n="menu.privacy_hint">Was lokal bleibt</small></button>
+        <button id="menuImprintBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.imprint">Impressum</span><small data-i18n="menu.imprint_hint">Anbieterkennzeichnung</small></button>
       </section>
 
       <section class="figma-section-card">
-        <h3 class="figma-section-head">Schnellzugriff</h3>
-        <div class="figma-static-row"><span>Push-Benachrichtigungen</span><strong id="menuPushStatus" class="value_gold">Deaktiviert</strong></div>
-        <button id="menuPushBtn" class="menu-entry figma-menu-entry figma-menu-entry--small" type="button" aria-pressed="false"><span>Push umschalten</span><small>Status jetzt ändern</small></button>
+        <h3 class="figma-section-head" data-i18n="menu.quick_access">Schnellzugriff</h3>
+        <div class="figma-static-row"><span data-i18n="menu.reminders">Erinnerungen</span><strong id="menuPushStatus" class="value_gold">Optional aus</strong></div>
+        <button id="menuPushBtn" class="menu-entry figma-menu-entry figma-menu-entry--small" type="button" aria-pressed="false"><span data-i18n="menu.reminders_settings">Erinnerungen einstellen</span><small data-i18n="menu.reminders_hint">Optional, kein Login für lokales Spielen</small></button>
       </section>
 
       <div class="menu-quick-actions">
@@ -1667,13 +1675,14 @@
 
   <section id="authModal" class="menu-dialog hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
     <div class="menu-dialog-card auth-modal-card">
-      <p class="menu-dialog-kicker">Cloud Sync</p>
+      <p class="menu-dialog-kicker" data-i18n="auth.cloud_kicker">Cloud Sync</p>
       <h3 id="authModalTitle" data-i18n="auth.title">Account</h3>
       <div id="authModalLoggedOutView">
-        <div class="auth-modal-tabs" role="tablist" aria-label="Auth Modus">
+        <div class="auth-modal-tabs" role="tablist" aria-label="Auth Modus" data-i18n-aria-label="auth.mode_aria">
           <button id="authTabLogin" class="auth-tab is-active" type="button" data-i18n="auth.login">Login</button>
           <button id="authTabRegister" class="auth-tab" type="button" data-i18n="auth.register">Registrieren</button>
         </div>
+        <p class="sheet-note auth-modal-note" data-i18n="auth.optional_note">Lokales Spielen funktioniert auch ohne Konto. Wenn du dich spaeter anmeldest, kannst du optionale Cloud-Sicherung, Geraetewechsel, verifizierte Ergebnisse, Leaderboard und Erinnerungen nutzen, soweit verfuegbar.</p>
         <div class="auth-modal-form-grid">
           <label id="authDisplayNameLabel" class="auth-field hidden">
             <span data-i18n="auth.display_name">Anzeigename</span>
@@ -1704,10 +1713,11 @@
       </div>
       <div id="authModalLoggedInView" class="hidden" aria-hidden="true">
         <div class="auth-modal-status">
-          <div class="figma-static-row"><span>Status</span><strong class="value_green">Verbunden</strong></div>
-          <div class="figma-static-row"><span>E-Mail</span><strong id="authLoggedInEmailValue" class="value_gold">-</strong></div>
-          <div class="figma-static-row"><span>Anzeigename</span><strong id="authLoggedInNameValue" class="value_gold">-</strong></div>
+          <div class="figma-static-row"><span data-i18n="auth.status_label">Status</span><strong class="value_green" data-i18n="auth.connected">Verbunden</strong></div>
+          <div class="figma-static-row"><span data-i18n="auth.email">E-Mail</span><strong id="authLoggedInEmailValue" class="value_gold">-</strong></div>
+          <div class="figma-static-row"><span data-i18n="auth.display_name">Anzeigename</span><strong id="authLoggedInNameValue" class="value_gold">-</strong></div>
         </div>
+        <p class="sheet-note auth-modal-note" data-i18n="auth.logged_in_note">Cloud Sync bleibt optional. Wenn du dich abmeldest, bleibt dein aktueller lokaler Run auf diesem Geraet spielbar.</p>
         <div class="menu-dialog-actions">
           <button id="authModalCloseBtn" class="ghost-btn" type="button" data-i18n="common.close">Schließen</button>
           <button id="authModalLogoutBtn" class="action-btn action-primary" type="button" data-i18n="auth.logout">Logout</button>

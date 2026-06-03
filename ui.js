@@ -999,7 +999,10 @@ function bindMenuOverlayEvents(controller = null) {
     });
   }
   if (ui.menuAboutBtn) {
-    ui.menuAboutBtn.addEventListener('click', () => openMenuPlaceholder('Über das Spiel', 'Grow Simulator MVP · Weitere Infos folgen.'));
+    ui.menuAboutBtn.addEventListener('click', () => openMenuPlaceholder(
+      i18nT('menu.about_sheet_title'),
+      i18nT('menu.about_sheet_body')
+    ));
   }
   if (ui.menuImprintBtn) {
     ui.menuImprintBtn.addEventListener('click', () => {

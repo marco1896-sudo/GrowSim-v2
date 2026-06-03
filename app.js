@@ -1654,11 +1654,63 @@ function resolvePushUiPresentation() {
   return api.resolvePushPresentation(state, {
     pushUiRuntime,
     notifications,
+    translations: buildPushUiTranslationBundle(),
     authed: isAuthSessionValid() && Boolean(readAuthToken()),
     pushEnabled: api && typeof api.isPushActive === 'function'
       ? api.isPushActive(pushUiRuntime.status)
       : notifications.enabled === true
   });
+}
+
+function buildPushUiTranslationBundle() {
+  return {
+    support: {
+      supported: i18nT('settings.push_runtime.supported'),
+      unsupported: i18nT('settings.push_runtime.unsupported')
+    },
+    permission: {
+      granted: i18nT('settings.push_runtime.permission_granted'),
+      denied: i18nT('settings.push_runtime.permission_denied'),
+      default: i18nT('settings.push_runtime.permission_default'),
+      unsupported: i18nT('settings.push_runtime.permission_unsupported')
+    },
+    status: {
+      active: i18nT('settings.push_runtime.status_active'),
+      inactive: i18nT('settings.push_runtime.status_inactive'),
+      loading: i18nT('settings.push_runtime.status_loading'),
+      denied: i18nT('settings.push_runtime.status_denied'),
+      unsupported: i18nT('settings.push_runtime.status_unsupported'),
+      missingPermission: i18nT('settings.push_runtime.status_missing_permission')
+    },
+    feedback: {
+      loading: i18nT('settings.push_runtime.feedback_loading'),
+      unsupported: i18nT('settings.push_runtime.feedback_unsupported'),
+      denied: i18nT('settings.push_runtime.feedback_denied'),
+      inactive: i18nT('settings.push_runtime.feedback_inactive'),
+      active: i18nT('settings.push_runtime.feedback_active'),
+      unauthenticated: i18nT('settings.push_runtime.feedback_unauthenticated'),
+      localOnly: i18nT('settings.push_runtime.feedback_local_only')
+    },
+    action: {
+      enabled: i18nT('settings.push_runtime.action_enabled'),
+      disabled: i18nT('settings.push_runtime.action_disabled'),
+      unsupported: i18nT('settings.push_runtime.action_unsupported'),
+      permissionDenied: i18nT('settings.push_runtime.action_permission_denied'),
+      reloadRequired: i18nT('settings.push_runtime.action_reload_required'),
+      statusReadError: i18nT('settings.push_runtime.action_status_read_error')
+    },
+    menu: {
+      label: i18nT('menu.reminders'),
+      title: i18nT('settings.push_runtime.menu_title'),
+      enabledBadge: i18nT('settings.push_runtime.menu_enabled_badge')
+    },
+    toggle: {
+      enabled: i18nT('settings.push_runtime.toggle_enabled'),
+      disabled: i18nT('settings.push_runtime.toggle_disabled'),
+      statusEnabled: i18nT('settings.push_runtime.toggle_status_enabled'),
+      statusDisabled: i18nT('settings.push_runtime.toggle_status_disabled')
+    }
+  };
 }
 
 window.GrowSimAppUiRuntime = Object.freeze({
@@ -3805,7 +3857,7 @@ function renderRewardHintIndicators() {
   if (ui.menuToggleBtn) {
     ui.menuToggleBtn.classList.toggle('has-reward-hint', hasClaimableRewards);
     ui.menuToggleBtn.setAttribute('aria-label', hasClaimableRewards
-      ? `Menü öffnen. ${claimableCount} claimbare Weekly-Belohnung${claimableCount === 1 ? '' : 'en'}`
+      ? `Menü öffnen. ${claimableCount} verifizierte Belohnung${claimableCount === 1 ? '' : 'en'} verfügbar`
       : 'Menü öffnen');
   }
 
@@ -3818,23 +3870,23 @@ function renderRewardHintIndicators() {
     ui.menuLeaderboardBtn.classList.toggle('has-reward-hint', hasClaimableRewards);
     ui.menuLeaderboardBtn.classList.toggle('menu-entry--reward-priority', hasClaimableRewards);
     ui.menuLeaderboardBtn.setAttribute('title', hasClaimableRewards
-      ? `Öffnet Weekly-Leaderboard und claimbare Belohnungen (${claimableCount}).`
-      : 'Öffnet das Weekly-Leaderboard für verifizierte Ergebnisse.');
+      ? `Öffnet Leaderboard und verifizierte Belohnungen (${claimableCount}).`
+      : 'Leaderboard nutzt verifizierte Ergebnisse. Lokales Spielen bleibt ohne Login möglich.');
   }
   if (menuLeaderboardHintNode) {
     menuLeaderboardHintNode.classList.toggle('hidden', !hasClaimableRewards);
     menuLeaderboardHintNode.setAttribute('aria-hidden', String(!hasClaimableRewards));
   }
   if (menuLeaderboardLabelNode) {
-    menuLeaderboardLabelNode.textContent = hasClaimableRewards ? 'Leaderboard · Neu' : 'Leaderboard';
+    menuLeaderboardLabelNode.textContent = hasClaimableRewards ? 'Leaderboard · Belohnung' : 'Leaderboard';
     if (menuLeaderboardHintNode) {
       menuLeaderboardLabelNode.appendChild(menuLeaderboardHintNode);
     }
   }
   if (menuLeaderboardSubtextNode) {
     menuLeaderboardSubtextNode.textContent = hasClaimableRewards
-      ? 'Claimbare Weekly-Belohnung verfügbar'
-      : 'Nur verifizierte Ergebnisse';
+      ? 'Verifizierte Belohnung verfügbar'
+      : 'Verifizierte Ergebnisse mit Konto';
   }
 }
 
@@ -5768,7 +5820,7 @@ async function createHarvestRunSessionForCurrentRun(options = {}) {
   const shouldSkipAuth = !isAuthSessionValid() || !readAuthToken();
   if (shouldSkipAuth) {
     readiness.sessionState = 'local_only';
-    readiness.sessionError = 'Ohne Login bleibt dieser Run lokal.';
+    readiness.sessionError = 'Ohne Konto bleibt dieser Run lokal auf diesem Geraet.';
     schedulePersistState(true);
     renderAll();
     return '';
@@ -5951,7 +6003,7 @@ async function submitHarvestRunOutcomeIfPossible(options = {}) {
   if (!isAuthSessionValid() || !readAuthToken()) {
     readiness.submissionState = 'local_only';
     readiness.verificationStatus = 'local_only';
-    readiness.submissionError = 'Ohne Login bleibt dieses Ergebnis lokal.';
+    readiness.submissionError = 'Ohne Konto bleibt dieses Ergebnis lokal.';
     readiness.pendingSubmission = false;
     schedulePersistState(true);
     renderAll();
@@ -6297,18 +6349,9 @@ async function boot() {
         console.info('[auth] local dev bypass active');
       }
     }
+    setAuthGateActive(false);
     if (!hasValidSession) {
-      ensureSettingsUiReady();
-      setAuthGateActive(true);
-      syncAuthModalContent();
-      setBootStep('restore_session', 'Anmeldung erforderlich...');
-      await runBootSubstep('show_startup_auth_gate', () => hideLoadingScreen({ immediate: true }));
-      await runBootSubstep('open_startup_auth_gate', () => openCloudAuthModal({ gate: true }));
-      bootWaitingForAuth = true;
-      stateRestoredDuringStartupAuthGate = await runBootSubstep('wait_for_startup_auth', () => waitForStartupAuthGateClear());
-      bootWaitingForAuth = false;
-    } else {
-      setAuthGateActive(false);
+      await runBootSubstep('continue_as_local_guest', () => closeCloudAuthModal({ force: true }));
     }
     logBootStep('boot:auth_restore', {
       authenticated: hasValidSession
@@ -6389,6 +6432,9 @@ async function boot() {
     await runBootSubstep('start_heartbeat_watchdog', () => startHeartbeatWatchdog());
     await runBootSubstep('render_all', () => renderAll());
     await runBootSubstep('render_landing', () => renderLanding());
+    await runBootSubstep('clear_transient_boot_ui_state_after_render', () => clearTransientBootUiState());
+    await runBootSubstep('render_all_after_transient_clear', () => renderAll());
+    await runBootSubstep('render_landing_after_transient_clear', () => renderLanding());
     setBootStep('render_ui', 'Fast bereit...');
     window.__gsBootOk = true;
     state.ui.lastRenderRealMs = Date.now();
@@ -9757,7 +9803,7 @@ function getRewardActionGrantState(type, payload = {}) {
       providerStatus,
       reason: 'direct_mode',
       hint: policy === 'rewarded_required'
-        ? (rewardText ? rewardText.direct : 'Lokaler Direct-Modus aktiv. Reward wird ohne Provider simuliert.')
+        ? (rewardText ? rewardText.direct : 'Lokale Komfortaktion bereit.')
         : ''
     };
   }
@@ -11926,6 +11972,42 @@ function getAuthDisplayIdentity() {
   };
 }
 
+function getPlayerFacingCareStatus(sourceState = state) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const status = safeState.status && typeof safeState.status === 'object' ? safeState.status : {};
+  const careApi = window.GrowSimCareModel;
+  const rawCare = safeState.care && typeof safeState.care === 'object' ? safeState.care : {};
+  const normalizedCare = careApi && typeof careApi.normalizeCareState === 'function'
+    ? careApi.normalizeCareState(rawCare, safeState)
+    : rawCare;
+  const careSummary = careApi && typeof careApi.deriveCareSummary === 'function'
+    ? careApi.deriveCareSummary(normalizedCare, safeState)
+    : (normalizedCare.summary || {});
+  const water = clamp(
+    Number.isFinite(Number(careSummary && careSummary.displayMoisture))
+      ? Number(careSummary.displayMoisture)
+      : Number(status.water || 0),
+    0,
+    100
+  );
+  const nutrition = clamp(Number(status.nutrition || 0), 0, 100);
+  const stress = clamp(Number(status.stress || 0), 0, 100);
+  const risk = clamp(
+    Number.isFinite(Number(careSummary && careSummary.riskScore))
+      ? Number(careSummary.riskScore)
+      : Number(status.risk || 0),
+    0,
+    100
+  );
+
+  return {
+    water,
+    nutrition,
+    stress,
+    risk
+  };
+}
+
 function buildHomeViewModel(appState = state) { const sourceState = appState && typeof appState === 'object' ? appState : state;
   const dead = Boolean(sourceState.plant && (sourceState.plant.isDead || sourceState.plant.phase === 'dead'));
   const phaseCard = typeof getPhaseCardViewModel === 'function' ? getPhaseCardViewModel() : { title: '-', cycleIcon: '-', ageLabel: '-', subtitle: '-', progressPercent: 0, nextLabel: '' };
@@ -11933,6 +12015,7 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const simulation = sourceState.simulation || {};
   const isDaytime = isDaytimeAtSimTime(Number(simulation.simTimeMs || 0));
   const status = sourceState.status || {};
+  const displayStatus = getPlayerFacingCareStatus(sourceState);
   const boost = sourceState.boost || {};
   const profile = getCanonicalProfile(sourceState);
   const run = getCanonicalRun(sourceState);
@@ -12068,11 +12151,11 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
     },
     rings: {
       health: Number(status.health || 0),
-      stress: Number(status.stress || 0),
-      water: Number(status.water || 0),
-      nutrition: Number(status.nutrition || 0),
+      stress: Number(displayStatus.stress || 0),
+      water: Number(displayStatus.water || 0),
+      nutrition: Number(displayStatus.nutrition || 0),
       growth: Number(status.growth || 0),
-      risk: Number(status.risk || 0)
+      risk: Number(displayStatus.risk || 0)
     },
     panel: {
       playerName: (() => {
@@ -13485,6 +13568,7 @@ function renderMenuDynamicRows() {
       pushUiRuntime,
       pushEnabled: isPushStatusSubscribed(pushUiRuntime.status),
       notifications,
+      pushTranslations: buildPushUiTranslationBundle(),
       authed: isAuthSessionValid() && Boolean(readAuthToken())
     })
     : null;
@@ -13500,7 +13584,7 @@ function renderMenuDynamicRows() {
     ui.menuMissionsBtn.setAttribute('title', String(menuEntries.missions.title || ''));
   }
   if (ui.menuCoinShopBtn) {
-    ui.menuCoinShopBtn.setAttribute('title', 'Öffnet den Coin-Shop für Zeit, Komfort und direkte Kontrolle.');
+    ui.menuCoinShopBtn.setAttribute('title', 'Optionale Komfortaktionen. Der lokale Run bleibt ohne Kauf spielbar.');
   }
   if (ui.menuAboutBtn && menuEntries.about) {
     ui.menuAboutBtn.setAttribute('title', String(menuEntries.about.title || ''));
@@ -16442,7 +16526,7 @@ function buildEventInsightHtml(viewModel, machineState) {
   return `
     <div class="event-shadow-insight event-shadow-insight--${escapeHtml(String(tone || 'idle'))}${machineState === 'activeEvent' ? ' event-shadow-insight--live' : ''}" data-tone="${escapeHtml(String(tone || 'idle'))}">
       <div class="event-shadow-insight__head">
-        <span class="event-shadow-insight__eyebrow">Event Insight</span>
+        <span class="event-shadow-insight__eyebrow">${escapeHtml(i18nT('events.insight_eyebrow'))}</span>
         <span class="event-shadow-insight__pill">${escapeHtml(String(insightLabel || eventToneLabel(tone)))}</span>
       </div>
       <div class="event-detail-sections">
@@ -16459,6 +16543,10 @@ function buildEventCenterMarkup(viewModel) {
   const pendingOutcome = getPendingOutcomeView();
   const resolvedOutcome = getResolvedOutcomeView();
   const auditView = getEventAuditViewModel();
+  const eventDef = Array.isArray(state.events.catalog)
+    ? state.events.catalog.find((entry) => entry && entry.id === state.events.activeEventId)
+    : null;
+  const eventContext = describeActiveEventContext(eventDef);
   const followUpText = formatOutcomeFollowUpLabel(
     popup.machineState === 'resolved' && resolvedOutcome ? resolvedOutcome.followUpIds : [],
     'Folgepfad'
@@ -16476,16 +16564,27 @@ function buildEventCenterMarkup(viewModel) {
     ? `<div class="event-center-card__placeholder"><span>${escapeHtml(String((media.badge || 'E')).slice(0, 1).toUpperCase())}</span></div>`
     : `<img class="event-center-card__image${media.kind === 'icon' ? ' event-center-card__image--icon' : ''}" src="${escapeHtml(String(media.src || ''))}" alt="${escapeHtml(String(media.alt || ''))}">`;
 
-  const summary = popup.machineState === 'resolved' && resolvedOutcome
-    ? (resolvedOutcome.resultText || resolvedOutcome.explanationText || 'Das letzte Ereignis wurde ausgewertet.')
-    : (popup.machineState === 'resolving' && pendingOutcome
-      ? (pendingOutcome.observationText || 'Die Folgen der gewählten Maßnahme werden gerade beobachtet.')
-      : (shadow.causeSummary || shadow.outcomeSummary || 'Kein aktiver Schattenhinweis verfügbar.'));
-  const support = popup.machineState === 'resolved' && resolvedOutcome
-    ? (followUpText || resolvedOutcome.guidanceText || resolvedOutcome.causeText || 'Das letzte Ergebnis bleibt als Verlauf sichtbar.')
-    : (popup.machineState === 'resolving' && pendingOutcome
-      ? (pendingOutcome.optionLabel ? `Ausgewählte Maßnahme: ${pendingOutcome.optionLabel}.` : 'Die gewählte Maßnahme bleibt noch in Beobachtung.')
-      : (shadow.chainSummary || shadow.rewardSummary || 'Legacy bleibt autoritativ, die Vorschau dient nur der Einordnung.'));
+  let title = String(popup.title || 'Grow-Lage');
+  let summary = '';
+  let support = '';
+  if (popup.machineState === 'resolved' && resolvedOutcome) {
+    title = String(resolvedOutcome.eventTitle || popup.title || i18nT('events.resolved_title'));
+    summary = String(resolvedOutcome.resultText || resolvedOutcome.explanationText || i18nT('events.center_resolved_summary'));
+    support = String(followUpText || resolvedOutcome.guidanceText || resolvedOutcome.causeText || i18nT('events.center_resolved_support'));
+  } else if (popup.machineState === 'resolving' && pendingOutcome) {
+    title = String((pendingOutcome && pendingOutcome.eventTitle) || popup.title || i18nT('events.observing_title'));
+    summary = String(pendingOutcome.observationText || i18nT('events.center_resolving_summary'));
+    support = pendingOutcome.optionLabel
+      ? i18nT('events.center_resolving_support_with_action', { action: pendingOutcome.optionLabel })
+      : i18nT('events.center_resolving_support');
+  } else if (popup.machineState === 'activeEvent') {
+    summary = String(shadow.causeSummary || popup.description || i18nT('events.center_active_summary'));
+    support = String(eventContext.focus || shadow.chainSummary || shadow.rewardSummary || i18nT('events.center_active_support'));
+  } else {
+    title = i18nT('events.center_no_active_title');
+    summary = i18nT('events.center_no_active_summary');
+    support = i18nT('events.center_no_active_support');
+  }
   const markers = [
     tone !== 'idle' ? eventToneLabel(tone) : '',
     popup.machineState === 'resolved' && resolvedOutcome ? formatOutcomeStatusLabel(resolvedOutcome.outcomeStatus) : '',
@@ -16504,10 +16603,10 @@ function buildEventCenterMarkup(viewModel) {
       </div>
       <div class="event-center-card__body">
         <div class="event-center-card__head">
-          <span class="event-center-card__eyebrow">Event Center</span>
+          <span class="event-center-card__eyebrow">${escapeHtml(i18nT('events.center_eyebrow'))}</span>
           <span class="event-center-card__pill">${escapeHtml(stateLabel)}</span>
         </div>
-        <strong class="event-center-card__title">${escapeHtml(String(popup.title || 'Event Snapshot'))}</strong>
+        <strong class="event-center-card__title">${escapeHtml(title)}</strong>
         <p class="event-center-card__summary">${escapeHtml(String(summary))}</p>
         <p class="event-center-card__meta">${escapeHtml(String(support))}</p>
         ${auditView && auditView.summary ? `<p class="event-center-card__meta">${escapeHtml(String(auditView.summary))}</p>` : ''}
@@ -16610,10 +16709,10 @@ function getModernEventSheetContentState(viewModel, machineState) {
       title: String(state.events.activeEventTitle || popup.title || 'Aktives Ereignis'),
       description: String(state.events.activeEventText || popup.description || ''),
       meta: [
-        `Schweregrad: ${state.events.activeSeverity}`,
-        eventContext.cause ? `Warum jetzt: ${eventContext.cause}` : '',
-        eventContext.focus ? `Fokus: ${eventContext.focus}` : ''
-      ].filter(Boolean).join(' | '),
+        eventContext.cause ? i18nT('events.active_why_now', { text: eventContext.cause }) : '',
+        eventContext.focus ? i18nT('events.active_focus', { text: eventContext.focus }) : '',
+        i18nT('events.active_wait')
+      ].filter(Boolean).join(' · '),
       options: Array.isArray(state.events.activeOptions) ? state.events.activeOptions.slice() : [],
       rewardAction: !fastForwardPresentation.disabled
         ? {
@@ -16634,11 +16733,11 @@ function getModernEventSheetContentState(viewModel, machineState) {
       : 'Die gewählte Maßnahme wird jetzt ausgewertet.';
     return {
       title: String((pendingOutcome && pendingOutcome.eventTitle) || state.events.activeEventTitle || popup.title || 'Ereignis wird ausgewertet'),
-      description: `${actionLabel} ${String(pendingOutcome && pendingOutcome.observationText || 'Das Ergebnis erscheint nach Ablauf des Timers.')}`.trim(),
+      description: `${actionLabel} ${String(pendingOutcome && pendingOutcome.observationText || i18nT('events.center_resolving_summary'))}`.trim(),
       meta: [
-        `Ergebnis in: ${formatCountdown(leftMs)}`,
-        pendingOutcome && pendingOutcome.learningNote ? `Hinweis: ${pendingOutcome.learningNote}` : ''
-      ].filter(Boolean).join(' | '),
+        i18nT('events.resolving_eta', { time: formatCountdown(leftMs) }),
+        pendingOutcome && pendingOutcome.learningNote ? i18nT('events.active_focus', { text: pendingOutcome.learningNote }) : ''
+      ].filter(Boolean).join(' · '),
       options: [],
       rewardAction: !fastForwardPresentation.disabled
         ? {
@@ -16658,9 +16757,9 @@ function getModernEventSheetContentState(viewModel, machineState) {
       description: String(formatResolvedOutcome(outcome)),
       meta: [
         formatOutcomeStatusLabel(outcome && outcome.outcomeStatus),
-        outcome && outcome.optionLabel ? i18nT('events.meta_action_result_in', { action: outcome.optionLabel, time: '-' }) : '',
+        outcome && outcome.optionLabel ? i18nT('events.center_resolved_action', { action: outcome.optionLabel }) : '',
         i18nT('events.close_to_continue')
-      ].filter(Boolean).join(' | '),
+      ].filter(Boolean).join(' · '),
       options: []
     };
   }
@@ -16676,9 +16775,11 @@ function getModernEventSheetContentState(viewModel, machineState) {
   }
 
   return {
-    title: i18nT('events.no_active_title'),
-    description: i18nT('events.no_active_text'),
-    meta: `${i18nT('home.event')}: ${formatCountdown(Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0))}`,
+    title: i18nT('events.center_no_active_title'),
+    description: i18nT('events.center_no_active_summary'),
+    meta: i18nT('events.center_no_active_eta', {
+      time: formatCountdown(Number(state.events.scheduler.nextEventSimTimeMs || 0) - Number(state.simulation.simTimeMs || 0))
+    }),
     options: []
   };
 }
@@ -16816,8 +16917,8 @@ function renderModernEventSheetContent(viewModel, machineState) {
   const eventId = String(contentState.eventId || state.events.activeEventId || '');
   const eventAuthority = String(contentState.eventAuthority || (eventSystem === 'v2' ? 'v2' : 'legacy'));
   const topSubtitle = isV2PilotSheet
-    ? 'Neues Ereignissystem aktiv'
-    : 'Legacy-Ereignisse werden in der modernen Darstellung angezeigt.';
+    ? i18nT('events.sheet_top_subtitle')
+    : i18nT('events.sheet_top_subtitle');
   const historySlotMarkup = isV2PilotSheet
     ? ''
     : `<div class="event-history-slot" aria-hidden="false">${buildEventHistorySnapshotMarkup()}</div>`;
@@ -16831,11 +16932,11 @@ function renderModernEventSheetContent(viewModel, machineState) {
   const template = document.createElement('template');
   template.innerHTML = `
     <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-      <div class="figma-top-player-title">Event-System</div>
+      <div class="figma-top-player-title">${escapeHtml(i18nT('events.sheet_top_title'))}</div>
       <div class="figma-top-player-subtitle">${escapeHtml(topSubtitle)}</div>
     </section>
     <section class="figma-section-card figma-section-card--event event-sheet-modern-card${isResolvedV2Pilot ? ' event-sheet-modern-card--resolved' : ''}" data-tone="${escapeHtml(String(tone || 'idle'))}" data-event-system="${escapeHtml(eventSystem)}" data-event-id="${escapeHtml(eventId)}" data-event-authority="${escapeHtml(eventAuthority)}">
-      <h3 class="figma-section-head">${escapeHtml(i18nT('events.focus'))}</h3>
+      <h3 class="figma-section-head">${escapeHtml(i18nT('events.sheet_section_title'))}</h3>
       <p class="sheet-badge" data-shadow="${escapeHtml(String(shadowSummary.primaryState || ''))}">${escapeHtml(isV2PilotSheet ? String(contentState.statusLabel || 'Aktives Ereignis') : i18nT('events.status', { state: translateEventState(machineState) }))}</p>
       ${buildEventMediaMarkup(mediaModel, tone)}
       <h3 class="event-sheet-modern__title">${escapeHtml(String(contentState.title || 'Event'))}</h3>
@@ -16905,9 +17006,9 @@ function renderAnalysisPanel(force = false) {
     timeline: ui.analysisPanelTimeline
   };
 
-  ui.analysisTabOverview.setAttribute('title', 'Zeigt den aktuellen Run-Report mit Status, Trend und Verlaufskurve.');
-  ui.analysisTabDiagnosis.setAttribute('title', 'Zeigt aktuelle Diagnose-Treiber und die empfohlene nächste Pflege.');
-  ui.analysisTabTimeline.setAttribute('title', 'Kein Dateiexport. Zeigt den letzten protokollierten Run-Verlauf.');
+  ui.analysisTabOverview.setAttribute('title', i18nT('analysis.tab_overview_title'));
+  ui.analysisTabDiagnosis.setAttribute('title', i18nT('analysis.tab_diagnosis_title'));
+  ui.analysisTabTimeline.setAttribute('title', i18nT('analysis.tab_timeline_title'));
 
   ui.analysisTabOverview.classList.toggle('is-active', activeTab === 'overview');
   ui.analysisTabDiagnosis.classList.toggle('is-active', activeTab === 'diagnosis');
@@ -17164,7 +17265,7 @@ async function refreshPushStatus(options = {}) {
     pushUiRuntime.lastUpdatedAtMs = Date.now();
 
     if (!authed && pushUiRuntime.status === 'granted_subscribed') {
-      pushUiRuntime.message = 'Push lokal aktiv. Für Tests bitte einloggen.';
+      pushUiRuntime.message = 'Erinnerungen sind lokal vorgemerkt. Cloud-Verknuepfung ist optional.';
     }
 
     syncPushFlagsWithCanonicalSettings(pushUiRuntime.status);
@@ -17335,6 +17436,15 @@ function renderAnalysisOverview() {
   const recoveryOpportunities = Array.isArray(forecast && forecast.recoveryOpportunities) ? forecast.recoveryOpportunities.slice(0, 3) : [];
   const leadOpportunity = recoveryOpportunities.length ? recoveryOpportunities[0] : null;
   const supportingOpportunities = leadOpportunity ? recoveryOpportunities.slice(1, 3) : [];
+  const coachPositive = positiveDrivers[0]
+    ? normalizeHarvestUiLabel(positiveDrivers[0].label, 'positive')
+    : i18nT('analysis.coach_positive_fallback');
+  const coachBrake = primaryIssue
+    ? primaryIssue.title
+    : (negativeDrivers[0] ? normalizeHarvestUiLabel(negativeDrivers[0].label, 'negative') : i18nT('analysis.coach_brake_fallback'));
+  const overallState = heroCopy && heroCopy.title
+    ? String(heroCopy.title)
+    : (primaryIssue ? primaryIssue.title : i18nT('analysis.coach_overall_fallback'));
 
   const rowsToHtml = (rows) => rows.map((row) => `
       <div class="gs-analysis-status-row">
@@ -17410,6 +17520,41 @@ function renderAnalysisOverview() {
         <p class="harvest-analysis-hero__reason">${escapeHtml(normalizeHarvestUiText(forecast.lastForecastReason || 'Die lokale Richtung bleibt derzeit vergleichsweise ruhig.', 'hero'))}</p>
       </section>
     ` : ''}
+    <section class="gs-analysis-overview-section gs-analysis-coach-brief">
+      <div class="harvest-section-headline gs-analysis-coach-brief__headline">
+        <div class="gs-analysis-coach-brief__title-wrap">
+          <span class="gs-analysis-coach-brief__badge">${escapeHtml(i18nT('analysis.tab_diagnosis'))}</span>
+          <h3 class="figma-section-head">${escapeHtml(i18nT('analysis.coach_title'))}</h3>
+        </div>
+        <p class="harvest-section-intro">${escapeHtml(i18nT('analysis.coach_intro'))}</p>
+      </div>
+      <div class="gs-analysis-coach-brief__grid">
+        <article class="gs-analysis-driver gs-analysis-driver--primary gs-analysis-coach-brief__card" data-coach-card="overall">
+          <div class="gs-analysis-driver-head">
+            <strong>${escapeHtml(i18nT('analysis.coach_overall'))}</strong>
+          </div>
+          <p class="gs-analysis-driver-line">${escapeHtml(overallState)}</p>
+        </article>
+        <article class="gs-analysis-driver gs-analysis-coach-brief__card" data-coach-card="positive">
+          <div class="gs-analysis-driver-head">
+            <strong>${escapeHtml(i18nT('analysis.coach_positive'))}</strong>
+          </div>
+          <p class="gs-analysis-driver-line">${escapeHtml(coachPositive)}</p>
+        </article>
+        <article class="gs-analysis-driver gs-analysis-coach-brief__card" data-coach-card="brake">
+          <div class="gs-analysis-driver-head">
+            <strong>${escapeHtml(i18nT('analysis.coach_brake'))}</strong>
+          </div>
+          <p class="gs-analysis-driver-line">${escapeHtml(coachBrake)}</p>
+        </article>
+        <article class="gs-analysis-driver gs-analysis-driver--primary gs-analysis-coach-brief__card" data-coach-card="next">
+          <div class="gs-analysis-driver-head">
+            <strong>${escapeHtml(i18nT('analysis.coach_next'))}</strong>
+          </div>
+          <p class="gs-analysis-driver-line">${escapeHtml(nextCareText)}</p>
+        </article>
+      </div>
+    </section>
     ${buildEventCenterMarkup(eventUiViewModel)}
     ${buildRecentEventHistoryMarkup()}
     ${retentionInsightsMarkup}
@@ -17626,10 +17771,10 @@ function renderAnalysisDiagnosis() {
   const secondary = Array.isArray(diagnosis.secondaryIssues) ? diagnosis.secondaryIssues : [];
   const guidanceHints = getGuidanceHints(diagnosis);
   const severityLabel = (severity) => {
-    if (severity === 'critical') return 'Akut';
-    if (severity === 'high') return 'Wichtig';
-    if (severity === 'medium') return 'Relevant';
-    return 'Beobachten';
+    if (severity === 'critical') return i18nT('analysis.severity_critical');
+    if (severity === 'high') return i18nT('analysis.severity_high');
+    if (severity === 'medium') return i18nT('analysis.severity_medium');
+    return i18nT('analysis.severity_low');
   };
 
   ui.analysisPanelDiagnosis.replaceChildren();
@@ -17643,9 +17788,9 @@ function renderAnalysisDiagnosis() {
         <strong>${escapeHtml(String(heroCopy.title || 'Wo der Run gerade steht'))}</strong>
         <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(String(forecast.confidenceBand || 'medium'))}">${escapeHtml(formatHarvestReadinessLabel(forecast.confidenceBand))}</span>
       </div>
-      <p class="gs-analysis-driver-line"><span>Prognose:</span> ${escapeHtml(String(Math.round(Number(forecast.harvestScore) || 0)))}</p>
-      <p class="gs-analysis-driver-line"><span>Qualität:</span> ${escapeHtml(formatHarvestQualityBand(forecast))}</p>
-      <p class="gs-analysis-driver-line"><span>Einordnung:</span> ${escapeHtml(String(heroCopy.subtitle || 'Die lokale Richtung ist aktuell sauber lesbar.'))}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.forecast_label'))}:</span> ${escapeHtml(String(Math.round(Number(forecast.harvestScore) || 0)))}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.quality_label'))}:</span> ${escapeHtml(formatHarvestQualityBand(forecast))}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.coach_overall'))}:</span> ${escapeHtml(String(heroCopy.subtitle || i18nT('analysis.coach_overall_fallback')))}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(heroNode);
   }
@@ -17655,14 +17800,14 @@ function renderAnalysisDiagnosis() {
     node.className = 'gs-analysis-driver gs-analysis-driver--primary';
     node.innerHTML = `
       <div class="gs-analysis-driver-head">
-        <strong>Was gerade am meisten drückt</strong>
+        <strong>${escapeHtml(i18nT('analysis.diagnosis_primary_title'))}</strong>
         <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(primary.severity)}">${escapeHtml(severityLabel(primary.severity))}</span>
       </div>
-      <p class="gs-analysis-driver-line"><span>Thema:</span> ${escapeHtml(primary.title)}</p>
-      <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(primary.cause)}</p>
-      <p class="gs-analysis-driver-line"><span>Auswirkung:</span> ${escapeHtml(primary.effect)}</p>
-      <p class="gs-analysis-driver-line"><span>Jetzt sinnvoll:</span> ${escapeHtml(describeDiagnosisRecommendation(primary))}</p>
-      <p class="gs-analysis-driver-line gs-analysis-driver-line--limit"><span>Grenze:</span> ${escapeHtml(primary.limit)}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.topic_label'))}:</span> ${escapeHtml(primary.title)}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.cause_label'))}:</span> ${escapeHtml(primary.cause)}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.effect_label'))}:</span> ${escapeHtml(primary.effect)}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.next_step_label'))}:</span> ${escapeHtml(describeDiagnosisRecommendation(primary))}</p>
+      <p class="gs-analysis-driver-line gs-analysis-driver-line--limit"><span>${escapeHtml(i18nT('analysis.limit_label'))}:</span> ${escapeHtml(primary.limit)}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(node);
   }
@@ -17675,8 +17820,8 @@ function renderAnalysisDiagnosis() {
         <strong>${escapeHtml(item.title)}</strong>
         <span class="gs-analysis-driver-badge gs-analysis-driver-badge--${escapeHtml(item.severity)}">${escapeHtml(severityLabel(item.severity))}</span>
       </div>
-      <p class="gs-analysis-driver-line"><span>Ursache:</span> ${escapeHtml(item.cause)}</p>
-      <p class="gs-analysis-driver-line"><span>Richtung:</span> ${escapeHtml(describeDiagnosisRecommendation(item))}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.cause_label'))}:</span> ${escapeHtml(item.cause)}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.next_step_label'))}:</span> ${escapeHtml(describeDiagnosisRecommendation(item))}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(node);
   }
@@ -17699,10 +17844,10 @@ function renderAnalysisDiagnosis() {
     node.className = 'gs-analysis-driver';
     node.innerHTML = `
       <div class="gs-analysis-driver-head">
-        <strong>Größter lokaler Hebel</strong>
-        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--medium">Chance</span>
+        <strong>${escapeHtml(i18nT('analysis.diagnosis_opportunity_title'))}</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--medium">${escapeHtml(i18nT('analysis.diagnosis_opportunity_badge'))}</span>
       </div>
-      <p class="gs-analysis-driver-line"><span>Priorität:</span> ${escapeHtml(normalizeHarvestUiLabel(forecast.recoveryOpportunities[0].label || 'Chance', 'opportunity'))}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.priority_label'))}:</span> ${escapeHtml(normalizeHarvestUiLabel(forecast.recoveryOpportunities[0].label || i18nT('analysis.diagnosis_opportunity_badge'), 'opportunity'))}</p>
       <p class="gs-analysis-driver-line">${escapeHtml(normalizeHarvestUiText(String(forecast.recoveryOpportunities[0].reason || ''), 'opportunity'))}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(node);
@@ -17713,16 +17858,16 @@ function renderAnalysisDiagnosis() {
     stableNode.className = 'gs-analysis-driver';
     stableNode.innerHTML = `
       <div class="gs-analysis-driver-head">
-        <strong>Aktuell kein akuter Bremsfaktor</strong>
-        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--low">Beobachten</span>
+        <strong>${escapeHtml(i18nT('analysis.diagnosis_stable_title'))}</strong>
+        <span class="gs-analysis-driver-badge gs-analysis-driver-badge--low">${escapeHtml(i18nT('analysis.severity_low'))}</span>
       </div>
-      <p class="gs-analysis-driver-line"><span>Lage:</span> Wasser, Nährstoffe und Druckwerte wirken aktuell vergleichsweise ruhig.</p>
-      <p class="gs-analysis-driver-line"><span>Jetzt sinnvoll:</span> Keine harte Gegenmaßnahme nötig. Werte weiter beobachten und nur bei klarer Abweichung eingreifen.</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.coach_overall'))}:</span> ${escapeHtml(i18nT('analysis.diagnosis_stable_body'))}</p>
+      <p class="gs-analysis-driver-line"><span>${escapeHtml(i18nT('analysis.next_step_label'))}:</span> ${escapeHtml(i18nT('analysis.diagnosis_stable_action'))}</p>
     `;
     ui.analysisPanelDiagnosis.appendChild(stableNode);
   }
 
-  ui.analysisPanelDiagnosis.setAttribute('title', 'Diagnoseansicht mit aktuellen Treibern. Kein Filtersystem.');
+  ui.analysisPanelDiagnosis.setAttribute('title', i18nT('analysis.diagnosis_title'));
 }
 
 function diagnosisSeverityFromScore(score) {
@@ -17945,7 +18090,7 @@ function renderAnalysisTimeline() {
   const latest = merged.slice(0, 10);
 
   ui.analysisPanelTimeline.replaceChildren();
-  ui.analysisPanelTimeline.setAttribute('title', 'Zeigt die letzten protokollierten Aktionen, Ereignisse und Systemeintraege. Kein Dateiexport.');
+  ui.analysisPanelTimeline.setAttribute('title', i18nT('analysis.timeline_panel_title'));
 
   if (!latest.length) {
     const empty = document.createElement('div');
@@ -19124,6 +19269,12 @@ function renderLanding() {
   landingNode.classList.toggle('hidden', !visible);
   landingNode.setAttribute('aria-hidden', String(!visible));
   if (visible) {
+    const guestWelcomeNode = document.querySelector('[data-guest-welcome-note]');
+    if (guestWelcomeNode) {
+      const showGuestWelcome = !isAuthSessionValid();
+      guestWelcomeNode.classList.toggle('hidden', !showGuestWelcome);
+      guestWelcomeNode.setAttribute('aria-hidden', String(!showGuestWelcome));
+    }
     renderSetupOptionLocks();
     if (typeof updateOnboardingBuilderUi === 'function') {
       updateOnboardingBuilderUi();
@@ -19813,6 +19964,7 @@ function onStartRun() {
   renderRunSummaryOverlay();
   schedulePersistState(true);
   addLog('system', 'Neuer Run gestartet (Figma-Setup)', state.setup);
+  showRetentionToast(i18nT('onboarding.guest.run_started'));
   void createHarvestRunSessionForCurrentRun();
 }
 
@@ -19887,7 +20039,7 @@ async function onPushEnableClick() {
   const pushActionText = pushText && pushText.action ? pushText.action : null;
   const authed = isAuthSessionValid() && Boolean(readAuthToken());
   if (!pushApi) {
-    notifications.lastMessage = pushActionText ? pushActionText.unsupported : 'Push wird in diesem Browser nicht unterstützt.';
+    notifications.lastMessage = pushActionText ? pushActionText.unsupported : 'Erinnerungen sind in diesem Browser aktuell nicht verfügbar.';
     pushUiRuntime.error = '';
     pushUiRuntime.message = notifications.lastMessage;
     pushUiRuntime.status = 'unsupported';
@@ -19898,7 +20050,7 @@ async function onPushEnableClick() {
     return;
   }
   if (!authed) {
-    notifications.lastMessage = pushText && pushText.feedback ? pushText.feedback.unauthenticated : 'Bitte zuerst einloggen, um Push zu aktivieren.';
+    notifications.lastMessage = pushText && pushText.feedback ? pushText.feedback.unauthenticated : 'Erinnerungen mit Cloud-Bezug brauchen ein Konto. Dein lokaler Run bleibt spielbar.';
     pushUiRuntime.error = '';
     pushUiRuntime.message = notifications.lastMessage;
     renderPushToggle();
@@ -19909,16 +20061,16 @@ async function onPushEnableClick() {
 
   pushUiRuntime.busy = true;
   pushUiRuntime.error = '';
-  pushUiRuntime.message = pushText && pushText.feedback ? pushText.feedback.loading : 'Push wird aktiviert...';
+  pushUiRuntime.message = pushText && pushText.feedback ? pushText.feedback.loading : 'Erinnerungen werden vorbereitet...';
   renderPushToggle();
   renderPushSettingsUi();
 
   try {
     await pushApi.subscribeToPush();
-    notifications.lastMessage = pushActionText ? pushActionText.enabled : 'Push erfolgreich aktiviert.';
+    notifications.lastMessage = pushActionText ? pushActionText.enabled : 'Erinnerungen aktiviert.';
     pushUiRuntime.message = notifications.lastMessage;
   } catch (error) {
-    const message = error && error.message ? String(error.message) : 'Push konnte nicht aktiviert werden.';
+    const message = error && error.message ? String(error.message) : 'Erinnerungen konnten nicht aktiviert werden.';
     console.error('[push] activation failed', { message, error });
     notifications.lastMessage = message;
     pushUiRuntime.error = message;
@@ -19939,7 +20091,7 @@ async function onPushDisableClick() {
   const pushText = getPushUiTextBundle();
   const pushActionText = pushText && pushText.action ? pushText.action : null;
   if (!pushApi) {
-    notifications.lastMessage = pushActionText ? pushActionText.unsupported : 'Push wird in diesem Browser nicht unterstützt.';
+    notifications.lastMessage = pushActionText ? pushActionText.unsupported : 'Erinnerungen sind in diesem Browser aktuell nicht verfügbar.';
     pushUiRuntime.status = 'unsupported';
     pushUiRuntime.message = notifications.lastMessage;
     pushUiRuntime.error = '';
@@ -19952,16 +20104,16 @@ async function onPushDisableClick() {
 
   pushUiRuntime.busy = true;
   pushUiRuntime.error = '';
-  pushUiRuntime.message = pushText && pushText.feedback ? pushText.feedback.loading : 'Push wird deaktiviert...';
+  pushUiRuntime.message = pushText && pushText.feedback ? pushText.feedback.loading : 'Erinnerungen werden deaktiviert...';
   renderPushToggle();
   renderPushSettingsUi();
 
   try {
     await pushApi.unsubscribeFromPush();
-    notifications.lastMessage = pushActionText ? pushActionText.disabled : 'Push deaktiviert.';
+    notifications.lastMessage = pushActionText ? pushActionText.disabled : 'Erinnerungen deaktiviert.';
     pushUiRuntime.message = notifications.lastMessage;
   } catch (error) {
-    const message = error && error.message ? String(error.message) : 'Push konnte nicht deaktiviert werden.';
+    const message = error && error.message ? String(error.message) : 'Erinnerungen konnten nicht deaktiviert werden.';
     notifications.lastMessage = message;
     pushUiRuntime.error = message;
     pushUiRuntime.message = '';
@@ -19979,32 +20131,32 @@ async function onPushTestClick() {
   const pushApi = getPushManagerApi();
   const notifications = getCanonicalNotificationsSettings(state);
   if (!pushApi) {
-    pushUiRuntime.error = 'Push ist in diesem Browser nicht verfügbar.';
+    pushUiRuntime.error = 'Erinnerungen sind in diesem Browser aktuell nicht verfügbar.';
     renderPushSettingsUi();
     return;
   }
   if (!isAuthSessionValid() || !readAuthToken()) {
-    pushUiRuntime.error = 'Bitte einloggen, um eine Test-Benachrichtigung zu senden.';
+    pushUiRuntime.error = 'Ein Test mit Cloud-Bezug braucht ein Konto. Dein lokaler Run bleibt spielbar.';
     renderPushSettingsUi();
     return;
   }
   if (!isPushStatusSubscribed(pushUiRuntime.status)) {
-    pushUiRuntime.error = 'Push ist noch nicht aktiv.';
+    pushUiRuntime.error = 'Erinnerungen sind aktuell aus.';
     renderPushSettingsUi();
     return;
   }
 
   pushUiRuntime.busy = true;
   pushUiRuntime.error = '';
-  pushUiRuntime.message = 'Test-Benachrichtigung wird gesendet...';
+  pushUiRuntime.message = 'Test-Erinnerung wird gesendet...';
   renderPushSettingsUi();
   renderPushToggle();
   try {
     await pushApi.sendTestPush();
-    notifications.lastMessage = 'Test-Benachrichtigung ausgelöst.';
+    notifications.lastMessage = 'Test-Erinnerung gesendet.';
     pushUiRuntime.message = notifications.lastMessage;
   } catch (error) {
-    const message = error && error.message ? String(error.message) : 'Test-Benachrichtigung fehlgeschlagen.';
+    const message = error && error.message ? String(error.message) : 'Test-Erinnerung konnte nicht gesendet werden.';
     notifications.lastMessage = message;
     pushUiRuntime.error = message;
     pushUiRuntime.message = '';
@@ -22156,9 +22308,9 @@ function updateSettingsUI() {
   }
   if (simSpeedNode) {
     const runtimeSpeed = round2(Number(state.simulation && state.simulation.effectiveSpeed) || getEffectiveSimulationSpeed(Date.now()));
-    simSpeedNode.textContent = `Basis ${baseSpeed}x · Aktiv ${runtimeSpeed}x`;
+    simSpeedNode.textContent = i18nT('settings.sim_speed_value', { base: baseSpeed, active: runtimeSpeed });
     simSpeedNode.className = 'value_gold';
-    simSpeedNode.setAttribute('title', 'Basisgeschwindigkeit plus optionaler Zeit-Boost.');
+    simSpeedNode.setAttribute('title', 'Grundtempo plus optionaler Zeit-Boost.');
   }
   if (simSpeedHintNode) {
     const boostActive = Number(state.simulation && state.simulation.effectiveSpeed) === BOOST_SIM_SPEED;
@@ -22178,64 +22330,64 @@ function updateSettingsUI() {
   if (eventFreqNode) {
     const minMinutes = Math.round(EVENT_ROLL_MIN_REAL_MS / 60000);
     const maxMinutes = Math.round(EVENT_ROLL_MAX_REAL_MS / 60000);
-    eventFreqNode.textContent = `Fix ${minMinutes}-${maxMinutes}m`;
+    eventFreqNode.textContent = i18nT('settings.event_frequency_value', { min: minMinutes, max: maxMinutes });
     eventFreqNode.className = 'value_gold';
-    eventFreqNode.setAttribute('title', 'Aktives Runtime-Fenster. Die Auswahl ist aktuell vorbereitend.');
+    eventFreqNode.setAttribute('title', 'Ereignisse erscheinen in einem ruhigen Zeitfenster.');
   }
 
   const tutNode = document.getElementById('settingsTutorialValue');
   if (tutNode) {
-    tutNode.textContent = i18nT('settings.not_active');
+    tutNode.textContent = i18nT('settings.prepared');
     tutNode.className = 'subtitle';
-    tutNode.setAttribute('title', 'Der Tutorial-Schalter ist im aktuellen Build noch ohne Runtime-Wirkung.');
+    tutNode.setAttribute('title', 'Zusätzliche Hinweise werden später erweitert.');
   }
 
   const autoNode = document.getElementById('settingsAutosaveValue');
   if (autoNode) {
-    autoNode.textContent = `Lokal ${Math.max(1, Math.round(PERSIST_THROTTLE_MS / 1000))}s`;
+    autoNode.textContent = i18nT('settings.local_autosave_value', { seconds: Math.max(1, Math.round(PERSIST_THROTTLE_MS / 1000)) });
     autoNode.className = 'value_gold';
-    autoNode.setAttribute('title', 'Aktuelles lokales Persistenzintervall. Im aktuellen UI nicht umschaltbar.');
+    autoNode.setAttribute('title', 'Dein Gast-Spielstand wird lokal auf diesem Gerät gesichert.');
   }
 
   const volNode = document.getElementById('settingsVolumeValue');
   if (volNode) {
-    volNode.textContent = i18nT('settings.not_active');
+    volNode.textContent = i18nT('settings.prepared');
     volNode.className = 'subtitle';
-    volNode.setAttribute('title', 'Aktuell nur lokaler Anzeigezustand ohne Audio-Backend.');
+    volNode.setAttribute('title', 'Audio-Feintuning wird später erweitert.');
   }
 
   const effNode = document.getElementById('settingsEffectsValue');
   if (effNode) {
-    effNode.textContent = i18nT('settings.not_active');
+    effNode.textContent = i18nT('settings.prepared');
     effNode.className = 'subtitle';
-    effNode.setAttribute('title', 'Aktuell nur lokaler Anzeigezustand ohne Grafik-/FX-Anbindung.');
+    effNode.setAttribute('title', 'Grafik-Feintuning wird später erweitert.');
   }
 
   const batNode = document.getElementById('settingsBatteryValue');
   if (batNode) {
-    batNode.textContent = i18nT('settings.not_active');
+    batNode.textContent = i18nT('settings.prepared');
     batNode.className = 'subtitle';
-    batNode.setAttribute('title', 'Aktuell ohne direkte Runtime-Wirkung.');
+    batNode.setAttribute('title', 'Akkuschonende Optionen werden später erweitert.');
   }
 
   const hapNode = document.getElementById('settingsHapticValue');
   if (hapNode) {
-    hapNode.textContent = i18nT('settings.not_active');
+    hapNode.textContent = i18nT('settings.prepared');
     hapNode.className = 'subtitle';
-    hapNode.setAttribute('title', 'Aktuell ohne direkte Runtime-Wirkung.');
+    hapNode.setAttribute('title', 'Haptik-Optionen werden später erweitert.');
   }
 
   const cloudNode = document.getElementById('settingsCloudSyncValue');
   if (cloudNode) {
     const authIdentity = getAuthDisplayIdentity();
     const isAuthed = Boolean(authIdentity);
-    cloudNode.textContent = isAuthed ? (authIdentity.email || i18nT('auth.connected')) : i18nT('settings.not_connected');
+    cloudNode.textContent = isAuthed ? (authIdentity.email || i18nT('auth.connected')) : i18nT('settings.local_guest');
     cloudNode.className = isAuthed ? 'value_green' : 'value_gold';
     cloudNode.setAttribute(
       'title',
       isAuthed
-        ? 'Cloud Sync aktiv. Klick öffnet Account-Optionen.'
-        : 'Nicht mit Cloud verbunden. Klick öffnet Login/Registrierung.'
+      ? i18nT('settings.cloud_sync_connected_title')
+      : i18nT('settings.cloud_sync_guest_title')
     );
   }
 
@@ -22647,15 +22799,14 @@ function performAuthLogout() {
   authApi.logout();
   console.info('[auth] logout success');
   pushUiRuntime.error = '';
-  pushUiRuntime.message = 'Login erforderlich für Push-Requests.';
+  pushUiRuntime.message = 'Erinnerungen mit Cloud-Bezug brauchen ein Konto. Dein lokaler Run bleibt spielbar.';
   pushUiRuntime.busy = false;
-  setAuthGateActive(true);
+  setAuthGateActive(false);
   closeCloudAuthModal({ force: true });
   void refreshPushStatus({ force: true });
   updateSettingsUI();
   renderPushSettingsUi();
   renderAll();
-  openCloudAuthModal({ gate: true });
   schedulePersistState(true);
 }
 

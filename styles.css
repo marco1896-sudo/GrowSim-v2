@@ -4967,6 +4967,82 @@ body.panelized-ready :is(
   color: rgba(220, 227, 214, 0.72);
 }
 
+.gs-analysis-coach-brief {
+  padding: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.08), rgba(212, 175, 55, 0) 42%),
+    linear-gradient(180deg, rgba(20, 24, 21, 0.98), rgba(13, 17, 15, 0.98));
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
+.gs-analysis-coach-brief__headline {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gs-analysis-coach-brief__title-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.gs-analysis-coach-brief__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  background: rgba(212, 175, 55, 0.12);
+  color: rgba(244, 224, 161, 0.92);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gs-analysis-coach-brief__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gs-analysis-coach-brief__card {
+  min-height: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.gs-analysis-coach-brief__card .gs-analysis-driver-head strong {
+  color: rgba(245, 241, 225, 0.96);
+  font-size: 12px;
+}
+
+.gs-analysis-coach-brief__card .gs-analysis-driver-line {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.gs-analysis-coach-brief__card[data-coach-card="next"] {
+  grid-column: 1 / -1;
+  border-color: rgba(212, 175, 55, 0.24);
+  background:
+    linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.03) 48%, rgba(255, 255, 255, 0.02) 100%);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.06);
+}
+
+.gs-analysis-coach-brief__card[data-coach-card="next"] .gs-analysis-driver-head strong,
+.gs-analysis-coach-brief__card[data-coach-card="next"] .gs-analysis-driver-line {
+  color: #f4ecd0;
+}
+
 .gs-analysis-timeline-meta {
   color: rgba(222, 235, 227, 0.65);
   font-size: 11px;
@@ -6991,6 +7067,15 @@ body.panelized-ready :is(
   gap: 1px;
 }
 
+.figma-menu-screen .menu-section-label {
+  margin: 6px 2px 2px;
+  color: rgba(135, 255, 180, 0.72);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .figma-menu-screen .figma-menu-entry::after {
   content: "\203A";
   position: absolute;
@@ -8655,6 +8740,35 @@ body.panelized-ready :is(
   line-height: 1.42;
 }
 
+.run-builder-local-note {
+  display: grid;
+  gap: 0.38rem;
+  border-radius: 16px;
+  border: 1px solid rgba(135, 255, 180, 0.18);
+  background: rgba(6, 20, 14, 0.68);
+  padding: 0.72rem 0.78rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.run-builder-local-note__status {
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid rgba(135, 255, 180, 0.22);
+  background: rgba(66, 255, 126, 0.1);
+  color: rgba(220, 255, 232, 0.94);
+  padding: 0.26rem 0.48rem;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.run-builder-local-note p {
+  margin: 0;
+  color: rgba(226, 242, 234, 0.78);
+  font-size: 0.78rem;
+  line-height: 1.38;
+}
+
 .onboarding-buddy-tip {
   min-height: 88px;
   display: grid;
@@ -9130,6 +9244,15 @@ body.panelized-ready :is(
   gap: 6px;
 }
 
+.figma-settings-actions .ghost-btn,
+.figma-settings-actions .action-btn {
+  min-width: 0;
+  min-height: 38px;
+  padding-inline: 0.5rem;
+  white-space: normal;
+  line-height: 1.12;
+}
+
 .figma-sheet-settings .figma-settings-card--gameplay {
   min-height: 220px;
 }
@@ -9174,11 +9297,11 @@ body.panelized-ready :is(
 
 .settings-push-row .settings-push-value {
   flex: 0 0 auto;
-  min-width: 118px;
+  min-width: 96px;
   max-width: none;
   justify-self: auto;
   text-align: right;
-  white-space: nowrap;
+  white-space: normal;
   overflow-wrap: normal;
   word-break: keep-all;
   letter-spacing: 0.01em;
@@ -9216,6 +9339,22 @@ body.panelized-ready :is(
   transition: background-color 0.18s ease, border-color 0.18s ease;
 }
 
+.settings-link-row--stacked {
+  align-items: flex-start;
+}
+
+.settings-link-row--stacked > span {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.settings-link-row--stacked small {
+  color: rgba(222, 235, 227, 0.7);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
 .settings-link-row:hover,
 .settings-link-row:focus-visible {
   background: rgba(212, 175, 55, 0.12);
@@ -9228,7 +9367,11 @@ body.panelized-ready :is(
   }
 
   .settings-push-row .settings-push-value {
-    min-width: 96px;
+    min-width: 82px;
+  }
+
+  .figma-settings-actions {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -10451,6 +10594,14 @@ body.panelized-ready :is(
     grid-template-columns: 1fr;
   }
 
+  .gs-analysis-coach-brief {
+    padding: 11px;
+  }
+
+  .gs-analysis-coach-brief__grid {
+    gap: 8px;
+  }
+
   .harvest-analysis-hero {
     flex-direction: column;
     align-items: flex-start;
@@ -10465,6 +10616,12 @@ body.panelized-ready :is(
   .harvest-analysis-metric-grid,
   .run-summary-harvest-hero,
   .run-summary-harvest-metric-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .gs-analysis-coach-brief__grid {
     grid-template-columns: 1fr;
   }
 }
