@@ -1,36 +1,16 @@
 'use strict';
 
 (function attachHomeMapping(globalScope) {
-  function clampPercent(value) {
-    const numeric = Number.isFinite(Number(value)) ? Number(value) : 0;
-    return Math.max(0, Math.min(100, numeric));
-  }
-
   function getPlayerFacingStatus(state) {
-    const safeState = state && typeof state === 'object' ? state : {};
-    const status = safeState.status || {};
-    const careApi = globalScope.GrowSimCareModel;
-    const rawCare = safeState.care && typeof safeState.care === 'object' ? safeState.care : {};
-    const normalizedCare = careApi && typeof careApi.normalizeCareState === 'function'
-      ? careApi.normalizeCareState(rawCare, safeState)
-      : rawCare;
-    const careSummary = careApi && typeof careApi.deriveCareSummary === 'function'
-      ? careApi.deriveCareSummary(normalizedCare, safeState)
-      : (normalizedCare.summary || {});
-
+    const playerFacingApi = globalScope.GrowSimPlayerFacingStatus;
+    if (playerFacingApi && typeof playerFacingApi.derivePlayerFacingStatus === 'function') {
+      return playerFacingApi.derivePlayerFacingStatus(state);
+    }
     return {
-      water: clampPercent(
-        Number.isFinite(Number(careSummary && careSummary.displayMoisture))
-          ? Number(careSummary.displayMoisture)
-          : Number(status.water || 0)
-      ),
-      nutrition: clampPercent(status.nutrition),
-      stress: clampPercent(status.stress),
-      risk: clampPercent(
-        Number.isFinite(Number(careSummary && careSummary.riskScore))
-          ? Number(careSummary.riskScore)
-          : Number(status.risk || 0)
-      )
+      water: 0,
+      nutrition: 0,
+      stress: 0,
+      risk: 0
     };
   }
 

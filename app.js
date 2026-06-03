@@ -11973,38 +11973,15 @@ function getAuthDisplayIdentity() {
 }
 
 function getPlayerFacingCareStatus(sourceState = state) {
-  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
-  const status = safeState.status && typeof safeState.status === 'object' ? safeState.status : {};
-  const careApi = window.GrowSimCareModel;
-  const rawCare = safeState.care && typeof safeState.care === 'object' ? safeState.care : {};
-  const normalizedCare = careApi && typeof careApi.normalizeCareState === 'function'
-    ? careApi.normalizeCareState(rawCare, safeState)
-    : rawCare;
-  const careSummary = careApi && typeof careApi.deriveCareSummary === 'function'
-    ? careApi.deriveCareSummary(normalizedCare, safeState)
-    : (normalizedCare.summary || {});
-  const water = clamp(
-    Number.isFinite(Number(careSummary && careSummary.displayMoisture))
-      ? Number(careSummary.displayMoisture)
-      : Number(status.water || 0),
-    0,
-    100
-  );
-  const nutrition = clamp(Number(status.nutrition || 0), 0, 100);
-  const stress = clamp(Number(status.stress || 0), 0, 100);
-  const risk = clamp(
-    Number.isFinite(Number(careSummary && careSummary.riskScore))
-      ? Number(careSummary.riskScore)
-      : Number(status.risk || 0),
-    0,
-    100
-  );
-
+  const playerFacingApi = window.GrowSimPlayerFacingStatus;
+  if (playerFacingApi && typeof playerFacingApi.derivePlayerFacingStatus === 'function') {
+    return playerFacingApi.derivePlayerFacingStatus(sourceState);
+  }
   return {
-    water,
-    nutrition,
-    stress,
-    risk
+    water: 0,
+    nutrition: 0,
+    stress: 0,
+    risk: 0
   };
 }
 
@@ -13897,24 +13874,16 @@ function getCareStudioHeroProps(careViewModel = null, overallLevel = 'info', ris
 
 function getCareStudioGlobalStatus(careViewModel = null) {
   const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
-  const mappedStatus = careData.globalStatus && typeof careData.globalStatus === 'object' ? careData.globalStatus : null;
-  const water = Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.water != null ? mappedStatus.water : state.status && state.status.water || 0)));
-  const nutrition = Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.nutrition != null ? mappedStatus.nutrition : state.status && state.status.nutrition || 0)));
-  const stress = Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.stress != null ? mappedStatus.stress : state.status && state.status.stress || 0)));
-  const risk = Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.risk != null ? mappedStatus.risk : state.status && state.status.risk || 0)));
-  let riskLevel = String(mappedStatus && mappedStatus.riskLevel || '').trim();
-  if (!riskLevel) {
-    if (risk >= 75) {
-      riskLevel = 'high';
-    } else if (risk >= 50) {
-      riskLevel = 'elevated';
-    } else if (risk >= 25) {
-      riskLevel = 'medium';
-    } else {
-      riskLevel = 'low';
-    }
-  }
-  return { water, nutrition, stress, risk, riskLevel };
+  const mappedStatus = careData.playerFacingStatus && typeof careData.playerFacingStatus === 'object'
+    ? careData.playerFacingStatus
+    : (careData.globalStatus && typeof careData.globalStatus === 'object' ? careData.globalStatus : getPlayerFacingCareStatus(state));
+  return {
+    water: Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.water != null ? mappedStatus.water : 0))),
+    nutrition: Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.nutrition != null ? mappedStatus.nutrition : 0))),
+    stress: Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.stress != null ? mappedStatus.stress : 0))),
+    risk: Math.max(0, Math.min(100, Number(mappedStatus && mappedStatus.risk != null ? mappedStatus.risk : 0))),
+    riskLevel: String(mappedStatus && mappedStatus.riskLevel || 'low').trim() || 'low'
+  };
 }
 
 function renderCareCategoryButtons(categories) {
@@ -14555,22 +14524,25 @@ function renderCareEffectsPanel(careViewModel = null) {
   };
 
   if (activeTabId === 'water') {
+    const playerFacingStatus = careData.playerFacingStatus && typeof careData.playerFacingStatus === 'object'
+      ? careData.playerFacingStatus
+      : getPlayerFacingCareStatus(state);
     appendSectionLabel(i18nT('careStudio.water.title'), 'hints');
     appendHtmlCard('care-studio-insight-card care-studio-insight-card--water', `
       <div class="care-studio-water-profile">
         <div class="care-studio-soil-zone care-studio-soil-zone--surface">
           <span>${escapeHtml(i18nT('careStudio.water.surface'))}</span>
-          <strong>${escapeHtml(String(Math.round(Number(careSummary.surfaceMoisture || careWater.surfaceMoisture || 0))))}%</strong>
+          <strong>${escapeHtml(String(Math.round(Number(playerFacingStatus.surfaceMoisture || 0))))}%</strong>
         </div>
         <div class="care-studio-soil-zone care-studio-soil-zone--root">
           <span>${escapeHtml(i18nT('careStudio.water.root_zone'))}</span>
-          <strong>${escapeHtml(String(Math.round(Number(careSummary.rootZoneMoisture || careWater.rootZoneMoisture || 0))))}%</strong>
+          <strong>${escapeHtml(String(Math.round(Number(playerFacingStatus.rootZoneMoisture || 0))))}%</strong>
         </div>
       </div>
       <div class="care-studio-water-mini-grid">
-        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.dryback'))}</small><strong>${escapeHtml(`${round2(Number(careData.drybackRatePerHour || careWater.drybackRatePerHour || 0))}/h`)}</strong></span>
-        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.overwatering'))}</small><strong>${escapeHtml(`${Math.round(Number(careSummary.rootZoneRiskScore != null ? careSummary.rootZoneRiskScore : careWater.overwateringPressure || 0))}%`)}</strong></span>
-        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.dry_stress'))}</small><strong>${escapeHtml(`${Math.round(Number(careWater.dryStressPressure || 0))}%`)}</strong></span>
+        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.dryback'))}</small><strong>${escapeHtml(`${round2(Number(playerFacingStatus.drybackRatePerHour || 0))}/h`)}</strong></span>
+        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.overwatering'))}</small><strong>${escapeHtml(`${Math.round(Number(playerFacingStatus.rootZoneRiskScore || 0))}%`)}</strong></span>
+        <span class="care-studio-mini-stat"><small>${escapeHtml(i18nT('careStudio.water.dry_stress'))}</small><strong>${escapeHtml(`${Math.round(Number(playerFacingStatus.dryStressPressure || 0))}%`)}</strong></span>
       </div>
       <div class="care-studio-meta-row care-studio-meta-row--stacked">
         <span>${escapeHtml(i18nT('careStudio.water.next_window'))}</span>

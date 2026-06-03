@@ -1,19 +1,6 @@
 'use strict';
 
 (function attachCareMapping(globalScope) {
-  function clampPercent(value) {
-    const numeric = Number.isFinite(Number(value)) ? Number(value) : 0;
-    return Math.max(0, Math.min(100, numeric));
-  }
-
-  function deriveGlobalRiskLevel(riskValue) {
-    const safeRisk = clampPercent(riskValue);
-    if (safeRisk >= 75) return 'high';
-    if (safeRisk >= 50) return 'elevated';
-    if (safeRisk >= 25) return 'medium';
-    return 'low';
-  }
-
   function mapPhaseLabel(stageIndex, plantPhase) {
     const safePhase = String(plantPhase || '').trim().toLowerCase();
     const safeStageIndex = Number.isFinite(Number(stageIndex)) ? Number(stageIndex) : 0;
@@ -83,6 +70,7 @@
       const hintApi = globalScope.GrowSimCareActionHints;
       const careApi = globalScope.GrowSimCareModel;
       const careMethodsApi = globalScope.GrowSimCareMethods;
+      const playerFacingApi = globalScope.GrowSimPlayerFacingStatus;
       const stageIndex = Number(plant.stageIndex || 0);
       const plantPhase = String(plant.phase || '');
       const normalizedCare = careApi && typeof careApi.normalizeCareState === 'function'
@@ -163,25 +151,22 @@
       const lastFeedback = normalizedCare && normalizedCare.feedback && typeof normalizedCare.feedback === 'object'
         ? normalizedCare.feedback
         : {};
-      const summaryDisplayMoisture = careSummary && Number.isFinite(Number(careSummary.displayMoisture))
-        ? Number(careSummary.displayMoisture)
-        : (careSummary && Number.isFinite(Number(careSummary.substrateMoisture))
-          ? Number(careSummary.substrateMoisture)
-          : (normalizedCare && normalizedCare.water && Number.isFinite(Number(normalizedCare.water.substrateMoisture))
-            ? Number(normalizedCare.water.substrateMoisture)
-            : Number(status.water || 0)));
-      const summaryRiskScore = careSummary && Number.isFinite(Number(careSummary.riskScore))
-        ? Number(careSummary.riskScore)
-        : Number(status.risk || 0);
-      const summaryRiskLevel = careSummary && typeof careSummary.riskLevel === 'string' && careSummary.riskLevel.trim()
-        ? careSummary.riskLevel.trim()
-        : deriveGlobalRiskLevel(summaryRiskScore);
+      const playerFacingStatus = playerFacingApi && typeof playerFacingApi.derivePlayerFacingStatus === 'function'
+        ? playerFacingApi.derivePlayerFacingStatus(safeState)
+        : Object.freeze({
+          water: 0,
+          nutrition: 0,
+          stress: 0,
+          risk: 0,
+          riskLevel: 'low',
+          drybackRatePerHour: 0
+        });
       const globalStatus = Object.freeze({
-        water: clampPercent(summaryDisplayMoisture),
-        nutrition: clampPercent(status.nutrition),
-        stress: clampPercent(status.stress),
-        risk: clampPercent(summaryRiskScore),
-        riskLevel: summaryRiskLevel
+        water: Number(playerFacingStatus.water || 0),
+        nutrition: Number(playerFacingStatus.nutrition || 0),
+        stress: Number(playerFacingStatus.stress || 0),
+        risk: Number(playerFacingStatus.risk || 0),
+        riskLevel: String(playerFacingStatus.riskLevel || 'low')
       });
 
       return {
@@ -201,6 +186,7 @@
         care: {
           model: normalizedCare,
           summary: careSummary,
+          playerFacingStatus,
           globalStatus,
           readiness: careReadiness,
           moistureStatus: careSummary.moistureBand || 'stable',
@@ -211,7 +197,7 @@
           nextCareFocus: careSummary.nextCareFocus || 'routine',
           buddyHintKey: careSummary.buddyHintKey || 'care.buddy.observe',
           phaseLabel: mapPhaseLabel(stageIndex, plantPhase),
-          drybackRatePerHour: Number(normalizedCare && normalizedCare.water ? normalizedCare.water.drybackRatePerHour : 0) || 0,
+          drybackRatePerHour: Number(playerFacingStatus.drybackRatePerHour || 0) || 0,
           nutrientBars: [
             { key: 'n', value: Math.round(Number(nutrientModel.n || 0)) },
             { key: 'p', value: Math.round(Number(nutrientModel.p || 0)) },

@@ -28,3 +28,38 @@ That split made screenshot states like `Homescreen water = 5` while `Care Studio
 Homescreen and Care Studio now use the same player-facing derived source for visible moisture/water and risk.
 The regression test now verifies that the Homescreen water/risk rings match the Care Studio moisture/risk chips for the wet-root scenario above.
 Event System V2, save format, and simulation/event trigger logic were not changed.
+
+## Follow-up Refactor
+
+Extracted shared player-facing display derivation into `src/ui/mappings/playerFacingStatus.js`.
+That helper now owns the visible fallback chain for:
+
+- moisture / water
+- nutrition / supply
+- stress
+- risk
+- surface moisture
+- root-zone moisture
+- dryback
+- root risk
+- drought stress
+
+This reduces future mismatch risk because Homescreen and Care Studio no longer maintain separate display fallback logic.
+
+Changed files:
+
+- `src/ui/mappings/playerFacingStatus.js`
+- `src/ui/mappings/homeMapping.js`
+- `src/ui/mappings/careMapping.js`
+- `app.js`
+- `index.html`
+- `sw.js`
+
+Tests run:
+
+- `node --check app.js`
+- `node --check src/ui/mappings/homeMapping.js`
+- `node --check src/ui/mappings/playerFacingStatus.js`
+- `node test/care-studio-moisture-risk-consistency.test.js`
+- `node test/ui-feedback-phase7.test.js`
+- `npm run test:smoke`

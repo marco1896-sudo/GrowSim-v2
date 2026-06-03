@@ -32,6 +32,7 @@ const APP_SHELL_FILES = [
   appPath('src/ui/components/primitives.js'),
   appPath('src/ui/controller/uiController.js'),
   appPath('src/ui/runtime/screenRuntimeManager.js'),
+  appPath('src/ui/mappings/playerFacingStatus.js'),
   appPath('src/ui/mappings/homeMapping.js'),
   appPath('src/ui/mappings/careMapping.js'),
   appPath('src/ui/screens/screenModules.js')

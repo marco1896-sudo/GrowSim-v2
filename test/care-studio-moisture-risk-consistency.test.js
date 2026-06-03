@@ -34,11 +34,12 @@ async function main() {
         const waitForHomeRings = () => new Promise((resolve) => {
           let attempts = 0;
           const tick = () => {
-            const waterRing = document.getElementById('waterRing');
-            const riskRing = document.getElementById('riskRing');
-            const waterDone = !waterRing || waterRing.dataset.animating === 'false';
-            const riskDone = !riskRing || riskRing.dataset.animating === 'false';
-            if ((waterDone && riskDone) || attempts >= 20) {
+            const ringIds = ['waterRing', 'nutritionRing', 'stressRing', 'riskRing'];
+            const allDone = ringIds.every((id) => {
+              const ring = document.getElementById(id);
+              return !ring || ring.dataset.animating === 'false';
+            });
+            if (allDone || attempts >= 20) {
               resolve();
               return;
             }
