@@ -149,20 +149,433 @@
     "task_fallback": "Aufgabe",
     "task": {
       "water_once": {
-        "title": "Einmal giessen",
-        "description": "Fuehre heute eine bewaessernde Aktion aus."
+        "title": "Wasser-Check",
+        "description": "Halte den Wasserwert heute mit einer ruhigen Giess-Aktion stabil."
       },
       "resolve_one_event": {
-        "title": "Ein Event sauber loesen",
-        "description": "Reagiere auf ein Event und bringe es zu Ende."
+        "title": "Lage aufloesen",
+        "description": "Reagiere sauber auf ein aktives Ereignis und bringe es zu Ende."
       },
       "open_app_twice": {
-        "title": "Zwei Sessions heute",
-        "description": "Starte heute zwei getrennte Sessions."
+        "title": "Zwei Checks heute",
+        "description": "Komm heute in zwei getrennten Sessions zur Pflanze zurueck."
       },
       "stable_climate_window": {
-        "title": "Klima kurz stabil halten",
-        "description": "Halte Klima-Werte kurz im gruenen Bereich."
+        "title": "Klima stabil halten",
+        "description": "Halte Temperatur, Feuchte und VPD heute kurz im ruhigen Bereich."
+      },
+      "seedling_moisture_round": {
+        "title": "Keimling sanft giessen",
+        "description": "Gib dem jungen Run heute eine leichte Wasser-Runde ohne Ueberreaktion."
+      },
+      "water_recovery_round": {
+        "title": "Wasser nachziehen",
+        "description": "Fang trockene Tendenzen heute mit einer gezielten Giess-Aktion ab."
+      },
+      "nutrient_rebalance": {
+        "title": "Naehrstoffe pruefen",
+        "description": "Stabilisiere die Versorgung heute ohne Ueberkorrektur."
+      },
+      "climate_pressure_relief": {
+        "title": "Stress senken",
+        "description": "Nutze heute eine Klima- oder Umwelt-Aktion, um Druck aus dem Run zu nehmen."
+      },
+      "resolve_pending_pressure": {
+        "title": "Risiko bereinigen",
+        "description": "Bringe ein laufendes Ereignis heute sauber unter Kontrolle."
+      },
+      "flowering_humidity_watch": {
+        "title": "Bluete im Blick",
+        "description": "Halte Feuchtigkeit und Risiko heute ruhig, damit die Bluete sauber bleibt."
+      },
+      "seedling_stability_check": {
+        "title": "Keimling pruefen",
+        "description": "Oeffne heute das Care Studio und lies den jungen Run ohne Hektik."
+      },
+      "veg_feed_support": {
+        "title": "Wachstum stuetzen",
+        "description": "Setze heute in der Vegetationsphase einen sauberen Feed-Schritt."
+      },
+      "veg_training_review": {
+        "title": "Training mit Ruhe",
+        "description": "Fuehre heute nur einen kontrollierten Training-Schritt aus."
+      },
+      "flower_climate_tune": {
+        "title": "Bluete-Klima tunen",
+        "description": "Justiere heute das Klima fein nach, ohne die Bluete zu ueberreizen."
+      },
+      "flower_mold_watch": {
+        "title": "Schimmelrisiko pruefen",
+        "description": "Oeffne heute die Analyse und suche in der Bluete nach Feuchte- oder Druckzeichen."
+      },
+      "ripening_quality_check": {
+        "title": "Reife lesen",
+        "description": "Pruefe heute in der Analyse, ob die Endphase ruhig und sauber laeuft."
+      },
+      "ripening_final_round": {
+        "title": "Finale Begleitung",
+        "description": "Komm heute in zwei Sessions zurueck und begleite den Finish aufmerksam."
+      },
+      "care_sheet_check": {
+        "title": "Care Studio checken",
+        "description": "Lies heute im Care Studio kurz nach, was die Pflanze gerade braucht."
+      },
+      "analysis_sheet_check": {
+        "title": "Analyse ansehen",
+        "description": "Mach heute einen kurzen Analyse-Check fuer Werte, Druck und Trends."
+      },
+      "missions_board_check": {
+        "title": "Tagesfokus holen",
+        "description": "Oeffne heute die Missionen und richte den Run auf die Tagesaufgaben aus."
+      }
+    },
+    "buddy": {
+      "prefix": "Buddy:",
+      "comment": {
+        "stable_day": {
+          "1": "Heute wirkt die Lage ruhig. Wenn du {primaryTask} sauber spielst, bleibt der Run gut lesbar.",
+          "2": "Aktuell schreit nichts laut. Ein sauberer Schritt ueber {primaryTask} reicht fuer heute oft schon aus.",
+          "3": "Das ist eher ein stabiler Tag. Halte {primaryTask} kontrolliert und vermeide unnoetigen Aktionismus."
+        },
+        "water_focus": {
+          "1": "Wasser ist heute der wichtigste Hebel. Starte mit {primaryTask}, bevor die Pflanze ausgleichen muss.",
+          "2": "Buddy sieht Feuchte heute klar vorne. Eine saubere Runde ueber {primaryTask} sollte den Run beruhigen.",
+          "3": "Nicht den ganzen Tag ueberdrehen. Erst die Wasserseite mit {primaryTask} ordnen, dann neu lesen."
+        },
+        "nutrient_focus": {
+          "1": "Naehrstoffe brauchen heute die sauberere Linie. Nutze {primaryTask}, statt Inputs wild zu stapeln.",
+          "2": "Die Feed-Balance ist heute der sinnvolle Fokus. Lass {primaryTask} den Ton fuer den Tag setzen.",
+          "3": "Buddy wuerde heute vorsichtig ueber Naehrstoffe gehen. Starte mit {primaryTask} und beobachte die Reaktion."
+        },
+        "stress_focus": {
+          "1": "Die Pflanze wirkt heute angespannt. Nutze {primaryTask}, um erst Druck herauszunehmen.",
+          "2": "Stress ist gerade das lauteste Signal. Eine ruhige {primaryTask}-Runde sollte Luft schaffen.",
+          "3": "Heute geht es mehr ums Beruhigen als ums Pushen. Lass {primaryTask} zuerst die Lage entlasten."
+        },
+        "risk_focus": {
+          "1": "Heute liegt echter Druck auf dem Run. Priorisiere {primaryTask}, bevor du Nebenziele jagst.",
+          "2": "Buddy liest das klar als Risiko-Tag. Schliess {primaryTask} sauber ab und bleib sonst konservativ.",
+          "3": "Die sichere Linie ist heute klar: erst {primaryTask}, dann schauen, was an Druck uebrig bleibt."
+        },
+        "bloom_focus": {
+          "1": "Bluete-Tage belohnen saubere Kontrolle. {primaryTask} ist gerade wichtiger als Tempo.",
+          "2": "Diese Phase will eine ruhige Hand. Lass {primaryTask} erst die Qualitaet absichern.",
+          "3": "Buddy schaut in der Bluete genauer hin. Eine saubere {primaryTask}-Runde haelt den Run hochwertig."
+        },
+        "seedling_veg_focus": {
+          "1": "Fruehes Wachstum setzt weiter den Ton. {primaryTask} ist heute der richtige kleine Schritt.",
+          "2": "Diese Phase lebt noch stark von sauberen Basics. Starte heute mit {primaryTask}.",
+          "3": "Buddy mag hier ein stabiles Fundament. Nutze {primaryTask} und lass die Pflanze darauf antworten."
+        },
+        "daily_task_hint": {
+          "1": "Das Board ist heute klar: zuerst {primaryTask}, danach {secondaryTask}. So bleibt auch das Wochenziel sauber lesbar.",
+          "2": "Buddy wuerde dem Daily-Loop heute einfach folgen. Erst {primaryTask}, dann {secondaryTask}, dann neu lesen.",
+          "3": "Heute braucht es keinen Umweg. Nimm {primaryTask} als Anker und zieh {secondaryTask} ruhig danach nach."
+        },
+        "timeboost_safe": {
+          "1": "Der Run wirkt spaeter ruhig genug fuer Tempo. Erst {primaryTask} sichern, dann waere Zeitboost eher sauber.",
+          "2": "Buddy sieht heute etwas Luft fuer Speed, aber erst wenn {primaryTask} unter Kontrolle ist.",
+          "3": "Das ist einer der sichereren Tage fuer mehr Tempo. Mach {primaryTask} erst sauber fest."
+        },
+        "timeboost_unsafe": {
+          "1": "Heute bitte kein Tempo erzwingen. {primaryTask} braucht erst eine saubere Einordnung.",
+          "2": "Buddy wuerde diesen Run gerade nicht hetzen. Stabilisiere erst {primaryTask}, dann neu entscheiden.",
+          "3": "Tempo ist noch nicht die Antwort. Loese erst {primaryTask}, bevor du ueber Zeitboost nachdenkst."
+        },
+        "fallback": {
+          "1": "Buddy wuerde es heute schlicht halten: {primaryTask} sauber spielen und danach neu lesen.",
+          "2": "Es gibt heute keinen dramatischen Call. Nutze {primaryTask} als ersten Checkpunkt und bleib aufmerksam.",
+          "3": "Ein kleiner sauberer Schritt reicht erstmal. Starte mit {primaryTask} und warte auf das naechste Signal."
+        }
+      }
+    },
+    "weekly": {
+      "title": "Wochenziel",
+      "empty": "Noch kein Wochenziel aktiv.",
+      "in_progress": "Laeuft",
+      "ready": "Claimbar",
+      "claimed": "Abgeholt",
+      "claim": "Weekly claimen",
+      "claim_not_possible": "Weekly-Claim aktuell nicht moeglich",
+      "claim_success": "Weekly eingesammelt · +{coins} Coins",
+      "already_claimed": "Weekly bereits geclaimt",
+      "reward_line": "Belohnung: +{coins} Coins",
+      "mission": {
+        "stable_start": {
+          "title": "Stabiler Start",
+          "description": "Baue in der fruehen Phase ueber mehrere saubere Daily-Care-Claims eine ruhige Routine auf."
+        },
+        "clean_routine": {
+          "title": "Saubere Routine",
+          "description": "Halte mehrere Tage hintereinander saubere Daily-Care-Runden und lass den Run ruhig im Fluss."
+        },
+        "growth_focus": {
+          "title": "Wachstumsfokus",
+          "description": "Nutze die Vegetationsphase fuer saubere Daily-Care-Abschluesse und eine stabil gelesene Versorgung."
+        },
+        "bloom_focus": {
+          "title": "Bluete im Griff",
+          "description": "Halte in Bluete oder Reife Daily Care, Risiko und ruhige Folgeentscheidungen sauber zusammen."
+        },
+        "risk_reset": {
+          "title": "Risiko runter",
+          "description": "Beruhige eine druckvolle Woche ueber Daily Care, klare Diagnose und kontrollierte Folgewerte."
+        }
+      },
+      "metric": {
+        "tasks_completed_week": "Daily Care {current}/{target}",
+        "active_days_week": "Aktive Tage {current}/{target}",
+        "streak_current": "Streak {current}/{target}",
+        "calm_today": "Ruhiger Status heute {current}/{target}",
+        "resource_stability_today": "Wasser & Naehrstoffe stabil {current}/{target}",
+        "bloom_calm_today": "Risiko & Stress ruhig {current}/{target}",
+        "risk_low_today": "Risiko gesenkt {current}/{target}"
+      }
+    },
+    "daily_care_title": "Daily Care",
+    "micro_title": "Heute freigeschaltet",
+    "coin_actions": {
+      "title": "Coin-Helfer",
+      "empty": "Heute sind keine Coin-Helfer aktiv.",
+      "buy": "Nutzen · {coins} C",
+      "not_available": "Diese Coin Action ist gerade nicht verfuegbar.",
+      "focus_note": "Focus Boost aktiv · +{bonus} Coins beim Claim",
+      "state": {
+        "available": "Verfuegbar",
+        "active": "Aktiv",
+        "used": "Genutzt",
+        "locked": "Gesperrt",
+        "coming_soon": "Spaeter"
+      },
+      "toast": {
+        "buddy_extra_tip": "Buddy Extra-Tipp freigeschaltet",
+        "daily_focus_boost": "Daily Focus Boost gesetzt",
+        "weekly_push": "Weekly Push aktiviert",
+        "safe_boost_check": "Safe Boost Check gekauft"
+      },
+      "action": {
+        "buddy_extra_tip": {
+          "title": "Buddy Extra-Tipp",
+          "description": "Hol dir einen kurzen Zusatzhinweis zu {task} und zur Wochenlage.",
+          "effect": "Nur Guidance: Buddy ordnet den heutigen Fokus noch etwas klarer fuer dich ein."
+        },
+        "daily_focus_boost": {
+          "title": "Daily Focus Boost",
+          "description": "Markiere {task} als Fokus und sichere dir einen kleinen Claim-Bonus.",
+          "effect": "Wenn du die Fokus-Aufgabe heute claimst, kommen beim bestehenden Claim +{bonus} Coins dazu.",
+          "active_effect": "Fokus liegt auf {task}. Beim heutigen Claim warten +{bonus} Bonus-Coins."
+        },
+        "weekly_push": {
+          "title": "Weekly Push",
+          "description": "Gib {mission} einen kleinen Schub ueber den bestehenden Weekly-Fortschritt.",
+          "effect": "Zaehlt einmalig wie 1 zusaetzlicher Daily-Care-Abschluss fuer diese Woche, ohne neue Weekly-Belohnung.",
+          "active_effect": "{mission} hat bereits +{count} Weekly-Push-Fortschritt aus diesem Helfer."
+        },
+        "safe_boost_check": {
+          "title": "Safe Boost Check",
+          "description": "Buddy bewertet konservativ, ob heute eher Ruhe oder Tempo zu {task} passt.",
+          "effect": "Nur Guidance: Du bekommst eine Einordnung, aber keine Aenderung am Boost- oder Nacht-System."
+        },
+        "recovery_snack": {
+          "title": "Recovery Snack",
+          "description": "Geplanter Komfort-Helfer fuer Drucklagen. In dieser Phase noch bewusst gesperrt.",
+          "effect": "Kommt erst spaeter, wenn sichere Care-Muster dafuer sauber definiert sind."
+        }
+      },
+      "tip": {
+        "water": {
+          "1": "Extra-Tipp: Erst {primaryTask} sauber spielen. Wenn Wasser ruhig steht, wird auch der Rest des Tages lesbarer.",
+          "2": "Extra-Tipp: Heute nicht ueberpflegen. {primaryTask} reicht oft, um wieder einen stabilen Rhythmus aufzubauen."
+        },
+        "nutrition": {
+          "1": "Extra-Tipp: Nutze {primaryTask} eher kontrolliert als aggressiv. Die Pflanze braucht heute Balance, keinen grossen Sprung.",
+          "2": "Extra-Tipp: Ein sauberer Feed-Schritt ueber {primaryTask} ist heute wertvoller als mehrere kleine Korrekturen."
+        },
+        "stress": {
+          "1": "Extra-Tipp: Halte die Eingriffe heute klein. Wenn {primaryTask} den Druck senkt, lass der Pflanze danach etwas Ruhe.",
+          "2": "Extra-Tipp: Stress-Tage moegen Klarheit. Eine saubere {primaryTask}-Runde ist heute oft besser als mehrere Experimente."
+        },
+        "risk": {
+          "1": "Extra-Tipp: Spiele heute konsequent auf Sicherheit. {primaryTask} zuerst, erst danach ueber Extras nachdenken.",
+          "2": "Extra-Tipp: Wenn Risiko vorne liegt, ist weniger mehr. Nutze {primaryTask}, dann neu lesen statt zu pushen."
+        },
+        "weekly": {
+          "1": "Extra-Tipp: {weeklyMission} gewinnt diese Woche vor allem durch saubere Daily-Routine, nicht durch Hektik.",
+          "2": "Extra-Tipp: Wenn du heute {primaryTask} solide abschliesst, fuehlt sich auch {weeklyMission} deutlich leichter an."
+        },
+        "focus": {
+          "1": "Extra-Tipp: Bleib heute nah an {primaryTask}. Der Rest darf erstmal warten, bis dieser Anker sauber sitzt.",
+          "2": "Extra-Tipp: Nutze {primaryTask} als Leitlinie fuer den Tag. So bleibt der Daily-Loop klar und ruhig."
+        },
+        "fallback": {
+          "1": "Extra-Tipp: Ein kleiner sauberer Schritt ist heute genug. Arbeite erst {primaryTask} ab und lies dann neu.",
+          "2": "Extra-Tipp: Buddy wuerde heute nichts erzwingen. Nimm {primaryTask} als ruhigen Startpunkt."
+        }
+      },
+      "safe_boost": {
+        "safe": {
+          "1": "Safe Boost Check: Die Lage wirkt ruhig. Wenn {primaryTask} sitzt, ist Night Shift oder Zeitboost heute eher vertretbar.",
+          "2": "Safe Boost Check: Das sieht nach einer der stabileren Lagen aus. Erst {primaryTask}, dann darf Tempo eine Option sein."
+        },
+        "caution": {
+          "1": "Safe Boost Check: Heute eher mit Vorsicht. Bring erst {primaryTask} sauber in Linie, bevor du Tempo dazugibst.",
+          "2": "Safe Boost Check: Nicht kritisch, aber auch nicht frei. Nach {primaryTask} noch einmal neu auf Wasser, Stress und Risiko schauen."
+        },
+        "unsafe": {
+          "1": "Safe Boost Check: Heute lieber kein Extra-Tempo. {primaryTask} braucht erst eine ruhigere Basis.",
+          "2": "Safe Boost Check: Buddy wuerde Night Shift oder Zeitboost gerade noch nicht empfehlen. Stabilisiere zuerst {primaryTask}."
+        }
+      }
+    },
+    "decision": {
+      "title": "Tagesentscheidung",
+      "empty": "Heute ist keine Tagesentscheidung aktiv.",
+      "available": "Offen",
+      "answered": "Beantwortet",
+      "answer_success": "Entscheidung gespeichert · Tagesfokus klarer",
+      "already_answered": "Diese Karte wurde bereits beantwortet",
+      "answer_not_possible": "Diese Entscheidung ist gerade nicht moeglich",
+      "focus_note": "Heute zuerst: {task}",
+      "action_note": "Optional dazu: {action}",
+      "card": {
+        "water_low": {
+          "title": "Wasser niedrig",
+          "description": "Der Wasserwert wirkt heute etwas knapp. Wie willst du den Tag lesen?",
+          "option": {
+            "careful_water": {
+              "label": "Vorsichtig giessen",
+              "description": "Kleiner, ruhiger Wasser-Schritt statt hektischer Korrektur."
+            },
+            "check_later": {
+              "label": "Spaeter pruefen",
+              "description": "Erst kurz beobachten und den Run noch einmal lesen."
+            },
+            "read_buddy_tip": {
+              "label": "Buddy-Tipp lesen",
+              "description": "Hol dir zuerst eine zusaetzliche Buddy-Einordnung."
+            }
+          },
+          "result": {
+            "careful_water": "Saubere Linie. Arbeite heute zuerst {task} ab und lies danach den Run neu.",
+            "check_later": "Ruhig bleiben ist okay. Nutze {task} spaeter fuer einen zweiten, saubereren Blick.",
+            "read_buddy_tip": "Buddy kann die Lage hier noch klarer ordnen. {action} passt heute gut als Zusatzhilfe."
+          }
+        },
+        "stress_elevated": {
+          "title": "Stress erhoeht",
+          "description": "Die Pflanze wirkt heute angespannter. Welche Linie willst du setzen?",
+          "option": {
+            "stay_calm": {
+              "label": "Heute ruhig bleiben",
+              "description": "Druck rausnehmen und den Run nicht weiter aufladen."
+            },
+            "review_routine": {
+              "label": "Routine pruefen",
+              "description": "Lieber erst die gewohnte Pflege- und Analyse-Routine lesen."
+            },
+            "avoid_boost": {
+              "label": "Boost vermeiden",
+              "description": "Heute eher keine Beschleunigung erzwingen."
+            }
+          },
+          "result": {
+            "stay_calm": "Gute Richtung. {task} sollte heute zuerst Druck aus dem Run nehmen, bevor du mehr machst.",
+            "review_routine": "Sauberer Call. {task} hilft dir, den Stress erst einzuordnen und dann ruhiger weiterzugehen.",
+            "avoid_boost": "Vorsicht ist hier sinnvoll. {action} gibt dir dafuer noch einen konservativen Zusatzcheck."
+          }
+        },
+        "risk_focus": {
+          "title": "Risiko-Fokus",
+          "description": "Heute zeigt der Run mehr Risiko als Komfort. Was hat Prioritaet?",
+          "option": {
+            "prioritize_risk": {
+              "label": "Risiko priorisieren",
+              "description": "Erst die druckvolle Lage entschärfen."
+            },
+            "first_diagnosis": {
+              "label": "Erst Diagnose",
+              "description": "Vor dem Handeln noch einmal sauber lesen."
+            },
+            "wait_and_watch": {
+              "label": "Abwarten",
+              "description": "Kurz nichts ueberstuerzen und die Lage beobachten."
+            }
+          },
+          "result": {
+            "prioritize_risk": "Klare Prioritaet. {task} bekommt heute zuerst deinen Fokus, damit der Rest ruhiger lesbar wird.",
+            "first_diagnosis": "Das ist sicher. {task} hilft dir, den Druck erst sauber einzuordnen.",
+            "wait_and_watch": "Beobachten ist okay. Halte den Run heute bewusst ruhig und entscheide erst nach dem naechsten Read."
+          }
+        },
+        "bloom_watch": {
+          "title": "Bluete im Blick",
+          "description": "Die Bluete- oder Reifephase laeuft. Worauf willst du heute achten?",
+          "option": {
+            "check_humidity": {
+              "label": "Feuchtigkeit pruefen",
+              "description": "Klima und Feuchte heute lieber sauber lesen."
+            },
+            "avoid_stress": {
+              "label": "Stress vermeiden",
+              "description": "Keine unnoetigen Eingriffe in einer sensiblen Phase."
+            },
+            "use_buddy_tip": {
+              "label": "Buddy Extra Tip nutzen",
+              "description": "Hol dir zuerst eine zusaetzliche Begleiter-Einordnung."
+            }
+          },
+          "result": {
+            "check_humidity": "Richtiger Fokus fuer diese Phase. {task} passt heute am besten als sicherer Tagesanker.",
+            "avoid_stress": "Sauber gedacht. {task} sollte die Bluete heute ruhiger und lesbarer halten.",
+            "use_buddy_tip": "Buddy kann die Lage hier gut zuspitzen. {action} waere heute als Guidance passend."
+          }
+        },
+        "growth_routine": {
+          "title": "Wachstumsroutine",
+          "description": "Die Vegetationsphase lebt von sauberen Grundlagen. Womit willst du starten?",
+          "option": {
+            "check_supply": {
+              "label": "Versorgung pruefen",
+              "description": "Wasser und Naehrstoffe zuerst ruhig sortieren."
+            },
+            "watch_light_stress": {
+              "label": "Licht & Stress beachten",
+              "description": "Belastung und Klima zuerst im Blick behalten."
+            },
+            "focus_dailycare": {
+              "label": "DailyCare fokussieren",
+              "description": "Die heutige Aufgabe als klaren Anker nehmen."
+            }
+          },
+          "result": {
+            "check_supply": "Gute Wachstumsbasis. {task} ist heute der richtige Startpunkt fuer den Daily-Loop.",
+            "watch_light_stress": "Das haelt den Run sauber. {task} sollte heute zuerst Aufmerksamkeit bekommen.",
+            "focus_dailycare": "Klarer Plan. {task} ist jetzt dein Decision-Fokus und zieht den Tag zusammen."
+          }
+        },
+        "timeboost_choice": {
+          "title": "Zeitboost-Entscheidung",
+          "description": "Heute koennte Tempo verlockend wirken. Wie willst du damit umgehen?",
+          "option": {
+            "use_safe_boost_check": {
+              "label": "Safe Boost Check nutzen",
+              "description": "Erst konservativ einordnen, ob Tempo sauber waere."
+            },
+            "finish_dailycare_first": {
+              "label": "Erst DailyCare erledigen",
+              "description": "Vor Tempo lieber den Tagesanker setzen."
+            },
+            "skip_for_now": {
+              "label": "Spaeter ueberspringen",
+              "description": "Heute erstmal ohne Beschleunigung lesen."
+            }
+          },
+          "result": {
+            "use_safe_boost_check": "Sicherer Ansatz. {action} passt heute besser als blindes Beschleunigen.",
+            "finish_dailycare_first": "Gute Reihenfolge. {task} sollte vor jedem Zeitboost sauber sitzen und dir erst den Tag erklaeren.",
+            "skip_for_now": "Ruhig bleiben ist valide. Lies den Tag erst ohne Tempo zu Ende und entscheide spaeter neu."
+          }
+        }
       }
     },
     "toast": {
@@ -173,6 +586,8 @@
       "claim_now": "{text} Jetzt Claim holen.",
       "multi_done": "Daily-Schub: {count} Aufgaben geschafft."
     },
+    "sheet_kicker_title": "Heute im Run",
+    "sheet_kicker_subtitle": "Daily Care, Fokus & Fortschritt",
     "retention": {
       "streak_secured": "Heute gesichert. Naechster Streak-Bonus +{coins} Coins.",
       "streak_push_milestone": "Heute qualifizieren und Richtung {target} spielen.",
@@ -200,9 +615,16 @@
       "claim_note_single": "1 Aufgabe ist abholbereit. Hol dir den Claim und sichere die Streak.",
       "claim_note_multi": "{count} Aufgaben sind abholbereit. Jetzt einsammeln und Streak sichern.",
       "progress_day_status": "{done}/{total} erledigt | {status}",
+      "task_description_fallback": "Buddy richtet den Tagesfokus gerade ein.",
+      "context_decision_open": "Tagesentscheidung ist offen.",
+      "context_decision_answered_task": "Heute zuerst: {task}.",
+      "context_decision_answered_action": "Optional dazu: {action}.",
+      "context_weekly": "Jeder Daily-Care-Claim schiebt das Wochenziel mit.",
       "optional_bonus_unavailable": "Optionaler Bonus aktuell nicht verfuegbar.",
       "recovery_bonus_activated": "Bonus aktiviert. 1 Recovery-Credit.",
-      "streak_line": "Streak {streak} | {status}"
+      "streak_line": "Streak {streak} | {status}",
+      "teaser_bonus_line": "Streak {streak} · +{coins} C Bonus",
+      "badge": "Daily Care"
     }
   },
   "events": {
@@ -1528,6 +1950,7 @@
     },
     "feedback": {
       "badCare": "Diese Entscheidung hat mehr Druck als Entlastung gebracht.",
+      "chooseMethod": "Wähle eine Methode.",
       "effect": {
         "dryStressReduced": "Trockenstress gesenkt",
         "monitorResponse": "Pflanzenreaktion beobachten",
@@ -1550,14 +1973,32 @@
       "okayCare": "Die Aktion passt, aber das Timing war noch nicht ganz sauber.",
       "perfectCare": "Sehr starke Entscheidung. Die Pflanze reagiert sauber.",
       "perfectWatering": "Perfektes Dryback-Fenster. Das Gießen passt sehr sauber zum aktuellen Zustand.",
+      "readyToAct": "Bereit zur Ausführung.",
       "rootZoneRelief": "Gute Entscheidung. Die Wurzelzone wird vorsichtig entlastet, ohne wie ein neuer Gießdurchgang zu wirken.",
       "rootZoneReliefLimited": "Die Entlastung greift nur begrenzt. Beobachte weiter, ob die Wurzelzone wirklich Druck zeigt.",
+      "noMethodsLoaded": "Keine Pflegemethoden geladen.",
       "riskyCare": "Die Aktion war machbar, baut aber zusätzlichen Druck auf. Beobachte die Reaktion genau.",
       "riskyFeeding": "Die Versorgung steigt, aber auch die Salzlast. Beim nächsten Mal vorsichtiger dosieren.",
       "riskyWatering": "Das war etwas früh. Beobachte die Wurzelzone, bevor du erneut gießt.",
+      "softReady": "Verfügbar, aber heute etwas weniger effizient und leicht riskanter.",
       "uptakeLimited": "Die Aufnahme bleibt noch begrenzt. Erst Wurzelzone und Salzlast weiter beruhigen.",
       "uptakeStabilized": "Gute Entscheidung. Die Aufnahme wirkt ruhiger, ohne die Salzlast stark zu erhöhen.",
       "title": "Nachwirkung"
+    },
+    "recommendation": {
+      "note": {
+        "feed": {
+          "stable": "Die Nährstofflage ist stabil. Ein kurzer Check reicht heute."
+        },
+        "water": {
+          "monitor": "Die Werte sind stabil. Erst beobachten verhindert unnötigen Stress."
+        }
+      }
+    },
+    "first_visit": {
+      "read_moisture_risk": "Erster Check: Lies erst Feuchte und Risiko, bevor du etwas erzwingst.",
+      "stable_observe": "Erster Check: Feuchte stabil und Risiko niedrig heißt oft, dass Beobachten reicht.",
+      "watch_before_action": "Erster Check: Schau erst auf Feuchte und Risiko. Du musst nicht sofort gießen oder düngen."
     },
     "aftercare": {
       "grade": "Note",
@@ -1658,6 +2099,7 @@
       },
       "title": "Prognose",
       "verdict": {
+        "avoid": "Lieber vermeiden",
         "recommended": "Empfohlen",
         "risky": "Riskant",
         "situational": "Situativ",
@@ -1902,6 +2344,189 @@
       "cloud_hint": "Cloud Sync kannst du spaeter optional in den Einstellungen verbinden, wenn du deinen Run zusaetzlich sichern oder auf ein anderes Geraet mitnehmen moechtest.",
       "buddy": "Ich begleite dich Schritt für Schritt. Wähle zuerst den Wurzelraum; alles Weitere bauen wir ruhig darauf auf.",
       "run_started": "Dein lokaler Run ist gestartet. Beobachte zuerst Wasser, Nährstoffe und Stress; ich melde mich, wenn ein klarer nächster Schritt wichtig wird."
+    },
+    "first_run": {
+      "badge": "Buddy",
+      "headline_stable": "Erster Check im Care Studio",
+      "headline_attention": "Erster Check vor der ersten Aktion",
+      "body_stable": "Prüfe kurz Feuchte und Risiko. Wenn alles ruhig ist, reicht Beobachten für heute.",
+      "body_attention": "Buddy sieht leichten Druck. Prüfe zuerst Feuchte und Risiko, bevor du etwas änderst.",
+      "action": "Care Studio öffnen · Feuchte & Risiko prüfen",
+      "run_started": "Dein Run ist gestartet. Buddy zeigt dir jetzt den ersten Check im Care Studio."
+    },
+    "first_five": {
+      "welcome": {
+        "eyebrow": "Erster Einstieg",
+        "title": "Dein erster Grow beginnt",
+        "body": "Zieh deine Pflanze durch Wachstum, Entscheidungen, Fehler, Wetter, Stress und Ernte. Buddy begleitet dich - aber du entscheidest."
+      },
+      "buddy": {
+        "eyebrow": "Buddy",
+        "title": "Lerne deinen Coach kennen",
+        "body": "Ich bin Buddy. Ich sag dir nicht nur, was du druecken sollst. Ich zeige dir, warum deine Pflanze reagiert.",
+        "hint": "Ich bleibe kurz, warm und ehrlich. Dein erster Tag soll sich wie ein ruhiger Start anfuehlen, nicht wie ein Formular."
+      },
+      "setup": {
+        "eyebrow": "Quick Setup",
+        "title": "Starte deinen ersten Grow",
+        "body": "Drei kurze Entscheidungen genuegen. Den Rest halten wir fuer deinen ersten Run bewusst ruhig.",
+        "hint": "Wir mappen deine Wahl auf das vorhandene Setup. So bleibt der Einstieg schlank und die Simulation stabil.",
+        "style_title": "Grow-Stil",
+        "style_hint": "Wie direkt dein erster Run sich anfuehlt.",
+        "environment_title": "Umgebung",
+        "environment_hint": "Hier landet dein erster Grow.",
+        "plant_title": "Pflanzentyp",
+        "plant_hint": "Welche Linie du dir fuer den Start wuenschst.",
+        "style": {
+          "safe": {
+            "title": "Sicher",
+            "badge": "Empfohlen",
+            "body": "Mehr Puffer fuer einen ruhigen ersten Eindruck.",
+            "effect": "Ruhig · sauber · stabil"
+          },
+          "fast": {
+            "title": "Schnell",
+            "badge": "Direkt",
+            "body": "Fruehes Feedback und ein dichteres Gefuehl fuer Veraenderung.",
+            "effect": "Tempo · Reaktion · Fokus"
+          },
+          "challenging": {
+            "title": "Anspruchsvoll",
+            "badge": "Mehr Druck",
+            "body": "Weniger Komfort, dafuer mehr Beobachtung von Anfang an.",
+            "effect": "Druck · Timing · Disziplin"
+          }
+        },
+        "environment": {
+          "indoor": {
+            "title": "Indoor",
+            "badge": "Kontrolle",
+            "body": "Ruhiger Start mit klarerem Klima.",
+            "effect": "Sauber · planbar · ruhig"
+          },
+          "outdoor": {
+            "title": "Outdoor",
+            "badge": "Wetter",
+            "body": "Mehr Natur, mehr Schwankung, mehr Geschichte.",
+            "effect": "Luft · Wetter · Timing"
+          },
+          "greenhouse": {
+            "title": "Gewaechshaus",
+            "badge": "Hybrid",
+            "body": "Geschuetzt, aber nicht steril. Ein Mittelweg.",
+            "effect": "Puffer · Licht · Beobachtung"
+          }
+        },
+        "plant": {
+          "beginner": {
+            "title": "Anfaengerfreundlich",
+            "badge": "Sanft",
+            "body": "Ein klarer, toleranter Einstieg.",
+            "effect": "Puffer · Lernen · Ruhe"
+          },
+          "auto": {
+            "title": "Auto",
+            "badge": "Direkt",
+            "body": "Wirkt schneller und direkter im Startgefuehl.",
+            "effect": "Rhythmus · Flow · Fokus"
+          },
+          "yield": {
+            "title": "Ertragreich",
+            "badge": "Ziel",
+            "body": "Ein Start mit Blick auf spaeteres Potenzial.",
+            "effect": "Potenzial · Aufbau · Ziel"
+          }
+        }
+      },
+      "summary": {
+        "eyebrow": "Startklar",
+        "title": "Dein Grow ist startbereit",
+        "body": "Du setzt jetzt den Run auf und landest danach direkt in deinem gefuehrten ersten Tag.",
+        "hint": "Ich bleibe bei dir. Nach dem Start fuehren wir nur durch den ersten wichtigen Moment - nicht durch zehn Menues."
+      },
+      "actions": {
+        "next": "Weiter",
+        "start_run": "Grow erstellen"
+      },
+      "dashboard_followup": {
+        "eyebrow": "Im Grow angekommen",
+        "title": "Dein Grow laeuft",
+        "body": "Tag 1 ist geschafft. Ab jetzt entwickelt sich deine Pflanze Schritt fuer Schritt weiter - und Buddy meldet sich, wenn etwas wichtig wird.",
+        "buddy": "Guter Start. Schau spaeter wieder rein: Wachstum, Licht und Pflege veraendern den naechsten Tag.",
+        "cta": "Weiter"
+      },
+      "dashboard_goal": {
+        "badge": "Tagesziel",
+        "headline": "Dein Grow laeuft",
+        "body": "Naechster Schritt: Beobachte deine Pflanze und warte auf die erste Wachstumsreaktion.",
+        "action": "Analyse oeffnen und den Verlauf im Blick behalten"
+      },
+      "toast_started": "Dein Grow steht. Buddy fuehrt dich jetzt durch Tag 1.",
+      "day1": {
+        "plant": {
+          "eyebrow": "Tag 1",
+          "title": "Tag 1 - Keimling",
+          "body": "Alles beginnt klein. Heute zaehlt: nicht uebertreiben.",
+          "buddy": "Ich behalte die Reaktion im Blick. Du triffst die erste Pflegeentscheidung.",
+          "cta": "Erste Pflege waehlen"
+        },
+        "decision": {
+          "eyebrow": "Erste Entscheidung",
+          "title": "Der Topf wirkt leicht trocken. Was machst du?",
+          "body": "Keine harte Strafe, kein Trick. Nur ein erster kleiner Moment mit echter Wirkung.",
+          "gentle": {
+            "title": "Vorsichtig angiessen",
+            "body": "Verbessert die Feuchtigkeit leicht und haelt den Stress niedrig."
+          },
+          "heavy": {
+            "title": "Stark giessen",
+            "body": "Hebt die Feuchtigkeit staerker an, bringt aber leichtes Staunaesse-Risiko."
+          },
+          "wait": {
+            "title": "Noch warten",
+            "body": "Manchmal ist Beobachten die beste Pflege fuer den Moment."
+          }
+        },
+        "gentle": {
+          "result_title": "Guter Start",
+          "result_body": "Du hast der Pflanze geholfen, ohne sie zu ersaeufen.",
+          "buddy": "Sauber gelesen. Genau solche kleinen Entscheidungen machen spaeter den Unterschied."
+        },
+        "heavy": {
+          "result_title": "Mutig, aber beobachtet",
+          "result_body": "Das kann funktionieren - aber ich behalte die Wurzeln im Blick.",
+          "buddy": "Mehr Wasser ist nicht immer mehr Sicherheit. Heute bleibt es noch kontrollierbar."
+        },
+        "wait": {
+          "result_title": "Ruhig geblieben",
+          "result_body": "Gar nichts tun ist manchmal auch Pflege. Wichtig ist nur, dass du weisst warum.",
+          "buddy": "Geduld ist eine echte Aktion, wenn sie bewusst passiert."
+        },
+        "result": {
+          "eyebrow": "Ergebnis",
+          "daily_done": "Tagesziel erledigt",
+          "cta": "Tag abschliessen"
+        },
+        "summary": {
+          "eyebrow": "Tagesabschluss",
+          "title": "Tag 1 geschafft",
+          "started": "Pflanze gestartet",
+          "decision": "Erste Pflegeentscheidung",
+          "stability": "Stabilitaet",
+          "coins": "Coins",
+          "teaser": "Morgen wartet die erste Wachstumsreaktion.",
+          "cta": "Zum Dashboard",
+          "yes": "Erledigt",
+          "good": "Guter Start. Die Pflanze kennt jetzt deinen Rhythmus.",
+          "okay": "Ruhiger Start. Beobachtung war heute genug.",
+          "observed": "Wir haben gelernt. Morgen lesen wir die Wurzeln noch genauer.",
+          "summary_state": {
+            "good": "gut",
+            "okay": "okay",
+            "observed": "beobachtet"
+          }
+        }
+      }
     },
     "hook": {
       "1": "Zieh deine erste Pflanze gross. Jede Session zaehlt.",

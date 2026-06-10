@@ -720,26 +720,29 @@ function bindHomeScreenEvents(controller = null) {
   }
 
   if (ui.homeMetaRetentionTeaser) {
-    const openMissionsFromTeaser = () => {
+    const openSheetFromTeaser = () => {
+      const targetSheet = ['care', 'missions', 'dashboard'].includes(String(ui.homeMetaRetentionTeaser.dataset.actionTarget || '').trim())
+        ? String(ui.homeMetaRetentionTeaser.dataset.actionTarget).trim()
+        : 'missions';
       const activeController = resolveController();
       if (activeController && typeof activeController.handleOpenSheet === 'function') {
-        activeController.handleOpenSheet('missions');
+        activeController.handleOpenSheet(targetSheet);
         return;
       }
-      openSheet('missions');
+      openSheet(targetSheet);
     };
     ui.homeMetaRetentionTeaser.addEventListener('click', (event) => {
       if (event) {
         event.preventDefault();
         event.stopPropagation();
       }
-      openMissionsFromTeaser();
+      openSheetFromTeaser();
     });
     ui.homeMetaRetentionTeaser.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         event.stopPropagation();
-        openMissionsFromTeaser();
+        openSheetFromTeaser();
       }
     });
   }
@@ -1203,6 +1206,9 @@ function bindSetupOptionButtons() {
   syncGroup('setupMode');
   syncGroup('setupMedium');
   syncGroup('setupLight');
+  syncGroup('setupGrowStyle');
+  syncGroup('setupEnvironment');
+  syncGroup('setupPlantType');
   updateOnboardingBuilderUi();
 }
 
@@ -1210,6 +1216,14 @@ let onboardingBuilderStep = 0;
 
 const ONBOARDING_BUDDY_FALLBACK_SRC = 'assets/onboarding/buddy_summary.png';
 const ONBOARDING_BUDDY_ASSETS = Object.freeze({
+  welcome: Object.freeze({
+    src: 'assets/onboarding/buddy_summary.png',
+    alt: 'Buddy begruesst den ersten Grow'
+  }),
+  intro: Object.freeze({
+    src: 'assets/onboarding/buddy_setup.png',
+    alt: 'Buddy stellt sich vor'
+  }),
   pot: Object.freeze({
     src: 'assets/onboarding/buddy_pot.png',
     alt: 'Buddy erklärt die Topfgröße'
@@ -1273,7 +1287,7 @@ const ONBOARDING_OPTION_ICON_ASSETS = Object.freeze({
 function getOnboardingStepCount() {
   return Array.isArray(ui.onboardingStepPanels) && ui.onboardingStepPanels.length
     ? ui.onboardingStepPanels.length
-    : 6;
+    : 4;
 }
 
 function clampOnboardingStep(step) {
@@ -1303,7 +1317,79 @@ function getSetupOptionLabel(selectId, fallback) {
   );
 }
 
+const FIRST_RUN_SETUP_PRESETS = Object.freeze({
+  safe: Object.freeze({
+    potSize: 'large',
+    light: 'low',
+    medium: 'soil'
+  }),
+  fast: Object.freeze({
+    potSize: 'small',
+    light: 'medium',
+    medium: 'soil'
+  }),
+  challenging: Object.freeze({
+    potSize: 'small',
+    light: 'medium',
+    medium: 'soil'
+  })
+});
+
+const FIRST_RUN_ENVIRONMENT_PRESETS = Object.freeze({
+  indoor: Object.freeze({ mode: 'indoor' }),
+  outdoor: Object.freeze({ mode: 'outdoor' }),
+  greenhouse: Object.freeze({ mode: 'greenhouse' })
+});
+
+const FIRST_RUN_PLANT_TYPE_PRESETS = Object.freeze({
+  beginner: Object.freeze({ genetics: 'hybrid' }),
+  auto: Object.freeze({ genetics: 'hybrid' }),
+  yield: Object.freeze({ genetics: 'hybrid' })
+});
+
+function getSelectValue(selectId, fallback) {
+  const node = document.getElementById(selectId);
+  const value = node ? String(node.value || '').trim() : '';
+  return value || String(fallback || '');
+}
+
+function applyFirstRunSetupPreset() {
+  const growStyle = getSelectValue('setupGrowStyle', 'safe');
+  const environment = getSelectValue('setupEnvironment', 'indoor');
+  const plantType = getSelectValue('setupPlantType', 'beginner');
+  const stylePreset = FIRST_RUN_SETUP_PRESETS[growStyle] || FIRST_RUN_SETUP_PRESETS.safe;
+  const environmentPreset = FIRST_RUN_ENVIRONMENT_PRESETS[environment] || FIRST_RUN_ENVIRONMENT_PRESETS.indoor;
+  const plantTypePreset = FIRST_RUN_PLANT_TYPE_PRESETS[plantType] || FIRST_RUN_PLANT_TYPE_PRESETS.beginner;
+
+  const assignSelect = (selectId, value) => {
+    const node = document.getElementById(selectId);
+    if (!node || !value) {
+      return;
+    }
+    node.value = String(value);
+  };
+
+  assignSelect('setupPotSize', stylePreset.potSize);
+  assignSelect('setupLight', stylePreset.light);
+  assignSelect('setupMedium', stylePreset.medium);
+  assignSelect('setupMode', environmentPreset.mode);
+  assignSelect('setupGenetics', plantTypePreset.genetics);
+}
+
 function renderOnboardingSummarySelections() {
+  applyFirstRunSetupPreset();
+  const summaryStyle = document.getElementById('onboardingSummaryStyle');
+  if (summaryStyle) {
+    summaryStyle.textContent = getSetupOptionLabel('setupGrowStyle', 'Sicher');
+  }
+  const summaryEnvironment = document.getElementById('onboardingSummaryEnvironment');
+  if (summaryEnvironment) {
+    summaryEnvironment.textContent = getSetupOptionLabel('setupEnvironment', 'Indoor');
+  }
+  const summaryPlantType = document.getElementById('onboardingSummaryPlantType');
+  if (summaryPlantType) {
+    summaryPlantType.textContent = getSetupOptionLabel('setupPlantType', 'Anfaengerfreundlich');
+  }
   if (ui.onboardingSummaryPot) {
     ui.onboardingSummaryPot.textContent = getSetupOptionLabel('setupPotSize', '2 Liter (S)');
   }
@@ -2739,6 +2825,9 @@ function formatRecentHistoryHtml(row) {
 }
 
 function onStartRun() {
+  if (typeof window !== 'undefined' && typeof window.__gsStartRunHandler === 'function' && window.__gsStartRunHandler !== onStartRun) {
+    return window.__gsStartRunHandler();
+  }
   const nowMs = Date.now();
   state.setup = {
     mode: ui.setupMode.value || 'indoor',

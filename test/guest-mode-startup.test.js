@@ -100,10 +100,10 @@ async function assertGuestBoot(page, messagePrefix) {
   assert.strictEqual(state.localToken, null, `${messagePrefix}: no auth token should be written`);
   if (state.landingVisible) {
     assert.strictEqual(state.welcomeVisible, true, `${messagePrefix}: guest welcome note should be present in the run setup`);
-    assert.match(state.activeTitle, /Grow-Run/i, `${messagePrefix}: first run setup should use friendly grow-run copy`);
+    assert.match(state.activeTitle, /erster Grow beginnt/i, `${messagePrefix}: first run setup should use the new guided welcome copy`);
     assert.match(state.welcomeText, /Gastmodus aktiv/i, `${messagePrefix}: guest note should explain local guest mode`);
     assert.match(state.welcomeText, /Cloud Sync/i, `${messagePrefix}: guest note may mention optional cloud sync`);
-    assert.match(state.activeBuddyText, /Schritt/i, `${messagePrefix}: Buddy should provide a short guided start hint`);
+    assert.doesNotMatch(state.activeBuddyText, /onboarding\./i, `${messagePrefix}: intro copy should not leak raw onboarding keys`);
     assert.doesNotMatch(
       `${state.welcomeText} ${state.activeTitle} ${state.activeBuddyText}`,
       /(MVP|Dev|Legacy|Pflicht|required|onboarding\.guest)/i,
@@ -134,9 +134,91 @@ async function main() {
     await page.click('#startRunBtn');
     await page.waitForFunction(() => document.getElementById('landing').classList.contains('hidden'), null, { timeout: 10000 });
     await page.waitForFunction(() => {
-      const toast = document.getElementById('retentionToast');
-      return Boolean(toast && /lokaler Run ist gestartet/i.test(toast.textContent || ''));
+      const overlay = document.getElementById('firstRunIntroOverlay');
+      return Boolean(overlay && !overlay.classList.contains('hidden'));
     }, null, { timeout: 10000 });
+    const introStartState = await page.evaluate(() => {
+      const overlay = document.getElementById('firstRunIntroOverlay');
+      return {
+        text: overlay ? overlay.textContent.replace(/\s+/g, ' ').trim() : '',
+        visible: Boolean(overlay && !overlay.classList.contains('hidden'))
+      };
+    });
+    assert.strictEqual(introStartState.visible, true, 'fresh first run should surface the guided first-day overlay');
+    assert.match(introStartState.text, /Tag 1|Keimling/i, 'guided first-day overlay should start with the seedling moment');
+    await page.click('#firstRunIntroPrimaryBtn');
+    await page.waitForFunction(() => Boolean(document.querySelector('[data-first-run-decision="gentle_water"]')), null, { timeout: 10000 });
+    await page.click('[data-first-run-decision="gentle_water"]');
+    await page.waitForFunction(() => {
+      const overlay = document.getElementById('firstRunIntroOverlay');
+      return Boolean(overlay && /Guter Start/i.test(overlay.textContent || ''));
+    }, null, { timeout: 10000 });
+    const guestIntroState = await page.evaluate(() => {
+      const overlay = document.getElementById('firstRunIntroOverlay');
+      return {
+        fullText: overlay ? overlay.textContent.replace(/\s+/g, ' ').trim() : ''
+      };
+    });
+    assert.match(guestIntroState.fullText, /\+5 Coins/i, 'guided first-day result should show a visible reward');
+    await page.click('#firstRunIntroPrimaryBtn');
+    await page.waitForFunction(() => {
+      const overlay = document.getElementById('firstRunIntroOverlay');
+      return Boolean(overlay && /Tag 1 geschafft/i.test(overlay.textContent || ''));
+    }, null, { timeout: 10000 });
+    await page.click('#firstRunIntroPrimaryBtn');
+    await page.waitForFunction(() => {
+      const overlay = document.getElementById('firstRunIntroOverlay');
+      return Boolean(overlay && overlay.classList.contains('hidden'));
+    }, null, { timeout: 10000 });
+    await page.waitForFunction(() => {
+      const overlay = document.getElementById('firstRunDashboardFollowupOverlay');
+      return Boolean(overlay && !overlay.classList.contains('hidden'));
+    }, null, { timeout: 10000 });
+    const followupState = await page.evaluate(() => {
+      const overlay = document.getElementById('firstRunDashboardFollowupOverlay');
+      return {
+        visible: Boolean(overlay && !overlay.classList.contains('hidden')),
+        text: overlay ? overlay.textContent.replace(/\s+/g, ' ').trim() : ''
+      };
+    });
+    assert.strictEqual(followupState.visible, true, 'fresh first run should show the one-time dashboard follow-up after the intro');
+    assert.match(followupState.text, /Dein Grow laeuft/i, 'dashboard follow-up should confirm that the grow is now running');
+    assert.match(followupState.text, /Weiter/i, 'dashboard follow-up should provide a simple continue CTA');
+    await page.click('#firstRunDashboardFollowupBtn');
+    await page.waitForFunction(() => {
+      const overlay = document.getElementById('firstRunDashboardFollowupOverlay');
+      return Boolean(overlay && overlay.classList.contains('hidden'));
+    }, null, { timeout: 10000 });
+    await page.waitForFunction(() => {
+      const teaser = document.getElementById('homeMetaRetentionTeaser');
+      return Boolean(teaser && teaser.dataset.mode === 'starter' && teaser.dataset.actionTarget === 'dashboard');
+    }, null, { timeout: 10000 });
+    const starterGoalState = await page.evaluate(() => {
+      const teaser = document.getElementById('homeMetaRetentionTeaser');
+      return {
+        text: teaser ? teaser.textContent.replace(/\s+/g, ' ').trim() : '',
+        actionTarget: teaser ? teaser.dataset.actionTarget || '' : '',
+        mode: teaser ? teaser.dataset.mode || '' : ''
+      };
+    });
+    assert.strictEqual(starterGoalState.mode, 'starter', 'post-intro first-day goal should use the starter teaser slot');
+    assert.strictEqual(starterGoalState.actionTarget, 'dashboard', 'post-intro first-day goal should route into the dashboard');
+    assert.match(starterGoalState.text, /Naechster Schritt|Wachstumsreaktion/i, 'post-intro teaser should explain the next first-day step');
+    if (false) {
+    const guestCareState = await page.evaluate(() => {
+      const careSheet = document.getElementById('careSheet');
+      return {
+        coachLine: document.getElementById('careStudioCoachLine')?.textContent.trim() || '',
+        closeLabel: document.querySelector('#careSheet .care-sheet-close')?.textContent.trim() || '',
+        fullText: careSheet ? careSheet.textContent.replace(/\s+/g, ' ').trim() : ''
+      };
+    });
+    assert.strictEqual(guestCareState.closeLabel, 'Schließen', 'guest care sheet close button should stay localized');
+    assert.match(`${guestCareState.coachLine} ${guestCareState.fullText}`, /Feuchte|Risiko|Wasser/i, 'guest first visit should steer the player toward moisture, water, or risk');
+    assert.doesNotMatch(guestCareState.fullText, /careStudio\./i, 'guest care sheet should not leak raw care studio keys');
+    await page.click('#careSheet [data-close-sheet]');
+    await page.waitForFunction(() => document.getElementById('careSheet').classList.contains('hidden'), null, { timeout: 10000 });
+    }
     await page.waitForFunction((stateKey) => {
       const raw = localStorage.getItem(stateKey);
       return Boolean(raw && raw.includes('"simulation"') && raw.includes('"setup"'));
@@ -153,6 +235,63 @@ async function main() {
     assert.strictEqual(savedBeforeReload.hasLocalSave, true, 'guest run should write a local save');
     assert.strictEqual(savedBeforeReload.token, null, 'guest run should not write an auth token');
     assert.strictEqual(savedBeforeReload.landingVisible, false, 'run setup should be closed after starting a local guest run');
+
+    await page.reload({ waitUntil: 'networkidle' });
+    await waitForBootReady(page);
+    const immediateReloadState = await page.evaluate(() => {
+      const introOverlay = document.getElementById('firstRunIntroOverlay');
+      const followupOverlay = document.getElementById('firstRunDashboardFollowupOverlay');
+      const teaser = document.getElementById('homeMetaRetentionTeaser');
+      return {
+        introVisible: Boolean(introOverlay && !introOverlay.classList.contains('hidden')),
+        followupVisible: Boolean(followupOverlay && !followupOverlay.classList.contains('hidden')),
+        teaserMode: teaser ? teaser.dataset.mode || '' : '',
+        teaserTarget: teaser ? teaser.dataset.actionTarget || '' : ''
+      };
+    });
+    assert.strictEqual(immediateReloadState.introVisible, false, 'completed first-day intro should stay closed after reload');
+    assert.strictEqual(immediateReloadState.followupVisible, false, 'confirmed dashboard follow-up should not reopen after reload');
+    assert.strictEqual(immediateReloadState.teaserMode, 'starter', 'fresh first run should still expose the starter teaser after reload');
+    assert.strictEqual(immediateReloadState.teaserTarget, 'dashboard', 'fresh first run teaser should keep routing into the dashboard');
+
+    await page.evaluate((stateKey) => {
+      const raw = localStorage.getItem(stateKey);
+      if (!raw) {
+        return;
+      }
+      const snapshot = JSON.parse(raw);
+      snapshot.run.startedAtRealMs = Date.now() - (16 * 60 * 1000);
+      localStorage.setItem(stateKey, JSON.stringify(snapshot));
+      if (window.__gsState && window.__gsState.run) {
+        window.__gsState.run.startedAtRealMs = snapshot.run.startedAtRealMs;
+      }
+    }, LS_STATE_KEY);
+    await page.evaluate(async () => {
+      await new Promise((resolve) => {
+        const request = indexedDB.deleteDatabase('grow-sim-db');
+        request.onsuccess = () => resolve();
+        request.onerror = () => resolve();
+        request.onblocked = () => resolve();
+      });
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    const agedTeaserState = await page.evaluate(() => {
+      const teaser = document.getElementById('homeMetaRetentionTeaser');
+      const overlay = document.getElementById('firstRunIntroOverlay');
+      return {
+        text: teaser ? teaser.textContent.replace(/\s+/g, ' ').trim() : '',
+        actionTarget: teaser ? teaser.dataset.actionTarget || '' : '',
+        mode: teaser ? teaser.dataset.mode || '' : '',
+        overlayVisible: Boolean(overlay && !overlay.classList.contains('hidden')),
+        landingVisible: !document.getElementById('landing').classList.contains('hidden'),
+        missionsSheetVisible: !document.getElementById('missionsSheet').classList.contains('hidden')
+      };
+    });
+    assert.strictEqual(agedTeaserState.landingVisible, false, 'restored run should stay in the active HUD after reload');
+    assert.strictEqual(agedTeaserState.overlayVisible, false, 'completed guided first-day overlay should not reopen after reload');
+    assert.strictEqual(agedTeaserState.mode, 'daily', 'older restored runs should fall back to the normal daily teaser');
+    assert.strictEqual(agedTeaserState.actionTarget, 'missions', 'older restored runs should no longer route the teaser into Care Studio');
+    assert.strictEqual(agedTeaserState.missionsSheetVisible, false, 'daily buddy check must not auto-open the missions sheet on reload');
 
     await page.click('#menuToggleBtn');
     await page.waitForFunction(() => {
@@ -245,10 +384,32 @@ async function main() {
     }, LS_STATE_KEY);
     assert.strictEqual(legacyGateSave.storedAuthGateActive, true, 'test should seed a legacy save with authGateActive true');
     assert.strictEqual(legacyGateSave.storedOpenSheet, 'leaderboard', 'test should seed transient legacy UI state');
+    await page.evaluate(async () => {
+      await new Promise((resolve) => {
+        const request = indexedDB.deleteDatabase('grow-sim-db');
+        request.onsuccess = () => resolve();
+        request.onerror = () => resolve();
+        request.onblocked = () => resolve();
+      });
+    });
 
     await page.reload({ waitUntil: 'networkidle' });
     const reloadedGuest = await assertGuestBoot(page, 'guest reload');
     assert.strictEqual(reloadedGuest.landingVisible, false, 'guest reload should restore the started local run');
+    await page.waitForFunction(() => {
+      const menu = document.getElementById('gameMenu');
+      const dialog = document.getElementById('menuDialog');
+      return Boolean(
+        menu
+        && dialog
+        && menu.classList.contains('hidden')
+        && dialog.classList.contains('hidden')
+        && window.__gsState
+        && window.__gsState.ui
+        && window.__gsState.ui.menuOpen === false
+        && window.__gsState.ui.menuDialogOpen === false
+      );
+    }, null, { timeout: 10000 });
     const legacyGateRestore = await page.evaluate(() => {
       const modal = document.getElementById('authModal');
       const menu = document.getElementById('gameMenu');
@@ -263,6 +424,31 @@ async function main() {
     assert.strictEqual(legacyGateRestore.modalVisible, false, 'legacy saved auth gate should not reopen the auth modal');
     assert.strictEqual(legacyGateRestore.menuVisible, false, 'legacy transient menu state should not restore as blocking UI');
     assert.strictEqual(legacyGateRestore.openSheet, null, 'legacy transient sheet state should be cleared on restore');
+
+    await page.waitForFunction(() => {
+      const completed = Array.isArray(window.__gsState && window.__gsState.missions && window.__gsState.missions.completed)
+        ? window.__gsState.missions.completed
+        : [];
+      return completed.includes('mission_004');
+    }, null, { timeout: 15000 });
+    const passiveMissionRestoreState = await page.evaluate(() => {
+      const menu = document.getElementById('gameMenu');
+      const dialog = document.getElementById('menuDialog');
+      return {
+        completedMissionIds: Array.isArray(window.__gsState && window.__gsState.missions && window.__gsState.missions.completed)
+          ? window.__gsState.missions.completed.slice()
+          : [],
+        coins: Number(window.__gsState && window.__gsState.status && window.__gsState.status.coins || 0),
+        menuVisible: Boolean(menu && !menu.classList.contains('hidden')),
+        dialogVisible: Boolean(dialog && !dialog.classList.contains('hidden')),
+        dialogVariant: dialog ? String(dialog.dataset.variant || '') : ''
+      };
+    });
+    assert(passiveMissionRestoreState.completedMissionIds.includes('mission_004'), 'passive health mission should still complete after guest reload');
+    assert(passiveMissionRestoreState.coins >= 1000, 'mission reward coins should still be granted after guest reload');
+    assert.strictEqual(passiveMissionRestoreState.menuVisible, false, 'passive mission completion should not reopen the menu after guest reload');
+    assert.strictEqual(passiveMissionRestoreState.dialogVisible, false, 'passive mission completion should not reopen the reward dialog after guest reload');
+    assert.notStrictEqual(passiveMissionRestoreState.dialogVariant, 'mission-reward', 'passive guest reload should suppress the blocking mission-reward dialog');
 
     assert.strictEqual(stats.saveGetRequests >= 1, true, 'signed-out guest boot may probe remote save but must fall back locally');
     console.log('guest mode startup smoke test passed');

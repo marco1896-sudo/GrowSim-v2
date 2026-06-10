@@ -990,6 +990,20 @@ function getCanonicalCare(snapshot) {
 
 function getCanonicalMeta(snapshot) {
   const s = snapshot || state;
+  const createDefaultFirstRunIntroState = () => ({
+    active: false,
+    completed: false,
+    dashboardFollowupShown: false,
+    step: 'plant',
+    createdAtRealMs: 0,
+    completedAtRealMs: 0,
+    growStyle: 'safe',
+    environment: 'indoor',
+    plantType: 'beginner',
+    decisionId: '',
+    resultTone: 'good',
+    statusKey: 'good'
+  });
   if (!s.meta || typeof s.meta !== 'object') {
     s.meta = {};
   }
@@ -1008,6 +1022,15 @@ function getCanonicalMeta(snapshot) {
   if (!s.meta.rewardLedger || typeof s.meta.rewardLedger !== 'object') {
     s.meta.rewardLedger = {};
   }
+  if (!s.meta.firstRunIntro || typeof s.meta.firstRunIntro !== 'object') {
+    s.meta.firstRunIntro = createDefaultFirstRunIntroState();
+  }
+  const existingFirstRunIntro = { ...s.meta.firstRunIntro };
+  Object.assign(
+    s.meta.firstRunIntro,
+    createDefaultFirstRunIntroState(),
+    existingFirstRunIntro
+  );
   return s.meta;
 }
 
@@ -1321,6 +1344,12 @@ function normalizeSetupState(setupLike, simulationLike) {
 }
 
 async function restoreState(options = {}) {
+  globalThis.__gsStorageRestoreMeta = {
+    restored: false,
+    source: null,
+    runStatus: null,
+    restoredAtRealMs: 0
+  };
   if (!storageAdapter) {
     return;
   }
@@ -1346,6 +1375,12 @@ async function restoreState(options = {}) {
     return;
   }
   globalThis.__gsStorageHasWrittenLocalState = selectedRestore.source === 'local';
+  globalThis.__gsStorageRestoreMeta = {
+    restored: true,
+    source: selectedRestore.source || null,
+    runStatus: saved && saved.run && saved.run.status ? String(saved.run.status) : null,
+    restoredAtRealMs: Date.now()
+  };
 
   if (selectedRestore.source === 'local' && remoteSaved && localSaved) {
     logStorageDebugInfo('[restore] local save selected over remote', {
@@ -1945,7 +1980,71 @@ state.rewardActions = {
       dayKey: '',
       tasks: [],
       completedCount: 0,
-      allCompleteClaimed: false
+      allCompleteClaimed: false,
+      recentTaskIds: [],
+      buddyCheck: {
+        dayKey: '',
+        category: '',
+        textKey: '',
+        primaryTaskId: '',
+        secondaryTaskId: '',
+        generatedAtMs: 0
+      }
+    },
+    weekly: {
+      weekKey: '',
+      missionId: '',
+      rewardCoins: 0,
+      generatedAtMs: 0,
+      completedAtMs: 0,
+      claimedAtMs: 0,
+      history: []
+    },
+    decisionCards: {
+      dayKey: '',
+      activeCard: {
+        dayKey: '',
+        weekKey: '',
+        cardId: '',
+        primaryTaskId: '',
+        generatedAtMs: 0,
+        answeredAtMs: 0,
+        chosenOptionId: '',
+        resultTextKey: '',
+        focusTaskId: '',
+        suggestedCoinActionId: ''
+      },
+      recentCardIds: [],
+      history: []
+    },
+    coinActions: {
+      buddyTip: {
+        dayKey: '',
+        category: '',
+        textKey: '',
+        primaryTaskId: '',
+        weeklyMissionId: '',
+        purchasedAtMs: 0
+      },
+      focusBoost: {
+        dayKey: '',
+        taskId: '',
+        bonusCoins: 0,
+        purchasedAtMs: 0,
+        claimedAtMs: 0
+      },
+      safeBoostCheck: {
+        dayKey: '',
+        statusKey: '',
+        textKey: '',
+        primaryTaskId: '',
+        purchasedAtMs: 0
+      },
+      weeklyPush: {
+        weekKey: '',
+        bonusTasksCompleted: 0,
+        purchasedAtMs: 0
+      }
     },
     micro: {
       unlockedIds: [],
@@ -2239,6 +2338,15 @@ function ensureStateIntegrity(nowMs) {
   if (!state.retention.dailyCare || typeof state.retention.dailyCare !== 'object') {
     state.retention.dailyCare = {};
   }
+  if (!state.retention.weekly || typeof state.retention.weekly !== 'object') {
+    state.retention.weekly = {};
+  }
+  if (!state.retention.decisionCards || typeof state.retention.decisionCards !== 'object') {
+    state.retention.decisionCards = {};
+  }
+  if (!state.retention.coinActions || typeof state.retention.coinActions !== 'object') {
+    state.retention.coinActions = {};
+  }
   if (!state.retention.micro || typeof state.retention.micro !== 'object') {
     state.retention.micro = {};
   }
@@ -2276,24 +2384,172 @@ function ensureStateIntegrity(nowMs) {
   ));
 
   state.retention.dailyCare.dayKey = typeof state.retention.dailyCare.dayKey === 'string' ? state.retention.dailyCare.dayKey : '';
+  if (!Array.isArray(state.retention.dailyCare.recentTaskIds)) {
+    state.retention.dailyCare.recentTaskIds = [];
+  }
+  state.retention.dailyCare.recentTaskIds = Array.from(new Set(
+    state.retention.dailyCare.recentTaskIds
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+  )).slice(-9);
+  if (!state.retention.dailyCare.buddyCheck || typeof state.retention.dailyCare.buddyCheck !== 'object') {
+    state.retention.dailyCare.buddyCheck = {};
+  }
+  state.retention.dailyCare.buddyCheck.dayKey = typeof state.retention.dailyCare.buddyCheck.dayKey === 'string'
+    ? state.retention.dailyCare.buddyCheck.dayKey
+    : '';
+  state.retention.dailyCare.buddyCheck.category = typeof state.retention.dailyCare.buddyCheck.category === 'string'
+    ? state.retention.dailyCare.buddyCheck.category
+    : '';
+  state.retention.dailyCare.buddyCheck.textKey = typeof state.retention.dailyCare.buddyCheck.textKey === 'string'
+    ? state.retention.dailyCare.buddyCheck.textKey
+    : '';
+  state.retention.dailyCare.buddyCheck.primaryTaskId = typeof state.retention.dailyCare.buddyCheck.primaryTaskId === 'string'
+    ? state.retention.dailyCare.buddyCheck.primaryTaskId
+    : '';
+  state.retention.dailyCare.buddyCheck.secondaryTaskId = typeof state.retention.dailyCare.buddyCheck.secondaryTaskId === 'string'
+    ? state.retention.dailyCare.buddyCheck.secondaryTaskId
+    : '';
+  state.retention.dailyCare.buddyCheck.generatedAtMs = Number.isFinite(Number(state.retention.dailyCare.buddyCheck.generatedAtMs))
+    ? Number(state.retention.dailyCare.buddyCheck.generatedAtMs)
+    : 0;
+  state.retention.weekly.weekKey = typeof state.retention.weekly.weekKey === 'string' ? state.retention.weekly.weekKey : '';
+  state.retention.weekly.missionId = typeof state.retention.weekly.missionId === 'string' ? state.retention.weekly.missionId : '';
+  state.retention.weekly.rewardCoins = Math.max(0, Math.trunc(Number(state.retention.weekly.rewardCoins) || 0));
+  state.retention.weekly.generatedAtMs = Number.isFinite(Number(state.retention.weekly.generatedAtMs))
+    ? Number(state.retention.weekly.generatedAtMs)
+    : 0;
+  state.retention.weekly.completedAtMs = Number.isFinite(Number(state.retention.weekly.completedAtMs))
+    ? Number(state.retention.weekly.completedAtMs)
+    : 0;
+  state.retention.weekly.claimedAtMs = Number.isFinite(Number(state.retention.weekly.claimedAtMs))
+    ? Number(state.retention.weekly.claimedAtMs)
+    : 0;
+  state.retention.weekly.history = (Array.isArray(state.retention.weekly.history) ? state.retention.weekly.history : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      weekKey: typeof entry.weekKey === 'string' ? entry.weekKey : '',
+      missionId: typeof entry.missionId === 'string' ? entry.missionId : '',
+      rewardCoins: Math.max(0, Math.trunc(Number(entry.rewardCoins) || 0)),
+      completedAtMs: Number.isFinite(Number(entry.completedAtMs)) ? Number(entry.completedAtMs) : 0,
+      claimedAtMs: Number.isFinite(Number(entry.claimedAtMs)) ? Number(entry.claimedAtMs) : 0
+    }))
+    .filter((entry) => entry.weekKey && entry.missionId)
+    .slice(-12);
+  state.retention.decisionCards.dayKey = typeof state.retention.decisionCards.dayKey === 'string' ? state.retention.decisionCards.dayKey : '';
+  if (!Array.isArray(state.retention.decisionCards.recentCardIds)) {
+    state.retention.decisionCards.recentCardIds = [];
+  }
+  state.retention.decisionCards.recentCardIds = Array.from(new Set(
+    state.retention.decisionCards.recentCardIds
+      .map((entry) => String(entry || '').trim())
+      .filter(Boolean)
+  )).slice(-10);
+  if (!state.retention.decisionCards.activeCard || typeof state.retention.decisionCards.activeCard !== 'object') {
+    state.retention.decisionCards.activeCard = {};
+  }
+  state.retention.decisionCards.activeCard.dayKey = typeof state.retention.decisionCards.activeCard.dayKey === 'string' ? state.retention.decisionCards.activeCard.dayKey : '';
+  state.retention.decisionCards.activeCard.weekKey = typeof state.retention.decisionCards.activeCard.weekKey === 'string' ? state.retention.decisionCards.activeCard.weekKey : '';
+  state.retention.decisionCards.activeCard.cardId = typeof state.retention.decisionCards.activeCard.cardId === 'string' ? state.retention.decisionCards.activeCard.cardId : '';
+  state.retention.decisionCards.activeCard.primaryTaskId = typeof state.retention.decisionCards.activeCard.primaryTaskId === 'string' ? state.retention.decisionCards.activeCard.primaryTaskId : '';
+  state.retention.decisionCards.activeCard.generatedAtMs = Number.isFinite(Number(state.retention.decisionCards.activeCard.generatedAtMs))
+    ? Number(state.retention.decisionCards.activeCard.generatedAtMs)
+    : 0;
+  state.retention.decisionCards.activeCard.answeredAtMs = Number.isFinite(Number(state.retention.decisionCards.activeCard.answeredAtMs))
+    ? Number(state.retention.decisionCards.activeCard.answeredAtMs)
+    : 0;
+  state.retention.decisionCards.activeCard.chosenOptionId = typeof state.retention.decisionCards.activeCard.chosenOptionId === 'string'
+    ? state.retention.decisionCards.activeCard.chosenOptionId
+    : '';
+  state.retention.decisionCards.activeCard.resultTextKey = typeof state.retention.decisionCards.activeCard.resultTextKey === 'string'
+    ? state.retention.decisionCards.activeCard.resultTextKey
+    : '';
+  state.retention.decisionCards.activeCard.focusTaskId = typeof state.retention.decisionCards.activeCard.focusTaskId === 'string'
+    ? state.retention.decisionCards.activeCard.focusTaskId
+    : '';
+  state.retention.decisionCards.activeCard.suggestedCoinActionId = typeof state.retention.decisionCards.activeCard.suggestedCoinActionId === 'string'
+    ? state.retention.decisionCards.activeCard.suggestedCoinActionId
+    : '';
+  state.retention.decisionCards.history = (Array.isArray(state.retention.decisionCards.history) ? state.retention.decisionCards.history : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      dayKey: typeof entry.dayKey === 'string' ? entry.dayKey : '',
+      cardId: typeof entry.cardId === 'string' ? entry.cardId : '',
+      chosenOptionId: typeof entry.chosenOptionId === 'string' ? entry.chosenOptionId : '',
+      answeredAtMs: Number.isFinite(Number(entry.answeredAtMs)) ? Number(entry.answeredAtMs) : 0
+    }))
+    .filter((entry) => entry.dayKey && entry.cardId)
+    .slice(-14);
+  if (!state.retention.coinActions.buddyTip || typeof state.retention.coinActions.buddyTip !== 'object') {
+    state.retention.coinActions.buddyTip = {};
+  }
+  state.retention.coinActions.buddyTip.dayKey = typeof state.retention.coinActions.buddyTip.dayKey === 'string' ? state.retention.coinActions.buddyTip.dayKey : '';
+  state.retention.coinActions.buddyTip.category = typeof state.retention.coinActions.buddyTip.category === 'string' ? state.retention.coinActions.buddyTip.category : '';
+  state.retention.coinActions.buddyTip.textKey = typeof state.retention.coinActions.buddyTip.textKey === 'string' ? state.retention.coinActions.buddyTip.textKey : '';
+  state.retention.coinActions.buddyTip.primaryTaskId = typeof state.retention.coinActions.buddyTip.primaryTaskId === 'string' ? state.retention.coinActions.buddyTip.primaryTaskId : '';
+  state.retention.coinActions.buddyTip.weeklyMissionId = typeof state.retention.coinActions.buddyTip.weeklyMissionId === 'string' ? state.retention.coinActions.buddyTip.weeklyMissionId : '';
+  state.retention.coinActions.buddyTip.purchasedAtMs = Number.isFinite(Number(state.retention.coinActions.buddyTip.purchasedAtMs))
+    ? Number(state.retention.coinActions.buddyTip.purchasedAtMs)
+    : 0;
+  if (!state.retention.coinActions.focusBoost || typeof state.retention.coinActions.focusBoost !== 'object') {
+    state.retention.coinActions.focusBoost = {};
+  }
+  state.retention.coinActions.focusBoost.dayKey = typeof state.retention.coinActions.focusBoost.dayKey === 'string' ? state.retention.coinActions.focusBoost.dayKey : '';
+  state.retention.coinActions.focusBoost.taskId = typeof state.retention.coinActions.focusBoost.taskId === 'string' ? state.retention.coinActions.focusBoost.taskId : '';
+  state.retention.coinActions.focusBoost.bonusCoins = Math.max(0, Math.trunc(Number(state.retention.coinActions.focusBoost.bonusCoins) || 0));
+  state.retention.coinActions.focusBoost.purchasedAtMs = Number.isFinite(Number(state.retention.coinActions.focusBoost.purchasedAtMs))
+    ? Number(state.retention.coinActions.focusBoost.purchasedAtMs)
+    : 0;
+  state.retention.coinActions.focusBoost.claimedAtMs = Number.isFinite(Number(state.retention.coinActions.focusBoost.claimedAtMs))
+    ? Number(state.retention.coinActions.focusBoost.claimedAtMs)
+    : 0;
+  if (!state.retention.coinActions.safeBoostCheck || typeof state.retention.coinActions.safeBoostCheck !== 'object') {
+    state.retention.coinActions.safeBoostCheck = {};
+  }
+  state.retention.coinActions.safeBoostCheck.dayKey = typeof state.retention.coinActions.safeBoostCheck.dayKey === 'string' ? state.retention.coinActions.safeBoostCheck.dayKey : '';
+  state.retention.coinActions.safeBoostCheck.statusKey = typeof state.retention.coinActions.safeBoostCheck.statusKey === 'string' ? state.retention.coinActions.safeBoostCheck.statusKey : '';
+  state.retention.coinActions.safeBoostCheck.textKey = typeof state.retention.coinActions.safeBoostCheck.textKey === 'string' ? state.retention.coinActions.safeBoostCheck.textKey : '';
+  state.retention.coinActions.safeBoostCheck.primaryTaskId = typeof state.retention.coinActions.safeBoostCheck.primaryTaskId === 'string' ? state.retention.coinActions.safeBoostCheck.primaryTaskId : '';
+  state.retention.coinActions.safeBoostCheck.purchasedAtMs = Number.isFinite(Number(state.retention.coinActions.safeBoostCheck.purchasedAtMs))
+    ? Number(state.retention.coinActions.safeBoostCheck.purchasedAtMs)
+    : 0;
+  if (!state.retention.coinActions.weeklyPush || typeof state.retention.coinActions.weeklyPush !== 'object') {
+    state.retention.coinActions.weeklyPush = {};
+  }
+  state.retention.coinActions.weeklyPush.weekKey = typeof state.retention.coinActions.weeklyPush.weekKey === 'string' ? state.retention.coinActions.weeklyPush.weekKey : '';
+  state.retention.coinActions.weeklyPush.bonusTasksCompleted = Math.max(0, Math.min(1, Math.trunc(Number(state.retention.coinActions.weeklyPush.bonusTasksCompleted) || 0)));
+  state.retention.coinActions.weeklyPush.purchasedAtMs = Number.isFinite(Number(state.retention.coinActions.weeklyPush.purchasedAtMs))
+    ? Number(state.retention.coinActions.weeklyPush.purchasedAtMs)
+    : 0;
   if (!Array.isArray(state.retention.dailyCare.tasks)) {
     state.retention.dailyCare.tasks = [];
   }
   state.retention.dailyCare.tasks = state.retention.dailyCare.tasks
     .filter((task) => task && typeof task === 'object')
-    .map((task) => ({
-      taskId: String(task.taskId || '').trim(),
-      title: String(task.title || '').trim(),
-      description: String(task.description || '').trim(),
-      dayKey: String(task.dayKey || state.retention.dailyCare.dayKey || '').trim(),
-      trigger: String(task.trigger || '').trim(),
-      sheetName: String(task.sheetName || '').trim(),
-      threshold: Number.isFinite(Number(task.threshold)) ? Number(task.threshold) : null,
-      xp: Math.max(0, Math.trunc(Number(task.xp) || 0)),
-      completedAt: Number.isFinite(Number(task.completedAt)) ? Number(task.completedAt) : null,
-      rewardGrantedAt: Number.isFinite(Number(task.rewardGrantedAt)) ? Number(task.rewardGrantedAt) : null,
-      claimKey: String(task.claimKey || '').trim()
-    }))
+    .map((task) => {
+      const taskId = String(task.taskId || task.id || task.type || task.trigger || task.sheetName || '').trim();
+      const rawTitle = String(task.title || '').trim();
+      const rawDescription = String(task.description || '').trim();
+      const title = (!rawTitle || /^(daily task|task|aufgabe|tarea)$/i.test(rawTitle))
+        ? (taskId ? `daily.task.${taskId}.title` : rawTitle)
+        : rawTitle;
+      const description = (!rawDescription || /^start with daily task$/i.test(rawDescription) || /^desc$/i.test(rawDescription))
+        ? (taskId ? `daily.task.${taskId}.description` : rawDescription)
+        : rawDescription;
+      return {
+        taskId,
+        title,
+        description,
+        dayKey: String(task.dayKey || state.retention.dailyCare.dayKey || '').trim(),
+        trigger: String(task.trigger || '').trim(),
+        sheetName: String(task.sheetName || '').trim(),
+        threshold: Number.isFinite(Number(task.threshold)) ? Number(task.threshold) : null,
+        xp: Math.max(0, Math.trunc(Number(task.xp) || 0)),
+        completedAt: Number.isFinite(Number(task.completedAt)) ? Number(task.completedAt) : null,
+        rewardGrantedAt: Number.isFinite(Number(task.rewardGrantedAt)) ? Number(task.rewardGrantedAt) : null,
+        claimKey: String(task.claimKey || '').trim()
+      };
+    })
     .filter((task) => task.taskId && task.claimKey);
   state.retention.dailyCare.tasks = state.retention.dailyCare.tasks.map((task) => {
     if (!task.rewardGrantedAt && task.completedAt && state.retention.claimLedger.includes(task.claimKey)) {

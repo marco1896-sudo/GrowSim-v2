@@ -1,0 +1,1386 @@
+{
+  "version": 1,
+  "basePath": "assets/buddy/transparent",
+  "assets": [
+    {
+      "id": "buddy_emotion_angry_fists_up_v001",
+      "category": "emotion",
+      "state": "angry",
+      "action": "fists_up",
+      "path": "emotions/angry/buddy_emotion_angry_fists_up_v001.png",
+      "tags": [
+        "angry",
+        "challenge",
+        "intense"
+      ],
+      "recommendedUse": [
+        "strong_warning",
+        "challenge",
+        "event_reaction"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Show_me_this_character_with_an_angry_expression_and_pose_0__2_-removebg-preview.png",
+        "assets/buddy/transparent/Show_me_this_character_with_an_angry_expression_and_pose_0__3_-removebg-preview.png"
+      ],
+      "notes": "Matches official angry reference naming closely."
+    },
+    {
+      "id": "buddy_emotion_concerned_downcast_v001",
+      "category": "emotion",
+      "state": "concerned",
+      "action": "downcast",
+      "path": "emotions/concerned/buddy_emotion_concerned_downcast_v001.png",
+      "tags": [
+        "concerned",
+        "low_energy",
+        "serious"
+      ],
+      "recommendedUse": [
+        "soft_warning",
+        "missed_task",
+        "status_drop"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__29_-removebg-preview.png"
+      ],
+      "notes": "Similar family to sad/downcast but lighter."
+    },
+    {
+      "id": "buddy_emotion_confused_head_scratch_v001",
+      "category": "emotion",
+      "state": "confused",
+      "action": "head_scratch",
+      "path": "emotions/confused/buddy_emotion_confused_head_scratch_v001.png",
+      "tags": [
+        "confused",
+        "thinking",
+        "unsure"
+      ],
+      "recommendedUse": [
+        "question",
+        "investigation",
+        "unclear_state"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Show_me_this_character_with_a_confused_expression_and_pose_0__2_-removebg-preview.png",
+        "assets/buddy/transparent/Show_me_this_character_with_a_confused_expression_and_pose_0__3_-removebg-preview.png"
+      ],
+      "notes": "Matches official reference naming closely."
+    },
+    {
+      "id": "buddy_emotion_confused_spiral_eyes_v001",
+      "category": "emotion",
+      "state": "confused",
+      "action": "spiral_eyes",
+      "path": "emotions/confused/buddy_emotion_confused_spiral_eyes_v001.png",
+      "tags": [
+        "confused",
+        "dizzy",
+        "overwhelmed"
+      ],
+      "recommendedUse": [
+        "failure",
+        "overload",
+        "status_issue"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__6_-removebg-preview (1).png"
+      ],
+      "notes": "Strong dizzy/confused read."
+    },
+    {
+      "id": "buddy_emotion_happy_big_smile_v001",
+      "category": "emotion",
+      "state": "happy",
+      "action": "big_smile",
+      "path": "emotions/happy/buddy_emotion_happy_big_smile_v001.png",
+      "tags": [
+        "happy",
+        "smile",
+        "friendly"
+      ],
+      "recommendedUse": [
+        "default_positive",
+        "success",
+        "friendly_tip"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__18_-removebg-preview.png"
+      ],
+      "notes": "Simple positive expression."
+    },
+    {
+      "id": "buddy_emotion_happy_cheering_fists_v001",
+      "category": "emotion",
+      "state": "happy",
+      "action": "cheering_fists",
+      "path": "emotions/happy/buddy_emotion_happy_cheering_fists_v001.png",
+      "tags": [
+        "happy",
+        "celebrate",
+        "energy"
+      ],
+      "recommendedUse": [
+        "level_up",
+        "small_win",
+        "streak"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__1_-removebg-preview (2).png"
+      ],
+      "notes": "Energetic cheering pose."
+    },
+    {
+      "id": "buddy_emotion_happy_hugging_self_v001",
+      "category": "emotion",
+      "state": "happy",
+      "action": "hugging_self",
+      "path": "emotions/happy/buddy_emotion_happy_hugging_self_v001.png",
+      "tags": [
+        "happy",
+        "warm",
+        "cozy"
+      ],
+      "recommendedUse": [
+        "comfort",
+        "success",
+        "buddy_dialogue"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926-removebg-preview.png"
+      ],
+      "notes": "Warm affectionate smile pose."
+    },
+    {
+      "id": "buddy_emotion_happy_joyful_step_v001",
+      "category": "emotion",
+      "state": "happy",
+      "action": "joyful_step",
+      "path": "emotions/happy/buddy_emotion_happy_joyful_step_v001.png",
+      "tags": [
+        "happy",
+        "playful",
+        "movement"
+      ],
+      "recommendedUse": [
+        "celebration",
+        "light_reward",
+        "fun_moment"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__9_-removebg-preview (1).png"
+      ],
+      "notes": "Playful movement pose but no full frame set partner found."
+    },
+    {
+      "id": "buddy_emotion_happy_laughing_eyes_closed_v001",
+      "category": "emotion",
+      "state": "happy",
+      "action": "laughing_eyes_closed",
+      "path": "emotions/happy/buddy_emotion_happy_laughing_eyes_closed_v001.png",
+      "tags": [
+        "happy",
+        "laughing",
+        "joy"
+      ],
+      "recommendedUse": [
+        "success",
+        "buddy_dialogue",
+        "reward"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__1_-removebg-preview.png"
+      ],
+      "notes": "Closed-eye laughter pose."
+    },
+    {
+      "id": "buddy_emotion_happy_open_arms_v001",
+      "category": "emotion",
+      "state": "happy",
+      "action": "open_arms",
+      "path": "emotions/happy/buddy_emotion_happy_open_arms_v001.png",
+      "tags": [
+        "happy",
+        "welcome",
+        "friendly"
+      ],
+      "recommendedUse": [
+        "welcome",
+        "onboarding",
+        "success"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_051326__3_-removebg-preview.png"
+      ],
+      "notes": "Strong master-like welcoming pose."
+    },
+    {
+      "id": "buddy_emotion_happy_raised_hands_v001",
+      "category": "emotion",
+      "state": "happy",
+      "action": "raised_hands",
+      "path": "emotions/happy/buddy_emotion_happy_raised_hands_v001.png",
+      "tags": [
+        "happy",
+        "excited",
+        "celebrate"
+      ],
+      "recommendedUse": [
+        "success",
+        "unlock",
+        "celebration"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__2_-removebg-preview (1).png"
+      ],
+      "notes": "Raised hands front pose."
+    },
+    {
+      "id": "buddy_emotion_love_heart_eyes_clasped_v001",
+      "category": "emotion",
+      "state": "love",
+      "action": "heart_eyes_clasped",
+      "path": "emotions/love/buddy_emotion_love_heart_eyes_clasped_v001.png",
+      "tags": [
+        "love",
+        "adoring",
+        "delighted"
+      ],
+      "recommendedUse": [
+        "special_reward",
+        "rare_drop",
+        "community_moment"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_051326__6_-removebg-preview.png"
+      ],
+      "notes": "Heart-eyes variant with clasped hands."
+    },
+    {
+      "id": "buddy_emotion_love_heart_eyes_shy_v001",
+      "category": "emotion",
+      "state": "love",
+      "action": "heart_eyes_shy",
+      "path": "emotions/love/buddy_emotion_love_heart_eyes_shy_v001.png",
+      "tags": [
+        "love",
+        "adoring",
+        "cute"
+      ],
+      "recommendedUse": [
+        "special_reward",
+        "social_post",
+        "premium_reaction"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_051326__5_-removebg-preview.png"
+      ],
+      "notes": "Heart-eyes variant with shy body language."
+    },
+    {
+      "id": "buddy_emotion_neutral_seated_idle_v001",
+      "category": "emotion",
+      "state": "neutral",
+      "action": "seated_idle",
+      "path": "emotions/neutral/buddy_emotion_neutral_seated_idle_v001.png",
+      "tags": [
+        "neutral",
+        "idle",
+        "seated"
+      ],
+      "recommendedUse": [
+        "idle",
+        "empty_state",
+        "loading"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__10_-removebg-preview (1).png"
+      ],
+      "notes": "Good calm idle candidate, but no frame sequence partner found."
+    },
+    {
+      "id": "buddy_emotion_neutral_standing_v001",
+      "category": "emotion",
+      "state": "neutral",
+      "action": "standing",
+      "path": "emotions/neutral/buddy_emotion_neutral_standing_v001.png",
+      "tags": [
+        "neutral",
+        "idle",
+        "standing"
+      ],
+      "recommendedUse": [
+        "default",
+        "idle",
+        "status_panel"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__11_-removebg-preview (1).png"
+      ],
+      "notes": "Simple neutral standing pose."
+    },
+    {
+      "id": "buddy_emotion_proud_confident_stance_v001",
+      "category": "emotion",
+      "state": "proud",
+      "action": "confident_stance",
+      "path": "emotions/proud/buddy_emotion_proud_confident_stance_v001.png",
+      "tags": [
+        "proud",
+        "confident",
+        "stance"
+      ],
+      "recommendedUse": [
+        "coach_moment",
+        "status_ok",
+        "success"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__5_-removebg-preview.png"
+      ],
+      "notes": "Friendly confident stance."
+    },
+    {
+      "id": "buddy_emotion_proud_hands_on_hips_v001",
+      "category": "emotion",
+      "state": "proud",
+      "action": "hands_on_hips",
+      "path": "emotions/proud/buddy_emotion_proud_hands_on_hips_v001.png",
+      "tags": [
+        "proud",
+        "confident",
+        "idle"
+      ],
+      "recommendedUse": [
+        "default_positive",
+        "coach_moment",
+        "status_ok"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__3_-removebg-preview.png"
+      ],
+      "notes": "Confident neutral-positive stance."
+    },
+    {
+      "id": "buddy_emotion_proud_starry_eyes_clasped_v001",
+      "category": "emotion",
+      "state": "proud",
+      "action": "starry_eyes_clasped",
+      "path": "emotions/proud/buddy_emotion_proud_starry_eyes_clasped_v001.png",
+      "tags": [
+        "proud",
+        "amazed",
+        "delighted"
+      ],
+      "recommendedUse": [
+        "milestone",
+        "rare_success",
+        "special_unlock"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__17_-removebg-preview.png"
+      ],
+      "notes": "Starry eyes suggest awe/pride."
+    },
+    {
+      "id": "buddy_emotion_sad_downcast_reference_v001",
+      "category": "emotion",
+      "state": "sad",
+      "action": "downcast_reference",
+      "path": "emotions/sad/buddy_emotion_sad_downcast_reference_v001.png",
+      "tags": [
+        "sad",
+        "downcast",
+        "loss"
+      ],
+      "recommendedUse": [
+        "failure",
+        "missed_task",
+        "stress_feedback"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Show_me_this_character_with_a_sad_expression_and_pose_0__2_-removebg-preview.png",
+        "assets/buddy/transparent/Show_me_this_character_with_a_sad_expression_and_pose_0__3_-removebg-preview.png"
+      ],
+      "notes": "Close to official sad reference."
+    },
+    {
+      "id": "buddy_emotion_sad_downcast_v001",
+      "category": "emotion",
+      "state": "sad",
+      "action": "downcast",
+      "path": "emotions/sad/buddy_emotion_sad_downcast_v001.png",
+      "tags": [
+        "sad",
+        "low_energy",
+        "loss"
+      ],
+      "recommendedUse": [
+        "failure",
+        "missed_task",
+        "stress_feedback"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__13_-removebg-preview.png"
+      ],
+      "notes": "Clean sad pose."
+    },
+    {
+      "id": "buddy_emotion_sad_droopy_v001",
+      "category": "emotion",
+      "state": "sad",
+      "action": "droopy",
+      "path": "emotions/sad/buddy_emotion_sad_droopy_v001.png",
+      "tags": [
+        "sad",
+        "droopy",
+        "tired"
+      ],
+      "recommendedUse": [
+        "missed_task",
+        "stress_feedback",
+        "bad_condition"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__3_-removebg-preview (1).png"
+      ],
+      "notes": "Sad droopy expression without props."
+    },
+    {
+      "id": "buddy_emotion_sleepy_drowsy_v001",
+      "category": "emotion",
+      "state": "sleepy",
+      "action": "drowsy",
+      "path": "emotions/sleepy/buddy_emotion_sleepy_drowsy_v001.png",
+      "tags": [
+        "sleepy",
+        "tired",
+        "low_energy"
+      ],
+      "recommendedUse": [
+        "night_state",
+        "fatigue",
+        "waiting"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__4_-removebg-preview.png"
+      ],
+      "notes": "Drowsy sleepy expression."
+    },
+    {
+      "id": "buddy_emotion_sleepy_holding_pillow_v001",
+      "category": "emotion",
+      "state": "sleepy",
+      "action": "holding_pillow",
+      "path": "emotions/sleepy/buddy_emotion_sleepy_holding_pillow_v001.png",
+      "tags": [
+        "sleepy",
+        "rest",
+        "pillow"
+      ],
+      "recommendedUse": [
+        "night_state",
+        "sleep_tip",
+        "idle_night"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__3_-removebg-preview (2).png"
+      ],
+      "notes": "Clear sleepy prop pose."
+    },
+    {
+      "id": "buddy_emotion_sleepy_yawn_raised_hands_v001",
+      "category": "emotion",
+      "state": "sleepy",
+      "action": "yawn_raised_hands",
+      "path": "emotions/sleepy/buddy_emotion_sleepy_yawn_raised_hands_v001.png",
+      "tags": [
+        "sleepy",
+        "yawn",
+        "tired"
+      ],
+      "recommendedUse": [
+        "night_state",
+        "fatigue",
+        "idle_night"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__8_-removebg-preview.png"
+      ],
+      "notes": "Strong sleepy/yawn pose."
+    },
+    {
+      "id": "buddy_emotion_surprised_hands_out_v001",
+      "category": "emotion",
+      "state": "surprised",
+      "action": "hands_out",
+      "path": "emotions/surprised/buddy_emotion_surprised_hands_out_v001.png",
+      "tags": [
+        "surprised",
+        "alert",
+        "stop"
+      ],
+      "recommendedUse": [
+        "warning",
+        "surprise",
+        "reveal"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926-removebg-preview (1).png"
+      ],
+      "notes": "Balanced surprised open-hand pose."
+    },
+    {
+      "id": "buddy_emotion_surprised_palms_up_v001",
+      "category": "emotion",
+      "state": "surprised",
+      "action": "palms_up",
+      "path": "emotions/surprised/buddy_emotion_surprised_palms_up_v001.png",
+      "tags": [
+        "surprised",
+        "alert",
+        "oops"
+      ],
+      "recommendedUse": [
+        "surprise",
+        "warning",
+        "reveal"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__31_-removebg-preview.png"
+      ],
+      "notes": "Open-mouth surprised palms-up pose."
+    },
+    {
+      "id": "buddy_emotion_surprised_raised_hands_v001",
+      "category": "emotion",
+      "state": "surprised",
+      "action": "raised_hands",
+      "path": "emotions/surprised/buddy_emotion_surprised_raised_hands_v001.png",
+      "tags": [
+        "surprised",
+        "raised_hands",
+        "alert"
+      ],
+      "recommendedUse": [
+        "warning",
+        "reveal",
+        "discovery"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Show_me_this_character_with_a_surprised_expression_and_pose_0__1_-removebg-preview.png",
+        "assets/buddy/transparent/Show_me_this_character_with_a_surprised_expression_and_pose_0__2_-removebg-preview.png"
+      ],
+      "notes": "Matches official surprised reference naming closely."
+    },
+    {
+      "id": "buddy_emotion_worried_hand_to_chin_v001",
+      "category": "emotion",
+      "state": "worried",
+      "action": "hand_to_chin",
+      "path": "emotions/worried/buddy_emotion_worried_hand_to_chin_v001.png",
+      "tags": [
+        "worried",
+        "thinking",
+        "concern"
+      ],
+      "recommendedUse": [
+        "soft_warning",
+        "care_tip",
+        "uncertain_state"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__16_-removebg-preview.png"
+      ],
+      "notes": "Reads as worried/thoughtful rather than fully confused."
+    },
+    {
+      "id": "buddy_gameplay_clipboard_concerned_checkin_v001",
+      "category": "gameplay",
+      "state": "clipboard",
+      "action": "concerned_checkin",
+      "path": "gameplay/clipboard/buddy_gameplay_clipboard_concerned_checkin_v001.png",
+      "tags": [
+        "clipboard",
+        "concerned",
+        "review"
+      ],
+      "recommendedUse": [
+        "warning",
+        "daily_checkin",
+        "task_review"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__1_-removebg-preview (1).png"
+      ],
+      "notes": "Concerned face with blank clipboard."
+    },
+    {
+      "id": "buddy_gameplay_clipboard_presenting_blank_v001",
+      "category": "gameplay",
+      "state": "clipboard",
+      "action": "presenting_blank",
+      "path": "gameplay/clipboard/buddy_gameplay_clipboard_presenting_blank_v001.png",
+      "tags": [
+        "clipboard",
+        "task",
+        "instruction"
+      ],
+      "recommendedUse": [
+        "task_intro",
+        "tutorial",
+        "checklist"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_051326__7_-removebg-preview.png"
+      ],
+      "notes": "Reusable blank clipboard prop."
+    },
+    {
+      "id": "buddy_gameplay_clipboard_wave_v001",
+      "category": "gameplay",
+      "state": "clipboard",
+      "action": "wave",
+      "path": "gameplay/clipboard/buddy_gameplay_clipboard_wave_v001.png",
+      "tags": [
+        "clipboard",
+        "wave",
+        "guide"
+      ],
+      "recommendedUse": [
+        "welcome",
+        "task_intro",
+        "daily_checkin"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926-removebg-preview (2).png"
+      ],
+      "notes": "Friendly wave with clipboard."
+    },
+    {
+      "id": "buddy_gameplay_magnifier_leaf_inspection_v001",
+      "category": "gameplay",
+      "state": "magnifier",
+      "action": "leaf_inspection",
+      "path": "gameplay/magnifier/buddy_gameplay_magnifier_leaf_inspection_v001.png",
+      "tags": [
+        "magnifier",
+        "inspection",
+        "leaf"
+      ],
+      "recommendedUse": [
+        "diagnosis",
+        "plant_check",
+        "education"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__10_-removebg-preview.png"
+      ],
+      "notes": "Clear inspection pose; leaf prop may need product-context review later."
+    },
+    {
+      "id": "buddy_gameplay_magnifier_leaf_inspection_v002",
+      "category": "gameplay",
+      "state": "magnifier",
+      "action": "leaf_inspection",
+      "path": "gameplay/magnifier/buddy_gameplay_magnifier_leaf_inspection_v002.png",
+      "tags": [
+        "magnifier",
+        "inspection",
+        "leaf"
+      ],
+      "recommendedUse": [
+        "diagnosis",
+        "plant_check",
+        "education"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__7_-removebg-preview.png"
+      ],
+      "notes": "Second inspection variant; leaf prop may need product-context review later."
+    },
+    {
+      "id": "buddy_gameplay_nutrients_bottle_v001",
+      "category": "gameplay",
+      "state": "nutrients",
+      "action": "bottle",
+      "path": "gameplay/nutrients/buddy_gameplay_nutrients_bottle_v001.png",
+      "tags": [
+        "nutrients",
+        "bottle",
+        "care"
+      ],
+      "recommendedUse": [
+        "feeding_action",
+        "care_tip",
+        "shop_item"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__9_-removebg-preview.png"
+      ],
+      "notes": "Contains embedded NUTRIENT text and leaf icon on bottle."
+    },
+    {
+      "id": "buddy_gameplay_pointing_down_v001",
+      "category": "gameplay",
+      "state": "pointing",
+      "action": "down",
+      "path": "gameplay/pointing/buddy_gameplay_pointing_down_v001.png",
+      "tags": [
+        "pointing",
+        "down",
+        "guide"
+      ],
+      "recommendedUse": [
+        "tap_here",
+        "cta",
+        "tutorial"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__4_-removebg-preview (1).png"
+      ],
+      "notes": "Useful downward pointing UI pose."
+    },
+    {
+      "id": "buddy_gameplay_pointing_side_alert_v001",
+      "category": "gameplay",
+      "state": "pointing",
+      "action": "side_alert",
+      "path": "gameplay/pointing/buddy_gameplay_pointing_side_alert_v001.png",
+      "tags": [
+        "pointing",
+        "alert",
+        "guide"
+      ],
+      "recommendedUse": [
+        "warning",
+        "highlight",
+        "callout"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__25_-removebg-preview.png"
+      ],
+      "notes": "More assertive directional pose."
+    },
+    {
+      "id": "buddy_gameplay_pointing_side_v001",
+      "category": "gameplay",
+      "state": "pointing",
+      "action": "side",
+      "path": "gameplay/pointing/buddy_gameplay_pointing_side_v001.png",
+      "tags": [
+        "pointing",
+        "guide",
+        "ui"
+      ],
+      "recommendedUse": [
+        "cta",
+        "highlight",
+        "hint"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__12_-removebg-preview.png"
+      ],
+      "notes": "Useful directional pose."
+    },
+    {
+      "id": "buddy_gameplay_pointing_up_instruction_v001",
+      "category": "gameplay",
+      "state": "pointing",
+      "action": "up_instruction",
+      "path": "gameplay/pointing/buddy_gameplay_pointing_up_instruction_v001.png",
+      "tags": [
+        "pointing",
+        "up",
+        "instruction"
+      ],
+      "recommendedUse": [
+        "tip",
+        "tutorial",
+        "highlight"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__4_-removebg-preview (2).png"
+      ],
+      "notes": "Instructional pointing pose."
+    },
+    {
+      "id": "buddy_gameplay_pointing_up_v001",
+      "category": "gameplay",
+      "state": "pointing",
+      "action": "up",
+      "path": "gameplay/pointing/buddy_gameplay_pointing_up_v001.png",
+      "tags": [
+        "pointing",
+        "up",
+        "guide"
+      ],
+      "recommendedUse": [
+        "tip",
+        "cta",
+        "highlight"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__6_-removebg-preview.png"
+      ],
+      "notes": "Simple upward pointing pose."
+    },
+    {
+      "id": "buddy_gameplay_thumbs_down_disapproval_v001",
+      "category": "gameplay",
+      "state": "thumbs_down",
+      "action": "disapproval",
+      "path": "gameplay/thumbs_down/buddy_gameplay_thumbs_down_disapproval_v001.png",
+      "tags": [
+        "disapproval",
+        "negative",
+        "warning"
+      ],
+      "recommendedUse": [
+        "mistake",
+        "warning",
+        "bad_choice"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__15_-removebg-preview.png"
+      ],
+      "notes": "Clear negative feedback gesture."
+    },
+    {
+      "id": "buddy_gameplay_thumbs_up_approval_v001",
+      "category": "gameplay",
+      "state": "thumbs_up",
+      "action": "approval",
+      "path": "gameplay/thumbs_up/buddy_gameplay_thumbs_up_approval_v001.png",
+      "tags": [
+        "approval",
+        "positive",
+        "confirm"
+      ],
+      "recommendedUse": [
+        "success",
+        "confirmation",
+        "task_complete"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__14_-removebg-preview.png"
+      ],
+      "notes": "Strong approval gesture."
+    },
+    {
+      "id": "buddy_gameplay_watering_can_motivated_v001",
+      "category": "gameplay",
+      "state": "watering",
+      "action": "can_motivated",
+      "path": "gameplay/watering/buddy_gameplay_watering_can_motivated_v001.png",
+      "tags": [
+        "watering",
+        "motivated",
+        "care"
+      ],
+      "recommendedUse": [
+        "watering_action",
+        "care_tip",
+        "onboarding"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Show_me_this_character_with_a_motivated_expression_and_pose_and_a_watering_can_0-removebg-preview.png"
+      ],
+      "notes": "Clear motivated watering pose."
+    },
+    {
+      "id": "buddy_gameplay_watering_can_ready_v001",
+      "category": "gameplay",
+      "state": "watering",
+      "action": "can_ready",
+      "path": "gameplay/watering/buddy_gameplay_watering_can_ready_v001.png",
+      "tags": [
+        "watering",
+        "tool",
+        "care"
+      ],
+      "recommendedUse": [
+        "watering_action",
+        "care_tip",
+        "tutorial"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__11_-removebg-preview.png"
+      ],
+      "notes": "Clear watering prop pose."
+    },
+    {
+      "id": "buddy_gameplay_wave_hello_v001",
+      "category": "gameplay",
+      "state": "waving",
+      "action": "hello",
+      "path": "gameplay/waving/buddy_gameplay_wave_hello_v001.png",
+      "tags": [
+        "wave",
+        "hello",
+        "greeting"
+      ],
+      "recommendedUse": [
+        "welcome",
+        "hello",
+        "intro"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__7_-removebg-preview (1).png"
+      ],
+      "notes": "Greeting wave pose."
+    },
+    {
+      "id": "buddy_reward_celebrate_peace_sign_v001",
+      "category": "reward",
+      "state": "celebrate",
+      "action": "peace_sign",
+      "path": "rewards/celebrate/buddy_reward_celebrate_peace_sign_v001.png",
+      "tags": [
+        "celebrate",
+        "peace_sign",
+        "fun"
+      ],
+      "recommendedUse": [
+        "casual_win",
+        "social_post",
+        "fun_reward"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__24_-removebg-preview.png"
+      ],
+      "notes": "Playful celebration pose."
+    },
+    {
+      "id": "buddy_reward_chest_held_v001",
+      "category": "reward",
+      "state": "chest",
+      "action": "held",
+      "path": "rewards/chest/buddy_reward_chest_held_v001.png",
+      "tags": [
+        "chest",
+        "reward",
+        "loot"
+      ],
+      "recommendedUse": [
+        "loot_reward",
+        "daily_reward",
+        "reward_preview"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__2_-removebg-preview.png"
+      ],
+      "notes": "Chest held in front."
+    },
+    {
+      "id": "buddy_reward_chest_raised_v001",
+      "category": "reward",
+      "state": "chest",
+      "action": "raised",
+      "path": "rewards/chest/buddy_reward_chest_raised_v001.png",
+      "tags": [
+        "chest",
+        "reward",
+        "loot"
+      ],
+      "recommendedUse": [
+        "loot_reward",
+        "claim_reward",
+        "event_reward"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__20_-removebg-preview.png"
+      ],
+      "notes": "Raised chest reveal pose."
+    },
+    {
+      "id": "buddy_reward_coins_celebrating_v001",
+      "category": "reward",
+      "state": "coins",
+      "action": "celebrating",
+      "path": "rewards/coins/buddy_reward_coins_celebrating_v001.png",
+      "tags": [
+        "coins",
+        "reward",
+        "celebrate"
+      ],
+      "recommendedUse": [
+        "coins_earned",
+        "daily_reward",
+        "quest_complete"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__19_-removebg-preview.png"
+      ],
+      "notes": "Coin reward celebration."
+    },
+    {
+      "id": "buddy_reward_coins_holding_v001",
+      "category": "reward",
+      "state": "coins",
+      "action": "holding",
+      "path": "rewards/coins/buddy_reward_coins_holding_v001.png",
+      "tags": [
+        "coins",
+        "reward",
+        "currency"
+      ],
+      "recommendedUse": [
+        "coins_earned",
+        "shop_reward",
+        "bonus"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__22_-removebg-preview.png"
+      ],
+      "notes": "Coins held in both hands."
+    },
+    {
+      "id": "buddy_reward_gift_box_held_v001",
+      "category": "reward",
+      "state": "gift",
+      "action": "box_held",
+      "path": "rewards/gift/buddy_reward_gift_box_held_v001.png",
+      "tags": [
+        "gift",
+        "reward",
+        "present"
+      ],
+      "recommendedUse": [
+        "gift_reward",
+        "daily_reward",
+        "event_gift"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__26_-removebg-preview.png"
+      ],
+      "notes": "Gift box reward prop."
+    },
+    {
+      "id": "buddy_reward_premium_cool_shades_v001",
+      "category": "reward",
+      "state": "premium",
+      "action": "cool_shades",
+      "path": "rewards/premium/buddy_reward_premium_cool_shades_v001.png",
+      "tags": [
+        "premium",
+        "cool",
+        "style"
+      ],
+      "recommendedUse": [
+        "premium_offer",
+        "vip_reward",
+        "shop_highlight"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__27_-removebg-preview.png"
+      ],
+      "notes": "Style-driven premium pose."
+    },
+    {
+      "id": "buddy_reward_premium_offer_sign_v001",
+      "category": "reward",
+      "state": "premium",
+      "action": "offer_sign",
+      "path": "rewards/premium/buddy_reward_premium_offer_sign_v001.png",
+      "tags": [
+        "premium",
+        "offer",
+        "shop"
+      ],
+      "recommendedUse": [
+        "premium_offer",
+        "shop_banner",
+        "upsell"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__28_-removebg-preview.png"
+      ],
+      "notes": "Contains embedded PREMIUM OFFER text."
+    },
+    {
+      "id": "buddy_reward_shop_voucher_v001",
+      "category": "reward",
+      "state": "shop",
+      "action": "voucher",
+      "path": "rewards/shop/buddy_reward_shop_voucher_v001.png",
+      "tags": [
+        "shop",
+        "voucher",
+        "reward"
+      ],
+      "recommendedUse": [
+        "shop_reward",
+        "coupon",
+        "promo"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__30_-removebg-preview.png"
+      ],
+      "notes": "Contains embedded VOUCHER text."
+    },
+    {
+      "id": "buddy_reward_star_held_v001",
+      "category": "reward",
+      "state": "star",
+      "action": "held",
+      "path": "rewards/star/buddy_reward_star_held_v001.png",
+      "tags": [
+        "star",
+        "reward",
+        "milestone"
+      ],
+      "recommendedUse": [
+        "achievement",
+        "milestone",
+        "rating"
+      ],
+      "confidence": "high",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__23_-removebg-preview.png"
+      ],
+      "notes": "Star reward prop."
+    },
+    {
+      "id": "buddy_reward_trophy_surprised_v001",
+      "category": "reward",
+      "state": "trophy",
+      "action": "surprised",
+      "path": "rewards/trophy/buddy_reward_trophy_surprised_v001.png",
+      "tags": [
+        "trophy",
+        "reward",
+        "surprised"
+      ],
+      "recommendedUse": [
+        "big_reward",
+        "achievement",
+        "competition"
+      ],
+      "confidence": "medium",
+      "width": 500,
+      "height": 500,
+      "hasTransparency": true,
+      "sourceFiles": [
+        "assets/buddy/transparent/Runway_Seedream_5_0_060926__21_-removebg-preview.png"
+      ],
+      "notes": "Contains embedded REWARD text on trophy base."
+    }
+  ],
+  "animations": {}
+}

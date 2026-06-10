@@ -340,6 +340,19 @@ const state = {
       usedAtRealMs: null,
       lastResult: null
     },
+    firstRunIntro: {
+      active: false,
+      completed: false,
+      step: 'plant',
+      createdAtRealMs: 0,
+      completedAtRealMs: 0,
+      growStyle: 'safe',
+      environment: 'indoor',
+      plantType: 'beginner',
+      decisionId: '',
+      resultTone: 'good',
+      statusKey: 'good'
+    },
     rewardLedger: {},
     persistence: {
       lastSavedAtRealMs: Date.now()
@@ -402,7 +415,42 @@ const state = {
       tasks: [],
       completedCount: 0,
       allCompleteClaimed: false,
+      recentTaskIds: [],
+      buddyCheck: {
+        dayKey: '',
+        category: '',
+        textKey: '',
+        primaryTaskId: '',
+        secondaryTaskId: '',
+        generatedAtMs: 0
+      },
       lastGeneratedAtMs: 0
+    },
+    weekly: {
+      weekKey: '',
+      missionId: '',
+      rewardCoins: 0,
+      generatedAtMs: 0,
+      completedAtMs: 0,
+      claimedAtMs: 0,
+      history: []
+    },
+    decisionCards: {
+      dayKey: '',
+      activeCard: {
+        dayKey: '',
+        weekKey: '',
+        cardId: '',
+        primaryTaskId: '',
+        generatedAtMs: 0,
+        answeredAtMs: 0,
+        chosenOptionId: '',
+        resultTextKey: '',
+        focusTaskId: '',
+        suggestedCoinActionId: ''
+      },
+      recentCardIds: [],
+      history: []
     },
     session: {
       dayKey: '',
@@ -608,7 +656,7 @@ const state = {
       selectedStudioTab: 'water',
       selectedCategory: null,
       selectedActionId: null,
-      feedback: { kind: 'info', text: 'Wähle eine Methode.' }
+      feedback: null
     },
     analysis: {
       activeTab: 'overview'
@@ -661,6 +709,7 @@ let authGateActive = false;
 let authGatePausedAtMs = 0;
 let bootWaitingForAuth = false;
 let startupAuthGateResolver = null;
+let startupRestoreMissionRewardSuppressUntilMs = 0;
 let settingsEventsInitialized = false;
 let pushStatusRefreshPromise = null;
 const pushUiRuntime = {
@@ -690,6 +739,7 @@ const REWARDS_FETCH_COOLDOWN_MS = 45 * 1000;
 const RETENTION_STREAK_MILESTONES = Object.freeze([3, 7, 14, 30]);
 const RETENTION_DAILY_TASK_MIN = 3;
 const RETENTION_DAILY_TASK_MAX = 3;
+const FIRST_RUN_GUIDE_REAL_MS = 15 * 60 * 1000;
 const RETENTION_DAILY_TASK_XP = 8;
 const RETENTION_DAILY_ALL_COMPLETE_XP = 18;
 const RETENTION_DAILY_TASK_DEFAULT_COINS = Object.freeze({
@@ -707,6 +757,8 @@ const RETENTION_STREAK_REWARD_BY_DAY = Object.freeze({
   6: 180,
   7: 250
 });
+const RETENTION_WEEKLY_HISTORY_LIMIT = 12;
+const RETENTION_COIN_ACTION_FOCUS_BONUS_DEFAULT = 8;
 const RETENTION_SESSION_MIN_GAP_MS = 45 * 1000;
 const RETENTION_STREAK_MILESTONE_XP = Object.freeze({
   3: 10,
@@ -1750,7 +1802,71 @@ function getRetentionDefaults() {
       tasks: [],
       completedCount: 0,
       allCompleteClaimed: false,
+      recentTaskIds: [],
+      buddyCheck: {
+        dayKey: '',
+        category: '',
+        textKey: '',
+        primaryTaskId: '',
+        secondaryTaskId: '',
+        generatedAtMs: 0
+      },
       lastGeneratedAtMs: 0
+    },
+    weekly: {
+      weekKey: '',
+      missionId: '',
+      rewardCoins: 0,
+      generatedAtMs: 0,
+      completedAtMs: 0,
+      claimedAtMs: 0,
+      history: []
+    },
+    decisionCards: {
+      dayKey: '',
+      activeCard: {
+        dayKey: '',
+        weekKey: '',
+        cardId: '',
+        primaryTaskId: '',
+        generatedAtMs: 0,
+        answeredAtMs: 0,
+        chosenOptionId: '',
+        resultTextKey: '',
+        focusTaskId: '',
+        suggestedCoinActionId: ''
+      },
+      recentCardIds: [],
+      history: []
+    },
+    coinActions: {
+      buddyTip: {
+        dayKey: '',
+        category: '',
+        textKey: '',
+        primaryTaskId: '',
+        weeklyMissionId: '',
+        purchasedAtMs: 0
+      },
+      focusBoost: {
+        dayKey: '',
+        taskId: '',
+        bonusCoins: 0,
+        purchasedAtMs: 0,
+        claimedAtMs: 0
+      },
+      safeBoostCheck: {
+        dayKey: '',
+        statusKey: '',
+        textKey: '',
+        primaryTaskId: '',
+        purchasedAtMs: 0
+      },
+      weeklyPush: {
+        weekKey: '',
+        bonusTasksCompleted: 0,
+        purchasedAtMs: 0
+      }
     },
     session: {
       dayKey: '',
@@ -1761,7 +1877,8 @@ function getRetentionDefaults() {
       unlockedIds: [],
       unlockedHistory: [],
       lastShownAt: 0,
-      sessionShownCount: 0
+      sessionShownCount: 0,
+      onboardingHookShownAtMs: 0
     },
     claimLedger: [],
     analytics: {
@@ -1781,6 +1898,9 @@ function ensureRetentionState(snapshot = state) {
   retention.version = Number.isFinite(Number(retention.version)) ? Number(retention.version) : defaults.version;
   retention.streak = retention.streak && typeof retention.streak === 'object' ? retention.streak : defaults.streak;
   retention.dailyCare = retention.dailyCare && typeof retention.dailyCare === 'object' ? retention.dailyCare : defaults.dailyCare;
+  retention.weekly = retention.weekly && typeof retention.weekly === 'object' ? retention.weekly : defaults.weekly;
+  retention.decisionCards = retention.decisionCards && typeof retention.decisionCards === 'object' ? retention.decisionCards : defaults.decisionCards;
+  retention.coinActions = retention.coinActions && typeof retention.coinActions === 'object' ? retention.coinActions : defaults.coinActions;
   retention.micro = retention.micro && typeof retention.micro === 'object' ? retention.micro : defaults.micro;
   retention.claimLedger = Array.isArray(retention.claimLedger) ? retention.claimLedger : [];
   retention.analytics = retention.analytics && typeof retention.analytics === 'object' ? retention.analytics : defaults.analytics;
@@ -1809,6 +1929,129 @@ function ensureRetentionState(snapshot = state) {
   retention.dailyCare.lastGeneratedAtMs = Number.isFinite(Number(retention.dailyCare.lastGeneratedAtMs))
     ? Number(retention.dailyCare.lastGeneratedAtMs)
     : 0;
+  retention.dailyCare.recentTaskIds = Array.from(new Set((Array.isArray(retention.dailyCare.recentTaskIds) ? retention.dailyCare.recentTaskIds : [])
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean))).slice(-9);
+  retention.dailyCare.buddyCheck = retention.dailyCare.buddyCheck && typeof retention.dailyCare.buddyCheck === 'object'
+    ? retention.dailyCare.buddyCheck
+    : {};
+  retention.dailyCare.buddyCheck.dayKey = typeof retention.dailyCare.buddyCheck.dayKey === 'string'
+    ? retention.dailyCare.buddyCheck.dayKey
+    : '';
+  retention.dailyCare.buddyCheck.category = typeof retention.dailyCare.buddyCheck.category === 'string'
+    ? retention.dailyCare.buddyCheck.category
+    : '';
+  retention.dailyCare.buddyCheck.textKey = typeof retention.dailyCare.buddyCheck.textKey === 'string'
+    ? retention.dailyCare.buddyCheck.textKey
+    : '';
+  retention.dailyCare.buddyCheck.primaryTaskId = typeof retention.dailyCare.buddyCheck.primaryTaskId === 'string'
+    ? retention.dailyCare.buddyCheck.primaryTaskId
+    : '';
+  retention.dailyCare.buddyCheck.secondaryTaskId = typeof retention.dailyCare.buddyCheck.secondaryTaskId === 'string'
+    ? retention.dailyCare.buddyCheck.secondaryTaskId
+    : '';
+  retention.dailyCare.buddyCheck.generatedAtMs = Number.isFinite(Number(retention.dailyCare.buddyCheck.generatedAtMs))
+    ? Number(retention.dailyCare.buddyCheck.generatedAtMs)
+    : 0;
+  retention.weekly.weekKey = typeof retention.weekly.weekKey === 'string' ? retention.weekly.weekKey : '';
+  retention.weekly.missionId = typeof retention.weekly.missionId === 'string' ? retention.weekly.missionId : '';
+  retention.weekly.rewardCoins = Math.max(0, Math.trunc(Number(retention.weekly.rewardCoins) || 0));
+  retention.weekly.generatedAtMs = Number.isFinite(Number(retention.weekly.generatedAtMs))
+    ? Number(retention.weekly.generatedAtMs)
+    : 0;
+  retention.weekly.completedAtMs = Number.isFinite(Number(retention.weekly.completedAtMs))
+    ? Number(retention.weekly.completedAtMs)
+    : 0;
+  retention.weekly.claimedAtMs = Number.isFinite(Number(retention.weekly.claimedAtMs))
+    ? Number(retention.weekly.claimedAtMs)
+    : 0;
+  retention.weekly.history = (Array.isArray(retention.weekly.history) ? retention.weekly.history : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      weekKey: typeof entry.weekKey === 'string' ? entry.weekKey : '',
+      missionId: typeof entry.missionId === 'string' ? entry.missionId : '',
+      rewardCoins: Math.max(0, Math.trunc(Number(entry.rewardCoins) || 0)),
+      completedAtMs: Number.isFinite(Number(entry.completedAtMs)) ? Number(entry.completedAtMs) : 0,
+      claimedAtMs: Number.isFinite(Number(entry.claimedAtMs)) ? Number(entry.claimedAtMs) : 0
+    }))
+    .filter((entry) => entry.weekKey && entry.missionId)
+    .slice(-RETENTION_WEEKLY_HISTORY_LIMIT);
+  retention.decisionCards.dayKey = typeof retention.decisionCards.dayKey === 'string' ? retention.decisionCards.dayKey : '';
+  retention.decisionCards.recentCardIds = Array.from(new Set((Array.isArray(retention.decisionCards.recentCardIds) ? retention.decisionCards.recentCardIds : [])
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean))).slice(-10);
+  retention.decisionCards.activeCard = retention.decisionCards.activeCard && typeof retention.decisionCards.activeCard === 'object'
+    ? retention.decisionCards.activeCard
+    : {};
+  retention.decisionCards.activeCard.dayKey = typeof retention.decisionCards.activeCard.dayKey === 'string' ? retention.decisionCards.activeCard.dayKey : '';
+  retention.decisionCards.activeCard.weekKey = typeof retention.decisionCards.activeCard.weekKey === 'string' ? retention.decisionCards.activeCard.weekKey : '';
+  retention.decisionCards.activeCard.cardId = typeof retention.decisionCards.activeCard.cardId === 'string' ? retention.decisionCards.activeCard.cardId : '';
+  retention.decisionCards.activeCard.primaryTaskId = typeof retention.decisionCards.activeCard.primaryTaskId === 'string' ? retention.decisionCards.activeCard.primaryTaskId : '';
+  retention.decisionCards.activeCard.generatedAtMs = Number.isFinite(Number(retention.decisionCards.activeCard.generatedAtMs))
+    ? Number(retention.decisionCards.activeCard.generatedAtMs)
+    : 0;
+  retention.decisionCards.activeCard.answeredAtMs = Number.isFinite(Number(retention.decisionCards.activeCard.answeredAtMs))
+    ? Number(retention.decisionCards.activeCard.answeredAtMs)
+    : 0;
+  retention.decisionCards.activeCard.chosenOptionId = typeof retention.decisionCards.activeCard.chosenOptionId === 'string' ? retention.decisionCards.activeCard.chosenOptionId : '';
+  retention.decisionCards.activeCard.resultTextKey = typeof retention.decisionCards.activeCard.resultTextKey === 'string' ? retention.decisionCards.activeCard.resultTextKey : '';
+  retention.decisionCards.activeCard.focusTaskId = typeof retention.decisionCards.activeCard.focusTaskId === 'string' ? retention.decisionCards.activeCard.focusTaskId : '';
+  retention.decisionCards.activeCard.suggestedCoinActionId = typeof retention.decisionCards.activeCard.suggestedCoinActionId === 'string'
+    ? retention.decisionCards.activeCard.suggestedCoinActionId
+    : '';
+  retention.decisionCards.history = (Array.isArray(retention.decisionCards.history) ? retention.decisionCards.history : [])
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      dayKey: typeof entry.dayKey === 'string' ? entry.dayKey : '',
+      cardId: typeof entry.cardId === 'string' ? entry.cardId : '',
+      chosenOptionId: typeof entry.chosenOptionId === 'string' ? entry.chosenOptionId : '',
+      answeredAtMs: Number.isFinite(Number(entry.answeredAtMs)) ? Number(entry.answeredAtMs) : 0
+    }))
+    .filter((entry) => entry.dayKey && entry.cardId)
+    .slice(-14);
+  retention.coinActions.buddyTip = retention.coinActions.buddyTip && typeof retention.coinActions.buddyTip === 'object'
+    ? retention.coinActions.buddyTip
+    : {};
+  retention.coinActions.buddyTip.dayKey = typeof retention.coinActions.buddyTip.dayKey === 'string' ? retention.coinActions.buddyTip.dayKey : '';
+  retention.coinActions.buddyTip.category = typeof retention.coinActions.buddyTip.category === 'string' ? retention.coinActions.buddyTip.category : '';
+  retention.coinActions.buddyTip.textKey = typeof retention.coinActions.buddyTip.textKey === 'string' ? retention.coinActions.buddyTip.textKey : '';
+  retention.coinActions.buddyTip.primaryTaskId = typeof retention.coinActions.buddyTip.primaryTaskId === 'string' ? retention.coinActions.buddyTip.primaryTaskId : '';
+  retention.coinActions.buddyTip.weeklyMissionId = typeof retention.coinActions.buddyTip.weeklyMissionId === 'string' ? retention.coinActions.buddyTip.weeklyMissionId : '';
+  retention.coinActions.buddyTip.purchasedAtMs = Number.isFinite(Number(retention.coinActions.buddyTip.purchasedAtMs))
+    ? Number(retention.coinActions.buddyTip.purchasedAtMs)
+    : 0;
+  retention.coinActions.focusBoost = retention.coinActions.focusBoost && typeof retention.coinActions.focusBoost === 'object'
+    ? retention.coinActions.focusBoost
+    : {};
+  retention.coinActions.focusBoost.dayKey = typeof retention.coinActions.focusBoost.dayKey === 'string' ? retention.coinActions.focusBoost.dayKey : '';
+  retention.coinActions.focusBoost.taskId = typeof retention.coinActions.focusBoost.taskId === 'string' ? retention.coinActions.focusBoost.taskId : '';
+  retention.coinActions.focusBoost.bonusCoins = Math.max(0, Math.trunc(Number(retention.coinActions.focusBoost.bonusCoins) || 0));
+  retention.coinActions.focusBoost.purchasedAtMs = Number.isFinite(Number(retention.coinActions.focusBoost.purchasedAtMs))
+    ? Number(retention.coinActions.focusBoost.purchasedAtMs)
+    : 0;
+  retention.coinActions.focusBoost.claimedAtMs = Number.isFinite(Number(retention.coinActions.focusBoost.claimedAtMs))
+    ? Number(retention.coinActions.focusBoost.claimedAtMs)
+    : 0;
+  retention.coinActions.safeBoostCheck = retention.coinActions.safeBoostCheck && typeof retention.coinActions.safeBoostCheck === 'object'
+    ? retention.coinActions.safeBoostCheck
+    : {};
+  retention.coinActions.safeBoostCheck.dayKey = typeof retention.coinActions.safeBoostCheck.dayKey === 'string' ? retention.coinActions.safeBoostCheck.dayKey : '';
+  retention.coinActions.safeBoostCheck.statusKey = typeof retention.coinActions.safeBoostCheck.statusKey === 'string' ? retention.coinActions.safeBoostCheck.statusKey : '';
+  retention.coinActions.safeBoostCheck.textKey = typeof retention.coinActions.safeBoostCheck.textKey === 'string' ? retention.coinActions.safeBoostCheck.textKey : '';
+  retention.coinActions.safeBoostCheck.primaryTaskId = typeof retention.coinActions.safeBoostCheck.primaryTaskId === 'string'
+    ? retention.coinActions.safeBoostCheck.primaryTaskId
+    : '';
+  retention.coinActions.safeBoostCheck.purchasedAtMs = Number.isFinite(Number(retention.coinActions.safeBoostCheck.purchasedAtMs))
+    ? Number(retention.coinActions.safeBoostCheck.purchasedAtMs)
+    : 0;
+  retention.coinActions.weeklyPush = retention.coinActions.weeklyPush && typeof retention.coinActions.weeklyPush === 'object'
+    ? retention.coinActions.weeklyPush
+    : {};
+  retention.coinActions.weeklyPush.weekKey = typeof retention.coinActions.weeklyPush.weekKey === 'string' ? retention.coinActions.weeklyPush.weekKey : '';
+  retention.coinActions.weeklyPush.bonusTasksCompleted = clampInt(Number(retention.coinActions.weeklyPush.bonusTasksCompleted) || 0, 0, 1);
+  retention.coinActions.weeklyPush.purchasedAtMs = Number.isFinite(Number(retention.coinActions.weeklyPush.purchasedAtMs))
+    ? Number(retention.coinActions.weeklyPush.purchasedAtMs)
+    : 0;
   retention.dailyCare.tasks = Array.isArray(retention.dailyCare.tasks) ? retention.dailyCare.tasks : [];
   retention.dailyCare.tasks = retention.dailyCare.tasks
     .filter((task) => task && typeof task === 'object')
@@ -1825,12 +2068,13 @@ function ensureRetentionState(snapshot = state) {
       const claimed = Boolean(task.claimed)
         || Boolean(claimedAt)
         || Boolean(String(task.claimKey || '').trim() && retention.claimLedger.includes(String(task.claimKey || '').trim()));
+      const copy = normalizeDailyTaskCopy(task);
       return {
         id: taskId,
         taskId,
         type: String(task.type || task.trigger || task.sheetName || '').trim(),
-        title: String(task.title || '').trim(),
-        description: String(task.description || '').trim(),
+        title: String(copy.title || '').trim(),
+        description: String(copy.description || '').trim(),
         dayKey: String(task.dayKey || retention.dailyCare.dayKey || '').trim(),
         trigger: String(task.trigger || '').trim(),
         sheetName: String(task.sheetName || '').trim(),
@@ -2778,67 +3022,118 @@ function grantRetentionRewardOnce(claimKey, rewardSpec = {}, context = {}) {
 }
 
 function getDailyCareTaskTemplates() {
-  return [
-    {
-      id: 'water_once',
-      type: 'water_once',
-      title: i18nT('daily.task.water_once.title'),
-      description: i18nT('daily.task.water_once.description'),
-      trigger: 'water_once',
-      target: 1,
-      rewardCoins: getDefaultDailyTaskCoins('water_once')
-    },
-    {
-      id: 'resolve_one_event',
-      type: 'resolve_one_event',
-      title: i18nT('daily.task.resolve_one_event.title'),
-      description: i18nT('daily.task.resolve_one_event.description'),
-      trigger: 'resolve_one_event',
-      target: 1,
-      rewardCoins: getDefaultDailyTaskCoins('resolve_one_event')
-    },
-    {
-      id: 'open_app_twice',
-      type: 'open_app_twice',
-      title: i18nT('daily.task.open_app_twice.title'),
-      description: i18nT('daily.task.open_app_twice.description'),
-      trigger: 'open_app_twice',
-      target: 2,
-      rewardCoins: getDefaultDailyTaskCoins('open_app_twice')
-    },
-    {
-      id: 'stable_climate_window',
-      type: 'stable_climate_window',
-      title: i18nT('daily.task.stable_climate_window.title'),
-      description: i18nT('daily.task.stable_climate_window.description'),
-      trigger: 'stable_climate_window',
-      target: 1,
-      rewardCoins: getDefaultDailyTaskCoins('stable_climate_window')
-    }
-  ];
+  const api = (typeof window !== 'undefined' && window.GrowSimDailyCareSelection && typeof window.GrowSimDailyCareSelection.createCatalog === 'function')
+    ? window.GrowSimDailyCareSelection
+    : null;
+  const catalog = api ? api.createCatalog() : [];
+  return catalog.map((template) => {
+    const taskId = String(template.id || '').trim();
+    const titleKey = `daily.task.${taskId}.title`;
+    const descriptionKey = `daily.task.${taskId}.description`;
+    return {
+      id: taskId,
+      type: taskId,
+      titleKey,
+      descriptionKey,
+      title: titleKey,
+      description: descriptionKey,
+      trigger: String(template.trigger || taskId).trim(),
+      target: Math.max(1, Math.trunc(Number(template.target) || 1)),
+      rewardCoins: Math.max(0, Math.trunc(Number(template.rewardCoins) || getDefaultDailyTaskCoins(taskId))),
+      minXp: Math.max(0, Math.trunc(Number(template.minXp) || RETENTION_DAILY_TASK_XP))
+    };
+  });
+}
+
+function getDailyTaskCopyKeys(taskLike) {
+  const safeTask = taskLike && typeof taskLike === 'object' ? taskLike : {};
+  const taskId = String(safeTask.taskId || safeTask.id || safeTask.type || safeTask.trigger || safeTask.sheetName || '').trim();
+  if (!taskId) {
+    return {
+      taskId: '',
+      titleKey: '',
+      descriptionKey: ''
+    };
+  }
+  return {
+    taskId,
+    titleKey: `daily.task.${taskId}.title`,
+    descriptionKey: `daily.task.${taskId}.description`
+  };
+}
+
+function isGenericDailyTaskTitle(value) {
+  const safeValue = String(value || '').trim().toLowerCase();
+  return !safeValue
+    || safeValue === 'daily task'
+    || safeValue === 'task'
+    || safeValue === 'aufgabe'
+    || safeValue === 'tarea';
+}
+
+function isGenericDailyTaskDescription(value) {
+  const safeValue = String(value || '').trim().toLowerCase();
+  return !safeValue
+    || safeValue === 'start with daily task'
+    || safeValue === 'desc';
+}
+
+function normalizeDailyTaskCopy(taskLike) {
+  const safeTask = taskLike && typeof taskLike === 'object' ? taskLike : {};
+  const copyKeys = getDailyTaskCopyKeys(safeTask);
+  const rawTitle = String(safeTask.title || '').trim();
+  const rawDescription = String(safeTask.description || '').trim();
+  return {
+    title: isGenericDailyTaskTitle(rawTitle) && copyKeys.titleKey
+      ? copyKeys.titleKey
+      : rawTitle,
+    description: isGenericDailyTaskDescription(rawDescription) && copyKeys.descriptionKey
+      ? copyKeys.descriptionKey
+      : rawDescription,
+    titleKey: copyKeys.titleKey,
+    descriptionKey: copyKeys.descriptionKey
+  };
 }
 
 function buildDailyCareTasks(snapshot = state, dayKey = getLocalDayKey(Date.now())) {
   const templates = getDailyCareTaskTemplates();
-  const alwaysOn = ['water_once', 'resolve_one_event', 'open_app_twice'];
-  const selected = alwaysOn
-    .map((id) => templates.find((entry) => String(entry.id || '') === id))
-    .filter(Boolean)
-    .slice(0, RETENTION_DAILY_TASK_MAX);
+  const templateById = Object.fromEntries(templates.map((template) => [String(template.id || '').trim(), template]));
+  const retention = ensureRetentionState(snapshot);
+  const selectionApi = (typeof window !== 'undefined' && window.GrowSimDailyCareSelection && typeof window.GrowSimDailyCareSelection.buildDailyCareSelection === 'function')
+    ? window.GrowSimDailyCareSelection
+    : null;
+  const selected = selectionApi
+    ? selectionApi.buildDailyCareSelection(snapshot, {
+      dayKey,
+      maxTasks: RETENTION_DAILY_TASK_MAX,
+      recentTaskIds: retention && retention.dailyCare && Array.isArray(retention.dailyCare.recentTaskIds)
+        ? retention.dailyCare.recentTaskIds
+        : []
+    })
+    : templates.slice(0, RETENTION_DAILY_TASK_MAX);
 
   return selected.map((template) => {
     const taskId = String(template.id || '').trim();
+    const catalogTemplate = templateById[taskId] || {};
     const type = String(template.type || taskId).trim();
+    const trigger = String(template.trigger || type).trim();
     const target = Math.max(1, Math.trunc(Number(template.target) || 1));
     const rewardCoins = Math.max(0, Math.trunc(Number(template.rewardCoins) || getDefaultDailyTaskCoins(type)));
+    const copy = normalizeDailyTaskCopy({
+      taskId,
+      type,
+      trigger,
+      title: template.title || catalogTemplate.title || '',
+      description: template.description || catalogTemplate.description || ''
+    });
     return {
       id: taskId,
       taskId,
       type,
-      title: String(template.title || 'Daily Task'),
-      description: String(template.description || ''),
+      title: String(copy.title || catalogTemplate.titleKey || 'daily.task_fallback'),
+      description: String(copy.description || catalogTemplate.descriptionKey || ''),
       dayKey,
-      trigger: String(template.trigger || ''),
+      trigger,
       sheetName: String(template.sheetName || ''),
       threshold: Number.isFinite(Number(template.threshold)) ? Number(template.threshold) : null,
       progress: 0,
@@ -2857,6 +3152,801 @@ function buildDailyCareTasks(snapshot = state, dayKey = getLocalDayKey(Date.now(
   });
 }
 
+function createEmptyBuddyDailyCheck(dayKey = '') {
+  return {
+    dayKey: String(dayKey || '').trim(),
+    category: '',
+    textKey: '',
+    primaryTaskId: '',
+    secondaryTaskId: '',
+    generatedAtMs: 0
+  };
+}
+
+function buildBuddyDailyCheck(snapshot = state, dayKey = getLocalDayKey(Date.now()), nowMs = Date.now()) {
+  const retention = ensureRetentionState(snapshot);
+  const safeDayKey = String(dayKey || '').trim();
+  const buddyApi = (typeof window !== 'undefined' && window.GrowSimBuddyDailyCheck && typeof window.GrowSimBuddyDailyCheck.buildBuddyDailyCheck === 'function')
+    ? window.GrowSimBuddyDailyCheck
+    : null;
+  if (!buddyApi) {
+    return createEmptyBuddyDailyCheck(safeDayKey);
+  }
+  const dailyTasks = Array.isArray(retention.dailyCare && retention.dailyCare.tasks) ? retention.dailyCare.tasks : [];
+  const entry = buddyApi.buildBuddyDailyCheck(snapshot, {
+    dayKey: safeDayKey,
+    nowMs,
+    tasks: dailyTasks
+  });
+  return {
+    dayKey: safeDayKey,
+    category: String(entry && entry.category || '').trim(),
+    textKey: String(entry && entry.textKey || '').trim(),
+    primaryTaskId: String(entry && entry.primaryTaskId || '').trim(),
+    secondaryTaskId: String(entry && entry.secondaryTaskId || '').trim(),
+    generatedAtMs: Number.isFinite(Number(entry && entry.generatedAtMs)) ? Number(entry.generatedAtMs) : Number(nowMs || Date.now())
+  };
+}
+
+function resolveBuddyDailyCheckText(entry) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const textKey = String(safeEntry.textKey || '').trim();
+  const primaryTaskId = String(safeEntry.primaryTaskId || '').trim();
+  const secondaryTaskId = String(safeEntry.secondaryTaskId || '').trim();
+  const primaryTask = primaryTaskId
+    ? resolveLikelyI18nText('', `daily.task.${primaryTaskId}.title`)
+    : i18nT('daily.task_fallback');
+  const secondaryTask = secondaryTaskId
+    ? resolveLikelyI18nText('', `daily.task.${secondaryTaskId}.title`)
+    : primaryTask;
+  const resolved = textKey
+    ? i18nT(textKey, {
+      primaryTask,
+      secondaryTask
+    })
+    : '';
+  if (resolved && resolved !== textKey) {
+    return resolved;
+  }
+  return i18nT('daily.buddy.comment.fallback.1', {
+    primaryTask,
+    secondaryTask
+  });
+}
+
+function createEmptyWeeklyMissionState() {
+  return {
+    weekKey: '',
+    missionId: '',
+    rewardCoins: 0,
+    generatedAtMs: 0,
+    completedAtMs: 0,
+    claimedAtMs: 0,
+    history: []
+  };
+}
+
+function getWeeklyMissionTemplates() {
+  const api = (typeof window !== 'undefined' && window.GrowSimWeeklyMissions && typeof window.GrowSimWeeklyMissions.createCatalog === 'function')
+    ? window.GrowSimWeeklyMissions
+    : null;
+  return api ? api.createCatalog() : [];
+}
+
+function buildWeeklyMissionRecord(snapshot = state, nowMs = Date.now(), missionId = '') {
+  const api = (typeof window !== 'undefined' && window.GrowSimWeeklyMissions && typeof window.GrowSimWeeklyMissions.selectWeeklyMission === 'function')
+    ? window.GrowSimWeeklyMissions
+    : null;
+  const retention = ensureRetentionState(snapshot);
+  const weekly = retention.weekly && typeof retention.weekly === 'object' ? retention.weekly : createEmptyWeeklyMissionState();
+  const selectedTemplate = missionId
+    ? getWeeklyMissionTemplates().find((entry) => String(entry.id || '').trim() === String(missionId || '').trim())
+    : (api ? api.selectWeeklyMission(snapshot, { nowMs }) : null);
+  const selectedId = String(selectedTemplate && selectedTemplate.id || missionId || '').trim();
+  const weekKey = api && typeof api.getWeekKey === 'function'
+    ? String(api.getWeekKey(nowMs) || '').trim()
+    : getLocalDayKey(nowMs);
+  return {
+    weekKey,
+    missionId: selectedId,
+    rewardCoins: Math.max(0, Math.trunc(Number(selectedTemplate && selectedTemplate.rewardCoins) || Number(weekly.rewardCoins) || 0)),
+    generatedAtMs: Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now(),
+    completedAtMs: 0,
+    claimedAtMs: 0
+  };
+}
+
+function archiveWeeklyMissionIfNeeded(weekly) {
+  const safeWeekly = weekly && typeof weekly === 'object' ? weekly : null;
+  if (!safeWeekly || !safeWeekly.weekKey || !safeWeekly.missionId) {
+    return;
+  }
+  if (!Array.isArray(safeWeekly.history)) {
+    safeWeekly.history = [];
+  }
+  const existingIndex = safeWeekly.history.findIndex((entry) => entry && entry.weekKey === safeWeekly.weekKey && entry.missionId === safeWeekly.missionId);
+  const archived = {
+    weekKey: String(safeWeekly.weekKey || '').trim(),
+    missionId: String(safeWeekly.missionId || '').trim(),
+    rewardCoins: Math.max(0, Math.trunc(Number(safeWeekly.rewardCoins) || 0)),
+    completedAtMs: Number.isFinite(Number(safeWeekly.completedAtMs)) ? Number(safeWeekly.completedAtMs) : 0,
+    claimedAtMs: Number.isFinite(Number(safeWeekly.claimedAtMs)) ? Number(safeWeekly.claimedAtMs) : 0
+  };
+  if (existingIndex >= 0) {
+    safeWeekly.history.splice(existingIndex, 1, archived);
+  } else {
+    safeWeekly.history.push(archived);
+  }
+  safeWeekly.history = safeWeekly.history.slice(-RETENTION_WEEKLY_HISTORY_LIMIT);
+}
+
+function evaluateWeeklyMission(snapshot = state, nowMs = Date.now(), options = {}) {
+  const retention = ensureRetentionState(snapshot);
+  const weekly = retention.weekly && typeof retention.weekly === 'object'
+    ? retention.weekly
+    : (retention.weekly = createEmptyWeeklyMissionState());
+  const api = (typeof window !== 'undefined' && window.GrowSimWeeklyMissions && typeof window.GrowSimWeeklyMissions.buildWeeklyMissionProgress === 'function')
+    ? window.GrowSimWeeklyMissions
+    : null;
+  if (!api) {
+    return { changed: false, mission: null, progress: null };
+  }
+  const weekKey = String(api.getWeekKey(nowMs) || '').trim();
+  let changed = false;
+  if (!weekly.weekKey || weekly.weekKey !== weekKey) {
+    archiveWeeklyMissionIfNeeded(weekly);
+    const nextMission = buildWeeklyMissionRecord(snapshot, nowMs);
+    weekly.weekKey = nextMission.weekKey;
+    weekly.missionId = nextMission.missionId;
+    weekly.rewardCoins = nextMission.rewardCoins;
+    weekly.generatedAtMs = nextMission.generatedAtMs;
+    weekly.completedAtMs = 0;
+    weekly.claimedAtMs = 0;
+    changed = true;
+    emitRetentionAnalytics('weekly_mission_generated', {
+      weekKey,
+      missionId: weekly.missionId
+    }, {
+      nowMs,
+      eventKey: `weekly_mission_generated:${weekKey}:${weekly.missionId}`
+    });
+  } else if (!weekly.missionId) {
+    const nextMission = buildWeeklyMissionRecord(snapshot, nowMs);
+    weekly.missionId = nextMission.missionId;
+    weekly.rewardCoins = nextMission.rewardCoins;
+    weekly.generatedAtMs = nextMission.generatedAtMs;
+    changed = true;
+  }
+
+  const progress = weekly.missionId
+    ? api.buildWeeklyMissionProgress(snapshot, weekly.missionId, { nowMs })
+    : null;
+  if (progress && progress.completed && !weekly.completedAtMs) {
+    weekly.completedAtMs = Number(nowMs || Date.now());
+    changed = true;
+    emitRetentionAnalytics('weekly_mission_completed', {
+      weekKey: weekly.weekKey,
+      missionId: weekly.missionId
+    }, {
+      nowMs,
+      eventKey: `weekly_mission_completed:${weekly.weekKey}:${weekly.missionId}`
+    });
+  }
+  if (changed && options.skipPersist !== true) {
+    schedulePersistState();
+  }
+  return {
+    changed,
+    mission: weekly,
+    progress
+  };
+}
+
+function buildWeeklyMissionViewModel(snapshot = state, nowMs = Date.now()) {
+  const evaluation = evaluateWeeklyMission(snapshot, nowMs, { skipPersist: true });
+  const retention = ensureRetentionState(snapshot);
+  const weekly = retention.weekly && typeof retention.weekly === 'object' ? retention.weekly : createEmptyWeeklyMissionState();
+  const missionId = String(weekly.missionId || '').trim();
+  if (!missionId) {
+    return { visible: false };
+  }
+  const progress = evaluation.progress;
+  const rewardCoins = Math.max(0, Math.trunc(Number(weekly.rewardCoins || progress && progress.rewardCoins) || 0));
+  const title = i18nT(`daily.weekly.mission.${missionId}.title`);
+  const description = i18nT(`daily.weekly.mission.${missionId}.description`);
+  const objectives = Array.isArray(progress && progress.objectives) ? progress.objectives : [];
+  const objectiveText = objectives.map((objective) => i18nT(`daily.weekly.metric.${String(objective.metric || '').trim()}`, {
+    current: Math.max(0, Math.trunc(Number(objective.current) || 0)),
+    target: Math.max(1, Math.trunc(Number(objective.target) || 1))
+  }));
+  const claimed = Number(weekly.claimedAtMs || 0) > 0 || hasRetentionClaim(`weekly:mission:${weekly.weekKey}:${missionId}`);
+  const completed = Boolean(progress && progress.completed) || Number(weekly.completedAtMs || 0) > 0;
+  const stateKey = claimed
+    ? 'claimed'
+    : (completed ? 'claimable' : 'in_progress');
+  return {
+    visible: true,
+    missionId,
+    title,
+    description,
+    objectiveText,
+    rewardCoins,
+    weekKey: String(weekly.weekKey || '').trim(),
+    stateKey,
+    claimable: completed && !claimed,
+    completed,
+    claimed,
+    progressPercent: Math.max(0, Math.trunc(Number(progress && progress.progressPercent) || 0))
+  };
+}
+
+function claimWeeklyMission(nowMs = Date.now(), options = {}) {
+  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const retention = ensureRetentionState(state);
+  const evaluation = evaluateWeeklyMission(state, now, { skipPersist: true });
+  const weekly = retention.weekly && typeof retention.weekly === 'object' ? retention.weekly : createEmptyWeeklyMissionState();
+  const missionId = String(weekly.missionId || '').trim();
+  if (!missionId) {
+    return { ok: false, reason: 'mission_missing' };
+  }
+  if (!(evaluation.progress && evaluation.progress.completed) && !weekly.completedAtMs) {
+    return { ok: false, reason: 'not_completed' };
+  }
+  const claimKey = `weekly:mission:${weekly.weekKey}:${missionId}`;
+  if (Number(weekly.claimedAtMs || 0) > 0 || hasRetentionClaim(claimKey)) {
+    weekly.claimedAtMs = Number(weekly.claimedAtMs || weekly.completedAtMs || now);
+    archiveWeeklyMissionIfNeeded(weekly);
+    return { ok: false, reason: 'already_claimed' };
+  }
+  const rewardCoins = Math.max(0, Math.trunc(Number(weekly.rewardCoins || evaluation.progress && evaluation.progress.rewardCoins) || 0));
+  const grant = grantCoins(rewardCoins, 'weekly_mission', claimKey);
+  if (!grant.ok && grant.reason !== 'duplicate') {
+    return { ok: false, reason: grant.reason || 'grant_failed' };
+  }
+  registerRetentionClaim(claimKey);
+  if (!weekly.completedAtMs) {
+    weekly.completedAtMs = now;
+  }
+  weekly.claimedAtMs = now;
+  archiveWeeklyMissionIfNeeded(weekly);
+  emitRetentionAnalytics('weekly_mission_claimed', {
+    weekKey: weekly.weekKey,
+    missionId,
+    coins: rewardCoins
+  }, {
+    nowMs: now,
+    eventKey: `weekly_mission_claimed:${weekly.weekKey}:${missionId}`
+  });
+  if (options.skipPersist !== true) {
+    schedulePersistState(true);
+  }
+  return {
+    ok: true,
+    missionId,
+    coinsGranted: grant.ok ? grant.amount : 0
+  };
+}
+
+function createEmptyCoinActionsState() {
+  return {
+    buddyTip: {
+      dayKey: '',
+      category: '',
+      textKey: '',
+      primaryTaskId: '',
+      weeklyMissionId: '',
+      purchasedAtMs: 0
+    },
+    focusBoost: {
+      dayKey: '',
+      taskId: '',
+      bonusCoins: 0,
+      purchasedAtMs: 0,
+      claimedAtMs: 0
+    },
+    safeBoostCheck: {
+      dayKey: '',
+      statusKey: '',
+      textKey: '',
+      primaryTaskId: '',
+      purchasedAtMs: 0
+    },
+    weeklyPush: {
+      weekKey: '',
+      bonusTasksCompleted: 0,
+      purchasedAtMs: 0
+    }
+  };
+}
+
+function getCoinActionApi() {
+  return (typeof window !== 'undefined' && window.GrowSimCoinActions && typeof window.GrowSimCoinActions.buildActionCatalog === 'function')
+    ? window.GrowSimCoinActions
+    : null;
+}
+
+function getCoinActionTemplates() {
+  const api = getCoinActionApi();
+  return api && typeof api.createCatalog === 'function'
+    ? api.createCatalog()
+    : [];
+}
+
+function getCoinActionTemplate(actionId) {
+  const safeId = String(actionId || '').trim();
+  return getCoinActionTemplates().find((entry) => String(entry.id || '').trim() === safeId) || null;
+}
+
+function ensureCoinActionState(snapshot = state) {
+  const retention = ensureRetentionState(snapshot);
+  if (!retention.coinActions || typeof retention.coinActions !== 'object') {
+    retention.coinActions = createEmptyCoinActionsState();
+  }
+  return retention.coinActions;
+}
+
+function resolveCoinActionTaskTitle(taskId) {
+  const safeTaskId = String(taskId || '').trim();
+  return safeTaskId
+    ? resolveLikelyI18nText('', `daily.task.${safeTaskId}.title`)
+    : i18nT('daily.task_fallback');
+}
+
+function resolveBuddyExtraTipText(entry) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const textKey = String(safeEntry.textKey || '').trim();
+  const primaryTask = resolveCoinActionTaskTitle(safeEntry.primaryTaskId);
+  const weeklyTitle = String(safeEntry.weeklyMissionId || '').trim()
+    ? i18nT(`daily.weekly.mission.${String(safeEntry.weeklyMissionId || '').trim()}.title`)
+    : i18nT('daily.weekly.title');
+  const resolved = textKey
+    ? i18nT(textKey, {
+      primaryTask,
+      weeklyMission: weeklyTitle
+    })
+    : '';
+  if (resolved && resolved !== textKey) {
+    return resolved;
+  }
+  return i18nT('daily.coin_actions.tip.fallback.1', {
+    primaryTask,
+    weeklyMission: weeklyTitle
+  });
+}
+
+function resolveSafeBoostCheckText(entry) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const textKey = String(safeEntry.textKey || '').trim();
+  const primaryTask = resolveCoinActionTaskTitle(safeEntry.primaryTaskId);
+  const resolved = textKey
+    ? i18nT(textKey, { primaryTask })
+    : '';
+  if (resolved && resolved !== textKey) {
+    return resolved;
+  }
+  return i18nT('daily.coin_actions.safe_boost.caution.1', { primaryTask });
+}
+
+function resolveRetentionContextHint(snapshot = state, nowMs = Date.now()) {
+  const retention = ensureRetentionState(snapshot);
+  const todayKey = getLocalDayKey(nowMs);
+  const decisionCard = retention.decisionCards && retention.decisionCards.activeCard && typeof retention.decisionCards.activeCard === 'object'
+    ? retention.decisionCards.activeCard
+    : null;
+  if (decisionCard && String(decisionCard.dayKey || '').trim() === todayKey && String(decisionCard.cardId || '').trim()) {
+    if (Number(decisionCard.answeredAtMs || 0) > 0) {
+      const focusTaskId = String(decisionCard.focusTaskId || '').trim();
+      if (focusTaskId) {
+        return i18nT('daily.retention.context_decision_answered_task', {
+          task: resolveCoinActionTaskTitle(focusTaskId)
+        });
+      }
+      const actionId = String(decisionCard.suggestedCoinActionId || '').trim();
+      if (actionId) {
+        return i18nT('daily.retention.context_decision_answered_action', {
+          action: i18nT(`daily.coin_actions.action.${actionId}.title`)
+        });
+      }
+    }
+    return i18nT('daily.retention.context_decision_open');
+  }
+  const weekly = retention.weekly && typeof retention.weekly === 'object'
+    ? retention.weekly
+    : null;
+  if (weekly && String(weekly.missionId || '').trim() && !Number(weekly.claimedAtMs || 0)) {
+    return i18nT('daily.retention.context_weekly');
+  }
+  return '';
+}
+
+function getActiveFocusBoost(snapshot = state, taskId = '') {
+  const retention = ensureRetentionState(snapshot);
+  const focusBoost = retention.coinActions && retention.coinActions.focusBoost && typeof retention.coinActions.focusBoost === 'object'
+    ? retention.coinActions.focusBoost
+    : null;
+  const safeTaskId = String(taskId || '').trim();
+  if (!focusBoost || !focusBoost.dayKey || !focusBoost.taskId) {
+    return null;
+  }
+  if (retention.dailyCare && focusBoost.dayKey !== String(retention.dailyCare.dayKey || '').trim()) {
+    return null;
+  }
+  if (safeTaskId && String(focusBoost.taskId || '').trim() !== safeTaskId) {
+    return null;
+  }
+  return focusBoost;
+}
+
+function buildCoinActionViewModel(snapshot = state, nowMs = Date.now()) {
+  const retention = ensureRetentionState(snapshot);
+  const coinActions = ensureCoinActionState(snapshot);
+  const api = getCoinActionApi();
+  const actions = api
+    ? api.buildActionCatalog(snapshot, {
+      dayKey: retention.dailyCare && retention.dailyCare.dayKey,
+      weekKey: retention.weekly && retention.weekly.weekKey
+    })
+    : [];
+  const buddyTipText = resolveBuddyExtraTipText(coinActions.buddyTip);
+  const safeBoostText = resolveSafeBoostCheckText(coinActions.safeBoostCheck);
+  const rows = actions.map((action) => {
+    const actionId = String(action.id || '').trim();
+    const cost = Math.max(0, Math.trunc(Number(action.cost) || 0));
+    const stateKey = String(action.stateKey || 'locked').trim() || 'locked';
+    const taskId = String(action.taskId || '').trim();
+    const taskTitle = taskId ? resolveCoinActionTaskTitle(taskId) : '';
+    const missionTitle = retention.weekly && retention.weekly.missionId
+      ? i18nT(`daily.weekly.mission.${String(retention.weekly.missionId || '').trim()}.title`)
+      : i18nT('daily.weekly.title');
+    const title = i18nT(`daily.coin_actions.action.${actionId}.title`);
+    const description = i18nT(`daily.coin_actions.action.${actionId}.description`, {
+      task: taskTitle || i18nT('daily.task_fallback'),
+      mission: missionTitle,
+      coins: cost
+    });
+    let effectText = i18nT(`daily.coin_actions.action.${actionId}.effect`, {
+      task: taskTitle || i18nT('daily.task_fallback'),
+      mission: missionTitle,
+      bonus: Math.max(0, Math.trunc(Number(action.bonusCoins) || Number(getActiveFocusBoost(snapshot, taskId) && getActiveFocusBoost(snapshot, taskId).bonusCoins) || RETENTION_COIN_ACTION_FOCUS_BONUS_DEFAULT))
+    });
+    if (actionId === 'buddy_extra_tip' && String(coinActions.buddyTip.dayKey || '').trim() === String(retention.dailyCare.dayKey || '').trim()) {
+      effectText = buddyTipText;
+    } else if (actionId === 'safe_boost_check' && String(coinActions.safeBoostCheck.dayKey || '').trim() === String(retention.dailyCare.dayKey || '').trim()) {
+      effectText = safeBoostText;
+    } else if (actionId === 'daily_focus_boost' && String(coinActions.focusBoost.dayKey || '').trim() === String(retention.dailyCare.dayKey || '').trim() && String(coinActions.focusBoost.taskId || '').trim()) {
+      effectText = i18nT('daily.coin_actions.action.daily_focus_boost.active_effect', {
+        task: resolveCoinActionTaskTitle(coinActions.focusBoost.taskId),
+        bonus: Math.max(0, Math.trunc(Number(coinActions.focusBoost.bonusCoins) || RETENTION_COIN_ACTION_FOCUS_BONUS_DEFAULT))
+      });
+    } else if (actionId === 'weekly_push' && String(coinActions.weeklyPush.weekKey || '').trim() === String(retention.weekly && retention.weekly.weekKey || '').trim() && Number(coinActions.weeklyPush.purchasedAtMs || 0) > 0) {
+      effectText = i18nT('daily.coin_actions.action.weekly_push.active_effect', {
+        mission: missionTitle,
+        count: Math.max(0, Math.trunc(Number(coinActions.weeklyPush.bonusTasksCompleted) || 0))
+      });
+    }
+    const buttonLabel = stateKey === 'available'
+      ? i18nT('daily.coin_actions.buy', { coins: cost })
+      : '';
+    return {
+      id: actionId,
+      title,
+      description,
+      effectText,
+      cost,
+      available: Boolean(action.available),
+      stateKey,
+      taskId,
+      buttonLabel,
+      stateLabel: i18nT(`daily.coin_actions.state.${stateKey}`)
+    };
+  });
+  return {
+    visible: rows.length > 0,
+    rows
+  };
+}
+
+function useCoinAction(actionId, nowMs = Date.now(), options = {}) {
+  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const safeActionId = String(actionId || '').trim();
+  const template = getCoinActionTemplate(safeActionId);
+  if (!template) {
+    return { ok: false, reason: 'action_missing' };
+  }
+  const retention = ensureRetentionState(state);
+  const coinActions = ensureCoinActionState(state);
+  const dailyDayKey = String(retention.dailyCare && retention.dailyCare.dayKey || '').trim();
+  const weeklyWeekKey = String(retention.weekly && retention.weekly.weekKey || '').trim();
+  const api = getCoinActionApi();
+  const actionState = api
+    ? api.buildActionCatalog(state, { dayKey: dailyDayKey, weekKey: weeklyWeekKey }).find((entry) => String(entry.id || '').trim() === safeActionId)
+    : null;
+  if (!actionState || !actionState.available) {
+    return { ok: false, reason: actionState ? `not_${String(actionState.stateKey || 'available')}` : 'unavailable' };
+  }
+  const cost = Math.max(0, Math.trunc(Number(template.cost) || 0));
+  const spend = spendCoins(cost, `coin_action:${safeActionId}`);
+  if (!spend.ok) {
+    return { ok: false, reason: spend.reason || 'spend_failed', coins: spend.coins };
+  }
+  if (safeActionId === 'buddy_extra_tip') {
+    const entry = api && typeof api.buildBuddyExtraTip === 'function'
+      ? api.buildBuddyExtraTip(state, { dayKey: dailyDayKey, weekKey: weeklyWeekKey })
+      : {};
+    coinActions.buddyTip = {
+      dayKey: dailyDayKey,
+      category: String(entry.category || '').trim(),
+      textKey: String(entry.textKey || '').trim(),
+      primaryTaskId: String(entry.primaryTaskId || '').trim(),
+      weeklyMissionId: String(entry.weeklyMissionId || '').trim(),
+      purchasedAtMs: now
+    };
+  } else if (safeActionId === 'daily_focus_boost') {
+    coinActions.focusBoost = {
+      dayKey: dailyDayKey,
+      taskId: String(actionState.taskId || '').trim(),
+      bonusCoins: Math.max(0, Math.trunc(Number(template.bonusCoins) || RETENTION_COIN_ACTION_FOCUS_BONUS_DEFAULT)),
+      purchasedAtMs: now,
+      claimedAtMs: 0
+    };
+  } else if (safeActionId === 'weekly_push') {
+    coinActions.weeklyPush = {
+      weekKey: weeklyWeekKey,
+      bonusTasksCompleted: clampInt(Number(template.bonusTasksCompleted) || 1, 0, 1),
+      purchasedAtMs: now
+    };
+    evaluateWeeklyMission(state, now, { skipPersist: true });
+  } else if (safeActionId === 'safe_boost_check') {
+    const entry = api && typeof api.buildSafeBoostCheck === 'function'
+      ? api.buildSafeBoostCheck(state, { dayKey: dailyDayKey, weekKey: weeklyWeekKey })
+      : {};
+    coinActions.safeBoostCheck = {
+      dayKey: dailyDayKey,
+      statusKey: String(entry.statusKey || '').trim(),
+      textKey: String(entry.textKey || '').trim(),
+      primaryTaskId: String(entry.primaryTaskId || '').trim(),
+      purchasedAtMs: now
+    };
+  } else {
+    return { ok: false, reason: 'not_implemented' };
+  }
+  if (options.skipPersist !== true) {
+    schedulePersistState(true);
+  }
+  return {
+    ok: true,
+    id: safeActionId,
+    cost,
+    coins: getCoins()
+  };
+}
+
+function createEmptyDecisionCardEntry(dayKey = '') {
+  return {
+    dayKey: String(dayKey || '').trim(),
+    weekKey: '',
+    cardId: '',
+    primaryTaskId: '',
+    generatedAtMs: 0,
+    answeredAtMs: 0,
+    chosenOptionId: '',
+    resultTextKey: '',
+    focusTaskId: '',
+    suggestedCoinActionId: ''
+  };
+}
+
+function createEmptyDecisionCardState() {
+  return {
+    dayKey: '',
+    activeCard: createEmptyDecisionCardEntry(),
+    recentCardIds: [],
+    history: []
+  };
+}
+
+function getDecisionCardApi() {
+  return (typeof window !== 'undefined' && window.GrowSimDecisionCards && typeof window.GrowSimDecisionCards.selectDecisionCard === 'function')
+    ? window.GrowSimDecisionCards
+    : null;
+}
+
+function ensureDecisionCardState(snapshot = state) {
+  const retention = ensureRetentionState(snapshot);
+  if (!retention.decisionCards || typeof retention.decisionCards !== 'object') {
+    retention.decisionCards = createEmptyDecisionCardState();
+  }
+  return retention.decisionCards;
+}
+
+function getActiveDecisionFocusTask(taskId) {
+  const retention = ensureRetentionState(state);
+  const decisionState = retention.decisionCards && retention.decisionCards.activeCard && typeof retention.decisionCards.activeCard === 'object'
+    ? retention.decisionCards.activeCard
+    : null;
+  const safeTaskId = String(taskId || '').trim();
+  if (!decisionState || !decisionState.cardId || !decisionState.answeredAtMs || !decisionState.focusTaskId) {
+    return null;
+  }
+  if (String(decisionState.dayKey || '').trim() !== String(retention.dailyCare && retention.dailyCare.dayKey || '').trim()) {
+    return null;
+  }
+  if (safeTaskId && String(decisionState.focusTaskId || '').trim() !== safeTaskId) {
+    return null;
+  }
+  return decisionState;
+}
+
+function resolveDecisionCardText(textKey, cardLike) {
+  const safeCard = cardLike && typeof cardLike === 'object' ? cardLike : {};
+  const safeTextKey = String(textKey || '').trim();
+  if (!safeTextKey) {
+    return '';
+  }
+  const taskTitle = resolveCoinActionTaskTitle(safeCard.focusTaskId || safeCard.primaryTaskId || '');
+  const actionId = String(safeCard.suggestedCoinActionId || '').trim();
+  const actionTitle = actionId
+    ? i18nT(`daily.coin_actions.action.${actionId}.title`)
+    : i18nT('daily.coin_actions.title');
+  const resolved = i18nT(safeTextKey, {
+    task: taskTitle || i18nT('daily.task_fallback'),
+    action: actionTitle
+  });
+  return resolved === safeTextKey ? '' : resolved;
+}
+
+function evaluateDecisionCard(snapshot = state, nowMs = Date.now(), options = {}) {
+  const retention = ensureRetentionState(snapshot);
+  const decisionState = ensureDecisionCardState(snapshot);
+  const api = getDecisionCardApi();
+  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const todayKey = getLocalDayKey(now);
+  let changed = false;
+
+  if (decisionState.dayKey !== todayKey) {
+    const previousCardId = String(decisionState.activeCard && decisionState.activeCard.cardId || '').trim();
+    if (previousCardId) {
+      decisionState.recentCardIds = [previousCardId].concat(Array.isArray(decisionState.recentCardIds) ? decisionState.recentCardIds : [])
+        .filter(Boolean)
+        .slice(0, 10);
+    }
+    decisionState.dayKey = todayKey;
+    decisionState.activeCard = createEmptyDecisionCardEntry(todayKey);
+    const nextCard = api
+      ? api.selectDecisionCard(snapshot, {
+        dayKey: todayKey,
+        weekKey: retention.weekly && retention.weekly.weekKey,
+        recentCardIds: decisionState.recentCardIds
+      })
+      : null;
+    if (nextCard && nextCard.id) {
+      decisionState.activeCard = {
+        dayKey: todayKey,
+        weekKey: String(nextCard.weekKey || retention.weekly && retention.weekly.weekKey || '').trim(),
+        cardId: String(nextCard.id || '').trim(),
+        primaryTaskId: String(nextCard.primaryTaskId || '').trim(),
+        generatedAtMs: now,
+        answeredAtMs: 0,
+        chosenOptionId: '',
+        resultTextKey: '',
+        focusTaskId: '',
+        suggestedCoinActionId: ''
+      };
+    }
+    changed = true;
+  } else if (decisionState.activeCard && decisionState.activeCard.cardId && !decisionState.activeCard.generatedAtMs) {
+    decisionState.activeCard.generatedAtMs = now;
+    changed = true;
+  }
+
+  if (changed && options.skipPersist !== true) {
+    schedulePersistState();
+  }
+  return {
+    changed,
+    activeCard: decisionState.activeCard
+  };
+}
+
+function buildDecisionCardViewModel(snapshot = state, nowMs = Date.now()) {
+  const evaluation = evaluateDecisionCard(snapshot, nowMs, { skipPersist: true });
+  const decisionState = ensureDecisionCardState(snapshot);
+  const activeCard = decisionState.activeCard && typeof decisionState.activeCard === 'object'
+    ? decisionState.activeCard
+    : createEmptyDecisionCardEntry(decisionState.dayKey);
+  const cardId = String(activeCard.cardId || '').trim();
+  if (!cardId) {
+    return { visible: false };
+  }
+  const api = getDecisionCardApi();
+  const template = api && typeof api.createCatalog === 'function'
+    ? api.createCatalog().find((entry) => String(entry.id || '').trim() === cardId)
+    : null;
+  const options = Array.isArray(template && template.options) ? template.options.map((entry) => {
+    const optionId = String(entry.id || '').trim();
+    return {
+      id: optionId,
+      label: i18nT(`daily.decision.card.${cardId}.option.${optionId}.label`),
+      description: i18nT(`daily.decision.card.${cardId}.option.${optionId}.description`)
+    };
+  }) : [];
+  return {
+    visible: true,
+    cardId,
+    title: i18nT(`daily.decision.card.${cardId}.title`),
+    description: i18nT(`daily.decision.card.${cardId}.description`),
+    stateKey: Number(activeCard.answeredAtMs || 0) > 0 ? 'answered' : 'available',
+    answered: Number(activeCard.answeredAtMs || 0) > 0,
+    chosenOptionId: String(activeCard.chosenOptionId || '').trim(),
+    resultText: resolveDecisionCardText(activeCard.resultTextKey, activeCard),
+    options,
+    focusTaskId: String(activeCard.focusTaskId || '').trim(),
+    suggestedCoinActionId: String(activeCard.suggestedCoinActionId || '').trim(),
+    primaryTaskId: String(activeCard.primaryTaskId || '').trim(),
+    stateLabel: Number(activeCard.answeredAtMs || 0) > 0
+      ? i18nT('daily.decision.answered')
+      : i18nT('daily.decision.available')
+  };
+}
+
+function answerDecisionCard(optionId, nowMs = Date.now(), options = {}) {
+  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+  const retention = ensureRetentionState(state);
+  const decisionState = ensureDecisionCardState(state);
+  evaluateDecisionCard(state, now, { skipPersist: true });
+  const activeCard = decisionState.activeCard && typeof decisionState.activeCard === 'object'
+    ? decisionState.activeCard
+    : null;
+  const todayKey = getLocalDayKey(now);
+  if (!activeCard || !activeCard.cardId || String(activeCard.dayKey || '').trim() !== todayKey) {
+    return { ok: false, reason: 'card_missing' };
+  }
+  if (Number(activeCard.answeredAtMs || 0) > 0) {
+    return { ok: false, reason: 'already_answered' };
+  }
+  const safeOptionId = String(optionId || '').trim();
+  const api = getDecisionCardApi();
+  const template = api && typeof api.createCatalog === 'function'
+    ? api.createCatalog().find((entry) => String(entry.id || '').trim() === String(activeCard.cardId || '').trim())
+    : null;
+  const isValidOption = Array.isArray(template && template.options)
+    && template.options.some((entry) => String(entry.id || '').trim() === safeOptionId);
+  if (!isValidOption) {
+    return { ok: false, reason: 'option_missing' };
+  }
+  const resolution = api && typeof api.buildDecisionCardResolution === 'function'
+    ? api.buildDecisionCardResolution(state, activeCard.cardId, safeOptionId, {
+      dayKey: todayKey,
+      weekKey: retention.weekly && retention.weekly.weekKey,
+      primaryTaskId: activeCard.primaryTaskId
+    })
+    : null;
+  activeCard.chosenOptionId = safeOptionId;
+  activeCard.resultTextKey = String(resolution && resolution.resultTextKey || '').trim();
+  activeCard.focusTaskId = String(resolution && resolution.focusTaskId || '').trim();
+  activeCard.suggestedCoinActionId = String(resolution && resolution.suggestedCoinActionId || '').trim();
+  activeCard.answeredAtMs = now;
+  decisionState.history = [{
+    dayKey: todayKey,
+    cardId: String(activeCard.cardId || '').trim(),
+    chosenOptionId: safeOptionId,
+    answeredAtMs: now
+  }].concat(Array.isArray(decisionState.history) ? decisionState.history : [])
+    .filter((entry) => entry && entry.dayKey && entry.cardId)
+    .slice(0, 14);
+  if (options.skipPersist !== true) {
+    schedulePersistState(true);
+  }
+  return {
+    ok: true,
+    cardId: String(activeCard.cardId || '').trim(),
+    optionId: safeOptionId,
+    resultTextKey: activeCard.resultTextKey,
+    focusTaskId: activeCard.focusTaskId,
+    suggestedCoinActionId: activeCard.suggestedCoinActionId
+  };
+}
+
 function showRetentionToast(message) {
   const text = String(message || '').trim();
   if (!text) {
@@ -2869,6 +3959,9 @@ function showRetentionToast(message) {
   const node = document.createElement('div');
   node.id = 'retentionToast';
   node.className = 'retention-toast';
+  if (state.ui && state.ui.openSheet) {
+    node.dataset.anchor = 'sheet';
+  }
   node.textContent = text;
   document.body.appendChild(node);
   window.setTimeout(() => {
@@ -3107,7 +4200,11 @@ function claimDailyTask(taskId, nowMs = Date.now(), options = {}) {
   }
 
   const rewardCoins = Math.max(0, Math.trunc(Number(task.rewardCoins) || getDefaultDailyTaskCoins(task.type || task.trigger)));
-  const grant = grantCoins(rewardCoins, 'daily_task', task.claimKey);
+  const focusBoost = getActiveFocusBoost(state, safeTaskId);
+  const focusBonus = focusBoost && Number(focusBoost.claimedAtMs || 0) <= 0
+    ? Math.max(0, Math.trunc(Number(focusBoost.bonusCoins) || RETENTION_COIN_ACTION_FOCUS_BONUS_DEFAULT))
+    : 0;
+  const grant = grantCoins(rewardCoins + focusBonus, 'daily_task', task.claimKey);
   if (!grant.ok && grant.reason !== 'duplicate') {
     return { ok: false, reason: grant.reason || 'grant_failed' };
   }
@@ -3116,11 +4213,15 @@ function claimDailyTask(taskId, nowMs = Date.now(), options = {}) {
   task.claimed = true;
   task.claimedAt = now;
   task.rewardGrantedAt = now;
+  if (focusBoost && focusBonus > 0) {
+    focusBoost.claimedAtMs = now;
+  }
   syncDailyTaskDerivedState(retention, now);
+  evaluateWeeklyMission(state, now, { skipPersist: true });
   emitRetentionAnalytics('daily_task_claimed', {
     taskId: task.taskId,
     type: task.type || task.trigger || '',
-    coins: rewardCoins
+    coins: rewardCoins + focusBonus
   }, {
     nowMs: now,
     eventKey: `daily_task_claimed:${todayKey}:${task.taskId}`
@@ -3134,6 +4235,7 @@ function claimDailyTask(taskId, nowMs = Date.now(), options = {}) {
     ok: true,
     taskId: task.taskId,
     coinsGranted: grant.ok ? grant.amount : 0,
+    focusBonus,
     streak: streakResult
   };
 }
@@ -3203,11 +4305,44 @@ function evaluateDailyRetention(snapshot = state, nowMs = Date.now(), options = 
   let changed = false;
 
   if (retention.dailyCare.dayKey !== todayKey) {
+    const coinActions = ensureCoinActionState(snapshot);
+    const previousTaskIds = Array.isArray(retention.dailyCare.tasks)
+      ? retention.dailyCare.tasks.map((task) => String(task && (task.taskId || task.id) || '').trim()).filter(Boolean)
+      : [];
+    if (previousTaskIds.length) {
+      retention.dailyCare.recentTaskIds = previousTaskIds
+        .concat(Array.isArray(retention.dailyCare.recentTaskIds) ? retention.dailyCare.recentTaskIds : [])
+        .filter(Boolean)
+        .slice(0, 9);
+    }
     retention.dailyCare.dayKey = todayKey;
     retention.dailyCare.tasks = buildDailyCareTasks(snapshot, todayKey);
+    retention.dailyCare.buddyCheck = buildBuddyDailyCheck(snapshot, todayKey, now);
     retention.dailyCare.completedCount = 0;
     retention.dailyCare.allCompleteClaimed = false;
     retention.dailyCare.lastGeneratedAtMs = now;
+    coinActions.buddyTip = {
+      dayKey: '',
+      category: '',
+      textKey: '',
+      primaryTaskId: '',
+      weeklyMissionId: '',
+      purchasedAtMs: 0
+    };
+    coinActions.focusBoost = {
+      dayKey: '',
+      taskId: '',
+      bonusCoins: 0,
+      purchasedAtMs: 0,
+      claimedAtMs: 0
+    };
+    coinActions.safeBoostCheck = {
+      dayKey: '',
+      statusKey: '',
+      textKey: '',
+      primaryTaskId: '',
+      purchasedAtMs: 0
+    };
     retention.micro.sessionShownCount = 0;
     if (!retention.session || typeof retention.session !== 'object') {
       retention.session = { dayKey: todayKey, openCount: 0, lastOpenAtMs: 0 };
@@ -3225,6 +4360,16 @@ function evaluateDailyRetention(snapshot = state, nowMs = Date.now(), options = 
     changed = true;
   }
 
+  const existingBuddyCheck = retention.dailyCare && retention.dailyCare.buddyCheck && typeof retention.dailyCare.buddyCheck === 'object'
+    ? retention.dailyCare.buddyCheck
+    : null;
+  if (!existingBuddyCheck
+    || String(existingBuddyCheck.dayKey || '') !== todayKey
+    || !String(existingBuddyCheck.textKey || '').trim()) {
+    retention.dailyCare.buddyCheck = buildBuddyDailyCheck(snapshot, todayKey, now);
+    changed = true;
+  }
+
   const streak = retention.streak;
   const streakRecovery = reconcilePendingStreakRecovery(snapshot, now);
   if (streakRecovery.changed) {
@@ -3232,6 +4377,26 @@ function evaluateDailyRetention(snapshot = state, nowMs = Date.now(), options = 
   }
   streak.lastEvaluatedDayKey = todayKey;
   syncDailyTaskDerivedState(retention, now);
+  const weeklyEvaluation = evaluateWeeklyMission(snapshot, now, {
+    skipPersist: true
+  });
+  if (weeklyEvaluation.changed) {
+    changed = true;
+  }
+  const decisionEvaluation = evaluateDecisionCard(snapshot, now, {
+    skipPersist: true
+  });
+  if (decisionEvaluation.changed) {
+    changed = true;
+  }
+  if (retention.coinActions && retention.coinActions.weeklyPush && String(retention.coinActions.weeklyPush.weekKey || '').trim() !== String(retention.weekly && retention.weekly.weekKey || '').trim()) {
+    retention.coinActions.weeklyPush = {
+      weekKey: '',
+      bonusTasksCompleted: 0,
+      purchasedAtMs: 0
+    };
+    changed = true;
+  }
   if (options.forceCheckin === true) {
     const checkin = claimDailyCheckin(now, {
       skipPersist: true,
@@ -3406,6 +4571,7 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
   const safeTrigger = String(triggerType || '').trim();
   const actionId = String(payload.actionId || '').trim().toLowerCase();
   const actionCategory = String(payload.category || '').trim().toLowerCase();
+  const sheetName = String(payload.sheetName || '').trim().toLowerCase();
   const countsAsWatering = payload.countsAsWatering === undefined
     ? null
     : Boolean(payload.countsAsWatering);
@@ -3418,21 +4584,40 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
     const target = Math.max(1, Math.trunc(Number(task.target || task.targetValue) || 1));
       const previousProgress = clampInt(Number(task.progress || task.progressValue) || 0, 0, target);
       let nextProgress = previousProgress;
-      const type = String(task.type || task.trigger || '').trim();
+      const type = String(task.type || '').trim();
+      const trigger = String(task.trigger || task.type || '').trim();
   
-      if (type === 'water_once' && safeTrigger === 'action_success') {
+      if (trigger === 'water_once' && safeTrigger === 'action_success') {
         const shouldCountAsWatering = countsAsWatering === null
           ? (actionCategory === 'watering' || actionId.includes('water'))
           : countsAsWatering;
         if (shouldCountAsWatering) {
           nextProgress = Math.min(target, previousProgress + 1);
         }
-      } else if (type === 'resolve_one_event' && safeTrigger === 'event_resolved') {
-      nextProgress = Math.min(target, previousProgress + 1);
-    } else if (type === 'open_app_twice' && safeTrigger === 'session_start') {
-      nextProgress = Math.min(target, currentOpenCount);
-    } else if (type === 'stable_climate_window' && safeTrigger === 'climate_stable_window') {
-      nextProgress = Math.min(target, previousProgress + 1);
+      } else if (trigger === 'fertilizing_once' && safeTrigger === 'action_success') {
+        if (actionCategory === 'fertilizing') {
+          nextProgress = Math.min(target, previousProgress + 1);
+        }
+      } else if (trigger === 'training_once' && safeTrigger === 'action_success') {
+        if (actionCategory === 'training') {
+          nextProgress = Math.min(target, previousProgress + 1);
+        }
+      } else if (trigger === 'environment_once' && safeTrigger === 'action_success') {
+        if (actionCategory === 'environment') {
+          nextProgress = Math.min(target, previousProgress + 1);
+        }
+      } else if (trigger === 'resolve_one_event' && safeTrigger === 'event_resolved') {
+        nextProgress = Math.min(target, previousProgress + 1);
+      } else if (trigger === 'open_app_twice' && safeTrigger === 'session_start') {
+        nextProgress = Math.min(target, currentOpenCount);
+      } else if (trigger === 'stable_climate_window' && safeTrigger === 'climate_stable_window') {
+        nextProgress = Math.min(target, previousProgress + 1);
+      } else if (trigger === 'care_sheet_check' && safeTrigger === 'sheet_open' && sheetName === 'care') {
+        nextProgress = Math.min(target, previousProgress + 1);
+      } else if (trigger === 'analysis_sheet_check' && safeTrigger === 'sheet_open' && sheetName === 'analysis') {
+        nextProgress = Math.min(target, previousProgress + 1);
+      } else if (trigger === 'missions_board_check' && safeTrigger === 'sheet_open' && sheetName === 'missions') {
+        nextProgress = Math.min(target, previousProgress + 1);
     }
 
     if (nextProgress !== previousProgress) {
@@ -3511,6 +4696,9 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
   }
 
   if (changed) {
+    evaluateWeeklyMission(state, nowMs, { skipPersist: true });
+  }
+  if (changed) {
     schedulePersistState();
   }
   return { changed };
@@ -3519,6 +4707,11 @@ function updateDailyCareCompletion(triggerType, payload = {}) {
 window.__gsEvaluateDailyRetention = (nowMs, options = {}) => evaluateDailyRetention(state, nowMs, options);
 window.__gsRetentionTaskUpdate = (triggerType, payload = {}) => updateDailyCareCompletion(triggerType, payload);
 window.__gsClaimDailyTask = (taskId, nowMs = Date.now(), options = {}) => claimDailyTask(taskId, nowMs, options);
+window.__gsEvaluateWeeklyMission = (nowMs = Date.now(), options = {}) => evaluateWeeklyMission(state, nowMs, options);
+window.__gsClaimWeeklyMission = (nowMs = Date.now(), options = {}) => claimWeeklyMission(nowMs, options);
+window.__gsUseCoinAction = (actionId, nowMs = Date.now(), options = {}) => useCoinAction(actionId, nowMs, options);
+window.__gsEvaluateDecisionCard = (nowMs = Date.now(), options = {}) => evaluateDecisionCard(state, nowMs, options);
+window.__gsAnswerDecisionCard = (optionId, nowMs = Date.now(), options = {}) => answerDecisionCard(optionId, nowMs, options);
 window.__gsClaimDailyCheckin = (nowMs = Date.now(), options = {}) => claimDailyCheckin(nowMs, options);
 window.__gsRecordRetentionSessionStart = (nowMs = Date.now(), source = 'manual', options = {}) => recordRetentionSessionStart(nowMs, source, options);
 window.__gsTryStreakRecovery = (nowMs) => tryApplyStreakRecovery(nowMs);
@@ -6362,6 +7555,7 @@ async function boot() {
     if (!stateRestoredDuringStartupAuthGate) {
       await runBootSubstep('restore_or_migrate_state', () => initOrMigrateState());
     }
+    await runBootSubstep('sync_startup_restore_transient_guards', () => syncStartupRestoreTransientGuards());
     await runBootSubstep('init_i18n_runtime', () => initializeI18nRuntime());
     logBootStep('boot:state_restore', {
       simTimeMs: state.simulation.simTimeMs,
@@ -11985,6 +13179,434 @@ function getPlayerFacingCareStatus(sourceState = state) {
   };
 }
 
+function buildFirstRunCoachViewModel(sourceState, options = {}) {
+  const safeState = sourceState && typeof sourceState === 'object' ? sourceState : state;
+  const run = getCanonicalRun(safeState);
+  const profile = getCanonicalProfile(safeState);
+  const stats = profile && profile.stats && typeof profile.stats === 'object' ? profile.stats : {};
+  const plant = safeState.plant || {};
+  const events = safeState.events || {};
+  const retention = safeState.retention && typeof safeState.retention === 'object' ? safeState.retention : {};
+  const dailyCare = retention.dailyCare && typeof retention.dailyCare === 'object' ? retention.dailyCare : {};
+  const dailyTasks = Array.isArray(dailyCare.tasks) ? dailyCare.tasks : [];
+  const startedAtRealMs = Number(run && run.startedAtRealMs || 0);
+  const runAgeMs = startedAtRealMs > 0 ? Math.max(0, Date.now() - startedAtRealMs) : Number.POSITIVE_INFINITY;
+  const totalRuns = Math.max(0, Math.trunc(Number(stats.totalRuns) || 0));
+  const runId = Math.max(0, Math.trunc(Number(run && run.id) || 0));
+  const machineState = String(events.machineState || 'idle');
+  const dailyCompleted = Math.max(0, Math.trunc(Number(dailyCare.completedCount) || 0));
+  const dailyClaimable = dailyTasks.reduce((count, task) => {
+    if (!task || typeof task !== 'object') {
+      return count;
+    }
+    return Boolean(task.completed) && !Boolean(task.claimed) ? (count + 1) : count;
+  }, 0);
+  const hasStartedDailyProgress = dailyCompleted > 0 || dailyClaimable > 0;
+  const introState = getFirstRunIntroState(safeState);
+
+  if (String(run && run.status || '') !== 'active'
+    || !startedAtRealMs
+    || runId !== 1
+    || totalRuns !== 0
+    || runAgeMs > FIRST_RUN_GUIDE_REAL_MS
+    || introState.active === true
+    || hasStartedDailyProgress
+    || Boolean(plant.isDead || plant.phase === 'dead')
+    || machineState === 'activeEvent'
+    || machineState === 'resolving') {
+    return { visible: false };
+  }
+
+  if (introState.completed === true) {
+    const headline = i18nT('onboarding.first_five.dashboard_goal.headline');
+    const body = i18nT('onboarding.first_five.dashboard_goal.body');
+    const actionLabel = i18nT('onboarding.first_five.dashboard_goal.action');
+    return {
+      visible: true,
+      stateLabel: i18nT('onboarding.first_five.dashboard_goal.badge'),
+      headline,
+      body,
+      actionLabel,
+      actionTarget: 'dashboard',
+      ariaLabel: [headline, body, actionLabel].filter(Boolean).join(' ')
+    };
+  }
+
+  const displayStatus = options.displayStatus && typeof options.displayStatus === 'object'
+    ? options.displayStatus
+    : getPlayerFacingCareStatus(safeState);
+  const diagnostics = options.diagnostics && typeof options.diagnostics === 'object'
+    ? options.diagnostics
+    : diagnosePlantState();
+  const water = Math.round(Number(displayStatus.water || 0));
+  const nutrition = Math.round(Number(displayStatus.nutrition || 0));
+  const stress = Math.round(Number(displayStatus.stress || 0));
+  const risk = Math.round(Number(displayStatus.risk || 0));
+  const hasPressure = Boolean(diagnostics && diagnostics.primaryIssue)
+    || risk >= 35
+    || water <= 58
+    || nutrition <= 50
+    || stress >= 25;
+  const headline = i18nT(hasPressure
+    ? 'onboarding.first_run.headline_attention'
+    : 'onboarding.first_run.headline_stable');
+  const body = i18nT(hasPressure
+    ? 'onboarding.first_run.body_attention'
+    : 'onboarding.first_run.body_stable');
+  const actionLabel = i18nT('onboarding.first_run.action');
+
+  return {
+    visible: true,
+    stateLabel: i18nT('onboarding.first_run.badge'),
+    headline,
+    body,
+    actionLabel,
+    actionTarget: 'care',
+    ariaLabel: [headline, body, actionLabel].filter(Boolean).join(' ')
+  };
+}
+
+function createDefaultFirstRunIntroState() {
+  return {
+    active: false,
+    completed: false,
+    dashboardFollowupShown: false,
+    step: 'plant',
+    createdAtRealMs: 0,
+    completedAtRealMs: 0,
+    growStyle: 'safe',
+    environment: 'indoor',
+    plantType: 'beginner',
+    decisionId: '',
+    resultTone: 'good',
+    statusKey: 'good'
+  };
+}
+
+function getFirstRunIntroState(snapshot = state) {
+  const meta = getCanonicalMeta(snapshot);
+  if (!meta.firstRunIntro || typeof meta.firstRunIntro !== 'object') {
+    meta.firstRunIntro = createDefaultFirstRunIntroState();
+  }
+  const intro = meta.firstRunIntro;
+  intro.active = Boolean(intro.active);
+  intro.completed = Boolean(intro.completed);
+  intro.dashboardFollowupShown = Boolean(intro.dashboardFollowupShown);
+  intro.step = typeof intro.step === 'string' ? intro.step : 'plant';
+  intro.createdAtRealMs = Number.isFinite(Number(intro.createdAtRealMs)) ? Number(intro.createdAtRealMs) : 0;
+  intro.completedAtRealMs = Number.isFinite(Number(intro.completedAtRealMs)) ? Number(intro.completedAtRealMs) : 0;
+  intro.growStyle = typeof intro.growStyle === 'string' ? intro.growStyle : 'safe';
+  intro.environment = typeof intro.environment === 'string' ? intro.environment : 'indoor';
+  intro.plantType = typeof intro.plantType === 'string' ? intro.plantType : 'beginner';
+  intro.decisionId = typeof intro.decisionId === 'string' ? intro.decisionId : '';
+  intro.resultTone = typeof intro.resultTone === 'string' ? intro.resultTone : 'good';
+  intro.statusKey = typeof intro.statusKey === 'string' ? intro.statusKey : 'good';
+  return intro;
+}
+
+function readFirstRunSetupChoices() {
+  const readValue = (id, fallback) => {
+    const node = document.getElementById(id);
+    const value = node ? String(node.value || '').trim() : '';
+    return value || String(fallback || '');
+  };
+  return {
+    growStyle: readValue('setupGrowStyle', 'safe'),
+    environment: readValue('setupEnvironment', 'indoor'),
+    plantType: readValue('setupPlantType', 'beginner')
+  };
+}
+
+function resolveFirstRunIntroOutcome(decisionId) {
+  const safeDecisionId = String(decisionId || '').trim();
+  if (safeDecisionId === 'heavy_water') {
+    return {
+      decisionId: safeDecisionId,
+      resultTone: 'observed',
+      statusKey: 'observed',
+      coins: 5,
+      xp: 4,
+      waterDelta: 10,
+      stressDelta: 2,
+      riskDelta: 6,
+      resultTitle: i18nT('onboarding.first_five.day1.heavy.result_title'),
+      resultBody: i18nT('onboarding.first_five.day1.heavy.result_body'),
+      buddyLine: i18nT('onboarding.first_five.day1.heavy.buddy'),
+      summaryLine: i18nT('onboarding.first_five.day1.summary.observed')
+    };
+  }
+  if (safeDecisionId === 'wait') {
+    return {
+      decisionId: safeDecisionId,
+      resultTone: 'okay',
+      statusKey: 'okay',
+      coins: 4,
+      xp: 4,
+      waterDelta: 0,
+      stressDelta: 0,
+      riskDelta: -2,
+      resultTitle: i18nT('onboarding.first_five.day1.wait.result_title'),
+      resultBody: i18nT('onboarding.first_five.day1.wait.result_body'),
+      buddyLine: i18nT('onboarding.first_five.day1.wait.buddy'),
+      summaryLine: i18nT('onboarding.first_five.day1.summary.okay')
+    };
+  }
+  return {
+    decisionId: 'gentle_water',
+    resultTone: 'good',
+    statusKey: 'good',
+    coins: 5,
+    xp: 5,
+    waterDelta: 6,
+    stressDelta: 0,
+    riskDelta: -1,
+    resultTitle: i18nT('onboarding.first_five.day1.gentle.result_title'),
+    resultBody: i18nT('onboarding.first_five.day1.gentle.result_body'),
+    buddyLine: i18nT('onboarding.first_five.day1.gentle.buddy'),
+    summaryLine: i18nT('onboarding.first_five.day1.summary.good')
+  };
+}
+
+function applyFirstRunIntroDecision(decisionId) {
+  const intro = getFirstRunIntroState(state);
+  if (!intro.active || intro.decisionId) {
+    return;
+  }
+  const outcome = resolveFirstRunIntroOutcome(decisionId);
+  intro.decisionId = outcome.decisionId;
+  intro.resultTone = outcome.resultTone;
+  intro.statusKey = outcome.statusKey;
+
+  state.status.water = clamp(Number(state.status.water || 0) + Number(outcome.waterDelta || 0), 0, 100);
+  state.status.stress = clamp(Number(state.status.stress || 0) + Number(outcome.stressDelta || 0), 0, 100);
+  state.status.risk = clamp(Number(state.status.risk || 0) + Number(outcome.riskDelta || 0), 0, 100);
+
+  grantCoins(Math.max(0, Math.trunc(Number(outcome.coins) || 0)), 'first_run_intro', `first_run_intro:coins:${outcome.decisionId}`);
+  grantRetentionRewardOnce(`first_run_intro:xp:${outcome.decisionId}`, {
+    xp: Math.max(0, Math.trunc(Number(outcome.xp) || 0))
+  }, {
+    reason: 'first_run_intro'
+  });
+
+  addLog('system', 'First-run Entscheidung abgeschlossen', {
+    type: 'first_run_intro',
+    decisionId: outcome.decisionId,
+    coins: outcome.coins,
+    xp: outcome.xp
+  });
+}
+
+function finishFirstRunIntro() {
+  const intro = getFirstRunIntroState(state);
+  intro.active = false;
+  intro.completed = true;
+  intro.step = 'done';
+  intro.completedAtRealMs = Date.now();
+  schedulePersistState(true);
+  renderFirstRunIntroOverlay();
+  renderFirstRunDashboardFollowupOverlay();
+}
+
+function advanceFirstRunIntro(stepOrAction) {
+  const intro = getFirstRunIntroState(state);
+  if (!intro.active) {
+    return;
+  }
+  const action = String(stepOrAction || '').trim();
+  if (action === 'plant') {
+    intro.step = 'plant';
+  } else if (action === 'decision') {
+    intro.step = 'decision';
+  } else if (action === 'result') {
+    intro.step = 'result';
+  } else if (action === 'day_end') {
+    intro.step = 'day_end';
+  } else if (action === 'finish') {
+    finishFirstRunIntro();
+    return;
+  } else if (action.startsWith('decision:')) {
+    applyFirstRunIntroDecision(action.slice('decision:'.length));
+    getFirstRunIntroState(state).step = 'result';
+  }
+  schedulePersistState(true);
+  renderFirstRunIntroOverlay();
+}
+
+function renderFirstRunIntroOverlay() {
+  const overlayNode = document.getElementById('firstRunIntroOverlay');
+  const contentNode = document.getElementById('firstRunIntroContent');
+  const appHud = document.getElementById('app-hud');
+  if (!overlayNode || !contentNode) {
+    return;
+  }
+  const intro = getFirstRunIntroState(state);
+  const visible = intro.active === true;
+  overlayNode.classList.toggle('hidden', !visible);
+  overlayNode.setAttribute('aria-hidden', String(!visible));
+  if (!visible) {
+    contentNode.replaceChildren();
+    if (appHud && !hasSetup()) {
+      appHud.classList.add('app-hud--blocked');
+    }
+    return;
+  }
+
+  if (appHud) {
+    appHud.classList.remove('app-hud--blocked');
+  }
+
+  const outcome = resolveFirstRunIntroOutcome(intro.decisionId || 'gentle_water');
+  const stateLabel = i18nT(`onboarding.first_five.day1.summary_state.${outcome.statusKey}`);
+  let markup = '';
+  if (intro.step === 'plant') {
+    markup = `
+      <div class="first-run-intro-step">
+        <span class="first-run-intro-step__eyebrow">${escapeHtml(i18nT('onboarding.first_five.day1.plant.eyebrow'))}</span>
+        <h2>${escapeHtml(i18nT('onboarding.first_five.day1.plant.title'))}</h2>
+        <div class="first-run-intro-plant-hero">
+          <img src="assets/plants/strains/shared/stage_02_seedling/healthy_none.png" alt="">
+        </div>
+        <p class="first-run-intro-step__body">${escapeHtml(i18nT('onboarding.first_five.day1.plant.body'))}</p>
+        <p class="first-run-intro-step__buddy">${escapeHtml(i18nT('onboarding.first_five.day1.plant.buddy'))}</p>
+        <button id="firstRunIntroPrimaryBtn" class="action-btn action-primary" type="button">${escapeHtml(i18nT('onboarding.first_five.day1.plant.cta'))}</button>
+      </div>
+    `;
+  } else if (intro.step === 'decision') {
+    markup = `
+      <div class="first-run-intro-step">
+        <span class="first-run-intro-step__eyebrow">${escapeHtml(i18nT('onboarding.first_five.day1.decision.eyebrow'))}</span>
+        <h2>${escapeHtml(i18nT('onboarding.first_five.day1.decision.title'))}</h2>
+        <p class="first-run-intro-step__body">${escapeHtml(i18nT('onboarding.first_five.day1.decision.body'))}</p>
+        <div class="first-run-intro-options">
+          <button class="first-run-intro-option" type="button" data-first-run-decision="gentle_water">
+            <strong>${escapeHtml(i18nT('onboarding.first_five.day1.decision.gentle.title'))}</strong>
+            <span>${escapeHtml(i18nT('onboarding.first_five.day1.decision.gentle.body'))}</span>
+          </button>
+          <button class="first-run-intro-option" type="button" data-first-run-decision="heavy_water">
+            <strong>${escapeHtml(i18nT('onboarding.first_five.day1.decision.heavy.title'))}</strong>
+            <span>${escapeHtml(i18nT('onboarding.first_five.day1.decision.heavy.body'))}</span>
+          </button>
+          <button class="first-run-intro-option" type="button" data-first-run-decision="wait">
+            <strong>${escapeHtml(i18nT('onboarding.first_five.day1.decision.wait.title'))}</strong>
+            <span>${escapeHtml(i18nT('onboarding.first_five.day1.decision.wait.body'))}</span>
+          </button>
+        </div>
+      </div>
+    `;
+  } else if (intro.step === 'result') {
+    markup = `
+      <div class="first-run-intro-step">
+        <span class="first-run-intro-step__eyebrow">${escapeHtml(i18nT('onboarding.first_five.day1.result.eyebrow'))}</span>
+        <h2>${escapeHtml(outcome.resultTitle)}</h2>
+        <p class="first-run-intro-step__body">${escapeHtml(outcome.resultBody)}</p>
+        <p class="first-run-intro-step__buddy">${escapeHtml(outcome.buddyLine)}</p>
+        <div class="first-run-intro-reward-row" aria-live="polite">
+          <span>+${escapeHtml(String(outcome.coins))} Coins</span>
+          <span>+${escapeHtml(String(outcome.xp))} XP</span>
+          <span>${escapeHtml(i18nT('onboarding.first_five.day1.result.daily_done'))}</span>
+        </div>
+        <button id="firstRunIntroPrimaryBtn" class="action-btn action-primary" type="button">${escapeHtml(i18nT('onboarding.first_five.day1.result.cta'))}</button>
+      </div>
+    `;
+  } else {
+    markup = `
+      <div class="first-run-intro-step">
+        <span class="first-run-intro-step__eyebrow">${escapeHtml(i18nT('onboarding.first_five.day1.summary.eyebrow'))}</span>
+        <h2>${escapeHtml(i18nT('onboarding.first_five.day1.summary.title'))}</h2>
+        <div class="first-run-intro-summary-grid">
+          <div><span>${escapeHtml(i18nT('onboarding.first_five.day1.summary.started'))}</span><strong>${escapeHtml(i18nT('onboarding.first_five.day1.summary.yes'))}</strong></div>
+          <div><span>${escapeHtml(i18nT('onboarding.first_five.day1.summary.decision'))}</span><strong>${escapeHtml(i18nT('onboarding.first_five.day1.summary.yes'))}</strong></div>
+          <div><span>${escapeHtml(i18nT('onboarding.first_five.day1.summary.stability'))}</span><strong>${escapeHtml(stateLabel)}</strong></div>
+          <div><span>${escapeHtml(i18nT('onboarding.first_five.day1.summary.coins'))}</span><strong>+${escapeHtml(String(outcome.coins))}</strong></div>
+        </div>
+        <p class="first-run-intro-step__body">${escapeHtml(i18nT('onboarding.first_five.day1.summary.teaser'))}</p>
+        <p class="first-run-intro-step__buddy">${escapeHtml(outcome.summaryLine)}</p>
+        <button id="firstRunIntroPrimaryBtn" class="action-btn action-primary" type="button">${escapeHtml(i18nT('onboarding.first_five.day1.summary.cta'))}</button>
+      </div>
+    `;
+  }
+
+  contentNode.innerHTML = markup;
+  const primaryBtn = document.getElementById('firstRunIntroPrimaryBtn');
+  if (primaryBtn) {
+    primaryBtn.onclick = () => {
+      if (intro.step === 'plant') {
+        advanceFirstRunIntro('decision');
+      } else if (intro.step === 'result') {
+        advanceFirstRunIntro('day_end');
+      } else {
+        advanceFirstRunIntro('finish');
+      }
+    };
+  }
+  contentNode.querySelectorAll('[data-first-run-decision]').forEach((node) => {
+    node.addEventListener('click', () => {
+      advanceFirstRunIntro(`decision:${node.getAttribute('data-first-run-decision') || ''}`);
+    });
+  });
+}
+
+function shouldShowFirstRunDashboardFollowup(snapshot = state) {
+  const safeState = snapshot && typeof snapshot === 'object' ? snapshot : state;
+  const intro = getFirstRunIntroState(safeState);
+  if (intro.active || !intro.completed || intro.dashboardFollowupShown) {
+    return false;
+  }
+  const run = getCanonicalRun(safeState);
+  const profile = getCanonicalProfile(safeState);
+  const uiState = safeState.ui && typeof safeState.ui === 'object' ? safeState.ui : {};
+  const totalRuns = Math.max(0, Math.trunc(Number(profile && profile.stats && profile.stats.totalRuns || 0)));
+  const runId = Math.max(0, Math.trunc(Number(run && run.id) || 0));
+  if (String(run && run.status || '') !== 'active' || runId !== 1 || totalRuns !== 0) {
+    return false;
+  }
+  if (Boolean(uiState.menuOpen) || Boolean(uiState.menuDialogOpen) || uiState.openSheet) {
+    return false;
+  }
+  return authGateActive !== true;
+}
+
+function dismissFirstRunDashboardFollowup() {
+  const intro = getFirstRunIntroState(state);
+  if (intro.dashboardFollowupShown) {
+    return;
+  }
+  intro.dashboardFollowupShown = true;
+  schedulePersistState(true);
+  renderFirstRunDashboardFollowupOverlay();
+  renderHud();
+}
+
+function renderFirstRunDashboardFollowupOverlay() {
+  const overlayNode = document.getElementById('firstRunDashboardFollowupOverlay');
+  const contentNode = document.getElementById('firstRunDashboardFollowupContent');
+  if (!overlayNode || !contentNode) {
+    return;
+  }
+  const visible = shouldShowFirstRunDashboardFollowup(state);
+  overlayNode.classList.toggle('hidden', !visible);
+  overlayNode.setAttribute('aria-hidden', String(!visible));
+  if (!visible) {
+    contentNode.replaceChildren();
+    return;
+  }
+  contentNode.innerHTML = `
+    <div class="first-run-intro-step">
+      <span class="first-run-intro-step__eyebrow">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.eyebrow'))}</span>
+      <h2>${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.title'))}</h2>
+      <p class="first-run-intro-step__body">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.body'))}</p>
+      <p class="first-run-intro-step__buddy">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.buddy'))}</p>
+      <button id="firstRunDashboardFollowupBtn" class="action-btn action-primary" type="button">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.cta'))}</button>
+    </div>
+  `;
+  const buttonNode = document.getElementById('firstRunDashboardFollowupBtn');
+  if (buttonNode) {
+    buttonNode.onclick = () => {
+      dismissFirstRunDashboardFollowup();
+    };
+  }
+}
+
 function buildHomeViewModel(appState = state) { const sourceState = appState && typeof appState === 'object' ? appState : state;
   const dead = Boolean(sourceState.plant && (sourceState.plant.isDead || sourceState.plant.phase === 'dead'));
   const phaseCard = typeof getPhaseCardViewModel === 'function' ? getPhaseCardViewModel() : { title: '-', cycleIcon: '-', ageLabel: '-', subtitle: '-', progressPercent: 0, nextLabel: '' };
@@ -12031,6 +13653,10 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const showRunGoal = Boolean(runGoal && (run.status === 'active' || run.status === 'downed'));
   const diagnostics = diagnosePlantState();
   const guidanceHints = getGuidanceHints(diagnostics);
+  const firstRunCoach = buildFirstRunCoachViewModel(sourceState, {
+    diagnostics,
+    displayStatus
+  });
   const growthImpulse = Number(simulation.growthImpulse || 0);
   const stressVisual = classifyStressVisualLevel(Number(status.stress || 0));
   const riskVisual = classifyRiskVisualLevel(Number(status.risk || 0));
@@ -12060,6 +13686,11 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
     return Boolean(task.claimed) ? (count + 1) : count;
   }, 0);
   const dailyRemaining = Math.max(0, dailyTotal - dailyCompleted);
+  const buddyCheck = retention.dailyCare && retention.dailyCare.buddyCheck && typeof retention.dailyCare.buddyCheck === 'object'
+    ? retention.dailyCare.buddyCheck
+    : createEmptyBuddyDailyCheck(retentionTodayKey);
+  const buddyText = resolveBuddyDailyCheckText(buddyCheck);
+  const contextHint = resolveRetentionContextHint(sourceState, Date.now());
   const retentionState = (() => {
     if (dailyTotal <= 0) {
       return 'idle';
@@ -12183,6 +13814,7 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       primaryTitle: String(diagnostics && diagnostics.primaryIssue && diagnostics.primaryIssue.title || ''),
       hints: guidanceHints.slice(0, 3)
     },
+    firstRunCoach,
     playerSignal: (() => {
       const signalState = derivePlayerSignalState(status, diagnostics, eventStatus, { dailyRemaining });
       return {
@@ -12241,6 +13873,10 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       dailyClaimable,
       dailyClaimed,
       dailyRemaining,
+      buddyCategory: String(buddyCheck.category || '').trim(),
+      buddyTipCategory: String(retention.coinActions && retention.coinActions.buddyTip && retention.coinActions.buddyTip.dayKey === retentionTodayKey
+        ? retention.coinActions.buddyTip.category
+        : '').trim(),
       state: retentionState,
       headline: i18nT('daily.retention.headline', {
         done: dailyCompleted,
@@ -12248,6 +13884,8 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       }),
       teaserLine,
       rewardHint,
+      buddyText,
+      contextHint,
       teaserText: (() => {
         if (retentionState === 'claimable') {
           return dailyClaimable === 1
@@ -12381,7 +14019,55 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
     playerSignalNode.setAttribute('title', signalLabel);
   }
   if (homeMetaRetentionTeaserNode) {
+    const firstRunCoachVm = vm.firstRunCoach && typeof vm.firstRunCoach === 'object' ? vm.firstRunCoach : {};
+    if (firstRunCoachVm.visible) {
+      const starterBuddyAssetSrc = resolveHomeRetentionBuddyAsset({}, { mode: 'starter' });
+      const starterBuddyMotionClass = resolveBuddyMotionClass({
+        surface: 'home_starter',
+        mode: 'starter',
+        dailyCategory: 'default'
+      });
+      homeMetaRetentionTeaserNode.innerHTML = `
+        <span class="home-retention-card home-retention-card--starter${starterBuddyAssetSrc ? ' home-retention-card--with-buddy' : ''}" data-state="starter" aria-label="${escapeHtml(firstRunCoachVm.ariaLabel || firstRunCoachVm.body || firstRunCoachVm.headline || '')}">
+          ${starterBuddyAssetSrc ? buildCareMediaFrameMarkup({
+            src: starterBuddyAssetSrc,
+            fallbackSrc: CARE_STUDIO_ASSET_PATHS.buddyBase,
+            frameClass: 'home-retention-buddy-frame',
+            imageClass: `home-retention-buddy-image ${starterBuddyMotionClass}`.trim(),
+            fallbackClass: 'home-retention-buddy-fallback',
+            fallbackMarkup: '<span class="home-retention-buddy-fallback-dot"></span>',
+            alt: '',
+            loading: 'eager'
+          }) : ''}
+          <span class="home-retention-card__top">
+            <strong class="home-retention-card__headline">${escapeHtml(firstRunCoachVm.headline || '')}</strong>
+            <span class="home-retention-card__state">${escapeHtml(firstRunCoachVm.stateLabel || '')}</span>
+          </span>
+          <span class="home-retention-card__mid">${escapeHtml(firstRunCoachVm.body || '')}</span>
+          <span class="home-retention-card__bottom">${escapeHtml(firstRunCoachVm.actionLabel || '')}</span>
+        </span>
+      `;
+      homeMetaRetentionTeaserNode.classList.remove('hidden');
+      homeMetaRetentionTeaserNode.setAttribute('aria-hidden', 'false');
+      homeMetaRetentionTeaserNode.setAttribute('role', 'button');
+      homeMetaRetentionTeaserNode.setAttribute('tabindex', '0');
+      homeMetaRetentionTeaserNode.setAttribute('title', String(firstRunCoachVm.body || firstRunCoachVm.ariaLabel || ''));
+      homeMetaRetentionTeaserNode.dataset.state = 'starter';
+      homeMetaRetentionTeaserNode.dataset.mode = 'starter';
+      homeMetaRetentionTeaserNode.dataset.actionTarget = String(firstRunCoachVm.actionTarget || 'care');
+      homeMetaRetentionTeaserNode.classList.remove('is-claimable');
+    } else {
     const retentionVm = vm.retention && typeof vm.retention === 'object' ? vm.retention : {};
+    const retentionBuddyAssetSrc = resolveHomeRetentionBuddyAsset(retentionVm, { mode: 'daily' });
+    const retentionBuddyMotionClass = resolveBuddyMotionClass({
+      surface: 'home_retention',
+      mode: 'daily',
+      dailyCategory: String(retentionVm.buddyCategory || '').trim(),
+      tipCategory: String(retentionVm.buddyTipCategory || '').trim(),
+      riskLevel: String(retentionVm.riskLevel || '').trim(),
+      overallLevel: String(retentionVm.overallLevel || '').trim(),
+      stateKey: String(retentionVm.state || '').trim()
+    });
     const headline = String(retentionVm.headline || '').trim();
     const streakLine = i18nT('daily.retention.streak_line', {
       streak: Math.max(0, Math.trunc(Number(retentionVm.streakCount) || 0)),
@@ -12389,17 +14075,32 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
     });
     const primaryLine = String(retentionVm.teaserLine || retentionVm.teaserText || '').trim();
     const rewardHint = String(retentionVm.rewardHint || '').trim();
-    const streakRewardLine = [streakLine, rewardHint].filter(Boolean).join(' | ');
-    const bottomLine = primaryLine || retentionVm.teaserText || '';
+    const buddyText = String(retentionVm.buddyText || '').trim();
+    const contextHint = String(retentionVm.contextHint || '').trim();
+    const streakRewardLine = rewardHint || i18nT('daily.retention.teaser_bonus_line', {
+      streak: Math.max(0, Math.trunc(Number(retentionVm.streakCount) || 0)),
+      coins: nextReward
+    });
+    const bottomLine = [buddyText, contextHint].filter(Boolean).join(' · ') || primaryLine || retentionVm.teaserText || '';
     const nextReward = Math.max(0, Math.trunc(Number(retentionVm.nextStreakReward) || 0));
     const status = String(retentionVm.state || 'idle');
-    const teaser = [headline, streakRewardLine, bottomLine].filter(Boolean).join(' ');
+    const teaser = [headline, streakRewardLine, primaryLine, buddyText, contextHint].filter(Boolean).join(' ');
     homeMetaRetentionTeaserNode.innerHTML = teaser
       ? `
-        <span class="home-retention-card home-retention-card--${escapeHtml(status)}" data-state="${escapeHtml(status)}" aria-label="${escapeHtml(teaser)}">
+        <span class="home-retention-card home-retention-card--${escapeHtml(status)}${retentionBuddyAssetSrc ? ' home-retention-card--with-buddy' : ''}" data-state="${escapeHtml(status)}" aria-label="${escapeHtml(teaser)}">
+          ${retentionBuddyAssetSrc ? buildCareMediaFrameMarkup({
+            src: retentionBuddyAssetSrc,
+            fallbackSrc: CARE_STUDIO_ASSET_PATHS.buddyBase,
+            frameClass: 'home-retention-buddy-frame',
+            imageClass: `home-retention-buddy-image ${retentionBuddyMotionClass}`.trim(),
+            fallbackClass: 'home-retention-buddy-fallback',
+            fallbackMarkup: '<span class="home-retention-buddy-fallback-dot"></span>',
+            alt: '',
+            loading: 'eager'
+          }) : ''}
           <span class="home-retention-card__top">
             <strong class="home-retention-card__headline">${escapeHtml(headline || i18nT('daily.retention.headline', { done: 0, total: 3 }))}</strong>
-            <span class="home-retention-card__state">Daily Achievements</span>
+            <span class="home-retention-card__state">${escapeHtml(i18nT('daily.retention.badge'))}</span>
           </span>
           <span class="home-retention-card__mid">${escapeHtml(streakRewardLine || i18nT('daily.retention.next_streak_bonus', { coins: nextReward }))}</span>
           <span class="home-retention-card__bottom">${escapeHtml(bottomLine || i18nT('daily.retention.next_streak_bonus', { coins: nextReward }))}</span>
@@ -12416,7 +14117,12 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
       homeMetaRetentionTeaserNode.setAttribute('tabindex', '-1');
     }
     homeMetaRetentionTeaserNode.dataset.state = status;
+    homeMetaRetentionTeaserNode.dataset.mode = 'daily';
+    homeMetaRetentionTeaserNode.dataset.actionTarget = 'missions';
     homeMetaRetentionTeaserNode.classList.toggle('is-claimable', status === 'claimable');
+    homeMetaRetentionTeaserNode.setAttribute('title', teaser);
+    }
+    hydrateCareAssetFrames(homeMetaRetentionTeaserNode);
   }
   if (homeMetaBuildChipNode) {
     homeMetaBuildChipNode.textContent = '';
@@ -12625,6 +14331,8 @@ function updateHomeFromViewModel(homeVm, prevVm = null) { const vm = homeVm && t
 function renderHud() {
   const homeVm = buildHomeViewModel(state);
   updateHomeFromViewModel(homeVm, null);
+  renderFirstRunIntroOverlay();
+  renderFirstRunDashboardFollowupOverlay();
 }
 
 function triggerPlayerHudPulse(node, className = 'is-updating', durationMs = 820) {
@@ -13653,7 +15361,7 @@ function renderCareSheet(force = false) {
     ui.careActionList.replaceChildren();
     ui.careEffectsList.replaceChildren();
     ui.careExecuteButton.disabled = true;
-    setCareFeedback('error', 'Keine Pflegemethoden geladen.');
+    setCareFeedback('error', i18nT('careStudio.feedback.noMethodsLoaded'));
     return;
   }
 
@@ -13735,8 +15443,9 @@ function buildCareLegacyIconMarkup(src, className = '') {
   return `<img src="${safeSrc}" class="care-studio-legacy-icon${safeClassName ? ` ${escapeHtml(safeClassName)}` : ''}" alt="" aria-hidden="true">`;
 }
 
-function buildCareMediaFrameMarkup({ src = '', frameClass = '', imageClass = '', fallbackClass = '', fallbackMarkup = '', alt = '', loading = 'lazy' } = {}) {
+function buildCareMediaFrameMarkup({ src = '', fallbackSrc = '', frameClass = '', imageClass = '', fallbackClass = '', fallbackMarkup = '', alt = '', loading = 'lazy' } = {}) {
   const safeSrc = String(src || '').trim();
+  const safeFallbackSrc = String(fallbackSrc || '').trim();
   const safeAlt = escapeHtml(String(alt || ''));
   const safeFrameClass = escapeHtml(String(frameClass || '').trim());
   const safeImageClass = escapeHtml(String(imageClass || '').trim());
@@ -13745,10 +15454,20 @@ function buildCareMediaFrameMarkup({ src = '', frameClass = '', imageClass = '',
   const loadingMode = loading === 'eager' ? 'eager' : 'lazy';
   return `
     <span class="care-studio-media-frame ${safeFrameClass}" data-care-asset-frame>
-      ${safeSrc ? `<img src="${escapeHtml(safeSrc)}" class="${safeImageClass}" alt="${safeAlt}"${ariaHidden} loading="${loadingMode}" decoding="async">` : ''}
+      ${safeSrc ? `<img src="${escapeHtml(safeSrc)}" ${safeFallbackSrc ? `data-fallback-src="${escapeHtml(safeFallbackSrc)}"` : ''} class="${safeImageClass}" alt="${safeAlt}"${ariaHidden} loading="${loadingMode}" decoding="async">` : ''}
       <span class="care-studio-media-fallback ${safeFallbackClass}" aria-hidden="true">${fallbackMarkup || ''}</span>
     </span>
   `;
+}
+
+function resolveBuddyMotionClass(context = {}) {
+  const visualMap = (typeof window !== 'undefined' && window.GrowSimBuddyVisualMap && typeof window.GrowSimBuddyVisualMap.resolveBuddyMotionClass === 'function')
+    ? window.GrowSimBuddyVisualMap
+    : null;
+  if (!visualMap) {
+    return '';
+  }
+  return String(visualMap.resolveBuddyMotionClass(context) || '').trim();
 }
 
 function hydrateCareAssetFrames(root = document) {
@@ -13768,6 +15487,7 @@ function hydrateCareAssetFrames(root = document) {
       frame.classList.add('is-missing');
       return;
     }
+    const fallbackSrc = String(img.dataset.fallbackSrc || '').trim();
 
     const showLoaded = () => {
       if (img.naturalWidth > 0) {
@@ -13780,6 +15500,20 @@ function hydrateCareAssetFrames(root = document) {
     };
 
     const showMissing = () => {
+      if (fallbackSrc && img.dataset.fallbackApplied !== 'true' && img.getAttribute('src') !== fallbackSrc) {
+        img.dataset.fallbackApplied = 'true';
+        img.src = fallbackSrc;
+        if (img.complete) {
+          showLoaded();
+        } else {
+          img.addEventListener('load', showLoaded, { once: true });
+          img.addEventListener('error', () => {
+            frame.classList.remove('is-loaded');
+            frame.classList.add('is-missing');
+          }, { once: true });
+        }
+        return;
+      }
       frame.classList.remove('is-loaded');
       frame.classList.add('is-missing');
     };
@@ -13872,6 +15606,172 @@ function getCareStudioHeroProps(careViewModel = null, overallLevel = 'info', ris
   return { contextPropKey, statusPropKey };
 }
 
+function resolveCareStudioBuddyAsset(careViewModel = null, overallLevel = 'info', riskLevel = 'low', heroProps = {}) {
+  const buddyApi = (typeof window !== 'undefined' && window.GrowSimBuddyAssets && typeof window.GrowSimBuddyAssets.resolveBuddyAsset === 'function')
+    ? window.GrowSimBuddyAssets
+    : null;
+  if (!buddyApi) {
+    return CARE_STUDIO_ASSET_PATHS.buddyBase;
+  }
+
+  const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
+  const activeTabId = String(state.ui && state.ui.care && state.ui.care.selectedStudioTab || 'water');
+  const resolved = buddyApi.resolveBuddyAsset({
+    surface: 'care_studio',
+    buddyHintKey: String(careData.buddyHintKey || 'care.buddy.observe'),
+    riskLevel: String(riskLevel || 'low'),
+    overallLevel: String(overallLevel || 'info'),
+    activeTabId,
+    contextPropKey: heroProps && heroProps.contextPropKey ? heroProps.contextPropKey : '',
+    statusPropKey: heroProps && heroProps.statusPropKey ? heroProps.statusPropKey : ''
+  });
+
+  return String(resolved || '').trim() || CARE_STUDIO_ASSET_PATHS.buddyBase;
+}
+
+function resolveHomeRetentionBuddyAsset(retentionVm = {}, options = {}) {
+  const buddyApi = (typeof window !== 'undefined' && window.GrowSimBuddyAssets && typeof window.GrowSimBuddyAssets.resolveBuddyAsset === 'function')
+    ? window.GrowSimBuddyAssets
+    : null;
+  if (!buddyApi) {
+    return '';
+  }
+
+  const safeRetentionVm = retentionVm && typeof retentionVm === 'object' ? retentionVm : {};
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  const stateKey = String(safeRetentionVm.state || '').trim();
+  const claimable = Math.max(0, Math.trunc(Number(safeRetentionVm.dailyClaimable) || 0));
+  const claimed = Math.max(0, Math.trunc(Number(safeRetentionVm.dailyClaimed) || 0));
+  const total = Math.max(0, Math.trunc(Number(safeRetentionVm.dailyTotal) || 0));
+  const remaining = Math.max(0, Math.trunc(Number(safeRetentionVm.dailyRemaining) || 0));
+
+  let dailyCategory = String(safeRetentionVm.buddyCategory || '').trim();
+  if (claimable > 0 || stateKey === 'claimable' || (claimed > 0 && claimed >= total && total > 0)) {
+    dailyCategory = 'reward_focus';
+  } else if (!dailyCategory && remaining > 0 && total > 0) {
+    dailyCategory = 'mission_focus';
+  } else if (!dailyCategory && safeOptions.mode === 'starter') {
+    dailyCategory = 'default';
+  }
+
+  const resolved = buddyApi.resolveBuddyAsset({
+    surface: safeOptions.mode === 'starter' ? 'home_starter' : 'home_retention',
+    dailyCategory,
+    tipCategory: String(safeRetentionVm.buddyTipCategory || '').trim(),
+    riskLevel: String(safeRetentionVm.riskLevel || '').trim(),
+    overallLevel: String(safeRetentionVm.overallLevel || '').trim()
+  });
+  const fallback = typeof buddyApi.getFallbackBuddyAsset === 'function'
+    ? String(buddyApi.getFallbackBuddyAsset() || '').trim()
+    : '';
+  return String(resolved || '').trim() || fallback;
+}
+
+function resolveMissionRewardBuddyAsset(context = {}, options = {}) {
+  const buddyApi = (typeof window !== 'undefined' && window.GrowSimBuddyAssets && typeof window.GrowSimBuddyAssets.resolveBuddyAsset === 'function')
+    ? window.GrowSimBuddyAssets
+    : null;
+  if (!buddyApi) {
+    return '';
+  }
+
+  const safeContext = context && typeof context === 'object' ? context : {};
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  let dailyCategory = String(safeContext.dailyCategory || '').trim();
+  const stateKey = String(safeContext.stateKey || '').trim();
+
+  if (!dailyCategory) {
+    if (safeOptions.surface === 'missions_weekly') {
+      if (stateKey === 'claimable') {
+        dailyCategory = 'reward_claimable';
+      } else if (stateKey === 'claimed') {
+        dailyCategory = 'reward_claimed';
+      } else if (stateKey === 'in_progress') {
+        dailyCategory = 'mission_progress';
+      } else {
+        dailyCategory = 'mission_open';
+      }
+    } else if (safeOptions.surface === 'missions_header') {
+      if (Boolean(safeContext.claimable)) {
+        dailyCategory = 'mission_claimable';
+      } else if (Boolean(safeContext.completed)) {
+        dailyCategory = 'mission_completed';
+      } else if (Boolean(safeContext.hasText)) {
+        dailyCategory = 'mission_progress';
+      } else {
+        dailyCategory = 'default';
+      }
+    }
+  }
+
+  const resolved = buddyApi.resolveBuddyAsset({
+    surface: String(safeOptions.surface || 'missions').trim() || 'missions',
+    dailyCategory,
+    tipCategory: String(safeContext.tipCategory || '').trim(),
+    riskLevel: String(safeContext.riskLevel || '').trim(),
+    overallLevel: String(safeContext.overallLevel || '').trim()
+  });
+  const fallback = typeof buddyApi.getFallbackBuddyAsset === 'function'
+    ? String(buddyApi.getFallbackBuddyAsset() || '').trim()
+    : '';
+  return String(resolved || '').trim() || fallback;
+}
+
+function resolveCoinActionBuddyAsset(action = {}, retention = {}, coinActions = {}) {
+  const buddyApi = (typeof window !== 'undefined' && window.GrowSimBuddyAssets && typeof window.GrowSimBuddyAssets.resolveBuddyAsset === 'function')
+    ? window.GrowSimBuddyAssets
+    : null;
+  if (!buddyApi) {
+    return '';
+  }
+
+  const safeAction = action && typeof action === 'object' ? action : {};
+  const safeRetention = retention && typeof retention === 'object' ? retention : {};
+  const safeCoinActions = coinActions && typeof coinActions === 'object' ? coinActions : {};
+  const actionId = String(safeAction.id || '').trim();
+  const stateKey = String(safeAction.stateKey || '').trim() || 'locked';
+  const todayKey = String(safeRetention.dailyCare && safeRetention.dailyCare.dayKey || '').trim();
+  const buddyTipActive = actionId === 'buddy_extra_tip'
+    && String(safeCoinActions.buddyTip && safeCoinActions.buddyTip.dayKey || '').trim() === todayKey;
+  const safeBoostActive = actionId === 'safe_boost_check'
+    && String(safeCoinActions.safeBoostCheck && safeCoinActions.safeBoostCheck.dayKey || '').trim() === todayKey;
+  const focusBoostActive = actionId === 'daily_focus_boost'
+    && String(safeCoinActions.focusBoost && safeCoinActions.focusBoost.dayKey || '').trim() === todayKey
+    && String(safeCoinActions.focusBoost && safeCoinActions.focusBoost.taskId || '').trim();
+  const weeklyPushActive = actionId === 'weekly_push'
+    && String(safeCoinActions.weeklyPush && safeCoinActions.weeklyPush.weekKey || '').trim() === String(safeRetention.weekly && safeRetention.weekly.weekKey || '').trim()
+    && Number(safeCoinActions.weeklyPush && safeCoinActions.weeklyPush.purchasedAtMs || 0) > 0;
+
+  let dailyCategory = 'coin_action_default';
+  let tipCategory = '';
+
+  if (safeBoostActive || actionId === 'safe_boost_check') {
+    dailyCategory = 'coin_action_warning';
+    tipCategory = String(safeCoinActions.buddyTip && safeCoinActions.buddyTip.category || '').trim();
+  } else if (focusBoostActive || weeklyPushActive) {
+    dailyCategory = stateKey === 'available' ? 'coin_action_reward' : 'coin_action_timeboost';
+  } else if (buddyTipActive) {
+    dailyCategory = 'coin_action_tip';
+    tipCategory = String(safeCoinActions.buddyTip && safeCoinActions.buddyTip.category || '').trim();
+  } else if (stateKey === 'available') {
+    dailyCategory = 'coin_action_tip';
+  } else if (stateKey === 'active' || stateKey === 'claimed' || stateKey === 'done') {
+    dailyCategory = 'coin_action_reward';
+  }
+
+  const resolved = buddyApi.resolveBuddyAsset({
+    surface: 'missions_coin_action',
+    dailyCategory,
+    tipCategory,
+    riskLevel: dailyCategory === 'coin_action_warning' ? 'high' : 'low',
+    overallLevel: dailyCategory === 'coin_action_warning' ? 'warning' : (dailyCategory === 'coin_action_reward' ? 'good' : 'ready')
+  });
+  const fallback = typeof buddyApi.getFallbackBuddyAsset === 'function'
+    ? String(buddyApi.getFallbackBuddyAsset() || '').trim()
+    : '';
+  return String(resolved || '').trim() || fallback;
+}
+
 function getCareStudioGlobalStatus(careViewModel = null) {
   const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
   const mappedStatus = careData.playerFacingStatus && typeof careData.playerFacingStatus === 'object'
@@ -13887,7 +15787,8 @@ function getCareStudioGlobalStatus(careViewModel = null) {
 }
 
 function renderCareCategoryButtons(categories) {
-  const signature = categories.map((tab) => tab.id).join('|') + `|selected:${state.ui.care.selectedStudioTab}`;
+  const localeSignature = document && document.documentElement ? String(document.documentElement.lang || '') : '';
+  const signature = categories.map((tab) => `${tab.id}:${tab.label || ''}`).join('|') + `|selected:${state.ui.care.selectedStudioTab}|lang:${localeSignature}`;
   if (ui.careCategoryList.dataset.signature === signature) {
     return;
   }
@@ -13933,6 +15834,7 @@ function renderCareStudioChrome(careViewModel = null) {
   const statusNode = uiNode('careStudioStatusChips', 'careStudioStatusChips');
   const timingNode = uiNode('careStudioTimingBadge', 'careStudioTimingBadge');
   const hintNode = uiNode('careStudioHintText', 'careStudioHintText');
+  const coachLineNode = uiNode('careStudioCoachLine', 'careStudioCoachLine');
   const buddySlot = document.querySelector('#careSheet .care-studio-buddy-slot');
   const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
   const careSummary = careData.summary && typeof careData.summary === 'object' ? careData.summary : {};
@@ -13944,6 +15846,10 @@ function renderCareStudioChrome(careViewModel = null) {
   const overallLevel = wateringRecommendation && wateringRecommendation.level && wateringRecommendation.level !== 'info'
     ? wateringRecommendation.level
     : (feedingRecommendation && feedingRecommendation.level ? feedingRecommendation.level : 'info');
+  const firstRunCoachVm = buildFirstRunCoachViewModel(state, {
+    displayStatus: getPlayerFacingCareStatus(state),
+    diagnostics: diagnosePlantState()
+  });
 
   if (subtitleNode) {
     let subtitleKey = 'careStudio.subtitle.stable';
@@ -13978,14 +15884,38 @@ function renderCareStudioChrome(careViewModel = null) {
     hintNode.textContent = i18nT(buddyHintKey) || i18nT('careStudio.diagnosis.ready_focus');
   }
 
+  if (coachLineNode) {
+    let coachKey = '';
+    if (firstRunCoachVm && firstRunCoachVm.visible) {
+      if (riskLevel === 'high' || overallLevel === 'warning' || moistureStatus === 'dry' || moistureStatus === 'wet') {
+        coachKey = 'careStudio.first_visit.watch_before_action';
+      } else if (overallLevel === 'positive' || (riskLevel === 'low' && moistureStatus === 'stable')) {
+        coachKey = 'careStudio.first_visit.stable_observe';
+      } else {
+        coachKey = 'careStudio.first_visit.read_moisture_risk';
+      }
+    }
+    coachLineNode.textContent = coachKey ? i18nT(coachKey) : '';
+    coachLineNode.classList.toggle('hidden', !coachKey);
+    coachLineNode.setAttribute('aria-hidden', String(!coachKey));
+  }
+
   if (buddySlot) {
     const heroProps = getCareStudioHeroProps(careViewModel, overallLevel, riskLevel);
+    const buddyAssetSrc = resolveCareStudioBuddyAsset(careViewModel, overallLevel, riskLevel, heroProps);
+    const careBuddyMotionClass = resolveBuddyMotionClass({
+      surface: 'care_studio',
+      buddyHintKey,
+      riskLevel,
+      overallLevel
+    });
     buddySlot.innerHTML = `
       <span class="care-studio-buddy-visual">
         ${buildCareMediaFrameMarkup({
-          src: CARE_STUDIO_ASSET_PATHS.buddyBase,
+          src: buddyAssetSrc,
+          fallbackSrc: CARE_STUDIO_ASSET_PATHS.buddyBase,
           frameClass: 'care-studio-buddy-frame',
-          imageClass: 'care-studio-buddy-image',
+          imageClass: `care-studio-buddy-image ${careBuddyMotionClass}`.trim(),
           fallbackClass: 'care-studio-buddy-fallback',
           fallbackMarkup: '<span class="care-studio-buddy-glyph">+</span>',
           alt: '',
@@ -14119,6 +16049,28 @@ function getCarePreviewVerdictTone(preview) {
   if (verdict === 'situational') return 'neutral';
   if (verdict === 'risky') return 'warning';
   return 'critical';
+}
+
+function getCareRecommendationNoteKey(recommendation, context) {
+  const noteContext = String(context || '').trim();
+  const key = String(recommendation && recommendation.key || '').trim();
+  const level = String(recommendation && recommendation.level || '').trim();
+
+  if (noteContext === 'water' && (key === 'monitor' || level === 'info')) {
+    return 'careStudio.recommendation.note.water.monitor';
+  }
+  if (noteContext === 'feed' && (key === 'stable' || level === 'info')) {
+    return 'careStudio.recommendation.note.feed.stable';
+  }
+  return '';
+}
+
+function renderCareRecommendationNote(recommendation, context) {
+  const noteKey = getCareRecommendationNoteKey(recommendation, context);
+  if (!noteKey) {
+    return '';
+  }
+  return `<p class="care-studio-meta-note">${escapeHtml(i18nT(noteKey))}</p>`;
 }
 
 function getCareActionPreviewForUi(action) {
@@ -14259,7 +16211,8 @@ function renderCareActionButtons(activeTabId, careViewModel = null) {
     state.ui.care.selectedActionId = null;
   }
 
-  const signature = `${activeTabId}|` + actions.map((action) => {
+  const localeSignature = document && document.documentElement ? String(document.documentElement.lang || '') : '';
+  const signature = `${activeTabId}|lang:${localeSignature}|` + actions.map((action) => {
     return `${action.id}:${action.cooldownUntil}:${action.tier}:${action.availability.reason || 'ok'}:selected:${state.ui.care.selectedActionId === action.id}`;
   }).join('|');
 
@@ -14527,6 +16480,7 @@ function renderCareEffectsPanel(careViewModel = null) {
     const playerFacingStatus = careData.playerFacingStatus && typeof careData.playerFacingStatus === 'object'
       ? careData.playerFacingStatus
       : getPlayerFacingCareStatus(state);
+    const wateringRecommendation = careData.wateringRecommendation || careSummary.wateringRecommendation || null;
     appendSectionLabel(i18nT('careStudio.water.title'), 'hints');
     appendHtmlCard('care-studio-insight-card care-studio-insight-card--water', `
       <div class="care-studio-water-profile">
@@ -14546,10 +16500,12 @@ function renderCareEffectsPanel(careViewModel = null) {
       </div>
       <div class="care-studio-meta-row care-studio-meta-row--stacked">
         <span>${escapeHtml(i18nT('careStudio.water.next_window'))}</span>
-        <strong>${escapeHtml(i18nT((careData.wateringRecommendation && careData.wateringRecommendation.messageKey) || 'care.recommendation.water.monitor'))}</strong>
+        <strong>${escapeHtml(i18nT((wateringRecommendation && wateringRecommendation.messageKey) || 'care.recommendation.water.monitor'))}</strong>
       </div>
+      ${renderCareRecommendationNote(wateringRecommendation, 'water')}
     `);
   } else if (activeTabId === 'feed') {
+    const feedingRecommendation = careData.feedingRecommendation || careSummary.feedingRecommendation || null;
     appendSectionLabel(i18nT('careStudio.feed.title'), 'hints');
     appendHtmlCard('care-studio-insight-card care-studio-insight-card--feed', `
       <div class="care-studio-bars">
@@ -14571,8 +16527,9 @@ function renderCareEffectsPanel(careViewModel = null) {
       </div>
       <div class="care-studio-meta-row">
         <span>${escapeHtml(i18nT('careStudio.feed.recommendation'))}</span>
-        <strong>${escapeHtml(i18nT((careData.feedingRecommendation && careData.feedingRecommendation.messageKey) || 'care.recommendation.feed.stable'))}</strong>
+        <strong>${escapeHtml(i18nT((feedingRecommendation && feedingRecommendation.messageKey) || 'care.recommendation.feed.stable'))}</strong>
       </div>
+      ${renderCareRecommendationNote(feedingRecommendation, 'feed')}
     `);
   } else if (activeTabId === 'routine') {
     appendSectionLabel(i18nT('careStudio.routine.title'), 'hints');
@@ -15143,10 +17100,19 @@ function renderCareFeedback() {
   const cooldownUntil = selected ? Number(state.actions.cooldowns[selected.id] || 0) : 0;
   const cooldownReason = cooldownUntil > Date.now() ? `cooldown_active:${Math.ceil((cooldownUntil - Date.now()) / 1000)}s` : '';
   const softReason = selected && availability && availability.ok && availability.soft
-    ? (availability.note || 'Verfügbar, aber heute weniger effizient und etwas riskanter.')
+    ? (availability.note || i18nT('careStudio.feedback.softReady'))
     : '';
   const feedback = (state.ui.care && state.ui.care.feedback)
-    || { kind: 'info', text: selected ? (cooldownReason ? explainActionFailure(cooldownReason) : (availability && !availability.ok ? explainActionFailure(availability.reason) : (softReason || 'Bereit zur Ausführung'))) : 'Wähle eine Methode.' };
+    || {
+      kind: 'info',
+      text: selected
+        ? (cooldownReason
+          ? explainActionFailure(cooldownReason)
+          : (availability && !availability.ok
+            ? explainActionFailure(availability.reason)
+            : (softReason || i18nT('careStudio.feedback.readyToAct'))))
+        : i18nT('careStudio.feedback.chooseMethod')
+    };
   ui.careFeedback.textContent = feedback.text;
   ui.careFeedback.classList.toggle('is-info', feedback.kind === 'info');
   ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');
@@ -18628,10 +20594,15 @@ function getMissionProgressView(mission) {
 
 function renderMissionsSheet() {
   if (!ui.missionsSheet || state.ui.openSheet !== 'missions') return;
+  evaluateWeeklyMission(state, Date.now(), { skipPersist: true });
   const retention = ensureRetentionState(state);
+  const coinActions = ensureCoinActionState(state);
   const streak = retention.streak || {};
   const daily = retention.dailyCare || {};
   const micro = retention.micro || {};
+  const weeklyVm = buildWeeklyMissionViewModel(state, Date.now());
+  const coinActionVm = buildCoinActionViewModel(state, Date.now());
+  const decisionVm = buildDecisionCardViewModel(state, Date.now());
   const todayKey = getLocalDayKey(Date.now());
   const streakCount = Math.max(0, Math.trunc(Number(streak.currentCount) || 0));
   const streakBest = Math.max(streakCount, Math.max(0, Math.trunc(Number(streak.bestCount) || 0)));
@@ -18648,6 +20619,10 @@ function renderMissionsSheet() {
     return (Boolean(task.completed) && !Boolean(task.claimed)) ? (count + 1) : count;
   }, 0);
   const remainingTasks = Math.max(0, totalTasks - completedTasks);
+  const buddyCheck = daily.buddyCheck && typeof daily.buddyCheck === 'object'
+    ? daily.buddyCheck
+    : createEmptyBuddyDailyCheck(todayKey);
+  const buddyText = resolveBuddyDailyCheckText(buddyCheck);
   const dayStatusLabel = claimableTasks > 0
     ? (claimableTasks === 1 ? `1 ${i18nT('daily.claimable')}` : `${claimableTasks} ${i18nT('daily.claimable')}`)
     : (remainingTasks <= 0
@@ -18674,6 +20649,252 @@ function renderMissionsSheet() {
     `;
   }
 
+  const buddyDailyCheckNode = uiNode('missionsBuddyDailyCheck', 'missionsBuddyDailyCheck');
+  if (buddyDailyCheckNode) {
+    const missionsHeaderBuddySrc = resolveMissionRewardBuddyAsset({
+      hasText: Boolean(buddyText),
+      claimable: claimableTasks > 0,
+      completed: remainingTasks <= 0 && totalTasks > 0
+    }, {
+      surface: 'missions_header'
+    });
+    const missionsHeaderBuddyMotionClass = resolveBuddyMotionClass({
+      surface: 'missions_header',
+      dailyCategory: claimableTasks > 0
+        ? 'mission_claimable'
+        : ((remainingTasks <= 0 && totalTasks > 0) ? 'mission_completed' : 'mission_progress'),
+      stateKey: claimableTasks > 0 ? 'claimable' : ''
+    });
+    if (buddyText) {
+      buddyDailyCheckNode.innerHTML = `
+        ${missionsHeaderBuddySrc ? buildCareMediaFrameMarkup({
+          src: missionsHeaderBuddySrc,
+          fallbackSrc: CARE_STUDIO_ASSET_PATHS.buddyBase,
+          frameClass: 'missions-buddy-frame missions-buddy-frame--header',
+          imageClass: `missions-buddy-image missions-buddy-image--header ${missionsHeaderBuddyMotionClass}`.trim(),
+          fallbackClass: 'missions-buddy-fallback',
+          fallbackMarkup: '<span class="missions-buddy-fallback-dot"></span>',
+          alt: '',
+          loading: 'lazy'
+        }) : ''}
+        <span class="missions-buddy-copy">${escapeHtml(`${i18nT('daily.buddy.prefix')} ${buddyText}`)}</span>
+      `;
+    } else {
+      buddyDailyCheckNode.textContent = '';
+    }
+    buddyDailyCheckNode.classList.toggle('hidden', !buddyText);
+    buddyDailyCheckNode.setAttribute('aria-hidden', String(!buddyText));
+  }
+
+  const weeklyWrapNode = uiNode('missionsWeeklyWrap', 'missionsWeeklyWrap');
+  if (weeklyWrapNode) {
+    weeklyWrapNode.replaceChildren();
+    if (!weeklyVm.visible) {
+      const empty = document.createElement('p');
+      empty.className = 'sheet-note';
+      empty.textContent = i18nT('daily.weekly.empty');
+      weeklyWrapNode.appendChild(empty);
+    } else {
+      const row = document.createElement('div');
+      row.className = `retention-task-row retention-task-row--${weeklyVm.stateKey}`;
+      const rewardLabel = i18nT('daily.weekly.reward_line', { coins: Math.max(0, Math.trunc(Number(weeklyVm.rewardCoins) || 0)) });
+      const progressParts = Array.isArray(weeklyVm.objectiveText) ? weeklyVm.objectiveText.filter(Boolean) : [];
+      const progressLabel = progressParts.slice(0, 2).join(' · ');
+      const extraProgressLabel = progressParts.slice(2).join(' · ');
+      const weeklyBuddySrc = resolveMissionRewardBuddyAsset({
+        stateKey: weeklyVm.stateKey,
+        claimable: weeklyVm.claimable,
+        completed: weeklyVm.completed
+      }, {
+        surface: 'missions_weekly'
+      });
+      const weeklyBuddyMotionClass = resolveBuddyMotionClass({
+        surface: 'missions_weekly',
+        stateKey: weeklyVm.stateKey,
+        dailyCategory: weeklyVm.claimable
+          ? 'reward_claimable'
+          : (weeklyVm.claimed ? 'reward_claimed' : 'mission_progress')
+      });
+      const stateLabel = weeklyVm.claimed
+        ? i18nT('daily.weekly.claimed')
+        : (weeklyVm.claimable ? i18nT('daily.weekly.ready') : i18nT('daily.weekly.in_progress'));
+      const claimButtonHtml = weeklyVm.claimable
+        ? `<button class="action-btn action-primary retention-task-claim-btn" type="button" data-weekly-claim-mission="active">${escapeHtml(i18nT('daily.weekly.claim'))} +${Math.max(0, Math.trunc(Number(weeklyVm.rewardCoins) || 0))} C</button>`
+        : '';
+      row.innerHTML = `
+        ${weeklyBuddySrc ? buildCareMediaFrameMarkup({
+          src: weeklyBuddySrc,
+          fallbackSrc: CARE_STUDIO_ASSET_PATHS.buddyBase,
+          frameClass: 'missions-buddy-frame missions-buddy-frame--weekly',
+          imageClass: `missions-buddy-image missions-buddy-image--weekly ${weeklyBuddyMotionClass}`.trim(),
+          fallbackClass: 'missions-buddy-fallback',
+          fallbackMarkup: '<span class="missions-buddy-fallback-dot"></span>',
+          alt: '',
+          loading: 'lazy'
+        }) : ''}
+        <span class="retention-task-copy">
+          <strong>${escapeHtml(String(weeklyVm.title || i18nT('daily.weekly.title')))}</strong>
+          <small>${escapeHtml(String(weeklyVm.description || i18nT('daily.weekly.empty')))}</small>
+          <small>${escapeHtml(progressLabel || rewardLabel)}</small>
+        </span>
+        <span class="retention-task-state retention-task-state--${weeklyVm.stateKey}">${escapeHtml(stateLabel)}</span>${claimButtonHtml}
+      `;
+      const claimButton = row.querySelector('[data-weekly-claim-mission]');
+      if (claimButton) {
+        claimButton.addEventListener('click', () => {
+          claimButton.disabled = true;
+          const result = claimWeeklyMission(Date.now());
+          if (!result.ok && result.reason !== 'already_claimed') {
+            showRetentionToast(i18nT('daily.weekly.claim_not_possible'));
+            claimButton.disabled = false;
+            return;
+          }
+          showRetentionToast(result.ok
+            ? i18nT('daily.weekly.claim_success', { coins: Math.max(0, Math.trunc(Number(result.coinsGranted) || 0)) })
+            : i18nT('daily.weekly.already_claimed'));
+          renderMissionsSheet();
+          renderAll();
+        });
+      }
+      weeklyWrapNode.appendChild(row);
+      const rewardNote = document.createElement('p');
+      rewardNote.className = 'sheet-note';
+      rewardNote.textContent = [extraProgressLabel, rewardLabel].filter(Boolean).join(' · ');
+      weeklyWrapNode.appendChild(rewardNote);
+    }
+  }
+
+  const coinActionsWrapNode = uiNode('missionsCoinActionsWrap', 'missionsCoinActionsWrap');
+  if (coinActionsWrapNode) {
+    coinActionsWrapNode.replaceChildren();
+    const rows = Array.isArray(coinActionVm.rows) ? coinActionVm.rows : [];
+    if (!rows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'sheet-note';
+      empty.textContent = i18nT('daily.coin_actions.empty');
+      coinActionsWrapNode.appendChild(empty);
+    } else {
+      for (const action of rows) {
+        const row = document.createElement('div');
+        row.className = `retention-task-row retention-task-row--${String(action.stateKey || 'locked')}`;
+        const coinActionBuddySrc = resolveCoinActionBuddyAsset(action, retention, coinActions);
+        const coinActionBuddyMotionClass = resolveBuddyMotionClass({
+          surface: 'missions_coin_action',
+          stateKey: String(action.stateKey || '').trim(),
+          dailyCategory: action.id === 'safe_boost_check'
+            ? 'coin_action_warning'
+            : (action.id === 'buddy_extra_tip'
+              ? 'coin_action_tip'
+              : ((action.id === 'daily_focus_boost' || action.id === 'weekly_push')
+                ? 'coin_action_timeboost'
+                : (String(action.stateKey || '').trim() === 'available' ? 'coin_action_reward' : 'coin_action_default'))),
+          tipCategory: action.id === 'buddy_extra_tip'
+            ? String(coinActions.buddyTip && coinActions.buddyTip.category || '').trim()
+            : '',
+          riskLevel: action.id === 'safe_boost_check' ? 'high' : 'low',
+          overallLevel: action.id === 'safe_boost_check' ? 'warning' : (String(action.stateKey || '').trim() === 'available' ? 'ready' : 'info')
+        });
+        const buttonHtml = action.available
+          ? `<button class="action-btn action-primary retention-task-claim-btn" type="button" data-coin-action="${escapeHtml(action.id)}">${escapeHtml(String(action.buttonLabel || i18nT('daily.coin_actions.buy', { coins: Math.max(0, Math.trunc(Number(action.cost) || 0)) })))}</button>`
+          : '';
+        row.innerHTML = `
+          ${coinActionBuddySrc ? buildCareMediaFrameMarkup({
+            src: coinActionBuddySrc,
+            fallbackSrc: CARE_STUDIO_ASSET_PATHS.buddyBase,
+            frameClass: 'missions-buddy-frame missions-buddy-frame--coin-action',
+            imageClass: `missions-buddy-image missions-buddy-image--coin-action ${coinActionBuddyMotionClass}`.trim(),
+            fallbackClass: 'missions-buddy-fallback',
+            fallbackMarkup: '<span class="missions-buddy-fallback-dot"></span>',
+            alt: '',
+            loading: 'lazy'
+          }) : ''}
+          <span class="retention-task-copy">
+            <strong>${escapeHtml(String(action.title || ''))}</strong>
+            <small>${escapeHtml(String(action.description || ''))}</small>
+            <small>${escapeHtml(String(action.effectText || ''))}</small>
+          </span>
+          <span class="retention-task-state retention-task-state--${escapeHtml(String(action.stateKey || 'locked'))}">${escapeHtml(String(action.stateLabel || ''))}</span>${buttonHtml}
+        `;
+        const actionButton = row.querySelector('[data-coin-action]');
+        if (actionButton) {
+          actionButton.addEventListener('click', () => {
+            actionButton.disabled = true;
+            const result = useCoinAction(String(action.id || ''), Date.now());
+            if (!result.ok) {
+              showRetentionToast(result.reason === 'insufficient_coins'
+                ? i18nT('shop.too_few_coins')
+                : i18nT('daily.coin_actions.not_available'));
+              actionButton.disabled = false;
+              return;
+            }
+            showRetentionToast(i18nT(`daily.coin_actions.toast.${String(action.id || '').trim()}`, {
+              coins: Math.max(0, Math.trunc(Number(result.cost) || 0))
+            }));
+            renderMissionsSheet();
+            renderAll();
+          });
+        }
+        coinActionsWrapNode.appendChild(row);
+      }
+    }
+  }
+
+  const decisionWrapNode = uiNode('missionsDecisionCardWrap', 'missionsDecisionCardWrap');
+  if (decisionWrapNode) {
+    decisionWrapNode.replaceChildren();
+    if (!decisionVm.visible) {
+      const empty = document.createElement('p');
+      empty.className = 'sheet-note';
+      empty.textContent = i18nT('daily.decision.empty');
+      decisionWrapNode.appendChild(empty);
+    } else {
+      const row = document.createElement('div');
+      row.className = `retention-task-row retention-task-row--${String(decisionVm.stateKey || 'available')}`;
+      const optionButtonsHtml = !decisionVm.answered
+        ? `<span class="retention-recovery-actions">${decisionVm.options.map((option) => (
+          `<button class="ghost-btn retention-recovery-btn" type="button" data-decision-option="${escapeHtml(option.id)}" aria-label="${escapeHtml(String(option.description || option.label || ''))}">${escapeHtml(String(option.label || option.id || ''))}</button>`
+        )).join('')}</span>`
+        : '';
+      const outcomeNote = decisionVm.resultText
+        ? `<small>${escapeHtml(String(decisionVm.resultText || ''))}</small>`
+        : '';
+      row.innerHTML = `
+        <span class="retention-task-copy">
+          <strong>${escapeHtml(String(decisionVm.title || i18nT('daily.decision.title')))}</strong>
+          <small>${escapeHtml(String(decisionVm.description || i18nT('daily.decision.empty')))}</small>
+          ${outcomeNote}
+        </span>
+        <span class="retention-task-state retention-task-state--${escapeHtml(String(decisionVm.stateKey || 'available'))}">${escapeHtml(String(decisionVm.stateLabel || ''))}</span>
+        ${optionButtonsHtml}
+      `;
+      for (const optionButton of Array.from(row.querySelectorAll('[data-decision-option]'))) {
+        optionButton.addEventListener('click', () => {
+          optionButton.disabled = true;
+          const result = answerDecisionCard(String(optionButton.getAttribute('data-decision-option') || ''), Date.now());
+          if (!result.ok && result.reason !== 'already_answered') {
+            showRetentionToast(i18nT('daily.decision.answer_not_possible'));
+            optionButton.disabled = false;
+            return;
+          }
+          showRetentionToast(result.ok ? i18nT('daily.decision.answer_success') : i18nT('daily.decision.already_answered'));
+          renderMissionsSheet();
+          renderAll();
+        });
+      }
+      decisionWrapNode.appendChild(row);
+      if (decisionVm.focusTaskId || decisionVm.suggestedCoinActionId) {
+        const note = document.createElement('p');
+        note.className = 'sheet-note';
+        note.textContent = decisionVm.focusTaskId
+          ? i18nT('daily.decision.focus_note', { task: resolveCoinActionTaskTitle(decisionVm.focusTaskId) })
+          : i18nT('daily.decision.action_note', {
+            action: i18nT(`daily.coin_actions.action.${String(decisionVm.suggestedCoinActionId || '').trim()}.title`)
+          });
+        decisionWrapNode.appendChild(note);
+      }
+    }
+  }
+
   const dailyList = uiNode('missionsDailyCareList', 'missionsDailyCareList');
   if (dailyList) {
     dailyList.replaceChildren();
@@ -18689,11 +20910,19 @@ function renderMissionsSheet() {
       const nextStateMap = {};
       for (const task of tasks) {
         const taskTypeKey = String(task.type || task.trigger || task.sheetName || '').trim();
-        const taskTitle = resolveLikelyI18nText(task.title, taskTypeKey ? `daily.task.${taskTypeKey}.title` : 'daily.task_fallback');
+        const normalizedCopy = normalizeDailyTaskCopy(task);
+        const taskTitle = resolveLikelyI18nText(normalizedCopy.title || task.title, taskTypeKey ? `daily.task.${taskTypeKey}.title` : 'daily.task_fallback');
+        const taskDescription = resolveLikelyI18nText(normalizedCopy.description || task.description, taskTypeKey ? `daily.task.${taskTypeKey}.description` : '');
         const target = Math.max(1, Math.trunc(Number(task.target || task.targetValue) || 1));
         const progress = clampInt(Number(task.progress || task.progressValue) || 0, 0, target);
         const completed = Boolean(task.completed) || progress >= target;
         const rewardGranted = Boolean(task.claimed) || Boolean(task.rewardGrantedAt) || hasRetentionClaim(task.claimKey);
+        const claimTaskId = String(task.taskId || task.id || '');
+        const focusBoost = getActiveFocusBoost(state, claimTaskId);
+        const focusBonus = focusBoost && Number(focusBoost.claimedAtMs || 0) <= 0
+          ? Math.max(0, Math.trunc(Number(focusBoost.bonusCoins) || RETENTION_COIN_ACTION_FOCUS_BONUS_DEFAULT))
+          : 0;
+        const decisionFocus = getActiveDecisionFocusTask(claimTaskId);
         const inProgress = !completed && progress > 0;
         const rowState = !completed
           ? (inProgress ? 'in_progress' : 'open')
@@ -18703,15 +20932,7 @@ function renderMissionsSheet() {
           : (rowState === 'in_progress'
             ? i18nT('daily.in_progress')
             : (rowState === 'claimable' ? i18nT('daily.claimable') : i18nT('daily.collected')));
-        const stateHint = !completed
-          ? (inProgress
-            ? i18nT('daily.retention.progress_almost', { progress, target })
-            : i18nT('daily.retention.start_task', { task: String(taskTitle || i18nT('daily.task_fallback')).toLowerCase() }))
-          : (rewardGranted
-            ? i18nT('daily.retention.reward_collected')
-            : i18nT('daily.retention.ready_for_coins', { coins: Math.max(0, Math.trunc(Number(task.rewardCoins) || 0)) }));
         const progressRatio = clamp(progress / target, 0, 1);
-        const claimTaskId = String(task.taskId || task.id || '');
         const claimCoins = Math.max(0, Math.trunc(Number(task.rewardCoins) || 0));
         const stateKey = `task:${claimTaskId}`;
         const previousState = String(previousStateMap[stateKey] || '');
@@ -18722,13 +20943,21 @@ function renderMissionsSheet() {
         const row = document.createElement('div');
         row.className = `retention-task-row retention-task-row--${rowState}${completed && rewardGranted ? ' retention-task-row--done' : ''}${transitionClass}`;
         const claimButtonHtml = completed && !rewardGranted
-          ? `<button class="action-btn action-primary retention-task-claim-btn" type="button" data-retention-claim-task="${escapeHtml(claimTaskId)}">${claimCoins > 0 ? `${i18nT('daily.claim')} +${claimCoins} C` : i18nT('daily.claim')}</button>`
+          ? `<button class="action-btn action-primary retention-task-claim-btn" type="button" data-retention-claim-task="${escapeHtml(claimTaskId)}">${(claimCoins + focusBonus) > 0 ? `${i18nT('daily.claim')} +${claimCoins + focusBonus} C` : i18nT('daily.claim')}</button>`
           : '';
         const stateToneClass = `retention-task-state retention-task-state--${rowState}`;
+        const focusNote = focusBonus > 0
+          ? `<small>${escapeHtml(i18nT('daily.coin_actions.focus_note', { bonus: focusBonus }))}</small>`
+          : '';
+        const decisionNote = decisionFocus
+          ? `<small>${escapeHtml(i18nT('daily.decision.focus_note', { task: resolveCoinActionTaskTitle(claimTaskId) }))}</small>`
+          : '';
         row.innerHTML = `
           <span class="retention-task-copy">
             <strong>${escapeHtml(String(taskTitle || i18nT('daily.task_fallback')))}</strong>
-            <small>${escapeHtml(stateHint)}</small>
+            <small>${escapeHtml(String(taskDescription || i18nT('daily.retention.task_description_fallback')))}</small>
+            ${focusNote}
+            ${decisionNote}
             <span class="retention-task-progress-wrap" aria-hidden="true">
               <span class="retention-task-progress-track">
                 <span class="retention-task-progress-fill" style="--retention-progress:${Math.round(progressRatio * 100)}"></span>
@@ -18906,6 +21135,8 @@ function renderMissionsSheet() {
     `;
     ui.missionsList.appendChild(card);
   });
+
+  hydrateCareAssetFrames(ui.missionsSheet || document);
 }
 
 function onMenuToggleClick() {
@@ -18939,6 +21170,7 @@ function closeMenu() {
   closeHomeStatPopup({ render: false });
   state.ui.menuOpen = false;
   renderGameMenu();
+  renderFirstRunDashboardFollowupOverlay();
 }
 
 function openMenuPlaceholder(title, text) {
@@ -19865,6 +22097,7 @@ function formatRecentHistoryHtml(row) {
 function onStartRun() {
   const progressionApi = getProgressionApi();
   const harvestApi = getHarvestApi();
+  const profile = getCanonicalProfile(state);
   clearHarvestVerificationPolling();
   harvestBackendRuntime.sessionPromise = null;
   harvestBackendRuntime.submissionPromise = null;
@@ -19878,6 +22111,11 @@ function onStartRun() {
 
   const nowMs = Date.now();
   const run = getCanonicalRun(state);
+  const introState = getFirstRunIntroState(state);
+  const firstRunChoices = readFirstRunSetupChoices();
+  const isFreshFirstRun = Math.max(0, Math.trunc(Number(run.id || 0))) === 0
+    && Math.max(0, Math.trunc(Number(profile && profile.stats && profile.stats.totalRuns || 0))) === 0
+    && introState.completed !== true;
   state.setup = {
     ...setup,
     createdAtReal: nowMs
@@ -19905,6 +22143,15 @@ function onStartRun() {
   state.meta.rescue.used = false;
   state.meta.rescue.usedAtRealMs = null;
   state.meta.rescue.lastResult = null;
+  introState.growStyle = firstRunChoices.growStyle;
+  introState.environment = firstRunChoices.environment;
+  introState.plantType = firstRunChoices.plantType;
+  introState.decisionId = '';
+  introState.resultTone = 'good';
+  introState.statusKey = 'good';
+  introState.active = isFreshFirstRun;
+  introState.step = isFreshFirstRun ? 'plant' : 'done';
+  introState.createdAtRealMs = isFreshFirstRun ? nowMs : Number(introState.createdAtRealMs || 0);
 
   ensureCurrencyState(state);
 
@@ -19936,8 +22183,12 @@ function onStartRun() {
   renderRunSummaryOverlay();
   schedulePersistState(true);
   addLog('system', 'Neuer Run gestartet (Figma-Setup)', state.setup);
-  showRetentionToast(i18nT('onboarding.guest.run_started'));
+  showRetentionToast(i18nT(isFreshFirstRun ? 'onboarding.first_five.toast_started' : 'onboarding.first_run.run_started'));
   void createHarvestRunSessionForCurrentRun();
+}
+
+if (typeof window !== 'undefined') {
+  window.__gsStartRunHandler = onStartRun;
 }
 
 async function onDeathResetClick() {
@@ -22211,12 +24462,16 @@ window.checkMissions = function(triggerType, payload) {
       }
     }
     if (isCompleted) {
-      window.completeMission(mission);
+      window.completeMission(mission, {
+        triggerType,
+        payload: payload && typeof payload === 'object' ? { ...payload } : null,
+        triggeredAtRealMs: nowMs
+      });
     }
   });
 };
 
-window.completeMission = function(mission) {
+window.completeMission = function(mission, context = {}) {
   state.missions.completed.push(mission.id);
   if (mission.reward) {
     const missionCoins = Math.max(0, Math.trunc(Number(mission.reward.coins) || 0));
@@ -22225,9 +24480,13 @@ window.completeMission = function(mission) {
     }
   }
   if (typeof addLog === 'function') {
-    addLog('system', "Mission erfuellt: " + mission.title, { missionId: mission.id, reward: mission.reward });
+    addLog('system', "Mission erfuellt: " + mission.title, {
+      missionId: mission.id,
+      reward: mission.reward,
+      triggerType: String(context.triggerType || 'unknown')
+    });
   }
-  if (typeof openMenuDialog === 'function') {
+  if (typeof openMenuDialog === 'function' && !shouldSuppressMissionRewardDialog(mission, context)) {
     const reward = mission && mission.reward && typeof mission.reward === 'object' ? mission.reward : {};
     const rewardItems = [
       reward.coins ? { icon: 'C', value: `+${reward.coins}`, label: 'Coins', tone: 'gold' } : null
@@ -22444,6 +24703,34 @@ function resolveStartupAuthGateClear(stateRestored = false) {
   const resolve = startupAuthGateResolver;
   startupAuthGateResolver = null;
   resolve(Boolean(stateRestored));
+}
+
+function syncStartupRestoreTransientGuards() {
+  const restoreMeta = globalThis.__gsStorageRestoreMeta && typeof globalThis.__gsStorageRestoreMeta === 'object'
+    ? globalThis.__gsStorageRestoreMeta
+    : null;
+  const restoredRunStatus = String(restoreMeta && restoreMeta.runStatus || '').trim().toLowerCase();
+  const hasRestoredActiveRun = Boolean(
+    restoreMeta
+    && restoreMeta.restored === true
+    && (restoredRunStatus === 'active' || restoredRunStatus === 'downed')
+  );
+  startupRestoreMissionRewardSuppressUntilMs = hasRestoredActiveRun ? (Date.now() + 30000) : 0;
+}
+
+function shouldSuppressMissionRewardDialog(mission, context = {}) {
+  if (!Number.isFinite(startupRestoreMissionRewardSuppressUntilMs) || startupRestoreMissionRewardSuppressUntilMs <= 0) {
+    return false;
+  }
+  if (Date.now() > startupRestoreMissionRewardSuppressUntilMs) {
+    startupRestoreMissionRewardSuppressUntilMs = 0;
+    return false;
+  }
+  if (String(context.triggerType || '').trim().toLowerCase() !== 'tick') {
+    return false;
+  }
+  const conditionType = String(mission && mission.condition && mission.condition.type || '').trim().toLowerCase();
+  return ['min_day', 'min_health', 'max_stress_duration'].includes(conditionType);
 }
 
 function clearTransientBootUiState() {

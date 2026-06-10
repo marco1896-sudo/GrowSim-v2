@@ -1,0 +1,361 @@
+{
+  "schema_version": "1.0.0",
+  "queue_id": "start-charge-plant-assets-v1",
+  "source_plan": "docs/plants/assets/final-plant-asset-production-plan.md",
+  "source_skill": "C:/Users/Marco/.codex/skills/grow-simulator-plant-asset-factory/SKILL.md",
+  "queue_status": [
+    "ready_for_generation",
+    "not_generated_in_this_phase"
+  ],
+  "generated_in_this_phase": false,
+  "generation_note": "Prepared as a repo-local generation queue only. No real PNG batch was produced or promoted in this phase.",
+  "asset_count": 11,
+  "defaults": {
+    "strain_id": "shared",
+    "strain_archetype": "hybrid_balanced",
+    "format": "png",
+    "canvas_size": "2048x2048",
+    "transparent_background": true,
+    "anchor_policy": "full_plant_bottom_anchor_centerline",
+    "style_requirements": [
+      "premium mobile game plant asset",
+      "realistic but slightly stylized cannabis morphology",
+      "single isolated plant only",
+      "consistent camera angle, centerline, scale, and soft studio lighting",
+      "full plant visible with transparent padding",
+      "no pot, no soil, no substrate, no environment, no text, no UI"
+    ],
+    "baseline_matching_rules": [
+      "gleiche Pflanzenstruktur",
+      "gleiche Grundgroesse",
+      "gleiche Perspektive",
+      "gleiche Lichtfuehrung",
+      "gleiche Canvas-Position",
+      "nur Zustand/Symptome aendern",
+      "keine komplett neue Pflanze erzeugen"
+    ]
+  },
+  "assets": [
+    {
+      "order": 1,
+      "asset_id": "cannabis_seedling_healthy_v001",
+      "asset_type": "baseline",
+      "stage": "seedling",
+      "growth_stage_id": "stage_02_seedling",
+      "condition": "healthy",
+      "severity": "none",
+      "target_path": "assets/plants/strains/shared/stage_02_seedling/healthy_none.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis seedling, stage_02_seedling, healthy, severity none. Show a very small seedling with a fine main stem, cotyledons and first true serrated leaves, minimal leaf mass, compact internodes, no flowers, stable bottom anchor, centered composition, strong silhouette at phone size, soft studio lighting, same camera and light direction as the full series. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, ground plane, background, grow tent, lamp, tools, hands, person, text, logo, watermark, UI, second plant, cropped leaves, cropped stem, fantasy cannabis leaves, cartoon style, noisy photo cutout, harsh photorealism, malformed branching, flowers, buds",
+      "qa_criteria": [
+        "Seedling reads clearly as the smallest baseline stage.",
+        "No bud or flower cues.",
+        "No pot, no substrate, no environment.",
+        "Bottom anchor and centerline stay consistent with later stages.",
+        "Silhouette remains readable at 320 px and 180 px."
+      ],
+      "dependency": {
+        "type": "none"
+      }
+    },
+    {
+      "order": 2,
+      "asset_id": "cannabis_early_veg_healthy_v001",
+      "asset_type": "baseline",
+      "stage": "early_veg",
+      "growth_stage_id": "stage_03_early_veg",
+      "condition": "healthy",
+      "severity": "none",
+      "target_path": "assets/plants/strains/shared/stage_03_early_veg/healthy_none.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_03_early_veg, healthy, severity none. Show a young vegetative plant with a lightly opening structure, several true leaf pairs, fresh vitality, low-to-medium leaf mass, airy spacing, compact early veg character, no flowers, centered front-facing composition, shared bottom anchor, soft studio lighting, identical camera and scale language to the lineup. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, room scene, grow tent, lamp, tools, hands, person, text, logo, watermark, UI, second plant, cropped leaves, cropped top, bushy generic shrub, flowers, buds, cartoon style, noisy photorealism",
+      "qa_criteria": [
+        "Clearly larger and more open than the seedling baseline.",
+        "No bloom cues or budsites.",
+        "Leaf edges remain clean and mobile-readable.",
+        "No pot, no substrate, no environment.",
+        "Anchor and camera match the baseline series."
+      ],
+      "dependency": {
+        "type": "none"
+      }
+    },
+    {
+      "order": 3,
+      "asset_id": "cannabis_mid_veg_healthy_v001",
+      "asset_type": "baseline",
+      "stage": "mid_veg",
+      "growth_stage_id": "stage_04_mid_veg",
+      "condition": "healthy",
+      "severity": "none",
+      "target_path": "assets/plants/strains/shared/stage_04_mid_veg/healthy_none.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_04_mid_veg, healthy, severity none. Show the main everyday vegetative baseline: balanced symmetrical structure, stable main stem, clear side branching, medium-to-high leaf mass without overload, normal internode spacing, no flowers, calm and high-quality silhouette, centered composition, shared bottom anchor, consistent series camera, scale, and soft studio lighting. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, room scene, grow tent, lamp, tools, hands, person, text, logo, watermark, UI, second plant, cropped leaves, cropped buds, photoreal studio setup, flowers, buds, cartoon style, impossible leaf shapes",
+      "qa_criteria": [
+        "Best all-purpose veg silhouette with strong phone readability.",
+        "No bloom or preflower cues.",
+        "Balanced leaf mass, not over-busy or noisy.",
+        "No pot, no substrate, no environment.",
+        "Shared centerline and anchor remain stable."
+      ],
+      "dependency": {
+        "type": "none"
+      }
+    },
+    {
+      "order": 4,
+      "asset_id": "cannabis_late_veg_healthy_v001",
+      "asset_type": "baseline",
+      "stage": "late_veg",
+      "growth_stage_id": "stage_05_late_veg",
+      "condition": "healthy",
+      "severity": "none",
+      "target_path": "assets/plants/strains/shared/stage_05_late_veg/healthy_none.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_05_late_veg, healthy, severity none. Show a broader denser vegetative plant with more branching, fuller crown, high leaf mass, mature pre-flip veg character, still no real flowers, compact-to-moderate internodes, centered front-facing composition, same camera line, same soft studio lighting, same bottom anchor as the baseline series. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, scenery, tools, hands, text, logo, watermark, UI, second plant, cropped leaves, flower clusters, dense bloom buds, futuristic styling, cartoon look, noisy photo cutout",
+      "qa_criteria": [
+        "Distinctly denser and more mature than mid veg.",
+        "Still reads as veg, not stretch or flower.",
+        "No pot, no substrate, no environment.",
+        "No cropped branches or canopy tips.",
+        "Camera, scale, and lighting stay consistent."
+      ],
+      "dependency": {
+        "type": "none"
+      }
+    },
+    {
+      "order": 5,
+      "asset_id": "cannabis_stretch_healthy_v001",
+      "asset_type": "baseline",
+      "stage": "stretch",
+      "growth_stage_id": "stage_07_stretch",
+      "condition": "healthy",
+      "severity": "none",
+      "target_path": "assets/plants/strains/shared/stage_07_stretch/healthy_none.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_07_stretch, healthy, severity none. Show a clear stretch morphotype with a taller main axis, longer internodes, upward growth, airier crown than late veg, early transition toward bloom, only minimal preflower hints, no dense buds, centered composition, shared bottom anchor, same camera angle and soft studio lighting as the series. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, room scene, tools, hands, text, logo, watermark, UI, second plant, cropped leaves, cropped top, dense flower buds, heavy bloom mass, weak floppy plant, cartoon style, impossible morphology",
+      "qa_criteria": [
+        "Clearly reads as stretch, not late veg and not early flower.",
+        "Internodes are visibly longer but still healthy and plausible.",
+        "No dense bloom mass.",
+        "No pot, no substrate, no environment.",
+        "Anchor and camera remain aligned to the lineup."
+      ],
+      "dependency": {
+        "type": "none"
+      }
+    },
+    {
+      "order": 6,
+      "asset_id": "cannabis_early_flower_healthy_v001",
+      "asset_type": "baseline",
+      "stage": "early_flower",
+      "growth_stage_id": "stage_08_early_flower",
+      "condition": "healthy",
+      "severity": "none",
+      "target_path": "assets/plants/strains/shared/stage_08_early_flower/healthy_none.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_08_early_flower, healthy, severity none. Show a healthy early flower plant with visible but still modest budsites and fresh pistil clusters, medium-to-high leaf mass, stretch influence still present but settling, attractive bloom-start silhouette, centered composition, shared bottom anchor, same series camera, scale, and soft studio lighting. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, grow room scene, tools, hands, text, logo, watermark, UI, second plant, cropped leaves, cropped buds, oversized dense colas, late flower mass, cartoon style, harsh photo noise",
+      "qa_criteria": [
+        "Clear budsite onset without looking like mid flower.",
+        "Stretch and early bloom both remain visible.",
+        "No overbuilt bud mass.",
+        "No pot, no substrate, no environment.",
+        "Lighting and anchor match the baseline series."
+      ],
+      "dependency": {
+        "type": "none"
+      }
+    },
+    {
+      "order": 7,
+      "asset_id": "cannabis_mid_flower_healthy_v001",
+      "asset_type": "baseline",
+      "stage": "mid_flower",
+      "growth_stage_id": "stage_09_mid_flower",
+      "condition": "healthy",
+      "severity": "none",
+      "target_path": "assets/plants/strains/shared/stage_09_mid_flower/healthy_none.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_09_mid_flower, healthy, severity none. Show the key bloom diagnosis baseline: full developed flower structure, clear cola formation, balanced leaves and buds, vital and attractive plant, moderate internodes, high mobile readability, centered composition, shared bottom anchor, same camera angle, scale, and soft studio lighting as the series. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, scene, grow tent, lamp, tools, hands, person, text, logo, watermark, UI, second plant, cropped leaves, cropped buds, excessive trichome glitter, rotten buds, cartoon style, noisy photoreal clutter",
+      "qa_criteria": [
+        "Strongest diagnosis baseline in the batch.",
+        "Leaf and bud balance stays clean at phone size.",
+        "No disease or stress cues.",
+        "No pot, no substrate, no environment.",
+        "This becomes the morphology reference for all mid-flower conditions."
+      ],
+      "dependency": {
+        "type": "none"
+      }
+    },
+    {
+      "order": 8,
+      "asset_id": "cannabis_mid_flower_underwatered_medium_v001",
+      "asset_type": "condition",
+      "stage": "mid_flower",
+      "growth_stage_id": "stage_09_mid_flower",
+      "condition": "underwatered",
+      "severity": "medium",
+      "target_path": "assets/plants/strains/shared/stage_09_mid_flower/underwatered_medium.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_09_mid_flower, condition underwatered, severity medium. Use the same morphology, size, camera, lighting, and canvas position as the healthy mid flower baseline. Show clear dry-stress loss of turgor: drooping leaves, slightly rolled dry leaf posture, tired canopy, thin petiole feel, buds still intact and readable, no collapse, no severe death cues. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, scene, tools, hands, text, logo, watermark, UI, second plant, cropped leaves, cropped buds, dark wet overwatering look, root rot, severe collapse, mold, bud damage, cartoon style, noisy photo cutout",
+      "qa_criteria": [
+        "Must read immediately as dry stress, not overwatering.",
+        "Symptom intensity stays medium, not severe.",
+        "Buds remain plausible and attractive.",
+        "No pot, no substrate, no environment.",
+        "Structure, anchor, and camera match the healthy mid-flower baseline."
+      ],
+      "dependency": {
+        "type": "baseline_required",
+        "required_baseline_asset_id": "cannabis_mid_flower_healthy_v001",
+        "required_baseline_path": "assets/plants/strains/shared/stage_09_mid_flower/healthy_none.png",
+        "baseline_matching_rules": [
+          "gleiche Pflanzenstruktur",
+          "gleiche Grundgroesse",
+          "gleiche Perspektive",
+          "gleiche Lichtfuehrung",
+          "gleiche Canvas-Position",
+          "nur Zustand/Symptome aendern",
+          "keine komplett neue Pflanze erzeugen"
+        ]
+      }
+    },
+    {
+      "order": 9,
+      "asset_id": "cannabis_mid_flower_overwatered_medium_v001",
+      "asset_type": "condition",
+      "stage": "mid_flower",
+      "growth_stage_id": "stage_09_mid_flower",
+      "condition": "overwatered",
+      "severity": "medium",
+      "target_path": "assets/plants/strains/shared/stage_09_mid_flower/overwatered_medium.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_09_mid_flower, condition overwatered, severity medium. Use the same morphology, size, camera, lighting, and canvas position as the healthy mid flower baseline. Show a heavier darker wet-stress posture: leaves pulled downward with swollen limp weight, slower heavy canopy feel, no dry roll, no severe claw collapse, buds still intact and readable. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, scene, tools, hands, text, logo, watermark, UI, second plant, cropped leaves, cropped buds, dry papery underwatered look, heat tacoing, root rot slime, yellow disease mix, severe collapse, cartoon style, noisy photo cutout",
+      "qa_criteria": [
+        "Must read immediately as overwatering, not dry stress.",
+        "Darker heavier posture is visible without turning into rot or toxicity.",
+        "Severity stays medium.",
+        "No pot, no substrate, no environment.",
+        "Structure, anchor, and camera match the healthy mid-flower baseline."
+      ],
+      "dependency": {
+        "type": "baseline_required",
+        "required_baseline_asset_id": "cannabis_mid_flower_healthy_v001",
+        "required_baseline_path": "assets/plants/strains/shared/stage_09_mid_flower/healthy_none.png",
+        "baseline_matching_rules": [
+          "gleiche Pflanzenstruktur",
+          "gleiche Grundgroesse",
+          "gleiche Perspektive",
+          "gleiche Lichtfuehrung",
+          "gleiche Canvas-Position",
+          "nur Zustand/Symptome aendern",
+          "keine komplett neue Pflanze erzeugen"
+        ]
+      }
+    },
+    {
+      "order": 10,
+      "asset_id": "cannabis_mid_flower_heat_stress_medium_v001",
+      "asset_type": "condition",
+      "stage": "mid_flower",
+      "growth_stage_id": "stage_09_mid_flower",
+      "condition": "heat_stress",
+      "severity": "medium",
+      "target_path": "assets/plants/strains/shared/stage_09_mid_flower/heat_stress_medium.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_09_mid_flower, condition heat_stress, severity medium. Use the same morphology, size, camera, lighting, and canvas position as the healthy mid flower baseline. Show upper-canopy heat and VPD tension: taco leaves, upward-curled top leaf edges, tense dry top zone, stressed but still vital bloom posture, buds intact and readable, no burn apocalypse, no water-stress droop. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, scene, tools, hands, text, logo, watermark, UI, second plant, cropped leaves, cropped buds, droopy underwatered posture, dark heavy overwatered posture, flames, scorched dead plant, severe burn, mold, cartoon style, noisy photo cutout",
+      "qa_criteria": [
+        "Top-zone tacoing must be visible on first glance.",
+        "Must not be confused with dry or wet watering stress.",
+        "Buds stay healthy-looking because this is not a bud-damage condition.",
+        "No pot, no substrate, no environment.",
+        "Structure, anchor, and camera match the healthy mid-flower baseline."
+      ],
+      "dependency": {
+        "type": "baseline_required",
+        "required_baseline_asset_id": "cannabis_mid_flower_healthy_v001",
+        "required_baseline_path": "assets/plants/strains/shared/stage_09_mid_flower/healthy_none.png",
+        "baseline_matching_rules": [
+          "gleiche Pflanzenstruktur",
+          "gleiche Grundgroesse",
+          "gleiche Perspektive",
+          "gleiche Lichtfuehrung",
+          "gleiche Canvas-Position",
+          "nur Zustand/Symptome aendern",
+          "keine komplett neue Pflanze erzeugen"
+        ]
+      }
+    },
+    {
+      "order": 11,
+      "asset_id": "cannabis_mid_flower_nutrient_burn_medium_v001",
+      "asset_type": "condition",
+      "stage": "mid_flower",
+      "growth_stage_id": "stage_09_mid_flower",
+      "condition": "nutrient_burn",
+      "severity": "medium",
+      "target_path": "assets/plants/strains/shared/stage_09_mid_flower/nutrient_burn_medium.png",
+      "expected_image_size": "2048x2048",
+      "transparency_requirement": "Fully transparent background, isolated full plant, alpha-clean edges, no halo.",
+      "final_prompt": "Create a premium mobile game cannabis plant asset as a transparent single-plant PNG. Subject: hybrid_balanced cannabis plant, stage_09_mid_flower, condition nutrient_burn, severity medium. Use the same morphology, size, camera, lighting, and canvas position as the healthy mid flower baseline. Show a still-vital flowering plant with clear but controlled feed burn: burnt leaf tips and margins, moderate necrotic edging, rest of the plant still structurally healthy, buds intact and attractive, no severe mixed-disease chaos. Full plant visible with clean transparent padding. No pot, no soil, no substrate, no scene, no text.",
+      "negative_prompt": "pot, planter, soil, substrate, background, scene, tools, hands, text, logo, watermark, UI, second plant, cropped leaves, cropped buds, generalized whole-plant sickness, severe deficiency yellowing, bud rot, mold, dead plant, cartoon style, noisy photo cutout",
+      "qa_criteria": [
+        "Tip and margin burn must read immediately as feed stress.",
+        "Plant remains mostly vital because severity is medium.",
+        "Buds stay visually plausible and attractive.",
+        "No pot, no substrate, no environment.",
+        "Structure, anchor, and camera match the healthy mid-flower baseline."
+      ],
+      "dependency": {
+        "type": "baseline_required",
+        "required_baseline_asset_id": "cannabis_mid_flower_healthy_v001",
+        "required_baseline_path": "assets/plants/strains/shared/stage_09_mid_flower/healthy_none.png",
+        "baseline_matching_rules": [
+          "gleiche Pflanzenstruktur",
+          "gleiche Grundgroesse",
+          "gleiche Perspektive",
+          "gleiche Lichtfuehrung",
+          "gleiche Canvas-Position",
+          "nur Zustand/Symptome aendern",
+          "keine komplett neue Pflanze erzeugen"
+        ]
+      }
+    }
+  ],
+  "recommended_generation_order": [
+    "cannabis_seedling_healthy_v001",
+    "cannabis_early_veg_healthy_v001",
+    "cannabis_mid_veg_healthy_v001",
+    "cannabis_late_veg_healthy_v001",
+    "cannabis_stretch_healthy_v001",
+    "cannabis_early_flower_healthy_v001",
+    "cannabis_mid_flower_healthy_v001",
+    "cannabis_mid_flower_underwatered_medium_v001",
+    "cannabis_mid_flower_overwatered_medium_v001",
+    "cannabis_mid_flower_heat_stress_medium_v001",
+    "cannabis_mid_flower_nutrient_burn_medium_v001"
+  ]
+}

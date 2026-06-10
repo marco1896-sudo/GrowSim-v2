@@ -1,0 +1,223 @@
+{
+  "library": "buddy",
+  "version": 1,
+  "background": "transparent",
+  "naming_convention": {
+    "pattern": "buddy_<id>_v###.png",
+    "rules": [
+      "lowercase",
+      "snake_case",
+      "ascii_only",
+      "transparent_png_only",
+      "increment_version_only_for_visual_changes"
+    ]
+  },
+  "directories": {
+    "poses": "assets/buddy/transparent/poses",
+    "emotions": "assets/buddy/transparent/emotions",
+    "ui": "assets/buddy/transparent/ui",
+    "source": "assets/buddy/source"
+  },
+  "assets": [
+    {
+      "id": "idle_front",
+      "filename": "transparent/poses/buddy_idle_front_v001.png",
+      "mood": "neutral",
+      "pose": "front_arms_down",
+      "use_cases": ["default_idle", "dialogue", "onboarding"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/master/buddy_master_front_neutral_arms_down_v1.png"
+    },
+    {
+      "id": "pointing_right",
+      "filename": "transparent/poses/buddy_pointing_right_v001.png",
+      "mood": "helpful",
+      "pose": "pointing_right",
+      "use_cases": ["tutorial_hint", "cta_direction", "panel_intro"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No matching pointing-right asset found in current repository scan."
+    },
+    {
+      "id": "pointing_left",
+      "filename": "transparent/poses/buddy_pointing_left_v001.png",
+      "mood": "helpful",
+      "pose": "pointing_left",
+      "use_cases": ["tutorial_hint", "cta_direction", "panel_intro"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No matching pointing-left asset found in current repository scan."
+    },
+    {
+      "id": "thumbs_up",
+      "filename": "transparent/poses/buddy_thumbs_up_v001.png",
+      "mood": "positive",
+      "pose": "thumbs_up",
+      "use_cases": ["success_feedback", "reward_claim", "confirmation"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No matching thumbs-up asset found in current repository scan."
+    },
+    {
+      "id": "warning",
+      "filename": "transparent/emotions/buddy_warning_v001.png",
+      "mood": "alert",
+      "pose": "warning_gesture",
+      "use_cases": ["risk_notice", "care_warning", "event_alert"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No approved warning asset found. Rejected care-studio variants were intentionally excluded."
+    },
+    {
+      "id": "confused",
+      "filename": "transparent/emotions/buddy_confused_v001.png",
+      "mood": "confused",
+      "pose": "head_scratch",
+      "use_cases": ["unknown_state", "failed_action", "question_prompt"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/emotions/buddy_emotion_confused_head_scratch_v1.png"
+    },
+    {
+      "id": "excited",
+      "filename": "transparent/emotions/buddy_excited_v001.png",
+      "mood": "excited",
+      "pose": "high_energy",
+      "use_cases": ["reward_reveal", "level_up", "positive_event"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No clearly labeled excited asset found; avoided remapping a non-equivalent pose."
+    },
+    {
+      "id": "sleeping",
+      "filename": "transparent/emotions/buddy_sleeping_v001.png",
+      "mood": "sleepy",
+      "pose": "sleeping",
+      "use_cases": ["offline_state", "night_mode", "idle_long"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No matching sleeping asset found in current repository scan."
+    },
+    {
+      "id": "celebrating",
+      "filename": "transparent/emotions/buddy_celebrating_v001.png",
+      "mood": "celebrating",
+      "pose": "celebration",
+      "use_cases": ["milestone", "achievement", "harvest_success"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No clearly labeled celebration asset found; avoided using a generic happy pose as a false match."
+    },
+    {
+      "id": "thinking",
+      "filename": "transparent/emotions/buddy_thinking_v001.png",
+      "mood": "thoughtful",
+      "pose": "thinking",
+      "use_cases": ["analysis_hint", "decision_prompt", "diagnosis"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No matching thinking asset found in current repository scan."
+    },
+    {
+      "id": "coin_reward",
+      "filename": "transparent/ui/buddy_coin_reward_v001.png",
+      "mood": "rewarding",
+      "pose": "reward_presenting",
+      "use_cases": ["coin_reward", "claim_popup", "economy_feedback"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No matching coin-reward Buddy asset found in current repository scan."
+    },
+    {
+      "id": "daily_task",
+      "filename": "transparent/ui/buddy_daily_task_v001.png",
+      "mood": "encouraging",
+      "pose": "task_presenting",
+      "use_cases": ["daily_tasks", "streak_prompt", "goal_reminder"],
+      "background": "transparent",
+      "status": "missing",
+      "notes": "No matching daily-task Buddy asset found in current repository scan."
+    },
+    {
+      "id": "master_front_happy_open_arms",
+      "filename": "transparent/poses/buddy_master_front_happy_open_arms_v001.png",
+      "mood": "happy",
+      "pose": "front_open_arms",
+      "use_cases": ["identity_reference", "greeting", "hero_pose"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/master/buddy_master_front_happy_open_arms_v1.png"
+    },
+    {
+      "id": "master_side_neutral_profile",
+      "filename": "transparent/poses/buddy_master_side_neutral_profile_v001.png",
+      "mood": "neutral",
+      "pose": "side_profile",
+      "use_cases": ["identity_reference", "directional_ui", "profile_pose"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/master/buddy_master_side_neutral_profile_v1.png"
+    },
+    {
+      "id": "happy_open_arms",
+      "filename": "transparent/poses/buddy_happy_open_arms_v001.png",
+      "mood": "happy",
+      "pose": "open_arms",
+      "use_cases": ["welcome", "reward_intro", "positive_feedback"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/poses/buddy_pose_happy_open_arms_v1.png"
+    },
+    {
+      "id": "playful_wink_peace_sign",
+      "filename": "transparent/poses/buddy_playful_wink_peace_sign_v001.png",
+      "mood": "playful",
+      "pose": "wink_peace_sign",
+      "use_cases": ["social_reward", "cosmetic_ui", "lighthearted_feedback"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/poses/buddy_pose_playful_wink_peace_sign_v1.png"
+    },
+    {
+      "id": "angry_fists_up",
+      "filename": "transparent/emotions/buddy_angry_fists_up_v001.png",
+      "mood": "angry",
+      "pose": "fists_up",
+      "use_cases": ["strong_reaction", "challenge_moment", "high_intensity_feedback"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/emotions/buddy_emotion_angry_fists_up_v1.png"
+    },
+    {
+      "id": "relaxed_smirk_head_tilt",
+      "filename": "transparent/emotions/buddy_relaxed_smirk_head_tilt_v001.png",
+      "mood": "relaxed_smirk",
+      "pose": "head_tilt",
+      "use_cases": ["coach_moment", "confidence_feedback", "playful_hint"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/emotions/buddy_emotion_relaxed_smirk_head_tilt_v1.png"
+    },
+    {
+      "id": "sad_downcast",
+      "filename": "transparent/emotions/buddy_sad_downcast_v001.png",
+      "mood": "sad",
+      "pose": "downcast",
+      "use_cases": ["loss_feedback", "low_energy_state", "gentle_warning"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/emotions/buddy_emotion_sad_downcast_v1.png"
+    },
+    {
+      "id": "surprised_raised_hands",
+      "filename": "transparent/emotions/buddy_surprised_raised_hands_v001.png",
+      "mood": "surprised",
+      "pose": "raised_hands",
+      "use_cases": ["alert_reaction", "discovery", "high_visibility_feedback"],
+      "background": "transparent",
+      "status": "needs_revision",
+      "notes": "Processed from official reference with alpha transparency and square export padding. Base/foot cleanup still unresolved after targeted revision: assets/buddy referenz/emotions/buddy_emotion_surprised_raised_hands_v1.png"
+    }
+  ]
+}

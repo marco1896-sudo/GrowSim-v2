@@ -112,6 +112,7 @@ async function main() {
       };
       const initialHeaderExpectation = getCareHeaderExpectation();
       const initialStatusChips = readStatusChips();
+      const waterRecommendationNote = String(document.querySelector('#careEffectsList .care-studio-meta-note')?.textContent || '').trim();
 
       const beforeWater = Number(window.__gsState.status.water || 0);
       window.onCareExecuteAction();
@@ -147,8 +148,8 @@ async function main() {
       window.__gsState.plant = window.__gsState.plant || {};
       window.__gsState.plant.stageIndex = 4;
       window.__gsState.plant.phase = 'vegetative';
-      window.__gsState.status.nutrition = 34;
-      window.__gsState.status.water = 62;
+      window.__gsState.status.nutrition = 58;
+      window.__gsState.status.water = 58;
       window.__gsState.status.stress = 8;
       window.__gsState.status.risk = 12;
       window.__gsState.care = window.__gsState.care || {};
@@ -163,15 +164,16 @@ async function main() {
       };
       window.__gsState.care.nutrients = {
         ...(window.__gsState.care.nutrients || {}),
-        n: 28,
-        p: 30,
-        k: 32,
-        micro: 34,
+        n: 52,
+        p: 54,
+        k: 56,
+        micro: 58,
         saltLoad: 18
       };
       window.renderCareSheet(true);
       await waitForCareImages();
       const feedMethodLabels = collectActionTexts();
+      const feedRecommendationNote = String(document.querySelector('#careEffectsList .care-studio-meta-note')?.textContent || '').trim();
       const beforeFeed = Number(window.__gsState.status.nutrition || 0);
       window.__gsState.ui.care.selectedActionId = 'feed_light_base';
       window.renderCareSheet(true);
@@ -231,12 +233,14 @@ async function main() {
         initialStatusSnapshot,
         initialHeaderExpectation,
         initialStatusChips,
+        waterRecommendationNote,
         waterChanged: afterWater !== beforeWater,
         waterStatusSnapshot,
         waterHeaderExpectation,
         waterStatusChips,
         waterMethodLabels,
         feedMethodLabels,
+        feedRecommendationNote,
         feedChanged: afterFeed !== beforeFeed,
         feedStatusSnapshot,
         feedHeaderExpectation,
@@ -288,10 +292,12 @@ async function main() {
     assert.ok(result.decisionZoneChildren >= 1, 'care studio should render a separate decision zone');
     assert.ok(result.decisionCardCount >= 1, 'care studio should render a decision card for the selected action');
     assert.ok(result.deltaChipCount >= 1, 'care studio should render delta chips for the selected action');
-    assert.ok(/Decision|Auswahl|Selection|Delta|Feuchte|Moisture/.test(result.previewText), 'care studio should render a decision forecast for the selected action');
-    assert.ok(result.aftercareCardCount >= 1, 'care studio should render stored after-action feedback');
-    assert.ok(result.feedback.length > 0, 'care studio should keep feedback visible after execution');
-    assert.ok(Math.abs(parseInt(result.initialStatusChips.Feuchte.value, 10) - Math.round(result.initialHeaderExpectation.water)) <= 1, 'care header moisture should mirror the care summary moisture');
+      assert.ok(/Decision|Auswahl|Selection|Delta|Feuchte|Moisture/.test(result.previewText), 'care studio should render a decision forecast for the selected action');
+      assert.ok(result.aftercareCardCount >= 1, 'care studio should render stored after-action feedback');
+      assert.ok(result.feedback.length > 0, 'care studio should keep feedback visible after execution');
+      assert.ok(result.waterRecommendationNote.length > 0, 'water recommendation should include a short stable explanation');
+      assert.ok(/Beob|Stress|Werte|monitor|watch/i.test(result.waterRecommendationNote), 'water recommendation note should explain why monitoring is enough');
+      assert.ok(Math.abs(parseInt(result.initialStatusChips.Feuchte.value, 10) - Math.round(result.initialHeaderExpectation.water)) <= 1, 'care header moisture should mirror the care summary moisture');
     assert.strictEqual(result.initialStatusChips['Versorg.'].value, `${Math.round(result.initialStatusSnapshot.nutrition)}%`, 'care header nutrition should mirror the global nutrition status');
     assert.strictEqual(result.initialStatusChips.Stress.value, `${Math.round(result.initialStatusSnapshot.stress)}%`, 'care header stress should mirror the global stress status');
     assert.ok(Math.abs(parseInt(result.initialStatusChips.Risiko.value, 10) - Math.round(result.initialHeaderExpectation.risk)) <= 1, 'care header risk should mirror the care summary risk');
@@ -310,10 +316,12 @@ async function main() {
     assert.strictEqual(result.feedChanged, true, 'feed methods should remain executable');
     assert.ok(Math.abs(parseInt(result.feedStatusChips.Feuchte.value, 10) - Math.round(result.feedHeaderExpectation.water)) <= 1, 'care header moisture should stay synced to care summary after a feed method');
     assert.strictEqual(result.feedStatusChips['Versorg.'].value, `${Math.round(result.feedStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a feed method');
-    assert.strictEqual(result.feedStatusChips.Stress.value, `${Math.round(result.feedStatusSnapshot.stress)}%`, 'care header stress should stay synced after a feed method');
-    assert.ok(Math.abs(parseInt(result.feedStatusChips.Risiko.value, 10) - Math.round(result.feedHeaderExpectation.risk)) <= 1, 'care header risk should stay synced to care summary after a feed method');
-    assert.strictEqual(result.feedStatusChips.Risiko.detail, result.expectedFeedRiskLabel, 'care header risk label should stay derived from the care summary risk value after a feed method');
-    assert.ok(result.routineMethodLabels.includes('Bl\u00E4tter pr\u00FCfen'), 'routine tab should expose the new routine methods');
+      assert.strictEqual(result.feedStatusChips.Stress.value, `${Math.round(result.feedStatusSnapshot.stress)}%`, 'care header stress should stay synced after a feed method');
+      assert.ok(Math.abs(parseInt(result.feedStatusChips.Risiko.value, 10) - Math.round(result.feedHeaderExpectation.risk)) <= 1, 'care header risk should stay synced to care summary after a feed method');
+      assert.strictEqual(result.feedStatusChips.Risiko.detail, result.expectedFeedRiskLabel, 'care header risk label should stay derived from the care summary risk value after a feed method');
+      assert.ok(result.feedRecommendationNote.length > 0, 'feed recommendation should include a short stable explanation');
+      assert.ok(/Check|kurz|stabil|stable/i.test(result.feedRecommendationNote), 'feed recommendation note should explain why a short check is enough');
+      assert.ok(result.routineMethodLabels.includes('Bl\u00E4tter pr\u00FCfen'), 'routine tab should expose the new routine methods');
     assert.ok(!/careStudio\.routine\.note\.|careMethod\./.test(result.routineInsightText), 'routine tab should not leak raw i18n keys');
     assert.ok(!/careStudio\.|careMethod\./.test(result.diagnosisText), 'diagnosis tab should not leak raw i18n keys');
     assert.strictEqual(result.routinePanelTitle, 'Pflege-Methoden', 'routine panel should use care-method language');

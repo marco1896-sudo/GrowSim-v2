@@ -1,0 +1,71 @@
+{
+  "library": "buddy_reference_source",
+  "version": 1,
+  "source_root": "assets/buddy/source/reference",
+  "references": [
+    {
+      "id": "master_front",
+      "filename": "buddy_reference_master_front_v001.png",
+      "role": "primary_identity_reference",
+      "recommended_for": ["idle_front_v002", "general_identity_lock", "proportions", "face"],
+      "source": "assets/buddy referenz/master/buddy_master_front_neutral_arms_down_v1.png",
+      "status": "registered",
+      "notes": "Best baseline identity sheet for neutral front-facing Buddy."
+    },
+    {
+      "id": "master_front_happy",
+      "filename": "buddy_reference_master_front_happy_v001.png",
+      "role": "secondary_identity_reference",
+      "recommended_for": ["happy_open_arms_v002", "friendly_expression_lock", "hero_pose"],
+      "source": "assets/buddy referenz/master/buddy_master_front_happy_open_arms_v1.png",
+      "status": "registered",
+      "notes": "Strong front-facing happy master for silhouette and expression continuity."
+    },
+    {
+      "id": "master_side_profile",
+      "filename": "buddy_reference_master_side_profile_v001.png",
+      "role": "perspective_reference",
+      "recommended_for": ["directional_pose_work", "turnaround_consistency", "profile_checks"],
+      "source": "assets/buddy referenz/master/buddy_master_side_neutral_profile_v1.png",
+      "status": "registered",
+      "notes": "Useful side-profile identity anchor; not primary for front-facing regeneration."
+    },
+    {
+      "id": "happy_open_arms",
+      "filename": "buddy_reference_happy_open_arms_v001.png",
+      "role": "pose_reference",
+      "recommended_for": ["happy_open_arms_v002", "welcome_pose", "open_arms_action"],
+      "source": "assets/buddy referenz/poses/buddy_pose_happy_open_arms_v1.png",
+      "status": "registered",
+      "notes": "Best direct pose match for happy open arms."
+    },
+    {
+      "id": "confused",
+      "filename": "buddy_reference_confused_v001.png",
+      "role": "emotion_reference",
+      "recommended_for": ["confused_variants", "inspection_moods", "qa_identity_cross_check"],
+      "source": "assets/buddy referenz/emotions/buddy_emotion_confused_head_scratch_v1.png",
+      "status": "registered",
+      "notes": "Useful expression anchor for future confusion or inspection states."
+    }
+  ],
+  "recommended_pairs": {
+    "idle_front_v002": {
+      "identity": ["buddy_reference_master_front_v001.png"],
+      "pose": ["buddy_reference_master_front_v001.png"]
+    },
+    "happy_open_arms_v002": {
+      "identity": [
+        "buddy_reference_master_front_v001.png",
+        "buddy_reference_master_front_happy_v001.png"
+      ],
+      "pose": ["buddy_reference_happy_open_arms_v001.png"]
+    }
+  },
+  "skill_compatibility": {
+    "buddy_asset_skill_reference_source_valid": true,
+    "can_be_used_as_prompt_and_qa_anchor": true,
+    "can_enable_generation_only_if_image_conditioning_generator_is_available": true,
+    "current_local_generator_workflow_confirmed": false
+  }
+}
