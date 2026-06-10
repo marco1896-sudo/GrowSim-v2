@@ -1,4 +1,4 @@
-# 14 — Codex Phase 3 Result
+# 14 â€” Codex Phase 3 Result
 
 ## 1. Neu angelegte Dateien
 
@@ -12,8 +12,8 @@
 - `src/events/v2/scoring/EligibilityResult.js`
 - `src/events/v2/scoring/README.md`
 
-## 2. Unverändert gebliebene bestehende Dateien
-Nicht verändert wurden:
+## 2. UnverÃ¤ndert gebliebene bestehende Dateien
+Nicht verÃ¤ndert wurden:
 
 - `app.js`
 - bestehende `src/events/*.js`
@@ -28,16 +28,16 @@ Nicht verändert wurden:
 ## 3. Was die Shadow Engine aktuell kann
 
 - Ein read-only Evaluation-Context-Objekt erzeugen (`createShadowEvaluationContext`).
-- Ein reines, strukturiertes Shadow-Evaluationsresultat zurückgeben (`evaluateShadowEvents`).
-- Kandidaten aus einem übergebenen Catalog-Index in Stub-Form durchlaufen.
+- Ein reines, strukturiertes Shadow-Evaluationsresultat zurÃ¼ckgeben (`evaluateShadowEvents`).
+- Kandidaten aus einem Ã¼bergebenen Catalog-Index in Stub-Form durchlaufen.
 - Strukturierte Decision-, Diagnostic- und Summary-Objekte liefern.
 - Ein explizites Vertragsobjekt exportieren (`describeShadowEngineContract`).
 
 ## 4. Was sie bewusst noch nicht kann
 
 - Keine echte botanische Bewertung/Pressure-Logik.
-- Keine echte Eligibility-Logik (Stage/Setup/Category) über Stub hinaus.
-- Keine Event-Aktivierung, keine Auflösung, keine Kettensteuerung in Runtime.
+- Keine echte Eligibility-Logik (Stage/Setup/Category) Ã¼ber Stub hinaus.
+- Keine Event-Aktivierung, keine AuflÃ¶sung, keine Kettensteuerung in Runtime.
 - Keine State-Mutationen, keine Save-Interaktion, keine Side-Effects.
 - Keine Feature-Flag- oder App-Loop-Integration.
 
@@ -48,21 +48,21 @@ Phase 3 bleibt absichtlich isoliert, damit die neue Struktur risikofrei entwicke
 - Keine Imports in bestehende Runtime-Pfade.
 - Keine Hooks in `app.js`.
 - Keine Game-State-Mutationen.
-- Keine aktive Event-Ausführung.
+- Keine aktive Event-AusfÃ¼hrung.
 
-Damit bleibt das produktive Event-System unverändert stabil.
+Damit bleibt das produktive Event-System unverÃ¤ndert stabil.
 
 ## 6. Welche Risiken vor Phase 4 bestehen
 
-- Scoring ist aktuell neutraler Stub, daher noch keine echte Entscheidungsqualität.
+- Scoring ist aktuell neutraler Stub, daher noch keine echte EntscheidungsqualitÃ¤t.
 - Keine Schema-Deep-Validation direkt im Shadow-Engine-Pfad.
-- Fehlende fachliche Regeln (i18n/AssetRef/QR) können später zu Divergenzen führen.
-- Ohne deterministische Bewertungsformeln sind spätere Vergleichsmessungen noch nicht belastbar.
+- Fehlende fachliche Regeln (i18n/AssetRef/QR) kÃ¶nnen spÃ¤ter zu Divergenzen fÃ¼hren.
+- Ohne deterministische Bewertungsformeln sind spÃ¤tere Vergleichsmessungen noch nicht belastbar.
 
-## 7. Empfehlung für Phase 4
+## 7. Empfehlung fÃ¼r Phase 4
 
-Empfohlen für Phase 4:
+Empfohlen fÃ¼r Phase 4:
 
-1. Validation-Layer vertiefen (Schema-Deep-Checks + strukturierte Regelgruppen für i18n/AssetRef/Stage-Setup-Category).
+1. Validation-Layer vertiefen (Schema-Deep-Checks + strukturierte Regelgruppen fÃ¼r i18n/AssetRef/Stage-Setup-Category).
 2. Shadow-Scoring deterministisch erweitern (weiterhin read-only, weiterhin ohne Runtime-Anbindung).
-3. Einheitliches Fehler-/Diagnoseformat für Loader, Parser, Validation und Engine konsolidieren.
+3. Einheitliches Fehler-/Diagnoseformat fÃ¼r Loader, Parser, Validation und Engine konsolidieren.

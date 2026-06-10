@@ -1,4 +1,4 @@
-# 12 — Codex Phase 1 Result
+# 12 â€” Codex Phase 1 Result
 
 ## 1. Pfadentscheidung
 Verbindlich umgesetzt wurde Variante B:
@@ -25,10 +25,10 @@ Nicht verwendet:
 - `src/events/v2/validation/BotanicalConstants.js`
 - `src/events/v2/validation/ToneBlocklist.js`
 
-## 3. Bestätigung zu bestehenden Runtime-Dateien
-Es wurden keine bestehenden Runtime-Dateien verändert.
+## 3. BestÃ¤tigung zu bestehenden Runtime-Dateien
+Es wurden keine bestehenden Runtime-Dateien verÃ¤ndert.
 
-Insbesondere unverändert geblieben (nicht editiert in dieser Phase):
+Insbesondere unverÃ¤ndert geblieben (nicht editiert in dieser Phase):
 
 - `app.js`
 - `src/events/*.js` (bestehende Dateien)
@@ -37,17 +37,17 @@ Insbesondere unverändert geblieben (nicht editiert in dieser Phase):
 - `data/events.foundation.json`
 - Locales unter `src/i18n/locales/*`
 
-## 4. Empfohlene nächste Phase-2-Aufgabe
+## 4. Empfohlene nÃ¤chste Phase-2-Aufgabe
 Empfohlen wird als minimaler Phase-2-Schritt:
 
 1. Read-only Catalog Loader Stub unter `src/events/v2/` anlegen (nur laden/parsen, keine Runtime-Anbindung).
-2. Parser/Validation-Layer als interne Module ergänzen, die nur gegen `data/events/catalog/_schema/` und `_examples/` arbeiten.
+2. Parser/Validation-Layer als interne Module ergÃ¤nzen, die nur gegen `data/events/catalog/_schema/` und `_examples/` arbeiten.
 3. Noch keine Imports in bestehende Runtime, kein Feature-Flag-Cutover.
 
 ## 5. Exit-Kriterien Phase 1
-Phase 1 erfüllt aus meiner Sicht die Exit-Kriterien:
+Phase 1 erfÃ¼llt aus meiner Sicht die Exit-Kriterien:
 
 - Neue V2-Struktur liegt unter `src/events/v2/`.
-- Contracts/Stubs sind neutral und read-only ausgeführt.
+- Contracts/Stubs sind neutral und read-only ausgefÃ¼hrt.
 - Keine Engine-Logik, keine Integration, keine Runtime-Imports in bestehende Systeme.
-- Keine Änderung an verbotenen Bestandsdateien durch diese Umsetzung.
+- Keine Ã„nderung an verbotenen Bestandsdateien durch diese Umsetzung.

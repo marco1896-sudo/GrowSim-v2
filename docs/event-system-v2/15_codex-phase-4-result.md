@@ -1,4 +1,4 @@
-# 15 ó Codex Phase 4 Result
+# 15 ‚Äî Codex Phase 4 Result
 
 ## 1. Welche Dateien neu angelegt wurden
 
@@ -16,16 +16,16 @@ Scoring:
 - `src/events/v2/scoring/ScoringWeights.js`
 - `src/events/v2/scoring/ScoringDiagnostic.js`
 
-## 2. Welche Dateien aus Phase 1ñ3 erweitert wurden
+## 2. Welche Dateien aus Phase 1‚Äì3 erweitert wurden
 
 - `src/events/v2/validation/validateCatalogExamples.js`
 - `src/events/v2/scoring/EventCandidateScorer.js`
 - `src/events/v2/scoring/PressureScore.js`
 - `src/events/v2/scoring/EligibilityResult.js`
 
-## 3. Welche bestehenden Runtime-Dateien unver‰ndert geblieben sind
+## 3. Welche bestehenden Runtime-Dateien unver√§ndert geblieben sind
 
-Unver‰ndert geblieben:
+Unver√§ndert geblieben:
 - `app.js`
 - bestehende `src/events/*.js`
 - `data/events.json`
@@ -47,19 +47,19 @@ Aktiv als strukturierte Diagnostics:
   - keine fehlenden Kategorien
   - keine fehlenden Stages (Basis)
   - Learning-/Story-Beats mit fehlender `learningCard.ref` markieren
-  - Severity-Werte gegen definierte Menge pr¸fen
+  - Severity-Werte gegen definierte Menge pr√ºfen
   - fehlender visueller Asset-Hinweis markieren
 
-## 5. Welche Validierungen bewusst noch nicht vollst‰ndig sind
+## 5. Welche Validierungen bewusst noch nicht vollst√§ndig sind
 
-- keine vollst‰ndige JSON-Schema-Deep-Validation (Draft-07-regelvollst‰ndig)
-- keine echte Dateisystem-Existenzpr¸fung aller Assetpfade (nur Stub-Hinweis)
-- keine Locale-Auflˆsung/Abgleich gegen reale Locale-Dateien (nur Key-Form)
-- keine vollst‰ndige QR-Abdeckung aller Regeln aus `07_quality-rules.md`
+- keine vollst√§ndige JSON-Schema-Deep-Validation (Draft-07-regelvollst√§ndig)
+- keine echte Dateisystem-Existenzpr√ºfung aller Assetpfade (nur Stub-Hinweis)
+- keine Locale-Aufl√∂sung/Abgleich gegen reale Locale-Dateien (nur Key-Form)
+- keine vollst√§ndige QR-Abdeckung aller Regeln aus `07_quality-rules.md`
 
 ## 6. Wie deterministisches Scoring aktuell funktioniert
 
-Deterministische (nicht zuf‰llige) Stub-Komponenten:
+Deterministische (nicht zuf√§llige) Stub-Komponenten:
 - `eligibilityScore`
 - `pressureScore`
 - `stageFitScore`
@@ -72,7 +72,7 @@ Deterministische (nicht zuf‰llige) Stub-Komponenten:
 
 ## 7. Warum weiterhin keine Runtime-Anbindung besteht
 
-Die Umsetzung bleibt vollst‰ndig isoliert unter `src/events/v2/`:
+Die Umsetzung bleibt vollst√§ndig isoliert unter `src/events/v2/`:
 - keine Imports in bestehende Runtime
 - keine Hooks in `app.js`
 - keine State-Mutationen
@@ -80,15 +80,15 @@ Die Umsetzung bleibt vollst‰ndig isoliert unter `src/events/v2/`:
 
 ## 8. Welche Risiken vor Phase 5 bestehen
 
-- Validation ist strukturiert, aber noch nicht schema-vollst‰ndig.
+- Validation ist strukturiert, aber noch nicht schema-vollst√§ndig.
 - Scoring ist deterministisch, aber fachlich/botanisch noch Stub-Niveau.
-- Fehlende Asset- und Locale-Integrit‰tschecks kˆnnen sp‰ter Divergenzen erzeugen.
+- Fehlende Asset- und Locale-Integrit√§tschecks k√∂nnen sp√§ter Divergenzen erzeugen.
 - Ohne Integrationsharness bleibt Verhalten nur auf Modul-Ebene sichtbar.
 
-## 9. Empfehlung f¸r Phase 5
+## 9. Empfehlung f√ºr Phase 5
 
-Empfohlener n‰chster Schritt:
-1. JSON-Schema-Deep-Validation im V2-Layer erg‰nzen (ohne Runtime-Anbindung).
-2. Asset-Referenz-Existenzpr¸fung (read-only) f¸r Catalog-Examples erweitern.
-3. Deterministisches Scoring fachlich pr‰zisieren (weiterhin ohne Runtime-Hook).
-4. Optional ein isoliertes V2-CLI/Report-Modul unter `src/events/v2/` erg‰nzen, das nur Diagnosen/Scoring-Berichte erzeugt.
+Empfohlener n√§chster Schritt:
+1. JSON-Schema-Deep-Validation im V2-Layer erg√§nzen (ohne Runtime-Anbindung).
+2. Asset-Referenz-Existenzpr√ºfung (read-only) f√ºr Catalog-Examples erweitern.
+3. Deterministisches Scoring fachlich pr√§zisieren (weiterhin ohne Runtime-Hook).
+4. Optional ein isoliertes V2-CLI/Report-Modul unter `src/events/v2/` erg√§nzen, das nur Diagnosen/Scoring-Berichte erzeugt.

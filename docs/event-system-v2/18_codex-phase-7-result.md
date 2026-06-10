@@ -1,4 +1,4 @@
-# 18 — Codex Phase 7 Result
+# 18 â€” Codex Phase 7 Result
 
 ## 1. Welche Dateien neu angelegt wurden
 
@@ -24,9 +24,9 @@
 - `src/events/v2/validation/LocaleIntegrityValidator.js`
 - `src/events/v2/validation/AssetIntegrityValidator.js`
 
-## 3. Welche bestehenden Runtime-Dateien unverändert geblieben sind
+## 3. Welche bestehenden Runtime-Dateien unverÃ¤ndert geblieben sind
 
-Unverändert geblieben:
+UnverÃ¤ndert geblieben:
 - `app.js`
 - bestehende `src/events/*.js`
 - `data/events.json`
@@ -38,7 +38,7 @@ Unverändert geblieben:
 
 ## 4. Wie Rule-Profiling pro Typ funktioniert
 
-`RuleProfileRegistry` liefert Profile für:
+`RuleProfileRegistry` liefert Profile fÃ¼r:
 - `event`
 - `chain`
 - `learning-card`
@@ -56,51 +56,51 @@ Jedes Profil definiert:
 ## 5. Wie SeverityThresholds funktionieren
 
 `SeverityThresholds` kapselt zentrale Eskalationslogik:
-- fehlendes Pflichtfeld (`required`) => standardmäßig `blocker` (bei `chain` als `error` gedämpft)
+- fehlendes Pflichtfeld (`required`) => standardmÃ¤ÃŸig `blocker` (bei `chain` als `error` gedÃ¤mpft)
 - fehlendes empfohlenes Feld (`recommended`) => `warning`
 - fehlendes optionales/future Feld => `info`
-- ungültige Referenz => typabhängig (`chain` strenger)
-- `resolveSeverity` berücksichtigt Profil-Overrides
+- ungÃ¼ltige Referenz => typabhÃ¤ngig (`chain` strenger)
+- `resolveSeverity` berÃ¼cksichtigt Profil-Overrides
 
 ## 6. Wie Cross-Reference-Checks funktionieren
 
-`CrossReferenceValidator` prüft read-only über den geladenen Beispielindex:
+`CrossReferenceValidator` prÃ¼ft read-only Ã¼ber den geladenen Beispielindex:
 - Chain-Step `eventId` gegen vorhandene Event-IDs in `_examples`
 - Chain-Transition-Ziele (`to`) gegen vorhandene Step-IDs derselben Chain
 - Event `learningCard.ref` gegen vorhandene Learning-Card-IDs in `_examples`
 
-Keine Dateien werden verändert.
+Keine Dateien werden verÃ¤ndert.
 
 ## 7. Wie Health Score berechnet wird
 
-`HealthScore` berechnet einen groben Readiness-Score (0–100) aus Severity-Zählwerten:
+`HealthScore` berechnet einen groben Readiness-Score (0â€“100) aus Severity-ZÃ¤hlwerten:
 - `blocker` gewichtet stark
 - `error` mittel
 - `warning` leicht
 - `info` minimal
 
-Zusätzlich liefert er Coverage-Hints (z. B. fehlende Typabdeckung).  
+ZusÃ¤tzlich liefert er Coverage-Hints (z. B. fehlende Typabdeckung).  
 `HealthScoreReport` erzeugt sowohl strukturierte Daten als auch Markdown-Output.
 
 ## 8. Welche Checks weiterhin bewusst begrenzt sind
 
-- Deep-Schema-Validierung bleibt interne Teilmenge (kein vollständiger Draft-07-Interpreter).
-- Cross-Reference-Checks nutzen nur geladene `_examples`, nicht den späteren vollständigen Katalog.
-- Locale-Resolver unterstützt flat+nested, aber keine semantische Textprüfung.
-- Asset-Checks prüfen Endung/Existenz, keine Bildinhalt-/Dimension-Validität.
+- Deep-Schema-Validierung bleibt interne Teilmenge (kein vollstÃ¤ndiger Draft-07-Interpreter).
+- Cross-Reference-Checks nutzen nur geladene `_examples`, nicht den spÃ¤teren vollstÃ¤ndigen Katalog.
+- Locale-Resolver unterstÃ¼tzt flat+nested, aber keine semantische TextprÃ¼fung.
+- Asset-Checks prÃ¼fen Endung/Existenz, keine Bildinhalt-/Dimension-ValiditÃ¤t.
 
 ## 9. Warum weiterhin keine Runtime-Anbindung besteht
 
-Alle Änderungen bleiben vollständig in `src/events/v2/` und Reporting-Dokumentation:
+Alle Ã„nderungen bleiben vollstÃ¤ndig in `src/events/v2/` und Reporting-Dokumentation:
 - keine Imports in bestehende Runtime
 - keine Hooks in `app.js`
 - keine Game-State-Mutationen
 - keine Eventaktivierung
 
-## 10. Empfehlung für Phase 8
+## 10. Empfehlung fÃ¼r Phase 8
 
 Empfohlen:
 1. Validation-Pipeline in profilbasierte Stages aufteilen (Schema ? Integrity ? CrossRef ? Quality) mit konfigurierbaren Noise-Filtern.
-2. Health-Score kalibrieren (z. B. per gewichteter Rule-Familie statt nur Severity-Zählung).
-3. Cross-Reference-Checks auf vollständigen Catalog-Modus vorbereiten (weiterhin read-only).
-4. Reporting um Delta-Vergleich (vorher/nachher) zwischen Läufen ergänzen.
+2. Health-Score kalibrieren (z. B. per gewichteter Rule-Familie statt nur Severity-ZÃ¤hlung).
+3. Cross-Reference-Checks auf vollstÃ¤ndigen Catalog-Modus vorbereiten (weiterhin read-only).
+4. Reporting um Delta-Vergleich (vorher/nachher) zwischen LÃ¤ufen ergÃ¤nzen.

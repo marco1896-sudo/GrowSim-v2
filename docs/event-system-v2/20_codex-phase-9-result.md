@@ -26,9 +26,9 @@
 - `src/events/v2/reporting/CatalogValidationReport.js`
 - `src/events/v2/reporting/HealthScoreReport.js`
 
-## 3. Welche bestehenden Runtime-Dateien unverändert geblieben sind
+## 3. Welche bestehenden Runtime-Dateien unverÃ¤ndert geblieben sind
 
-Unverändert in diesem Schritt:
+UnverÃ¤ndert in diesem Schritt:
 
 - `app.js`
 - bestehende Dateien unter `src/events/*.js`
@@ -43,16 +43,16 @@ Unverändert in diesem Schritt:
 
 ## 4. Wie Full-Catalog-Mode funktioniert
 
-`FullCatalogLoader` kapselt das read-only Laden über `loadCatalogByMode(mode)`.
+`FullCatalogLoader` kapselt das read-only Laden Ã¼ber `loadCatalogByMode(mode)`.
 
-- `examplesOnly`: lädt aus `data/events/catalog/_examples/`
-- `fullCatalog`: vorbereitetes Laden aus späteren Ordnern (`events`, `chains`, `learning-cards`) innerhalb `data/events/catalog/`
+- `examplesOnly`: lÃ¤dt aus `data/events/catalog/_examples/`
+- `fullCatalog`: vorbereitetes Laden aus spÃ¤teren Ordnern (`events`, `chains`, `learning-cards`) innerhalb `data/events/catalog/`
 
 Der `fullCatalog`-Pfad ist bewusst nur vorbereitend und migriert keine produktiven Eventdaten.
 
 ## 5. Wie CatalogSourceMode funktioniert
 
-`CatalogSourceMode` definiert die zulässigen Modi und normalisiert Eingaben:
+`CatalogSourceMode` definiert die zulÃ¤ssigen Modi und normalisiert Eingaben:
 
 - `examplesOnly`
 - `fullCatalog`
@@ -74,7 +74,7 @@ Keine automatische Disk-Persistenz.
 
 ## 8. Wie DeltaGates funktionieren
 
-`DeltaGate` beschreibt einzelne Gate-Regeln. `DeltaGatePolicy` bündelt mehrere Gates, z. B.:
+`DeltaGate` beschreibt einzelne Gate-Regeln. `DeltaGatePolicy` bÃ¼ndelt mehrere Gates, z. B.:
 
 - keine neuen Blocker
 - neue Errors nur innerhalb Toleranz
@@ -83,7 +83,7 @@ Keine automatische Disk-Persistenz.
 
 ## 9. Wie ReleaseBlockerPolicy funktioniert
 
-`ReleaseBlockerPolicy` wertet Delta + GatePolicy aus und markiert ein Ergebnis als blockierend, sobald mindestens ein Gate fehlschlägt.
+`ReleaseBlockerPolicy` wertet Delta + GatePolicy aus und markiert ein Ergebnis als blockierend, sobald mindestens ein Gate fehlschlÃ¤gt.
 
 ## 10. Wie BaselineComparisonReport funktioniert
 
@@ -102,12 +102,12 @@ Keine automatische Disk-Persistenz.
 
 ## 12. Warum weiterhin keine Runtime-Anbindung besteht
 
-Alle Änderungen bleiben isoliert unter `src/events/v2/` sowie diesem Ergebnisdokument. Es gibt keine Imports in bestehende Runtime-Module.
+Alle Ã„nderungen bleiben isoliert unter `src/events/v2/` sowie diesem Ergebnisdokument. Es gibt keine Imports in bestehende Runtime-Module.
 
-## 13. Empfehlung für Phase 10
+## 13. Empfehlung fÃ¼r Phase 10
 
-Phase 10: **Catalog-Coverage-Expansion + Gate-Feintuning + Baseline-Workflow-Härtung**
+Phase 10: **Catalog-Coverage-Expansion + Gate-Feintuning + Baseline-Workflow-HÃ¤rtung**
 
-- vorbereiteten `fullCatalog`-Modus mit kontrollierten Testdaten schrittweise befüllen
+- vorbereiteten `fullCatalog`-Modus mit kontrollierten Testdaten schrittweise befÃ¼llen
 - Gate-Policies pro Rule-Family/Rule-Scope feinjustieren
 - Baseline-Vergleich als standardisierten QA-Workflow dokumentieren (weiterhin isoliert)

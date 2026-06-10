@@ -24,9 +24,9 @@
 - `src/events/v2/reporting/TopIssueGrouper.js`
 - `src/events/v2/reporting/ShadowScoringReport.js`
 
-## 3. Unveränderte bestehende Runtime-Dateien
+## 3. UnverÃ¤nderte bestehende Runtime-Dateien
 
-Unverändert geblieben in diesem Schritt:
+UnverÃ¤ndert geblieben in diesem Schritt:
 
 - `app.js`
 - bestehende Dateien unter `src/events/*.js`
@@ -48,7 +48,7 @@ Unverändert geblieben in diesem Schritt:
 - `crossRef`
 - `quality`
 
-Jede Stage liefert eigene Diagnostics. Es werden keine Dateien verändert.
+Jede Stage liefert eigene Diagnostics. Es werden keine Dateien verÃ¤ndert.
 
 ## 5. NoiseFilter
 
@@ -63,7 +63,7 @@ Damit kann die Report-Ausgabe gezielt auf relevante Findings reduziert werden.
 
 ## 6. RuleFamily + RuleFamilyWeights
 
-`RuleFamily` führt die Familien ein:
+`RuleFamily` fÃ¼hrt die Familien ein:
 
 - `schema`
 - `i18n`
@@ -77,10 +77,10 @@ Damit kann die Report-Ausgabe gezielt auf relevante Findings reduziert werden.
 
 ## 7. Health-Score-Kalibrierung
 
-`HealthScore` unterstützt jetzt zwei Modi:
+`HealthScore` unterstÃ¼tzt jetzt zwei Modi:
 
-- klassisch über Severity-Counts
-- kalibriert über konkrete Diagnostics + `RuleFamilyWeights`
+- klassisch Ã¼ber Severity-Counts
+- kalibriert Ã¼ber konkrete Diagnostics + `RuleFamilyWeights`
 
 Der Score bleibt deterministisch und read-only.
 
@@ -92,8 +92,8 @@ Der Score bleibt deterministisch und read-only.
 
 - neue Issues
 - behobene Issues
-- verschärfte Issues
-- entschärfte Issues
+- verschÃ¤rfte Issues
+- entschÃ¤rfte Issues
 - Score-Differenz
 
 `DeltaReportFormatter` kann die Delta-Daten als strukturierte Daten oder Markdown ausgeben.
@@ -110,8 +110,8 @@ Weiterhin bewusst begrenzt:
 
 ## 10. Warum weiterhin keine Runtime-Anbindung
 
-Alle Module liegen isoliert unter `src/events/v2/` und werden nirgends in bestehende Runtime importiert. Dadurch bleibt das produktive Verhalten unverändert.
+Alle Module liegen isoliert unter `src/events/v2/` und werden nirgends in bestehende Runtime importiert. Dadurch bleibt das produktive Verhalten unverÃ¤ndert.
 
-## 11. Empfehlung für Phase 9
+## 11. Empfehlung fÃ¼r Phase 9
 
-Empfohlen: **Phase 9 als vollständiger Catalog-Modus mit Snapshot-Historie und stabilen Baseline-Vergleichen** vorbereiten, inklusive klarer Policy, wann ein Delta als Release-Blocker gilt.
+Empfohlen: **Phase 9 als vollstÃ¤ndiger Catalog-Modus mit Snapshot-Historie und stabilen Baseline-Vergleichen** vorbereiten, inklusive klarer Policy, wann ein Delta als Release-Blocker gilt.

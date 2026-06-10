@@ -1,10 +1,10 @@
-# 11 — Codex Phase 0 Audit
+# 11 â€” Codex Phase 0 Audit
 
 Status: Phase-0-Dokumentation (Read-only).  
-Keine Runtime-Änderungen, keine Event-Migration, keine UI-/Locale-/Save-/Flag-Änderungen.
+Keine Runtime-Ã„nderungen, keine Event-Migration, keine UI-/Locale-/Save-/Flag-Ã„nderungen.
 
 ## 1. Kurze Zusammenfassung, was Event System V2 werden soll
-Event System V2 soll ein modular aufgebautes, datengetriebenes, realistisches und lernorientiertes Event-System werden, das Kausalität (Ursache ? Symptom ? Entscheidung ? Nachwirkung), Event-Ketten, Coach-/Learning-Layer, klare Qualitätsregeln und eine sichere, schrittweise Einführung über Shadow-/Cutover-Phasen unterstützt. Ziel ist ein premium mobiles Spielerlebnis mit stabiler Persistenz und kontrollierbarer Rollback-Fähigkeit.
+Event System V2 soll ein modular aufgebautes, datengetriebenes, realistisches und lernorientiertes Event-System werden, das KausalitÃ¤t (Ursache ? Symptom ? Entscheidung ? Nachwirkung), Event-Ketten, Coach-/Learning-Layer, klare QualitÃ¤tsregeln und eine sichere, schrittweise EinfÃ¼hrung Ã¼ber Shadow-/Cutover-Phasen unterstÃ¼tzt. Ziel ist ein premium mobiles Spielerlebnis mit stabiler Persistenz und kontrollierbarer Rollback-FÃ¤higkeit.
 
 ## 2. Welche bestehenden Event-Dateien aktuell relevant sind
 Aktuell relevante bestehende Event-Dateien im Repository:
@@ -37,7 +37,7 @@ Relevante Event-Datenquellen:
 - `data/event-assets.registry.json`
 - `data/event-assets.gaps.json`
 
-## 3. Welche bestehenden Runtime-Dateien besonders vorsichtig behandelt werden müssen
+## 3. Welche bestehenden Runtime-Dateien besonders vorsichtig behandelt werden mÃ¼ssen
 Besonders vorsichtig zu behandeln (hohes Integrations-/Regressionsrisiko):
 
 - `app.js` (zentraler Runtime-Einstieg und Event-Wiring)
@@ -45,27 +45,27 @@ Besonders vorsichtig zu behandeln (hohes Integrations-/Regressionsrisiko):
 - `src/events/eventPersistenceAdapter.js` (Save-Snapshot/Restore)
 - `src/events/eventFeatureFlag.js` (Modussteuerung)
 - `src/events/eventShared.js` (Snapshot-/Trigger-Baselogik)
-- `src/events/eventResolution.js` und `src/events/eventResolver.js` (Choice-Auflösung)
+- `src/events/eventResolution.js` und `src/events/eventResolver.js` (Choice-AuflÃ¶sung)
 - `src/events/eventCooldowns.js`, `eventContradictions.js`, `eventEscalation.js` (Balancing-/Konsistenzkern)
 
-## 4. Welche neuen Ordner/Dateien laut Spezifikation später nötig werden
-Später laut Spezifikation vorgesehen (noch nicht in Phase 0 umsetzen):
+## 4. Welche neuen Ordner/Dateien laut Spezifikation spÃ¤ter nÃ¶tig werden
+SpÃ¤ter laut Spezifikation vorgesehen (noch nicht in Phase 0 umsetzen):
 
 - `src/systems/events-v2/` (Contracts, Validation, Loader, Engine, Coach, Learning, Chains)
 - `data/events-v2/` (catalog, chains, beats)
-- alternativ/ergänzend in anderen Spezifikationen: `src/events/v2/`, `data/events/catalog/`, `data/events/schemas/`
+- alternativ/ergÃ¤nzend in anderen Spezifikationen: `src/events/v2/`, `data/events/catalog/`, `data/events/schemas/`
 - `scripts/validate-catalog.ts` und weitere Validator-/Simulationsskripte
-- zusätzliche Dokumente/Artefakte für Phase-Fortschritte (z. B. Architektur-/Testing-/Catalog-Outputs)
+- zusÃ¤tzliche Dokumente/Artefakte fÃ¼r Phase-Fortschritte (z. B. Architektur-/Testing-/Catalog-Outputs)
 
 Wichtig: Die Spezifikationen nennen zwei Strukturvarianten (`src/events/v2` vs. `src/systems/events-v2`). Das muss vor Phase 1 eindeutig entschieden werden.
 
-## 5. Welche Risiken vor Phase 1 geklärt sein müssen
+## 5. Welche Risiken vor Phase 1 geklÃ¤rt sein mÃ¼ssen
 - Zielpfad-Konflikt: Spezifikation nutzt teils `src/systems/events/**`, Repo hat aktuell `src/events/**`.
-- Scope-Konflikt: Einige Spec-Phasen erlauben `package.json`-Änderungen; aktueller Auftrag verbietet das explizit.
-- Quellenkonflikt: Mehrere Dokumente geben unterschiedliche „nächste Codex-Aufträge“ (#001/#002/#003/#004/#005*).
+- Scope-Konflikt: Einige Spec-Phasen erlauben `package.json`-Ã„nderungen; aktueller Auftrag verbietet das explizit.
+- Quellenkonflikt: Mehrere Dokumente geben unterschiedliche â€nÃ¤chste Codex-AuftrÃ¤geâ€œ (#001/#002/#003/#004/#005*).
 - Naming-/Schema-Konflikt: `data/events-v2/*` vs. `data/events/catalog/*`.
 - Startpunkt-Konflikt: `10_codex-stepwise-implementation.md` fordert eigenes `00_v1-audit.md`, vorhanden ist bereits `00_current-system-audit.md`.
-- Dirty Worktree: Aktuell bestehen ungeklärte Änderungen außerhalb des Event-V2-Scopes.
+- Dirty Worktree: Aktuell bestehen ungeklÃ¤rte Ã„nderungen auÃŸerhalb des Event-V2-Scopes.
 
 ## 6. Welche Tests aktuell als Sicherheitsnetz relevant sind
 Relevantes bestehendes Sicherheitsnetz (ohne neue Tests zu schreiben):
@@ -75,26 +75,26 @@ Relevantes bestehendes Sicherheitsnetz (ohne neue Tests zu schreiben):
 - Runtime-/Regression-Tests: z. B. `test/event-realism-runtime.test.js`, `test/event-scheduler-runtime.test.js`, `test/event-timer-balance-regression.test.js`, `test/event-roll-threshold-regression.test.js`, `test/event-ui-exclusive-rendering.test.js`
 - Verifier-Skripte in `dev/`: z. B. `dev/verify_event_foundation.js`, `dev/verify_event_pools.js`, `dev/verify_event_weighting.js`, `dev/verify_event_analysis.js`, `dev/verify_event_resolver_guards.js`, `dev/verify_event_catalog_guard_metadata.js`, `dev/verify_pending_chain_lifecycle.js`
 
-## 7. Welche Punkte aus den Specs widersprüchlich, unklar oder riskant wirken
+## 7. Welche Punkte aus den Specs widersprÃ¼chlich, unklar oder riskant wirken
 - Widerspruch bei Zielarchitekturpfaden (`src/events/v2` vs. `src/systems/events-v2`, `data/events-v2` vs. `data/events/catalog`).
-- Widerspruch bei erlaubten Änderungen in frühen Phasen (`package.json` in manchen Specs erlaubt, in diesem Auftrag verboten).
-- Umfangsrisiko: einige Katalogdokumente sind sehr groß und nutzen teilweise andere Zählungen/Bezeichnungen (z. B. Story-Beats 10 vs. 27), dadurch Integrationsrisiko im Datenmodell.
-- Prozessrisiko: „einzige Quelle der Wahrheit“ im Stepwise-Dokument kollidiert faktisch mit bereits parallel bestehenden Detailaufträgen in anderen Event-V2-Dokumenten.
-- Realitätsabgleich: Stepwise nennt Audit-Zielpfade, die so im aktuellen Repo nicht vorhanden sind.
+- Widerspruch bei erlaubten Ã„nderungen in frÃ¼hen Phasen (`package.json` in manchen Specs erlaubt, in diesem Auftrag verboten).
+- Umfangsrisiko: einige Katalogdokumente sind sehr groÃŸ und nutzen teilweise andere ZÃ¤hlungen/Bezeichnungen (z. B. Story-Beats 10 vs. 27), dadurch Integrationsrisiko im Datenmodell.
+- Prozessrisiko: â€einzige Quelle der Wahrheitâ€œ im Stepwise-Dokument kollidiert faktisch mit bereits parallel bestehenden DetailauftrÃ¤gen in anderen Event-V2-Dokumenten.
+- RealitÃ¤tsabgleich: Stepwise nennt Audit-Zielpfade, die so im aktuellen Repo nicht vorhanden sind.
 
 ## 8. Welche minimale Phase-1-Umsetzung du empfiehlst
 Empfohlene minimale, sichere Phase 1 (ohne Runtime-Eingriff):
 
-1. Endgültige Pfadkonvention festlegen (einmalig):
+1. EndgÃ¼ltige Pfadkonvention festlegen (einmalig):
    - Option A: `src/systems/events-v2` + `data/events-v2`
    - Option B: `src/events/v2` + `data/events/catalog`
 2. Nur neue, leere Struktur + Contracts + Validator-Skelett anlegen.
 3. Keine Imports in bestehende Runtime.
-4. Keine package.json-Änderung in diesem Schritt.
-5. Validierung zunächst manuell per Node-Aufruf (ohne CI-Hook).
+4. Keine package.json-Ã„nderung in diesem Schritt.
+5. Validierung zunÃ¤chst manuell per Node-Aufruf (ohne CI-Hook).
 
-## 9. Exakte Datei-Liste für Phase 1
-Empfehlung für eine minimale und konfliktarme Datei-Liste (Variante A gemäß Stepwise-Hauptpfad):
+## 9. Exakte Datei-Liste fÃ¼r Phase 1
+Empfehlung fÃ¼r eine minimale und konfliktarme Datei-Liste (Variante A gemÃ¤ÃŸ Stepwise-Hauptpfad):
 
 - `src/systems/events-v2/contracts/EventV2.ts`
 - `src/systems/events-v2/contracts/ChainV2.ts`
@@ -111,26 +111,26 @@ Empfehlung für eine minimale und konfliktarme Datei-Liste (Variante A gemäß Step
 - `data/events-v2/beats/.gitkeep`
 - `scripts/validate-catalog.ts`
 
-Wichtig: Nur neue Dateien. Keine bestehenden Dateien ändern.
+Wichtig: Nur neue Dateien. Keine bestehenden Dateien Ã¤ndern.
 
-## 10. Klare Verbotsliste für Phase 1
-- Keine Änderung an `app.js`
-- Keine Änderung an `src/events/**`
-- Keine Migration oder Änderung in `data/events.json`, `data/events.v2.json`, `data/events.foundation.json`
-- Keine Änderung an `src/i18n/locales/*.json`
-- Keine UI-Änderungen in bestehenden Komponenten
+## 10. Klare Verbotsliste fÃ¼r Phase 1
+- Keine Ã„nderung an `app.js`
+- Keine Ã„nderung an `src/events/**`
+- Keine Migration oder Ã„nderung in `data/events.json`, `data/events.v2.json`, `data/events.foundation.json`
+- Keine Ã„nderung an `src/i18n/locales/*.json`
+- Keine UI-Ã„nderungen in bestehenden Komponenten
 - Keine Save-/Persistence-Migration
-- Keine Aktivierung/Änderung von Feature-Flags
-- Keine package.json-Änderung (für den aktuellen Auftrag)
+- Keine Aktivierung/Ã„nderung von Feature-Flags
+- Keine package.json-Ã„nderung (fÃ¼r den aktuellen Auftrag)
 - Keine Test-Suite-Umbauten
 
-## 11. Exit-Kriterien für Phase 0
+## 11. Exit-Kriterien fÃ¼r Phase 0
 Phase 0 ist abgeschlossen, wenn:
 
-- Alle geforderten Spezifikationsdokumente vollständig gelesen wurden.
+- Alle geforderten Spezifikationsdokumente vollstÃ¤ndig gelesen wurden.
 - Bestehende Event-/Runtime-Risiken und Konflikte dokumentiert sind.
 - Eine klare minimale Phase-1-Dateiliste vorliegt.
-- Verbotsliste für Phase 1 eindeutig festgehalten ist.
-- Keine bestehenden Projektdateien im Zuge von Phase 0 geändert wurden.
+- Verbotsliste fÃ¼r Phase 1 eindeutig festgehalten ist.
+- Keine bestehenden Projektdateien im Zuge von Phase 0 geÃ¤ndert wurden.
 
-Empfehlung: Phase 1 kann sicher starten, sobald Pfadkonvention (Strukturvariante A/B) einmalig bestätigt ist.
+Empfehlung: Phase 1 kann sicher starten, sobald Pfadkonvention (Strukturvariante A/B) einmalig bestÃ¤tigt ist.
