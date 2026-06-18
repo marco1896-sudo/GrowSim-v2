@@ -116,3 +116,31 @@ Open items:
   - active run HUD now keeps the chosen build visible next to the current mission
   - run summary now includes the selected build and setup-aware highlight/mistake/positive feedback
   - added regression coverage for build identity, strategic start preview, and summary references to the chosen setup
+
+2026-06-16
+- Phase 9 Safe typography pass completed for missions/daily surfaces.
+- Limited changes to `styles.css` only:
+  - slightly raised premium home retention teaser text sizes while keeping the compact playercard footprint
+  - improved missions sheet helper/status/progress readability
+  - increased claim button minimum height for better mobile tap comfort
+  - modestly lifted micro-chip helper text readability
+- Verification:
+  - `node scripts/i18n-audit.js` passed
+  - `npm run check:syntax` passed
+  - `node test/daily-tasks-ui-state.test.js` passed
+  - `node test/daily-tasks-runtime.test.js` passed
+  - `node test/home-playercard-compactness-regression.test.js` passed
+  - `node test/ui-onboarding-settings-smoke.test.js` passed on retry after one mission-reward overlay interception
+  - `npm run test:smoke` hit the same overlay interception flake inside `ui-onboarding-settings-smoke.test.js`
+  - remaining smoke tests passed individually
+  - `npm run test:runtime` passed
+
+Open items:
+- Manual mobile check still recommended on 390px and 360px because the open local dev tab currently shows unrelated auth/i18n warning state not caused by this phase.
+
+2026-06-17
+- Phase 11.2 offline reopen / SW boot triage:
+  - reproduced the offline reopen path with a fresh persistent browser profile against a local static server
+  - verified service worker control, shell cache persistence, and guest/local boot reaching `window.__gsBootOk === true` after a full offline reopen
+  - the previously reported guest startup failure is confirmed test drift against the newer honest push copy (`Lokales Spielen bleibt möglich`)
+  - added a dedicated offline reopen regression test to lock in service-worker-backed boot readiness without changing product logic

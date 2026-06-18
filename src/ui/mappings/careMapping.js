@@ -71,6 +71,7 @@
       const careApi = globalScope.GrowSimCareModel;
       const careMethodsApi = globalScope.GrowSimCareMethods;
       const playerFacingApi = globalScope.GrowSimPlayerFacingStatus;
+      const i18nApi = globalScope.GrowSimI18n;
       const stageIndex = Number(plant.stageIndex || 0);
       const plantPhase = String(plant.phase || '');
       const normalizedCare = careApi && typeof careApi.normalizeCareState === 'function'
@@ -177,7 +178,12 @@
           : (availableCategories[0] || null),
         selectedActionId,
         selectedAction: selectedMethod,
-        feedback: careUi.feedback || { kind: 'info', text: 'Wähle eine Methode.' },
+        feedback: careUi.feedback || {
+          kind: 'info',
+          text: i18nApi && typeof i18nApi.t === 'function'
+            ? i18nApi.t('careStudio.feedback.chooseMethod')
+            : 'Wenn du heute eingreifen willst, starte mit einer Methode. Bei stabilen Werten reicht Beobachten.'
+        },
         categoryOrder,
         categoryLabels,
         availableCategories,

@@ -113,22 +113,22 @@
       && Number.isFinite(climate.airflowScore)
       && climate.airflowScore <= 45
       && action.intensity !== 'low') {
-      pushHint(hints, 'warning', 'In der späten Blüte hält zusätzliches Gießen die Zone leichter zu feucht. Das erhöht gerade den Krankheitsdruck.', 'watering_late_flower_humid');
+      pushHint(hints, 'warning', 'Noch kein guter Gießmoment. In der späten Blüte hält zusätzliches Wasser die Zone leichter zu feucht.', 'watering_late_flower_humid');
     }
 
     if (context.water >= 88 || (context.water >= 78 && context.risk >= 70)) {
-      pushHint(hints, 'warning', 'Das Medium wirkt bereits stark belastet. Mehr Wasser kann die Wurzelzone gerade eher verschärfen.', 'watering_root_pressure');
+      pushHint(hints, 'warning', 'Heute ist Warten sauberer. Mehr Wasser würde den Druck in der Wurzelzone eher erhöhen.', 'watering_root_pressure');
     } else if (context.water >= 76) {
-      pushHint(hints, 'caution', 'Das Medium ist noch recht feucht. Mehr Wasser kann die Wurzelzone unnötig belasten.', 'watering_still_wet');
+      pushHint(hints, 'caution', 'Noch nicht ideal. Die Wurzelzone hält gerade noch genug Feuchte.', 'watering_still_wet');
     } else if (context.water <= 36) {
-      pushHint(hints, 'positive', 'Das Medium wirkt trocken genug. Diese Bewässerung passt gerade gut.', 'watering_good_fit');
+      pushHint(hints, 'positive', 'Das Timing wirkt sauber. Diese Wassergabe passt gerade gut.', 'watering_good_fit');
     }
 
     if (action.id === 'watering_medium_vitamin') {
       if (context.nutrition >= 78 || context.stress >= 62) {
-        pushHint(hints, 'caution', 'Die Wurzelzone trägt schon Druck. Nährlösung kann sie jetzt schneller belasten.', 'watering_feed_solution_pressure');
+        pushHint(hints, 'caution', 'Die Wurzelzone trägt schon Druck. Nährlösung würde gerade leichter nachschieben als entlasten.', 'watering_feed_solution_pressure');
       } else if (context.nutrition <= 42 && context.health >= 45) {
-        pushHint(hints, 'positive', 'Die Pflanze wirkt aufnahmefähig. Eine Nährlösung passt gerade gut.', 'watering_feed_solution_positive');
+        pushHint(hints, 'positive', 'Die Pflanze wirkt aufnahmefähig. Eine dosierte Nährlösung passt gerade gut.', 'watering_feed_solution_positive');
       }
     }
 
@@ -136,14 +136,14 @@
       if (context.nutrition >= 72 || context.risk >= 65) {
         pushHint(hints, 'positive', 'Die Wurzelzone wirkt belastet. Ein Spülen kann gerade helfen, etwas Druck herauszunehmen.', 'watering_flush_positive');
       } else if (context.nutrition <= 40) {
-        pushHint(hints, 'caution', 'Die Pflanze wirkt nicht stark belastet. Spülen kann jetzt auch unnötig Substanz aus dem Medium ziehen.', 'watering_flush_caution');
+        pushHint(hints, 'caution', 'Die Pflanze wirkt nicht stark belastet. Spülen würde jetzt eher unnötig Substanz aus dem Medium ziehen.', 'watering_flush_caution');
       }
     }
 
     if (Number.isFinite(climate.humidityPercent)
       && climate.humidityPercent <= 38
       && action.intensity !== 'low') {
-      pushHint(hints, 'caution', 'Die Luft ist sehr trocken. Stärkeres Gießen ändert das nur kurz und kann den Rhythmus unruhig machen.', 'watering_dry_air');
+      pushHint(hints, 'caution', 'Sehr trockene Luft allein ist kein Grund für mehr Wasser. Ein ruhiger Rhythmus bleibt hier sauberer.', 'watering_dry_air');
     }
 
     return hints;
@@ -155,24 +155,24 @@
     const climate = context.climate || {};
 
     if (context.phaseModel === 'seedling' && action.intensity !== 'low') {
-      pushHint(hints, 'warning', 'Junge Pflanzen reagieren auf kräftige Fütterung schneller empfindlich. Gerade jetzt ist Zurückhaltung meist schonender.', 'fertilizing_seedling_warning');
+      pushHint(hints, 'warning', 'Junge Pflanzen reagieren auf kräftige Versorgung besonders empfindlich. Gerade jetzt ist Zurückhaltung meist sauberer.', 'fertilizing_seedling_warning');
     }
 
     if (context.nutrition >= 80 || (context.nutrition >= 72 && context.risk >= 65)) {
-      pushHint(hints, 'warning', 'Die Wurzelzone steht schon unter Nährstoffdruck. Mehr Futter erhöht jetzt eher das Risiko.', 'fertilizing_pressure_warning');
+      pushHint(hints, 'warning', 'Die Wurzelzone steht schon unter Nährstoffdruck. Mehr Versorgung würde jetzt eher das Risiko erhöhen.', 'fertilizing_pressure_warning');
     } else if (context.stress >= 64 || context.health <= 38) {
-      pushHint(hints, 'warning', 'Die Pflanze steht bereits unter Druck. Zusätzliche Nährstoffe können sie gerade stärker belasten.', 'fertilizing_stressed_warning');
+      pushHint(hints, 'warning', 'Die Pflanze steht bereits unter Druck. Zusätzliche Versorgung könnte sie gerade stärker belasten.', 'fertilizing_stressed_warning');
     } else if (context.water <= 28) {
-      pushHint(hints, 'caution', 'Sehr trockenes Medium nimmt Fütterung oft härter auf. Etwas sanftere Versorgung wäre jetzt schonender.', 'fertilizing_dry_medium');
+      pushHint(hints, 'caution', 'Sehr trockenes Medium nimmt Versorgung oft härter auf. Etwas sanfter wäre jetzt schonender.', 'fertilizing_dry_medium');
     } else if (context.nutrition <= 42 && context.health >= 45 && context.stress <= 50) {
-      pushHint(hints, 'positive', 'Die Pflanze wirkt aufnahmefähig. Eine passende Fütterung ist gerade sinnvoll.', 'fertilizing_positive');
+      pushHint(hints, 'positive', 'Die Pflanze wirkt aufnahmefähig. Eine dosierte Versorgung ist gerade sinnvoll.', 'fertilizing_positive');
     }
 
     if (context.phaseModel === 'late_flower'
       && Number.isFinite(climate.humidityPercent)
       && climate.humidityPercent >= 68
       && context.risk >= 55) {
-      pushHint(hints, 'caution', 'In der späten Blüte zählt stabile Führung besonders. Zusätzlicher Druck wirkt jetzt schneller nach.', 'fertilizing_late_flower_caution');
+      pushHint(hints, 'caution', 'In der späten Blüte zählt stabile Führung besonders. Zusätzlicher Versorgungsdruck wirkt jetzt schneller nach.', 'fertilizing_late_flower_caution');
     }
 
     return hints;
@@ -184,21 +184,21 @@
     const climate = context.climate || {};
 
     if (context.phaseModel === 'seedling') {
-      pushHint(hints, 'warning', 'Junge Pflanzen reagieren auf Eingriffe deutlich empfindlicher. Training kostet jetzt schnell Stabilität.', 'training_seedling_warning');
+      pushHint(hints, 'warning', 'Bei jungen Pflanzen reicht heute meist Beobachten. Sanfte Routine ist sauberer als zusätzlicher Eingriff.', 'training_seedling_warning');
     } else if (context.phaseModel === 'late_flower' && action.intensity !== 'low') {
-      pushHint(hints, 'warning', 'In der späten Blüte wirken stärkere Eingriffe deutlich belastender. Erholung kommt jetzt langsamer zurück.', 'training_late_flower_warning');
+      pushHint(hints, 'warning', 'In der späten Blüte sollten Routinen besonders ruhig bleiben. Stärkere Eingriffe kosten jetzt leichter Erholung.', 'training_late_flower_warning');
     } else if (context.phaseModel === 'early_flower' && action.intensity !== 'low') {
-      pushHint(hints, 'caution', 'In der frühen Blüte sollte Training vorsichtiger werden. Zu viel Eingriff kostet jetzt leichter Energie.', 'training_early_flower_caution');
+      pushHint(hints, 'caution', 'In der frühen Blüte passt sanfte Routine besser. Zu viel Eingriff kostet jetzt leichter Energie.', 'training_early_flower_caution');
     }
 
     if (context.stress >= 55 || context.health <= 45) {
-      pushHint(hints, 'warning', 'Die Pflanze steht bereits unter Druck. Training kostet jetzt eher Erholung als Fortschritt.', 'training_stress_warning');
+      pushHint(hints, 'warning', 'Die Pflanze steht bereits unter Druck. Heute lieber lesen und beruhigen als stärker eingreifen.', 'training_stress_warning');
     } else if (Number.isFinite(climate.vpdKpa) && climate.vpdKpa >= 1.55) {
-      pushHint(hints, 'caution', 'Die Luft wirkt gerade ziehend und fordernd. Eingriffe fühlen sich für die Pflanze jetzt härter an.', 'training_dry_air_caution');
+      pushHint(hints, 'caution', 'Die Luft wirkt gerade ziehend und fordernd. Beobachten oder eine sanfte Routine passt besser.', 'training_dry_air_caution');
     } else if (Number.isFinite(climate.temperatureC) && climate.temperatureC >= 30) {
-      pushHint(hints, 'caution', 'Wärme macht Eingriffe gerade belastender. Etwas mehr Ruhe wäre jetzt oft sauberer.', 'training_heat_caution');
+      pushHint(hints, 'caution', 'Wärme macht zusätzliche Reize gerade belastender. Etwas mehr Ruhe wäre jetzt oft sauberer.', 'training_heat_caution');
     } else if (context.phaseModel === 'vegetative' && context.health >= 65 && context.stress <= 34 && context.risk <= 40) {
-      pushHint(hints, 'positive', 'Die Pflanze wirkt stabil. Leichtes Training passt in dieser Phase gut.', 'training_positive');
+      pushHint(hints, 'positive', 'Die Pflanze wirkt stabil. Eine sanfte Routine passt heute gut.', 'training_positive');
     }
 
     return hints;
@@ -258,8 +258,4 @@
   });
 
   globalScope.GrowSimCareActionHints = api;
-
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = api;
-  }
-})(typeof globalThis !== 'undefined' ? globalThis : window);
+})(typeof window !== 'undefined' ? window : globalThis);

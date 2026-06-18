@@ -1427,6 +1427,8 @@
     "language_hint": "Changes apply instantly.",
     "not_active": "Not active",
     "prepared": "Prepared",
+    "prepared_group_hint": "Prepared. Visible, but not directly adjustable yet.",
+    "footer_hint": "Active changes apply immediately. Prepared items stay status-only here.",
     "language_de": "Deutsch",
     "language_en": "English",
     "language_es": "Español",
@@ -1799,6 +1801,21 @@
       "waterSmallSip": "A smaller sip fits the current dryback better.",
       "waterTooSoon": "It is still too early for heavier watering."
     },
+    "coach": {
+      "diagnosis": "Read first, then act.",
+      "dry": "Add back carefully now.",
+      "feed": "Check supply before raising it.",
+      "routine": "Small check, big effect.",
+      "stable": "Observing is enough today.",
+      "wet": "Let the root zone breathe first."
+    },
+    "context": {
+      "decision_open": "Daily choice active: read first, then set the line.",
+      "decision_task": "Today's focus: {task}.",
+      "daily_observe": "Daily Care: observing counts today.",
+      "daily_task": "Daily Care open: {task}.",
+      "weekly_goal": "Weekly goal active: {goal}."
+    },
     "actionPanel": {
       "diagnosis_subtitle": "Diagnosis reads the plant before you commit to the next move.",
       "diagnosis_title": "Diagnosis view",
@@ -1878,7 +1895,7 @@
         "stabilizeBeforeIntervention": "Settle the plant first before training, heavy feeding, or more pressure."
       },
       "probable_cause": "Likely cause",
-      "ready_focus": "Read the plant first and then choose the cleanest action.",
+      "ready_focus": "Read first, act second. Moisture and root zone set the tone today.",
       "risk": "Risk",
       "risk_level": "Risk level",
       "root_zone": "Root zone",
@@ -1896,7 +1913,7 @@
     },
     "feedback": {
       "badCare": "That move added more pressure than support.",
-      "chooseMethod": "Choose a method.",
+      "chooseMethod": "Pick a method if you want to intervene today. If values stay calm, observing is enough.",
       "effect": {
         "dryStressReduced": "Dry stress reduced",
         "monitorResponse": "Watch how the plant responds",
@@ -1919,7 +1936,7 @@
       "okayCare": "The action landed, but timing was only average.",
       "perfectCare": "Excellent call. The plant is responding cleanly.",
       "perfectWatering": "Perfect dryback timing. That was a premium watering call.",
-      "readyToAct": "Ready to act.",
+      "readyToAct": "This method is available right now.",
       "rootZoneRelief": "Good call. The root zone is being eased carefully without turning into a full watering pass.",
       "rootZoneReliefLimited": "That relief move can only do so much here. Keep watching whether the root zone is really under pressure.",
       "noMethodsLoaded": "No care methods loaded.",
@@ -1934,10 +1951,10 @@
     "recommendation": {
       "note": {
         "feed": {
-          "stable": "The nutrients are stable. A short check is enough today."
+          "stable": "Supply is calm. A short check is enough today."
         },
         "water": {
-          "monitor": "The values are stable. Watching first avoids unnecessary stress."
+          "monitor": "Calm is a valid call today. Watch whether the root zone keeps drying back cleanly."
         }
       }
     },
@@ -2323,6 +2340,15 @@
         "environment_hint": "Where your first grow begins.",
         "plant_title": "Plant type",
         "plant_hint": "What kind of line you want to start with.",
+        "mode_title": "Grow setup",
+        "mode_hint": "Where your first run begins.",
+        "light_title": "Light setup",
+        "light_hint": "How strongly your starting light works right away.",
+        "medium_title": "Medium",
+        "medium_hint": "How quickly water and nutrients react.",
+        "pot_title": "Pot size",
+        "pot_hint": "Your root space sets tempo, reserve, and watering pressure.",
+        "genetics_title": "Genetics",
         "style": {
           "safe": {
             "title": "Safe",
@@ -2381,6 +2407,74 @@
             "badge": "Goal",
             "body": "A start with later potential in mind.",
             "effect": "Potential · build-up · goal"
+          }
+        },
+        "mode": {
+          "indoor": {
+            "title": "Indoor",
+            "badge": "Recommended",
+            "body": "Calmer start with controllable climate and predictable routines.",
+            "effect": "Control ? clean ? stable"
+          },
+          "outdoor": {
+            "title": "Outdoor",
+            "badge": "Later",
+            "body": "More variance, more weather, and a more demanding start.",
+            "effect": "Weather ? air ? timing"
+          }
+        },
+        "light": {
+          "medium": {
+            "title": "Medium Light",
+            "badge": "Standard",
+            "body": "Solid light baseline for a calm, readable start.",
+            "effect": "Balance ? control ? buffer"
+          },
+          "high": {
+            "title": "High Output Light",
+            "badge": "Later",
+            "body": "More pressure and speed once your profile unlocks it.",
+            "effect": "Peak ? consumption ? focus"
+          }
+        },
+        "medium": {
+          "soil": {
+            "title": "Soil",
+            "badge": "Recommended",
+            "body": "Forgives small mistakes and stays easy to read for the first run.",
+            "effect": "Buffer ? calm ? forgiving"
+          },
+          "coco": {
+            "title": "Coco",
+            "badge": "Later",
+            "body": "Reacts more directly and wants more routine once you unlock it.",
+            "effect": "Reactive ? faster ? tighter"
+          }
+        },
+        "pot": {
+          "small": {
+            "title": "2 liters (S)",
+            "badge": "Standard",
+            "body": "Small starter pot with direct response and a tighter care window.",
+            "effect": "Compact ? direct ? active"
+          },
+          "medium": {
+            "title": "8 liters (M)",
+            "badge": "Balanced",
+            "body": "More buffer for water and roots without making the start feel sluggish.",
+            "effect": "Balanced ? calmer ? stable"
+          },
+          "large": {
+            "title": "16 liters (L)",
+            "badge": "Long-term",
+            "body": "Noticeably more reserve for long, clean development phases.",
+            "effect": "Reserve ? long-term ? calm"
+          },
+          "xlarge": {
+            "title": "25 liters (XL)",
+            "badge": "Reserve",
+            "body": "Maximum root space for big reserves and calmer drybacks.",
+            "effect": "Max ? slower ? deep"
           }
         }
       },

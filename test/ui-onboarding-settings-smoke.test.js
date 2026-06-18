@@ -127,13 +127,153 @@ async function dismissMissionRewardDialogIfPresent(page) {
       await page.waitForTimeout(150);
       continue;
     }
-    await page.click('#menuDialogCancelBtn');
+    await page.evaluate(() => {
+      const cancelBtn = document.getElementById('menuDialogCancelBtn');
+      if (cancelBtn && typeof cancelBtn.click === 'function') {
+        cancelBtn.click();
+        return;
+      }
+      if (typeof closeMenuDialog === 'function') {
+        closeMenuDialog();
+        return;
+      }
+      const dialog = document.getElementById('menuDialog');
+      if (dialog) {
+        dialog.classList.add('hidden');
+        dialog.setAttribute('aria-hidden', 'true');
+      }
+      if (window.__gsState && window.__gsState.ui) {
+        window.__gsState.ui.menuDialogOpen = false;
+      }
+    });
     await page.waitForFunction(() => {
       const dialog = document.getElementById('menuDialog');
       return Boolean(dialog && dialog.classList.contains('hidden'));
     });
     await page.waitForTimeout(150);
   }
+}
+
+async function clickWithMissionRewardGuard(page, selector, options = {}) {
+  const maxAttempts = Number.isFinite(Number(options.maxAttempts)) ? Number(options.maxAttempts) : 3;
+  const clickTimeout = Number.isFinite(Number(options.clickTimeoutMs)) ? Number(options.clickTimeoutMs) : 1800;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    await ensureMenuClosed(page);
+    await dismissMissionRewardDialogIfPresent(page);
+
+    try {
+      await page.click(selector, { timeout: clickTimeout });
+      return;
+    } catch (error) {
+      lastError = error;
+      const interceptState = await page.evaluate(() => {
+        const dialog = document.getElementById('menuDialog');
+        const menu = document.getElementById('gameMenu');
+        return {
+          dialogOpen: Boolean(dialog && !dialog.classList.contains('hidden')),
+          dialogVariant: dialog ? dialog.dataset.variant || '' : '',
+          menuOpen: Boolean(menu && !menu.classList.contains('hidden'))
+        };
+      });
+
+      if (interceptState.menuOpen) {
+        await ensureMenuClosed(page);
+        await page.waitForTimeout(120);
+        continue;
+      }
+
+      if (!(interceptState.dialogOpen && interceptState.dialogVariant === 'mission-reward')) {
+        throw error;
+      }
+
+      await dismissMissionRewardDialogIfPresent(page);
+      await page.waitForTimeout(120);
+    }
+  }
+
+  throw lastError || new Error(`clickWithMissionRewardGuard failed for ${selector}`);
+}
+
+async function ensureMenuClosed(page) {
+  await dismissMissionRewardDialogIfPresent(page);
+  const menuOpen = await page.evaluate(() => {
+    const menu = document.getElementById('gameMenu');
+    return Boolean(
+      menu
+      && !menu.classList.contains('hidden')
+      && (menu.getAttribute('aria-hidden') !== 'true' || (window.__gsState && window.__gsState.ui && window.__gsState.ui.menuOpen))
+    );
+  });
+  if (!menuOpen) {
+    return;
+  }
+  await page.evaluate(() => {
+    if (typeof closeMenu === 'function') {
+      closeMenu();
+      return;
+    }
+    const menu = document.getElementById('gameMenu');
+    if (menu) {
+      menu.classList.add('hidden');
+      menu.setAttribute('aria-hidden', 'true');
+    }
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuOpen = false;
+    }
+  });
+  await page.waitForFunction(() => {
+    const menu = document.getElementById('gameMenu');
+    return Boolean(
+      menu
+      && menu.classList.contains('hidden')
+      && menu.getAttribute('aria-hidden') === 'true'
+      && (!window.__gsState || !window.__gsState.ui || window.__gsState.ui.menuOpen === false)
+    );
+  });
+  await dismissMissionRewardDialogIfPresent(page);
+}
+
+async function ensureMenuOpen(page) {
+  await ensureMenuClosed(page);
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    await dismissMissionRewardDialogIfPresent(page);
+    const menuAlreadyOpen = await page.evaluate(() => {
+      const menu = document.getElementById('gameMenu');
+      return Boolean(
+        menu
+        && !menu.classList.contains('hidden')
+        && menu.getAttribute('aria-hidden') === 'false'
+        && window.__gsState
+        && window.__gsState.ui
+        && window.__gsState.ui.menuOpen === true
+      );
+    });
+    if (menuAlreadyOpen) {
+      return;
+    }
+    await page.locator('#menuToggleBtn').evaluate((node) => node.click());
+    try {
+      await page.waitForFunction(() => {
+        const menu = document.getElementById('gameMenu');
+        return Boolean(
+          menu
+          && !menu.classList.contains('hidden')
+          && menu.getAttribute('aria-hidden') === 'false'
+          && window.__gsState
+          && window.__gsState.ui
+          && window.__gsState.ui.menuOpen === true
+        );
+      }, null, { timeout: 1500 });
+      return;
+    } catch (error) {
+      await dismissMissionRewardDialogIfPresent(page);
+      await page.waitForTimeout(120);
+    }
+  }
+
+  throw new Error('failed to open menu without mission reward interception');
 }
 
 async function readCareStudioLocaleSnapshot(page) {
@@ -220,7 +360,7 @@ async function main() {
         activeTitle: document.querySelector('.run-builder-step.is-active h3')?.textContent.trim() || null,
         guestWelcomeText: guestWelcomeVisible ? guestWelcomeNode.textContent.replace(/\s+/g, ' ').trim() : '',
         guestWelcomeVisible,
-        activePot: Boolean(document.querySelector('[data-setup-select="setupPotSize"].is-active')),
+        activePotVisible: Boolean(document.querySelector('.run-builder-step.is-active [data-setup-select="setupPotSize"].is-active')),
         buddySrc: document.querySelector('.run-builder-step.is-active .onboarding-buddy-tip img')?.getAttribute('src') || null,
         potIconSrc: document.querySelector('[data-setup-select="setupPotSize"][data-setup-value="small"] .onboarding-option-media__image')?.getAttribute('src') || null,
         nextHidden: document.getElementById('setupNextBtn')?.classList.contains('hidden') || false,
@@ -233,21 +373,67 @@ async function main() {
     assert.strictEqual(initialBuilderState.activeTitle, 'Dein erster Grow beginnt', 'first onboarding step should use the new welcome screen');
     assert.strictEqual(initialBuilderState.guestWelcomeVisible, false, 'signed-in first run setup should hide the guest-mode welcome note');
     assert.strictEqual(initialBuilderState.guestWelcomeText, '', 'signed-in first run setup should not show the guest-mode welcome note');
-    assert.strictEqual(initialBuilderState.activePot, false, 'first step should now be a welcome screen instead of a pot picker');
+    assert.strictEqual(initialBuilderState.activePotVisible, false, 'first step should stay a welcome screen instead of showing setup cards');
     assert.strictEqual(initialBuilderState.nextHidden, false, 'next button should be visible before summary');
     assert.strictEqual(initialBuilderState.startHidden, true, 'start button should stay hidden before summary');
-    assert.strictEqual(initialBuilderState.outdoorDisabled, false, 'quick setup should keep the environment choices visible for the first-run flow');
-    assert.strictEqual(initialBuilderState.highLightDisabled, false, 'quick setup no longer exposes the old light lock card on step 1');
+    assert.strictEqual(initialBuilderState.outdoorDisabled, true, 'locked outdoor mode should stay visibly unavailable on first run');
+    assert.strictEqual(initialBuilderState.highLightDisabled, true, 'high light should stay visibly locked until it is unlocked');
 
-    for (let index = 0; index < 3; index += 1) {
-      if (index === 0) {
-        await page.click('#setupNextBtn');
-        const introBuddySrc = await page.locator('.run-builder-step.is-active .onboarding-buddy-tip img').getAttribute('src');
-        assert.strictEqual(introBuddySrc, 'assets/onboarding/buddy_setup.png', 'buddy intro should use the setup Buddy asset');
-        continue;
+    await page.click('#setupNextBtn');
+    const introBuddySrc = await page.locator('.run-builder-step.is-active .onboarding-buddy-tip img').getAttribute('src');
+    assert.strictEqual(introBuddySrc, 'assets/buddy/transparent/gameplay/waving/buddy_gameplay_wave_hello_v001.png', 'buddy intro should use the transparent welcome asset');
+
+    await page.click('#setupNextBtn');
+    const quickSetupState = await page.evaluate(() => ({
+      stepLabel: document.getElementById('onboardingStepLabel')?.textContent.trim() || null,
+      activeTitle: document.querySelector('.run-builder-step.is-active h3')?.textContent.trim() || null,
+      outdoorDisabled: Boolean(document.querySelector('.run-builder-step.is-active [data-setup-select="setupMode"][data-setup-value="outdoor"]')?.disabled),
+      highLightDisabled: Boolean(document.querySelector('.run-builder-step.is-active [data-setup-select="setupLight"][data-setup-value="high"]')?.disabled),
+      potValues: Array.from(document.querySelectorAll('.run-builder-step.is-active [data-setup-select="setupPotSize"]')).map((node) => String(node.dataset.setupValue || '')),
+      smallPotIconSrc: document.querySelector('.run-builder-step.is-active [data-setup-select="setupPotSize"][data-setup-value="small"] .onboarding-option-media__image')?.getAttribute('src') || null,
+      mediumLightIconSrc: document.querySelector('.run-builder-step.is-active [data-setup-select="setupLight"][data-setup-value="medium"] .onboarding-option-media__image')?.getAttribute('src') || null,
+      soilIconSrc: document.querySelector('.run-builder-step.is-active [data-setup-select="setupMedium"][data-setup-value="soil"] .onboarding-option-media__image')?.getAttribute('src') || null,
+      modeIconSrc: document.querySelector('.run-builder-step.is-active [data-setup-select="setupMode"][data-setup-value="indoor"] .onboarding-option-media__image')?.getAttribute('src') || null
+    }));
+    assert.strictEqual(quickSetupState.stepLabel, 'Schritt 3 von 4', 'quick setup should be the third onboarding step');
+    assert.strictEqual(quickSetupState.activeTitle, 'Starte deinen ersten Grow', 'third step should expose the real setup choices');
+    assert.strictEqual(quickSetupState.outdoorDisabled, true, 'outdoor mode should render as a locked upgrade on first run');
+    assert.strictEqual(quickSetupState.highLightDisabled, true, 'high light should render as a locked upgrade on first run');
+    assert.deepStrictEqual(quickSetupState.potValues, ['small', 'medium', 'large', 'xlarge'], 'quick setup should expose all restored pot sizes');
+    assert.strictEqual(quickSetupState.smallPotIconSrc, 'assets/onboarding/pot_s.png', 'small pot card should use the restored pot asset');
+    assert.strictEqual(quickSetupState.mediumLightIconSrc, 'assets/onboarding/light_medium.png', 'light card should use the restored light asset');
+    assert.strictEqual(quickSetupState.soilIconSrc, 'assets/onboarding/substrate_soil.png', 'medium card should use the restored substrate asset');
+    assert.strictEqual(quickSetupState.modeIconSrc, 'assets/onboarding/run_indoor.png', 'setup card should use the restored setup asset');
+
+    await page.evaluate(() => {
+      const image = document.querySelector('.run-builder-step.is-active [data-setup-select="setupPotSize"][data-setup-value="small"] .onboarding-option-media__image');
+      if (image) {
+        image.src = 'assets/onboarding/__missing_pot_asset__.png';
       }
-      await page.click('#setupNextBtn');
-    }
+    });
+    await page.waitForFunction(() => {
+      const media = document.querySelector('.run-builder-step.is-active [data-setup-select="setupPotSize"][data-setup-value="small"] .onboarding-icon');
+      const image = media ? media.querySelector('img') : null;
+      return Boolean(media && !media.classList.contains('onboarding-icon--asset') && image && image.hidden === true);
+    });
+    await page.evaluate(() => {
+      if (typeof updateOnboardingBuilderUi === 'function') {
+        updateOnboardingBuilderUi();
+      }
+    });
+    await page.waitForFunction(() => {
+      const image = document.querySelector('.run-builder-step.is-active [data-setup-select="setupPotSize"][data-setup-value="small"] .onboarding-option-media__image');
+      return Boolean(image && image.hidden !== true && /pot_s\.png$/.test(image.getAttribute('src') || ''));
+    });
+
+    await page.click('[data-setup-select="setupPotSize"][data-setup-value="xlarge"]');
+    await page.waitForFunction(() => {
+      const button = document.querySelector('.run-builder-step.is-active [data-setup-select="setupPotSize"][data-setup-value="xlarge"]');
+      const select = document.getElementById('setupPotSize');
+      return Boolean(button && button.classList.contains('is-active') && select && select.value === 'xlarge');
+    });
+
+    await page.click('#setupNextBtn');
 
     const summaryState = await page.evaluate(() => ({
       stepLabel: document.getElementById('onboardingStepLabel')?.textContent.trim() || null,
@@ -262,7 +448,6 @@ async function main() {
       light: document.getElementById('onboardingSummaryLight')?.textContent.trim() || null,
       profileTitle: document.getElementById('setupStrategyTitle')?.textContent.trim() || null,
       buddySrc: document.querySelector('.run-builder-step.is-active .onboarding-buddy-tip img')?.getAttribute('src') || null,
-      mediumLightIconSrc: document.querySelector('[data-setup-select="setupLight"][data-setup-value="medium"] .onboarding-option-media__image')?.getAttribute('src') || null,
       summaryPotIconSrc: document.querySelector('[data-summary-select="setupPotSize"] .summary-setup-media__image')?.getAttribute('src') || null,
       summaryGeneticsIconSrc: document.querySelector('[data-summary-select="setupGenetics"] .summary-setup-media__image')?.getAttribute('src') || null,
       summaryLightIconSrc: document.querySelector('[data-summary-select="setupLight"] .summary-setup-media__image')?.getAttribute('src') || null
@@ -272,32 +457,66 @@ async function main() {
     assert.strictEqual(summaryState.nextHidden, true, 'next button should be hidden on summary');
     assert.strictEqual(summaryState.startHidden, false, 'start button should be visible on summary');
     assert.strictEqual(summaryState.backDisabled, false, 'back button should be available on summary');
-    assert.ok((summaryState.pot || '').length > 0, 'summary should include a mapped pot size');
+    assert.strictEqual(summaryState.pot, '25 Liter (XL)', 'summary should keep the selected larger pot size');
     assert.strictEqual(summaryState.genetics, 'Hybrid', 'summary should include selected genetics');
-    assert.ok((summaryState.mode || '').length > 0, 'summary should include selected setup mode');
-    assert.ok((summaryState.medium || '').length > 0, 'summary should include selected medium');
-    assert.ok((summaryState.light || '').length > 0, 'summary should include selected light');
+    assert.strictEqual(summaryState.mode, 'Indoor', 'summary should include the selected setup mode');
+    assert.strictEqual(summaryState.medium, 'Erde', 'summary should include the selected substrate');
+    assert.strictEqual(summaryState.light, 'Mittleres Licht', 'summary should include the selected light setup');
     assert.strictEqual(summaryState.profileTitle, 'Balanced Control', 'summary should reuse the run build presentation');
-    assert.strictEqual(summaryState.buddySrc, 'assets/onboarding/buddy_summary.png', 'summary step should use the summary Buddy asset');
-    assert.ok(summaryState.mediumLightIconSrc === null || /light_/.test(summaryState.mediumLightIconSrc), 'light card should keep a stable asset mapping when available');
-    assert.ok(summaryState.summaryPotIconSrc === null || /pot_/.test(summaryState.summaryPotIconSrc), 'summary pot should use a stable pot asset when available');
+    assert.strictEqual(summaryState.buddySrc, 'assets/buddy/transparent/emotions/happy/buddy_emotion_happy_open_arms_v001.png', 'summary step should use the transparent onboarding Buddy asset');
+    assert.strictEqual(summaryState.summaryPotIconSrc, 'assets/onboarding/pot_xl.png', 'summary pot should use the selected XL pot asset');
     assert.strictEqual(summaryState.summaryGeneticsIconSrc, 'assets/onboarding/genetic_hybrid.png', 'summary genetics should use the selected genetics PNG asset');
-    assert.ok(summaryState.summaryLightIconSrc === null || /light_/.test(summaryState.summaryLightIconSrc), 'summary light should keep a stable light asset when available');
+    assert.strictEqual(summaryState.summaryLightIconSrc, 'assets/onboarding/light_medium.png', 'summary light should keep the selected light asset');
 
     await page.click('#startRunBtn');
     await page.waitForFunction(() => document.getElementById('landing').classList.contains('hidden'));
+    const startedSetupState = await page.evaluate(() => ({
+      setup: window.__gsState && window.__gsState.setup ? {
+        mode: window.__gsState.setup.mode,
+        light: window.__gsState.setup.light,
+        medium: window.__gsState.setup.medium,
+        potSize: window.__gsState.setup.potSize,
+        genetics: window.__gsState.setup.genetics
+      } : null,
+      runSetup: window.__gsState && window.__gsState.run && window.__gsState.run.setupSnapshot ? {
+        mode: window.__gsState.run.setupSnapshot.mode,
+        light: window.__gsState.run.setupSnapshot.light,
+        medium: window.__gsState.run.setupSnapshot.medium,
+        potSize: window.__gsState.run.setupSnapshot.potSize,
+        genetics: window.__gsState.run.setupSnapshot.genetics
+      } : null
+    }));
+    assert.deepStrictEqual(startedSetupState.setup, {
+      mode: 'indoor',
+      light: 'medium',
+      medium: 'soil',
+      potSize: 'xlarge',
+      genetics: 'hybrid'
+    }, 'started run should preserve the selected onboarding setup');
+    assert.deepStrictEqual(startedSetupState.runSetup, startedSetupState.setup, 'run snapshot should match the started setup exactly');
 
     await page.waitForFunction(() => {
       const overlay = document.getElementById('firstRunIntroOverlay');
       return Boolean(overlay && !overlay.classList.contains('hidden'));
     });
+    await page.waitForFunction(() => {
+      const image = document.querySelector('#firstRunIntroOverlay .first-run-intro-buddy-image');
+      return Boolean(image && image.complete && image.naturalWidth > 0);
+    });
     const firstRunIntroState = await page.evaluate(() => {
       const overlay = document.getElementById('firstRunIntroOverlay');
+      const buddyImage = overlay ? overlay.querySelector('.first-run-intro-buddy-image') : null;
       return {
-        text: overlay ? overlay.textContent.replace(/\s+/g, ' ').trim() : ''
+        text: overlay ? overlay.textContent.replace(/\s+/g, ' ').trim() : '',
+        buddyImagePresent: Boolean(buddyImage),
+        buddyImageSrc: buddyImage ? buddyImage.getAttribute('src') || '' : '',
+        buddyImageLoaded: Boolean(buddyImage && buddyImage.complete && buddyImage.naturalWidth > 0)
       };
     });
     assert.match(firstRunIntroState.text, /Tag 1|Keimling/i, 'first started run should open the guided day-1 overlay');
+    assert.strictEqual(firstRunIntroState.buddyImagePresent, true, 'day-1 overlay should render a Buddy visual');
+    assert.ok(firstRunIntroState.buddyImageSrc.length > 0, 'day-1 overlay Buddy visual should resolve an asset path');
+    assert.strictEqual(firstRunIntroState.buddyImageLoaded, true, 'day-1 overlay Buddy visual should load cleanly');
     await page.click('#firstRunIntroPrimaryBtn');
     await page.waitForFunction(() => Boolean(document.querySelector('[data-first-run-decision="gentle_water"]')));
     await page.click('[data-first-run-decision="gentle_water"]');
@@ -319,14 +538,25 @@ async function main() {
       const overlay = document.getElementById('firstRunDashboardFollowupOverlay');
       return Boolean(overlay && !overlay.classList.contains('hidden'));
     });
+    await page.waitForFunction(() => {
+      const image = document.querySelector('#firstRunDashboardFollowupOverlay .first-run-intro-buddy-image');
+      return Boolean(image && image.complete && image.naturalWidth > 0);
+    });
     const dashboardFollowupState = await page.evaluate(() => {
       const overlay = document.getElementById('firstRunDashboardFollowupOverlay');
+      const buddyImage = overlay ? overlay.querySelector('.first-run-intro-buddy-image') : null;
       return {
-        text: overlay ? overlay.textContent.replace(/\s+/g, ' ').trim() : ''
+        text: overlay ? overlay.textContent.replace(/\s+/g, ' ').trim() : '',
+        buddyImagePresent: Boolean(buddyImage),
+        buddyImageSrc: buddyImage ? buddyImage.getAttribute('src') || '' : '',
+        buddyImageLoaded: Boolean(buddyImage && buddyImage.complete && buddyImage.naturalWidth > 0)
       };
     });
-    assert.match(dashboardFollowupState.text, /Dein Grow laeuft/i, 'first finished intro should surface the calm dashboard follow-up');
+    assert.match(dashboardFollowupState.text, /Dein Grow läuft/i, 'first finished intro should surface the calm dashboard follow-up');
     assert.match(dashboardFollowupState.text, /Weiter/i, 'dashboard follow-up should expose the continue CTA');
+    assert.strictEqual(dashboardFollowupState.buddyImagePresent, true, 'dashboard follow-up should render a Buddy visual');
+    assert.ok(dashboardFollowupState.buddyImageSrc.length > 0, 'dashboard follow-up Buddy visual should resolve an asset path');
+    assert.strictEqual(dashboardFollowupState.buddyImageLoaded, true, 'dashboard follow-up Buddy visual should load cleanly');
     await page.click('#firstRunDashboardFollowupBtn');
     await page.waitForFunction(() => {
       const overlay = document.getElementById('firstRunDashboardFollowupOverlay');
@@ -346,13 +576,13 @@ async function main() {
     });
     assert.strictEqual(firstRunTeaserState.actionTarget, 'dashboard', 'post-intro first-day goal should route into the dashboard');
     assert.strictEqual(firstRunTeaserState.mode, 'starter', 'post-intro first-day goal should still use the starter teaser slot');
-    assert.match(firstRunTeaserState.text, /Naechster Schritt|Wachstumsreaktion/i, 'post-intro teaser should explain the next first-day step');
+    assert.match(firstRunTeaserState.text, /Nächster Schritt|Wachstumsreaktion/i, 'post-intro teaser should explain the next first-day step');
     await page.locator('#homeMetaRetentionTeaser').evaluate((node) => node.click());
     await page.waitForFunction(() => {
       const dashboardSheet = document.getElementById('dashboardSheet');
       return Boolean(dashboardSheet && !dashboardSheet.classList.contains('hidden'));
     });
-    await page.click('#dashboardSheet [data-close-sheet]');
+    await clickWithMissionRewardGuard(page, '#dashboardSheet [data-close-sheet]');
     await waitForTransientUiSettled(page);
     if (false) {
 
@@ -410,15 +640,15 @@ async function main() {
     assert.ok(/steigt|stabil|f.llt/.test(harvestPopupState.trend || ''), 'harvest popup should render a readable trend');
     assert.strictEqual(harvestPopupState.hasRecommendation, true, 'harvest popup should render recommendations or fallback guidance');
 
-    await page.click('#harvestAnalysisSheet [data-close-sheet]');
+    await clickWithMissionRewardGuard(page, '#harvestAnalysisSheet [data-close-sheet]');
     await page.waitForFunction(() => document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
     await page.locator('#harvestForecastWidget').evaluate((node) => node.click());
     await page.waitForFunction(() => !document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
-    await page.click('#harvestAnalysisSheet .harvest-analysis-understood-btn');
+    await clickWithMissionRewardGuard(page, '#harvestAnalysisSheet .harvest-analysis-understood-btn');
     await page.waitForFunction(() => document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
     await page.locator('#harvestForecastWidget').evaluate((node) => node.click());
     await page.waitForFunction(() => !document.getElementById('harvestAnalysisSheet').classList.contains('hidden'));
-    await page.click('#harvestAnalysisDetailsBtn');
+    await clickWithMissionRewardGuard(page, '#harvestAnalysisDetailsBtn');
     await page.waitForFunction(() => {
       const harvestSheet = document.getElementById('harvestAnalysisSheet');
       const dashboardSheet = document.getElementById('dashboardSheet');
@@ -427,7 +657,7 @@ async function main() {
         && dashboardSheet
         && !dashboardSheet.classList.contains('hidden');
     });
-    await page.click('#dashboardSheet [data-close-sheet]');
+    await clickWithMissionRewardGuard(page, '#dashboardSheet [data-close-sheet]');
     await page.evaluate(() => {
       const run = window.getCanonicalRun ? window.getCanonicalRun() : state.run;
       if (run && run.harvest) {
@@ -442,7 +672,7 @@ async function main() {
     }));
     assert.ok(/g$/.test(fallbackPopupState.projected || ''), 'harvest popup should survive missing forecast data with a gram fallback');
     assert.strictEqual(fallbackPopupState.dashboardOpen, false, 'fallback harvest popup open should still not open dashboard');
-    await page.click('#harvestAnalysisSheet [data-close-sheet]');
+    await clickWithMissionRewardGuard(page, '#harvestAnalysisSheet [data-close-sheet]');
 
     await page.evaluate(() => {
       state.ui.openSheet = 'diagnosis';
@@ -462,7 +692,7 @@ async function main() {
     assert.ok(cloudSync.className.includes('value_green'), 'connected cloud sync should be styled as active');
     assert.strictEqual(cloudSync.title, 'Cloud Sync ist verbunden. Hier kannst du dein Konto verwalten oder dich wieder abmelden.', 'cloud status should explain the connected account path without pressuring startup login');
 
-    await page.click('#settingsCloudSyncRow');
+    await clickWithMissionRewardGuard(page, '#settingsCloudSyncRow');
     await page.waitForFunction(() => {
       const modal = document.getElementById('authModal');
       const loggedInView = document.getElementById('authModalLoggedInView');
@@ -481,7 +711,7 @@ async function main() {
     assert.strictEqual(loggedInAuthModalState.title, 'Konto & Cloud', 'connected cloud sheet should use the optional account framing');
     assert.strictEqual(loggedInAuthModalState.statusLabel, 'Status', 'connected cloud sheet should use localized status labels');
     assert.match(loggedInAuthModalState.note, /Cloud Sync bleibt optional/i, 'connected cloud sheet should keep cloud sync optional even while signed in');
-    await page.click('#authModalLogoutBtn');
+    await clickWithMissionRewardGuard(page, '#authModalLogoutBtn');
     await page.waitForFunction(() => {
       const modal = document.getElementById('authModal');
       return Boolean(
@@ -578,23 +808,41 @@ async function main() {
     const runtimeSettings = await page.evaluate(() => ({
       simSpeed: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null,
       eventWindow: document.getElementById('settingsEventFrequencyValue')?.textContent.trim() || null,
+      eventClass: document.getElementById('settingsEventFrequencyValue')?.className || null,
       tutorial: document.getElementById('settingsTutorialValue')?.textContent.trim() || null,
+      tutorialClass: document.getElementById('settingsTutorialValue')?.className || null,
       autosave: document.getElementById('settingsAutosaveValue')?.textContent.trim() || null,
-      volume: document.getElementById('settingsVolumeValue')?.textContent.trim() || null
+      volume: document.getElementById('settingsVolumeValue')?.textContent.trim() || null,
+      volumeClass: document.getElementById('settingsVolumeValue')?.className || null,
+      audioNote: document.querySelector('.figma-settings-card--audio .settings-card-note')?.textContent.trim() || null,
+      footerNote: document.querySelector('#diagnosisSheet .settings-footer-note')?.textContent.trim() || null,
+      defaultLabel: document.getElementById('settingsDefaultBtn')?.textContent.trim() || null,
+      defaultTitle: document.getElementById('settingsDefaultBtn')?.getAttribute('title') || null,
+      saveLabel: document.getElementById('settingsSaveBtn')?.textContent.trim() || null,
+      saveTitle: document.getElementById('settingsSaveBtn')?.getAttribute('title') || null
     }));
     assert.ok(
-      runtimeSettings.simSpeed === 'Basis 12x · Aktiv 12x' || runtimeSettings.simSpeed === 'Basis 12x Â· Aktiv 12x',
+      runtimeSettings.simSpeed === 'Basis 12x · Aktiv 12x',
       `simulation speed should reflect base and active runtime state, got: ${runtimeSettings.simSpeed}`
     );
     assert.strictEqual(runtimeSettings.eventWindow, 'ca. 30-90 Min.', 'event frequency should describe the calm event window without technical wording');
+    assert.match(runtimeSettings.eventClass || '', /settings-status-value/, 'event frequency should render as a quiet status value');
     assert.strictEqual(runtimeSettings.tutorial, 'Vorbereitet', 'tutorial setting should avoid unfinished technical wording');
+    assert.match(runtimeSettings.tutorialClass || '', /settings-prepared-value/, 'tutorial hints should read as prepared instead of active');
     assert.strictEqual(runtimeSettings.autosave, 'Lokal alle 3s', 'autosave should explain local persistence');
     assert.strictEqual(runtimeSettings.volume, 'Vorbereitet', 'audio setting should avoid unfinished technical wording');
+    assert.match(runtimeSettings.volumeClass || '', /settings-prepared-value/, 'audio status should read as prepared instead of active');
+    assert.strictEqual(runtimeSettings.audioNote, 'Vorbereitet. Sichtbar, aber noch nicht direkt anpassbar.', 'audio block should explain prepared areas explicitly');
+    assert.strictEqual(runtimeSettings.footerNote, 'Aktive Änderungen wirken sofort. Vorbereitetes bleibt hier nur Status.', 'footer should explain the difference between active settings and prepared areas');
+    assert.strictEqual(runtimeSettings.defaultLabel, 'Reminder zurücksetzen', 'default button should describe its real reminder scope');
+    assert.strictEqual(runtimeSettings.defaultTitle, 'Setzt die Reminder-Basis zurück.', 'default button title should avoid global reset wording');
+    assert.strictEqual(runtimeSettings.saveLabel, 'Fertig', 'save button should read like a neutral confirmation instead of a global apply action');
+    assert.strictEqual(runtimeSettings.saveTitle, 'Schließt dieses Fenster. Aktive Änderungen wirken bereits sofort.', 'save button title should explain that active settings already apply instantly');
 
     await dismissMissionRewardDialogIfPresent(page);
     await page.locator('#diagnosisSheet [data-close-sheet]').evaluate((node) => node.click());
     await dismissMissionRewardDialogIfPresent(page);
-    await page.click('#menuToggleBtn');
+    await ensureMenuOpen(page);
 
     const menuState = await page.evaluate(() => ({
       statsLabel: document.querySelector('#menuStatsBtn span')?.textContent.trim() || null,
@@ -616,10 +864,10 @@ async function main() {
       resetTitle: document.getElementById('analysisResetBtn')?.getAttribute('title') || null
     }));
     assert.strictEqual(menuState.statsLabel, 'Analyse', 'menu analysis entry should describe the actual dashboard path');
-    assert.strictEqual(menuState.statsTitle, 'Oeffnet Analyse, Verlauf und Run-Statistik.', 'menu analysis entry should explain the report path');
+    assert.strictEqual(menuState.statsTitle, 'Öffnet Analyse, Verlauf und Run-Statistik.', 'menu analysis entry should explain the report path');
     assert.strictEqual(menuState.rescueLabel, 'Notfallrettung', 'menu rescue entry should describe the actual rescue mechanic');
     assert.strictEqual(menuState.rescueSubtitle, 'Notfallrettung ist aktuell nicht erforderlich.', 'menu rescue subtitle should describe the actual current state honestly');
-    assert.strictEqual(menuState.rescueTitle, 'Einmalige Hilfe fuer kritische Situationen im aktiven Run.', 'menu rescue entry should explain its real scope');
+    assert.strictEqual(menuState.rescueTitle, 'Einmalige Hilfe für kritische Situationen im aktiven Run.', 'menu rescue entry should explain its real scope');
     assert.strictEqual(menuState.missionsSubtitle, 'Tagesziele & Fortschritt', 'missions entry should describe the real missions sheet');
     assert.strictEqual(menuState.leaderboardSubtitle, 'Verifizierte Ergebnisse mit Konto', 'leaderboard should explain the account-bound verified path');
     assert.strictEqual(menuState.coinShopSubtitle, 'Optionale Komfortaktionen', 'coin shop should be framed as optional');
@@ -630,10 +878,11 @@ async function main() {
     assert.strictEqual(menuState.aboutLabel, 'Projektinfo', 'about entry should not pretend to be a full tutorial');
     assert.strictEqual(menuState.quickHomeDisabled, true, 'prepared quick action should be non-interactive');
     assert.strictEqual(menuState.quickOpsDisabled, false, 'leaderboard entry should stay available in the current build');
-    assert.strictEqual(menuState.quickHomeTitle, 'Aktuell nicht verfuegbar.', 'hidden quick action should explain its availability calmly');
+    assert.strictEqual(menuState.quickHomeTitle, 'Aktuell nicht verfügbar.', 'hidden quick action should explain its availability calmly');
     assert.strictEqual(menuState.resetTitle, 'Setzt den aktuellen Run nach Bestätigung vollständig zurück.', 'reset action should describe its destructive scope');
 
-    await page.click('#menuStatsBtn');
+    await dismissMissionRewardDialogIfPresent(page);
+    await page.locator('#menuStatsBtn').evaluate((node) => node.click());
     await page.waitForFunction(() => {
       const node = document.getElementById('dashboardSheet');
       return node && !node.classList.contains('hidden');
@@ -652,14 +901,30 @@ async function main() {
     assert.strictEqual(analysisState.timelineTitle, 'Zeigt den letzten protokollierten Verlauf aus Pflege und Ereignissen.', 'timeline tab should explain the player-facing history view');
 
     await dismissMissionRewardDialogIfPresent(page);
-    await page.click('#analysisTabTimeline');
+    await ensureMenuClosed(page);
+    await page.evaluate(() => {
+      if (typeof closeMenuDialog === 'function') {
+        closeMenuDialog();
+      }
+      const dialog = document.getElementById('menuDialog');
+      if (dialog) {
+        dialog.classList.add('hidden');
+        dialog.setAttribute('aria-hidden', 'true');
+      }
+      if (window.__gsState && window.__gsState.ui) {
+        window.__gsState.ui.menuDialogOpen = false;
+      }
+    });
+    await page.waitForTimeout(120);
+    await dismissMissionRewardDialogIfPresent(page);
+    await page.locator('#analysisTabTimeline').evaluate((node) => node.click());
     await page.waitForFunction(() => document.getElementById('analysisPanelTimeline') && !document.getElementById('analysisPanelTimeline').classList.contains('hidden'));
     const timelinePanelTitle = await page.evaluate(() => document.getElementById('analysisPanelTimeline')?.getAttribute('title') || null);
     assert.strictEqual(timelinePanelTitle, 'Zeigt den letzten protokollierten Verlauf aus Pflege, Ereignissen und Run-Updates.', 'timeline panel should describe the calmer player-facing history view');
     await dismissMissionRewardDialogIfPresent(page);
     await page.locator('#dashboardSheet [data-close-sheet]').evaluate((node) => node.click());
 
-    await page.click('#menuToggleBtn');
+    await ensureMenuOpen(page);
     const rescueStatus = await page.evaluate(() => ({
       disabled: Boolean(document.getElementById('menuRescueBtn')?.disabled),
       subtitle: document.getElementById('menuRescueSubtext')?.textContent.trim() || null,
@@ -669,15 +934,18 @@ async function main() {
     assert.strictEqual(rescueStatus.subtitle, 'Notfallrettung ist aktuell nicht erforderlich.', 'menu rescue should report the same no-op message as the rescue runtime path');
     assert.strictEqual(rescueStatus.deathVisible, false, 'menu rescue should not open the death overlay when the run is not critical');
 
-    await page.click('#menuLanguageBtn');
+    await dismissMissionRewardDialogIfPresent(page);
+    await page.locator('#menuLanguageBtn').evaluate((node) => node.click());
     await page.waitForFunction(() => {
       const node = document.getElementById('diagnosisSheet');
       return node && !node.classList.contains('hidden');
     });
-    await page.click('#diagnosisSheet [data-close-sheet]');
+    await dismissMissionRewardDialogIfPresent(page);
+    await page.locator('#diagnosisSheet [data-close-sheet]').evaluate((node) => node.click());
 
-    await page.click('#menuToggleBtn');
-    await page.click('#menuMissionsBtn');
+    await dismissMissionRewardDialogIfPresent(page);
+    await ensureMenuOpen(page);
+    await page.locator('#menuMissionsBtn').evaluate((node) => node.click());
     await page.waitForFunction(() => {
       const node = document.getElementById('missionsSheet');
       return node && !node.classList.contains('hidden');

@@ -48,6 +48,71 @@ async function advanceOnboardingToSummary(page) {
   }, null, { timeout: 10000 });
 }
 
+async function readSetupOptionPresentation(page, { selectId, category, value }) {
+  return page.evaluate(({ selectId: inputSelectId, category: inputCategory, value: inputValue }) => {
+    const selectNode = document.getElementById(inputSelectId);
+    const optionNode = selectNode
+      ? Array.from(selectNode.options).find((option) => option.value === inputValue)
+      : null;
+    const profile = typeof getCanonicalProfile === 'function'
+      ? getCanonicalProfile(window.__gsState)
+      : (window.__gsState && window.__gsState.profile);
+    const progressionApi = window.GrowSimProgression;
+    const presentation = progressionApi && typeof progressionApi.getSetupOptionPresentation === 'function'
+      ? progressionApi.getSetupOptionPresentation(profile, inputCategory, inputValue)
+      : null;
+    return {
+      exists: Boolean(selectNode && optionNode),
+      currentValue: selectNode ? String(selectNode.value || '') : '',
+      unlocked: Boolean(presentation && presentation.unlocked),
+      requiredLevel: Number(presentation && presentation.requiredLevel || 0)
+    };
+  }, { selectId, category, value });
+}
+
+async function applyAdvancedSetupSelections(page, selections) {
+  await page.evaluate((nextSelections) => {
+    for (const [selectId, value] of Object.entries(nextSelections || {})) {
+      const selectNode = document.getElementById(selectId);
+      if (selectNode) {
+        selectNode.value = String(value);
+      }
+    }
+    if (typeof renderSetupOptionLocks === 'function') {
+      renderSetupOptionLocks();
+    }
+    if (typeof renderSetupStrategyPreview === 'function') {
+      renderSetupStrategyPreview();
+    }
+  }, selections);
+}
+
+async function clearBlockingGuidanceUi(page) {
+  await page.evaluate(() => {
+    if (typeof getFirstRunIntroState === 'function') {
+      const intro = getFirstRunIntroState(window.__gsState);
+      intro.active = false;
+      intro.completed = true;
+      intro.dashboardFollowupShown = true;
+    }
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+    }
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
+    if (typeof renderFirstRunIntroOverlay === 'function') {
+      renderFirstRunIntroOverlay();
+    }
+    if (typeof renderFirstRunDashboardFollowupOverlay === 'function') {
+      renderFirstRunDashboardFollowupOverlay();
+    }
+    if (typeof renderGameMenu === 'function') {
+      renderGameMenu();
+    }
+  });
+}
+
 async function main() {
   const { server, port: resolvedPort } = await startStaticServer(ROOT, HOST);
   PORT = Number(resolvedPort || 0);
@@ -66,18 +131,16 @@ async function main() {
     await page.goto(url, { waitUntil: 'networkidle' });
     await waitForBootReady(page);
 
-    for (const selector of [
-      '[data-setup-select="setupGenetics"][data-setup-value="indica"]',
-      '[data-setup-select="setupMode"][data-setup-value="outdoor"]',
-      '[data-setup-select="setupMedium"][data-setup-value="coco"]',
-      '[data-setup-select="setupLight"][data-setup-value="high"]'
+    for (const option of [
+      { selectId: 'setupGenetics', category: 'genetics', value: 'indica' },
+      { selectId: 'setupMode', category: 'setupModes', value: 'outdoor' },
+      { selectId: 'setupMedium', category: 'media', value: 'coco' },
+      { selectId: 'setupLight', category: 'lights', value: 'high' }
     ]) {
-      const disabled = await page.locator(selector).evaluate((node) => ({
-        disabled: Boolean(node.disabled),
-        ariaDisabled: node.getAttribute('aria-disabled')
-      }));
-      assert.strictEqual(disabled.disabled, true, `${selector} should start locked`);
-      assert.strictEqual(disabled.ariaDisabled, 'true', `${selector} should expose locked state`);
+      const state = await readSetupOptionPresentation(page, option);
+      assert.strictEqual(state.exists, true, `${option.selectId}=${option.value} should still exist in the setup model`);
+      assert.strictEqual(state.unlocked, false, `${option.selectId}=${option.value} should start locked`);
+      assert.ok(state.requiredLevel > 0, `${option.selectId}=${option.value} should advertise a required level`);
     }
 
     const initialStrategyPreview = await page.evaluate(() => ({
@@ -93,6 +156,7 @@ async function main() {
 
     await page.click('#startRunBtn');
     await page.waitForFunction(() => window.getCanonicalRun().status === 'active');
+    await clearBlockingGuidanceUi(page);
     const runGoalHud = await page.evaluate(() => ({
       goalId: window.getCanonicalRun().goal && window.getCanonicalRun().goal.id,
       hidden: document.getElementById('homeMetaToggle').classList.contains('hidden'),
@@ -284,13 +348,16 @@ async function main() {
       renderAll();
     });
     await rewindOnboardingToFirstStep(page);
-    await page.click('#setupNextBtn');
-    await page.click('[data-setup-select="setupGenetics"][data-setup-value="sativa"]');
-    await page.click('#setupNextBtn');
-    await page.click('#setupNextBtn');
-    await page.click('[data-setup-select="setupMedium"][data-setup-value="coco"]');
-    await page.click('#setupNextBtn');
-    await page.click('[data-setup-select="setupLight"][data-setup-value="high"]');
+    await advanceOnboardingToSummary(page);
+    await applyAdvancedSetupSelections(page, {
+      setupGrowStyle: 'challenging',
+      setupEnvironment: 'outdoor',
+      setupPlantType: 'yield',
+      setupGenetics: 'sativa',
+      setupMode: 'outdoor',
+      setupMedium: 'coco',
+      setupLight: 'high'
+    });
     const upgradedStrategyPreview = await page.evaluate(() => ({
       title: document.getElementById('setupStrategyTitle').textContent.trim(),
       tag: document.getElementById('setupStrategyTag').textContent.trim(),
@@ -298,10 +365,9 @@ async function main() {
     }));
     assert.ok(/High Pressure|Fast Cycle|Reactive Feed/.test(upgradedStrategyPreview.title), 'preview should react to strategic start choices');
     assert.ok(['risky', 'fast'].includes(upgradedStrategyPreview.tone), 'upgraded strategy should expose a non-default tone');
-
-    await advanceOnboardingToSummary(page);
     await page.click('#startRunBtn');
     await page.waitForFunction(() => window.getCanonicalRun().status === 'active');
+    await clearBlockingGuidanceUi(page);
 
     const harvestFinishState = await page.evaluate(async () => {
       const s = window.__gsState;
@@ -357,13 +423,16 @@ async function main() {
     await page.waitForFunction(() => !document.getElementById('runSummaryOverlay').classList.contains('hidden'));
     await page.locator('#runSummaryNewRunBtn').evaluate((node) => node.click());
     await page.waitForFunction(() => document.getElementById('landing') && !document.getElementById('landing').classList.contains('hidden'));
-    const unlockedStartOptions = await page.evaluate(() => ({
-      cocoDisabled: document.querySelector('[data-setup-select="setupMedium"][data-setup-value="coco"]').disabled,
-      highDisabled: document.querySelector('[data-setup-select="setupLight"][data-setup-value="high"]').disabled
-    }));
+    const unlockedStartOptions = await page.evaluate(() => {
+      const profile = getCanonicalProfile(window.__gsState);
+      return {
+        cocoUnlocked: Boolean(window.GrowSimProgression.getSetupOptionPresentation(profile, 'media', 'coco').unlocked),
+        highUnlocked: Boolean(window.GrowSimProgression.getSetupOptionPresentation(profile, 'lights', 'high').unlocked)
+      };
+    });
 
-    assert.strictEqual(unlockedStartOptions.cocoDisabled, false, 'level 4 unlock should be selectable on the next run');
-    assert.strictEqual(unlockedStartOptions.highDisabled, false, 'level 6 unlock should be selectable after enough profile progress');
+    assert.strictEqual(unlockedStartOptions.cocoUnlocked, true, 'level 4 unlock should remain available for the next run setup');
+    assert.strictEqual(unlockedStartOptions.highUnlocked, true, 'level 6 unlock should remain available after enough profile progress');
   } finally {
     await page.close().catch(() => {});
     await browser.close().catch(() => {});

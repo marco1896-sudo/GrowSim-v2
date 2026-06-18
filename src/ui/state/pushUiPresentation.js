@@ -23,7 +23,7 @@
     feedback: Object.freeze({
       loading: 'Push-Status wird aktualisiert.',
       unsupported: 'Erinnerungen sind in diesem Browser aktuell nicht verfuegbar.',
-      denied: 'Erinnerungen sind im Browser oder System ausgeschaltet. Du kannst lokal weiterspielen.',
+      denied: 'Im Browser oder System aus. Lokales Spielen bleibt möglich.',
       inactive: 'Erinnerungen sind optional. Du kannst sie spaeter aktivieren, wenn du Hinweise zu wichtigen Momenten moechtest.',
       active: 'Erinnerungen sind aktiv. Du bekommst Hinweise zu wichtigen Gameplay-Ereignissen.',
       unauthenticated: 'Erinnerungen mit Cloud-Bezug brauchen ein Konto. Dein lokaler Run bleibt spielbar.',
@@ -40,7 +40,14 @@
     menu: Object.freeze({
       label: 'Erinnerungen',
       title: 'Oeffnet optionale Erinnerungen und den aktuellen Status.',
-      enabledBadge: 'An'
+      enabledBadge: 'An',
+      statusActive: 'Aktiv',
+      statusInactive: 'Spaeter aktivierbar',
+      statusLoading: 'Wird aktualisiert',
+      statusDenied: 'Im Browser/System aus',
+      statusUnsupported: 'Nicht verfuegbar',
+      statusAccountRequired: 'Konto fuer Cloud-Erinnerungen noetig',
+      statusLocalOnly: 'Lokal vorgemerkt'
     }),
     toggle: Object.freeze({
       enabled: 'AN',
@@ -185,6 +192,35 @@
     };
   }
 
+  function resolveMenuStatus(runtime, options = {}, text = TEXT) {
+    const authed = options.authed === true;
+    if (runtime.busy === true) {
+      return text.menu.statusLoading;
+    }
+
+    if (runtime.supported !== true || String(runtime.status || '') === 'unsupported') {
+      return text.menu.statusUnsupported;
+    }
+
+    if (String(runtime.permission || '') === 'denied' || String(runtime.status || '') === 'denied') {
+      return text.menu.statusDenied;
+    }
+
+    if (String(runtime.message || '').trim() === text.feedback.localOnly) {
+      return text.menu.statusLocalOnly;
+    }
+
+    if (!authed) {
+      return text.menu.statusAccountRequired;
+    }
+
+    if (isPushActive(runtime.status)) {
+      return text.menu.statusActive;
+    }
+
+    return text.menu.statusInactive;
+  }
+
   function resolvePushPresentation(_sourceState, runtimeCtx = {}) {
     const text = resolveTextBundle(runtimeCtx.translations);
     const runtime = runtimeCtx.pushUiRuntime && typeof runtimeCtx.pushUiRuntime === 'object'
@@ -206,6 +242,13 @@
       status: statusCode,
       busy
     }, { authed }, text);
+    const menuStatus = resolveMenuStatus({
+      ...runtime,
+      supported,
+      permission,
+      status: statusCode,
+      busy
+    }, { authed }, text);
     const toggleFeedback = String(runtime.error || runtime.message || notifications.lastMessage || feedback.message || '').trim();
     const notificationsTypes = notifications.types && typeof notifications.types === 'object'
       ? notifications.types
@@ -213,7 +256,7 @@
 
     const menuEntry = buildPresentation({
       label: text.menu.label,
-      subtext: feedback.message,
+      subtext: menuStatus,
       title: text.menu.title,
       disabled: busy || !supported,
       disabledReason: !supported ? 'unsupported' : (busy ? 'busy' : ''),

@@ -54,6 +54,7 @@ function buildRuntime(overrides = {}) {
 
   assert.strictEqual(presentation.menuEntry.disabled, true, 'unsupported push should disable the menu entry');
   assert.strictEqual(presentation.menuEntry.disabledReason, 'unsupported');
+  assert.strictEqual(presentation.menuEntry.subtext, 'Nicht verfuegbar');
   assert.strictEqual(presentation.settings.supportLabel, 'Nein');
   assert.strictEqual(presentation.settings.feedback, pushUiPresentation.TEXT.feedback.unsupported);
 }
@@ -71,6 +72,7 @@ function buildRuntime(overrides = {}) {
 
   assert.strictEqual(presentation.settings.enableVisible, true, 'inactive supported push should show enable control');
   assert.strictEqual(presentation.settings.enableDisabled, true, 'enable control stays disabled while unauthenticated');
+  assert.strictEqual(presentation.menuEntry.subtext, 'Konto fuer Cloud-Erinnerungen noetig');
   assert.strictEqual(presentation.settings.feedback, pushUiPresentation.TEXT.feedback.unauthenticated);
   assert.strictEqual(presentation.toggle.statusLabel, 'Deaktiviert');
   assert.match(presentation.settings.feedback, /lokaler Run bleibt spielbar/, 'signed-out reminder copy should not pressure login');
@@ -96,6 +98,7 @@ function buildRuntime(overrides = {}) {
 
   assert.strictEqual(presentation.active, true, 'granted subscription should be active');
   assert.strictEqual(presentation.menuEntry.badge, 'An');
+  assert.strictEqual(presentation.menuEntry.subtext, 'Aktiv');
   assert.strictEqual(presentation.settings.disableVisible, true);
   assert.strictEqual(presentation.settings.testVisible, true);
   assert.strictEqual(presentation.toggle.typesDisabled, false);
@@ -117,6 +120,7 @@ function buildRuntime(overrides = {}) {
   });
 
   assert.strictEqual(presentation.settings.statusLabel, 'Wird aktualisiert');
+  assert.strictEqual(presentation.menuEntry.subtext, 'Wird aktualisiert');
   assert.strictEqual(presentation.toggle.disabled, true);
   assert.strictEqual(presentation.toggle.feedback, 'Temporärer Hinweis', 'explicit notification message should stay visible on the toggle');
 }

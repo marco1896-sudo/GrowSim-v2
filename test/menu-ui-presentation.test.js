@@ -60,12 +60,12 @@ function buildState(overrides = {}) {
     rewardControl: {
       disabled: true,
       reason: 'provider_unavailable',
-      hint: 'Optionale Belohnung ist gerade nicht verfuegbar.'
+      hint: 'Optionale Belohnung ist gerade nicht verfügbar.'
     }
   });
 
   assert.strictEqual(rescuePresentation.disabled, true, 'disabled reward control should disable rescue presentation');
-  assert.strictEqual(rescuePresentation.subtext, 'Optionale Belohnung ist gerade nicht verfuegbar.');
+  assert.strictEqual(rescuePresentation.subtext, 'Optionale Belohnung ist gerade nicht verfügbar.');
 }
 
 {
@@ -92,7 +92,7 @@ function buildState(overrides = {}) {
   });
 
   assert.strictEqual(menuPresentation.entries.push.badge, 'An');
-  assert.strictEqual(menuPresentation.entries.push.subtext, 'Erinnerungen sind aktiv. Du bekommst Hinweise zu wichtigen Gameplay-Ereignissen.');
+  assert.strictEqual(menuPresentation.entries.push.subtext, 'Aktiv');
   assert.strictEqual(menuPresentation.entries.stats.title.length > 0, true);
 }
 

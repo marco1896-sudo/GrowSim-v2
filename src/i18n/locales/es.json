@@ -1427,6 +1427,8 @@
     "language_hint": "Los cambios se aplican de inmediato.",
     "not_active": "No activo",
     "prepared": "Preparado",
+    "prepared_group_hint": "Preparado. Visible, pero todavia no ajustable directamente.",
+    "footer_hint": "Los cambios activos se aplican al instante. Lo preparado solo muestra estado aqui.",
     "language_de": "Deutsch",
     "language_en": "English",
     "language_es": "Español",
@@ -1799,6 +1801,21 @@
       "waterSmallSip": "Un pequeno sorbo encaja mejor aqui.",
       "waterTooSoon": "Todavia es pronto para un riego mas fuerte."
     },
+    "coach": {
+      "diagnosis": "Primero lee y luego actua.",
+      "dry": "Ahora repone con cuidado.",
+      "feed": "Revisa la nutricion antes de subirla.",
+      "routine": "Chequeo pequeno, gran efecto.",
+      "stable": "Hoy basta con observar.",
+      "wet": "Deja respirar primero la zona radicular."
+    },
+    "context": {
+      "decision_open": "Decision diaria activa: primero lee y luego marca la linea.",
+      "decision_task": "Foco de hoy: {task}.",
+      "daily_observe": "Daily Care: observar cuenta hoy.",
+      "daily_task": "Daily Care abierto: {task}.",
+      "weekly_goal": "Meta semanal activa: {goal}."
+    },
     "actionPanel": {
       "diagnosis_subtitle": "El diagn?stico te ayuda a leer la planta antes de actuar.",
       "diagnosis_title": "Vista de diagn?stico",
@@ -1878,7 +1895,7 @@
         "stabilizeBeforeIntervention": "Primero estabiliza la planta antes de entrenamiento, fertilización fuerte o más presión."
       },
       "probable_cause": "Causa probable",
-      "ready_focus": "Lee la planta primero y luego elige la accion mas limpia.",
+      "ready_focus": "Primero lee y luego actua. La humedad y la zona radicular marcan el tono hoy.",
       "risk": "Riesgo",
       "risk_level": "Nivel de riesgo",
       "root_zone": "Zona radicular",
@@ -1896,7 +1913,7 @@
     },
     "feedback": {
       "badCare": "Esa decision anadio mas presion que alivio.",
-      "chooseMethod": "Elige un metodo.",
+      "chooseMethod": "Si quieres intervenir hoy, empieza con un metodo. Si los valores siguen estables, observar basta.",
       "effect": {
         "dryStressReduced": "Estres seco reducido",
         "monitorResponse": "Observar la respuesta",
@@ -1919,7 +1936,7 @@
       "okayCare": "La accion funciono, pero el timing fue solo medio.",
       "perfectCare": "Muy buena decision. La planta responde limpia.",
       "perfectWatering": "Ventana de dryback perfecta. Fue un riego premium.",
-      "readyToAct": "Listo para actuar.",
+      "readyToAct": "Este metodo esta disponible ahora.",
       "rootZoneRelief": "Buena decision. La zona radicular se alivia con cuidado sin convertirse en un riego completo.",
       "rootZoneReliefLimited": "Ese alivio tiene efecto limitado aqui. Observa mejor si la zona radicular realmente esta bajo presion.",
       "noMethodsLoaded": "No hay metodos de cuidado cargados.",
@@ -1937,7 +1954,7 @@
           "stable": "La nutricion esta estable. Hoy basta con una revision breve."
         },
         "water": {
-          "monitor": "Los valores estan estables. Observar primero evita estres innecesario."
+          "monitor": "Hoy la calma tambien vale. Observa si la zona radicular sigue secandose con limpieza."
         }
       }
     },
@@ -2323,6 +2340,15 @@
         "environment_hint": "Donde empieza tu primer grow.",
         "plant_title": "Tipo de planta",
         "plant_hint": "Que linea quieres para arrancar.",
+        "mode_title": "Setup de cultivo",
+        "mode_hint": "Donde empieza tu primer run.",
+        "light_title": "Setup de luz",
+        "light_hint": "Con que fuerza trabaja tu luz inicial desde el principio.",
+        "medium_title": "Sustrato",
+        "medium_hint": "Que tan rapido reaccionan el agua y los nutrientes.",
+        "pot_title": "Tamano de maceta",
+        "pot_hint": "Tu espacio radicular marca ritmo, reserva y presion de riego.",
+        "genetics_title": "Genetica",
         "style": {
           "safe": {
             "title": "Seguro",
@@ -2381,6 +2407,74 @@
             "badge": "Objetivo",
             "body": "Un inicio mirando el potencial de mas adelante.",
             "effect": "Potencial · base · meta"
+          }
+        },
+        "mode": {
+          "indoor": {
+            "title": "Indoor",
+            "badge": "Recomendado",
+            "body": "Inicio mas calmado con clima controlable y rutinas previsibles.",
+            "effect": "Control ? limpio ? estable"
+          },
+          "outdoor": {
+            "title": "Outdoor",
+            "badge": "Mas tarde",
+            "body": "Mas variacion, mas clima y un inicio mas exigente.",
+            "effect": "Tiempo ? aire ? timing"
+          }
+        },
+        "light": {
+          "medium": {
+            "title": "Medium Light",
+            "badge": "Estandar",
+            "body": "Base de luz solida para un inicio calmado y facil de leer.",
+            "effect": "Balance ? control ? margen"
+          },
+          "high": {
+            "title": "High Output Light",
+            "badge": "Mas tarde",
+            "body": "Mas presion y velocidad cuando tu perfil ya lo haya desbloqueado.",
+            "effect": "Pico ? consumo ? foco"
+          }
+        },
+        "medium": {
+          "soil": {
+            "title": "Tierra",
+            "badge": "Recomendado",
+            "body": "Perdona pequenos errores y sigue siendo facil de leer en el primer run.",
+            "effect": "Margen ? calma ? tolerancia"
+          },
+          "coco": {
+            "title": "Coco",
+            "badge": "Mas tarde",
+            "body": "Reacciona mas directo y pide mas rutina cuando ya lo tengas desbloqueado.",
+            "effect": "Reactivo ? mas rapido ? mas estrecho"
+          }
+        },
+        "pot": {
+          "small": {
+            "title": "2 litros (S)",
+            "badge": "Estandar",
+            "body": "Maceta pequena de inicio con respuesta directa y ventana de cuidado mas estrecha.",
+            "effect": "Compacta ? directa ? activa"
+          },
+          "medium": {
+            "title": "8 litros (M)",
+            "badge": "Equilibrado",
+            "body": "Mas margen para agua y raices sin volver lento el inicio.",
+            "effect": "Equilibrio ? mas calma ? estable"
+          },
+          "large": {
+            "title": "16 litros (L)",
+            "badge": "Largo plazo",
+            "body": "Mas reserva real para fases largas y limpias de desarrollo.",
+            "effect": "Reserva ? largo plazo ? calma"
+          },
+          "xlarge": {
+            "title": "25 litros (XL)",
+            "badge": "Reserva",
+            "body": "Espacio radicular maximo para grandes reservas y drybacks mas tranquilos.",
+            "effect": "Maxi ? mas lenta ? profunda"
           }
         }
       },

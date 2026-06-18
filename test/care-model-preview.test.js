@@ -222,6 +222,35 @@ function buildState(overrides = {}) {
   assert.ok(deltaKeys(preview).includes('stress') || deltaKeys(preview).includes('stability'), 'routine preview should show stress or stability delta');
 })();
 
+(function testXLargePotSlowsDrybackComparedToLarge() {
+  const buildPotState = (potSize) => buildState({
+    setup: { potSize },
+    care: {
+      water: {
+        substrateMoisture: 54,
+        surfaceMoisture: 40,
+        rootZoneMoisture: 58,
+        drybackRatePerHour: 1.3,
+        overwateringPressure: 8,
+        dryStressPressure: 12
+      }
+    }
+  });
+
+  const largeState = buildPotState('large');
+  const xlargeState = buildPotState('xlarge');
+  const largeDryback = careModel.normalizeCareState(largeState.care, largeState).water.drybackRatePerHour;
+  const xlargeDryback = careModel.normalizeCareState(xlargeState.care, xlargeState).water.drybackRatePerHour;
+
+  assert.strictEqual(careModel.estimateDrybackRate(largeState), largeDryback, 'large pot dryback should stay internally consistent');
+  assert.strictEqual(careModel.estimateDrybackRate(xlargeState), xlargeDryback, 'xlarge pot dryback should stay internally consistent');
+  assert.ok(Number.isFinite(largeDryback) && Number.isFinite(xlargeDryback), 'pot dryback comparison should produce numeric values');
+  assert.ok(
+    xlargeDryback < largeDryback,
+    'xlarge pot should predict a calmer dryback rate than large'
+  );
+})();
+
 (function testAftercareFeedbackStillReturnsStructuredResult() {
   const feedback = careModel.getCareActionFeedback(buildState({
     care: {

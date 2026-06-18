@@ -16,6 +16,32 @@ const ROOT = path.resolve(__dirname, '..');
 const HOST = '127.0.0.1';
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
 
+async function clearBlockingGuidanceUi(page) {
+  await page.evaluate(() => {
+    if (typeof getFirstRunIntroState === 'function') {
+      const intro = getFirstRunIntroState(window.__gsState);
+      intro.active = false;
+      intro.completed = true;
+      intro.dashboardFollowupShown = true;
+    }
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+    }
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
+    if (typeof renderFirstRunIntroOverlay === 'function') {
+      renderFirstRunIntroOverlay();
+    }
+    if (typeof renderFirstRunDashboardFollowupOverlay === 'function') {
+      renderFirstRunDashboardFollowupOverlay();
+    }
+    if (typeof renderGameMenu === 'function') {
+      renderGameMenu();
+    }
+  });
+}
+
 async function startFreshRun(page, baseUrl) {
   await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
   await waitForBootReady(page, 25000);
@@ -28,6 +54,7 @@ async function startFreshRun(page, baseUrl) {
     const node = document.getElementById('landing');
     return Boolean(node && node.classList.contains('hidden'));
   }, null, { timeout: 10000 });
+  await clearBlockingGuidanceUi(page);
 }
 
 async function scenarioDailyUiShowsAuthoritativeStates(page) {
@@ -212,7 +239,7 @@ async function scenarioDailyUiShowsAuthoritativeStates(page) {
     const safeDescription = String(entry.description || '').trim().toLowerCase();
     return safeDescription !== 'start with daily task' && safeDescription !== 'desc';
   }), `task descriptions should not stay generic, got ${JSON.stringify(snapshot.taskRows)}`);
-  assert(/Daily Streak 3/.test(snapshot.streakText), `unexpected streak text: ${snapshot.streakText}`);
+  assert(/Tägliche Serie 3/.test(snapshot.streakText), `unexpected streak text: ${snapshot.streakText}`);
   assert(snapshot.progressText.length > 0, 'daily progress text should be present');
   assert(/Buddy:/.test(snapshot.buddyText), `missions sheet should show buddy check, got: ${snapshot.buddyText}`);
   assert(/Wasser-Check|Lage aufloesen/.test(snapshot.buddyText), `buddy check should reference current daily tasks, got: ${snapshot.buddyText}`);
@@ -226,6 +253,7 @@ async function scenarioDailyUiShowsAuthoritativeStates(page) {
 }
 
 async function scenarioDecisionCardUiAnswerFlow(page) {
+  await clearBlockingGuidanceUi(page);
   const before = await page.evaluate(() => {
     const nowMs = Date.now();
     const dayKey = window.__gsGetLocalDayKey(nowMs);

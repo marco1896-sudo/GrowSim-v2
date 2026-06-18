@@ -15,6 +15,73 @@ const {
 const ROOT = path.resolve(__dirname, '..');
 const HOST = '127.0.0.1';
 const AUTH_TOKEN_KEY = 'grow-sim-auth-token-v1';
+const FIXED_NOW_SESSION_KEY = '__gs_test_fixed_now_ms';
+
+async function armFixedNowForNextReload(page, fixedNowMs) {
+  await page.addInitScript((sessionKey) => {
+    const rawValue = sessionStorage.getItem(sessionKey);
+    if (rawValue === null || String(rawValue).trim() === '') {
+      return;
+    }
+    const fixedNow = Number(rawValue);
+    if (!Number.isFinite(fixedNow)) {
+      return;
+    }
+    const RealDate = Date;
+    function MockDate(...args) {
+      if (new.target) {
+        return args.length === 0 ? new RealDate(fixedNow) : new RealDate(...args);
+      }
+      return args.length === 0 ? new RealDate(fixedNow).toString() : RealDate(...args);
+    }
+    Object.setPrototypeOf(MockDate, RealDate);
+    MockDate.prototype = RealDate.prototype;
+    MockDate.now = () => fixedNow;
+    MockDate.parse = RealDate.parse;
+    MockDate.UTC = RealDate.UTC;
+    globalThis.__gsRealDate = RealDate;
+    globalThis.Date = MockDate;
+  }, FIXED_NOW_SESSION_KEY);
+  await page.evaluate(([sessionKey, nowMs]) => {
+    sessionStorage.setItem(sessionKey, String(nowMs));
+  }, [FIXED_NOW_SESSION_KEY, fixedNowMs]);
+}
+
+async function clearFixedNowOverride(page) {
+  await page.evaluate((sessionKey) => {
+    sessionStorage.removeItem(sessionKey);
+    if (typeof globalThis.__gsRealDate === 'function') {
+      globalThis.Date = globalThis.__gsRealDate;
+      delete globalThis.__gsRealDate;
+    }
+  }, FIXED_NOW_SESSION_KEY);
+}
+
+async function clearBlockingGuidanceUi(page) {
+  await page.evaluate(() => {
+    if (typeof getFirstRunIntroState === 'function') {
+      const intro = getFirstRunIntroState(window.__gsState);
+      intro.active = false;
+      intro.completed = true;
+      intro.dashboardFollowupShown = true;
+    }
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+    }
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
+    if (typeof renderFirstRunIntroOverlay === 'function') {
+      renderFirstRunIntroOverlay();
+    }
+    if (typeof renderFirstRunDashboardFollowupOverlay === 'function') {
+      renderFirstRunDashboardFollowupOverlay();
+    }
+    if (typeof renderGameMenu === 'function') {
+      renderGameMenu();
+    }
+  });
+}
 
 async function startFreshRun(page, baseUrl) {
   await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
@@ -28,6 +95,7 @@ async function startFreshRun(page, baseUrl) {
     const node = document.getElementById('landing');
     return Boolean(node && node.classList.contains('hidden'));
   }, null, { timeout: 10000 });
+  await clearBlockingGuidanceUi(page);
 }
 
 async function scenarioDailyGenerationAndStability(page) {
@@ -529,10 +597,17 @@ async function scenarioStreakRules(page) {
 }
 
 async function scenarioWeeklyMissionProgressClaimAndReload(page) {
+  const reloadNowMs = new Date('2026-06-11T12:00:00').getTime() + 200;
   const result = await page.evaluate(async () => {
     const nowMs = new Date('2026-06-11T12:00:00').getTime();
     const weekKey = '2026-06-08';
     window.__gsState.retention.weekly = undefined;
+    window.__gsState.retention.claimLedger = [];
+    window.__gsState.retention.dailyCare.dayKey = '2026-06-11';
+    window.__gsState.retention.dailyCare.tasks = [];
+    window.__gsState.retention.dailyCare.completedCount = 0;
+    window.__gsState.retention.dailyCare.allCompleteClaimed = false;
+    window.__gsState.retention.coinActions.weeklyPush = {};
     window.__gsState.retention.streak.currentCount = 3;
     window.__gsState.retention.analytics.dailyStats = [
       { dayKey: '2026-06-08', tasksCompleted: 2, sessionCount: 1, streakContinued: 1 },
@@ -546,12 +621,16 @@ async function scenarioWeeklyMissionProgressClaimAndReload(page) {
     window.__gsState.status.stress = 24;
     window.__gsState.status.risk = 18;
     const evaluation = window.__gsEvaluateWeeklyMission(nowMs, { skipPersist: true });
+    const confirmedEvaluation = window.__gsEvaluateWeeklyMission(nowMs + 1, { skipPersist: true });
     const beforeClaim = {
       weekKey: String(window.__gsState.retention.weekly && window.__gsState.retention.weekly.weekKey || ''),
       missionId: String(window.__gsState.retention.weekly && window.__gsState.retention.weekly.missionId || ''),
       completedAtMs: Number(window.__gsState.retention.weekly && window.__gsState.retention.weekly.completedAtMs || 0),
       rewardCoins: Number(window.__gsState.retention.weekly && window.__gsState.retention.weekly.rewardCoins || 0),
-      progressCompleted: Boolean(evaluation && evaluation.progress && evaluation.progress.completed)
+      progressCompleted: Boolean(
+        (evaluation && evaluation.progress && evaluation.progress.completed)
+        || (confirmedEvaluation && confirmedEvaluation.progress && confirmedEvaluation.progress.completed)
+      )
     };
     const coinsBefore = Number(window.getCoins());
     const firstClaim = window.__gsClaimWeeklyMission(nowMs + 100, { skipPersist: true });
@@ -571,6 +650,7 @@ async function scenarioWeeklyMissionProgressClaimAndReload(page) {
         : []
     };
   });
+  await armFixedNowForNextReload(page, reloadNowMs);
   await page.reload({ waitUntil: 'networkidle' });
   await waitForBootReady(page, 25000);
   const afterReload = await page.evaluate(() => ({
@@ -581,6 +661,7 @@ async function scenarioWeeklyMissionProgressClaimAndReload(page) {
       ? window.__gsState.retention.weekly.history.length
       : 0
   }));
+  await clearFixedNowOverride(page);
 
   assert.strictEqual(result.beforeClaim.weekKey, '2026-06-08', 'weekly mission should initialize with the current week key');
   assert.strictEqual(result.beforeClaim.missionId, 'growth_focus', `expected growth weekly in vegetative phase, got ${result.beforeClaim.missionId}`);

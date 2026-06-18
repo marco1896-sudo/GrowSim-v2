@@ -1191,6 +1191,12 @@ function bindSetupOptionButtons() {
         return;
       }
       selectNode.value = value;
+      if (selectId === 'setupMode') {
+        const environmentNode = document.getElementById('setupEnvironment');
+        if (environmentNode) {
+          environmentNode.value = value;
+        }
+      }
       syncGroup(selectId);
       if (typeof renderSetupOptionLocks === 'function') {
         renderSetupOptionLocks();
@@ -1214,42 +1220,42 @@ function bindSetupOptionButtons() {
 
 let onboardingBuilderStep = 0;
 
-const ONBOARDING_BUDDY_FALLBACK_SRC = 'assets/onboarding/buddy_summary.png';
+const ONBOARDING_BUDDY_FALLBACK_SRC = 'assets/buddy/transparent/emotions/happy/buddy_emotion_happy_open_arms_v001.png';
 const ONBOARDING_BUDDY_ASSETS = Object.freeze({
   welcome: Object.freeze({
-    src: 'assets/onboarding/buddy_summary.png',
+    src: 'assets/buddy/transparent/emotions/happy/buddy_emotion_happy_open_arms_v001.png',
     alt: 'Buddy begruesst den ersten Grow'
   }),
   intro: Object.freeze({
-    src: 'assets/onboarding/buddy_setup.png',
+    src: 'assets/buddy/transparent/gameplay/waving/buddy_gameplay_wave_hello_v001.png',
     alt: 'Buddy stellt sich vor'
   }),
   pot: Object.freeze({
-    src: 'assets/onboarding/buddy_pot.png',
+    src: 'assets/buddy/transparent/gameplay/pointing/buddy_gameplay_pointing_down_v001.png',
     alt: 'Buddy erklärt die Topfgröße'
   }),
   genetics: Object.freeze({
-    src: 'assets/onboarding/buddy_genetics.png',
+    src: 'assets/buddy/transparent/emotions/proud/buddy_emotion_proud_confident_stance_v001.png',
     alt: 'Buddy erklärt die Genetik-Auswahl'
   }),
   setup: Object.freeze({
-    src: 'assets/onboarding/buddy_setup.png',
+    src: 'assets/buddy/transparent/gameplay/pointing/buddy_gameplay_pointing_up_instruction_v001.png',
     alt: 'Buddy erklärt den Setup-Modus'
   }),
   mode: Object.freeze({
-    src: 'assets/onboarding/buddy_setup.png',
+    src: 'assets/buddy/transparent/gameplay/pointing/buddy_gameplay_pointing_up_instruction_v001.png',
     alt: 'Buddy erklärt den Setup-Modus'
   }),
   substrate: Object.freeze({
-    src: 'assets/onboarding/buddy_substrate.png',
+    src: 'assets/buddy/transparent/gameplay/clipboard/buddy_gameplay_clipboard_presenting_blank_v001.png',
     alt: 'Buddy erklärt das Substrat'
   }),
   medium: Object.freeze({
-    src: 'assets/onboarding/buddy_substrate.png',
+    src: 'assets/buddy/transparent/gameplay/clipboard/buddy_gameplay_clipboard_presenting_blank_v001.png',
     alt: 'Buddy erklärt das Substrat'
   }),
   light: Object.freeze({
-    src: 'assets/onboarding/buddy_light.png',
+    src: 'assets/buddy/transparent/gameplay/pointing/buddy_gameplay_pointing_side_v001.png',
     alt: 'Buddy erklärt das Lichtprofil'
   }),
   summary: Object.freeze({
@@ -1311,8 +1317,8 @@ function getSetupOptionLabel(selectId, fallback) {
   const titleNode = button.querySelector('.onboarding-card-title');
   const primaryNode = titleNode || button.querySelector('span');
   return String(
-    button.dataset.title
-    || (primaryNode && primaryNode.textContent ? primaryNode.textContent.trim() : '')
+    (primaryNode && primaryNode.textContent ? primaryNode.textContent.trim() : '')
+    || button.dataset.title
     || fallback
   );
 }
@@ -1377,7 +1383,6 @@ function applyFirstRunSetupPreset() {
 }
 
 function renderOnboardingSummarySelections() {
-  applyFirstRunSetupPreset();
   const summaryStyle = document.getElementById('onboardingSummaryStyle');
   if (summaryStyle) {
     summaryStyle.textContent = getSetupOptionLabel('setupGrowStyle', 'Sicher');
@@ -2884,7 +2889,7 @@ async function onDeathRescueClick() {
   }
 
   if (meta.rescue.used) {
-    meta.rescue.lastResult = rescueText ? rescueText.used : 'Rettungsaktion ist nur 1x pro Run verfuegbar.';
+    meta.rescue.lastResult = rescueText ? rescueText.used : 'Rettungsaktion ist nur 1× pro Run verfügbar.';
     renderDeathOverlay();
     schedulePersistState(true);
     return;

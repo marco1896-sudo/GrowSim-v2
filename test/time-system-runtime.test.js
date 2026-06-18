@@ -98,6 +98,52 @@ async function waitForRuntime(page) {
   });
 }
 
+async function clearBlockingGuidanceUi(page) {
+  await page.evaluate(() => {
+    const introState = typeof getFirstRunIntroState === 'function'
+      ? getFirstRunIntroState(window.__gsState)
+      : null;
+    if (introState) {
+      introState.active = false;
+      introState.completed = true;
+      introState.dashboardFollowupShown = true;
+    }
+
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+      window.__gsState.ui.menuOpen = false;
+    }
+
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
+    if (typeof closeMenu === 'function') {
+      closeMenu();
+    }
+    if (typeof renderFirstRunIntroOverlay === 'function') {
+      renderFirstRunIntroOverlay();
+    }
+    if (typeof renderFirstRunDashboardFollowupOverlay === 'function') {
+      renderFirstRunDashboardFollowupOverlay();
+    }
+    if (typeof renderGameMenu === 'function') {
+      renderGameMenu();
+    }
+  });
+  await page.waitForFunction(() => {
+    const intro = document.getElementById('firstRunIntroOverlay');
+    const followup = document.getElementById('firstRunDashboardFollowupOverlay');
+    const menu = document.getElementById('gameMenu');
+    const dialog = document.getElementById('menuDialog');
+    return Boolean(
+      intro && intro.classList.contains('hidden')
+      && followup && followup.classList.contains('hidden')
+      && menu && menu.classList.contains('hidden')
+      && dialog && dialog.classList.contains('hidden')
+    );
+  });
+}
+
 async function clearPersistence(page) {
   await page.goto(APP_URL, { waitUntil: 'networkidle' });
   await evaluateWithRetry(page, async (stateKey) => {
@@ -169,6 +215,7 @@ async function startFreshRun(page) {
   });
   await page.evaluate(() => window.onStartRun());
   await waitForRuntime(page);
+  await clearBlockingGuidanceUi(page);
   await page.waitForTimeout(1200);
 }
 
@@ -380,7 +427,7 @@ async function scenarioSettingsSimSpeedUi(page) {
   assert.strictEqual(initial.selectorRowLabel, 'Simulationstempo', 'speed selector is not rendered inside the Simulationstempo block');
   assert.strictEqual(initial.eventRowContainsSelector, false, 'Event-Häufigkeit row should not contain the speed selector');
 
-  await page.click('[data-sim-speed-option="16"]', { force: true });
+  await page.click('[data-sim-speed-option="16"]');
   const changed = await page.evaluate(() => ({
     currentText: document.getElementById('settingsSimSpeedValue')?.textContent.trim() || null,
     activeOption: document.querySelector('[data-sim-speed-option].is-active')?.getAttribute('data-sim-speed-option') || null,

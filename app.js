@@ -15829,6 +15829,118 @@ function renderCareCategoryButtons(categories) {
   }
 }
 
+function deriveCareStudioHeroCoachKey(careViewModel = null) {
+  const selectedTab = String(careViewModel && careViewModel.selectedStudioTab || 'water');
+  const careData = careViewModel && careViewModel.care ? careViewModel.care : {};
+  const moistureStatus = String(careData.moistureStatus || 'stable');
+  const buddyHintKey = String(careData.buddyHintKey || '');
+
+  if (selectedTab === 'diagnosis') return 'careStudio.coach.diagnosis';
+  if (selectedTab === 'routine') return 'careStudio.coach.routine';
+  if (selectedTab === 'feed') return 'careStudio.coach.feed';
+
+  if (moistureStatus === 'wet'
+    || buddyHintKey === 'care.buddy.wait_dryback'
+    || buddyHintKey === 'careStudio.buddy.waterTooSoon') {
+    return 'careStudio.coach.wet';
+  }
+  if (moistureStatus === 'dry'
+    || buddyHintKey === 'care.buddy.water_window'
+    || buddyHintKey === 'careStudio.buddy.waterGoodTiming'
+    || buddyHintKey === 'careStudio.buddy.waterSmallSip') {
+    return 'careStudio.coach.dry';
+  }
+  return 'careStudio.coach.stable';
+}
+
+function isCareStudioRetentionTaskRelevant(taskId = '') {
+  const safeTaskId = String(taskId || '').trim();
+  if (!safeTaskId) {
+    return false;
+  }
+  return !['open_app_twice', 'missions_board_check'].includes(safeTaskId);
+}
+
+function getCareStudioRetentionTaskId(dailyState = null) {
+  const safeDailyState = dailyState && typeof dailyState === 'object' ? dailyState : {};
+  const buddyCheck = safeDailyState.buddyCheck && typeof safeDailyState.buddyCheck === 'object'
+    ? safeDailyState.buddyCheck
+    : {};
+  const preferredTaskId = String(buddyCheck.primaryTaskId || '').trim();
+  if (isCareStudioRetentionTaskRelevant(preferredTaskId)) {
+    return preferredTaskId;
+  }
+
+  const tasks = Array.isArray(safeDailyState.tasks) ? safeDailyState.tasks : [];
+  const pickTaskId = (task) => String(task && (task.taskId || task.id) || '').trim();
+  const activeTask = tasks.find((task) => !task.claimed && !task.completed && isCareStudioRetentionTaskRelevant(pickTaskId(task)));
+  if (activeTask) {
+    return pickTaskId(activeTask);
+  }
+  const openTask = tasks.find((task) => !task.claimed && isCareStudioRetentionTaskRelevant(pickTaskId(task)));
+  if (openTask) {
+    return pickTaskId(openTask);
+  }
+  const fallbackTask = tasks.find((task) => isCareStudioRetentionTaskRelevant(pickTaskId(task)));
+  return fallbackTask ? pickTaskId(fallbackTask) : '';
+}
+
+function deriveCareStudioRetentionContextLine(snapshot = state, nowMs = Date.now()) {
+  const retention = ensureRetentionState(snapshot);
+  const todayKey = getLocalDayKey(nowMs);
+  const decisionCard = retention.decisionCards && retention.decisionCards.activeCard && typeof retention.decisionCards.activeCard === 'object'
+    ? retention.decisionCards.activeCard
+    : null;
+
+  if (decisionCard
+    && String(decisionCard.dayKey || '').trim() === todayKey
+    && String(decisionCard.cardId || '').trim()) {
+    const focusTaskId = String(decisionCard.focusTaskId || decisionCard.primaryTaskId || '').trim();
+    if (isCareStudioRetentionTaskRelevant(focusTaskId)) {
+      return i18nT('careStudio.context.decision_task', {
+        task: resolveCoinActionTaskTitle(focusTaskId)
+      });
+    }
+    if (!Number(decisionCard.answeredAtMs || 0)) {
+      return i18nT('careStudio.context.decision_open');
+    }
+  }
+
+  const daily = retention.dailyCare && typeof retention.dailyCare === 'object'
+    ? retention.dailyCare
+    : null;
+  if (daily && String(daily.dayKey || '').trim() === todayKey) {
+    const focusTaskId = getCareStudioRetentionTaskId(daily);
+    if (focusTaskId === 'care_sheet_check' || focusTaskId === 'analysis_sheet_check' || focusTaskId === 'seedling_stability_check') {
+      return i18nT('careStudio.context.daily_observe');
+    }
+    if (focusTaskId) {
+      return i18nT('careStudio.context.daily_task', {
+        task: resolveCoinActionTaskTitle(focusTaskId)
+      });
+    }
+  }
+
+  const weekly = retention.weekly && typeof retention.weekly === 'object'
+    ? retention.weekly
+    : null;
+  const weeklyApi = (typeof window !== 'undefined' && window.GrowSimWeeklyMissions && typeof window.GrowSimWeeklyMissions.getWeekKey === 'function')
+    ? window.GrowSimWeeklyMissions
+    : null;
+  const currentWeekKey = weeklyApi ? String(weeklyApi.getWeekKey(nowMs) || '').trim() : '';
+  const weeklyMissionId = String(weekly && weekly.missionId || '').trim();
+  if (weekly
+    && weeklyMissionId
+    && !Number(weekly.claimedAtMs || 0)
+    && (!currentWeekKey || String(weekly.weekKey || '').trim() === currentWeekKey)) {
+    return i18nT('careStudio.context.weekly_goal', {
+      goal: i18nT(`daily.weekly.mission.${weeklyMissionId}.title`)
+    });
+  }
+
+  return '';
+}
+
 function renderCareStudioChrome(careViewModel = null) {
   const subtitleNode = uiNode('careSheetSubtitle', 'careSheetSubtitle');
   const statusNode = uiNode('careStudioStatusChips', 'careStudioStatusChips');
@@ -15843,13 +15955,11 @@ function renderCareStudioChrome(careViewModel = null) {
   const riskLevel = String(careData.riskLevel || careSummary.riskLevel || 'low');
   const moistureStatus = String(careData.moistureStatus || careSummary.moistureBand || 'stable');
   const buddyHintKey = String(careData.buddyHintKey || 'care.buddy.observe');
+  const heroCoachKey = deriveCareStudioHeroCoachKey(careViewModel);
+  const retentionContextLine = deriveCareStudioRetentionContextLine(state, Date.now());
   const overallLevel = wateringRecommendation && wateringRecommendation.level && wateringRecommendation.level !== 'info'
     ? wateringRecommendation.level
     : (feedingRecommendation && feedingRecommendation.level ? feedingRecommendation.level : 'info');
-  const firstRunCoachVm = buildFirstRunCoachViewModel(state, {
-    displayStatus: getPlayerFacingCareStatus(state),
-    diagnostics: diagnosePlantState()
-  });
 
   if (subtitleNode) {
     let subtitleKey = 'careStudio.subtitle.stable';
@@ -15881,23 +15991,14 @@ function renderCareStudioChrome(careViewModel = null) {
   }
 
   if (hintNode) {
-    hintNode.textContent = i18nT(buddyHintKey) || i18nT('careStudio.diagnosis.ready_focus');
+    hintNode.setAttribute('data-i18n', heroCoachKey);
+    hintNode.textContent = i18nT(heroCoachKey) || i18nT('careStudio.diagnosis.ready_focus');
   }
 
   if (coachLineNode) {
-    let coachKey = '';
-    if (firstRunCoachVm && firstRunCoachVm.visible) {
-      if (riskLevel === 'high' || overallLevel === 'warning' || moistureStatus === 'dry' || moistureStatus === 'wet') {
-        coachKey = 'careStudio.first_visit.watch_before_action';
-      } else if (overallLevel === 'positive' || (riskLevel === 'low' && moistureStatus === 'stable')) {
-        coachKey = 'careStudio.first_visit.stable_observe';
-      } else {
-        coachKey = 'careStudio.first_visit.read_moisture_risk';
-      }
-    }
-    coachLineNode.textContent = coachKey ? i18nT(coachKey) : '';
-    coachLineNode.classList.toggle('hidden', !coachKey);
-    coachLineNode.setAttribute('aria-hidden', String(!coachKey));
+    coachLineNode.textContent = retentionContextLine;
+    coachLineNode.classList.toggle('hidden', !retentionContextLine);
+    coachLineNode.setAttribute('aria-hidden', String(!retentionContextLine));
   }
 
   if (buddySlot) {
@@ -16383,28 +16484,28 @@ function formatActionHint(action, cooldownLeft) {
 }
 
 const CARE_HINT_COPY_BY_KEY = Object.freeze({
-  watering_late_flower_humid: ['Zusätzliches Gießen erhöht hier gerade den Krankheitsdruck.', 'In der späten Blüte bleibt die Zone unter feuchten Bedingungen leichter zu nass.'],
-  watering_root_pressure: ['Mehr Wasser verschärft hier gerade den Druck an den Wurzeln.', 'Das Medium wirkt bereits stark belastet.'],
-  watering_still_wet: ['Mehr Wasser belastet die Wurzelzone gerade eher.', 'Das Medium ist noch recht feucht.'],
-  watering_good_fit: ['Diese Wassergabe passt gerade gut.', 'Das Medium wirkt trocken genug.'],
-  watering_feed_solution_pressure: ['Nährlösung kann die Wurzelzone gerade stärker belasten.', 'Sie trägt schon spürbar Druck.'],
-  watering_feed_solution_positive: ['Nährlösung passt gerade gut.', 'Die Pflanze wirkt aufnahmefähig.'],
+  watering_late_flower_humid: ['Noch kein guter Gießmoment.', 'In der späten Blüte hält zusätzliches Wasser die Zone leichter zu feucht.'],
+  watering_root_pressure: ['Heute ist Warten sauberer als mehr Wasser.', 'Die Wurzelzone wirkt bereits deutlich belastet.'],
+  watering_still_wet: ['Noch nicht ideal für mehr Wasser.', 'Die Wurzelzone hält gerade noch genug Feuchte.'],
+  watering_good_fit: ['Das Timing wirkt sauber für Wasser.', 'Diese Wassergabe passt gerade gut.'],
+  watering_feed_solution_pressure: ['Nährlösung würde gerade leichter nachschieben als entlasten.', 'Die Wurzelzone trägt schon Druck.'],
+  watering_feed_solution_positive: ['Eine dosierte Nährlösung passt gerade gut.', 'Die Pflanze wirkt aufnahmefähig.'],
   watering_flush_positive: ['Spülen kann hier gerade etwas Druck aus der Wurzelzone nehmen.', 'Die Zone wirkt belastet.'],
   watering_flush_caution: ['Spülen zieht hier leicht unnötig Substanz aus dem Medium.', 'Die Pflanze wirkt aktuell nicht stark belastet.'],
-  watering_dry_air: ['Stärkeres Gießen beruhigt das Klima gerade kaum.', 'Die Luft ist sehr trocken und der Rhythmus wird dadurch eher unruhig.'],
-  fertilizing_seedling_warning: ['Kräftige Fütterung kostet hier schnell Stabilität.', 'Junge Pflanzen reagieren darauf besonders empfindlich.'],
-  fertilizing_pressure_warning: ['Mehr Futter erhöht hier gerade das Risiko.', 'Die Wurzelzone steht schon unter Nährstoffdruck.'],
-  fertilizing_stressed_warning: ['Zusätzliche Nährstoffe belasten die Pflanze gerade eher.', 'Sie steht bereits unter Druck.'],
-  fertilizing_dry_medium: ['Fütterung fällt im trockenen Medium gerade härter aus.', 'Etwas sanftere Versorgung wäre jetzt schonender.'],
-  fertilizing_positive: ['Eine passende Fütterung ist gerade sinnvoll.', 'Die Pflanze wirkt aufnahmefähig.'],
-  fertilizing_late_flower_caution: ['Zusätzlicher Druck wirkt jetzt schneller nach.', 'In der späten Blüte zahlt sich stabile Führung besonders aus.'],
-  training_seedling_warning: ['Training kostet dich hier gerade Stabilität.', 'Junge Pflanzen reagieren empfindlich auf Eingriffe.'],
-  training_late_flower_warning: ['Stärkere Eingriffe kosten jetzt deutlich mehr Erholung.', 'In der späten Blüte kommt Stabilität langsamer zurück.'],
-  training_early_flower_caution: ['Zu viel Eingriff kostet jetzt leichter Energie.', 'In der frühen Blüte sollte Training vorsichtiger werden.'],
-  training_stress_warning: ['Training kostet gerade eher Erholung als Fortschritt.', 'Die Pflanze steht bereits unter Druck.'],
-  training_dry_air_caution: ['Eingriffe fühlen sich jetzt deutlich härter an.', 'Die Luft wirkt gerade ziehend und fordernd.'],
-  training_heat_caution: ['Wärme macht Eingriffe gerade deutlich belastender.', 'Etwas mehr Ruhe wäre jetzt oft sauberer.'],
-  training_positive: ['Leichtes Training passt gerade gut.', 'Die Pflanze wirkt stabil.'],
+  watering_dry_air: ['Mehr Wasser löst die trockene Luft gerade nicht.', 'Ein ruhiger Rhythmus bleibt hier sauberer.'],
+  fertilizing_seedling_warning: ['Junge Pflanzen brauchen heute die ruhigere Versorgung.', 'Kräftigeres Nachlegen kostet hier schnell Stabilität.'],
+  fertilizing_pressure_warning: ['Mehr Versorgung erhöht hier gerade eher das Risiko.', 'Die Wurzelzone steht schon unter Nährstoffdruck.'],
+  fertilizing_stressed_warning: ['Zusätzliche Versorgung belastet die Pflanze gerade eher.', 'Sie steht bereits unter Druck.'],
+  fertilizing_dry_medium: ['Im trockenen Medium lieber sanfter versorgen.', 'So bleibt die Aufnahme ruhiger.'],
+  fertilizing_positive: ['Eine dosierte Versorgung ist gerade sinnvoll.', 'Die Pflanze wirkt aufnahmefähig.'],
+  fertilizing_late_flower_caution: ['Zusätzlicher Versorgungsdruck wirkt jetzt schneller nach.', 'In der späten Blüte zahlt sich stabile Führung besonders aus.'],
+  training_seedling_warning: ['Bei jungen Pflanzen reicht heute meist Beobachten.', 'Sanfte Routine ist sauberer als zusätzlicher Eingriff.'],
+  training_late_flower_warning: ['Jetzt lieber ruhig halten als stärker eingreifen.', 'In der späten Blüte kommt Stabilität langsamer zurück.'],
+  training_early_flower_caution: ['Heute nur sanfte Routine, kein harter Eingriff.', 'In der frühen Blüte kostet zu viel Aktion leichter Energie.'],
+  training_stress_warning: ['Erst beruhigen, dann weitere Routine setzen.', 'Die Pflanze steht bereits unter Druck.'],
+  training_dry_air_caution: ['Beobachten oder eine sanfte Routine passt gerade besser.', 'Die Luft wirkt ziehend und fordernd.'],
+  training_heat_caution: ['Wärme macht zusätzliche Reize gerade belastender.', 'Etwas mehr Ruhe wäre jetzt oft sauberer.'],
+  training_positive: ['Eine sanfte Routine passt heute gut.', 'Die Pflanze wirkt stabil.'],
   environment_humid_warning: ['Eine Umgebungsmaßnahme ist hier jetzt besonders sinnvoll.', 'Feuchte Luft steht gerade zu lange im Bestand.'],
   environment_late_flower_caution: ['Stehende Feuchte wird jetzt schneller problematisch.', 'In der späten Blüte passt ein saubereres Klima besonders gut.'],
   environment_low_pressure: ['Der direkte Effekt dürfte gerade eher klein sein.', 'Aktuell ist wenig Druck im System.'],
@@ -16956,7 +17057,7 @@ function onCareExecuteAction() {
   const careViewModel = careMapping && typeof careMapping.toViewModel === 'function' ? careMapping.toViewModel(state) : null;
   const selected = getSelectedCareEntry(careViewModel);
   if (!selected) {
-    setCareFeedback('error', 'Bitte zuerst eine Methode wählen.');
+    setCareFeedback('error', i18nT('careStudio.feedback.chooseMethod'));
     renderCareSheet(true);
     return;
   }
@@ -17102,7 +17203,7 @@ function renderCareFeedback() {
   const softReason = selected && availability && availability.ok && availability.soft
     ? (availability.note || i18nT('careStudio.feedback.softReady'))
     : '';
-  const feedback = (state.ui.care && state.ui.care.feedback)
+  let feedback = (state.ui.care && state.ui.care.feedback)
     || {
       kind: 'info',
       text: selected
@@ -17113,6 +17214,15 @@ function renderCareFeedback() {
             : (softReason || i18nT('careStudio.feedback.readyToAct'))))
         : i18nT('careStudio.feedback.chooseMethod')
     };
+  if (!selected
+    && feedback
+    && feedback.kind === 'info'
+    && /^(wähle eine (aktion|methode)\.?|choose (an action|a method)\.?|elige un metodo\.?)$/i.test(String(feedback.text || '').trim())) {
+    feedback = {
+      kind: 'info',
+      text: i18nT('careStudio.feedback.chooseMethod')
+    };
+  }
   ui.careFeedback.textContent = feedback.text;
   ui.careFeedback.classList.toggle('is-info', feedback.kind === 'info');
   ui.careFeedback.classList.toggle('is-success', feedback.kind === 'success');

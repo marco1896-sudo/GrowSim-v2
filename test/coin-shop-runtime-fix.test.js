@@ -80,7 +80,7 @@ assert(
 
 const coinPackPurchaseBody = getFunctionBody(appSource, 'onCoinPackPurchaseClick');
 assert(
-  coinPackPurchaseBody.includes('Coin-Shop derzeit nicht verfuegbar'),
+  coinPackPurchaseBody.includes('Coin-Shop derzeit nicht verfügbar'),
   'coin pack purchase should provide visible feedback when purchase services are unavailable'
 );
 

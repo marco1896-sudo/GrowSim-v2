@@ -85,11 +85,13 @@
       'buddy_gameplay_clipboard_wave_v001'
     ],
     stable_day: [
+      'buddy_emotion_happy_hugging_self_v001',
       'buddy_emotion_proud_confident_stance_v001',
       'buddy_emotion_happy_big_smile_v001'
     ],
     routine_focus: [
       'buddy_emotion_proud_hands_on_hips_v001',
+      'buddy_gameplay_pointing_up_instruction_v001',
       'buddy_gameplay_clipboard_presenting_blank_v001'
     ],
     mission_focus: [
@@ -97,33 +99,54 @@
       'buddy_gameplay_pointing_up_instruction_v001'
     ],
     mission_open: [
+      'buddy_gameplay_wave_hello_v001',
       'buddy_gameplay_clipboard_wave_v001',
       'buddy_emotion_happy_open_arms_v001'
     ],
     mission_progress: [
       'buddy_gameplay_pointing_up_instruction_v001',
-      'buddy_gameplay_clipboard_presenting_blank_v001'
+      'buddy_gameplay_clipboard_presenting_blank_v001',
+      'buddy_emotion_confused_head_scratch_v001'
     ],
     mission_claimable: [
-      'buddy_emotion_happy_cheering_fists_v001',
-      'buddy_reward_coins_celebrating_v001'
+      'buddy_reward_chest_raised_v001',
+      'buddy_reward_coins_celebrating_v001',
+      'buddy_emotion_happy_cheering_fists_v001'
     ],
     mission_completed: [
+      'buddy_reward_star_held_v001',
       'buddy_emotion_proud_confident_stance_v001',
       'buddy_emotion_happy_big_smile_v001'
     ],
     reward_focus: [
-      'buddy_emotion_happy_cheering_fists_v001',
+      'buddy_reward_chest_held_v001',
       'buddy_emotion_proud_confident_stance_v001',
       'buddy_reward_coins_celebrating_v001'
     ],
     reward_claimable: [
-      'buddy_reward_coins_celebrating_v001',
+      'buddy_reward_gift_box_held_v001',
+      'buddy_reward_chest_raised_v001',
       'buddy_emotion_happy_raised_hands_v001'
     ],
     reward_claimed: [
+      'buddy_reward_star_held_v001',
       'buddy_emotion_proud_confident_stance_v001',
       'buddy_emotion_happy_big_smile_v001'
+    ],
+    harvest_strong: [
+      'buddy_reward_star_held_v001',
+      'buddy_emotion_proud_confident_stance_v001',
+      'buddy_emotion_happy_raised_hands_v001'
+    ],
+    harvest_solid: [
+      'buddy_gameplay_thumbs_up_approval_v001',
+      'buddy_reward_coins_holding_v001',
+      'buddy_reward_chest_held_v001'
+    ],
+    harvest_difficult: [
+      'buddy_emotion_worried_hand_to_chin_v001',
+      'buddy_emotion_confused_head_scratch_v001',
+      'buddy_emotion_sad_downcast_v001'
     ],
     reward_coins: [
       'buddy_reward_coins_celebrating_v001',
@@ -255,6 +278,7 @@
       stateKey === 'claimable'
       || dailyCategory === 'reward_focus'
       || dailyCategory === 'reward_claimable'
+      || dailyCategory === 'harvest_strong'
       || dailyCategory === 'reward_coins'
       || dailyCategory === 'coin_action_reward'
       || mode === 'starter'
@@ -265,6 +289,7 @@
     if (
       dailyCategory === 'stable_day'
       || dailyCategory === 'bloom_focus'
+      || dailyCategory === 'harvest_solid'
       || dailyCategory === 'mission_completed'
       || dailyCategory === 'reward_claimed'
       || dailyCategory === 'coin_action_timeboost'
@@ -279,6 +304,7 @@
       dailyCategory === 'coin_action_tip'
       || dailyCategory === 'mission_progress'
       || dailyCategory === 'mission_open'
+      || dailyCategory === 'harvest_difficult'
       || dailyCategory === 'coin_action_default'
       || dailyCategory === 'default'
       || surface === 'care_studio'
@@ -287,6 +313,7 @@
       || surface === 'missions_header'
       || surface === 'missions_weekly'
       || surface === 'missions_coin_action'
+      || surface === 'run_summary_harvest'
     ) {
       return 'buddy-motion-idle-breathing';
     }

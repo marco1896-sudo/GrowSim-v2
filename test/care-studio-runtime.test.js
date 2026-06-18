@@ -80,6 +80,24 @@ async function main() {
       const collectActionTexts = () => Array.from(document.querySelectorAll('#careActionList .care-action-label, #careActionList .care-action-compact-label'))
         .map((node) => String(node.textContent || '').trim())
         .filter(Boolean);
+      const waitForPaint = () => new Promise((resolve) => {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+      });
+      const readCoachSnapshot = () => {
+        const hintNode = document.getElementById('careStudioHintText');
+        return {
+          key: String(hintNode?.getAttribute('data-i18n') || '').trim(),
+          text: String(hintNode?.textContent || '').trim()
+        };
+      };
+      const readContextSnapshot = () => {
+        const contextNode = document.getElementById('careStudioCoachLine');
+        return {
+          text: String(contextNode?.textContent || '').trim(),
+          hidden: contextNode?.classList.contains('hidden') !== false,
+          ariaHidden: String(contextNode?.getAttribute('aria-hidden') || '').trim()
+        };
+      };
       const waterMethodLabels = collectActionTexts();
       window.__gsState.ui.care.selectedActionId = 'water_moisten_surface';
       window.renderCareSheet(true);
@@ -100,6 +118,130 @@ async function main() {
         };
         tick();
       });
+      const applyCoachSample = async ({ tab, water, root, surface, dryStress, wetPressure, nutrition, saltLoad, risk, stress }) => {
+        window.__gsState.ui.openSheet = 'care';
+        window.__gsState.ui.care = window.__gsState.ui.care || {};
+        window.__gsState.ui.care.selectedStudioTab = tab;
+        if (tab === 'feed') {
+          window.__gsState.ui.care.selectedCategory = 'fertilizing';
+        } else if (tab === 'routine') {
+          window.__gsState.ui.care.selectedCategory = 'routine';
+        } else {
+          window.__gsState.ui.care.selectedCategory = 'watering';
+        }
+        window.__gsState.ui.care.selectedActionId = null;
+        window.__gsState.status.water = water;
+        window.__gsState.status.nutrition = nutrition;
+        window.__gsState.status.stress = stress;
+        window.__gsState.status.risk = risk;
+        window.__gsState.care = window.__gsState.care || {};
+        window.__gsState.care.summary = null;
+        window.__gsState.care.water = {
+          ...(window.__gsState.care.water || {}),
+          substrateMoisture: water,
+          surfaceMoisture: surface,
+          rootZoneMoisture: root,
+          drybackRatePerHour: 0.8,
+          overwateringPressure: wetPressure,
+          dryStressPressure: dryStress
+        };
+        window.__gsState.care.nutrients = {
+          ...(window.__gsState.care.nutrients || {}),
+          n: nutrition,
+          p: nutrition,
+          k: nutrition,
+          micro: nutrition,
+          saltLoad
+        };
+        window.renderCareSheet(true);
+        await waitForCareImages();
+        await waitForPaint();
+        const beforeRefresh = readCoachSnapshot();
+        if (window.GrowSimI18n && typeof window.GrowSimI18n.applyTranslationsToDOM === 'function') {
+          window.GrowSimI18n.applyTranslationsToDOM(document);
+        }
+        await waitForPaint();
+        const afterRefresh = readCoachSnapshot();
+        return {
+          beforeRefresh,
+          afterRefresh
+        };
+      };
+      const applyRetentionContextSample = async ({ decision = null, dailyTaskId = '', buddyTaskId = '', weeklyMissionId = '', weeklyClaimed = false }) => {
+        const nowMs = Date.now();
+        const todayKey = typeof window.getLocalDayKey === 'function'
+          ? String(window.getLocalDayKey(nowMs) || '').trim()
+          : '';
+        const weekKey = window.GrowSimWeeklyMissions && typeof window.GrowSimWeeklyMissions.getWeekKey === 'function'
+          ? String(window.GrowSimWeeklyMissions.getWeekKey(nowMs) || '').trim()
+          : todayKey;
+        window.__gsState.retention = window.__gsState.retention || {};
+        const retention = window.__gsState.retention;
+        retention.claimLedger = Array.isArray(retention.claimLedger) ? retention.claimLedger : [];
+        retention.dailyCare = {
+          ...(retention.dailyCare || {}),
+          dayKey: dailyTaskId || buddyTaskId ? todayKey : '',
+          tasks: dailyTaskId ? [{
+            id: dailyTaskId,
+            taskId: dailyTaskId,
+            type: dailyTaskId,
+            dayKey: todayKey,
+            progress: 0,
+            target: 1,
+            completed: false,
+            claimed: false
+          }] : [],
+          buddyCheck: {
+            dayKey: dailyTaskId || buddyTaskId ? todayKey : '',
+            category: '',
+            textKey: '',
+            primaryTaskId: buddyTaskId || dailyTaskId || '',
+            secondaryTaskId: '',
+            generatedAtMs: nowMs
+          }
+        };
+        retention.weekly = {
+          ...(retention.weekly || {}),
+          weekKey: weeklyMissionId ? weekKey : '',
+          missionId: weeklyMissionId || '',
+          rewardCoins: weeklyMissionId ? 160 : 0,
+          generatedAtMs: weeklyMissionId ? nowMs : 0,
+          completedAtMs: 0,
+          claimedAtMs: weeklyMissionId && weeklyClaimed ? nowMs : 0
+        };
+        retention.decisionCards = {
+          ...(retention.decisionCards || {}),
+          dayKey: todayKey,
+          recentCardIds: [],
+          activeCard: decision ? {
+            dayKey: todayKey,
+            weekKey,
+            cardId: String(decision.cardId || 'growth_routine'),
+            primaryTaskId: String(decision.primaryTaskId || '').trim(),
+            generatedAtMs: nowMs,
+            answeredAtMs: decision.answered ? nowMs : 0,
+            chosenOptionId: '',
+            resultTextKey: '',
+            focusTaskId: String(decision.focusTaskId || '').trim(),
+            suggestedCoinActionId: ''
+          } : {
+            dayKey: '',
+            weekKey: '',
+            cardId: '',
+            primaryTaskId: '',
+            generatedAtMs: 0,
+            answeredAtMs: 0,
+            chosenOptionId: '',
+            resultTextKey: '',
+            focusTaskId: '',
+            suggestedCoinActionId: ''
+          }
+        };
+        window.renderCareSheet(true);
+        await waitForCareImages();
+        await waitForPaint();
+        return readContextSnapshot();
+      };
       await waitForCareImages();
       const previewText = String(document.getElementById('careDecisionZone')?.textContent || '');
       const previewDeltaChipCount = document.querySelectorAll('#careDecisionZone .care-studio-delta-chip').length;
@@ -215,6 +357,144 @@ async function main() {
       window.renderCareSheet(true);
       await waitForCareImages();
       const diagnosisText = String(document.getElementById('careEffectsList')?.textContent || '');
+      const diagnosisFallbackText = i18nT('careStudio.diagnosis.ready_focus');
+      const coachSamples = {
+        stable: await applyCoachSample({
+          tab: 'water',
+          water: 62,
+          root: 60,
+          surface: 58,
+          dryStress: 6,
+          wetPressure: 8,
+          nutrition: 54,
+          saltLoad: 16,
+          risk: 12,
+          stress: 8
+        }),
+        wet: await applyCoachSample({
+          tab: 'water',
+          water: 78,
+          root: 82,
+          surface: 70,
+          dryStress: 4,
+          wetPressure: 72,
+          nutrition: 58,
+          saltLoad: 20,
+          risk: 46,
+          stress: 18
+        }),
+        dry: await applyCoachSample({
+          tab: 'water',
+          water: 34,
+          root: 40,
+          surface: 18,
+          dryStress: 64,
+          wetPressure: 6,
+          nutrition: 52,
+          saltLoad: 14,
+          risk: 38,
+          stress: 24
+        }),
+        feed: await applyCoachSample({
+          tab: 'feed',
+          water: 56,
+          root: 58,
+          surface: 50,
+          dryStress: 10,
+          wetPressure: 10,
+          nutrition: 68,
+          saltLoad: 74,
+          risk: 44,
+          stress: 16
+        }),
+        routine: await applyCoachSample({
+          tab: 'routine',
+          water: 58,
+          root: 60,
+          surface: 54,
+          dryStress: 10,
+          wetPressure: 10,
+          nutrition: 54,
+          saltLoad: 20,
+          risk: 18,
+          stress: 10
+        }),
+        diagnosis: await applyCoachSample({
+          tab: 'diagnosis',
+          water: 58,
+          root: 60,
+          surface: 54,
+          dryStress: 10,
+          wetPressure: 10,
+          nutrition: 54,
+          saltLoad: 20,
+          risk: 18,
+          stress: 10
+        })
+      };
+      const coachExpectations = {
+        stable: {
+          key: 'careStudio.coach.stable',
+          text: i18nT('careStudio.coach.stable')
+        },
+        wet: {
+          key: 'careStudio.coach.wet',
+          text: i18nT('careStudio.coach.wet')
+        },
+        dry: {
+          key: 'careStudio.coach.dry',
+          text: i18nT('careStudio.coach.dry')
+        },
+        feed: {
+          key: 'careStudio.coach.feed',
+          text: i18nT('careStudio.coach.feed')
+        },
+        routine: {
+          key: 'careStudio.coach.routine',
+          text: i18nT('careStudio.coach.routine')
+        },
+        diagnosis: {
+          key: 'careStudio.coach.diagnosis',
+          text: i18nT('careStudio.coach.diagnosis')
+        }
+      };
+      const retentionContextSamples = {
+        decision: await applyRetentionContextSample({
+          decision: {
+            cardId: 'growth_routine',
+            primaryTaskId: 'nutrient_rebalance',
+            focusTaskId: 'nutrient_rebalance',
+            answered: false
+          }
+        }),
+        dailyTask: await applyRetentionContextSample({
+          dailyTaskId: 'water_recovery_round',
+          buddyTaskId: 'water_recovery_round'
+        }),
+        dailyObserve: await applyRetentionContextSample({
+          dailyTaskId: 'care_sheet_check',
+          buddyTaskId: 'care_sheet_check'
+        }),
+        weekly: await applyRetentionContextSample({
+          weeklyMissionId: 'clean_routine'
+        }),
+        none: await applyRetentionContextSample({
+          dailyTaskId: 'open_app_twice',
+          buddyTaskId: 'open_app_twice'
+        })
+      };
+      const retentionContextExpectations = {
+        decision: i18nT('careStudio.context.decision_task', {
+          task: resolveLikelyI18nText('', 'daily.task.nutrient_rebalance.title')
+        }),
+        dailyTask: i18nT('careStudio.context.daily_task', {
+          task: resolveLikelyI18nText('', 'daily.task.water_recovery_round.title')
+        }),
+        dailyObserve: i18nT('careStudio.context.daily_observe'),
+        weekly: i18nT('careStudio.context.weekly_goal', {
+          goal: i18nT('daily.weekly.mission.clean_routine.title')
+        })
+      };
 
       return {
         tabCount: document.querySelectorAll('#careCategoryList .care-category-tab').length,
@@ -278,6 +558,11 @@ async function main() {
         decisionIconImageCount: decisionFrames.length,
         decorativeAltEmpty: decorativeImages.every((img) => img.getAttribute('alt') === ''),
         diagnosisText,
+        diagnosisFallbackText,
+        coachSamples,
+        coachExpectations,
+        retentionContextSamples,
+        retentionContextExpectations,
         expectedInitialRiskLabel: initialHeaderExpectation.riskLabel,
         expectedWaterRiskLabel: waterHeaderExpectation.riskLabel,
         expectedFeedRiskLabel: feedHeaderExpectation.riskLabel
@@ -298,13 +583,13 @@ async function main() {
       assert.ok(result.waterRecommendationNote.length > 0, 'water recommendation should include a short stable explanation');
       assert.ok(/Beob|Stress|Werte|monitor|watch/i.test(result.waterRecommendationNote), 'water recommendation note should explain why monitoring is enough');
       assert.ok(Math.abs(parseInt(result.initialStatusChips.Feuchte.value, 10) - Math.round(result.initialHeaderExpectation.water)) <= 1, 'care header moisture should mirror the care summary moisture');
-    assert.strictEqual(result.initialStatusChips['Versorg.'].value, `${Math.round(result.initialStatusSnapshot.nutrition)}%`, 'care header nutrition should mirror the global nutrition status');
+    assert.strictEqual(result.initialStatusChips.Versorgung.value, `${Math.round(result.initialStatusSnapshot.nutrition)}%`, 'care header nutrition should mirror the global nutrition status');
     assert.strictEqual(result.initialStatusChips.Stress.value, `${Math.round(result.initialStatusSnapshot.stress)}%`, 'care header stress should mirror the global stress status');
     assert.ok(Math.abs(parseInt(result.initialStatusChips.Risiko.value, 10) - Math.round(result.initialHeaderExpectation.risk)) <= 1, 'care header risk should mirror the care summary risk');
     assert.strictEqual(result.initialStatusChips.Risiko.detail, result.expectedInitialRiskLabel, 'care header risk label should be derived from the care summary risk value');
     assert.strictEqual(result.waterChanged, true, 'existing care actions should remain executable');
     assert.ok(Math.abs(parseInt(result.waterStatusChips.Feuchte.value, 10) - Math.round(result.waterHeaderExpectation.water)) <= 1, 'care header moisture should stay synced to care summary after a watering method');
-    assert.strictEqual(result.waterStatusChips['Versorg.'].value, `${Math.round(result.waterStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a watering method');
+    assert.strictEqual(result.waterStatusChips.Versorgung.value, `${Math.round(result.waterStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a watering method');
     assert.strictEqual(result.waterStatusChips.Stress.value, `${Math.round(result.waterStatusSnapshot.stress)}%`, 'care header stress should stay synced after a watering method');
     assert.ok(Math.abs(parseInt(result.waterStatusChips.Risiko.value, 10) - Math.round(result.waterHeaderExpectation.risk)) <= 1, 'care header risk should stay synced to care summary after a watering method');
     assert.strictEqual(result.waterStatusChips.Risiko.detail, result.expectedWaterRiskLabel, 'care header risk label should stay derived from the care summary risk value after a watering method');
@@ -315,7 +600,7 @@ async function main() {
     assert.ok(!result.feedMethodLabels.some((label) => /Fütterung|CalMag/.test(label)), 'feed tab should not expose the old legacy feed labels');
     assert.strictEqual(result.feedChanged, true, 'feed methods should remain executable');
     assert.ok(Math.abs(parseInt(result.feedStatusChips.Feuchte.value, 10) - Math.round(result.feedHeaderExpectation.water)) <= 1, 'care header moisture should stay synced to care summary after a feed method');
-    assert.strictEqual(result.feedStatusChips['Versorg.'].value, `${Math.round(result.feedStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a feed method');
+    assert.strictEqual(result.feedStatusChips.Versorgung.value, `${Math.round(result.feedStatusSnapshot.nutrition)}%`, 'care header nutrition should stay synced after a feed method');
       assert.strictEqual(result.feedStatusChips.Stress.value, `${Math.round(result.feedStatusSnapshot.stress)}%`, 'care header stress should stay synced after a feed method');
       assert.ok(Math.abs(parseInt(result.feedStatusChips.Risiko.value, 10) - Math.round(result.feedHeaderExpectation.risk)) <= 1, 'care header risk should stay synced to care summary after a feed method');
       assert.strictEqual(result.feedStatusChips.Risiko.detail, result.expectedFeedRiskLabel, 'care header risk label should stay derived from the care summary risk value after a feed method');
@@ -345,6 +630,27 @@ async function main() {
     assert.strictEqual(result.decorativeAltEmpty, true, 'decorative care studio images should keep empty alt text');
     assert.ok(/Fokus|Focus|Causa|Cause|Beobachtung|Observation|Status/.test(result.diagnosisText), 'care studio diagnosis tab should render diagnosis details');
     assert.ok(/Tendenz|Trend|Tendencia/.test(result.diagnosisText), 'care studio diagnosis tab should render a trend hint');
+    for (const family of ['stable', 'wet', 'dry', 'feed', 'routine', 'diagnosis']) {
+      const sample = result.coachSamples[family];
+      const expectation = result.coachExpectations[family];
+      assert.strictEqual(sample.beforeRefresh.key, expectation.key, `${family} coach should set the expected data-i18n key before the i18n refresh`);
+      assert.strictEqual(sample.afterRefresh.key, expectation.key, `${family} coach should keep the expected data-i18n key after the i18n refresh`);
+      assert.strictEqual(sample.beforeRefresh.text, expectation.text, `${family} coach should render the expected coach text before the i18n refresh`);
+      assert.strictEqual(sample.afterRefresh.text, expectation.text, `${family} coach should keep the expected coach text after the i18n refresh`);
+    }
+    for (const family of ['stable', 'wet', 'dry', 'feed', 'routine']) {
+      assert.notStrictEqual(result.coachSamples[family].afterRefresh.text, result.diagnosisFallbackText, `${family} coach should not be overwritten by the old diagnosis fallback after the i18n refresh`);
+    }
+    assert.notStrictEqual(result.coachSamples.diagnosis.afterRefresh.text, result.diagnosisFallbackText, 'diagnosis coach should use the short coach sentence instead of the old longer diagnosis fallback');
+    assert.strictEqual(result.retentionContextSamples.decision.text, result.retentionContextExpectations.decision, 'care studio should surface the current decision focus when a daily decision is active');
+    assert.strictEqual(result.retentionContextSamples.decision.hidden, false, 'decision context should stay visible in the care hero');
+    assert.strictEqual(result.retentionContextSamples.dailyTask.text, result.retentionContextExpectations.dailyTask, 'care studio should surface the current daily care task when no decision focus overrides it');
+    assert.strictEqual(result.retentionContextSamples.dailyTask.hidden, false, 'daily task context should stay visible in the care hero');
+    assert.strictEqual(result.retentionContextSamples.dailyObserve.text, result.retentionContextExpectations.dailyObserve, 'care studio should keep observe-first daily tasks calm in the care hero');
+    assert.strictEqual(result.retentionContextSamples.weekly.text, result.retentionContextExpectations.weekly, 'care studio should surface the active weekly goal when no tighter context is active');
+    assert.strictEqual(result.retentionContextSamples.weekly.hidden, false, 'weekly context should stay visible when it is the only relevant anchor');
+    assert.strictEqual(result.retentionContextSamples.none.text, '', 'care studio should not leave a generic context line behind when no retention context is relevant');
+    assert.strictEqual(result.retentionContextSamples.none.hidden, true, 'care studio should hide the retention context line when nothing relevant exists');
   } finally {
     await closeBrowser(browser);
     await closeServer(server);

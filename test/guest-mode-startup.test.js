@@ -139,13 +139,28 @@ async function main() {
     }, null, { timeout: 10000 });
     const introStartState = await page.evaluate(() => {
       const overlay = document.getElementById('firstRunIntroOverlay');
+      const hero = overlay ? overlay.querySelector('.first-run-intro-plant-hero') : null;
+      const heroImg = hero ? hero.querySelector('img') : null;
+      const heroImgStyle = heroImg ? window.getComputedStyle(heroImg) : null;
+      const heroRect = hero ? hero.getBoundingClientRect() : null;
+      const heroImgRect = heroImg ? heroImg.getBoundingClientRect() : null;
       return {
         text: overlay ? overlay.textContent.replace(/\s+/g, ' ').trim() : '',
-        visible: Boolean(overlay && !overlay.classList.contains('hidden'))
+        visible: Boolean(overlay && !overlay.classList.contains('hidden')),
+        heroClassName: hero ? hero.className : '',
+        heroImgSrc: heroImg ? heroImg.getAttribute('src') || '' : '',
+        heroImgObjectFit: heroImgStyle ? heroImgStyle.objectFit : '',
+        heroHeight: heroRect ? heroRect.height : 0,
+        heroImgHeight: heroImgRect ? heroImgRect.height : 0
       };
     });
     assert.strictEqual(introStartState.visible, true, 'fresh first run should surface the guided first-day overlay');
     assert.match(introStartState.text, /Tag 1|Keimling/i, 'guided first-day overlay should start with the seedling moment');
+    assert.match(introStartState.heroClassName, /first-run-intro-plant-hero--seedling/, 'first-day overlay should use the seedling-specific hero frame');
+    assert.match(introStartState.heroImgSrc, /assets\/plant_growth\/aligned_frames\/frame_006\.png$/, 'first-day overlay should use the transparent aligned seedling asset');
+    assert.strictEqual(introStartState.heroImgObjectFit, 'contain', 'first-day overlay seedling should stay contained inside the hero card');
+    assert(introStartState.heroImgHeight > 0 && introStartState.heroHeight > 0, 'first-day overlay should expose measurable seedling hero geometry');
+    assert(introStartState.heroImgHeight < introStartState.heroHeight * 0.8, 'first-day overlay seedling image should not fill the full hero card height');
     await page.click('#firstRunIntroPrimaryBtn');
     await page.waitForFunction(() => Boolean(document.querySelector('[data-first-run-decision="gentle_water"]')), null, { timeout: 10000 });
     await page.click('[data-first-run-decision="gentle_water"]');
@@ -182,7 +197,7 @@ async function main() {
       };
     });
     assert.strictEqual(followupState.visible, true, 'fresh first run should show the one-time dashboard follow-up after the intro');
-    assert.match(followupState.text, /Dein Grow laeuft/i, 'dashboard follow-up should confirm that the grow is now running');
+    assert.match(followupState.text, /Dein Grow läuft/i, 'dashboard follow-up should confirm that the grow is now running');
     assert.match(followupState.text, /Weiter/i, 'dashboard follow-up should provide a simple continue CTA');
     await page.click('#firstRunDashboardFollowupBtn');
     await page.waitForFunction(() => {
@@ -203,7 +218,7 @@ async function main() {
     });
     assert.strictEqual(starterGoalState.mode, 'starter', 'post-intro first-day goal should use the starter teaser slot');
     assert.strictEqual(starterGoalState.actionTarget, 'dashboard', 'post-intro first-day goal should route into the dashboard');
-    assert.match(starterGoalState.text, /Naechster Schritt|Wachstumsreaktion/i, 'post-intro teaser should explain the next first-day step');
+    assert.match(starterGoalState.text, /Nächster Schritt|Wachstumsreaktion/i, 'post-intro teaser should explain the next first-day step');
     if (false) {
     const guestCareState = await page.evaluate(() => {
       const careSheet = document.getElementById('careSheet');
@@ -333,7 +348,11 @@ async function main() {
     assert.strictEqual(guestSettingsState.modalVisible, false, 'guest settings should not open login automatically');
     assert.strictEqual(guestSettingsState.cloudValue, 'Lokal auf diesem Gerät', 'guest settings should explain local save mode');
     assert.match(guestSettingsState.cloudTitle, /optional/i, 'cloud sync title should frame sync as optional');
-    assert.match(guestSettingsState.pushFeedback, /lokaler Run bleibt spielbar|lokal weiterspielen|optional/i, 'push feedback should stay optional for guests');
+    assert.match(
+      guestSettingsState.pushFeedback,
+      /lokaler Run bleibt spielbar|lokal weiterspielen|lokales Spielen bleibt möglich|optional/i,
+      'push feedback should stay optional for guests'
+    );
     assert.doesNotMatch(guestSettingsState.settingsText, /(MVP|Dev|Legacy|Runtime|AuthGate|Debug|Local Dev|DEFAULT|SAVE|Pflicht|onboarding\.)/i, 'guest settings should avoid internal wording');
 
     await page.click('#settingsCloudSyncRow');
@@ -354,7 +373,7 @@ async function main() {
     }));
     assert.strictEqual(guestAuthModalState.title, 'Konto & Cloud', 'guest cloud entry should open an optional account modal');
     assert.match(guestAuthModalState.note, /ohne Konto/i, 'guest auth modal should explicitly allow local play without an account');
-    assert.match(guestAuthModalState.note, /optionale Cloud-Sicherung|Cloud-Sicherung|Geraetewechsel/i, 'guest auth modal should explain the benefit of signing in later');
+    assert.match(guestAuthModalState.note, /optionale Cloud-Sicherung|Cloud-Sicherung|Gerätewechsel/i, 'guest auth modal should explain the benefit of signing in later');
     assert.strictEqual(guestAuthModalState.modeAria, 'Kontomodus', 'guest auth modal should expose a calm localized mode label');
     await page.click('#authModalCancelBtn');
     await page.waitForFunction(() => {

@@ -260,7 +260,7 @@
                 </div>
               </div>
               <div class="climate-controller-display__footer">
-                <span id="homeClimateStatusText">TARGET</span>
+                <span id="homeClimateStatusText">Ziel</span>
                 <span class="climate-controller-display__footer-dot" aria-hidden="true"></span>
               </div>
             </div>
@@ -273,7 +273,7 @@
             <span id="envHumidityLabel" class="home-climate-card__sr-only">Luftfeuchte</span>
             <span id="envLightLabel" class="home-climate-card__sr-only">PPFD</span>
             <span id="envAirflowLabel" class="home-climate-card__sr-only">Luftstrom</span>
-            <span id="envAirflowValue" class="home-climate-card__sr-only">Good</span>
+            <span id="envAirflowValue" class="home-climate-card__sr-only">Gut</span>
           </div>
         </div>
 
@@ -415,7 +415,7 @@
     <header class="sheet-header figma-sheet-header">
       <div class="care-sheet-heading">
         <h2 id="careSheetTitle" data-i18n="careStudio.title">Care Studio</h2>
-        <p id="careSheetSubtitle" class="care-sheet-subtitle" data-i18n="careStudio.subtitle.stable">Root zone stable</p>
+        <p id="careSheetSubtitle" class="care-sheet-subtitle" data-i18n="careStudio.subtitle.stable">Wurzelzone stabil</p>
       </div>
       <button class="sheet-close care-sheet-close" data-close-sheet type="button" data-i18n="common.close" data-i18n-aria-label="common.close" aria-label="Schließen">Schließen</button>
     </header>
@@ -428,26 +428,26 @@
             <span class="care-studio-buddy-label" data-i18n="careStudio.title">Care Studio</span>
           </div>
           <div class="care-studio-hero-copy">
-            <span id="careStudioTimingBadge" class="care-studio-timing-badge" data-tone="info" data-i18n="careStudio.timing.wait">Wait</span>
-            <p id="careStudioHintText" class="care-studio-hint-text" data-i18n="careStudio.diagnosis.ready_focus">Observe the plant and choose the cleanest next step.</p>
+            <span id="careStudioTimingBadge" class="care-studio-timing-badge" data-tone="info" data-i18n="careStudio.timing.wait">Warten</span>
+            <p id="careStudioHintText" class="care-studio-hint-text" data-i18n="careStudio.diagnosis.ready_focus">Beobachte die Pflanze und wähle den saubersten nächsten Schritt.</p>
             <p id="careStudioCoachLine" class="care-studio-coach-line hidden" aria-live="polite"></p>
           </div>
         </div>
         <div id="careCategoryList" class="care-category-list figma-care-categories care-studio-tabs" role="tablist" aria-label="Care Studio tabs"></div>
-        <ul id="careEffectsList" class="care-effects-list care-studio-insights" aria-live="polite"></ul>
       </section>
 
       <section class="figma-section-card figma-section-card--care figma-section-card--care-detail">
         <div class="care-action-panel-head">
-          <h3 id="careActionPanelTitle" class="figma-section-head" data-i18n="careStudio.actionPanel.water_title">Water actions</h3>
-          <p id="careActionPanelSubtitle" class="care-action-panel-subtitle" data-i18n="careStudio.actionPanel.water_subtitle">Existing watering actions stay available here.</p>
+          <h3 id="careActionPanelTitle" class="figma-section-head" data-i18n="careStudio.actionPanel.water_title">Wasser-Aktionen</h3>
+          <p id="careActionPanelSubtitle" class="care-action-panel-subtitle" data-i18n="careStudio.actionPanel.water_subtitle">Vorhandene Gieß-Aktionen bleiben hier verfügbar.</p>
         </div>
         <div id="careActionList" class="care-action-list figma-care-actions" aria-live="polite"></div>
         <div id="careDecisionZone" class="care-decision-zone" aria-live="polite"></div>
         <div id="careExecutePanel" class="care-execute-panel">
           <button id="careExecuteButton" class="action-btn action-primary care-execute-btn" type="button">Aktion ausführen</button>
-          <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite" data-i18n="careStudio.feedback.chooseMethod">Choose a method.</p>
+          <p id="careFeedback" class="care-feedback sheet-note" aria-live="polite" data-i18n="careStudio.feedback.chooseMethod">Wähle eine Methode.</p>
         </div>
+        <ul id="careEffectsList" class="care-effects-list care-studio-insights" aria-live="polite"></ul>
       </section>
     </div>
   </section>
@@ -494,7 +494,7 @@
               </div>
               <div class="climate-metric">
                 <span class="climate-metric__label">Airflow</span>
-                <strong id="climateLiveAirflowValue" class="climate-metric__value">Good</strong>
+                <strong id="climateLiveAirflowValue" class="climate-metric__value">Gut</strong>
               </div>
             </div>
           </div>
@@ -737,7 +737,7 @@
   <section id="eventSheet" class="bottom-sheet figma-sheet figma-sheet-event hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2 data-i18n="events.title">Ereignis-Popup</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <div id="eventSheetModernRoot" class="event-sheet-modern-root hidden" aria-hidden="true"></div>
@@ -773,12 +773,6 @@
           <div id="eventHistorySnapshotBlock" class="event-history-slot hidden" aria-hidden="true"></div>
         </section>
 
-        <section class="figma-section-card figma-section-card--event-positive" aria-hidden="true">
-          <h3 class="figma-section-head">Positives Event</h3>
-          <p class="sheet-note">Vitalitätsschub: optimale Bedingungen erkannt.</p>
-          <div class="figma-static-row"><span>Bonus übernehmen</span><strong class="value_green">+12%</strong></div>
-          <div class="figma-static-row"><span>Stabil weiterfahren</span><span class="subtitle">Sicher</span></div>
-        </section>
       </div>
     </div>
   </section>
@@ -787,7 +781,7 @@
     <header class="sheet-header figma-sheet-header">
       <h2>Analyse / Statistik</h2>
       <div class="sheet-header-actions">
-        <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+        <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
       </div>
     </header>
     <div class="sheet-content analysis-content figma-sheet-content">
@@ -801,8 +795,8 @@
       <section id="analysisPanelTimeline" class="gs-analysis-panel gs-analysis-timeline figma-section-card hidden" aria-live="polite"></section>
 
       <div class="gs-analysis-tabs figma-bottom-actions" role="tablist" aria-label="Analyse-Aktionen">
-        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button" title="Zeigt die aktuelle Kurzlage mit naechster Empfehlung." data-i18n="analysis.tab_overview">Kurzcheck</button>
-        <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button" title="Zeigt, was den Run gerade stuetzt oder bremst." data-i18n="analysis.tab_diagnosis">Coach</button>
+        <button id="analysisTabOverview" class="gs-analysis-tab is-active" data-analysis-tab="overview" type="button" title="Zeigt die aktuelle Kurzlage mit nächster Empfehlung." data-i18n="analysis.tab_overview">Kurzcheck</button>
+        <button id="analysisTabDiagnosis" class="gs-analysis-tab" data-analysis-tab="diagnosis" type="button" title="Zeigt, was den Run gerade stützt oder bremst." data-i18n="analysis.tab_diagnosis">Coach</button>
         <button id="analysisTabTimeline" class="gs-analysis-tab" data-analysis-tab="timeline" type="button" title="Zeigt den letzten protokollierten Verlauf aus Pflege und Ereignissen." data-i18n="analysis.tab_timeline">Verlauf</button>
       </div>
     </div>
@@ -815,7 +809,7 @@
           <h2 data-i18n="harvest.analysis_popup.title">Ernte-Analyse</h2>
           <p data-i18n="harvest.analysis_popup.subtitle">Prognose &amp; Potenzial</p>
         </div>
-        <button class="sheet-close harvest-analysis-modal__close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen">X</button>
+        <button class="sheet-close harvest-analysis-modal__close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
       </header>
 
       <div class="harvest-analysis-modal__content">
@@ -886,7 +880,7 @@
     <section id="diagnosisSheet" class="bottom-sheet figma-sheet figma-sheet-settings hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2 data-i18n="settings.title">Einstellungen</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
@@ -909,9 +903,9 @@
             <small id="settingsSimSpeedHint" class="sheet-note settings-speed-hint hidden" aria-hidden="true"></small>
           </div>
         </div>
-        <div class="figma-static-row"><span data-i18n="settings.event_frequency">Ereignisse</span><span id="settingsEventFrequencyValue" class="subtitle">Ruhiges Fenster</span></div>
-        <div class="figma-static-row"><span data-i18n="settings.tutorial_hints">Tutorial Hinweise</span><strong id="settingsTutorialValue" class="value_green">An</strong></div>
-        <div class="figma-static-row"><span data-i18n="settings.autosave">Lokaler Spielstand</span><strong id="settingsAutosaveValue" class="value_green">Automatisch</strong></div>
+        <div class="figma-static-row settings-static-row settings-static-row--info"><span data-i18n="settings.event_frequency">Ereignisse</span><span id="settingsEventFrequencyValue" class="subtitle">Ruhiges Fenster</span></div>
+        <div class="figma-static-row settings-static-row settings-static-row--prepared"><span data-i18n="settings.tutorial_hints">Tutorial Hinweise</span><strong id="settingsTutorialValue" class="value_green">An</strong></div>
+        <div class="figma-static-row settings-static-row settings-static-row--info"><span data-i18n="settings.autosave">Lokaler Spielstand</span><strong id="settingsAutosaveValue" class="value_green">Automatisch</strong></div>
         <div class="figma-static-row figma-static-row--stacked">
           <span id="settingsLanguageLabel" data-i18n="settings.language">Sprache</span>
           <div>
@@ -927,16 +921,17 @@
 
       <section class="figma-section-card figma-settings-card figma-settings-card--audio">
         <h3 class="figma-section-head" data-i18n="settings.audio_graphics">AUDIO & GRAFIK</h3>
-        <div class="figma-static-row"><span data-i18n="settings.master_volume">Master Lautstärke</span><strong id="settingsVolumeValue" class="value_gold">84%</strong></div>
-        <div class="figma-static-row"><span data-i18n="settings.effects">Effekte</span><span id="settingsEffectsValue" class="subtitle">Hoch</span></div>
-        <div class="figma-static-row"><span data-i18n="settings.battery_mode">Batterie-Modus</span><span id="settingsBatteryValue" class="subtitle">Aus</span></div>
-        <div class="figma-static-row"><span data-i18n="settings.haptic">Haptik</span><strong id="settingsHapticValue" class="value_green">An</strong></div>
+        <p class="sheet-note settings-card-note" data-i18n="settings.prepared_group_hint">Vorbereitet. Sichtbar, aber noch nicht direkt anpassbar.</p>
+        <div class="figma-static-row settings-static-row settings-static-row--prepared"><span data-i18n="settings.master_volume">Master Lautstärke</span><strong id="settingsVolumeValue" class="value_gold">84%</strong></div>
+        <div class="figma-static-row settings-static-row settings-static-row--prepared"><span data-i18n="settings.effects">Effekte</span><span id="settingsEffectsValue" class="subtitle">Hoch</span></div>
+        <div class="figma-static-row settings-static-row settings-static-row--prepared"><span data-i18n="settings.battery_mode">Batterie-Modus</span><span id="settingsBatteryValue" class="subtitle">Aus</span></div>
+        <div class="figma-static-row settings-static-row settings-static-row--prepared"><span data-i18n="settings.haptic">Haptik</span><strong id="settingsHapticValue" class="value_green">An</strong></div>
       </section>
 
       <section class="figma-section-card figma-settings-card figma-settings-card--account">
         <h3 class="figma-section-head" data-i18n="settings.account">LOKAL & CLOUD</h3>
         <div id="settingsCloudSyncRow" class="figma-static-row settings-link-row settings-link-row--stacked" role="button" tabindex="0" aria-label="Cloud Sync öffnen" data-i18n-aria-label="settings.cloud_sync_aria">
-          <span><strong data-i18n="settings.cloud_sync">Cloud Sync</strong><small data-i18n="settings.cloud_sync_hint">Optionales Backup, lokales Spielen bleibt möglich.</small></span>
+          <span><strong data-i18n="settings.cloud_sync">Cloud Sync</strong><small data-i18n="settings.cloud_sync_hint">Optionales Backup für Gerätewechsel. Lokales Spielen bleibt möglich.</small></span>
           <strong id="settingsCloudSyncValue" class="value_gold">Lokal auf diesem Gerät</strong>
         </div>
         <div class="settings-push-block" aria-label="Erinnerungen" data-i18n-aria-label="settings.push_aria">
@@ -955,10 +950,11 @@
           <button id="settingsPushTestBtn" class="ghost-btn" type="button" data-i18n="settings.push_test">Test senden</button>
         </div>
         
+        <p class="sheet-note settings-footer-note" data-i18n="settings.footer_hint">Aktive Änderungen wirken sofort. Vorbereitetes bleibt hier nur Status.</p>
         <div class="figma-settings-actions">
           <button id="analysisResetBtn" class="ghost-btn" type="button" data-i18n="settings.reset">Zurücksetzen</button>
-          <button id="settingsDefaultBtn" class="ghost-btn" type="button" data-i18n="settings.default">Empfohlen</button>
-          <button id="settingsSaveBtn" class="action-btn action-primary" type="button" data-i18n="settings.save">Sichern</button>
+          <button id="settingsDefaultBtn" class="ghost-btn" type="button" data-i18n="settings.default">Reminder zurücksetzen</button>
+          <button id="settingsSaveBtn" class="action-btn action-primary" type="button" data-i18n="settings.save">Fertig</button>
         </div>
       </section>
     </div>
@@ -967,7 +963,7 @@
   <section id="missionsSheet" class="bottom-sheet figma-sheet figma-sheet-missions hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2 data-i18n="daily.title">Missionen & Erfolge</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
@@ -976,13 +972,13 @@
       </section>
       <section class="figma-section-card retention-card">
         <div class="retention-sheet-head">
-          <strong>Daily Streak</strong>
+          <strong>Tägliche Serie</strong>
           <small id="missionsDailyCareProgress" class="sheet-note">0/0 abgeschlossen</small>
         </div>
         <small id="missionsBuddyDailyCheck" class="sheet-note hidden" aria-hidden="true"></small>
         <div id="missionsStreakBlock" class="retention-streak-block">
           <div class="retention-streak-main">
-            <strong>Daily Streak 0</strong>
+            <strong>Tägliche Serie 0</strong>
             <span class="retention-streak-status">Heute offen</span>
           </div>
           <small>Nächster Milestone: 3</small>
@@ -1014,12 +1010,15 @@
   <section id="coinShopSheet" class="bottom-sheet figma-sheet figma-sheet-shop hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2 data-i18n="shop.title">Coin-Shop</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content shop-sheet-content">
-      <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-        <div class="figma-top-player-title">Direkt anwenden</div>
-        <div id="coinShopBalanceText" class="figma-top-player-subtitle">Coins werden geladen</div>
+      <section class="figma-top-player figma-top-player--compact shop-sheet-intro">
+        <div class="shop-sheet-intro__copy">
+          <div class="figma-top-player-title">Optionaler Komfort</div>
+          <div id="coinShopBalanceText" class="figma-top-player-subtitle">Coins werden geladen</div>
+        </div>
+        <div id="coinShopBuddyVisual" class="shop-sheet-buddy" aria-hidden="true"></div>
       </section>
       <section class="figma-section-card shop-sheet-panel">
         <div class="shop-sheet-head">
@@ -1041,7 +1040,7 @@
   <section id="insufficientCoinsSheet" class="bottom-sheet figma-sheet figma-sheet-shop figma-sheet-insufficient-coins hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2 data-i18n="shop.insufficient_title">Nicht genug Coins</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content insufficient-coins-content">
       <section class="figma-section-card shop-sheet-panel">
@@ -1076,11 +1075,18 @@
     <header class="sheet-header figma-sheet-header">
       <div class="support-sheet-heading">
         <h2>GrowSim unterstützen</h2>
-        <p class="sheet-note">Hilf mit, neue Features, Events und Premium-Verbesserungen für GrowSim möglich zu machen.</p>
+        <p class="sheet-note">Wenn dir GrowSim hilft oder Freude macht, unterstützt du damit direkt die Weiterentwicklung.</p>
       </div>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content support-sheet-content">
+      <section class="figma-top-player figma-top-player--compact support-sheet-intro">
+        <div class="support-sheet-intro__copy">
+          <div class="figma-top-player-title">Freiwillige Unterstützung</div>
+          <div class="figma-top-player-subtitle">Jeder Beitrag hilft ruhig und direkt bei neuen Inhalten und weiterem Feinschliff.</div>
+        </div>
+        <div id="supportSheetBuddyVisual" class="shop-sheet-buddy shop-sheet-buddy--support" aria-hidden="true"></div>
+      </section>
       <section class="figma-section-card support-card">
         <small class="support-section-eyebrow">Support-Stufen</small>
         <div id="supportOptionList" class="support-option-list" role="list">
@@ -1122,7 +1128,7 @@
   <section id="imprint-sheet" class="bottom-sheet figma-sheet figma-sheet-legal hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2 data-i18n="legal.imprint_title">Impressum</h2>
-      <button class="sheet-close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content legal-sheet-content">
       <p class="sheet-note legal-language-note" data-i18n="legal.de_only_notice">Der folgende Rechtstext ist derzeit nur auf Deutsch verfügbar.</p>
@@ -1142,7 +1148,7 @@
   <section id="privacy-sheet" class="bottom-sheet figma-sheet figma-sheet-legal hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2 data-i18n="legal.privacy_title">Datenschutz</h2>
-      <button class="sheet-close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" data-i18n-aria-label="common.close" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content legal-sheet-content">
       <p class="sheet-note legal-language-note" data-i18n="legal.de_only_notice">Der folgende Rechtstext ist derzeit nur auf Deutsch verfügbar.</p>
@@ -1151,7 +1157,7 @@
 
         <section class="legal-section">
           <h4>1. Allgemeine Hinweise</h4>
-          <p>Der Schutz deiner persoenlichen Daten ist uns wichtig. Grow Simulator kann grundsaetzlich lokal ohne Konto gespielt werden. Diese Datenschutzerklaerung beschreibt, welche Daten lokal auf diesem Geraet bleiben und welche Daten nur bei optionalen Konto- oder Cloud-Funktionen verarbeitet werden.</p>
+          <p>Der Schutz deiner persönlichen Daten ist uns wichtig. Grow Simulator kann grundsätzlich lokal ohne Konto gespielt werden. Diese Datenschutzerklärung beschreibt, welche Daten lokal auf diesem Gerät bleiben und welche Daten nur bei optionalen Konto- oder Cloud-Funktionen verarbeitet werden.</p>
         </section>
 
         <section class="legal-section">
@@ -1161,13 +1167,13 @@
 
         <section class="legal-section">
           <h4>3. Erhebung und Speicherung personenbezogener Daten</h4>
-          <p>Wir erheben und verarbeiten personenbezogene Daten nur, soweit dies fuer die Bereitstellung der App oder fuer von dir aktiv genutzte Zusatzfunktionen erforderlich ist.</p>
+          <p>Wir erheben und verarbeiten personenbezogene Daten nur, soweit dies für die Bereitstellung der App oder für von dir aktiv genutzte Zusatzfunktionen erforderlich ist.</p>
           <p>Dies umfasst insbesondere:</p>
           <ul>
-            <li>lokal gespeicherte Spielstaende, Einstellungen und appnahe Nutzungsdaten auf diesem Geraet</li>
+            <li>lokal gespeicherte Spielstände, Einstellungen und appnahe Nutzungsdaten auf diesem Gerät</li>
             <li>E-Mail-Adresse und Kontodaten nur, wenn du freiwillig ein Konto erstellst oder dich anmeldest</li>
             <li>Cloud-gesicherte Spielstaende, Einstellungen oder verifizierte Ergebnisdaten nur, wenn du optionale Konto- oder Cloud-Funktionen nutzt</li>
-            <li>Statusdaten fuer Erinnerungen nur, wenn du Erinnerungen aktivierst und Browser- oder Systemfreigaben erteilst</li>
+            <li>Statusdaten für Erinnerungen nur, wenn du Erinnerungen aktivierst und Browser- oder Systemfreigaben erteilst</li>
           </ul>
         </section>
 
@@ -1175,8 +1181,8 @@
           <h4>4. Zweck der Verarbeitung</h4>
           <p>Die Daten werden verwendet für:</p>
           <ul>
-            <li>lokales Spielen und Speichern auf diesem Geraet</li>
-            <li>optionale Cloud-Sicherung oder Geraetewechsel, wenn du ein Konto nutzt</li>
+            <li>lokales Spielen und Speichern auf diesem Gerät</li>
+            <li>optionale Cloud-Sicherung oder Gerätewechsel, wenn du ein Konto nutzt</li>
             <li>verifizierte Ergebnisse, Leaderboard-Funktionen oder kontoabhängige Dienste, wenn du sie aktiv verwendest</li>
             <li>technische Stabilitaet und Weiterentwicklung der App</li>
           </ul>
@@ -1184,7 +1190,7 @@
 
         <section class="legal-section">
           <h4>5. Speicherung der Daten</h4>
-          <p>Ohne Konto bleibt dein Spielstand grundsaetzlich lokal auf diesem Geraet. Wenn Browserdaten geloescht werden, kann dieser lokale Spielstand verloren gehen. Wenn du optionale Cloud-Funktionen nutzt, koennen ausgewaehlte Daten zusaetzlich auf Servern gespeichert werden.</p>
+          <p>Ohne Konto bleibt dein Spielstand grundsätzlich lokal auf diesem Gerät. Wenn Browserdaten gelöscht werden, kann dieser lokale Spielstand verloren gehen. Wenn du optionale Cloud-Funktionen nutzt, können ausgewählte Daten zusätzlich auf Servern gespeichert werden.</p>
         </section>
 
         <section class="legal-section">
@@ -1198,7 +1204,7 @@
 
         <section class="legal-section">
           <h4>7. Lokale Speicherung</h4>
-          <p>Die App nutzt lokale Speichertechnologien wie LocalStorage und/oder IndexedDB, um deinen Run ohne Konto auf diesem Geraet zu speichern. Ohne Cloud Sync bleibt dieser lokale Spielstand an diesen Browser bzw. dieses Geraet gebunden und kann beim Loeschen von Browserdaten verloren gehen.</p>
+          <p>Die App nutzt lokale Speichertechnologien wie LocalStorage und/oder IndexedDB, um deinen Run ohne Konto auf diesem Gerät zu speichern. Ohne Cloud Sync bleibt dieser lokale Spielstand an diesen Browser bzw. dieses Gerät gebunden und kann beim Löschen von Browserdaten verloren gehen.</p>
         </section>
 
         <section class="legal-section">
@@ -1229,22 +1235,22 @@
   <section id="leaderboardSheet" class="bottom-sheet figma-sheet figma-sheet-leaderboard hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <h2>Leaderboard</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content leaderboard-sheet-content">
       <section class="figma-top-player figma-top-player--compact" aria-hidden="true">
-        <div id="leaderboardSheetTitle" class="figma-top-player-title">Weekly Overall</div>
+        <div id="leaderboardSheetTitle" class="figma-top-player-title">Wöchentliche Gesamtwertung</div>
         <div id="leaderboardSheetSubtitle" class="figma-top-player-subtitle">Nur verifizierte Ergebnisse</div>
       </section>
 
       <section class="figma-section-card leaderboard-status-card">
         <div class="leaderboard-status-card__row">
-          <span>Scope</span>
-          <strong id="leaderboardSheetStatus" class="value_gold">Weekly Snapshot</strong>
+          <span>Bereich</span>
+          <strong id="leaderboardSheetStatus" class="value_gold">Wöchentlicher Überblick</strong>
         </div>
         <div class="leaderboard-category-toggle" role="group" aria-label="Leaderboard-Kategorie">
-          <button id="leaderboardCategoryOverallBtn" class="leaderboard-category-btn is-active" type="button" aria-pressed="true">Overall</button>
-          <button id="leaderboardCategoryQualityBtn" class="leaderboard-category-btn" type="button" aria-pressed="false">Quality</button>
+          <button id="leaderboardCategoryOverallBtn" class="leaderboard-category-btn is-active" type="button" aria-pressed="true">Gesamt</button>
+          <button id="leaderboardCategoryQualityBtn" class="leaderboard-category-btn" type="button" aria-pressed="false">Qualität</button>
         </div>
       </section>
 
@@ -1263,7 +1269,7 @@
 
       <section class="figma-section-card leaderboard-section">
         <div class="leaderboard-section-head">
-          <h3 class="figma-section-head">Around Me</h3>
+          <h3 class="figma-section-head">In meiner Nähe</h3>
           <span>Nur verifiziert</span>
         </div>
         <div id="leaderboardAroundMeList" class="leaderboard-entry-list" aria-live="polite"></div>
@@ -1283,7 +1289,7 @@
   <section id="statDetailSheet" class="bottom-sheet hidden" aria-hidden="true">
     <header class="sheet-header">
       <h2 id="statDetailTitle">Statistik</h2>
-      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen">X</button>
+      <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content stat-detail-content">
       <p id="statDetailValue" class="stat-detail-value">0</p>
@@ -1316,7 +1322,7 @@
           </div>
           <div class="run-builder-local-note" data-guest-welcome-note>
             <span class="run-builder-local-note__status" data-i18n="onboarding.guest.status">Gastmodus aktiv</span>
-            <p data-i18n="onboarding.guest.cloud_hint">Cloud Sync kannst du spaeter optional in den Einstellungen verbinden, wenn du deinen Run zusaetzlich sichern oder auf ein anderes Geraet mitnehmen moechtest.</p>
+            <p data-i18n="onboarding.guest.cloud_hint">Cloud Sync kannst du später optional in den Einstellungen verbinden, wenn du deinen Run zusätzlich sichern oder auf ein anderes Gerät mitnehmen möchtest.</p>
           </div>
         </section>
 
@@ -1324,11 +1330,11 @@
           <div class="run-builder-copy">
             <span class="run-builder-eyebrow" data-i18n="onboarding.first_five.buddy.eyebrow">Buddy</span>
             <h3 data-i18n="onboarding.first_five.buddy.title">Lerne deinen Coach kennen</h3>
-            <p data-i18n="onboarding.first_five.buddy.body">Ich bin Buddy. Ich sag dir nicht nur, was du druecken sollst. Ich zeige dir, warum deine Pflanze reagiert.</p>
+            <p data-i18n="onboarding.first_five.buddy.body">Ich bin Buddy. Ich sag dir nicht nur, was du drücken sollst. Ich zeige dir, warum deine Pflanze reagiert.</p>
           </div>
           <aside class="onboarding-buddy-tip onboarding-buddy-tip--intro" data-buddy-key="intro">
             <img alt="Buddy erklärt die Genetik-Auswahl" loading="eager">
-            <p data-i18n="onboarding.first_five.buddy.hint">Ich bleibe kurz, warm und ehrlich. Dein erster Tag soll sich wie ein ruhiger Start anfuehlen, nicht wie ein Formular.</p>
+            <p data-i18n="onboarding.first_five.buddy.hint">Ich bleibe kurz, warm und ehrlich. Dein erster Tag soll sich wie ein ruhiger Start anfühlen, nicht wie ein Formular.</p>
           </aside>
         </section>
 
@@ -1336,80 +1342,94 @@
           <div class="run-builder-copy">
             <span class="run-builder-eyebrow" data-i18n="onboarding.first_five.setup.eyebrow">Quick Setup</span>
             <h3 data-i18n="onboarding.first_five.setup.title">Starte deinen ersten Grow</h3>
-            <p data-i18n="onboarding.first_five.setup.body">Drei kurze Entscheidungen genuegen. Den Rest halten wir fuer deinen ersten Run bewusst ruhig.</p>
+            <p data-i18n="onboarding.first_five.setup.body">Vier kurze Entscheidungen reichen. Danach startest du mit einem echten Setup statt mit einem Blindflug.</p>
           </div>
           <aside class="onboarding-buddy-tip" data-buddy-key="setup">
             <img alt="Buddy erklärt den Setup-Modus" loading="eager">
-            <p data-i18n="onboarding.first_five.setup.hint">Wir mappen deine Wahl auf das vorhandene Setup. So bleibt der Einstieg schlank und die Simulation stabil.</p>
+            <p data-i18n="onboarding.first_five.setup.hint">Wähle Licht, Substrat, Topf und Start-Setup direkt. Ich halte es kompakt, aber die Werte landen echt im Run.</p>
           </aside>
           <div class="first-run-choice-stack">
-            <section class="first-run-choice-group" aria-label="Grow-Stil">
+            <section class="first-run-choice-group" aria-label="Grow-Setup">
               <div class="first-run-choice-group__head">
-                <strong data-i18n="onboarding.first_five.setup.style_title">Grow-Stil</strong>
-                <small data-i18n="onboarding.first_five.setup.style_hint">Wie direkt dein erster Run sich anfuehlt.</small>
+                <strong data-i18n="onboarding.first_five.setup.mode_title">Grow-Setup</strong>
+                <small data-i18n="onboarding.first_five.setup.mode_hint">Wo dein erster Run startet.</small>
               </div>
               <div class="onboarding-option-grid onboarding-option-grid--compact">
-                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupGrowStyle" data-setup-value="safe">
-                  <span class="onboarding-icon onboarding-icon--profile" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.style.safe.title">Sicher</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.style.safe.badge">Empfohlen</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.style.safe.body">Mehr Puffer fuer einen ruhigen ersten Eindruck.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.style.safe.effect">Ruhig · sauber · stabil</span></span>
+                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupMode" data-setup-value="indoor" data-title="Indoor" data-description="Ruhiger Start mit kontrollierbarem Klima und planbaren Routinen." data-effect="Kontrolle · sauber · stabil">
+                  <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.mode.indoor.title">Indoor</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.mode.indoor.badge">Empfohlen</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.mode.indoor.body">Ruhiger Start mit kontrollierbarem Klima und planbaren Routinen.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.mode.indoor.effect">Kontrolle · sauber · stabil</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupGrowStyle" data-setup-value="fast">
-                  <span class="onboarding-icon onboarding-icon--profile" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.style.fast.title">Schnell</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.style.fast.badge">Direkt</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.style.fast.body">Fruehes Feedback und ein dichteres Gefuehl fuer Veraenderung.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.style.fast.effect">Tempo · Reaktion · Fokus</span></span>
-                  <span class="onboarding-card-check" aria-hidden="true">✓</span>
-                </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupGrowStyle" data-setup-value="challenging">
-                  <span class="onboarding-icon onboarding-icon--profile" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.style.challenging.title">Anspruchsvoll</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.style.challenging.badge">Mehr Druck</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.style.challenging.body">Weniger Komfort, dafuer mehr Beobachtung von Anfang an.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.style.challenging.effect">Druck · Timing · Disziplin</span></span>
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupMode" data-setup-value="outdoor" data-title="Outdoor" data-description="Mehr Schwankung, mehr Wetter und ein fordernderer Start." data-effect="Wetter · Luft · Timing">
+                  <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.mode.outdoor.title">Outdoor</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.mode.outdoor.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.mode.outdoor.body">Mehr Schwankung, mehr Wetter und ein fordernderer Start.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.mode.outdoor.effect">Wetter · Luft · Timing</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
               </div>
             </section>
 
-            <section class="first-run-choice-group" aria-label="Umgebung">
+            <section class="first-run-choice-group" aria-label="Licht-Setup">
               <div class="first-run-choice-group__head">
-                <strong data-i18n="onboarding.first_five.setup.environment_title">Umgebung</strong>
-                <small data-i18n="onboarding.first_five.setup.environment_hint">Hier landet dein erster Grow.</small>
+                <strong data-i18n="onboarding.first_five.setup.light_title">Licht-Setup</strong>
+                <small data-i18n="onboarding.first_five.setup.light_hint">Wie stark dein Startlicht direkt arbeitet.</small>
               </div>
               <div class="onboarding-option-grid onboarding-option-grid--compact">
-                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupEnvironment" data-setup-value="indoor">
-                  <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.environment.indoor.title">Indoor</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.environment.indoor.badge">Kontrolle</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.environment.indoor.body">Ruhiger Start mit klarerem Klima.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.environment.indoor.effect">Sauber · planbar · ruhig</span></span>
+                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupLight" data-setup-value="medium" data-title="Medium Light" data-description="Solider Lichtstandard für einen ruhigen, lesbaren Start." data-effect="Balance · Kontrolle · Puffer">
+                  <span class="onboarding-icon onboarding-icon--light" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.light.medium.title">Medium Light</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.light.medium.badge">Standard</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.light.medium.body">Solider Lichtstandard für einen ruhigen, lesbaren Start.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.light.medium.effect">Balance · Kontrolle · Puffer</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupEnvironment" data-setup-value="outdoor">
-                  <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.environment.outdoor.title">Outdoor</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.environment.outdoor.badge">Wetter</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.environment.outdoor.body">Mehr Natur, mehr Schwankung, mehr Geschichte.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.environment.outdoor.effect">Luft · Wetter · Timing</span></span>
-                  <span class="onboarding-card-check" aria-hidden="true">✓</span>
-                </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupEnvironment" data-setup-value="greenhouse">
-                  <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.environment.greenhouse.title">Gewaechshaus</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.environment.greenhouse.badge">Hybrid</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.environment.greenhouse.body">Geschuetzt, aber nicht steril. Ein Mittelweg.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.environment.greenhouse.effect">Puffer · Licht · Beobachtung</span></span>
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupLight" data-setup-value="high" data-title="High Output Light" data-description="Mehr Druck und Tempo, sobald dein Profil das freigeschaltet hat." data-effect="Peak · Verbrauch · Fokus">
+                  <span class="onboarding-icon onboarding-icon--light" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.light.high.title">High Output Light</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.light.high.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.light.high.body">Mehr Druck und Tempo, sobald dein Profil das freigeschaltet hat.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.light.high.effect">Peak · Verbrauch · Fokus</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
               </div>
             </section>
 
-            <section class="first-run-choice-group" aria-label="Pflanzentyp">
+            <section class="first-run-choice-group" aria-label="Substrat">
               <div class="first-run-choice-group__head">
-                <strong data-i18n="onboarding.first_five.setup.plant_title">Pflanzentyp</strong>
-                <small data-i18n="onboarding.first_five.setup.plant_hint">Welche Linie du dir fuer den Start wuenschst.</small>
+                <strong data-i18n="onboarding.first_five.setup.medium_title">Substrat</strong>
+                <small data-i18n="onboarding.first_five.setup.medium_hint">Wie schnell Wasser und Nährstoffe reagieren.</small>
               </div>
               <div class="onboarding-option-grid onboarding-option-grid--compact">
-                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupPlantType" data-setup-value="beginner">
-                  <span class="onboarding-icon onboarding-icon--genetics" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.plant.beginner.title">Anfaengerfreundlich</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.plant.beginner.badge">Sanft</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.plant.beginner.body">Ein klarer, toleranter Einstieg.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.plant.beginner.effect">Puffer · Lernen · Ruhe</span></span>
+                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupMedium" data-setup-value="soil" data-title="Erde" data-description="Verzeiht kleine Fehler und bleibt für den ersten Run angenehm lesbar." data-effect="Puffer · ruhig · fehlertolerant">
+                  <span class="onboarding-icon onboarding-icon--substrate" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.medium.soil.title">Erde</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.medium.soil.badge">Empfohlen</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.medium.soil.body">Verzeiht kleine Fehler und bleibt für den ersten Run angenehm lesbar.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.medium.soil.effect">Puffer · ruhig · fehlertolerant</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupPlantType" data-setup-value="auto">
-                  <span class="onboarding-icon onboarding-icon--genetics" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.plant.auto.title">Auto</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.plant.auto.badge">Direkt</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.plant.auto.body">Wirkt schneller und direkter im Startgefuehl.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.plant.auto.effect">Rhythmus · Flow · Fokus</span></span>
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupMedium" data-setup-value="coco" data-title="Coco" data-description="Reagiert direkter und will mehr Routine, sobald du es freigeschaltet hast." data-effect="Reaktiv · schneller · enger">
+                  <span class="onboarding-icon onboarding-icon--substrate" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.medium.coco.title">Coco</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.medium.coco.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.medium.coco.body">Reagiert direkter und will mehr Routine, sobald du es freigeschaltet hast.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.medium.coco.effect">Reaktiv · schneller · enger</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupPlantType" data-setup-value="yield">
-                  <span class="onboarding-icon onboarding-icon--genetics" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.plant.yield.title">Ertragreich</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.plant.yield.badge">Ziel</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.plant.yield.body">Ein Start mit Blick auf spaeteres Potenzial.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.plant.yield.effect">Potenzial · Aufbau · Ziel</span></span>
+              </div>
+            </section>
+
+            <section class="first-run-choice-group" aria-label="Topfgröße">
+              <div class="first-run-choice-group__head">
+                <strong data-i18n="onboarding.first_five.setup.pot_title">Topfgröße</strong>
+                <small data-i18n="onboarding.first_five.setup.pot_hint">Dein Wurzelraum bestimmt Tempo, Reserve und Gießdruck.</small>
+              </div>
+              <div class="onboarding-option-grid onboarding-option-grid--compact">
+                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupPotSize" data-setup-value="small" data-title="2 Liter (S)" data-description="Kleiner Starttopf mit direkter Reaktion und engerem Pflegefenster." data-effect="Kompakt · direkt · aktiv">
+                  <span class="onboarding-icon onboarding-icon--pot" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.pot.small.title">2 Liter (S)</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.pot.small.badge">Standard</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.pot.small.body">Kleiner Starttopf mit direkter Reaktion und engerem Pflegefenster.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.pot.small.effect">Kompakt · direkt · aktiv</span></span>
+                  <span class="onboarding-card-check" aria-hidden="true">✓</span>
+                </button>
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupPotSize" data-setup-value="medium" data-title="8 Liter (M)" data-description="Mehr Puffer für Wasser und Wurzeln, ohne den Start träge zu machen." data-effect="Ausgewogen · ruhiger · stabil">
+                  <span class="onboarding-icon onboarding-icon--pot" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.pot.medium.title">8 Liter (M)</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.pot.medium.badge">Ausgewogen</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.pot.medium.body">Mehr Puffer für Wasser und Wurzeln, ohne den Start träge zu machen.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.pot.medium.effect">Ausgewogen · ruhiger · stabil</span></span>
+                  <span class="onboarding-card-check" aria-hidden="true">✓</span>
+                </button>
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupPotSize" data-setup-value="large" data-title="16 Liter (L)" data-description="Spürbar mehr Reserve für lange, saubere Entwicklungsphasen." data-effect="Reserve · Langzeit · ruhig">
+                  <span class="onboarding-icon onboarding-icon--pot" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.pot.large.title">16 Liter (L)</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.pot.large.badge">Langzeit</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.pot.large.body">Spürbar mehr Reserve für lange, saubere Entwicklungsphasen.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.pot.large.effect">Reserve · Langzeit · ruhig</span></span>
+                  <span class="onboarding-card-check" aria-hidden="true">✓</span>
+                </button>
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupPotSize" data-setup-value="xlarge" data-title="25 Liter (XL)" data-description="Maximaler Wurzelraum für große Reserven und entspanntere Drybacks." data-effect="Maxi · träge · tief">
+                  <span class="onboarding-icon onboarding-icon--pot" aria-hidden="true"></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.pot.xlarge.title">25 Liter (XL)</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.pot.xlarge.badge">Reserve</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.pot.xlarge.body">Maximaler Wurzelraum für große Reserven und entspanntere Drybacks.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.pot.xlarge.effect">Maxi · träge · tief</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
               </div>
@@ -1421,11 +1441,11 @@
           <div class="run-builder-copy">
             <span class="run-builder-eyebrow" data-i18n="onboarding.first_five.summary.eyebrow">Startklar</span>
             <h3 data-i18n="onboarding.first_five.summary.title">Dein Grow ist startbereit</h3>
-            <p data-i18n="onboarding.first_five.summary.body">Du setzt jetzt den Run auf und landest danach direkt in deinem gefuehrten ersten Tag.</p>
+            <p data-i18n="onboarding.first_five.summary.body">Du setzt jetzt den Run auf und landest danach direkt in deinem geführten ersten Tag.</p>
           </div>
           <aside class="onboarding-buddy-tip onboarding-buddy-tip--summary" data-buddy-key="summary">
             <img alt="Buddy bestätigt die Run-Zusammenfassung" loading="eager">
-            <p data-i18n="onboarding.first_five.summary.hint">Ich bleibe bei dir. Nach dem Start fuehren wir nur durch den ersten wichtigen Moment - nicht durch zehn Menues.</p>
+            <p data-i18n="onboarding.first_five.summary.hint">Ich bleibe bei dir. Nach dem Start führen wir nur durch den ersten wichtigen Moment - nicht durch zehn Menüs.</p>
           </aside>
           <section class="setup-strategy-card run-builder-summary-card">
             <div class="setup-strategy-top">
@@ -1438,24 +1458,19 @@
             <p id="setupStrategyTradeoff" class="setup-strategy-tradeoff">Kein extremer Vorteil, aber auch keine große Sollbruchstelle.</p>
             <div id="setupStrategyLoadout" class="setup-strategy-loadout">Hybrid · Soil Medium · Medium Light · Mode: Indoor Run</div>
           </section>
-          <div class="run-builder-intro-grid" aria-label="Deine Startwahl">
-            <article><small data-i18n="onboarding.first_five.setup.style_title">Grow-Stil</small><strong id="onboardingSummaryStyle">Sicher</strong></article>
-            <article><small data-i18n="onboarding.first_five.setup.environment_title">Umgebung</small><strong id="onboardingSummaryEnvironment">Indoor</strong></article>
-            <article><small data-i18n="onboarding.first_five.setup.plant_title">Pflanzentyp</small><strong id="onboardingSummaryPlantType">Anfaengerfreundlich</strong></article>
-          </div>
           <div class="run-builder-summary-grid" aria-label="Gewähltes Setup">
-            <article data-summary-select="setupPotSize"><span class="onboarding-icon onboarding-icon--pot summary-setup-media" aria-hidden="true"></span><small>Topf</small><strong id="onboardingSummaryPot">2 Liter (S)</strong></article>
-            <article data-summary-select="setupGenetics"><span class="onboarding-icon onboarding-icon--genetics summary-setup-media" aria-hidden="true"></span><small>Genetik</small><strong id="onboardingSummaryGenetics">Hybrid</strong></article>
-            <article data-summary-select="setupMode"><span class="onboarding-icon onboarding-icon--setup summary-setup-media" aria-hidden="true"></span><small>Setup</small><strong id="onboardingSummaryMode">Indoor</strong></article>
-            <article data-summary-select="setupMedium"><span class="onboarding-icon onboarding-icon--substrate summary-setup-media" aria-hidden="true"></span><small>Substrat</small><strong id="onboardingSummaryMedium">Erde</strong></article>
-            <article data-summary-select="setupLight"><span class="onboarding-icon onboarding-icon--light summary-setup-media" aria-hidden="true"></span><small>Licht</small><strong id="onboardingSummaryLight">Medium Light</strong></article>
+            <article data-summary-select="setupMode"><span class="onboarding-icon onboarding-icon--setup summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.mode_title">Grow-Setup</small><strong id="onboardingSummaryMode">Indoor</strong></article>
+            <article data-summary-select="setupLight"><span class="onboarding-icon onboarding-icon--light summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.light_title">Licht-Setup</small><strong id="onboardingSummaryLight">Medium Light</strong></article>
+            <article data-summary-select="setupMedium"><span class="onboarding-icon onboarding-icon--substrate summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.medium_title">Substrat</small><strong id="onboardingSummaryMedium">Erde</strong></article>
+            <article data-summary-select="setupPotSize"><span class="onboarding-icon onboarding-icon--pot summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.pot_title">Topfgröße</small><strong id="onboardingSummaryPot">2 Liter (S)</strong></article>
+            <article data-summary-select="setupGenetics"><span class="onboarding-icon onboarding-icon--genetics summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.genetics_title">Genetik</small><strong id="onboardingSummaryGenetics">Hybrid</strong></article>
           </div>
         </section>
       </div>
 
       <div class="figma-onboarding-actions run-builder-footer">
         <button id="setupBackBtn" class="ghost-btn" type="button" disabled aria-disabled="true">Zurück</button>
-        <button id="setupPresetBtn" class="ghost-btn setup-preset-btn" type="button" disabled aria-disabled="true" title="Preset wird später aktiviert">Preset</button>
+        <button id="setupPresetBtn" class="ghost-btn setup-preset-btn hidden" type="button" disabled aria-disabled="true" aria-hidden="true">Preset</button>
         <button id="setupNextBtn" class="action-btn action-primary" type="button" data-i18n="onboarding.first_five.actions.next">Weiter</button>
         <button id="startRunBtn" class="action-btn action-primary hidden" type="button" data-i18n="onboarding.first_five.actions.start_run">Grow erstellen</button>
       </div>
@@ -1520,6 +1535,7 @@
           <div class="run-summary-harvest-score run-summary-harvest-score--main">
             <span>Harvest Score</span>
             <strong id="runSummaryHarvestScore">0</strong>
+            <div id="runSummaryHarvestBuddy" class="run-summary-harvest-buddy" aria-hidden="true"></div>
           </div>
           <div class="run-summary-harvest-quality">
             <span>Qualitätslinie</span>
@@ -1530,6 +1546,8 @@
           <strong id="runSummaryHarvestHeroTone" class="run-summary-harvest-finale__title">Solider Abschluss</strong>
           <p id="runSummaryHarvestInterpretation" class="run-summary-harvest-finale__copy">Die lokale Harvest-Auswertung wird nach dem Run aufgelöst.</p>
         </div>
+        <div id="runSummaryHarvestBests" class="run-summary-list run-summary-list--unlock run-summary-harvest-bests" aria-live="polite"></div>
+        <p id="runSummaryHarvestMotivation" class="run-summary-harvest-motivation">Mit einem sauberen nächsten Hebel ist noch mehr drin.</p>
         <section class="run-summary-harvest-impact">
           <h4>Entscheidend für deine Ernte</h4>
           <div id="runSummaryHarvestImpact" class="run-summary-list" aria-live="polite"></div>
@@ -1547,36 +1565,9 @@
           <p id="runSummaryRewardsHint" class="sheet-note">Nur verifizierte Ergebnisse können Weekly-Belohnungen freischalten.</p>
           <div id="runSummaryRewardsList" class="run-summary-list" aria-live="polite"></div>
         </section>
-        <div id="runSummaryHarvestBests" class="run-summary-list run-summary-list--unlock run-summary-harvest-bests" aria-live="polite"></div>
-        <p id="runSummaryHarvestMotivation" class="run-summary-harvest-motivation">Mit einem sauberen nächsten Hebel ist noch mehr drin.</p>
       </section>
 
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Run-Report</h3>
-        <div class="figma-static-row"><span>Tag</span><strong id="runSummaryDay">0</strong></div>
-        <div class="figma-static-row"><span>Phase</span><strong id="runSummaryStage">-</strong></div>
-        <div class="figma-static-row"><span>Build</span><strong id="runSummaryBuild">-</strong></div>
-        <div class="figma-static-row"><span>Qualität</span><strong id="runSummaryQuality">0</strong></div>
-        <div class="figma-static-row"><span>Aktionen</span><strong id="runSummaryActions">0</strong></div>
-        <div class="figma-static-row"><span>Events</span><strong id="runSummaryEvents">0</strong></div>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Highlights</h3>
-        <div id="runSummaryHighlights" class="run-summary-list" aria-live="polite"></div>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Was dich gebremst hat</h3>
-        <div id="runSummaryMistakes" class="run-summary-list" aria-live="polite"></div>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">Was gut lief</h3>
-        <div id="runSummaryPositives" class="run-summary-list" aria-live="polite"></div>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
+      <section class="figma-section-card figma-section-card--onboarding run-summary-section--priority">
         <div class="run-summary-goal-head">
           <h3 class="figma-section-head">Run-Ziel</h3>
           <strong id="runSummaryGoalStatus" class="run-summary-goal-status" data-status="failed">Verfehlt</strong>
@@ -1588,16 +1579,48 @@
         </div>
       </section>
 
-      <section class="figma-section-card figma-section-card--onboarding">
-        <h3 class="figma-section-head">XP & Fortschritt</h3>
-        <div id="runSummaryXpNotices" class="run-summary-list run-summary-list--xp" aria-live="polite"></div>
-        <div id="runSummaryXpRows" class="run-summary-list" aria-live="polite"></div>
-        <div class="figma-static-row"><span>Neues Level</span><strong id="runSummaryLevel">LVL 1</strong></div>
-      </section>
-
-      <section class="figma-section-card figma-section-card--onboarding">
+      <section class="figma-section-card figma-section-card--onboarding run-summary-section--priority">
         <h3 class="figma-section-head">Neue Unlocks</h3>
         <div id="runSummaryUnlocks" class="run-summary-list run-summary-list--unlock" aria-live="polite"></div>
+      </section>
+
+      <section class="run-summary-detail-zone" aria-labelledby="runSummaryDetailZoneTitle">
+        <div class="run-summary-detail-zone__head">
+          <span class="run-summary-detail-zone__eyebrow">Analyse danach</span>
+          <h3 id="runSummaryDetailZoneTitle" class="run-summary-detail-zone__title">Run-Details</h3>
+        </div>
+
+        <section class="figma-section-card figma-section-card--onboarding run-summary-section--detail run-summary-section--stats">
+          <h3 class="figma-section-head">Run-Report</h3>
+          <div class="figma-static-row"><span>Tag</span><strong id="runSummaryDay">0</strong></div>
+          <div class="figma-static-row"><span>Phase</span><strong id="runSummaryStage">-</strong></div>
+          <div class="figma-static-row"><span>Build</span><strong id="runSummaryBuild">-</strong></div>
+          <div class="figma-static-row"><span>Qualität</span><strong id="runSummaryQuality">0</strong></div>
+          <div class="figma-static-row"><span>Aktionen</span><strong id="runSummaryActions">0</strong></div>
+          <div class="figma-static-row"><span>Events</span><strong id="runSummaryEvents">0</strong></div>
+        </section>
+
+        <section class="figma-section-card figma-section-card--onboarding run-summary-section--detail run-summary-section--feedback">
+          <h3 class="figma-section-head">Highlights</h3>
+          <div id="runSummaryHighlights" class="run-summary-list" aria-live="polite"></div>
+        </section>
+
+        <section class="figma-section-card figma-section-card--onboarding run-summary-section--detail run-summary-section--feedback">
+          <h3 class="figma-section-head">Was dich gebremst hat</h3>
+          <div id="runSummaryMistakes" class="run-summary-list" aria-live="polite"></div>
+        </section>
+
+        <section class="figma-section-card figma-section-card--onboarding run-summary-section--detail run-summary-section--feedback">
+          <h3 class="figma-section-head">Was gut lief</h3>
+          <div id="runSummaryPositives" class="run-summary-list" aria-live="polite"></div>
+        </section>
+
+        <section class="figma-section-card figma-section-card--onboarding run-summary-section--detail run-summary-section--stats run-summary-section--xp">
+          <h3 class="figma-section-head">XP & Fortschritt</h3>
+          <div id="runSummaryXpNotices" class="run-summary-list run-summary-list--xp" aria-live="polite"></div>
+          <div id="runSummaryXpRows" class="run-summary-list" aria-live="polite"></div>
+          <div class="figma-static-row"><span>Neues Level</span><strong id="runSummaryLevel">LVL 1</strong></div>
+        </section>
       </section>
 
       <div class="death-actions">
@@ -1613,7 +1636,7 @@
   <section id="gameMenu" class="game-menu figma-menu-screen hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
     <header class="game-menu-header figma-sheet-header">
       <h2 id="menuTitle" data-i18n="menu.title">Menü</h2>
-      <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="Menü schließen">X</button>
+      <button id="menuHeaderCloseBtn" class="sheet-close" type="button" aria-label="Menü schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="game-menu-content figma-sheet-content">
       <section class="figma-top-player figma-top-player--compact">
@@ -1645,7 +1668,7 @@
       <section class="figma-section-card">
         <h3 class="figma-section-head" data-i18n="menu.quick_access">Schnellzugriff</h3>
         <div class="figma-static-row"><span data-i18n="menu.reminders">Erinnerungen</span><strong id="menuPushStatus" class="value_gold">Optional aus</strong></div>
-        <button id="menuPushBtn" class="menu-entry figma-menu-entry figma-menu-entry--small" type="button" aria-pressed="false"><span data-i18n="menu.reminders_settings">Erinnerungen einstellen</span><small data-i18n="menu.reminders_hint">Optional, kein Login für lokales Spielen</small></button>
+        <button id="menuPushBtn" class="menu-entry figma-menu-entry figma-menu-entry--small" type="button" aria-pressed="false"><span data-i18n="menu.reminders_settings">Erinnerungen einstellen</span><small data-i18n="menu.reminders_hint">Optional. Konto nur für Extras.</small></button>
       </section>
 
       <div class="menu-quick-actions">
@@ -1680,7 +1703,7 @@
           <button id="authTabLogin" class="auth-tab is-active" type="button" data-i18n="auth.login">Login</button>
           <button id="authTabRegister" class="auth-tab" type="button" data-i18n="auth.register">Registrieren</button>
         </div>
-        <p class="sheet-note auth-modal-note" data-i18n="auth.optional_note">Lokales Spielen funktioniert auch ohne Konto. Wenn du dich spaeter anmeldest, kannst du optionale Cloud-Sicherung, Geraetewechsel, verifizierte Ergebnisse, Leaderboard und Erinnerungen nutzen, soweit verfuegbar.</p>
+        <p class="sheet-note auth-modal-note" data-i18n="auth.optional_note">Lokales Spielen funktioniert auch ohne Konto. Wenn du dich später anmeldest, kannst du optionale Cloud-Sicherung, Gerätewechsel, verifizierte Ergebnisse, Leaderboard und Erinnerungen nutzen, soweit verfügbar.</p>
         <div class="auth-modal-form-grid">
           <label id="authDisplayNameLabel" class="auth-field hidden">
             <span data-i18n="auth.display_name">Anzeigename</span>
@@ -1715,7 +1738,7 @@
           <div class="figma-static-row"><span data-i18n="auth.email">E-Mail</span><strong id="authLoggedInEmailValue" class="value_gold">-</strong></div>
           <div class="figma-static-row"><span data-i18n="auth.display_name">Anzeigename</span><strong id="authLoggedInNameValue" class="value_gold">-</strong></div>
         </div>
-        <p class="sheet-note auth-modal-note" data-i18n="auth.logged_in_note">Cloud Sync bleibt optional. Wenn du dich abmeldest, bleibt dein aktueller lokaler Run auf diesem Geraet spielbar.</p>
+        <p class="sheet-note auth-modal-note" data-i18n="auth.logged_in_note">Cloud Sync bleibt optional. Wenn du dich abmeldest, bleibt dein aktueller lokaler Run auf diesem Gerät spielbar.</p>
         <div class="menu-dialog-actions">
           <button id="authModalCloseBtn" class="ghost-btn" type="button" data-i18n="common.close">Schließen</button>
           <button id="authModalLogoutBtn" class="action-btn action-primary" type="button" data-i18n="auth.logout">Logout</button>

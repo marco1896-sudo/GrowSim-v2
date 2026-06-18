@@ -26,6 +26,32 @@ async function startRun(page, url) {
   await page.waitForFunction(() => document.getElementById('landing')?.classList.contains('hidden'));
 }
 
+async function clearBlockingGuidanceUi(page) {
+  await page.evaluate(() => {
+    if (typeof getFirstRunIntroState === 'function') {
+      const intro = getFirstRunIntroState(window.__gsState);
+      intro.active = false;
+      intro.completed = true;
+      intro.dashboardFollowupShown = true;
+    }
+    if (window.__gsState && window.__gsState.ui) {
+      window.__gsState.ui.menuDialogOpen = false;
+    }
+    if (typeof closeMenuDialog === 'function') {
+      closeMenuDialog();
+    }
+    if (typeof renderFirstRunIntroOverlay === 'function') {
+      renderFirstRunIntroOverlay();
+    }
+    if (typeof renderFirstRunDashboardFollowupOverlay === 'function') {
+      renderFirstRunDashboardFollowupOverlay();
+    }
+    if (typeof renderGameMenu === 'function') {
+      renderGameMenu();
+    }
+  });
+}
+
 async function dismissIncidentalDialog(page) {
   await page.evaluate(() => {
     const dialog = document.getElementById('menuDialog');
@@ -59,6 +85,8 @@ async function main() {
   try {
     const url = `${baseUrl}/`;
     await startRun(page, url);
+    await clearBlockingGuidanceUi(page);
+    await dismissIncidentalDialog(page);
 
     await page.click('#homeClimateCard');
     await page.waitForFunction(() => {

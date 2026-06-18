@@ -1481,6 +1481,8 @@
     "language_hint": "Änderungen wirken sofort.",
     "not_active": "Nicht aktiv",
     "prepared": "Vorbereitet",
+    "prepared_group_hint": "Vorbereitet. Sichtbar, aber noch nicht direkt anpassbar.",
+    "footer_hint": "Aktive ?nderungen wirken sofort. Vorbereitetes bleibt hier nur Status.",
     "language_de": "Deutsch",
     "language_en": "English",
     "language_es": "Español",
@@ -1853,6 +1855,21 @@
       "waterSmallSip": "Ein kleiner Schluck passt hier besser als ein volles Gießen.",
       "waterTooSoon": "Die Wurzelzone ist noch zu feucht. Für stärkeres Gießen ist es zu früh."
     },
+    "coach": {
+      "diagnosis": "Erst lesen, dann handeln.",
+      "dry": "Jetzt vorsichtig nachlegen.",
+      "feed": "Versorgung prüfen, nicht blind erhöhen.",
+      "routine": "Kleiner Check, großer Effekt.",
+      "stable": "Heute reicht Beobachten.",
+      "wet": "Wurzelzone erst atmen lassen."
+    },
+    "context": {
+      "decision_open": "Tagesentscheidung aktiv: Erst lesen, dann Linie setzen.",
+      "decision_task": "Tagesfokus: {task}.",
+      "daily_observe": "Daily Care: Beobachten zählt heute.",
+      "daily_task": "Daily Care offen: {task}.",
+      "weekly_goal": "Wochenziel aktiv: {goal}."
+    },
     "actionPanel": {
       "diagnosis_subtitle": "Diagnose hilft dir erst zu lesen, bevor du handelst.",
       "diagnosis_title": "Diagnoseansicht",
@@ -1867,7 +1884,7 @@
     },
     "chips": {
       "moisture": "Feuchte",
-      "nutrition": "Versorg.",
+      "nutrition": "Versorgung",
       "risk": "Risiko",
       "stress": "Stress"
     },
@@ -1906,7 +1923,7 @@
         "nutritionLow": "Die Pflanze wirkt aufnahmefähig und hat wieder Puffer für eine moderate Versorgung.",
         "rootZoneWet": "Die Wurzelzone ist noch zu feucht. Erneutes Gießen würde Sauerstoffstress fördern.",
         "saltLoadHigh": "Die Versorgung ist vorhanden, aber die Salzlast steigt. Starke Düngung vermeiden.",
-        "stable": "Der Zustand ist stabil. Beobachte Dryback und Versorgung, bevor du eingreifst.",
+        "stable": "Der Zustand ist stabil. Beobachte Abtrocknung und Versorgung, bevor du eingreifst.",
         "stressHigh": "Die Pflanze ist instabil. Sanfte Pflege ist aktuell sinnvoller als starke Eingriffe.",
         "waterLow": "Die Pflanze verliert Feuchte schneller, als die Wurzelzone noch sauber puffern kann.",
         "waterWindow": "Die Oberfläche ist abgetrocknet, während die Wurzelzone noch stabil bleibt."
@@ -1915,7 +1932,7 @@
       "next_observation": "Nächste Beobachtung",
       "next_check": "Später prüfen",
       "nextCheck": {
-        "dryback": "Prüfe später, ob der Dryback weiter fortschreitet.",
+        "dryback": "Prüfe später, ob die Abtrocknung weiter fortschreitet.",
         "monitor": "Beobachte weiter, bevor du den nächsten starken Eingriff setzt.",
         "nutrition": "Prüfe nach der nächsten Versorgung, wie ruhig die Pflanze reagiert.",
         "rootZone": "Prüfe später, ob die tiefe Zone weiter entlastet.",
@@ -1927,12 +1944,12 @@
         "avoidStrongFeed": "Vermeide starke Düngung und beobachte, ob sich der Druck beruhigt.",
         "feedModerately": "Eine moderate Versorgung passt eher als ein starker Schub.",
         "monitorDryback": "Beobachte, wie Oberfläche und Wurzelzone weiter auseinanderlaufen oder sich angleichen.",
-        "monitorDrybackAndSupply": "Beobachte Dryback und Versorgung weiter, bevor du eingreifst.",
+        "monitorDrybackAndSupply": "Beobachte Abtrocknung und Versorgung weiter, bevor du eingreifst.",
         "recheckAfterWatering": "Nach dem Gießen prüfen, ob die Wurzelzone wieder sauber stabilisiert.",
         "stabilizeBeforeIntervention": "Erst beruhigen, dann Training, starke Düngung oder weitere Belastung setzen."
       },
       "probable_cause": "Wahrscheinliche Ursache",
-      "ready_focus": "Lies erst Wasser, Wurzelzone und Versorgung sauber, dann wähle die klarste Aktion.",
+      "ready_focus": "Heute erst lesen, dann handeln. Feuchte und Wurzelzone geben den Ton vor.",
       "risk": "Risiko",
       "risk_level": "Risiko-Level",
       "root_zone": "Wurzelzone",
@@ -1950,7 +1967,7 @@
     },
     "feedback": {
       "badCare": "Diese Entscheidung hat mehr Druck als Entlastung gebracht.",
-      "chooseMethod": "Wähle eine Methode.",
+      "chooseMethod": "Wenn du heute eingreifen willst, starte mit einer Methode. Bei stabilen Werten reicht Beobachten.",
       "effect": {
         "dryStressReduced": "Trockenstress gesenkt",
         "monitorResponse": "Pflanzenreaktion beobachten",
@@ -1972,8 +1989,8 @@
       "hygieneSettled": "Gute Entscheidung. Die Umgebung wirkt ruhiger und der Risikodruck sinkt leicht.",
       "okayCare": "Die Aktion passt, aber das Timing war noch nicht ganz sauber.",
       "perfectCare": "Sehr starke Entscheidung. Die Pflanze reagiert sauber.",
-      "perfectWatering": "Perfektes Dryback-Fenster. Das Gießen passt sehr sauber zum aktuellen Zustand.",
-      "readyToAct": "Bereit zur Ausführung.",
+      "perfectWatering": "Perfektes Abtrocknungsfenster. Das Gießen passt sehr sauber zum aktuellen Zustand.",
+      "readyToAct": "Diese Methode ist gerade verfügbar.",
       "rootZoneRelief": "Gute Entscheidung. Die Wurzelzone wird vorsichtig entlastet, ohne wie ein neuer Gießdurchgang zu wirken.",
       "rootZoneReliefLimited": "Die Entlastung greift nur begrenzt. Beobachte weiter, ob die Wurzelzone wirklich Druck zeigt.",
       "noMethodsLoaded": "Keine Pflegemethoden geladen.",
@@ -1988,10 +2005,10 @@
     "recommendation": {
       "note": {
         "feed": {
-          "stable": "Die Nährstofflage ist stabil. Ein kurzer Check reicht heute."
+          "stable": "Die Versorgung ist ruhig. Ein kurzer Check reicht heute."
         },
         "water": {
-          "monitor": "Die Werte sind stabil. Erst beobachten verhindert unnötigen Stress."
+          "monitor": "Heute ist Ruhe ein guter Zug. Beobachte zuerst, ob die Wurzelzone weiter sauber abtrocknet."
         }
       }
     },
@@ -2037,7 +2054,7 @@
       "title": "Nährstoffbalance"
     },
     "focus": {
-      "monitorDryback": "Dryback beobachten",
+      "monitorDryback": "Abtrocknung beobachten",
       "monitorPlant": "Pflanzenreaktion beobachten",
       "stabilizePlant": "Pflanze stabilisieren",
       "watchSaltLoad": "Salzlast beobachten"
@@ -2159,7 +2176,7 @@
     "title": "Care Studio",
     "water": {
       "dry_stress": "Trockenstress",
-      "dryback": "Dryback",
+      "dryback": "Abtrocknung",
       "next_window": "Nächstes Gießfenster",
       "overwatering": "Wurzelrisiko",
       "root_zone": "Wurzelzone",
@@ -2377,6 +2394,15 @@
         "environment_hint": "Hier landet dein erster Grow.",
         "plant_title": "Pflanzentyp",
         "plant_hint": "Welche Linie du dir fuer den Start wuenschst.",
+        "mode_title": "Grow-Setup",
+        "mode_hint": "Wo dein erster Run startet.",
+        "light_title": "Licht-Setup",
+        "light_hint": "Wie stark dein Startlicht direkt arbeitet.",
+        "medium_title": "Substrat",
+        "medium_hint": "Wie schnell Wasser und Naehrstoffe reagieren.",
+        "pot_title": "Topfgroesse",
+        "pot_hint": "Dein Wurzelraum bestimmt Tempo, Reserve und Giessdruck.",
+        "genetics_title": "Genetik",
         "style": {
           "safe": {
             "title": "Sicher",
@@ -2435,6 +2461,74 @@
             "badge": "Ziel",
             "body": "Ein Start mit Blick auf spaeteres Potenzial.",
             "effect": "Potenzial · Aufbau · Ziel"
+          }
+        },
+        "mode": {
+          "indoor": {
+            "title": "Indoor",
+            "badge": "Empfohlen",
+            "body": "Ruhiger Start mit kontrollierbarem Klima und planbaren Routinen.",
+            "effect": "Kontrolle ? sauber ? stabil"
+          },
+          "outdoor": {
+            "title": "Outdoor",
+            "badge": "Sp?ter",
+            "body": "Mehr Schwankung, mehr Wetter und ein fordernderer Start.",
+            "effect": "Wetter ? Luft ? Timing"
+          }
+        },
+        "light": {
+          "medium": {
+            "title": "Medium Light",
+            "badge": "Standard",
+            "body": "Solider Lichtstandard f?r einen ruhigen, lesbaren Start.",
+            "effect": "Balance ? Kontrolle ? Puffer"
+          },
+          "high": {
+            "title": "High Output Light",
+            "badge": "Sp?ter",
+            "body": "Mehr Druck und Tempo, sobald dein Profil das freigeschaltet hat.",
+            "effect": "Peak ? Verbrauch ? Fokus"
+          }
+        },
+        "medium": {
+          "soil": {
+            "title": "Erde",
+            "badge": "Empfohlen",
+            "body": "Verzeiht kleine Fehler und bleibt f?r den ersten Run angenehm lesbar.",
+            "effect": "Puffer ? ruhig ? fehlertolerant"
+          },
+          "coco": {
+            "title": "Coco",
+            "badge": "Sp?ter",
+            "body": "Reagiert direkter und will mehr Routine, sobald du es freigeschaltet hast.",
+            "effect": "Reaktiv ? schneller ? enger"
+          }
+        },
+        "pot": {
+          "small": {
+            "title": "2 Liter (S)",
+            "badge": "Standard",
+            "body": "Kleiner Starttopf mit direkter Reaktion und engerem Pflegefenster.",
+            "effect": "Kompakt ? direkt ? aktiv"
+          },
+          "medium": {
+            "title": "8 Liter (M)",
+            "badge": "Ausgewogen",
+            "body": "Mehr Puffer f?r Wasser und Wurzeln, ohne den Start tr?ge zu machen.",
+            "effect": "Ausgewogen ? ruhiger ? stabil"
+          },
+          "large": {
+            "title": "16 Liter (L)",
+            "badge": "Langzeit",
+            "body": "Sp?rbar mehr Reserve f?r lange, saubere Entwicklungsphasen.",
+            "effect": "Reserve ? Langzeit ? ruhig"
+          },
+          "xlarge": {
+            "title": "25 Liter (XL)",
+            "badge": "Reserve",
+            "body": "Maximaler Wurzelraum f?r gro?e Reserven und entspanntere Drybacks.",
+            "effect": "Maxi ? tr?ge ? tief"
           }
         }
       },
@@ -2606,7 +2700,7 @@
       },
       "evenWatering": {
         "label": "Gleichmäßig angießen",
-        "short": "Moderate Wassergabe bei sauberem Dryback-Fenster.",
+        "short": "Moderate Wassergabe bei sauberem Abtrocknungsfenster.",
         "description": "Stabilisiert Feuchte und Trockenstress, ohne aggressiv zu wirken.",
         "success": "Gleichmäßig angegossen. Die Feuchte verteilt sich wieder sauberer."
       },

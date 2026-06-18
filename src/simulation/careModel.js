@@ -77,7 +77,7 @@
     if (normalized === 'small' || normalized === 's') return 1.18;
     if (normalized === 'medium' || normalized === 'm') return 1;
     if (normalized === 'large' || normalized === 'l') return 0.84;
-    if (normalized === 'xl' || normalized === 'extra_large') return 0.74;
+    if (normalized === 'xlarge' || normalized === 'xl' || normalized === 'extra_large') return 0.74;
     return 1;
   }
 

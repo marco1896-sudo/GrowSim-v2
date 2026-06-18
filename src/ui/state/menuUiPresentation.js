@@ -4,8 +4,8 @@
   const TEXT = Object.freeze({
     rescue: Object.freeze({
       label: 'Notfallrettung',
-      menuTitle: 'Einmalige Hilfe fuer kritische Situationen im aktiven Run.',
-      overlayTitle: 'Einmalige Hilfe fuer kritische Situationen im aktiven Run.',
+      menuTitle: 'Einmalige Hilfe für kritische Situationen im aktiven Run.',
+      overlayTitle: 'Einmalige Hilfe für kritische Situationen im aktiven Run.',
       readySubtext: '1× pro Run bei kritischem Zustand.',
       pending: 'Notfallrettung wird gerade vorbereitet.',
       used: 'Rettungsaktion ist nur 1× pro Run verfügbar.',
@@ -19,21 +19,21 @@
       debug: 'Optionale Komfortaktion bereit.',
       preparing: 'Optionale Belohnung wird vorbereitet.',
       error: 'Optionale Belohnung ist gerade nicht bereit.',
-      unavailable: 'Optionale Belohnung ist gerade nicht verfuegbar.',
-      ready: 'Optionale Belohnung ist verfuegbar.'
+      unavailable: 'Optionale Belohnung ist gerade nicht verfügbar.',
+      ready: 'Optionale Belohnung ist verfügbar.'
     }),
     menu: Object.freeze({
-      statsTitle: 'Oeffnet Analyse, Verlauf und Run-Statistik.',
-      supportTitle: 'Oeffnet freiwilligen Support fuer GrowSim.',
+      statsTitle: 'Öffnet Analyse, Verlauf und Run-Statistik.',
+      supportTitle: 'Öffnet freiwilligen Support für GrowSim.',
       supportSubtext: 'Freiwilliger Support',
       missionsTitle: 'Öffnet Missionen und den aktuellen Fortschritt.',
       missionsSubtext: 'Tagesziele & Fortschritt',
-      aboutTitle: 'Erklaert lokalen Start, optionale Cloud-Funktionen und den aktuellen Produktstand.',
+      aboutTitle: 'Erklärt lokalen Start, optionale Cloud-Funktionen und den aktuellen Produktstand.',
       aboutSubtext: 'Lokaler Start & Cloud',
-      languageTitle: 'Oeffnet Tempo, Sprache, Cloud und Erinnerungen.',
+      languageTitle: 'Öffnet Tempo, Sprache, Cloud und Erinnerungen.',
       languageSubtext: 'Tempo, Sprache, Cloud',
-      achievementsTitle: 'Aktuell nicht verfuegbar.',
-      leaderboardTitle: 'Leaderboard nutzt verifizierte Ergebnisse. Lokales Spielen bleibt ohne Login moeglich.',
+      achievementsTitle: 'Aktuell nicht verfügbar.',
+      leaderboardTitle: 'Leaderboard nutzt verifizierte Ergebnisse. Lokales Spielen bleibt ohne Login möglich.',
       leaderboardSubtext: 'Verifizierte Ergebnisse mit Konto',
       pushEnabled: 'Aktiviert',
       pushDisabled: 'Optional aus'

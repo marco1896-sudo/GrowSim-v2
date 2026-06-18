@@ -26,7 +26,9 @@ assert.strictEqual(locale.care.water, 'Gie\u00DFen', 'care water label should us
 assert.strictEqual(locale.care.feed, 'D\u00FCngen', 'care feed label should use proper umlauts');
 assert.strictEqual(locale.careStudio.tabs.water, 'Gie\u00DFen', 'care studio water tab should use proper umlauts');
 assert.strictEqual(locale.careStudio.tabs.feed, 'D\u00FCngen', 'care studio feed tab should use proper umlauts');
+assert.strictEqual(locale.careStudio.chips.nutrition, 'Versorgung', 'care studio nutrition chip should use the full premium label');
 assert.strictEqual(locale.careStudio.water.surface, 'Oberfl\u00E4che', 'surface label should use proper umlauts');
+assert.strictEqual(locale.careStudio.water.dryback, 'Abtrocknung', 'dryback should use the localized premium wording');
 assert.strictEqual(locale.careStudio.diagnosis.next_focus, 'N\u00E4chster Fokus', 'next focus label should use proper umlauts');
 assert.strictEqual(locale.careStudio.diagnosis.next_observation, 'N\u00E4chste Beobachtung', 'next observation label should use proper umlauts');
 assert.strictEqual(locale.careStudio.diagnosis.next_check, 'Sp\u00E4ter pr\u00FCfen', 'follow-up label should stay human and use proper umlauts');

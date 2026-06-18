@@ -59,13 +59,13 @@ assert.doesNotMatch(
 
 assert.match(
   indexHtml,
-  /ohne Konto|lokal auf diesem Geraet/i,
+  /ohne Konto|lokal auf diesem Gerät/i,
   'privacy copy should explain that local play works without a required login'
 );
 
 assert.match(
   indexHtml,
-  /beim Loeschen von Browserdaten verloren gehen|an diesen Browser bzw\. dieses Geraet gebunden/i,
+  /beim Löschen von Browserdaten verloren gehen|an diesen Browser bzw\. dieses Gerät gebunden/i,
   'privacy copy should explain the local-save browser-data risk'
 );
 

@@ -113,7 +113,7 @@ async function main() {
             <div class="care-studio-soil-zone care-studio-soil-zone--root"><span>Wurzelzone</span><strong>68%</strong></div>
           </div>
           <div class="care-studio-water-mini-grid">
-            <span class="care-studio-mini-stat"><small>Dryback</small><strong>1.8/h</strong></span>
+            <span class="care-studio-mini-stat"><small>Abtrocknung</small><strong>1.8/h</strong></span>
             <span class="care-studio-mini-stat"><small>Wurzelrisiko</small><strong>4%</strong></span>
             <span class="care-studio-mini-stat"><small>Trockenstress</small><strong>12%</strong></span>
           </div>
@@ -143,7 +143,7 @@ async function main() {
           <p class="care-studio-preview-buddy care-studio-decision-buddy">Das Timing wirkt sauber.</p>
         </section>
         <section class="care-studio-feedback-card care-studio-aftercare-card care-studio-feedback-card--good">
-          <div class="care-studio-aftercare-head"><span class="care-studio-media-frame care-studio-icon-frame care-studio-icon-frame--decision is-loaded" data-care-asset-frame><img src="${transparentPixel}" class="care-studio-icon-image care-studio-icon-image--decision" alt="" aria-hidden="true"><span class="care-studio-media-fallback care-studio-icon-fallback care-studio-icon-fallback--decision" aria-hidden="true"></span></span><div><small>Note</small><strong>Gut</strong></div><span>Dryback beobachten</span></div>
+          <div class="care-studio-aftercare-head"><span class="care-studio-media-frame care-studio-icon-frame care-studio-icon-frame--decision is-loaded" data-care-asset-frame><img src="${transparentPixel}" class="care-studio-icon-image care-studio-icon-image--decision" alt="" aria-hidden="true"><span class="care-studio-media-fallback care-studio-icon-fallback care-studio-icon-fallback--decision" aria-hidden="true"></span></span><div><small>Note</small><strong>Gut</strong></div><span>Abtrocknung beobachten</span></div>
           <p class="care-studio-preview-buddy">Die Pflanze sollte ruhiger reagieren.</p>
         </section>
         <section class="care-hint-item care-hint-item--caution">
@@ -239,7 +239,7 @@ async function main() {
         actionsAboveDecision: actionsRect.bottom <= decisionRect.top + 12,
         needsScroll: sheetContent.scrollHeight > sheetContent.clientHeight + 1,
         hasHorizontalOverflow: careSheet.scrollWidth > careSheet.clientWidth + 1,
-        profileTextVisible: /Dryback|Wurzelzone|Oberflaeche/.test(effectsList.textContent || '')
+        profileTextVisible: /Abtrocknung|Dryback|Wurzelzone|Oberflaeche/.test(effectsList.textContent || '')
       };
     });
 
@@ -266,10 +266,10 @@ async function main() {
     assert.ok(careUiState.deltaChipCount >= 2, 'care studio should render delta chips');
     assert.ok(careUiState.aftercareCardCount >= 1, 'care studio should keep aftercare visible');
     assert.ok(careUiState.effectsListHeight >= 60, 'care studio tab content should stay visible on mobile');
-    assert.ok(careUiState.tabsAboveEffects, 'tabs should remain above the tab content');
-    assert.ok(careUiState.effectsAboveActions, 'tab content should stay above the action list');
-    assert.ok(careUiState.profileAboveActions, 'moisture profile should stay above the action list without overlap');
-    assert.ok(careUiState.profileHeaderClearOfActions, 'profile header should not share vertical space with action headers');
+    assert.ok(careUiState.tabsAboveEffects, 'tabs should remain above the lower care content');
+    assert.ok(!careUiState.effectsAboveActions, 'action list should surface before the lower tab content on mobile');
+    assert.ok(!careUiState.profileAboveActions, 'moisture profile should move below the action list on mobile');
+    assert.ok(!careUiState.profileHeaderClearOfActions, 'profile header should no longer reserve space above the action headers');
     assert.ok(careUiState.actionsAboveDecision, 'action list should stay above the decision zone');
     assert.ok(careUiState.profileTextVisible, 'moisture profile copy should remain visible');
     assert.ok(/Feuchteprofil/.test(careUiState.text), 'care studio should visibly include the moisture profile section');
