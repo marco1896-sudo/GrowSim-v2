@@ -1,4 +1,4 @@
-# 42 — Codex Phase 26 Slot QA Baseline Result
+# 42 â€” Codex Phase 26 Slot QA Baseline Result
 
 ## 1. Neu erstellte Dateien
 - `src/events/v2/ui-lab/qa/EventV2AdapterMatrix.js`

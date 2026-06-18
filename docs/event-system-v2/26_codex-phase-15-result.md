@@ -32,9 +32,9 @@ Optionale Governance-Metadaten:
 - `src/events/v2/reporting/MatrixRunComparison.js`
 - `src/events/v2/reporting/DriftReport.js`
 
-## 3. Welche bestehenden Runtime-Dateien unverändert geblieben sind
+## 3. Welche bestehenden Runtime-Dateien unverÃ¤ndert geblieben sind
 
-Unverändert geblieben:
+UnverÃ¤ndert geblieben:
 
 - `app.js`
 - bestehende Dateien unter `src/events/*.js`
@@ -58,7 +58,7 @@ Unverändert geblieben:
 - qaReviewer
 - observer
 
-inklusive Normalisierung für robuste Auswertung.
+inklusive Normalisierung fÃ¼r robuste Auswertung.
 
 ## 5. Wie GovernanceProfile funktioniert
 
@@ -66,7 +66,7 @@ inklusive Normalisierung für robuste Auswertung.
 
 - Rollenmenge
 - erforderliche Approvals
-- Freigaberechte für ExpectedChanges/Baseline/ReleaseCandidate
+- Freigaberechte fÃ¼r ExpectedChanges/Baseline/ReleaseCandidate
 
 `GovernanceProfileRegistry` liefert die Standardprofile:
 
@@ -95,7 +95,7 @@ inklusive Normalisierung für robuste Auswertung.
 
 - ExpectedChange
 - GovernanceProfile
-- verfügbare ApprovalTraces
+- verfÃ¼gbare ApprovalTraces
 
 und liefert:
 
@@ -106,11 +106,11 @@ und liefert:
 
 ## 8. Wie GovernanceAudit funktioniert
 
-`GovernanceAudit` prüft u. a.:
+`GovernanceAudit` prÃ¼ft u. a.:
 
 - fehlende oder unzureichende Approvals
-- unzulässige Rollen
-- unvollständige Gründe
+- unzulÃ¤ssige Rollen
+- unvollstÃ¤ndige GrÃ¼nde
 - nicht versionierte ExpectedChanges
 - nicht genehmigte Ampel-Regressionen
 
@@ -124,7 +124,7 @@ und liefert:
 - AssertionVersion
 - ExpectedChange-Version
 - ApprovalTraces
-- QaChangeLog-Einträge
+- QaChangeLog-EintrÃ¤ge
 
 in einem zentralen Audit-Output.
 
@@ -132,7 +132,7 @@ in einem zentralen Audit-Output.
 
 Unter `_scenarios` wurden nur Governance-Metadaten angelegt.
 `governance.README.md` markiert klar: **not loaded by runtime**.
-Keine produktiven Eventdaten wurden geändert oder eingebunden.
+Keine produktiven Eventdaten wurden geÃ¤ndert oder eingebunden.
 
 ## 11. Welche Checks weiterhin bewusst begrenzt sind
 
@@ -144,13 +144,13 @@ Keine produktiven Eventdaten wurden geändert oder eingebunden.
 
 ## 12. Warum weiterhin keine Runtime-Anbindung besteht
 
-Alle Änderungen liegen isoliert unter `src/events/v2/` und QA-/Governance-Metadaten unter `_scenarios`.
+Alle Ã„nderungen liegen isoliert unter `src/events/v2/` und QA-/Governance-Metadaten unter `_scenarios`.
 Keine Imports in bestehende Runtime.
 
-## 13. Empfehlung für Phase 16
+## 13. Empfehlung fÃ¼r Phase 16
 
 Phase 16: **Governance Timelines + Multi-Stage Approval Workflows**
 
 - zeitliche Approval-Ketten (draft -> reviewed -> approved)
 - verpflichtende Reviewer-Kombinationen je Profil
-- Audit-Alerts für abgelaufene oder widersprüchliche Freigaben
+- Audit-Alerts fÃ¼r abgelaufene oder widersprÃ¼chliche Freigaben

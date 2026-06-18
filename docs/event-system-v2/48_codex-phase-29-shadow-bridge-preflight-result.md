@@ -1,4 +1,4 @@
-# 48 — Codex Phase 29 Shadow-Bridge Preflight Result
+# 48 â€” Codex Phase 29 Shadow-Bridge Preflight Result
 
 ## 1. Neu erstellte Dateien
 - `docs/event-system-v2/46_codex-phase-29-shadow-bridge-preflight-report.md`

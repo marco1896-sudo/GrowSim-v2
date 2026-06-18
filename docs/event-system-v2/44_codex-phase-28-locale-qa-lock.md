@@ -1,4 +1,4 @@
-# 44 — Codex Phase 28 Locale QA Lock
+# 44 â€” Codex Phase 28 Locale QA Lock
 
 ## 1) Info-Density Grenzwerte (Mini-Katalog)
 - Zielwert: `<= 4.0` Infos/Event
@@ -31,5 +31,5 @@ Bridge-Prep darf starten, wenn alle Punkte erfuellt sind:
 - `infoDensity <= 4.0` oder als Ausnahme sauber begruendet
 
 ## 5) Lock-Interpretation
-- Der Lock ist ein QA-Geländer fuer Copy-Qualitaet, kein Ersatz fuer inhaltliche Review.
+- Der Lock ist ein QA-GelÃ¤nder fuer Copy-Qualitaet, kein Ersatz fuer inhaltliche Review.
 - Bei Grenzwertverletzung gilt zuerst: gezieltes Slot-Refinement statt breiter Rewrites.

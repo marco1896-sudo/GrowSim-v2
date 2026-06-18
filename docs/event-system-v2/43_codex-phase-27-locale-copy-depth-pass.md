@@ -1,4 +1,4 @@
-# 43 — Codex Phase 27 Locale Copy Depth Pass
+# 43 â€” Codex Phase 27 Locale Copy Depth Pass
 
 ## 1. Geaenderte Locale-Dateien
 - `src/i18n/locales/de.json`

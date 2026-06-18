@@ -1,4 +1,4 @@
-# 36 — Codex Phase 24 Copy Lock Matrix
+# 36 â€” Codex Phase 24 Copy Lock Matrix
 
 Ziel: finaler Copy-Lock-Status pro UI-Lab-Scenario und Textslot fuer mobile Lesbarkeit, Coach-Klarheit und Entscheidungswirkung.
 
@@ -24,7 +24,7 @@ Ziel: finaler Copy-Lock-Status pro UI-Lab-Scenario und Textslot fuer mobile Lesb
 ### indoor_soil_ph_out_of_range
 - Status: stabil, aber `Why` bleibt fachlich das dichteste Feld (`watch`)
 - Durchgefuehrte Schaerfung:
-  - Symptom expliziter auf „pH neben Zielbereich -> geringere Erreichbarkeit“
+  - Symptom expliziter auf â€žpH neben Zielbereich -> geringere Erreichbarkeitâ€œ
   - Coach-Text auf Ursache vor Sichtsymptom fokussiert
   - Aftermath klarer outcome-orientiert formuliert
 

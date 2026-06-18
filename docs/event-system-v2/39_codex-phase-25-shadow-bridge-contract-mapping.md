@@ -1,4 +1,4 @@
-# 39 — Codex Phase 25 Shadow-Bridge Contract Mapping
+# 39 â€” Codex Phase 25 Shadow-Bridge Contract Mapping
 
 ## 1. UI-Slot-Matrix
 | UI-Slot | Pflichtgrad | Quelle | Verhalten bei Fehlen |
@@ -42,14 +42,14 @@
 - Aftermath fehlt: neutrales Fallback oder ausblendbar (pro UI-Regel)
 
 ## 5. Textbudget-Regeln je Slot
-- Titel: 36–48
-- Symptom: 120–180
-- Coach Summary: 120–180
-- Coach Why: 180–260
-- Decision Label: 18–32
-- Decision Detail: 70–120
-- Aftermath: 100–160
-- Learning-Bullet: 20–90
+- Titel: 36â€“48
+- Symptom: 120â€“180
+- Coach Summary: 120â€“180
+- Coach Why: 180â€“260
+- Decision Label: 18â€“32
+- Decision Detail: 70â€“120
+- Aftermath: 100â€“160
+- Learning-Bullet: 20â€“90
 
 ## 6. Compact-Mode-Regeln je Slot
 - Kuerzbar: `symptom`, `coachSummary`, `coachWhy`, `decisionDetail`, `aftermath`
@@ -85,6 +85,6 @@
 
 ## 11. Risiken vor echter Runtime-Bridge
 - Locale-Inhalte sind technisch aufloesbar, aber semantische Qualitaet je Slot muss vor Bridge nochmals manuell geprueft werden.
-- Einige Decision-Detail-Texte benoetigen bei echten Runtime-Daten ggf. zusätzliche kuerzere Varianten fuer 360px.
+- Einige Decision-Detail-Texte benoetigen bei echten Runtime-Daten ggf. zusÃ¤tzliche kuerzere Varianten fuer 360px.
 - Learning-Panel-Verhalten braucht finalen Produktentscheid (immer zeigen vs. nur bei Ref).
 - Asset-Fallback ist robust, aber echtes Runtime-Asset-Monitoring fehlt noch.

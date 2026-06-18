@@ -1,4 +1,4 @@
-# 38 — Codex Phase 24 Copy Lock + Token Freeze Result
+# 38 â€” Codex Phase 24 Copy Lock + Token Freeze Result
 
 ## 1. Neu erstellte Dateien
 - `docs/event-system-v2/36_codex-phase-24-copy-lock-matrix.md`

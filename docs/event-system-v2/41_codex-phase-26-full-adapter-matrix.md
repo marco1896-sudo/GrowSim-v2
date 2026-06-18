@@ -1,4 +1,4 @@
-# 41 — Codex Phase 26 Full Adapter Matrix
+# 41 â€” Codex Phase 26 Full Adapter Matrix
 
 ## 1. Scope
 - Vollstaendige Adapter-Matrix ueber alle 12 Mini-Katalog-Events.

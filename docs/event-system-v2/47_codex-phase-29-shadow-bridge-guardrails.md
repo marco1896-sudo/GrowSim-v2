@@ -1,4 +1,4 @@
-# 47 — Codex Phase 29 Shadow-Bridge Guardrails
+# 47 â€” Codex Phase 29 Shadow-Bridge Guardrails
 
 ## 1. Was die erste Shadow-Bridge darf
 - Read-only Laden von:

@@ -3,7 +3,7 @@
 ## Readiness
 - `resolve_preview_no_write_ready_with_watch`
 - klare Lernmechanik mit Frage, Optionen, Feedback und Learning Preview
-- event-spezifische Feedbacks vorhanden, aber noch nicht fl‰chendeckend
+- event-spezifische Feedbacks vorhanden, aber noch nicht fl√§chendeckend
 
 ## Safety
 - kein RuntimeWrite, kein Save, keine Storage-Writes

@@ -23,9 +23,9 @@
 - `src/events/v2/reporting/HealthScoreReport.js`
 - `src/events/v2/reporting/DeltaGatePolicy.js`
 
-## 3. Welche bestehenden Runtime-Dateien unverändert geblieben sind
+## 3. Welche bestehenden Runtime-Dateien unverÃ¤ndert geblieben sind
 
-Unverändert in diesem Schritt:
+UnverÃ¤ndert in diesem Schritt:
 
 - `app.js`
 - bestehende Dateien unter `src/events/*.js`
@@ -57,10 +57,10 @@ Unverändert in diesem Schritt:
 
 ## 5. Wie RegressionSet funktioniert
 
-`RegressionSet` bündelt mehrere Lauf-Ergebnisse als Datenstruktur:
+`RegressionSet` bÃ¼ndelt mehrere Lauf-Ergebnisse als Datenstruktur:
 
-- Runs hinzufügen/listen
-- Summaries für `pass`, `warning`, `blocked`
+- Runs hinzufÃ¼gen/listen
+- Summaries fÃ¼r `pass`, `warning`, `blocked`
 
 `RegressionSetReport` erzeugt dazu strukturierte Daten und Markdown.
 
@@ -107,12 +107,12 @@ und liefert deterministisch:
 
 ## 10. Warum weiterhin keine Runtime-Anbindung besteht
 
-Alle Änderungen liegen ausschließlich unter `src/events/v2/` plus dieses Ergebnisdokument. Es gibt keine Imports in bestehende Runtime.
+Alle Ã„nderungen liegen ausschlieÃŸlich unter `src/events/v2/` plus dieses Ergebnisdokument. Es gibt keine Imports in bestehende Runtime.
 
-## 11. Empfehlung für Phase 12
+## 11. Empfehlung fÃ¼r Phase 12
 
 Phase 12: **Scenario Packs + Deterministic QA Matrix**
 
 - definierte QA-Szenariopakete (examplesOnly/fixtures/fullCatalog)
 - standardisierte Multi-Baseline-Matrix pro Readiness-Stufe
-- feste Ampelregeln für `pass/warning/blocked` je Release-Ziel
+- feste Ampelregeln fÃ¼r `pass/warning/blocked` je Release-Ziel

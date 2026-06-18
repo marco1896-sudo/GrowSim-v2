@@ -1,4 +1,4 @@
-# 37 — Codex Phase 24 UI Token Freeze
+# 37 â€” Codex Phase 24 UI Token Freeze
 
 Dieses Dokument friert die UI-Lab-Tokens als Referenz fuer die spaetere Runtime-Integration ein.
 

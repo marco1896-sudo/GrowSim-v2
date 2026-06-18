@@ -1,4 +1,4 @@
-# 40 — Codex Phase 25 Shadow-Bridge Adapter Prep Result
+# 40 â€” Codex Phase 25 Shadow-Bridge Adapter Prep Result
 
 ## 1. Neu erstellte Dateien
 - `src/events/v2/ui-lab/contracts/EventV2UiSlotContract.js`

@@ -1,4 +1,4 @@
-# 46 — Codex Phase 29 Shadow-Bridge Preflight Report
+# 46 â€” Codex Phase 29 Shadow-Bridge Preflight Report
 
 ## 1. Aktueller Gesamtstatus Event System V2
 - Phase 1-28 abgeschlossen im isolierten V2- und UI-Lab-Kontext.
@@ -49,7 +49,7 @@ Bewertung: **Go fuer read-only Bridge-Planung und Dry-Run-Boundary**, unter stri
 `ready_for_bridge_planning`
 
 Begruendung:
-- QA-Gates gru¨n (0 blocker/error/warning)
+- QA-Gates gruÂ¨n (0 blocker/error/warning)
 - Budget stabil (0 warnings)
 - Matrix pass 12/12
 - Info-Density im Zielbereich

@@ -31,9 +31,9 @@ Optional Scenario-Dateien:
 - `src/events/v2/reporting/GatePolicyPresets.js`
 - `src/events/v2/reporting/BaselineComparisonReport.js`
 
-## 3. Welche bestehenden Runtime-Dateien unverändert geblieben sind
+## 3. Welche bestehenden Runtime-Dateien unverÃ¤ndert geblieben sind
 
-Unverändert geblieben:
+UnverÃ¤ndert geblieben:
 
 - `app.js`
 - bestehende Dateien unter `src/events/*.js`
@@ -79,7 +79,7 @@ Unverändert geblieben:
 
 ## 7. Wie QaMatrix funktioniert
 
-`QaMatrix` bündelt mehrere Scenario-Runs in Matrix-Zellen (`QaMatrixCell`) mit:
+`QaMatrix` bÃ¼ndelt mehrere Scenario-Runs in Matrix-Zellen (`QaMatrixCell`) mit:
 
 - sourceMode
 - readinessProfile
@@ -114,12 +114,12 @@ Es werden keine produktiven Eventdaten migriert oder aktiviert.
 
 ## 11. Warum weiterhin keine Runtime-Anbindung besteht
 
-Alle Änderungen liegen unter `src/events/v2/` sowie QA-Doku/Scenario-Dateien. Keine bestehenden Runtime-Imports wurden ergänzt.
+Alle Ã„nderungen liegen unter `src/events/v2/` sowie QA-Doku/Scenario-Dateien. Keine bestehenden Runtime-Imports wurden ergÃ¤nzt.
 
-## 12. Empfehlung für Phase 13
+## 12. Empfehlung fÃ¼r Phase 13
 
 Phase 13: **Scenario Assertions + Drift Analysis**
 
 - explizite Assertions je ScenarioPack (must-pass/must-warn/must-block)
-- Drift-Analyse zwischen aufeinanderfolgenden Matrix-Läufen
-- stabile Toleranzregeln für erwartete Score-/Issue-Schwankungen
+- Drift-Analyse zwischen aufeinanderfolgenden Matrix-LÃ¤ufen
+- stabile Toleranzregeln fÃ¼r erwartete Score-/Issue-Schwankungen

@@ -33,9 +33,9 @@ Optionale Versioning-Metadaten:
 - `src/events/v2/reporting/QaMatrixReport.js`
 - `src/events/v2/reporting/TrafficLightReport.js`
 
-## 3. Welche bestehenden Runtime-Dateien unverändert geblieben sind
+## 3. Welche bestehenden Runtime-Dateien unverÃ¤ndert geblieben sind
 
-Unverändert geblieben:
+UnverÃ¤ndert geblieben:
 
 - `app.js`
 - bestehende Dateien unter `src/events/*.js`
@@ -68,12 +68,12 @@ Unverändert geblieben:
 
 ## 6. Wie BaselineEvolutionPolicy funktioniert
 
-`BaselineEvolutionPolicy` bündelt formale Regeln:
+`BaselineEvolutionPolicy` bÃ¼ndelt formale Regeln:
 
-- erwartete und begründete Änderungen sind grundsätzlich zulässig
+- erwartete und begrÃ¼ndete Ã„nderungen sind grundsÃ¤tzlich zulÃ¤ssig
 - neue Blocker/Errors sind reviewpflichtig
-- Ampel-Regressionen (z. B. grün->gelb, gelb->rot) sind reviewpflichtig
-- Verbesserungen (rot->gelb, gelb->grün) sind zulässig
+- Ampel-Regressionen (z. B. grÃ¼n->gelb, gelb->rot) sind reviewpflichtig
+- Verbesserungen (rot->gelb, gelb->grÃ¼n) sind zulÃ¤ssig
 
 Ausgabe:
 
@@ -83,8 +83,8 @@ Ausgabe:
 
 ## 7. Wie ExpectedChange und ReviewGate funktionieren
 
-`ExpectedChange` modelliert erwartete Decision-/Ampel-Übergänge inkl. `approved`.
-`ExpectedChangeReviewGate` prüft beobachtete Änderungen gegen erwartete Änderungen:
+`ExpectedChange` modelliert erwartete Decision-/Ampel-ÃœbergÃ¤nge inkl. `approved`.
+`ExpectedChangeReviewGate` prÃ¼ft beobachtete Ã„nderungen gegen erwartete Ã„nderungen:
 
 - erwartet + approved => `allow`
 - erwartet, aber nicht approved => `requiresReview`
@@ -92,7 +92,7 @@ Ausgabe:
 
 ## 8. Wie QaChangeLog funktioniert
 
-`QaChangeLog` sammelt QA-Änderungsentscheidungen rein in-memory als Datenobjekte.
+`QaChangeLog` sammelt QA-Ã„nderungsentscheidungen rein in-memory als Datenobjekte.
 `QaChangeLogReport` liefert strukturierte Daten + Markdown.
 
 ## 9. Welche Versioning-Dateien angelegt wurden und warum sie nicht produktiv sind
@@ -110,12 +110,12 @@ Unter `_scenarios` wurden nur QA-Versioning-Metadaten angelegt (`scenario-set.v1
 
 ## 11. Warum weiterhin keine Runtime-Anbindung besteht
 
-Alle Änderungen bleiben isoliert unter `src/events/v2/` und `data/events/catalog/_scenarios/` (nur QA-Metadaten). Keine Imports in bestehende Runtime.
+Alle Ã„nderungen bleiben isoliert unter `src/events/v2/` und `data/events/catalog/_scenarios/` (nur QA-Metadaten). Keine Imports in bestehende Runtime.
 
-## 12. Empfehlung für Phase 15
+## 12. Empfehlung fÃ¼r Phase 15
 
 Phase 15: **Governance Profiles + Approval Traceability**
 
-- formale Rollenprofile für QA-Änderungsfreigaben
-- nachvollziehbare Approval-Trace-Objekte pro erwarteter Änderung
-- konsolidierter Audit-Report über Baseline/Assertion/ExpectedChange-Versionen
+- formale Rollenprofile fÃ¼r QA-Ã„nderungsfreigaben
+- nachvollziehbare Approval-Trace-Objekte pro erwarteter Ã„nderung
+- konsolidierter Audit-Report Ã¼ber Baseline/Assertion/ExpectedChange-Versionen

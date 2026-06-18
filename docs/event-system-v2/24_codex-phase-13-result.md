@@ -30,9 +30,9 @@ Optional QA-Metadaten:
 - `src/events/v2/reporting/RegressionSetReport.js`
 - `src/events/v2/reporting/BaselineComparisonReport.js`
 
-## 3. Welche bestehenden Runtime-Dateien unverändert geblieben sind
+## 3. Welche bestehenden Runtime-Dateien unverÃ¤ndert geblieben sind
 
-Unverändert geblieben:
+UnverÃ¤ndert geblieben:
 
 - `app.js`
 - bestehende Dateien unter `src/events/*.js`
@@ -118,9 +118,9 @@ Diese sind explizit als **not loaded by runtime** markiert und enthalten keine p
 
 ## 12. Warum weiterhin keine Runtime-Anbindung besteht
 
-Alle Änderungen liegen ausschließlich unter `src/events/v2/` und QA-Metadaten/Dokumentation. Es gibt keine Imports in bestehende Runtime.
+Alle Ã„nderungen liegen ausschlieÃŸlich unter `src/events/v2/` und QA-Metadaten/Dokumentation. Es gibt keine Imports in bestehende Runtime.
 
-## 13. Empfehlung für Phase 14
+## 13. Empfehlung fÃ¼r Phase 14
 
 Phase 14: **Baseline Evolution Rules + Scenario Versioning**
 

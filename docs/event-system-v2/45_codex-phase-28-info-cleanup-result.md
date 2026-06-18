@@ -1,4 +1,4 @@
-# 45 — Codex Phase 28 Info Cleanup Result
+# 45 â€” Codex Phase 28 Info Cleanup Result
 
 ## 1. Geaenderte Locale-Dateien
 - `src/i18n/locales/de.json`
