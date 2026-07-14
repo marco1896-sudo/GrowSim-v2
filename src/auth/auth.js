@@ -13,6 +13,16 @@ const authState = {
   token: null,
   user: null
 };
+const DISPLAY_NAME_PLACEHOLDERS = new Set([
+  'guest',
+  'gast',
+  'invitado',
+  'local dev',
+  'player',
+  'test user',
+  'undefined',
+  'null'
+]);
 
 function getApiFetch() {
   if (window.GrowSimApi && typeof window.GrowSimApi.apiFetch === 'function') {
@@ -40,6 +50,65 @@ function getUser() {
 
 function isAuthenticated() {
   return Boolean(authState.token);
+}
+
+function isAuthenticatedUser() {
+  return Boolean(authState.token && authState.user && typeof authState.user === 'object');
+}
+
+function normalizeDisplayName(value) {
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  if (!normalized || DISPLAY_NAME_PLACEHOLDERS.has(normalized.toLocaleLowerCase())) {
+    return null;
+  }
+  return normalized;
+}
+
+function getCurrentUserDisplayName() {
+  if (!isAuthenticatedUser()) {
+    return null;
+  }
+
+  const user = authState.user;
+  return normalizeDisplayName(user.displayName)
+    || normalizeDisplayName(user.firstName)
+    || normalizeDisplayName(user.name)
+    || null;
+}
+
+function getUserGreeting(options = {}) {
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  const guestGreeting = typeof safeOptions.guestGreeting === 'string'
+    ? safeOptions.guestGreeting.trim()
+    : 'Hello';
+  const displayName = getCurrentUserDisplayName();
+  if (!displayName) {
+    return guestGreeting;
+  }
+
+  const namedGreeting = typeof safeOptions.namedGreeting === 'string'
+    ? safeOptions.namedGreeting.trim()
+    : '';
+  return namedGreeting ? namedGreeting.replace(/\{name\}/g, displayName) : displayName;
+}
+
+function getProfileDisplayModel(options = {}) {
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  const displayName = getCurrentUserDisplayName();
+  const guestTitle = typeof safeOptions.guestTitle === 'string' && safeOptions.guestTitle.trim()
+    ? safeOptions.guestTitle.trim()
+    : 'Guest';
+  const guestSubtitle = typeof safeOptions.guestSubtitle === 'string' && safeOptions.guestSubtitle.trim()
+    ? safeOptions.guestSubtitle.trim()
+    : 'Local save';
+
+  return {
+    isAuthenticated: isAuthenticatedUser(),
+    hasDisplayName: Boolean(displayName),
+    isGuest: !displayName,
+    title: displayName || guestTitle,
+    subtitle: displayName ? '' : guestSubtitle
+  };
 }
 
 function setToken(token) {
@@ -247,5 +316,9 @@ window.GrowSimAuth = Object.freeze({
   fetchCurrentUser,
   getToken,
   getUser,
-  isAuthenticated
+  isAuthenticated,
+  isAuthenticatedUser,
+  getCurrentUserDisplayName,
+  getUserGreeting,
+  getProfileDisplayModel
 });

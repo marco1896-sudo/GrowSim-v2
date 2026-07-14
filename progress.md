@@ -158,3 +158,15 @@ Open items:
 - Fixed hidden-state CSS precedence, restored diary deletion in the real history timeline, and replaced checkerboard-backed plant files with existing phase-aligned growth frames.
 - The complete Care+ flow now passes with three plants, daily check, diary entry, delete confirmation, reload, and persistence restoration.
 - Next: complete the final static, state, i18n, and product-hardening regression suite.
+
+2026-07-14
+- Completed approved Buddy Care+ Phase 15.1 mobile navigation and UI cleanup.
+- Split Care+ into a dedicated internal scroll region and one sibling bottom navigation with safe-area padding.
+- Simplified zero-plant Today and Plants states, removed redundant Buddy/CTA blocks, hid filters without plants, and added direct setup opening without save changes.
+- Corrected visible German Buddy Care copy to proper umlauts/ß and removed repeated Buddy-says prefixes in DE/EN/ES.
+- Added architecture/mobile-cleanup regression tests and expanded the Care+ E2E flow with nav separation and setup reachability checks.
+- Verified the full flow at 320x568, 375x667, 390x844, and 430x932; required syntax, i18n, state, UI, daily check, diary, risk, trend, monetization, hardening, and runtime tests pass.
+
+Open items:
+- Real-device Safari/PWA keyboard behavior remains a recommended manual check before the next external test.
+- Transparent Buddy assets still have slightly different internal padding; CSS bounds now limit the visible inconsistency.

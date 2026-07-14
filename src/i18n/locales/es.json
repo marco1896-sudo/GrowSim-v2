@@ -36,6 +36,10 @@
     "display_name": "Nombre visible",
     "logout": "Cerrar sesion",
     "connected": "Conectado con la cuenta",
+    "greeting": "Hola",
+    "welcome": "Bienvenido",
+    "guest": "Invitado",
+    "local_save": "Partida local",
     "status_label": "Estado",
     "cancel": "Cancelar",
     "missing_credentials": "Introduce correo y contraseña.",
@@ -186,6 +190,8 @@
       "subtitle": "Tu coach de 3 plantas",
       "intro": "Aqui Buddy acompana hasta tres plantas con prioridades diarias claras.",
       "plant_limit": "{count} plantas disponibles",
+      "plant_count": "{count} de {limit} plantas",
+      "plant_count_compact": "{count} / {limit}",
       "age_gate_kicker": "Control de edad",
       "age_gate_title": "Solo para usuarios adultos",
       "age_gate_body": "Antes de abrir Buddy Care+, confirma una vez que eres mayor de edad.",
@@ -217,6 +223,7 @@
       "today_kicker": "Hoy",
       "today_title": "Hoy importa",
       "today_empty_body": "En cuanto crees plantas, aqui aparecera el resumen de hoy.",
+      "today_empty_coach": "Tu resumen de plantas está listo. Añade tu primera planta. Después Buddy te mostrará qué importa hoy.",
       "buddy_says": "Buddy dice",
       "phase_note": "Buddy estima la fase segun tus datos. Podras ajustarla manualmente mas adelante.",
       "plants_kicker": "Resumen",
@@ -512,10 +519,10 @@
         "red": "Hay varias senales llamativas. Revisa la planta con calma hoy y documenta el cambio."
       },
       "aggregate": {
-        "all_gray": "Buddy dice: Empieza con un daily check corto para que pueda ubicar mejor tus plantas.",
-        "all_green": "Buddy dice: Hoy todo parece tranquilo. Manten tu rutina y deja una nota breve.",
-        "has_yellow": "Buddy dice: Una planta merece una observacion mas atenta. No hay motivo para el panico: una comparacion limpia ayuda.",
-        "has_red": "Buddy dice: Una planta necesita tu atencion hoy. Revisa con calma y documenta lo que ves."
+        "all_gray": "Empieza con un daily check corto para que pueda ubicar mejor tus plantas.",
+        "all_green": "Hoy todo parece tranquilo. Manten tu rutina y deja una nota breve.",
+        "has_yellow": "Una planta merece una observacion mas atenta. No hay motivo para el panico: una comparacion limpia ayuda.",
+        "has_red": "Una planta necesita tu atencion hoy. Revisa con calma y documenta lo que ves."
       },
       "recommendation": {
         "gray_check": "Iniciar daily check",

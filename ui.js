@@ -389,6 +389,7 @@ function cacheUi() {
   ui.runSummaryAnalyzeBtn = document.getElementById('runSummaryAnalyzeBtn');
   ui.runSummarySupportBtn = document.getElementById('runSummarySupportBtn');
   ui.buddyCareScreen = document.getElementById('buddyCareScreen');
+  ui.buddyCareScrollContent = document.getElementById('buddyCareScrollContent');
   ui.buddyCareBackBtn = document.getElementById('buddyCareBackBtn');
   ui.buddyCareStatusBadge = document.getElementById('buddyCareStatusBadge');
   ui.buddyCareOpenPaywallBtn = document.getElementById('buddyCareOpenPaywallBtn');
@@ -437,6 +438,7 @@ function cacheUi() {
   ui.buddyCareTodayCard = document.getElementById('buddyCareTodayCard');
   ui.buddyCareTodayList = document.getElementById('buddyCareTodayList');
   ui.buddyCareTodayBuddyVisual = document.getElementById('buddyCareTodayBuddyVisual');
+  ui.buddyCareTodayBuddyLabel = document.getElementById('buddyCareTodayBuddyLabel');
   ui.buddyCareTodayBuddySummary = document.getElementById('buddyCareTodayBuddySummary');
   ui.buddyCareTodayGreeting = document.getElementById('buddyCareTodayGreeting');
   ui.buddyCareTodayDate = document.getElementById('buddyCareTodayDate');
@@ -1352,7 +1354,7 @@ function bindMenuOverlayEvents(controller = null) {
     });
     ui.buddyCareScreen.addEventListener('click', (event) => {
       const target = event.target && typeof event.target.closest === 'function'
-        ? event.target.closest('[data-buddy-care-view], [data-buddy-care-switch-view], [data-buddy-care-open-plant], [data-buddy-care-open-plant-history], [data-buddy-care-open-check], [data-buddy-care-open-paywall], [data-buddy-care-close-paywall], [data-buddy-care-delete-entry], [data-buddy-care-plant-detail-back], [data-buddy-care-detail-section], [data-buddy-care-diary-filter], [data-buddy-care-plant-filter], [data-buddy-care-history-mode], [data-buddy-care-diary-open-composer], [data-buddy-care-diary-composer-cancel], [data-buddy-care-diary-jump], [data-buddy-care-test-start], [data-buddy-care-test-intro-dismiss], [data-buddy-care-test-feedback-open], [data-buddy-care-test-checklist-dismiss], [data-buddy-care-test-checklist-open], [data-buddy-care-test-feedback-dismiss], [data-buddy-care-test-reset], [data-buddy-care-test-export]')
+        ? event.target.closest('[data-buddy-care-view], [data-buddy-care-switch-view], [data-buddy-care-open-setup], [data-buddy-care-open-plant], [data-buddy-care-open-plant-history], [data-buddy-care-open-check], [data-buddy-care-open-paywall], [data-buddy-care-close-paywall], [data-buddy-care-delete-entry], [data-buddy-care-plant-detail-back], [data-buddy-care-detail-section], [data-buddy-care-diary-filter], [data-buddy-care-plant-filter], [data-buddy-care-history-mode], [data-buddy-care-diary-open-composer], [data-buddy-care-diary-composer-cancel], [data-buddy-care-diary-jump], [data-buddy-care-test-start], [data-buddy-care-test-intro-dismiss], [data-buddy-care-test-feedback-open], [data-buddy-care-test-checklist-dismiss], [data-buddy-care-test-checklist-open], [data-buddy-care-test-feedback-dismiss], [data-buddy-care-test-reset], [data-buddy-care-test-export]')
         : null;
       if (!target) {
         return;
@@ -1360,6 +1362,10 @@ function bindMenuOverlayEvents(controller = null) {
       const nextView = String(target.getAttribute('data-buddy-care-view') || target.getAttribute('data-buddy-care-switch-view') || '').trim();
       if (nextView && typeof window.__gsSetActiveBuddyCareView === 'function') {
         window.__gsSetActiveBuddyCareView(nextView);
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-open-setup') && typeof window.__gsOpenBuddyCarePlantSetup === 'function') {
+        window.__gsOpenBuddyCarePlantSetup();
         return;
       }
       const openPlantId = String(target.getAttribute('data-buddy-care-open-plant') || '').trim();
