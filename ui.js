@@ -239,6 +239,8 @@ function cacheUi() {
   ui.menuLanguageBtn = document.getElementById('menuLanguageBtn');
   ui.menuSupportBtn = document.getElementById('menuSupportBtn');
   ui.menuMissionsBtn = document.getElementById('menuMissionsBtn');
+  ui.menuBuddyCareBtn = document.getElementById('menuBuddyCareBtn');
+  ui.menuBuddyCareSubtext = document.getElementById('menuBuddyCareSubtext');
   ui.menuCoinShopBtn = document.getElementById('menuCoinShopBtn');
   ui.menuAboutBtn = document.getElementById('menuAboutBtn');
   ui.menuImprintBtn = document.getElementById('menuImprintBtn');
@@ -386,6 +388,94 @@ function cacheUi() {
   ui.runSummaryNewRunBtn = document.getElementById('runSummaryNewRunBtn');
   ui.runSummaryAnalyzeBtn = document.getElementById('runSummaryAnalyzeBtn');
   ui.runSummarySupportBtn = document.getElementById('runSummarySupportBtn');
+  ui.buddyCareScreen = document.getElementById('buddyCareScreen');
+  ui.buddyCareBackBtn = document.getElementById('buddyCareBackBtn');
+  ui.buddyCareStatusBadge = document.getElementById('buddyCareStatusBadge');
+  ui.buddyCareOpenPaywallBtn = document.getElementById('buddyCareOpenPaywallBtn');
+  ui.buddyCareViewNav = document.getElementById('buddyCareViewNav');
+  ui.buddyCareViewButtons = Array.from(document.querySelectorAll('[data-buddy-care-view]'));
+  ui.buddyCareViewPanels = Array.from(document.querySelectorAll('[data-buddy-care-view-panel]'));
+  ui.buddyCareTodayView = document.getElementById('buddyCareTodayView');
+  ui.buddyCarePlantsView = document.getElementById('buddyCarePlantsView');
+  ui.buddyCareDiaryView = document.getElementById('buddyCareDiaryView');
+  ui.buddyCareMoreView = document.getElementById('buddyCareMoreView');
+  ui.buddyCareHero = document.getElementById('buddyCareHero');
+  ui.buddyCareHeroEyebrow = document.getElementById('buddyCareHeroEyebrow');
+  ui.buddyCareHeroTitle = document.getElementById('buddyCareHeroTitle');
+  ui.buddyCareHeroSubtitle = document.getElementById('buddyCareHeroSubtitle');
+  ui.buddyCareHeroCopy = document.getElementById('buddyCareHeroCopy');
+  ui.buddyCareHeroBuddyVisual = document.getElementById('buddyCareHeroBuddyVisual');
+  ui.buddyCarePlantLimit = document.getElementById('buddyCarePlantLimit');
+  ui.buddyCareModeHint = document.getElementById('buddyCareModeHint');
+  ui.buddyCareAgeGateCard = document.getElementById('buddyCareAgeGateCard');
+  ui.buddyCareAgeGateAcceptBtn = document.getElementById('buddyCareAgeGateAcceptBtn');
+  ui.buddyCarePlaceholderCard = document.getElementById('buddyCarePlaceholderCard');
+  ui.buddyCareExternalTestIntroCard = document.getElementById('buddyCareExternalTestIntroCard');
+  ui.buddyCareSetupCard = document.getElementById('buddyCareSetupCard');
+  ui.buddyCareSetupForm = document.getElementById('buddyCareSetupForm');
+  ui.buddyCarePlantNameInput = document.getElementById('buddyCarePlantNameInput');
+  ui.buddyCarePlantTypeSelect = document.getElementById('buddyCarePlantTypeSelect');
+  ui.buddyCarePlantEnvironmentSelect = document.getElementById('buddyCarePlantEnvironmentSelect');
+  ui.buddyCarePlantStartDateInput = document.getElementById('buddyCarePlantStartDateInput');
+  ui.buddyCareAddPlantBtn = document.getElementById('buddyCareAddPlantBtn');
+  ui.buddyCareSetupStatus = document.getElementById('buddyCareSetupStatus');
+  ui.buddyCareSummaryCard = document.getElementById('buddyCareSummaryCard');
+  ui.buddyCareSummaryPlantCount = document.getElementById('buddyCareSummaryPlantCount');
+  ui.buddyCareSummaryEntitlement = document.getElementById('buddyCareSummaryEntitlement');
+  ui.buddyCareSummaryTaskCount = document.getElementById('buddyCareSummaryTaskCount');
+  ui.buddyCareSummaryRiskCount = document.getElementById('buddyCareSummaryRiskCount');
+  ui.buddyCareExternalTestChecklistCard = document.getElementById('buddyCareExternalTestChecklistCard');
+  ui.buddyCareSeasonPassCard = document.getElementById('buddyCareSeasonPassCard');
+  ui.buddyCareSeasonPassCloseBtn = document.getElementById('buddyCareSeasonPassCloseBtn');
+  ui.buddyCareSeasonPassActivateBtn = document.getElementById('buddyCareSeasonPassActivateBtn');
+  ui.buddyCareSeasonPassBuddyVisual = document.getElementById('buddyCareSeasonPassBuddyVisual');
+  ui.buddyCareSeasonPassFeatureList = document.getElementById('buddyCareSeasonPassFeatureList');
+  ui.buddyCareSeasonPassPrice = document.getElementById('buddyCareSeasonPassPrice');
+  ui.buddyCareSeasonPassPeriod = document.getElementById('buddyCareSeasonPassPeriod');
+  ui.buddyCareSeasonPassBillingLabel = document.getElementById('buddyCareSeasonPassBillingLabel');
+  ui.buddyCareSeasonPassStatusNote = document.getElementById('buddyCareSeasonPassStatusNote');
+  ui.buddyCareTodayCard = document.getElementById('buddyCareTodayCard');
+  ui.buddyCareTodayList = document.getElementById('buddyCareTodayList');
+  ui.buddyCareTodayBuddyVisual = document.getElementById('buddyCareTodayBuddyVisual');
+  ui.buddyCareTodayBuddySummary = document.getElementById('buddyCareTodayBuddySummary');
+  ui.buddyCareTodayGreeting = document.getElementById('buddyCareTodayGreeting');
+  ui.buddyCareTodayDate = document.getElementById('buddyCareTodayDate');
+  ui.buddyCareTodayEnvironment = document.getElementById('buddyCareTodayEnvironment');
+  ui.buddyCareTodayHeroActions = document.getElementById('buddyCareTodayHeroActions');
+  ui.buddyCareTodayPlantVisual = document.getElementById('buddyCareTodayPlantVisual');
+  ui.buddyCareDailyCheckCard = document.getElementById('buddyCareDailyCheckCard');
+  ui.buddyCareDailyCheckTitle = document.getElementById('buddyCareDailyCheckTitle');
+  ui.buddyCareDailyCheckBuddyVisual = document.getElementById('buddyCareDailyCheckBuddyVisual');
+  ui.buddyCareDailyCheckBuddyLabel = document.getElementById('buddyCareDailyCheckBuddyLabel');
+  ui.buddyCareDailyCheckSubtitle = document.getElementById('buddyCareDailyCheckSubtitle');
+  ui.buddyCareDailyCheckStatusBadge = document.getElementById('buddyCareDailyCheckStatusBadge');
+  ui.buddyCareDailyCheckForm = document.getElementById('buddyCareDailyCheckForm');
+  ui.buddyCareDailyCheckMoistureSelect = document.getElementById('buddyCareDailyCheckMoistureSelect');
+  ui.buddyCareDailyCheckLeafStateSelect = document.getElementById('buddyCareDailyCheckLeafStateSelect');
+  ui.buddyCareDailyCheckGrowthStateSelect = document.getElementById('buddyCareDailyCheckGrowthStateSelect');
+  ui.buddyCareDailyCheckEnvironmentStressSelect = document.getElementById('buddyCareDailyCheckEnvironmentStressSelect');
+  ui.buddyCareDailyCheckPestsVisibleSelect = document.getElementById('buddyCareDailyCheckPestsVisibleSelect');
+  ui.buddyCareDailyCheckHeightInput = document.getElementById('buddyCareDailyCheckHeightInput');
+  ui.buddyCareDailyCheckNoteInput = document.getElementById('buddyCareDailyCheckNoteInput');
+  ui.buddyCareDailyCheckCancelBtn = document.getElementById('buddyCareDailyCheckCancelBtn');
+  ui.buddyCareDailyCheckSubmitBtn = document.getElementById('buddyCareDailyCheckSubmitBtn');
+  ui.buddyCarePlantsCard = document.getElementById('buddyCarePlantsCard');
+  ui.buddyCarePlantCount = document.getElementById('buddyCarePlantCount');
+  ui.buddyCarePlantFilters = document.getElementById('buddyCarePlantFilters');
+  ui.buddyCarePlantList = document.getElementById('buddyCarePlantList');
+  ui.buddyCarePlantDetailCard = document.getElementById('buddyCarePlantDetailCard');
+  ui.buddyCareDiaryHubCard = document.getElementById('buddyCareDiaryHubCard');
+  ui.buddyCareFreeHintCard = document.getElementById('buddyCareFreeHintCard');
+  ui.buddyCareFreeHintBody = document.getElementById('buddyCareFreeHintBody');
+  ui.buddyCareMockHintCard = document.getElementById('buddyCareMockHintCard');
+  ui.buddyCareMockCard = document.getElementById('buddyCareMockCard');
+  ui.buddyCareMockUpgradeBtn = document.getElementById('buddyCareMockUpgradeBtn');
+  ui.buddyCareMockActiveState = document.getElementById('buddyCareMockActiveState');
+  ui.buddyCareMockActiveBuddyVisual = document.getElementById('buddyCareMockActiveBuddyVisual');
+  ui.buddyCareExternalTestFeedbackCard = document.getElementById('buddyCareExternalTestFeedbackCard');
+  ui.buddyCareExternalTestToolsCard = document.getElementById('buddyCareExternalTestToolsCard');
+  ui.buddyCareActivationCard = document.getElementById('buddyCareActivationCard');
+  ui.buddyCareMoreInfoCard = document.getElementById('buddyCareMoreInfoCard');
   ui.screenViews = Array.from(document.querySelectorAll('.hud-screen[data-screen]'));
   ui.screenNavButtons = Array.from(document.querySelectorAll('[data-screen-target]'));
 
@@ -985,6 +1075,14 @@ function bindMenuOverlayEvents(controller = null) {
       openSheet('missions');
     });
   }
+  if (ui.menuBuddyCareBtn) {
+    ui.menuBuddyCareBtn.addEventListener('click', () => {
+      closeMenu();
+      if (typeof window.__gsOpenBuddyCare === 'function') {
+        window.__gsOpenBuddyCare();
+      }
+    });
+  }
   if (ui.menuCoinShopBtn) {
     ui.menuCoinShopBtn.addEventListener('click', () => {
       const activeController = resolveController();
@@ -1042,6 +1140,321 @@ function bindMenuOverlayEvents(controller = null) {
       }
       openSheet('leaderboard');
     });
+  }
+  if (ui.buddyCareBackBtn) {
+    ui.buddyCareBackBtn.addEventListener('click', () => {
+      if (typeof window.__gsCloseBuddyCare === 'function') {
+        window.__gsCloseBuddyCare();
+      }
+    });
+  }
+  if (ui.buddyCareAgeGateAcceptBtn) {
+    ui.buddyCareAgeGateAcceptBtn.addEventListener('click', () => {
+      if (typeof window.__gsAcceptBuddyCareAgeGate === 'function') {
+        window.__gsAcceptBuddyCareAgeGate();
+      }
+    });
+  }
+  if (ui.buddyCareOpenPaywallBtn) {
+    ui.buddyCareOpenPaywallBtn.addEventListener('click', () => {
+      if (typeof window.__gsOpenBuddyCarePaywallMock === 'function') {
+        window.__gsOpenBuddyCarePaywallMock('header');
+      }
+    });
+  }
+  if (ui.buddyCareSetupForm) {
+    ui.buddyCareSetupForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (typeof window.__gsSubmitBuddyCarePlantSetup === 'function') {
+        window.__gsSubmitBuddyCarePlantSetup();
+      }
+    });
+  }
+  if (ui.buddyCareDailyCheckForm) {
+    ui.buddyCareDailyCheckForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (typeof window.__gsSubmitBuddyCareDailyCheck === 'function') {
+        window.__gsSubmitBuddyCareDailyCheck();
+      }
+    });
+    const syncDraft = () => {
+      if (typeof window.__gsSyncBuddyCareDailyCheckDraft === 'function') {
+        window.__gsSyncBuddyCareDailyCheckDraft();
+      }
+    };
+    ui.buddyCareDailyCheckForm.addEventListener('input', syncDraft);
+    ui.buddyCareDailyCheckForm.addEventListener('change', syncDraft);
+  }
+  if (ui.buddyCareDailyCheckCancelBtn) {
+    ui.buddyCareDailyCheckCancelBtn.addEventListener('click', () => {
+      if (typeof window.__gsCloseBuddyCareDailyCheck === 'function') {
+        window.__gsCloseBuddyCareDailyCheck();
+      }
+    });
+  }
+  if (ui.buddyCarePlantList) {
+    ui.buddyCarePlantList.addEventListener('submit', (event) => {
+      const formNode = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('[data-buddy-care-diary-form]')
+        : null;
+      if (!formNode) {
+        return;
+      }
+      event.preventDefault();
+      const plantId = String(formNode.getAttribute('data-buddy-care-diary-form') || '').trim();
+      if (plantId && typeof window.__gsSubmitBuddyCareDiaryEntry === 'function') {
+        window.__gsSubmitBuddyCareDiaryEntry(plantId, formNode);
+      }
+    });
+    ui.buddyCarePlantList.addEventListener('click', (event) => {
+      const target = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('[data-buddy-care-remove-plant], [data-buddy-care-open-plant], [data-buddy-care-toggle-details], [data-buddy-care-open-check], [data-buddy-care-delete-entry], [data-buddy-care-open-paywall], [data-buddy-care-close-paywall]')
+        : null;
+      if (!target) {
+        return;
+      }
+      event.stopPropagation();
+      const removePlantId = String(target.getAttribute('data-buddy-care-remove-plant') || '').trim();
+      if (removePlantId && typeof window.__gsRemoveBuddyCarePlant === 'function') {
+        window.__gsRemoveBuddyCarePlant(removePlantId);
+        return;
+      }
+      const detailPlantId = String(target.getAttribute('data-buddy-care-toggle-details') || '').trim();
+      if (detailPlantId && typeof window.__gsToggleBuddyCarePlantDetails === 'function') {
+        window.__gsToggleBuddyCarePlantDetails(detailPlantId);
+        return;
+      }
+      const openPlantId = String(target.getAttribute('data-buddy-care-open-plant') || '').trim();
+      if (openPlantId && typeof window.__gsOpenBuddyCarePlantDetails === 'function') {
+        window.__gsOpenBuddyCarePlantDetails(openPlantId);
+        return;
+      }
+      const checkPlantId = String(target.getAttribute('data-buddy-care-open-check') || '').trim();
+      if (checkPlantId && typeof window.__gsOpenBuddyCareDailyCheck === 'function') {
+        window.__gsOpenBuddyCareDailyCheck(checkPlantId);
+        return;
+      }
+      const diaryEntryId = String(target.getAttribute('data-buddy-care-delete-entry') || '').trim();
+      if (diaryEntryId && typeof window.__gsDeleteBuddyCareDiaryEntry === 'function') {
+        window.__gsDeleteBuddyCareDiaryEntry(diaryEntryId);
+        return;
+      }
+      const paywallOpenSource = String(target.getAttribute('data-buddy-care-open-paywall') || '').trim();
+      if (paywallOpenSource && typeof window.__gsOpenBuddyCarePaywallMock === 'function') {
+        window.__gsOpenBuddyCarePaywallMock(paywallOpenSource);
+        return;
+      }
+      const paywallCloseSource = String(target.getAttribute('data-buddy-care-close-paywall') || '').trim();
+      if (paywallCloseSource && typeof window.__gsCloseBuddyCarePaywallMock === 'function') {
+        window.__gsCloseBuddyCarePaywallMock(paywallCloseSource);
+      }
+    });
+  }
+  if (ui.buddyCareMockUpgradeBtn) {
+    ui.buddyCareMockUpgradeBtn.addEventListener('click', () => {
+      if (typeof window.__gsOpenBuddyCarePaywallMock === 'function') {
+        window.__gsOpenBuddyCarePaywallMock('mock-card');
+      }
+    });
+  }
+  if (ui.buddyCareSeasonPassCloseBtn) {
+    ui.buddyCareSeasonPassCloseBtn.addEventListener('click', () => {
+      if (typeof window.__gsCloseBuddyCarePaywallMock === 'function') {
+        window.__gsCloseBuddyCarePaywallMock();
+      }
+    });
+  }
+  if (ui.buddyCareSeasonPassActivateBtn) {
+    ui.buddyCareSeasonPassActivateBtn.addEventListener('click', () => {
+      if (typeof window.__gsActivateBuddyCareMockEntitlement === 'function') {
+        window.__gsActivateBuddyCareMockEntitlement();
+      }
+    });
+  }
+  if (ui.buddyCareActivationCard) {
+    ui.buddyCareActivationCard.addEventListener('click', (event) => {
+      const target = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('[data-buddy-care-activation-primary], [data-buddy-care-activation-dismiss]')
+        : null;
+      if (!target) {
+        return;
+      }
+      const primaryAction = String(target.getAttribute('data-buddy-care-activation-primary') || '').trim();
+      if (primaryAction && typeof window.__gsRunBuddyCareActivationPrimaryAction === 'function') {
+        window.__gsRunBuddyCareActivationPrimaryAction(primaryAction);
+        return;
+      }
+      const dismissValue = String(target.getAttribute('data-buddy-care-activation-dismiss') || '').trim();
+      if (dismissValue && typeof window.__gsDismissBuddyCareActivationOnboarding === 'function') {
+        window.__gsDismissBuddyCareActivationOnboarding();
+      }
+    });
+  }
+  if (ui.buddyCareScreen) {
+    ui.buddyCareScreen.addEventListener('submit', (event) => {
+      const diaryForm = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('[data-buddy-care-diary-form]')
+        : null;
+      if (diaryForm) {
+        event.preventDefault();
+        const plantId = String(diaryForm.getAttribute('data-buddy-care-diary-form') || '').trim();
+        if (plantId && typeof window.__gsSubmitBuddyCareDiaryEntry === 'function') {
+          window.__gsSubmitBuddyCareDiaryEntry(plantId, diaryForm);
+        }
+        return;
+      }
+      const diaryHubForm = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('#buddyCareDiaryHubForm')
+        : null;
+      if (diaryHubForm) {
+        event.preventDefault();
+        if (typeof window.__gsSubmitBuddyCareDiaryHubEntry === 'function') {
+          window.__gsSubmitBuddyCareDiaryHubEntry(diaryHubForm);
+        }
+        return;
+      }
+      const feedbackForm = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('#buddyCareExternalTestFeedbackForm')
+        : null;
+      if (!feedbackForm) {
+        return;
+      }
+      event.preventDefault();
+      if (typeof window.__gsSubmitBuddyCareExternalTestFeedback === 'function') {
+        window.__gsSubmitBuddyCareExternalTestFeedback(feedbackForm);
+      }
+    });
+    ui.buddyCareScreen.addEventListener('click', (event) => {
+      const target = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('[data-buddy-care-view], [data-buddy-care-switch-view], [data-buddy-care-open-plant], [data-buddy-care-open-plant-history], [data-buddy-care-open-check], [data-buddy-care-open-paywall], [data-buddy-care-close-paywall], [data-buddy-care-delete-entry], [data-buddy-care-plant-detail-back], [data-buddy-care-detail-section], [data-buddy-care-diary-filter], [data-buddy-care-plant-filter], [data-buddy-care-history-mode], [data-buddy-care-diary-open-composer], [data-buddy-care-diary-composer-cancel], [data-buddy-care-diary-jump], [data-buddy-care-test-start], [data-buddy-care-test-intro-dismiss], [data-buddy-care-test-feedback-open], [data-buddy-care-test-checklist-dismiss], [data-buddy-care-test-checklist-open], [data-buddy-care-test-feedback-dismiss], [data-buddy-care-test-reset], [data-buddy-care-test-export]')
+        : null;
+      if (!target) {
+        return;
+      }
+      const nextView = String(target.getAttribute('data-buddy-care-view') || target.getAttribute('data-buddy-care-switch-view') || '').trim();
+      if (nextView && typeof window.__gsSetActiveBuddyCareView === 'function') {
+        window.__gsSetActiveBuddyCareView(nextView);
+        return;
+      }
+      const openPlantId = String(target.getAttribute('data-buddy-care-open-plant') || '').trim();
+      if (openPlantId && typeof window.__gsOpenBuddyCarePlantDetails === 'function') {
+        window.__gsOpenBuddyCarePlantDetails(openPlantId);
+        return;
+      }
+      const openPlantHistoryId = String(target.getAttribute('data-buddy-care-open-plant-history') || '').trim();
+      if (openPlantHistoryId && typeof window.__gsOpenBuddyCarePlantDetails === 'function') {
+        window.__gsOpenBuddyCarePlantDetails(openPlantHistoryId, 'history');
+        return;
+      }
+      const checkPlantId = String(target.getAttribute('data-buddy-care-open-check') || '').trim();
+      if (checkPlantId && typeof window.__gsOpenBuddyCareDailyCheck === 'function') {
+        window.__gsOpenBuddyCareDailyCheck(checkPlantId);
+        return;
+      }
+      const paywallOpenSource = String(target.getAttribute('data-buddy-care-open-paywall') || '').trim();
+      if (paywallOpenSource && typeof window.__gsOpenBuddyCarePaywallMock === 'function') {
+        window.__gsOpenBuddyCarePaywallMock(paywallOpenSource);
+        return;
+      }
+      const paywallCloseSource = String(target.getAttribute('data-buddy-care-close-paywall') || '').trim();
+      if (paywallCloseSource && typeof window.__gsCloseBuddyCarePaywallMock === 'function') {
+        window.__gsCloseBuddyCarePaywallMock(paywallCloseSource);
+        return;
+      }
+      const diaryEntryId = String(target.getAttribute('data-buddy-care-delete-entry') || '').trim();
+      if (diaryEntryId && typeof window.__gsDeleteBuddyCareDiaryEntry === 'function') {
+        window.__gsDeleteBuddyCareDiaryEntry(diaryEntryId);
+        return;
+      }
+      const detailBack = String(target.getAttribute('data-buddy-care-plant-detail-back') || '').trim();
+      if (detailBack && typeof window.__gsCloseBuddyCarePlantDetails === 'function') {
+        window.__gsCloseBuddyCarePlantDetails();
+        return;
+      }
+      const detailSection = String(target.getAttribute('data-buddy-care-detail-section') || '').trim();
+      if (detailSection && typeof window.__gsSetBuddyCarePlantDetailSection === 'function') {
+        window.__gsSetBuddyCarePlantDetailSection(detailSection);
+        return;
+      }
+      const diaryFilter = String(target.getAttribute('data-buddy-care-diary-filter') || '').trim();
+      if (diaryFilter && typeof window.__gsSetBuddyCareDiaryFilter === 'function') {
+        window.__gsSetBuddyCareDiaryFilter(diaryFilter);
+        return;
+      }
+      const plantFilter = String(target.getAttribute('data-buddy-care-plant-filter') || '').trim();
+      if (plantFilter && typeof window.__gsSetBuddyCarePlantFilter === 'function') {
+        window.__gsSetBuddyCarePlantFilter(plantFilter);
+        return;
+      }
+      const historyMode = String(target.getAttribute('data-buddy-care-history-mode') || '').trim();
+      if (historyMode && typeof window.__gsSetBuddyCareHistoryMode === 'function') {
+        window.__gsSetBuddyCareHistoryMode(historyMode);
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-diary-open-composer') && typeof window.__gsOpenBuddyCareDiaryComposer === 'function') {
+        window.__gsOpenBuddyCareDiaryComposer(String(target.getAttribute('data-buddy-care-diary-open-composer') || '').trim());
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-diary-composer-cancel') && typeof window.__gsCloseBuddyCareDiaryComposer === 'function') {
+        window.__gsCloseBuddyCareDiaryComposer();
+        return;
+      }
+      const diaryJumpPlantId = String(target.getAttribute('data-buddy-care-diary-jump') || '').trim();
+      if (diaryJumpPlantId && typeof window.__gsOpenBuddyCarePlantDetails === 'function') {
+        window.__gsOpenBuddyCarePlantDetails(diaryJumpPlantId, 'diary');
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-test-start') && typeof window.__gsStartBuddyCareExternalTest === 'function') {
+        window.__gsStartBuddyCareExternalTest();
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-test-intro-dismiss') && typeof window.__gsDismissBuddyCareExternalTestIntro === 'function') {
+        window.__gsDismissBuddyCareExternalTestIntro();
+        if (typeof window.__gsCloseBuddyCareExternalTestFeedback === 'function') {
+          window.__gsCloseBuddyCareExternalTestFeedback();
+        }
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-test-feedback-open') && typeof window.__gsOpenBuddyCareExternalTestFeedback === 'function') {
+        window.__gsOpenBuddyCareExternalTestFeedback();
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-test-checklist-dismiss') && typeof window.__gsDismissBuddyCareExternalTestChecklist === 'function') {
+        window.__gsDismissBuddyCareExternalTestChecklist();
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-test-checklist-open') && typeof window.__gsReopenBuddyCareExternalTestChecklist === 'function') {
+        window.__gsReopenBuddyCareExternalTestChecklist();
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-test-feedback-dismiss') && typeof window.__gsCloseBuddyCareExternalTestFeedback === 'function') {
+        window.__gsCloseBuddyCareExternalTestFeedback();
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-test-reset') && typeof window.__gsResetBuddyCareTestData === 'function') {
+        window.__gsResetBuddyCareTestData();
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-test-export') && typeof window.__gsExportBuddyCareTestEvents === 'function') {
+        window.__gsExportBuddyCareTestEvents();
+      }
+    });
+    ui.buddyCareScreen.addEventListener('error', (event) => {
+      const image = event.target;
+      if (!image || !image.matches || !image.matches('img[data-buddy-care-plant-image]')) {
+        return;
+      }
+      const fallbackSrc = String(image.getAttribute('data-fallback-src') || '').trim();
+      if (fallbackSrc && image.getAttribute('data-fallback-applied') !== 'true') {
+        image.setAttribute('data-fallback-applied', 'true');
+        image.src = fallbackSrc;
+        return;
+      }
+      image.hidden = true;
+      if (image.parentElement) {
+        image.parentElement.classList.add('is-image-missing');
+      }
+    }, true);
   }
   if (ui.menuDialogCancelBtn) {
     ui.menuDialogCancelBtn.addEventListener('click', closeMenuDialog);
@@ -1277,8 +1690,8 @@ const ONBOARDING_OPTION_ICON_ASSETS = Object.freeze({
     sativa: Object.freeze({ src: 'assets/onboarding/genetic_fast.png', alt: 'Schnelle Genetik' })
   }),
   setupMode: Object.freeze({
-    indoor: Object.freeze({ src: 'assets/onboarding/run_indoor.png', alt: 'Indoor Run' }),
-    outdoor: Object.freeze({ src: 'assets/onboarding/run_outdoor.png', alt: 'Outdoor Run' })
+    indoor: Object.freeze({ src: 'assets/onboarding/run_indoor.png', alt: 'Indoor' }),
+    outdoor: Object.freeze({ src: 'assets/onboarding/run_outdoor.png', alt: 'Outdoor' })
   }),
   setupMedium: Object.freeze({
     soil: Object.freeze({ src: 'assets/onboarding/substrate_soil.png', alt: 'Erde Substrat' }),
@@ -1287,6 +1700,24 @@ const ONBOARDING_OPTION_ICON_ASSETS = Object.freeze({
   setupLight: Object.freeze({
     medium: Object.freeze({ src: 'assets/onboarding/light_medium.png', alt: 'Medium Light' }),
     high: Object.freeze({ src: 'assets/onboarding/light_high.png', alt: 'High Output Light' })
+  })
+});
+
+const ONBOARDING_SUMMARY_LABELS = Object.freeze({
+  setupMode: Object.freeze({
+    indoor: 'Indoor',
+    outdoor: 'Outdoor',
+    greenhouse: 'Gewächshaus'
+  }),
+  setupMedium: Object.freeze({
+    soil: 'Erde',
+    coco: 'Coco',
+    hydro: 'Hydro'
+  }),
+  setupLight: Object.freeze({
+    low: 'Sanftes Licht',
+    medium: 'Mittleres Licht',
+    high: 'Starkes Licht'
   })
 });
 
@@ -1301,9 +1732,13 @@ function clampOnboardingStep(step) {
   return Math.max(0, Math.min(maxStep, Math.trunc(Number(step) || 0)));
 }
 
-function getSetupOptionLabel(selectId, fallback) {
+function getSetupOptionLabel(selectId, fallback, overrides) {
   const selectNode = document.getElementById(selectId);
   const value = selectNode ? String(selectNode.value || '') : '';
+  const overrideLabel = overrides && value ? overrides[value] : '';
+  if (overrideLabel) {
+    return String(overrideLabel);
+  }
   const button = Array.isArray(ui.setupOptionButtons)
     ? ui.setupOptionButtons.find((candidate) => (
       candidate
@@ -1318,7 +1753,7 @@ function getSetupOptionLabel(selectId, fallback) {
   const primaryNode = titleNode || button.querySelector('span');
   return String(
     (primaryNode && primaryNode.textContent ? primaryNode.textContent.trim() : '')
-    || button.dataset.title
+    || String(button.dataset.title || '').trim()
     || fallback
   );
 }
@@ -1402,13 +1837,13 @@ function renderOnboardingSummarySelections() {
     ui.onboardingSummaryGenetics.textContent = getSetupOptionLabel('setupGenetics', 'Hybrid');
   }
   if (ui.onboardingSummaryMode) {
-    ui.onboardingSummaryMode.textContent = getSetupOptionLabel('setupMode', 'Indoor');
+    ui.onboardingSummaryMode.textContent = getSetupOptionLabel('setupMode', 'Indoor', ONBOARDING_SUMMARY_LABELS.setupMode);
   }
   if (ui.onboardingSummaryMedium) {
-    ui.onboardingSummaryMedium.textContent = getSetupOptionLabel('setupMedium', 'Erde');
+    ui.onboardingSummaryMedium.textContent = getSetupOptionLabel('setupMedium', 'Erde', ONBOARDING_SUMMARY_LABELS.setupMedium);
   }
   if (ui.onboardingSummaryLight) {
-    ui.onboardingSummaryLight.textContent = getSetupOptionLabel('setupLight', 'Medium Light');
+    ui.onboardingSummaryLight.textContent = getSetupOptionLabel('setupLight', 'Mittleres Licht', ONBOARDING_SUMMARY_LABELS.setupLight);
   }
 }
 

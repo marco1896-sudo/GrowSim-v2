@@ -407,6 +407,350 @@
         </section>
       </section>
     </main>
+    <main id="buddyCareScreen" class="hud-main hud-screen buddy-care-screen" data-screen="buddyCare" hidden aria-hidden="true">
+      <section class="buddy-care-shell" aria-label="Buddy Care Plus">
+        <header class="buddy-care-topbar">
+          <button id="buddyCareBackBtn" class="action-btn action-ghost buddy-care-back" type="button" data-i18n="common.back">Zurueck</button>
+          <div class="buddy-care-topbar-actions">
+            <button id="buddyCareOpenPaywallBtn" class="ghost-btn buddy-care-topbar-link" type="button" data-i18n="buddyCare.screen.view_care_plus">Testzugang ansehen</button>
+            <span id="buddyCareStatusBadge" class="buddy-care-badge">Free</span>
+          </div>
+        </header>
+
+        <section id="buddyCareHero" class="buddy-care-hero">
+          <div class="buddy-care-hero-copy">
+            <p id="buddyCareHeroEyebrow" class="buddy-care-eyebrow" data-i18n="buddyCare.screen.eyebrow">Deine Pflanzenuebersicht</p>
+            <h1 id="buddyCareHeroTitle" class="buddy-care-title" data-i18n="buddyCare.screen.title">Buddy Care+</h1>
+            <p id="buddyCareHeroSubtitle" class="buddy-care-subtitle" data-i18n="buddyCare.screen.subtitle">Dein 3-Pflanzen-Coach</p>
+            <p id="buddyCareHeroCopy" class="buddy-care-copy" data-i18n="buddyCare.screen.intro">Hier begleitet Buddy bis zu drei Pflanzen mit klaren Tagesimpulsen.</p>
+            <div class="buddy-care-meta">
+              <span id="buddyCarePlantLimit" class="buddy-care-meta-pill">1 Pflanze verfuegbar</span>
+              <span id="buddyCareModeHint" class="buddy-care-meta-copy">Free startet mit einer Pflanze. Care+ laesst sich kostenlos testen.</span>
+            </div>
+          </div>
+          <div id="buddyCareHeroBuddyVisual" class="buddy-care-hero-visual"></div>
+        </section>
+
+        <section id="buddyCareAgeGateCard" class="buddy-care-panel" aria-live="polite">
+          <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.age_gate_kicker">Altersfreigabe</p>
+          <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.age_gate_title">Nur fuer volljaehrige Nutzer</h2>
+          <p class="buddy-care-panel-copy" data-i18n="buddyCare.screen.age_gate_body">Bevor Buddy Care+ geoeffnet wird, bestaetigst du einmal, dass du volljaehrig bist.</p>
+          <button id="buddyCareAgeGateAcceptBtn" class="action-btn action-primary" type="button" data-i18n="buddyCare.screen.age_gate_action">Ich bin volljaehrig</button>
+        </section>
+
+        <div id="buddyCareTodayView" class="buddy-care-view" data-buddy-care-view-panel="today" hidden>
+          <header class="buddy-care-screen-header buddy-care-screen-header--today">
+            <div>
+              <h1 id="buddyCareTodayGreeting" class="buddy-care-screen-title">Heute</h1>
+              <p id="buddyCareTodayDate" class="buddy-care-screen-subtitle"></p>
+            </div>
+            <div class="buddy-care-screen-actions">
+              <span id="buddyCareTodayEnvironment" class="buddy-care-context-chip" hidden></span>
+              <button class="buddy-care-icon-btn" type="button" data-buddy-care-switch-view="more" data-i18n-aria-label="buddyCare.v2.open_settings" aria-label="Einstellungen oeffnen">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.55v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4.05 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2.2V9.55h.15a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.34-1.88l-.06-.06L6.4 3.65l.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V2.2h4.05v.15a1.7 1.7 0 0 0 1.1 1.6 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.15v4.05H21a1.7 1.7 0 0 0-1.6 1.1Z"/></svg>
+              </button>
+            </div>
+          </header>
+          <section id="buddyCarePlaceholderCard" class="buddy-care-panel" hidden aria-live="polite">
+            <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.placeholder_kicker">Bereit fuer heute</p>
+            <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.placeholder_title">Dein Care-Dashboard ist bereit</h2>
+            <p class="buddy-care-panel-copy" data-i18n="buddyCare.screen.placeholder_body">Lege deine erste Pflanze an und starte mit Tagescheck, Tagebuch und Wochenueberblick.</p>
+            <p class="buddy-care-panel-footnote" data-i18n="buddyCare.screen.today_view_hint">Buddy zeigt dir danach, was heute wirklich wichtig ist.</p>
+            <div class="buddy-care-daily-actions">
+              <button class="action-btn action-primary" type="button" data-buddy-care-switch-view="plants" data-i18n="buddyCare.nav.plants">Pflanzen</button>
+            </div>
+          </section>
+
+          <section id="buddyCareSummaryCard" class="buddy-care-panel" hidden aria-live="polite">
+            <div class="buddy-care-section-head">
+              <div>
+                <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.summary_kicker">Zusammenfassung</p>
+                <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.summary_title">Care Dashboard</h2>
+              </div>
+            </div>
+            <div class="buddy-care-summary-grid">
+              <article class="buddy-care-summary-item">
+                <span class="buddy-care-summary-label" data-i18n="buddyCare.v2.completed_checks">Erledigte Checks</span>
+                <strong id="buddyCareSummaryPlantCount" class="buddy-care-summary-value">0</strong>
+              </article>
+              <article class="buddy-care-summary-item">
+                <span class="buddy-care-summary-label" data-i18n="buddyCare.v2.total_checks">Checks heute</span>
+                <strong id="buddyCareSummaryEntitlement" class="buddy-care-summary-value">Free</strong>
+              </article>
+              <article class="buddy-care-summary-item">
+                <span class="buddy-care-summary-label" data-i18n="buddyCare.v2.open_checks">Offene Checks</span>
+                <strong id="buddyCareSummaryTaskCount" class="buddy-care-summary-value">0</strong>
+              </article>
+              <article class="buddy-care-summary-item">
+                <span class="buddy-care-summary-label" data-i18n="buddyCare.v2.risks">Akute Risiken</span>
+                <strong id="buddyCareSummaryRiskCount" class="buddy-care-summary-value">0</strong>
+              </article>
+            </div>
+          </section>
+
+          <section id="buddyCareTodayCard" class="buddy-care-panel" hidden aria-live="polite">
+            <div class="buddy-care-section-head">
+              <div>
+                <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.today_kicker">Heute</p>
+                <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.today_title">Heute wichtig</h2>
+              </div>
+            </div>
+            <div class="buddy-care-buddy-note buddy-care-buddy-note--today-hero">
+              <div id="buddyCareTodayBuddyVisual" class="buddy-care-buddy-visual"></div>
+              <div class="buddy-care-buddy-body">
+                <span class="buddy-care-buddy-label" data-i18n="buddyCare.screen.buddy_says">Buddy sagt</span>
+                <p id="buddyCareTodayBuddySummary" class="buddy-care-buddy-copy">Heute geht es vor allem um Beobachtung und Dokumentation.</p>
+                <div id="buddyCareTodayHeroActions" class="buddy-care-today-actions"></div>
+              </div>
+              <div id="buddyCareTodayPlantVisual" class="buddy-care-hero-plant" aria-hidden="true"></div>
+            </div>
+            <div id="buddyCareTodayList" class="buddy-care-today-list"></div>
+          </section>
+        </div>
+
+        <div id="buddyCarePlantsView" class="buddy-care-view" data-buddy-care-view-panel="plants" hidden>
+          <section id="buddyCareSetupCard" class="buddy-care-panel" hidden aria-live="polite">
+            <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.setup_kicker">Los geht's</p>
+            <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.setup_title">Pflanzen-Setup</h2>
+            <p class="buddy-care-panel-copy" data-i18n="buddyCare.screen.setup_body">Lege deine ersten Buddy-Care-Pflanzen an. Free startet mit 1 Pflanze, der Care+ Testzugang erweitert auf bis zu 3.</p>
+            <form id="buddyCareSetupForm" class="buddy-care-setup-form">
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.screen.setup_name_label">Name</span>
+                <input id="buddyCarePlantNameInput" class="buddy-care-input" type="text" maxlength="28" data-i18n-placeholder="buddyCare.screen.setup_name_placeholder" placeholder="z. B. Balkon 01">
+              </label>
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.screen.setup_type_label">Typ</span>
+                <select id="buddyCarePlantTypeSelect" class="buddy-care-select">
+                  <option value="unknown" data-i18n="buddyCare.type.unknown">Unbekannt</option>
+                  <option value="auto" data-i18n="buddyCare.type.auto">Auto</option>
+                  <option value="photoperiod" data-i18n="buddyCare.type.photoperiod">Photo</option>
+                </select>
+              </label>
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.screen.setup_environment_label">Umgebung</span>
+                <select id="buddyCarePlantEnvironmentSelect" class="buddy-care-select">
+                  <option value="indoor" data-i18n="buddyCare.environment.indoor">Indoor</option>
+                  <option value="outdoor" data-i18n="buddyCare.environment.outdoor">Outdoor</option>
+                  <option value="greenhouse" data-i18n="buddyCare.environment.greenhouse">Gewaechshaus</option>
+                </select>
+              </label>
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.screen.setup_start_label">Startdatum</span>
+                <input id="buddyCarePlantStartDateInput" class="buddy-care-input" type="date">
+              </label>
+              <button id="buddyCareAddPlantBtn" class="action-btn action-primary" type="submit" data-i18n="buddyCare.screen.setup_add">Pflanze hinzufuegen</button>
+            </form>
+            <p id="buddyCareSetupStatus" class="buddy-care-panel-footnote">Lege deine erste Pflanze an.</p>
+          </section>
+
+          <section id="buddyCarePlantsCard" class="buddy-care-panel" hidden aria-live="polite">
+            <div class="buddy-care-section-head">
+              <div>
+                <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.plants_kicker">Uebersicht</p>
+                <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.plants_title">Deine Pflanzen</h2>
+              </div>
+              <span id="buddyCarePlantCount" class="buddy-care-badge">0 / 1</span>
+            </div>
+            <div id="buddyCarePlantFilters" class="buddy-care-filter-row" role="group" data-i18n-aria-label="buddyCare.v2.filter_label" aria-label="Pflanzen filtern"></div>
+            <div id="buddyCarePlantList" class="buddy-care-plant-list"></div>
+          </section>
+
+          <section id="buddyCarePlantDetailCard" class="buddy-care-panel" hidden aria-live="polite"></section>
+
+          <section id="buddyCareDailyCheckCard" class="buddy-care-panel" hidden aria-live="polite">
+            <div class="buddy-care-section-head">
+              <div>
+                <p class="buddy-care-panel-kicker" data-i18n="buddyCare.dailyCheck.kicker">Tagescheck</p>
+                <h2 id="buddyCareDailyCheckTitle" class="buddy-care-panel-title">Tagescheck</h2>
+              </div>
+              <span id="buddyCareDailyCheckStatusBadge" class="buddy-care-badge">Kein Check heute</span>
+            </div>
+            <div class="buddy-care-buddy-note buddy-care-buddy-note--check">
+              <div id="buddyCareDailyCheckBuddyVisual" class="buddy-care-buddy-visual"></div>
+              <div class="buddy-care-buddy-body">
+                <span id="buddyCareDailyCheckBuddyLabel" class="buddy-care-buddy-label" data-i18n="buddyCare.buddy.label.daily_check">Buddy begleitet deinen Tagescheck</span>
+                <p id="buddyCareDailyCheckSubtitle" class="buddy-care-buddy-copy">Buddy macht mit dir einen kurzen Pflanzencheck. Das dauert weniger als eine Minute.</p>
+              </div>
+            </div>
+            <form id="buddyCareDailyCheckForm" class="buddy-care-daily-form">
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.medium_label">Wie fuehlt sich das Medium an?</span>
+                <select id="buddyCareDailyCheckMoistureSelect" class="buddy-care-select">
+                  <option value="dry" data-i18n="buddyCare.dailyCheck.option.dry">Trocken</option>
+                  <option value="moist" data-i18n="buddyCare.dailyCheck.option.moist">Leicht feucht</option>
+                  <option value="wet" data-i18n="buddyCare.dailyCheck.option.wet">Nass</option>
+                  <option value="unknown" data-i18n="buddyCare.dailyCheck.option.unknown">Weiss ich nicht</option>
+                </select>
+              </label>
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.leaf_label">Wie sehen die Blaetter aus?</span>
+                <select id="buddyCareDailyCheckLeafStateSelect" class="buddy-care-select">
+                  <option value="normal" data-i18n="buddyCare.dailyCheck.option.normal">Normal</option>
+                  <option value="hanging" data-i18n="buddyCare.dailyCheck.option.hanging">Haengen</option>
+                  <option value="curling" data-i18n="buddyCare.dailyCheck.option.curling">Rollen sich</option>
+                  <option value="spots" data-i18n="buddyCare.dailyCheck.option.spots">Flecken sichtbar</option>
+                  <option value="yellowing" data-i18n="buddyCare.dailyCheck.option.yellowing">Werden gelb</option>
+                  <option value="unknown" data-i18n="buddyCare.dailyCheck.option.unknown">Weiss ich nicht</option>
+                </select>
+              </label>
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.growth_label">Wie wirkt das Wachstum?</span>
+                <select id="buddyCareDailyCheckGrowthStateSelect" class="buddy-care-select">
+                  <option value="normal" data-i18n="buddyCare.dailyCheck.option.normal">Normal</option>
+                  <option value="fast" data-i18n="buddyCare.dailyCheck.option.fast">Schnell</option>
+                  <option value="slow" data-i18n="buddyCare.dailyCheck.option.slow">Langsam</option>
+                  <option value="unknown" data-i18n="buddyCare.dailyCheck.option.unknown">Weiss ich nicht</option>
+                </select>
+              </label>
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.environment_label">War heute etwas auffaellig?</span>
+                <select id="buddyCareDailyCheckEnvironmentStressSelect" class="buddy-care-select">
+                  <option value="normal" data-i18n="buddyCare.dailyCheck.option.normal">Normal</option>
+                  <option value="hot" data-i18n="buddyCare.dailyCheck.option.hot">Heiss</option>
+                  <option value="humid" data-i18n="buddyCare.dailyCheck.option.humid">Sehr feucht</option>
+                  <option value="cold" data-i18n="buddyCare.dailyCheck.option.cold">Kalt</option>
+                  <option value="windy" data-i18n="buddyCare.dailyCheck.option.windy">Windig</option>
+                  <option value="unknown" data-i18n="buddyCare.dailyCheck.option.unknown">Weiss ich nicht</option>
+                </select>
+              </label>
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.pests_label">Schaedlinge sichtbar?</span>
+                <select id="buddyCareDailyCheckPestsVisibleSelect" class="buddy-care-select">
+                  <option value="no" data-i18n="buddyCare.dailyCheck.option.no">Nein</option>
+                  <option value="unsure" data-i18n="buddyCare.dailyCheck.option.unsure">Unsicher</option>
+                  <option value="yes" data-i18n="buddyCare.dailyCheck.option.yes">Ja</option>
+                </select>
+              </label>
+              <label class="buddy-care-field">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.height_label">Hoehe in cm, optional</span>
+                <input id="buddyCareDailyCheckHeightInput" class="buddy-care-input" type="number" min="0" step="0.1" inputmode="decimal">
+              </label>
+              <label class="buddy-care-field buddy-care-field--full">
+                <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.note_label">Notiz, optional</span>
+                <textarea id="buddyCareDailyCheckNoteInput" class="buddy-care-textarea" rows="3" maxlength="280"></textarea>
+              </label>
+              <div class="buddy-care-daily-actions">
+                <button id="buddyCareDailyCheckCancelBtn" class="ghost-btn" type="button" data-i18n="common.cancel">Abbrechen</button>
+                <button id="buddyCareDailyCheckSubmitBtn" class="action-btn action-primary" type="submit" data-i18n="buddyCare.dailyCheck.save">Check speichern</button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <div id="buddyCareDiaryView" class="buddy-care-view" data-buddy-care-view-panel="history" hidden>
+          <section id="buddyCareDiaryHubCard" class="buddy-care-panel" hidden aria-live="polite"></section>
+        </div>
+
+        <div id="buddyCareMoreView" class="buddy-care-view" data-buddy-care-view-panel="more" hidden>
+          <section id="buddyCareExternalTestIntroCard" class="buddy-care-panel buddy-care-panel--accent" hidden aria-live="polite"></section>
+
+          <section id="buddyCareFreeHintCard" class="buddy-care-panel buddy-care-panel--accent" hidden aria-live="polite">
+            <div class="buddy-care-section-head">
+              <div>
+                <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.seasonpass_preview">Care+ testen</p>
+                <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.upgrade_title">Care+ Testzugang aktivieren</h2>
+              </div>
+            </div>
+            <p id="buddyCareFreeHintBody" class="buddy-care-panel-copy" data-i18n="buddyCare.screen.upgrade_body">Begleite bis zu 3 Pflanzen mit Tagescheck, Tagebuch, Ampel, Verlauf und Wochenrueckblick.</p>
+            <p class="buddy-care-panel-footnote" data-i18n="buddyCare.screen.upgrade_price_line">Saisonpass: 19,99 EUR</p>
+            <button class="action-btn action-primary" type="button" data-buddy-care-open-paywall="dashboard" data-i18n="buddyCare.screen.view_care_plus">Testzugang ansehen</button>
+          </section>
+
+          <section id="buddyCareMockHintCard" class="buddy-care-panel buddy-care-panel--success" hidden aria-live="polite">
+            <p class="buddy-care-panel-copy" data-i18n="buddyCare.screen.mock_hint">Care+ Testzugang aktiv: bis zu 3 Pflanzen verfuegbar.</p>
+          </section>
+
+          <section id="buddyCareMockCard" class="buddy-care-panel buddy-care-panel--accent" hidden aria-live="polite">
+            <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.mock_badge">Kostenlos testen</p>
+            <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.mock_title">Kostenloser Care+ Testzugang</h2>
+            <p class="buddy-care-panel-copy" data-i18n="buddyCare.screen.mock_body">Sieh dir Care+ in Ruhe an und schalte bis zu 3 Pflanzen fuer deinen Test frei.</p>
+            <button id="buddyCareMockUpgradeBtn" class="action-btn action-primary" type="button" data-i18n="buddyCare.screen.view_care_plus">Testzugang ansehen</button>
+          </section>
+
+          <section id="buddyCareSeasonPassCard" class="buddy-care-panel buddy-care-panel--accent buddy-care-seasonpass-card" hidden aria-live="polite">
+          <div class="buddy-care-section-head">
+            <div>
+              <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.seasonpass_preview">Care+ testen</p>
+              <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.seasonpass_title">Buddy Care+ Saisonpass</h2>
+            </div>
+            <button id="buddyCareSeasonPassCloseBtn" class="ghost-btn" type="button" data-i18n="common.back">Zurueck</button>
+          </div>
+          <div class="buddy-care-buddy-note buddy-care-buddy-note--seasonpass">
+            <div id="buddyCareSeasonPassBuddyVisual" class="buddy-care-buddy-visual"></div>
+            <div class="buddy-care-buddy-body">
+              <span class="buddy-care-buddy-label" data-i18n="buddyCare.screen.buddy_says">Buddy sagt</span>
+              <p class="buddy-care-buddy-copy" data-i18n="buddyCare.screen.seasonpass_body">Dein digitaler 3-Pflanzen-Coach fuer eine komplette Saison.</p>
+            </div>
+          </div>
+          <ul id="buddyCareSeasonPassFeatureList" class="buddy-care-seasonpass-list"></ul>
+          <div class="buddy-care-seasonpass-price">
+            <strong id="buddyCareSeasonPassPrice" class="buddy-care-seasonpass-amount" data-i18n="buddyCare.screen.seasonpass_price">19,99 EUR</strong>
+            <span id="buddyCareSeasonPassPeriod" class="buddy-care-seasonpass-period" data-i18n="buddyCare.screen.seasonpass_period">Einmalig fuer eine Saison</span>
+            <span id="buddyCareSeasonPassBillingLabel" class="buddy-care-seasonpass-footnote" data-i18n="buddyCare.screen.seasonpass_label">Eine Saison, bis zu 3 Pflanzen</span>
+          </div>
+          <div class="buddy-care-daily-actions">
+            <button id="buddyCareSeasonPassActivateBtn" class="action-btn action-primary" type="button" data-i18n="buddyCare.screen.mock_unlock">Testzugang aktivieren</button>
+            <button class="ghost-btn" type="button" data-buddy-care-close-paywall="seasonpass" data-i18n="common.back">Zurueck</button>
+          </div>
+          <p id="buddyCareSeasonPassStatusNote" class="buddy-care-panel-footnote" hidden></p>
+          <p class="buddy-care-panel-footnote" data-i18n="buddyCare.screen.test_mode_note">Kostenloser Testzugang - es wird keine Zahlung ausgeloest.</p>
+          </section>
+
+          <section id="buddyCareMockActiveState" class="buddy-care-panel buddy-care-panel--success" hidden aria-live="polite">
+            <p class="buddy-care-panel-kicker" data-i18n="buddyCare.entitlement.care_plus_mock">Care+ Testzugang</p>
+            <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.mock_active_title">Care+ Testzugang aktiv</h2>
+            <div class="buddy-care-buddy-note buddy-care-buddy-note--seasonpass">
+              <div id="buddyCareMockActiveBuddyVisual" class="buddy-care-buddy-visual"></div>
+              <div class="buddy-care-buddy-body">
+                <span class="buddy-care-buddy-label" data-i18n="buddyCare.screen.buddy_says">Buddy sagt</span>
+                <p class="buddy-care-panel-copy" data-i18n="buddyCare.screen.mock_active_body">Du kannst aktuell bis zu 3 Pflanzen begleiten.</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="buddyCareActivationCard" class="buddy-care-panel buddy-care-panel--success" hidden aria-live="polite"></section>
+
+          <section id="buddyCareExternalTestChecklistCard" class="buddy-care-panel" hidden aria-live="polite"></section>
+
+          <section id="buddyCareExternalTestFeedbackCard" class="buddy-care-panel" hidden aria-live="polite"></section>
+
+          <section id="buddyCareExternalTestToolsCard" class="buddy-care-panel" hidden aria-live="polite"></section>
+
+          <section id="buddyCareMoreInfoCard" class="buddy-care-panel" hidden aria-live="polite">
+            <p class="buddy-care-panel-kicker" data-i18n="buddyCare.more.kicker">Care+ und Einstellungen</p>
+            <h2 class="buddy-care-panel-title" data-i18n="buddyCare.more.title">Mehr</h2>
+            <p class="buddy-care-panel-copy" data-i18n="buddyCare.more.body">Hier findest du Testzugang, Feedback, Hinweise und deine Buddy-Care-Testwerkzeuge.</p>
+          </section>
+        </div>
+
+        <nav id="buddyCareViewNav" class="buddy-care-nav" hidden aria-label="Buddy Care Navigation">
+          <button class="buddy-care-nav-btn is-active" type="button" data-buddy-care-view="today">
+            <span class="buddy-care-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M12 4 4 9v11h16V9z"/><path d="M9 20v-6h6v6"/></svg>
+            </span>
+            <span class="buddy-care-nav-label" data-i18n="buddyCare.nav.today">Heute</span>
+          </button>
+          <button class="buddy-care-nav-btn" type="button" data-buddy-care-view="plants">
+            <span class="buddy-care-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M12 20c0-6 2-10 6-12-1 4-3 7-6 8"/><path d="M12 20c0-5-2-9-7-11 1 4 4 7 7 8"/><path d="M12 20v-6"/></svg>
+            </span>
+            <span class="buddy-care-nav-label" data-i18n="buddyCare.nav.plants">Pflanzen</span>
+          </button>
+          <button class="buddy-care-nav-btn" type="button" data-buddy-care-view="history">
+            <span class="buddy-care-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="m3 13 6-6 5 4 7-8"/></svg>
+            </span>
+            <span class="buddy-care-nav-label" data-i18n="buddyCare.nav.history">Verlauf</span>
+          </button>
+          <button class="buddy-care-nav-btn" type="button" data-buddy-care-view="more">
+            <span class="buddy-care-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></svg>
+            </span>
+            <span class="buddy-care-nav-label" data-i18n="buddyCare.nav.more">Mehr</span>
+          </button>
+        </nav>
+      </section>
+    </main>
 </div>
 
   <div id="sheetBackdrop" class="sheet-backdrop hidden" aria-hidden="true"></div>
@@ -1074,53 +1418,53 @@
   <section id="supportSheet" class="bottom-sheet figma-sheet figma-sheet-support hidden" aria-hidden="true">
     <header class="sheet-header figma-sheet-header">
       <div class="support-sheet-heading">
-        <h2>GrowSim unterstützen</h2>
-        <p class="sheet-note">Wenn dir GrowSim hilft oder Freude macht, unterstützt du damit direkt die Weiterentwicklung.</p>
+        <h2 data-i18n="support.title">GrowSim unterstützen</h2>
+        <p class="sheet-note" data-i18n="support.sheet_note">Wenn dir GrowSim hilft oder Freude macht, unterstützt du damit direkt die Weiterentwicklung.</p>
       </div>
       <button class="sheet-close" data-close-sheet type="button" aria-label="Schließen"><svg class="sheet-close__icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-close"></use></svg></button>
     </header>
     <div class="sheet-content figma-sheet-content support-sheet-content">
       <section class="figma-top-player figma-top-player--compact support-sheet-intro">
         <div class="support-sheet-intro__copy">
-          <div class="figma-top-player-title">Freiwillige Unterstützung</div>
-          <div class="figma-top-player-subtitle">Jeder Beitrag hilft ruhig und direkt bei neuen Inhalten und weiterem Feinschliff.</div>
+          <div class="figma-top-player-title" data-i18n="support.intro_title">Freiwillige Unterstützung</div>
+          <div class="figma-top-player-subtitle" data-i18n="support.intro_subtitle">Jeder Beitrag hilft ruhig und direkt bei neuen Inhalten und weiterem Feinschliff.</div>
         </div>
         <div id="supportSheetBuddyVisual" class="shop-sheet-buddy shop-sheet-buddy--support" aria-hidden="true"></div>
       </section>
       <section class="figma-section-card support-card">
-        <small class="support-section-eyebrow">Support-Stufen</small>
+        <small class="support-section-eyebrow" data-i18n="support.section_eyebrow">Support-Stufen</small>
         <div id="supportOptionList" class="support-option-list" role="list">
           <button class="support-option-btn" type="button" data-support-tier="seed">
             <span class="support-option-copy">
-              <strong>Samen</strong>
-              <small>Kleiner Push für neue Ideen</small>
+              <strong data-i18n="support.tier.seed.label">Samen</strong>
+              <small data-i18n="support.tier.seed.description">Kleiner Push für neue Ideen</small>
             </span>
             <span class="support-option-value">3 €</span>
           </button>
-          <button class="support-option-btn is-active" type="button" data-support-tier="growth">
+          <button class="support-option-btn" type="button" data-support-tier="growth">
             <span class="support-option-copy">
-              <strong>Wachstum</strong>
-              <small>Solider Beitrag für Content</small>
+              <strong data-i18n="support.tier.growth.label">Wachstum</strong>
+              <small data-i18n="support.tier.growth.description">Solider Beitrag für Content</small>
             </span>
             <span class="support-option-value">5 €</span>
           </button>
           <button class="support-option-btn" type="button" data-support-tier="bloom">
             <span class="support-option-copy">
-              <strong>Blüte</strong>
-              <small>Starker Boost für Premium-Features</small>
+              <strong data-i18n="support.tier.bloom.label">Blüte</strong>
+              <small data-i18n="support.tier.bloom.description">Starker Beitrag für neue Ausbauschritte</small>
             </span>
             <span class="support-option-value">10 €</span>
           </button>
           <button class="support-option-btn support-option-btn--custom" type="button" data-support-tier="custom">
             <span class="support-option-copy">
-              <strong>Freier Betrag</strong>
-              <small>Flexible Unterstützung</small>
+              <strong data-i18n="support.tier.custom.label">Freier Betrag</strong>
+              <small data-i18n="support.tier.custom.description">Flexible Unterstützung</small>
             </span>
-            <span class="support-option-value">Flexible</span>
+            <span class="support-option-value" data-i18n="support.tier.custom.amount">Freie Wahl</span>
           </button>
         </div>
-        <button id="supportPrimaryCtaBtn" class="action-btn action-primary support-primary-cta" type="button" data-i18n="support.paypal_cta">Mit PayPal unterstützen</button>
-        <p id="supportSecondaryHint" class="sheet-note support-secondary-hint" data-i18n="support.voluntary_hint">Freiwillig. Jeder Beitrag hilft direkt bei der Weiterentwicklung.</p>
+        <button id="supportPrimaryCtaBtn" class="action-btn action-primary support-primary-cta" type="button" data-i18n="support.paypal_cta">Weiter zu PayPal</button>
+        <p id="supportSecondaryHint" class="sheet-note support-secondary-hint" data-i18n="support.select_hint">Wähle zuerst eine Support-Stufe. Die Zahlung wird erst danach extern über PayPal geöffnet.</p>
       </section>
     </div>
   </section>
@@ -1318,8 +1662,12 @@
           <div class="run-builder-copy">
             <span class="run-builder-eyebrow" data-i18n="onboarding.first_five.welcome.eyebrow">Erster Einstieg</span>
             <h3 data-i18n="onboarding.first_five.welcome.title">Dein erster Grow beginnt</h3>
-            <p data-i18n="onboarding.first_five.welcome.body">Zieh deine Pflanze durch Wachstum, Entscheidungen, Fehler, Wetter, Stress und Ernte. Buddy begleitet dich - aber du entscheidest.</p>
+            <p data-i18n="onboarding.first_five.welcome.body">Wir richten deinen ersten Grow in vier ruhigen Schritten ein. Danach führt Buddy dich direkt in Tag 1 mit einer echten ersten Entscheidung.</p>
           </div>
+          <aside class="onboarding-buddy-tip onboarding-buddy-tip--welcome" data-buddy-key="welcome">
+            <img alt="Buddy begrüßt deinen ersten Grow" loading="eager">
+            <p data-i18n="onboarding.first_five.welcome.hint">Du triffst das Setup, ich halte die ersten Minuten klar, ruhig und gut lesbar.</p>
+          </aside>
           <div class="run-builder-local-note" data-guest-welcome-note>
             <span class="run-builder-local-note__status" data-i18n="onboarding.guest.status">Gastmodus aktiv</span>
             <p data-i18n="onboarding.guest.cloud_hint">Cloud Sync kannst du später optional in den Einstellungen verbinden, wenn du deinen Run zusätzlich sichern oder auf ein anderes Gerät mitnehmen möchtest.</p>
@@ -1330,11 +1678,11 @@
           <div class="run-builder-copy">
             <span class="run-builder-eyebrow" data-i18n="onboarding.first_five.buddy.eyebrow">Buddy</span>
             <h3 data-i18n="onboarding.first_five.buddy.title">Lerne deinen Coach kennen</h3>
-            <p data-i18n="onboarding.first_five.buddy.body">Ich bin Buddy. Ich sag dir nicht nur, was du drücken sollst. Ich zeige dir, warum deine Pflanze reagiert.</p>
+            <p data-i18n="onboarding.first_five.buddy.body">Ich zeige dir nicht nur, was wichtig ist. Ich sage dir auch warum es zählt und was als Nächstes passiert.</p>
           </div>
           <aside class="onboarding-buddy-tip onboarding-buddy-tip--intro" data-buddy-key="intro">
             <img alt="Buddy erklärt die Genetik-Auswahl" loading="eager">
-            <p data-i18n="onboarding.first_five.buddy.hint">Ich bleibe kurz, warm und ehrlich. Dein erster Tag soll sich wie ein ruhiger Start anfühlen, nicht wie ein Formular.</p>
+            <p data-i18n="onboarding.first_five.buddy.hint">Ich bleibe kurz, ruhig und ehrlich, damit dein erster Tag geführt statt technisch wirkt.</p>
           </aside>
         </section>
 
@@ -1342,11 +1690,11 @@
           <div class="run-builder-copy">
             <span class="run-builder-eyebrow" data-i18n="onboarding.first_five.setup.eyebrow">Quick Setup</span>
             <h3 data-i18n="onboarding.first_five.setup.title">Starte deinen ersten Grow</h3>
-            <p data-i18n="onboarding.first_five.setup.body">Vier kurze Entscheidungen reichen. Danach startest du mit einem echten Setup statt mit einem Blindflug.</p>
+            <p data-i18n="onboarding.first_five.setup.body">Ein paar klare Entscheidungen reichen. Wir legen jetzt den Charakter deines Runs fest, dann startet direkt der erste Tag.</p>
           </div>
           <aside class="onboarding-buddy-tip" data-buddy-key="setup">
             <img alt="Buddy erklärt den Setup-Modus" loading="eager">
-            <p data-i18n="onboarding.first_five.setup.hint">Wähle Licht, Substrat, Topf und Start-Setup direkt. Ich halte es kompakt, aber die Werte landen echt im Run.</p>
+            <p data-i18n="onboarding.first_five.setup.hint">Wähle das Setup, das sich für deinen ersten Run richtig anfühlt. Ich halte die Unterschiede kurz und spürbar.</p>
           </aside>
           <div class="first-run-choice-stack">
             <section class="first-run-choice-group" aria-label="Grow-Setup">
@@ -1355,14 +1703,14 @@
                 <small data-i18n="onboarding.first_five.setup.mode_hint">Wo dein erster Run startet.</small>
               </div>
               <div class="onboarding-option-grid onboarding-option-grid--compact">
-                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupMode" data-setup-value="indoor" data-title="Indoor" data-description="Ruhiger Start mit kontrollierbarem Klima und planbaren Routinen." data-effect="Kontrolle · sauber · stabil">
+                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupMode" data-setup-value="indoor" data-title="Indoor" data-description="Ruhiger Start mit stabilem Klima und klaren Routinen." data-effect="Kontrolle · ruhig · stabil">
                   <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.mode.indoor.title">Indoor</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.mode.indoor.badge">Empfohlen</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.mode.indoor.body">Ruhiger Start mit kontrollierbarem Klima und planbaren Routinen.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.mode.indoor.effect">Kontrolle · sauber · stabil</span></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.mode.indoor.title">Indoor</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.mode.indoor.badge">Empfohlen</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.mode.indoor.body">Ruhiger Start mit stabilem Klima und klaren Routinen.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.mode.indoor.effect">Kontrolle · ruhig · stabil</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupMode" data-setup-value="outdoor" data-title="Outdoor" data-description="Mehr Schwankung, mehr Wetter und ein fordernderer Start." data-effect="Wetter · Luft · Timing">
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupMode" data-setup-value="outdoor" data-title="Outdoor" data-description="Mehr Wetter, mehr Schwankung und ein härterer Einstieg." data-effect="Wetter · Luft · Timing">
                   <span class="onboarding-icon onboarding-icon--setup" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.mode.outdoor.title">Outdoor</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.mode.outdoor.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.mode.outdoor.body">Mehr Schwankung, mehr Wetter und ein fordernderer Start.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.mode.outdoor.effect">Wetter · Luft · Timing</span></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.mode.outdoor.title">Outdoor</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.mode.outdoor.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.mode.outdoor.body">Mehr Wetter, mehr Schwankung und ein härterer Einstieg.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.mode.outdoor.effect">Wetter · Luft · Timing</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
               </div>
@@ -1374,14 +1722,14 @@
                 <small data-i18n="onboarding.first_five.setup.light_hint">Wie stark dein Startlicht direkt arbeitet.</small>
               </div>
               <div class="onboarding-option-grid onboarding-option-grid--compact">
-                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupLight" data-setup-value="medium" data-title="Medium Light" data-description="Solider Lichtstandard für einen ruhigen, lesbaren Start." data-effect="Balance · Kontrolle · Puffer">
+                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupLight" data-setup-value="medium" data-title="Mittleres Licht" data-description="Ausgewogenes Licht, das den ersten Tag gut lesbar hält." data-effect="Balance · Kontrolle · Puffer">
                   <span class="onboarding-icon onboarding-icon--light" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.light.medium.title">Medium Light</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.light.medium.badge">Standard</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.light.medium.body">Solider Lichtstandard für einen ruhigen, lesbaren Start.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.light.medium.effect">Balance · Kontrolle · Puffer</span></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.light.medium.title">Mittleres Licht</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.light.medium.badge">Standard</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.light.medium.body">Ausgewogenes Licht, das den ersten Tag gut lesbar hält.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.light.medium.effect">Balance · Kontrolle · Puffer</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupLight" data-setup-value="high" data-title="High Output Light" data-description="Mehr Druck und Tempo, sobald dein Profil das freigeschaltet hat." data-effect="Peak · Verbrauch · Fokus">
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupLight" data-setup-value="high" data-title="Starkes Licht" data-description="Mehr Intensität und Tempo, sobald dein Profil es freigeschaltet hat." data-effect="Peak · Verbrauch · Fokus">
                   <span class="onboarding-icon onboarding-icon--light" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.light.high.title">High Output Light</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.light.high.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.light.high.body">Mehr Druck und Tempo, sobald dein Profil das freigeschaltet hat.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.light.high.effect">Peak · Verbrauch · Fokus</span></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.light.high.title">Starkes Licht</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.light.high.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.light.high.body">Mehr Intensität und Tempo, sobald dein Profil es freigeschaltet hat.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.light.high.effect">Peak · Verbrauch · Fokus</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
               </div>
@@ -1393,14 +1741,14 @@
                 <small data-i18n="onboarding.first_five.setup.medium_hint">Wie schnell Wasser und Nährstoffe reagieren.</small>
               </div>
               <div class="onboarding-option-grid onboarding-option-grid--compact">
-                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupMedium" data-setup-value="soil" data-title="Erde" data-description="Verzeiht kleine Fehler und bleibt für den ersten Run angenehm lesbar." data-effect="Puffer · ruhig · fehlertolerant">
+                <button class="setup-option-btn onboarding-option-card is-active" type="button" data-setup-select="setupMedium" data-setup-value="soil" data-title="Erde" data-description="Verzeiht kleine Fehler und lässt dich den Rhythmus ruhig lernen." data-effect="Puffer · ruhig · fehlertolerant">
                   <span class="onboarding-icon onboarding-icon--substrate" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.medium.soil.title">Erde</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.medium.soil.badge">Empfohlen</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.medium.soil.body">Verzeiht kleine Fehler und bleibt für den ersten Run angenehm lesbar.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.medium.soil.effect">Puffer · ruhig · fehlertolerant</span></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.medium.soil.title">Erde</span><strong class="onboarding-card-badge value_green" data-i18n="onboarding.first_five.setup.medium.soil.badge">Empfohlen</strong></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.medium.soil.body">Verzeiht kleine Fehler und lässt dich den Rhythmus ruhig lernen.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.medium.soil.effect">Puffer · ruhig · fehlertolerant</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
-                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupMedium" data-setup-value="coco" data-title="Coco" data-description="Reagiert direkter und will mehr Routine, sobald du es freigeschaltet hast." data-effect="Reaktiv · schneller · enger">
+                <button class="setup-option-btn onboarding-option-card" type="button" data-setup-select="setupMedium" data-setup-value="coco" data-title="Coco" data-description="Reagiert direkter und verlangt mehr Routine, sobald es freigeschaltet ist." data-effect="Reaktiv · schneller · enger">
                   <span class="onboarding-icon onboarding-icon--substrate" aria-hidden="true"></span>
-                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.medium.coco.title">Coco</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.medium.coco.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.medium.coco.body">Reagiert direkter und will mehr Routine, sobald du es freigeschaltet hast.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.medium.coco.effect">Reaktiv · schneller · enger</span></span>
+                  <span class="onboarding-card-body"><span class="onboarding-card-head"><span class="onboarding-card-title" data-i18n="onboarding.first_five.setup.medium.coco.title">Coco</span><span class="onboarding-card-badge subtitle" data-i18n="onboarding.first_five.setup.medium.coco.badge">Später</span></span><span class="onboarding-card-description" data-i18n="onboarding.first_five.setup.medium.coco.body">Reagiert direkter und verlangt mehr Routine, sobald es freigeschaltet ist.</span><span class="onboarding-card-effect setup-option-effect" data-i18n="onboarding.first_five.setup.medium.coco.effect">Reaktiv · schneller · enger</span></span>
                   <span class="onboarding-card-check" aria-hidden="true">✓</span>
                 </button>
               </div>
@@ -1441,11 +1789,11 @@
           <div class="run-builder-copy">
             <span class="run-builder-eyebrow" data-i18n="onboarding.first_five.summary.eyebrow">Startklar</span>
             <h3 data-i18n="onboarding.first_five.summary.title">Dein Grow ist startbereit</h3>
-            <p data-i18n="onboarding.first_five.summary.body">Du setzt jetzt den Run auf und landest danach direkt in deinem geführten ersten Tag.</p>
+            <p data-i18n="onboarding.first_five.summary.body">Dein erster Run ist startklar. Wir übernehmen dieses Setup jetzt so und gehen direkt in einen geführten Tag 1.</p>
           </div>
           <aside class="onboarding-buddy-tip onboarding-buddy-tip--summary" data-buddy-key="summary">
             <img alt="Buddy bestätigt die Run-Zusammenfassung" loading="eager">
-            <p data-i18n="onboarding.first_five.summary.hint">Ich bleibe bei dir. Nach dem Start führen wir nur durch den ersten wichtigen Moment - nicht durch zehn Menüs.</p>
+            <p data-i18n="onboarding.first_five.summary.hint">Das ist dein ruhiger Startpunkt: klares Setup, kein Druck und genau ein wichtiger erster Moment.</p>
           </aside>
           <section class="setup-strategy-card run-builder-summary-card">
             <div class="setup-strategy-top">
@@ -1460,7 +1808,7 @@
           </section>
           <div class="run-builder-summary-grid" aria-label="Gewähltes Setup">
             <article data-summary-select="setupMode"><span class="onboarding-icon onboarding-icon--setup summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.mode_title">Grow-Setup</small><strong id="onboardingSummaryMode">Indoor</strong></article>
-            <article data-summary-select="setupLight"><span class="onboarding-icon onboarding-icon--light summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.light_title">Licht-Setup</small><strong id="onboardingSummaryLight">Medium Light</strong></article>
+            <article data-summary-select="setupLight"><span class="onboarding-icon onboarding-icon--light summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.light_title">Licht-Setup</small><strong id="onboardingSummaryLight">Mittleres Licht</strong></article>
             <article data-summary-select="setupMedium"><span class="onboarding-icon onboarding-icon--substrate summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.medium_title">Substrat</small><strong id="onboardingSummaryMedium">Erde</strong></article>
             <article data-summary-select="setupPotSize"><span class="onboarding-icon onboarding-icon--pot summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.pot_title">Topfgröße</small><strong id="onboardingSummaryPot">2 Liter (S)</strong></article>
             <article data-summary-select="setupGenetics"><span class="onboarding-icon onboarding-icon--genetics summary-setup-media" aria-hidden="true"></span><small data-i18n="onboarding.first_five.setup.genetics_title">Genetik</small><strong id="onboardingSummaryGenetics">Hybrid</strong></article>
@@ -1651,6 +1999,7 @@
         <button id="menuNewRunBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.new_run">Speichern und Beenden</span><small data-i18n="menu.new_run_hint">Aktuellen Run sichern und neu starten</small></button>
         <p class="menu-section-label" data-i18n="menu.group_progress">Fortschritt</p>
         <button id="menuMissionsBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.missions">Missionen</span><small data-i18n="menu.missions_hint">Tagesziele &amp; Fortschritt</small></button>
+        <button id="menuBuddyCareBtn" class="menu-entry figma-menu-entry" type="button"><span data-i18n="menu.buddy_care">Buddy Care+</span><small id="menuBuddyCareSubtext" data-i18n="menu.buddy_care_hint">Dein Care+ Testzugang fuer bis zu 3 Pflanzen</small></button>
         <button id="menuLeaderboardBtn" class="menu-entry figma-menu-entry" type="button" aria-disabled="false" aria-hidden="false" title="Öffnet das Weekly-Leaderboard.">
           <span id="menuLeaderboardLabel" class="menu-entry-main">Leaderboard<span id="menuLeaderboardRewardHint" class="reward-hint-dot reward-hint-dot--entry hidden" aria-hidden="true"></span></span>
           <small id="menuLeaderboardSubtext">Verifizierte Ergebnisse mit Konto</small>
@@ -1811,6 +2160,16 @@
       { src: 'src/config/simulation.js' },
       { src: 'src/utils/textEncoding.js' },
       { src: 'src/i18n/index.js' },
+      { src: 'src/buddy-care/featureFlags.js' },
+      { src: 'src/buddy-care/types.js' },
+      { src: 'src/buddy-care/externalTestReadiness.js' },
+      { src: 'src/buddy-care/state.js' },
+      { src: 'src/buddy-care/monetizationReadiness.js' },
+      { src: 'src/buddy-care/buddyAssets.js' },
+      { src: 'src/buddy-care/phaseEngine.js' },
+      { src: 'src/buddy-care/taskGenerator.js' },
+      { src: 'src/buddy-care/riskEngine.js' },
+      { src: 'src/buddy-care/trendEngine.js' },
       { src: 'src/events/legacy/EventV1WriteTelemetry.js' },
       { src: 'sim.js' },
       { src: 'src/simulation/plantState.js' },

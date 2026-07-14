@@ -59,6 +59,9 @@
     "support_hint": "Freiwilliger Support",
     "missions": "Missionen",
     "missions_hint": "Tagesziele & Fortschritt",
+    "buddy_care": "Buddy Care+",
+    "buddy_care_hint": "{count} / {total} Pflanzen im Setup",
+    "buddy_care_hint_active": "Care+ Testzugang aktiv: {count} / {total} Pflanzen",
     "about": "Projektinfo",
     "about_hint": "Lokaler Start & Cloud",
     "imprint": "Impressum",
@@ -76,6 +79,625 @@
     "about_sheet_title": "Ueber Grow Simulator",
     "about_sheet_body": "Grow Simulator startet standardmaessig lokal auf diesem Geraet. Cloud Sync, verifizierte Ergebnisse, Leaderboard und Erinnerungen bleiben optionale Zusatzfunktionen.",
     "close": "Schließen"
+  },
+  "buddyCare": {
+    "nav": {
+      "today": "Heute",
+      "plants": "Pflanzen",
+      "diary": "Tagebuch",
+      "history": "Verlauf",
+      "more": "Mehr"
+    },
+    "v2": {
+      "open_settings": "Einstellungen öffnen",
+      "history_subtitle": "Entwicklung & Rückblick",
+      "history_intro": "Checks, Dokumentation und Trends aus deinen vorhandenen Pflanzendaten.",
+      "greeting_morning": "Guten Morgen, {name}",
+      "greeting_day": "Hallo, {name}",
+      "greeting_evening": "Guten Abend, {name}",
+      "grower": "Grower",
+      "check_now": "Jetzt prüfen",
+      "add_first_plant": "Erste Pflanze anlegen",
+      "today_important": "Heute wichtig",
+      "start_check": "Prüfung starten",
+      "show_all": "Alle anzeigen",
+      "open_plant": "{name} öffnen",
+      "plant_image_alt": "Cannabispflanze {name}",
+      "plant_fallback": "Pflanze",
+      "phase": "Phase",
+      "next_check": "Nächster Check",
+      "documented": "Dokumentation vorhanden",
+      "heat_stress": "Hitzestress beobachtet",
+      "filter_label": "Pflanzen filtern",
+      "filter": {
+        "all": "Alle",
+        "stable": "Stabil",
+        "watch": "Beobachten",
+        "action": "Handlungsbedarf"
+      },
+      "filter_empty_title": "Keine Pflanzen in diesem Filter",
+      "filter_empty_body": "Wähle einen anderen Status, um deine vorhandenen Pflanzen zu sehen.",
+      "status": {
+        "stable": "Stabil",
+        "watch": "Beobachten",
+        "action": "Handlungsbedarf",
+        "neutral": "Noch offen"
+      },
+      "currently_important": "Aktuell wichtig",
+      "module": {
+        "water": "Wasser",
+        "growth": "Entwicklung",
+        "environment": "Umgebung",
+        "risks": "Risiken"
+      },
+      "latest_documentation": "Letzte Dokumentation",
+      "no_documentation": "Noch keine Dokumentation vorhanden",
+      "open_history": "Verlauf öffnen",
+      "data_tab": "Daten",
+      "overall_status": "Gesamtzustand",
+      "plant_tabs": "Bereiche der Pflanze",
+      "data": {
+        "environment": "Standort",
+        "phase": "Phase",
+        "type": "Pflanzentyp",
+        "start_date": "Startdatum",
+        "age": "Alter",
+        "last_check": "Letzter Check",
+        "last_documentation": "Letzte Dokumentation"
+      },
+      "completed_checks": "Erledigte Checks",
+      "total_checks": "Checks heute",
+      "open_checks": "Offene Checks",
+      "risks": "Akute Risiken",
+      "history_modes": "Verlaufsansicht",
+      "timeline": "Zeitleiste",
+      "trends": "Trends",
+      "week_with_buddy": "Deine Woche mit Buddy",
+      "week_checks": "Pflegechecks in dieser Woche",
+      "week_stable": "Pflanzen stabil",
+      "week_risks": "Pflanzen unter Beobachtung",
+      "open_weekly_report": "Wochenbericht öffnen",
+      "open_plant_history": "Pflanzenverlauf öffnen",
+      "timeline_check": "Pflanzencheck durchgeführt",
+      "more_subtitle": "Care+ Funktionen und Einstellungen",
+      "more_navigation": "Weitere Care+ Bereiche",
+      "more_weekly": "Wochenberichte",
+      "more_weekly_hint": "Rückblicke und Trends öffnen",
+      "more_plants": "Pflanzenverwaltung",
+      "more_plants_hint": "Pflanzen anlegen und verwalten",
+      "more_status": "Care+ Status"
+    },
+    "hero": {
+      "today_subtitle": "Heute brauchen deine Pflanzen deinen Fokus.",
+      "today_empty": "Noch keine Pflanzen angelegt. Starte mit einer Pflanze und ich zeige dir, was heute wichtig wird.",
+      "plants_subtitle": "Pflanzen anlegen, pruefen und gezielt oeffnen.",
+      "plants_copy": "Du begleitest aktuell {count} Pflanzen. Halte Karten kompakt und springe fuer Details in die Einzelansicht.",
+      "plants_empty": "Lege hier deine erste Pflanze an, damit Buddy einen klaren Care-Bereich aufbauen kann.",
+      "diary_subtitle": "Deine Eintraege an einem Ort.",
+      "diary_copy": "Hier siehst du die letzten Notizen und Tageschecks aller Pflanzen zusammen."
+    },
+    "entitlement": {
+      "free": "Free",
+      "care_plus_mock": "Care+ Testzugang"
+    },
+    "screen": {
+      "eyebrow": "Deine Pflanzenuebersicht",
+      "title": "Buddy Care+",
+      "subtitle": "Dein 3-Pflanzen-Coach",
+      "intro": "Hier begleitet Buddy bis zu drei Pflanzen mit klaren Tagesimpulsen.",
+      "plant_limit": "{count} Pflanzen verfuegbar",
+      "age_gate_kicker": "Altersfreigabe",
+      "age_gate_title": "Nur fuer volljaehrige Nutzer",
+      "age_gate_body": "Bevor Buddy Care+ geoeffnet wird, bestaetigst du einmal, dass du volljaehrig bist.",
+      "age_gate_action": "Ich bin volljaehrig",
+      "placeholder_kicker": "Bereit fuer heute",
+      "placeholder_title": "Dein Care-Dashboard ist bereit",
+      "placeholder_body": "Lege deine erste Pflanze an und starte mit Tagescheck, Tagebuch und Wochenueberblick.",
+      "placeholder_note_free": "Im Free-Modus bleibt eine Pflanze verfuegbar.",
+      "placeholder_note_mock": "Care+ Testzugang aktiv. Du kannst aktuell bis zu 3 Pflanzen begleiten.",
+      "today_view_hint": "Buddy zeigt dir danach, was heute wirklich wichtig ist.",
+      "setup_kicker": "Los geht's",
+      "setup_title": "Pflanzen-Setup",
+      "setup_body": "Lege deine ersten Buddy-Care-Pflanzen an. Free startet mit 1 Pflanze, der Care+ Testzugang erweitert auf bis zu 3.",
+      "setup_name_label": "Name",
+      "setup_name_placeholder": "z. B. Balkon 01",
+      "setup_type_label": "Typ",
+      "setup_environment_label": "Umgebung",
+      "setup_start_label": "Startdatum",
+      "setup_add": "Pflanze hinzufuegen",
+      "setup_status_empty": "Lege deine erste Pflanze an.",
+      "setup_status_available": "Noch {count} von {total} Plaetzen frei.",
+      "setup_status_limit": "Alle {total} Pflanzenplaetze sind belegt.",
+      "setup_status_limit_free": "Free bleibt bei 1 Pflanze. Mit Buddy Care+ kannst du bis zu {total} Pflanzen begleiten.",
+      "summary_kicker": "Zusammenfassung",
+      "summary_title": "Care Dashboard",
+      "summary_plants": "Pflanzen",
+      "summary_entitlement": "Zugang",
+      "summary_tasks": "Offene Aufgaben",
+      "today_kicker": "Heute",
+      "today_title": "Heute wichtig",
+      "today_empty_body": "Sobald Pflanzen angelegt sind, erscheint hier die heutige Uebersicht.",
+      "buddy_says": "Buddy sagt",
+      "phase_note": "Buddy schätzt die Phase anhand deiner Angaben. Du kannst sie spaeter manuell anpassen.",
+      "plants_kicker": "Uebersicht",
+      "plants_title": "Deine Pflanzen",
+      "empty_title": "Buddy wartet auf deine erste Pflanze.",
+      "empty_body": "Lege eine Pflanze an, damit Buddy dir Tagesaufgaben, Wochenplan und Pflegehinweise erstellen kann.",
+      "slot_label": "Slot {number}",
+      "details": "Details",
+      "day_unknown": "Tag unbekannt",
+      "day_value": "Tag {day}",
+      "phase_estimate_value": "Geschätzte Phase: {phase}",
+      "card_type_environment": "{type} - {environment}",
+      "card_day_phase": "{phase} · {day}",
+      "card_today_value": "Heute: {status}",
+      "card_week_value": "Woche: {status}",
+      "details_open": "Details oeffnen",
+      "details_close": "Details schliessen",
+      "back_to_plants": "Zurueck zu Pflanzen",
+      "overview": "Uebersicht",
+      "history_short": "Verlauf",
+      "week": "Woche",
+      "next_task": "Naechste Aufgabe",
+      "read_only_badge": "Nur ansehen",
+      "read_only_title": "Gespeichert im Free-Zugang",
+      "read_only_body": "Diese Pflanze bleibt gespeichert. Aktiviere den Care+ Testzugang erneut, um wieder Checks und Eintraege hinzuzufuegen.",
+      "plant_count_saved": "{active} aktiv · {saved} gespeichert",
+      "main_task": "Heute zuerst: {task}",
+      "no_task": "Noch keine Aufgabe",
+      "weekly_title": "Diese Woche",
+      "remove_plant": "Entfernen",
+      "free_hint": "Free-Version: 1 Pflanze aktiv. Mit Care+ kannst du bis zu 3 Pflanzen begleiten.",
+      "mock_hint": "Care+ Testzugang aktiv: bis zu 3 Pflanzen verfuegbar.",
+      "view_care_plus": "Testzugang ansehen",
+      "upgrade_title": "Care+ Testzugang aktivieren",
+      "upgrade_body": "Begleite bis zu 3 Pflanzen mit Tagescheck, Tagebuch, Ampel, Verlauf und Wochenrueckblick.",
+      "upgrade_price_line": "Saisonpass: 19,99 EUR",
+      "seasonpass_preview": "Care+ testen",
+      "seasonpass_title": "Buddy Care+ Saisonpass",
+      "seasonpass_body": "Dein digitaler 3-Pflanzen-Coach fuer eine komplette Saison.",
+      "seasonpass_label": "Eine Saison, bis zu 3 Pflanzen",
+      "seasonpass_price": "19,99 EUR",
+      "seasonpass_period": "Einmalig fuer eine Saison",
+      "seasonpass_feature_3_plants": "bis zu 3 Pflanzen",
+      "seasonpass_feature_daily_checks": "Tageschecks",
+      "seasonpass_feature_diary": "Tagebuch pro Pflanze",
+      "seasonpass_feature_risk": "Ampel und Buddy-Hinweise",
+      "seasonpass_feature_trends": "Verlauf und Trends",
+      "seasonpass_feature_weekly": "Wochenrueckblick",
+      "seasonpass_feature_pdf": "spaeter PDF-Export",
+      "seasonpass_feature_reminders": "spaeter Erinnerungen",
+      "mock_unlock": "Testzugang aktivieren",
+      "test_mode_note": "Kostenloser Testzugang - es wird keine Zahlung ausgeloest.",
+      "monetization_not_ready": "Monetarisierung ist noch nicht freigegeben.",
+      "checkout_not_released": "Checkout ist noch nicht freigegeben.",
+      "mock_badge": "Kostenlos testen",
+      "mock_title": "Kostenloser Care+ Testzugang",
+      "mock_body": "Sieh dir Care+ in Ruhe an und schalte bis zu 3 Pflanzen fuer deinen Test frei.",
+      "mock_upgrade": "Testzugang ansehen",
+      "mock_active_title": "Care+ Testzugang aktiv",
+      "mock_active_body": "Du kannst aktuell bis zu 3 Pflanzen begleiten.",
+      "upgrade_reason_free_zero": "Starte kostenlos mit einer Pflanze. Mit dem Care+ Testzugang kannst du spaeter bis zu 3 Pflanzen begleiten.",
+      "upgrade_reason_free_one": "Dein Free-Slot ist aktiv. Mit dem Care+ Testzugang kannst du zwei weitere Pflanzen begleiten.",
+      "upgrade_reason_locked_slot": "Dieser Slot gehoert zum Care+ Testzugang. Damit kannst du bis zu 3 Pflanzen getrennt begleiten.",
+      "upgrade_reason_limit_reached": "Free begleitet eine Pflanze. Der Care+ Testzugang erweitert Buddy auf bis zu 3 Pflanzen.",
+      "activation_zero_plants_body": "Lege deine erste Pflanze an, damit Buddy Tageschecks, Tagebuch und Wochenrueckblick erstellen kann.",
+      "activation_one_plant_body": "Deine erste Pflanze ist angelegt. Jetzt kannst du Slot 2 nutzen.",
+      "activation_two_plants_body": "Noch ein Slot frei. Buddy kann eine dritte Pflanze begleiten.",
+      "activation_complete_kicker": "3 Pflanzen aktiv",
+      "activation_complete_title": "Dein Care+ Setup ist vollstaendig",
+      "activation_complete_body": "Buddy begleitet jetzt alle 3 Pflanzen mit Tageschecks, Tagebuch, Ampel, Verlauf und Wochenrueckblick.",
+      "activation_slot_free_title": "Noch ein Slot frei",
+      "activation_buddy_ready": "Der Care+ Testzugang ist bereit. Lege deine weiteren Pflanzen an, damit ich sie getrennt begleiten kann.",
+      "activation_buddy_complete": "Buddy begleitet jetzt alle 3 Pflanzen. Heute kannst du direkt mit Tagescheck und Verlauf starten.",
+      "activation_cta_first_plant": "Erste Pflanze anlegen",
+      "activation_cta_second_plant": "Zweite Pflanze anlegen",
+      "activation_cta_third_plant": "Dritte Pflanze anlegen",
+      "activation_cta_today_start": "Heute starten",
+      "activation_cta_later": "Spaeter",
+      "locked_slot_title": "Slot {number} gesperrt",
+      "locked_slot_body": "Mit dem Care+ Testzugang kannst du bis zu 3 Pflanzen begleiten."
+    },
+    "externalTest": {
+      "kicker": "Buddy Care+ Testzugang",
+      "intro_title": "Kostenloser Fruehtest",
+      "intro_body": "Du testest eine fruehe Version von Buddy Care+. Dein Feedback hilft dabei, den Pflanzen-Coach verstaendlicher und nuetzlicher zu machen.",
+      "test_access_note": "Kostenloser Testzugang. Es wird keine Zahlung ausgeloest. Deine Buddy-Care-Daten bleiben lokal im bestehenden Save-System.",
+      "start": "Test starten",
+      "feedback": "Feedback geben",
+      "checklist_title": "Buddy Care+ testen",
+      "checklist_show": "Checkliste zeigen",
+      "checklist_progress": "{done} von {total} Schritten erkannt.",
+      "checklist_item": {
+        "first_plant": "Eine Pflanze anlegen",
+        "daily_check": "Tagescheck durchfuehren",
+        "diary_open": "Tagebuch oeffnen",
+        "test_access": "Testzugang aktivieren",
+        "second_plant": "Zweite Pflanze anlegen",
+        "reload": "Seite neu laden",
+        "feedback": "Feedback geben"
+      },
+      "feedback_kicker": "Test-Feedback",
+      "feedback_title": "Deine Einschätzung",
+      "feedback_body": "Ein ehrliches Kurzfeedback hilft am meisten. Grow-Inhalte werden dabei nicht in Test-Events uebernommen.",
+      "feedback_saved_title": "Feedback gespeichert",
+      "feedback_saved_body": "Danke. Deine Antworten bleiben lokal und helfen bei der Entscheidung fuer die naechste Testphase.",
+      "feedback_submit": "Feedback speichern",
+      "feedback_clarity_label": "Wie verstaendlich war Buddy Care+?",
+      "feedback_helpful_label": "Was war am hilfreichsten?",
+      "feedback_confusion_label": "Was war unklar oder stoerend?",
+      "feedback_continue_label": "Wuerdest du Buddy Care+ weiter nutzen?",
+      "feedback_pay_label": "Wuerdest du grundsaetzlich dafuer bezahlen?",
+      "feedback_model_label": "Welches Modell waere fuer dich eher passend?",
+      "feedback_price_label": "Welcher Preis fuer einen Saisonpass waere fuer dich realistisch?",
+      "feedback_privacy_note": "Freitext bleibt nur lokal in Buddy Care+. Tracking-Events enthalten keine Pflanzennamen, Notizen oder Grow-Inhalte.",
+      "tools_kicker": "Testdaten",
+      "tools_title": "Test zuruecksetzen oder exportieren",
+      "tools_body": "Nur technische Buddy-Care-Testevents werden exportiert. Der normale Grow Simulator bleibt unberuehrt.",
+      "export_action": "Test-Events exportieren",
+      "reset_action": "Testdaten zuruecksetzen",
+      "reset_confirm_title": "Buddy-Care-Testdaten zuruecksetzen?",
+      "reset_confirm_body": "Pflanzen, Tageschecks und Tagebucheintraege in Buddy Care+ werden entfernt. Der normale Grow Simulator bleibt unveraendert.",
+      "select_placeholder": "Bitte waehlen",
+      "clarity_option": {
+        "1": "1 - unverstaendlich",
+        "2": "2",
+        "3": "3",
+        "4": "4",
+        "5": "5 - sehr verstaendlich"
+      },
+      "helpful_option": {
+        "today_view": "Heute wichtig",
+        "daily_check": "Tagescheck",
+        "buddy_hints": "Buddy-Hinweise",
+        "diary": "Tagebuch",
+        "risk_light": "Ampel",
+        "trend": "Verlauf",
+        "weekly_review": "Wochenrueckblick",
+        "three_plant_overview": "3-Pflanzen-Uebersicht"
+      },
+      "choice": {
+        "yes": "Ja",
+        "maybe": "Vielleicht",
+        "no": "Nein"
+      },
+      "pricing_model": {
+        "season_pass": "einmaliger Saisonpass",
+        "monthly_subscription": "monatliches Abo",
+        "one_time_purchase": "einmaliger Kauf",
+        "free_only": "nur kostenlos"
+      },
+      "season_pass_price": {
+        "under_10": "unter 10 EUR",
+        "10_15": "10-15 EUR",
+        "15_20": "15-20 EUR",
+        "over_20": "ueber 20 EUR",
+        "would_not_pay": "wuerde nicht zahlen"
+      }
+    },
+    "phase": {
+      "seedling": "Keimling",
+      "early_veg": "Fruehe Vegi",
+      "veg": "Vegetative Phase",
+      "stretch": "Stretch",
+      "flower": "Bluete",
+      "ripening": "Reifephase",
+      "harvest_window": "Erntefenster",
+      "unknown": "Unbekannt"
+    },
+    "type": {
+      "auto": "Auto",
+      "photoperiod": "Photo",
+      "unknown": "Unbekannt"
+    },
+    "environment": {
+      "indoor": "Indoor",
+      "outdoor": "Outdoor",
+      "greenhouse": "Gewaechshaus",
+      "unknown": "Unbekannte Umgebung"
+    },
+    "dailyCheck": {
+      "kicker": "Tagescheck",
+      "title": "Tagescheck",
+      "title_for_plant": "Tagescheck fuer {plant}",
+      "medium_label": "Wie fuehlt sich das Medium an?",
+      "leaf_label": "Wie sehen die Blaetter aus?",
+      "growth_label": "Wie wirkt das Wachstum?",
+      "environment_label": "War heute etwas auffaellig?",
+      "pests_label": "Schaedlinge sichtbar?",
+      "height_label": "Hoehe in cm, optional",
+      "note_label": "Notiz, optional",
+      "save": "Check speichern",
+      "start": "Tagescheck starten",
+      "recheck": "Tagescheck aktualisieren",
+      "view": "Tagescheck ansehen",
+      "latest_check_none": "Noch kein Check",
+      "latest_check_value": "Letzter Check: {date}",
+      "today_open": "Tagescheck offen",
+      "today_all_clear": "Alles unauffaellig",
+      "today_compare_tomorrow": "Vergleiche morgen die Blaetter erneut",
+      "status": {
+        "no_check_today": "Tagescheck offen",
+        "checked_today": "Tagescheck erledigt",
+        "needs_attention": "Genauer beobachten"
+      },
+      "option": {
+        "dry": "Trocken",
+        "moist": "Leicht feucht",
+        "wet": "Nass",
+        "unknown": "Weiss ich nicht",
+        "normal": "Normal",
+        "hanging": "Haengen",
+        "curling": "Rollen sich",
+        "spots": "Flecken sichtbar",
+        "yellowing": "Werden gelb",
+        "fast": "Schnell",
+        "slow": "Langsam",
+        "hot": "Heiss",
+        "humid": "Sehr feucht",
+        "cold": "Kalt",
+        "windy": "Windig",
+        "no": "Nein",
+        "unsure": "Unsicher",
+        "yes": "Ja"
+      }
+    },
+    "diary": {
+      "title": "Tagebuch",
+      "open": "Tagebuch oeffnen",
+      "hide": "Tagebuch schliessen",
+      "all_plants": "Alle Pflanzen",
+      "add_entry": "Eintrag hinzufuegen",
+      "save_entry": "Eintrag speichern",
+      "delete_entry": "Loeschen",
+      "delete_confirm_title": "Eintrag wirklich loeschen?",
+      "delete_confirm_body": "Dieser Tagebucheintrag wird aus Buddy Care+ entfernt.",
+      "latest_entry_none": "Letzter Eintrag: Noch kein Eintrag",
+      "latest_entry_value": "Letzter Eintrag: {date}",
+      "timeline_title": "Timeline",
+      "empty_title": "Noch keine Eintraege.",
+      "empty_body": "Buddy-Tipp: Ein kurzer Eintrag heute hilft dir spaeter, Veraenderungen besser einzuordnen.",
+      "today_updated": "Tagebuch aktualisiert",
+      "today_optional": "Optional: kurzen Tagebuch-Eintrag ergaenzen",
+      "linked_check": "Verknuepfter Tagescheck",
+      "field_medium": "Medium",
+      "field_leaves": "Blaetter",
+      "field_growth": "Wachstum",
+      "field_environment": "Umgebung",
+      "field_pests": "Schaedlinge",
+      "plant_label": "Pflanze",
+      "title_label": "Titel",
+      "title_placeholder": "z. B. Blattstellung am Morgen",
+      "note_label": "Notiz",
+      "note_placeholder": "Beobachtung kurz notieren",
+      "height_label": "Hoehe in cm",
+      "tags_label": "Tags",
+      "manual_title_fallback": "Eintrag ohne Titel",
+      "auto_title_complete": "Tagescheck abgeschlossen",
+      "auto_title_attention": "Tagescheck: genauer beobachten",
+      "tag": {
+        "observation": "Beobachtung",
+        "watering": "Giessen",
+        "height": "Hoehe",
+        "environment": "Umgebung",
+        "issue": "Auffaelligkeit",
+        "weekly_review": "Wochenrueckblick",
+        "other": "Sonstiges",
+        "daily_check": "Tagescheck"
+      }
+    },
+    "risk": {
+      "status": {
+        "gray": "Noch zu wenig Daten",
+        "green": "Unauffaellig",
+        "yellow": "Genauer beobachten",
+        "red": "Heute pruefen"
+      },
+      "message": {
+        "gray": "Ich brauche noch einen Tagescheck, bevor ich die Pflanze sinnvoll einschaetzen kann.",
+        "green": "Alles wirkt unauffaellig. Heute reicht eine ruhige Kontrolle.",
+        "yellow": "Eine Sache faellt auf. Kein Grund zur Panik - beobachte genauer und vergleiche morgen erneut.",
+        "red": "Mehrere Signale fallen auf. Pruefe die Pflanze heute in Ruhe und dokumentiere die Veraenderung."
+      },
+      "aggregate": {
+        "all_gray": "Buddy sagt: Starte mit einem kurzen Tagescheck, damit ich deine Pflanzen besser einordnen kann.",
+        "all_green": "Buddy sagt: Heute wirkt alles ruhig. Halte deine Routine bei und dokumentiere kurz.",
+        "has_yellow": "Buddy sagt: Eine Pflanze solltest du genauer beobachten. Kein Grund zur Panik - ein sauberer Vergleich hilft.",
+        "has_red": "Buddy sagt: Eine Pflanze braucht heute deine Aufmerksamkeit. Pruefe sie in Ruhe und dokumentiere, was du siehst."
+      },
+      "recommendation": {
+        "gray_check": "Tagescheck starten",
+        "gray_data": "Pflanzendaten pruefen",
+        "gray_diary": "Ersten Tagebuch-Eintrag ergaenzen",
+        "green_routine": "Routine beibehalten",
+        "green_note": "Optional Notiz ergaenzen",
+        "green_tomorrow": "Morgen erneut kurz pruefen",
+        "yellow_document": "Auffaellige Stelle dokumentieren",
+        "yellow_compare": "Morgen erneut vergleichen",
+        "yellow_not_many_changes": "Nicht mehrere Dinge gleichzeitig aendern",
+        "red_check": "Pflanze heute in Ruhe pruefen",
+        "red_document": "Beobachtung notieren",
+        "red_compare": "Morgen Vergleich durchfuehren"
+      },
+      "diary_tip": {
+        "yellow": "Buddy-Tipp: Ergaenze heute eine kurze Notiz, damit du morgen vergleichen kannst.",
+        "red": "Buddy-Tipp: Dokumentiere die auffaellige Stelle heute besonders genau."
+      },
+      "signal": {
+        "pest_title": "Schaedlinge sichtbar",
+        "pest_message": "Sichtbare Schaedlinge sind ein klares Signal fuer eine ruhige Pruefung heute.",
+        "moisture_title": "Nasses Medium und haengende Blaetter",
+        "moisture_message": "Diese Kombination ist heute einen ruhigen Vergleich wert.",
+        "leaf_title": "Blaetter wirken anders",
+        "leaf_message": "Blatthaltung oder Farbe fallen heute auf.",
+        "growth_title": "Wachstum wirkt langsamer",
+        "growth_message": "Das Wachstum wirkt gerade langsamer als erwartet.",
+        "environment_title": "Umgebung war auffaellig",
+        "environment_message": "Hitze, Feuchtigkeit, Kaelte oder Wind sind heute aufgefallen.",
+        "pest_unsure_title": "Schaedlinge unklar",
+        "pest_unsure_message": "Du hast Schaedlinge als unsicher markiert. Diese Pflanze verdient heute einen genaueren Blick.",
+        "diary_issue_title": "Problemnotiz heute",
+        "diary_issue_message": "Im Tagebuch ist fuer heute bereits ein auffaelliger Punkt markiert.",
+        "attention_title": "Check zeigt Aufmerksamkeit an",
+        "attention_message": "Der letzte Tagescheck deutet bereits auf einen genaueren Vergleich hin.",
+        "repeat_title": "Wiederholte Aufmerksamkeit",
+        "repeat_message": "In den letzten 48 Stunden gab es mehrere auffaellige Checks."
+      }
+    },
+    "trend": {
+      "title": "Verlauf",
+      "compare_title": "Buddy vergleicht",
+      "card_value": "Trend: {trend}",
+      "status": {
+        "not_enough_data": "Noch nicht genug Daten",
+        "stable": "Verlauf ruhig",
+        "improving": "Besser als letzter Check",
+        "watch_change": "Neue Veraenderung erkannt",
+        "repeat_attention": "Wiederholt auffaellig"
+      },
+      "message": {
+        "not_enough_data": "Ich brauche noch mindestens zwei Checks, um Veraenderungen sinnvoll vergleichen zu koennen.",
+        "stable": "Der Verlauf wirkt ruhig. Behalte deine Routine bei.",
+        "improving": "Der heutige Check wirkt ruhiger als der letzte. Beobachte weiter und aendere nicht zu viel auf einmal.",
+        "watch_change": "Eine Veraenderung ist neu dazugekommen. Dokumentiere sie kurz und vergleiche morgen erneut.",
+        "repeat_attention": "Die Auffaelligkeit wiederholt sich. Pruefe die Pflanze heute in Ruhe und halte den Verlauf fest."
+      },
+      "today": {
+        "not_enough_data": "Noch nicht genug Vergleichsdaten",
+        "stable": "Verlauf ruhig seit dem letzten Check",
+        "improving": "Ruhiger als der letzte Check",
+        "watch_change": "Neue Veraenderung seit dem letzten Check",
+        "repeat_attention": "Auffaelligkeit wiederholt sich"
+      },
+      "height": {
+        "delta": "Seit dem letzten Hoehenwert: {delta} cm",
+        "first": "Erster Hoehenwert gespeichert"
+      }
+    },
+    "history": {
+      "title": "Verlauf",
+      "last_checks": "Letzte Checks",
+      "last_entries": "Letzte Eintraege",
+      "low_data": "Noch wenig Daten.",
+      "checks_available": "Verlauf: {count} Checks",
+      "day": {
+        "today": "Heute",
+        "yesterday": "Gestern",
+        "two_days_ago": "Vor 2 Tagen",
+        "days_ago": "Vor {count} Tagen"
+      },
+      "summary": {
+        "low_data": "Noch wenig Verlauf vorhanden. Zwei bis drei Checks helfen Buddy beim Vergleichen.",
+        "stable": "Der Verlauf wirkt ruhig. Behalte deine Routine bei.",
+        "improving": "Der Verlauf wirkt heute ruhiger. Beobachte weiter und aendere nicht zu viel auf einmal.",
+        "watch_change": "Eine Veraenderung ist neu dazugekommen. Vergleiche morgen erneut und dokumentiere kurz.",
+        "repeat_attention": "Die Auffaelligkeit wiederholt sich. Pruefe die Pflanze heute in Ruhe und dokumentiere den Verlauf."
+      }
+    },
+    "weeklyReview": {
+      "title": "Wochenrueckblick",
+      "this_week": "Diese Woche",
+      "card_value": "Woche: {status}",
+      "next_focus": "Naechster Fokus",
+      "focus_line": "Wochenfokus: {focus}",
+      "checks_completed": "{count} Checks durchgefuehrt",
+      "diary_entries_added": "{count} Tagebucheintraege ergaenzt",
+      "label": {
+        "not_enough_data": "noch wenig Verlauf",
+        "calm_week": "ruhig",
+        "mixed_week": "gemischt",
+        "attention_week": "genauer beobachten"
+      },
+      "summary": {
+        "not_enough_data": "Noch wenig Verlauf vorhanden. Zwei bis drei weitere Checks helfen Buddy beim Einordnen.",
+        "calm_week": "Der Wochenverlauf wirkt ruhig. Behalte deine Routine bei und dokumentiere weiter kurz.",
+        "mixed_week": "Die Woche war gemischt. Beobachte die auffaelligen Punkte weiter ruhig und vergleiche sie mit deinen letzten Eintraegen.",
+        "attention_week": "Diese Pflanze sollte in den naechsten Tagen genauer beobachtet werden. Pruefe sie in Ruhe und dokumentiere den Verlauf."
+      },
+      "highlight": {
+        "low_data": "Noch wenig Verlauf vorhanden",
+        "calm": "Verlauf wirkt ruhig",
+        "mixed": "Woche war gemischt",
+        "attention_repeat": "{count}x genauer beobachten",
+        "today_check": "{count}x heute pruefen",
+        "new_change": "Neue Veraenderung erkannt",
+        "height": "Hoehenwerte dokumentiert"
+      },
+      "focus": {
+        "check_two_three_days": "Tagescheck an 2-3 Tagen durchfuehren",
+        "first_diary_entry": "ersten kurzen Tagebuch-Eintrag ergaenzen",
+        "build_routine": "Routine aufbauen",
+        "keep_routine": "Routine beibehalten",
+        "height_once_week": "1x pro Woche Hoehe dokumentieren",
+        "note_changes": "bei Veraenderungen kurzen Eintrag ergaenzen",
+        "compare_spot": "auffaellige Stelle erneut vergleichen",
+        "no_many_changes": "nicht mehrere Dinge gleichzeitig aendern",
+        "add_short_note": "kurze Notiz ergaenzen",
+        "check_today_calmly": "Pflanze heute in Ruhe pruefen",
+        "document_trend": "Verlauf dokumentieren",
+        "compare_tomorrow": "morgen erneut vergleichen"
+      }
+    },
+    "buddy": {
+      "alt": {
+        "header": "Buddy als Pflanzen-Coach",
+        "empty": "Buddy wartet auf deine erste Pflanze",
+        "today": "Buddy gibt einen Hinweis",
+        "success": "Buddy meldet: alles unauffaellig",
+        "attention": "Buddy meldet: genauer beobachten"
+      },
+      "label": {
+        "daily_check": "Buddy begleitet deinen Tagescheck",
+        "checked_today": "Buddy meldet: alles unauffaellig",
+        "needs_attention": "Buddy meldet: genauer beobachten"
+      },
+      "message": {
+        "daily_check_intro": "Buddy macht mit dir einen kurzen Pflanzencheck. Das dauert weniger als eine Minute."
+      }
+    },
+    "tasks": {
+      "seedling_observe": "Zustand kurz pruefen",
+      "seedling_water_check": "Medium nicht dauerhaft nass halten",
+      "seedling_photo": "Foto fuer Verlauf machen",
+      "early_veg_water_check": "Bodenfeuchte pruefen",
+      "early_veg_observe": "Blattfarbe beobachten",
+      "early_veg_photo": "Foto machen",
+      "veg_observe": "Wachstum beobachten",
+      "veg_water_check": "Bodenfeuchte pruefen",
+      "veg_document_height": "Hoehe dokumentieren",
+      "veg_weather_stress": "Wetterstress beobachten",
+      "stretch_height": "Hoehe dokumentieren",
+      "stretch_space": "Platzbedarf pruefen",
+      "stretch_photo": "Fotovergleich machen",
+      "flower_visual_check": "Bluetenbereich visuell pruefen",
+      "flower_environment": "Luftfeuchte und Umgebung beobachten",
+      "flower_photo": "Fotoverlauf dokumentieren",
+      "flower_greenhouse_humidity": "Feuchte und Luftbewegung beobachten",
+      "ripening_observe": "Reifezeichen beobachten",
+      "ripening_flower_check": "Bluetenbereich kontrollieren",
+      "ripening_notes": "Abschlussnotizen vorbereiten",
+      "harvest_window_check": "Erntefenster pruefen",
+      "harvest_photo": "Abschlussfoto machen",
+      "harvest_report": "Grow-Bericht vorbereiten",
+      "unknown_complete_data": "Pflanzendaten vervollstaendigen",
+      "unknown_start_date": "Startdatum pruefen",
+      "unknown_first_check": "Ersten Check vorbereiten",
+      "weekly_review": "Wochenrueckblick machen",
+      "weekly_photo": "Wochenfoto vergleichen"
+    },
+    "summary": {
+      "observe_and_document": "Heute geht es vor allem um Beobachtung und Dokumentation. Nicht jede Veraenderung braucht sofort eine Aktion.",
+      "complete_data": "Ergaenze zuerst die fehlenden Pflanzendaten. Damit werden Phase und Aufgaben deutlich hilfreicher.",
+      "stay_observant": "Heute lohnt sich vor allem ein ruhiger Blick auf Verlauf, Klima und Dokumentation.",
+      "checked_today": "Alles unauffaellig. Heute reicht eine ruhige Kontrolle.",
+      "needs_attention": "Eine Sache faellt auf. Kein Grund zur Panik - dokumentiere es und vergleiche morgen erneut.",
+      "no_check_today": "Ein kurzer Check hilft dir, Veraenderungen frueher zu erkennen."
+    },
+    "more": {
+      "kicker": "Care+ und Einstellungen",
+      "title": "Mehr",
+      "body": "Hier findest du Testzugang, Feedback, Hinweise und deine Buddy-Care-Testwerkzeuge."
+    }
   },
   "home": {
     "water": "Wasser",
@@ -1471,6 +2093,11 @@
           "lesson": "Besserung ist ebenfalls ein Signal. Nicht jede positive Bewegung braucht sofort eine weitere Aktion."
         }
       }
+    },
+    "more": {
+      "kicker": "Care+ und Einstellungen",
+      "title": "Mehr",
+      "body": "Hier findest du Testzugang, Feedback, Hinweise und deine Buddy-Care-Testwerkzeuge."
     }
   },
   "settings": {
@@ -1482,7 +2109,7 @@
     "not_active": "Nicht aktiv",
     "prepared": "Vorbereitet",
     "prepared_group_hint": "Vorbereitet. Sichtbar, aber noch nicht direkt anpassbar.",
-    "footer_hint": "Aktive ?nderungen wirken sofort. Vorbereitetes bleibt hier nur Status.",
+    "footer_hint": "Aktive Änderungen wirken sofort. Vorbereitetes bleibt hier nur Status.",
     "language_de": "Deutsch",
     "language_en": "English",
     "language_es": "Español",
@@ -1502,14 +2129,14 @@
     "haptic": "Haptik",
     "account": "LOKAL & CLOUD",
     "cloud_sync": "Cloud Sync",
-    "cloud_sync_hint": "Optionales Backup fuer Geraetewechsel und zusaetzliche Sicherung. Lokales Spielen bleibt moeglich.",
+    "cloud_sync_hint": "Optionales Backup für Gerätewechsel und zusätzliche Sicherung. Lokales Spielen bleibt möglich.",
     "cloud_sync_aria": "Cloud Sync optional öffnen",
     "cloud_sync_connected_title": "Cloud Sync ist verbunden. Hier kannst du dein Konto verwalten oder dich wieder abmelden.",
     "cloud_sync_guest_title": "Lokaler Gastmodus. Cloud Sync ist optional und kann spaeter verbunden werden.",
     "local_guest": "Lokal auf diesem Gerät",
     "not_connected": "Lokal auf diesem Gerät",
     "push_aria": "Optionale Erinnerungen",
-    "push_supported": "Erinnerungen verfuegbar",
+    "push_supported": "Erinnerungen verfügbar",
     "push_permission": "Browser/System",
     "push_status": "Erinnerungen",
     "push_enable": "Erinnerungen aktivieren",
@@ -1529,19 +2156,19 @@
       "status_unsupported": "Nicht verfügbar",
       "status_missing_permission": "Berechtigung fehlt",
       "feedback_loading": "Push-Status wird aktualisiert.",
-      "feedback_unsupported": "Erinnerungen sind in diesem Browser aktuell nicht verfuegbar.",
+      "feedback_unsupported": "Erinnerungen sind in diesem Browser aktuell nicht verfügbar.",
       "feedback_denied": "Erinnerungen sind im Browser oder System ausgeschaltet. Du kannst lokal weiterspielen.",
-      "feedback_inactive": "Erinnerungen sind optional. Du kannst sie spaeter aktivieren, wenn du Hinweise zu wichtigen Momenten moechtest.",
+      "feedback_inactive": "Erinnerungen sind optional. Du kannst sie später aktivieren, wenn du Hinweise zu wichtigen Momenten möchtest.",
       "feedback_active": "Erinnerungen sind aktiv. Du bekommst Hinweise zu wichtigen Gameplay-Ereignissen.",
       "feedback_unauthenticated": "Erinnerungen mit Cloud-Bezug brauchen ein Konto. Dein lokaler Run bleibt spielbar.",
-      "feedback_local_only": "Erinnerungen sind lokal vorgemerkt. Cloud-Verknuepfung ist optional.",
+      "feedback_local_only": "Erinnerungen sind lokal vorgemerkt. Cloud-Verknüpfung ist optional.",
       "action_enabled": "Erinnerungen aktiviert.",
       "action_disabled": "Erinnerungen deaktiviert.",
-      "action_unsupported": "Erinnerungen sind in diesem Browser aktuell nicht verfuegbar.",
+      "action_unsupported": "Erinnerungen sind in diesem Browser aktuell nicht verfügbar.",
       "action_permission_denied": "Erinnerungen sind im Browser oder System ausgeschaltet.",
       "action_reload_required": "Bitte einmal neu laden, damit Erinnerungen bereitstehen.",
       "action_status_read_error": "Status der Erinnerungen konnte nicht gelesen werden.",
-      "menu_title": "Oeffnet optionale Erinnerungen und den aktuellen Status.",
+      "menu_title": "Öffnet optionale Erinnerungen und den aktuellen Status.",
       "menu_enabled_badge": "An",
       "toggle_enabled": "AN",
       "toggle_disabled": "AUS",
@@ -1549,8 +2176,8 @@
       "toggle_status_disabled": "Deaktiviert"
     },
     "reset": "Zurücksetzen",
-    "default": "Empfohlen",
-    "save": "Sichern"
+    "default": "Reminder zurücksetzen",
+    "save": "Fertig"
   },
   "boot": {
     "init": "System startet...",
@@ -1561,9 +2188,37 @@
     "ready": "Bereit"
   },
   "support": {
-    "paypal_cta": "Mit PayPal unterst?tzen",
-    "voluntary_hint": "Freiwillig. Jeder Beitrag hilft direkt bei der Weiterentwicklung.",
-    "title": "GrowSim unterst?tzen"
+    "paypal_cta": "Weiter zu PayPal",
+    "paypal_cta_selected": "Weiter zu PayPal ({amount})",
+    "paypal_cta_title": "Öffnet PayPal extern für {tier} ({amount}).",
+    "paypal_cta_disabled_title": "Wähle zuerst eine Support-Stufe.",
+    "voluntary_hint": "Optional. Jeder Beitrag unterstützt direkt die Weiterentwicklung.",
+    "select_hint": "Wähle zuerst eine Support-Stufe. Die Zahlung wird erst danach extern über PayPal geöffnet.",
+    "selection_hint": "Ausgewählt: {tier} ({amount}). Das ist freiwilliger Support, läuft extern über PayPal und verändert deinen Run nicht.",
+    "title": "GrowSim unterstützen",
+    "sheet_note": "Wenn dir GrowSim hilft oder einfach gut tut, kannst du hier freiwillig die Weiterentwicklung unterstützen.",
+    "intro_title": "Freiwilliger Support",
+    "intro_subtitle": "Danke, dass du Grow Simulator mit ruhiger, optionaler Unterstützung mit möglich machst.",
+    "section_eyebrow": "Support-Stufen",
+    "tier": {
+      "seed": {
+        "label": "Samen",
+        "description": "Ein kleiner Beitrag für neue Ideen"
+      },
+      "growth": {
+        "label": "Wachstum",
+        "description": "Ein starker Beitrag für die laufende Weiterentwicklung"
+      },
+      "bloom": {
+        "label": "Blüte",
+        "description": "Ein größerer Beitrag für kommende Verbesserungen"
+      },
+      "custom": {
+        "label": "Freier Betrag",
+        "description": "Flexible Unterstützung",
+        "amount": "Freie Wahl"
+      }
+    }
   },
   "rewards": {
     "status_claimed": "Bereits eingel?st",
@@ -2358,7 +3013,7 @@
       "title": "Dein erster Grow-Run",
       "subtitle": "Du kannst sofort lokal spielen. Dein Spielstand bleibt auf diesem Gerät gespeichert.",
       "status": "Gastmodus aktiv",
-      "cloud_hint": "Cloud Sync kannst du spaeter optional in den Einstellungen verbinden, wenn du deinen Run zusaetzlich sichern oder auf ein anderes Geraet mitnehmen moechtest.",
+      "cloud_hint": "Cloud Sync kannst du später optional in den Einstellungen verbinden, wenn du deinen Run zusätzlich sichern oder auf ein anderes Gerät mitnehmen möchtest.",
       "buddy": "Ich begleite dich Schritt für Schritt. Wähle zuerst den Wurzelraum; alles Weitere bauen wir ruhig darauf auf.",
       "run_started": "Dein lokaler Run ist gestartet. Beobachte zuerst Wasser, Nährstoffe und Stress; ich melde mich, wenn ein klarer nächster Schritt wichtig wird."
     },
@@ -2375,19 +3030,20 @@
       "welcome": {
         "eyebrow": "Erster Einstieg",
         "title": "Dein erster Grow beginnt",
-        "body": "Zieh deine Pflanze durch Wachstum, Entscheidungen, Fehler, Wetter, Stress und Ernte. Buddy begleitet dich - aber du entscheidest."
+        "body": "Wir richten deinen ersten Grow in vier ruhigen Schritten ein. Danach führt Buddy dich direkt in Tag 1 mit einer echten ersten Entscheidung.",
+        "hint": "Du triffst das Setup, ich halte die ersten Minuten klar, ruhig und gut lesbar."
       },
       "buddy": {
         "eyebrow": "Buddy",
         "title": "Lerne deinen Coach kennen",
-        "body": "Ich bin Buddy. Ich sag dir nicht nur, was du druecken sollst. Ich zeige dir, warum deine Pflanze reagiert.",
-        "hint": "Ich bleibe kurz, warm und ehrlich. Dein erster Tag soll sich wie ein ruhiger Start anfuehlen, nicht wie ein Formular."
+        "body": "Ich zeige dir nicht nur, was wichtig ist. Ich sage dir auch warum es zählt und was als Nächstes passiert.",
+        "hint": "Ich bleibe kurz, ruhig und ehrlich, damit dein erster Tag gefuehrt statt technisch wirkt."
       },
       "setup": {
         "eyebrow": "Quick Setup",
         "title": "Starte deinen ersten Grow",
-        "body": "Drei kurze Entscheidungen genuegen. Den Rest halten wir fuer deinen ersten Run bewusst ruhig.",
-        "hint": "Wir mappen deine Wahl auf das vorhandene Setup. So bleibt der Einstieg schlank und die Simulation stabil.",
+        "body": "Ein paar klare Entscheidungen reichen. Wir legen jetzt den Charakter deines Runs fest, dann startet direkt der erste Tag.",
+        "hint": "Wähle das Setup, das sich für deinen ersten Run richtig anfühlt. Ich halte die Unterschiede kurz und spürbar.",
         "style_title": "Grow-Stil",
         "style_hint": "Wie direkt dein erster Run sich anfuehlt.",
         "environment_title": "Umgebung",
@@ -2399,28 +3055,28 @@
         "light_title": "Licht-Setup",
         "light_hint": "Wie stark dein Startlicht direkt arbeitet.",
         "medium_title": "Substrat",
-        "medium_hint": "Wie schnell Wasser und Naehrstoffe reagieren.",
-        "pot_title": "Topfgroesse",
-        "pot_hint": "Dein Wurzelraum bestimmt Tempo, Reserve und Giessdruck.",
+        "medium_hint": "Wie schnell Wasser und Nährstoffe reagieren.",
+        "pot_title": "Topfgröße",
+        "pot_hint": "Dein Wurzelraum bestimmt Tempo, Reserve und Gießdruck.",
         "genetics_title": "Genetik",
         "style": {
           "safe": {
             "title": "Sicher",
             "badge": "Empfohlen",
-            "body": "Mehr Puffer fuer einen ruhigen ersten Eindruck.",
-            "effect": "Ruhig · sauber · stabil"
+          "body": "Mehr Puffer für einen ruhigen ersten Eindruck.",
+          "effect": "Ruhig · sauber · stabil"
           },
           "fast": {
             "title": "Schnell",
             "badge": "Direkt",
-            "body": "Fruehes Feedback und ein dichteres Gefuehl fuer Veraenderung.",
-            "effect": "Tempo · Reaktion · Fokus"
+          "body": "Frühes Feedback und ein dichteres Gefühl für Veränderung.",
+          "effect": "Tempo · Reaktion · Fokus"
           },
           "challenging": {
             "title": "Anspruchsvoll",
             "badge": "Mehr Druck",
-            "body": "Weniger Komfort, dafuer mehr Beobachtung von Anfang an.",
-            "effect": "Druck · Timing · Disziplin"
+          "body": "Weniger Komfort, dafür mehr Beobachtung von Anfang an.",
+          "effect": "Druck · Timing · Disziplin"
           }
         },
         "environment": {
@@ -2428,81 +3084,81 @@
             "title": "Indoor",
             "badge": "Kontrolle",
             "body": "Ruhiger Start mit klarerem Klima.",
-            "effect": "Sauber · planbar · ruhig"
+          "effect": "Sauber · planbar · ruhig"
           },
           "outdoor": {
             "title": "Outdoor",
             "badge": "Wetter",
             "body": "Mehr Natur, mehr Schwankung, mehr Geschichte.",
-            "effect": "Luft · Wetter · Timing"
+          "effect": "Luft · Wetter · Timing"
           },
           "greenhouse": {
-            "title": "Gewaechshaus",
+          "title": "Gewächshaus",
             "badge": "Hybrid",
-            "body": "Geschuetzt, aber nicht steril. Ein Mittelweg.",
-            "effect": "Puffer · Licht · Beobachtung"
+          "body": "Geschützt, aber nicht steril. Ein Mittelweg.",
+          "effect": "Puffer · Licht · Beobachtung"
           }
         },
         "plant": {
           "beginner": {
-            "title": "Anfaengerfreundlich",
+          "title": "Anfängerfreundlich",
             "badge": "Sanft",
             "body": "Ein klarer, toleranter Einstieg.",
-            "effect": "Puffer · Lernen · Ruhe"
+          "effect": "Puffer · Lernen · Ruhe"
           },
           "auto": {
             "title": "Auto",
             "badge": "Direkt",
-            "body": "Wirkt schneller und direkter im Startgefuehl.",
-            "effect": "Rhythmus · Flow · Fokus"
+          "body": "Wirkt schneller und direkter im Startgefühl.",
+          "effect": "Rhythmus · Flow · Fokus"
           },
           "yield": {
             "title": "Ertragreich",
             "badge": "Ziel",
-            "body": "Ein Start mit Blick auf spaeteres Potenzial.",
-            "effect": "Potenzial · Aufbau · Ziel"
+          "body": "Ein Start mit Blick auf späteres Potenzial.",
+          "effect": "Potenzial · Aufbau · Ziel"
           }
         },
         "mode": {
           "indoor": {
             "title": "Indoor",
             "badge": "Empfohlen",
-            "body": "Ruhiger Start mit kontrollierbarem Klima und planbaren Routinen.",
-            "effect": "Kontrolle ? sauber ? stabil"
+            "body": "Ruhiger Start mit stabilem Klima und klaren Routinen.",
+          "effect": "Kontrolle · ruhig · stabil"
           },
           "outdoor": {
             "title": "Outdoor",
-            "badge": "Sp?ter",
-            "body": "Mehr Schwankung, mehr Wetter und ein fordernderer Start.",
-            "effect": "Wetter ? Luft ? Timing"
+            "badge": "Später",
+          "body": "Mehr Wetter, mehr Schwankung und ein härterer Einstieg.",
+          "effect": "Wetter · Luft · Timing"
           }
         },
         "light": {
           "medium": {
-            "title": "Medium Light",
+            "title": "Mittleres Licht",
             "badge": "Standard",
-            "body": "Solider Lichtstandard f?r einen ruhigen, lesbaren Start.",
-            "effect": "Balance ? Kontrolle ? Puffer"
+          "body": "Ausgewogenes Licht, das den ersten Tag gut lesbar hält.",
+          "effect": "Balance · Kontrolle · Puffer"
           },
           "high": {
-            "title": "High Output Light",
-            "badge": "Sp?ter",
-            "body": "Mehr Druck und Tempo, sobald dein Profil das freigeschaltet hat.",
-            "effect": "Peak ? Verbrauch ? Fokus"
+            "title": "Starkes Licht",
+            "badge": "Später",
+          "body": "Mehr Intensität und Tempo, sobald dein Profil es freigeschaltet hat.",
+          "effect": "Peak · Verbrauch · Fokus"
           }
         },
         "medium": {
           "soil": {
             "title": "Erde",
             "badge": "Empfohlen",
-            "body": "Verzeiht kleine Fehler und bleibt f?r den ersten Run angenehm lesbar.",
-            "effect": "Puffer ? ruhig ? fehlertolerant"
+          "body": "Verzeiht kleine Fehler und lässt dich den Rhythmus ruhig lernen.",
+          "effect": "Puffer · ruhig · fehlertolerant"
           },
           "coco": {
             "title": "Coco",
-            "badge": "Sp?ter",
-            "body": "Reagiert direkter und will mehr Routine, sobald du es freigeschaltet hast.",
-            "effect": "Reaktiv ? schneller ? enger"
+            "badge": "Später",
+            "body": "Reagiert direkter und verlangt mehr Routine, sobald es freigeschaltet ist.",
+          "effect": "Reaktiv · schneller · enger"
           }
         },
         "pot": {
@@ -2510,33 +3166,33 @@
             "title": "2 Liter (S)",
             "badge": "Standard",
             "body": "Kleiner Starttopf mit direkter Reaktion und engerem Pflegefenster.",
-            "effect": "Kompakt ? direkt ? aktiv"
+            "effect": "Kompakt · direkt · aktiv"
           },
           "medium": {
             "title": "8 Liter (M)",
             "badge": "Ausgewogen",
-            "body": "Mehr Puffer f?r Wasser und Wurzeln, ohne den Start tr?ge zu machen.",
-            "effect": "Ausgewogen ? ruhiger ? stabil"
+          "body": "Mehr Puffer für Wasser und Wurzeln, ohne den Start träge zu machen.",
+          "effect": "Ausgewogen · ruhiger · stabil"
           },
           "large": {
             "title": "16 Liter (L)",
             "badge": "Langzeit",
-            "body": "Sp?rbar mehr Reserve f?r lange, saubere Entwicklungsphasen.",
-            "effect": "Reserve ? Langzeit ? ruhig"
+          "body": "Spürbar mehr Reserve für lange, saubere Entwicklungsphasen.",
+          "effect": "Reserve · Langzeit · ruhig"
           },
           "xlarge": {
             "title": "25 Liter (XL)",
             "badge": "Reserve",
-            "body": "Maximaler Wurzelraum f?r gro?e Reserven und entspanntere Drybacks.",
-            "effect": "Maxi ? tr?ge ? tief"
+          "body": "Maximaler Wurzelraum für große Reserven und entspanntere Drybacks.",
+          "effect": "Maxi · träge · tief"
           }
         }
       },
       "summary": {
         "eyebrow": "Startklar",
         "title": "Dein Grow ist startbereit",
-        "body": "Du setzt jetzt den Run auf und landest danach direkt in deinem gefuehrten ersten Tag.",
-        "hint": "Ich bleibe bei dir. Nach dem Start fuehren wir nur durch den ersten wichtigen Moment - nicht durch zehn Menues."
+        "body": "Dein erster Run ist startklar. Wir übernehmen dieses Setup jetzt so und gehen direkt in einen geführten Tag 1.",
+        "hint": "Das ist dein ruhiger Startpunkt: klares Setup, kein Druck und genau ein wichtiger erster Moment."
       },
       "actions": {
         "next": "Weiter",
@@ -2544,47 +3200,48 @@
       },
       "dashboard_followup": {
         "eyebrow": "Im Grow angekommen",
-        "title": "Dein Grow laeuft",
-        "body": "Tag 1 ist geschafft. Ab jetzt entwickelt sich deine Pflanze Schritt fuer Schritt weiter - und Buddy meldet sich, wenn etwas wichtig wird.",
-        "buddy": "Guter Start. Schau spaeter wieder rein: Wachstum, Licht und Pflege veraendern den naechsten Tag.",
+        "title": "Dein Grow läuft",
+        "body": "Tag 1 ist geschafft. Ab jetzt entwickelt sich deine Pflanze Schritt für Schritt weiter, und Buddy meldet sich, wenn etwas wichtig wird.",
+        "buddy": "Guter Start. Schau später wieder rein: Wachstum, Licht und Pflege verändern den nächsten Tag.",
         "cta": "Weiter"
       },
       "dashboard_goal": {
         "badge": "Tagesziel",
-        "headline": "Dein Grow laeuft",
-        "body": "Naechster Schritt: Beobachte deine Pflanze und warte auf die erste Wachstumsreaktion.",
-        "action": "Analyse oeffnen und den Verlauf im Blick behalten"
+        "headline": "Dein Grow läuft",
+        "body": "Nächster Schritt: Beobachte deine Pflanze und warte auf die erste Wachstumsreaktion.",
+        "action": "Analyse öffnen und den Verlauf im Blick behalten"
       },
-      "toast_started": "Dein Grow steht. Buddy fuehrt dich jetzt durch Tag 1.",
+      "toast_started": "Dein Grow steht. Buddy führt dich jetzt durch Tag 1.",
       "day1": {
         "plant": {
           "eyebrow": "Tag 1",
           "title": "Tag 1 - Keimling",
-          "body": "Alles beginnt klein. Heute zaehlt: nicht uebertreiben.",
-          "buddy": "Ich behalte die Reaktion im Blick. Du triffst die erste Pflegeentscheidung.",
-          "cta": "Erste Pflege waehlen"
+          "body": "Alles beginnt klein. Heute geht es darum, ruhig zu bleiben und die erste Reaktion sauber zu lesen.",
+          "buddy": "Du triffst die erste Entscheidung, ich achte darauf, was der Keimling dir direkt zurückgibt.",
+          "cta": "Erste Pflege wählen"
         },
         "decision": {
           "eyebrow": "Erste Entscheidung",
           "title": "Der Topf wirkt leicht trocken. Was machst du?",
-          "body": "Keine harte Strafe, kein Trick. Nur ein erster kleiner Moment mit echter Wirkung.",
+          "body": "Das ist deine erste echte Grow-Entscheidung: jetzt gießen, noch warten und damit den Ton für Tag 1 setzen.",
+          "buddy": "Feuchte ist das Erste, was kippen kann. Wenn du ruhig starten willst, wählst du die sanftere Bewegung.",
           "gentle": {
-            "title": "Vorsichtig angiessen",
-            "body": "Verbessert die Feuchtigkeit leicht und haelt den Stress niedrig."
+            "title": "Vorsichtig angießen",
+            "body": "Verbessert die Feuchtigkeit leicht und hält den Stress niedrig."
           },
           "heavy": {
-            "title": "Stark giessen",
-            "body": "Hebt die Feuchtigkeit staerker an, bringt aber leichtes Staunaesse-Risiko."
+            "title": "Stark gießen",
+            "body": "Hebt die Feuchtigkeit stärker an, bringt aber leichtes Staunässe-Risiko."
           },
           "wait": {
             "title": "Noch warten",
-            "body": "Manchmal ist Beobachten die beste Pflege fuer den Moment."
+            "body": "Manchmal ist Beobachten die beste Pflege für den Moment."
           }
         },
         "gentle": {
           "result_title": "Guter Start",
-          "result_body": "Du hast der Pflanze geholfen, ohne sie zu ersaeufen.",
-          "buddy": "Sauber gelesen. Genau solche kleinen Entscheidungen machen spaeter den Unterschied."
+          "result_body": "Du hast der Pflanze geholfen, ohne sie zu ersäufen.",
+          "buddy": "Sauber gelesen. Genau solche kleinen Entscheidungen machen später den Unterschied."
         },
         "heavy": {
           "result_title": "Mutig, aber beobachtet",
@@ -2593,26 +3250,26 @@
         },
         "wait": {
           "result_title": "Ruhig geblieben",
-          "result_body": "Gar nichts tun ist manchmal auch Pflege. Wichtig ist nur, dass du weisst warum.",
+          "result_body": "Gar nichts tun ist manchmal auch Pflege. Wichtig ist nur, dass du weißt warum.",
           "buddy": "Geduld ist eine echte Aktion, wenn sie bewusst passiert."
         },
         "result": {
           "eyebrow": "Ergebnis",
           "daily_done": "Tagesziel erledigt",
-          "cta": "Tag abschliessen"
+          "cta": "Tag abschließen"
         },
         "summary": {
           "eyebrow": "Tagesabschluss",
           "title": "Tag 1 geschafft",
           "started": "Pflanze gestartet",
           "decision": "Erste Pflegeentscheidung",
-          "stability": "Stabilitaet",
+          "stability": "Stabilität",
           "coins": "Coins",
-          "teaser": "Morgen wartet die erste Wachstumsreaktion.",
+          "teaser": "Morgen liest du zum ersten Mal, wie dein Setup wirklich reagiert.",
           "cta": "Zum Dashboard",
           "yes": "Erledigt",
-          "good": "Guter Start. Die Pflanze kennt jetzt deinen Rhythmus.",
-          "okay": "Ruhiger Start. Beobachtung war heute genug.",
+          "good": "Guter Start. Dein Grow hat jetzt einen ruhigen Rhythmus.",
+          "okay": "Ruhiger Start. Heute war Beobachtung genug.",
           "observed": "Wir haben gelernt. Morgen lesen wir die Wurzeln noch genauer.",
           "summary_state": {
             "good": "gut",

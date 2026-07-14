@@ -133,6 +133,45 @@ function getCareModelApi() {
   return careApi;
 }
 
+function getBuddyCareStateApi() {
+  const buddyCareApi = (typeof window !== 'undefined' && window.GrowSimBuddyCareState && typeof window.GrowSimBuddyCareState === 'object')
+    ? window.GrowSimBuddyCareState
+    : ((typeof globalThis !== 'undefined' && globalThis.GrowSimBuddyCareState && typeof globalThis.GrowSimBuddyCareState === 'object')
+      ? globalThis.GrowSimBuddyCareState
+      : null);
+  return buddyCareApi;
+}
+
+function createDefaultBuddyCareStateFromBase() {
+  const buddyCareApi = getBuddyCareStateApi();
+  if (buddyCareApi && typeof buddyCareApi.createDefaultBuddyCareState === 'function') {
+    return buddyCareApi.createDefaultBuddyCareState();
+  }
+  return {
+    version: 1,
+    ageGateAccepted: false,
+    ageGateAcceptedAt: null,
+    entitlement: 'free',
+    plants: [],
+    dailyChecks: [],
+    diaryEntries: [],
+    tasks: [],
+    riskSignals: [],
+    settings: {
+      notificationsEnabled: false,
+      preferredReminderTime: '18:00'
+    }
+  };
+}
+
+function normalizeCanonicalBuddyCareState(buddyCareState) {
+  const buddyCareApi = getBuddyCareStateApi();
+  if (buddyCareApi && typeof buddyCareApi.normalizeBuddyCareState === 'function') {
+    return buddyCareApi.normalizeBuddyCareState(buddyCareState);
+  }
+  return createDefaultBuddyCareStateFromBase();
+}
+
 function createDefaultCareStateFromBase(baseState) {
   const careApi = getCareModelApi();
   if (careApi && typeof careApi.createDefaultCareState === 'function') {
@@ -1483,6 +1522,7 @@ async function restoreState(options = {}) {
       ...saved.care
     };
   }
+  state.buddyCare = normalizeCanonicalBuddyCareState(saved.buddyCare);
   if (saved.environmentControls && typeof saved.environmentControls === 'object') {
     state.environmentControls = {
       ...(state.environmentControls && typeof state.environmentControls === 'object' ? state.environmentControls : {}),
@@ -1934,6 +1974,7 @@ function resetStateToDefaults() {
     coins: 0
   };
   state.care = createDefaultCareStateFromBase(state);
+  state.buddyCare = createDefaultBuddyCareStateFromBase();
 
   state.boost = {
     boostUsedToday: 0,
@@ -2214,6 +2255,7 @@ function ensureStateIntegrity(nowMs) {
   state.status.growth = round2(computeGrowthPercent());
   state.care = normalizeCanonicalCareState(state.care, state);
   state.care.summary = deriveCanonicalCareSummary(state.care, state);
+  state.buddyCare = normalizeCanonicalBuddyCareState(state.buddyCare);
 
   state.boost.boostMaxPerDay = 6;
   if (!Number.isFinite(state.boost.boostUsedToday)) {
@@ -2700,6 +2742,10 @@ function ensureStateIntegrity(nowMs) {
   validSheets.add('insufficientCoins');
   if (!validSheets.has(state.ui.openSheet)) {
     state.ui.openSheet = null;
+  }
+  const validScreens = new Set(['home', 'buddyCare']);
+  if (!validScreens.has(String(state.ui.activeScreen || 'home'))) {
+    state.ui.activeScreen = 'home';
   }
   if (typeof state.ui.menuOpen !== 'boolean') {
     state.ui.menuOpen = false;

@@ -312,6 +312,29 @@ const now = Date.now();
 const initialSimTimeMs = alignToSimStartHour(now, SIM_START_HOUR);
 const progressionDefaults = window.GrowSimProgression && typeof window.GrowSimProgression.getDefaultProfile === 'function' ? window.GrowSimProgression : null;
 const harvestDefaults = window.GrowSimHarvest && typeof window.GrowSimHarvest.getDefaultRunHarvest === 'function' ? window.GrowSimHarvest : null;
+
+function createInitialBuddyCareState() {
+  const buddyCareApi = window.GrowSimBuddyCareState;
+  if (buddyCareApi && typeof buddyCareApi.createDefaultBuddyCareState === 'function') {
+    return buddyCareApi.createDefaultBuddyCareState();
+  }
+  return {
+    version: 1,
+    ageGateAccepted: false,
+    ageGateAcceptedAt: null,
+    entitlement: 'free',
+    plants: [],
+    dailyChecks: [],
+    diaryEntries: [],
+    tasks: [],
+    riskSignals: [],
+    settings: {
+      notificationsEnabled: false,
+      preferredReminderTime: '18:00'
+    }
+  };
+}
+
 const state = {
   schemaVersion: '1.0.0',
   seed: SIM_GLOBAL_SEED,
@@ -623,6 +646,7 @@ const state = {
       lastCareMessageKey: null
     }
   },
+  buddyCare: createInitialBuddyCareState(),
   boost: {
     boostUsedToday: 0,
     boostMaxPerDay: 6,
@@ -723,11 +747,31 @@ const pushUiRuntime = {
   lastUpdatedAtMs: 0
 };
 const supportFlowRuntime = {
-  selectedTierId: 'growth',
+  selectedTierId: '',
   activeSession: null,
   sdkPrimed: false,
   sdkPrimeAttempted: false,
   entrySource: 'sheet_open'
+};
+let buddyCareDetailPlantId = '';
+let buddyCareActiveView = 'today';
+let buddyCarePlantDetailSection = 'overview';
+let buddyCareActiveDailyCheckPlantId = '';
+let buddyCareDailyCheckDraft = null;
+let buddyCareSeasonPassOpen = false;
+let buddyCareActivationOnboardingVisible = false;
+let buddyCareJustUnlockedCarePlus = false;
+let buddyCareDeferredMenuDialog = null;
+let buddyCareExternalTestFeedbackOpen = false;
+let buddyCareDiaryFilter = 'all';
+let buddyCareDiaryComposerOpen = false;
+let buddyCareDiaryComposerPlantId = '';
+let buddyCarePlantFilter = 'all';
+let buddyCareHistoryMode = 'timeline';
+const buddyCareExternalTestSessionId = `buddy-care-test-session-${Date.now()}`;
+const buddyCareMonetizationUiState = {
+  buddyCare: null,
+  conversionEvents: []
 };
 
 const actionDebounceUntil = Object.create(null);
@@ -779,10 +823,10 @@ const SUPPORT_TELEMETRY_MAX_EVENTS = 80;
 const SUPPORT_PAYPAL_HOSTED_BUTTON_ID = '7F7NEL33DP6QQ';
 const SUPPORT_PAYPAL_DONATE_BASE_URL = `https://www.paypal.com/donate?hosted_button_id=${encodeURIComponent(SUPPORT_PAYPAL_HOSTED_BUTTON_ID)}`;
 const SUPPORT_TIERS = Object.freeze({
-  seed: Object.freeze({ id: 'seed', label: 'Samen', amount: '3.00', currencyCode: 'EUR', displayAmount: '3 €' }),
-  growth: Object.freeze({ id: 'growth', label: 'Wachstum', amount: '5.00', currencyCode: 'EUR', displayAmount: '5 €' }),
-  bloom: Object.freeze({ id: 'bloom', label: 'Blüte', amount: '10.00', currencyCode: 'EUR', displayAmount: '10 €' }),
-  custom: Object.freeze({ id: 'custom', label: 'Freier Betrag', amount: null, currencyCode: 'EUR', displayAmount: 'Freie Wahl' })
+  seed: Object.freeze({ id: 'seed', amount: '3.00', currencyCode: 'EUR', displayAmount: '3 €' }),
+  growth: Object.freeze({ id: 'growth', amount: '5.00', currencyCode: 'EUR', displayAmount: '5 €' }),
+  bloom: Object.freeze({ id: 'bloom', amount: '10.00', currencyCode: 'EUR', displayAmount: '10 €' }),
+  custom: Object.freeze({ id: 'custom', amount: null, currencyCode: 'EUR', displayAmount: 'Freie Wahl' })
 });
 const MICRO_ACHIEVEMENT_REGISTRY = Object.freeze({
   streak_milestone_3: Object.freeze({
@@ -2388,6 +2432,29 @@ function resolveSupportTier(tierId) {
   return SUPPORT_TIERS.growth;
 }
 
+function findSelectedSupportTier() {
+  const safeTierId = String(supportFlowRuntime.selectedTierId || '').trim().toLowerCase();
+  if (!safeTierId || !SUPPORT_TIERS[safeTierId]) {
+    return null;
+  }
+  return SUPPORT_TIERS[safeTierId];
+}
+
+function getSupportTierPresentation(tierId) {
+  const tier = resolveSupportTier(tierId);
+  const label = i18nT(`support.tier.${tier.id}.label`);
+  const description = i18nT(`support.tier.${tier.id}.description`);
+  const displayAmount = tier.amount
+    ? String(tier.displayAmount || '')
+    : i18nT('support.tier.custom.amount');
+  return {
+    ...tier,
+    label,
+    description,
+    displayAmount
+  };
+}
+
 function setSupportEntrySource(source) {
   supportFlowRuntime.entrySource = String(source || 'sheet_open');
 }
@@ -2534,8 +2601,8 @@ function buildPaypalSdkDonationConfig(tier, source) {
     hosted_button_id: SUPPORT_PAYPAL_HOSTED_BUTTON_ID,
     image: {
       src: 'https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif',
-      alt: 'Mit PayPal unterstützen',
-      title: 'Mit PayPal unterstützen'
+      alt: i18nT('support.paypal_cta'),
+      title: i18nT('support.paypal_cta')
     },
     onComplete: (params) => {
       const rawStatus = params && (params.st || params.status || params.payment_status);
@@ -2620,20 +2687,51 @@ function renderSupportSheet(force = false) {
   if (!force && state.ui.openSheet !== 'support') {
     return;
   }
-  const selectedTier = resolveSupportTier(supportFlowRuntime.selectedTierId);
-  supportFlowRuntime.selectedTierId = selectedTier.id;
+  const selectedTier = findSelectedSupportTier();
   const optionButtons = Array.from(ui.supportOptionList.querySelectorAll('[data-support-tier]'));
   for (const button of optionButtons) {
     const tierId = String(button.dataset.supportTier || '').trim().toLowerCase();
-    const active = tierId === selectedTier.id;
+    const tierPresentation = SUPPORT_TIERS[tierId] ? getSupportTierPresentation(tierId) : null;
+    const active = Boolean(selectedTier && tierId === selectedTier.id);
     button.classList.toggle('is-active', active);
     button.setAttribute('aria-pressed', String(active));
+    if (tierPresentation) {
+      const labelNode = button.querySelector('strong');
+      const descriptionNode = button.querySelector('small');
+      const amountNode = button.querySelector('.support-option-value');
+      if (labelNode) {
+        labelNode.textContent = tierPresentation.label;
+      }
+      if (descriptionNode) {
+        descriptionNode.textContent = tierPresentation.description;
+      }
+      if (amountNode) {
+        amountNode.textContent = tierPresentation.displayAmount;
+      }
+    }
   }
-  ui.supportPrimaryCtaBtn.textContent = i18nT('support.paypal_cta');
-  ui.supportPrimaryCtaBtn.setAttribute('data-support-tier', selectedTier.id);
-  ui.supportPrimaryCtaBtn.setAttribute('title', `${selectedTier.label} · ${selectedTier.displayAmount}`);
+  ui.supportPrimaryCtaBtn.disabled = !selectedTier;
+  ui.supportPrimaryCtaBtn.setAttribute('aria-disabled', String(!selectedTier));
+  if (selectedTier) {
+    const selectedTierPresentation = getSupportTierPresentation(selectedTier.id);
+    ui.supportPrimaryCtaBtn.textContent = i18nT('support.paypal_cta_selected', { amount: selectedTierPresentation.displayAmount });
+    ui.supportPrimaryCtaBtn.setAttribute('data-support-tier', selectedTier.id);
+    ui.supportPrimaryCtaBtn.setAttribute('title', i18nT('support.paypal_cta_title', {
+      tier: selectedTierPresentation.label,
+      amount: selectedTierPresentation.displayAmount
+    }));
+  } else {
+    ui.supportPrimaryCtaBtn.textContent = i18nT('support.paypal_cta');
+    ui.supportPrimaryCtaBtn.removeAttribute('data-support-tier');
+    ui.supportPrimaryCtaBtn.setAttribute('title', i18nT('support.paypal_cta_disabled_title'));
+  }
   if (ui.supportSecondaryHint) {
-    ui.supportSecondaryHint.textContent = i18nT('support.voluntary_hint');
+    ui.supportSecondaryHint.textContent = selectedTier
+      ? i18nT('support.selection_hint', {
+        tier: getSupportTierPresentation(selectedTier.id).label,
+        amount: getSupportTierPresentation(selectedTier.id).displayAmount
+      })
+      : i18nT('support.select_hint');
   }
   primeSupportPaypalSdkButtons();
 }
@@ -2904,6 +3002,7 @@ function renderCoinShopSheet(force = false) {
 
 function openSupportPaypal(tier, source = 'sheet_option') {
   const safeTier = tier && typeof tier === 'object' ? tier : resolveSupportTier('growth');
+  const tierPresentation = getSupportTierPresentation(safeTier.id);
   ensureSupportFocusObserver();
   const sdkPrimed = primeSupportPaypalSdkButtons();
   if (sdkPrimed) {
@@ -2912,7 +3011,7 @@ function openSupportPaypal(tier, source = 'sheet_option') {
       emitSupportTelemetry('support_paypal_opened', {
         source: String(source || 'sheet_option'),
         tierId: safeTier.id,
-        tierLabel: safeTier.label,
+        tierLabel: tierPresentation.label,
         amount: safeTier.amount || null,
         method: 'sdk'
       });
@@ -2929,7 +3028,7 @@ function openSupportPaypal(tier, source = 'sheet_option') {
   emitSupportTelemetry('support_paypal_opened', {
     source: String(source || 'sheet_option'),
     tierId: safeTier.id,
-    tierLabel: safeTier.label,
+    tierLabel: tierPresentation.label,
     amount: safeTier.amount || null,
     method: 'url_fallback'
   });
@@ -2953,23 +3052,29 @@ function openSupportPaypal(tier, source = 'sheet_option') {
 
 function onSupportTierSelected(tierId, context = {}) {
   const tier = selectSupportTier(tierId);
+  const tierPresentation = getSupportTierPresentation(tier.id);
   const source = String(context && context.source ? context.source : 'sheet_option');
   emitSupportTelemetry('support_option_selected', {
     source,
     tierId: tier.id,
-    tierLabel: tier.label,
+    tierLabel: tierPresentation.label,
     amount: tier.amount || null
   });
-  return openSupportPaypal(tier, source);
+  return { ok: true, selectedTierId: tier.id };
 }
 
 function onSupportPrimaryCtaClick(context = {}) {
-  const tier = resolveSupportTier(supportFlowRuntime.selectedTierId);
+  const tier = findSelectedSupportTier();
+  if (!tier) {
+    renderSupportSheet(true);
+    return { ok: false, reason: 'no_tier_selected' };
+  }
+  const tierPresentation = getSupportTierPresentation(tier.id);
   const source = String(context && context.source ? context.source : 'sheet_primary_cta');
   emitSupportTelemetry('support_option_selected', {
     source,
     tierId: tier.id,
-    tierLabel: tier.label,
+    tierLabel: tierPresentation.label,
     amount: tier.amount || null
   });
   return openSupportPaypal(tier, source);
@@ -7459,6 +7564,7 @@ function initUiArchitecture() {
       defaultScreenId: 'home'
     });
     screenRuntimeManager.register(createHomeScreenModule(mappings.home || null));
+    screenRuntimeManager.register(createPassiveScreenModule('buddyCare'));
     if (uiController) {
       screenRuntimeManager.bindController(uiController);
     } const active = state.ui && typeof state.ui.activeScreen === 'string' ? state.ui.activeScreen : 'home';
@@ -13026,6 +13132,7 @@ function renderAll() {
   refreshHarvestForecast();
   renderActiveScreen();
   renderOverlayModules();
+  renderBuddyCareScreen();
   migrateSettings(state);
   updateSettingsUI();
   renderLanding();
@@ -13071,6 +13178,3796 @@ function renderActiveScreen() {
   }
   renderHud();
 }
+
+function getBuddyCareStateApi() {
+  return window.GrowSimBuddyCareState && typeof window.GrowSimBuddyCareState === 'object'
+    ? window.GrowSimBuddyCareState
+    : null;
+}
+
+function getBuddyCareFlagsApi() {
+  return window.GrowSimBuddyCareFlags && typeof window.GrowSimBuddyCareFlags === 'object'
+    ? window.GrowSimBuddyCareFlags
+    : null;
+}
+
+function getBuddyCareMonetizationApi() {
+  return window.GrowSimBuddyCareMonetizationReadiness && typeof window.GrowSimBuddyCareMonetizationReadiness === 'object'
+    ? window.GrowSimBuddyCareMonetizationReadiness
+    : null;
+}
+
+function ensureBuddyCareState() {
+  const buddyCareApi = getBuddyCareStateApi();
+  if (buddyCareApi && typeof buddyCareApi.normalizeBuddyCareState === 'function') {
+    state.buddyCare = buddyCareApi.normalizeBuddyCareState(state.buddyCare);
+    return state.buddyCare;
+  }
+  state.buddyCare = createInitialBuddyCareState();
+  return state.buddyCare;
+}
+
+function getBuddyCareMonetizationUiState() {
+  buddyCareMonetizationUiState.buddyCare = ensureBuddyCareState();
+  return buddyCareMonetizationUiState;
+}
+
+function getBuddyCareExternalTestApi() {
+  return window.GrowSimBuddyCareExternalTestReadiness && typeof window.GrowSimBuddyCareExternalTestReadiness === 'object'
+    ? window.GrowSimBuddyCareExternalTestReadiness
+    : null;
+}
+
+function isBuddyCareExternalTestEnabled() {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (externalTestApi && typeof externalTestApi.isBuddyCareExternalTestEnabled === 'function') {
+    return externalTestApi.isBuddyCareExternalTestEnabled();
+  }
+  const flagsApi = getBuddyCareFlagsApi();
+  return !flagsApi || flagsApi.BUDDY_CARE_EXTERNAL_TEST_ENABLED === true;
+}
+
+function registerBuddyCareExternalTestSession() {
+  if (!isBuddyCareExternalTestEnabled()) {
+    return false;
+  }
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.registerBuddyCareExternalTestSession !== 'function') {
+    return false;
+  }
+  const result = externalTestApi.registerBuddyCareExternalTestSession(state, buddyCareExternalTestSessionId);
+  if (result && result.ok) {
+    schedulePersistState(true);
+    return true;
+  }
+  return false;
+}
+
+function getBuddyCareExternalTestSummary() {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.getBuddyCareExternalTestSummary !== 'function') {
+    return {
+      started: false,
+      plantCount: 0,
+      dailyCheckCompleted: false,
+      diaryEntryCreated: false,
+      testAccessActivated: false,
+      secondPlantCreated: false,
+      weeklyReviewViewed: false,
+      feedbackOpened: false,
+      feedbackSubmitted: false,
+      reloadCompleted: false,
+      eventCount: 0
+    };
+  }
+  return externalTestApi.getBuddyCareExternalTestSummary(state);
+}
+
+function trackBuddyCareExternalTestEvent(eventName, payload = {}, options = {}) {
+  if (!isBuddyCareExternalTestEnabled()) {
+    return null;
+  }
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.trackBuddyCareExternalTestEvent !== 'function') {
+    return null;
+  }
+  const nextEvent = externalTestApi.trackBuddyCareExternalTestEvent(state, eventName, {
+    locale: getBuddyCareLocale(),
+    ...payload
+  }, options);
+  if (nextEvent) {
+    schedulePersistState(true);
+  }
+  return nextEvent;
+}
+
+function dismissBuddyCareExternalTestIntro() {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.dismissBuddyCareExternalTestIntro !== 'function') {
+    return false;
+  }
+  externalTestApi.dismissBuddyCareExternalTestIntro(state, Date.now());
+  schedulePersistState(true);
+  renderBuddyCareScreen();
+  return true;
+}
+
+function startBuddyCareExternalTest() {
+  dismissBuddyCareExternalTestIntro();
+  trackBuddyCareExternalTestEvent('buddy_care_test_started', { source: 'intro_card' });
+  if (ensureBuddyCareState().plants.length > 0) {
+    setActiveBuddyCareView('today');
+    focusBuddyCareSection(ui.buddyCareTodayCard, null);
+  } else {
+    setActiveBuddyCareView('plants');
+    focusBuddyCareSection(ui.buddyCareSetupCard, ui.buddyCarePlantNameInput);
+  }
+  return true;
+}
+
+function dismissBuddyCareExternalTestChecklist() {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.dismissBuddyCareExternalTestChecklist !== 'function') {
+    return false;
+  }
+  externalTestApi.dismissBuddyCareExternalTestChecklist(state, Date.now());
+  schedulePersistState(true);
+  renderBuddyCareScreen();
+  return true;
+}
+
+function reopenBuddyCareExternalTestChecklist() {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.reopenBuddyCareExternalTestChecklist !== 'function') {
+    return false;
+  }
+  externalTestApi.reopenBuddyCareExternalTestChecklist(state);
+  schedulePersistState(true);
+  renderBuddyCareScreen();
+  return true;
+}
+
+function openBuddyCareExternalTestFeedback() {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.markBuddyCareExternalTestFeedbackOpened !== 'function') {
+    return false;
+  }
+  buddyCareExternalTestFeedbackOpen = true;
+  externalTestApi.markBuddyCareExternalTestFeedbackOpened(state, Date.now());
+  trackBuddyCareExternalTestEvent('buddy_care_test_feedback_opened', { source: 'feedback_card' });
+  setActiveBuddyCareView('more');
+  focusBuddyCareSection(ui.buddyCareExternalTestFeedbackCard, null);
+  return true;
+}
+
+function closeBuddyCareExternalTestFeedback() {
+  buddyCareExternalTestFeedbackOpen = false;
+  renderBuddyCareScreen();
+  return true;
+}
+
+function submitBuddyCareExternalTestFeedback(formNode) {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.saveBuddyCareExternalTestFeedback !== 'function') {
+    return { ok: false, reason: 'buddy_care_external_test_api_unavailable' };
+  }
+  if (!formNode || typeof formNode.querySelector !== 'function') {
+    return { ok: false, reason: 'feedback_form_missing' };
+  }
+  const helpfulFeatures = Array.from(formNode.querySelectorAll('input[name="buddyCareTestHelpfulFeature"]:checked'))
+    .map((node) => String(node && node.value || '').trim().toLowerCase())
+    .filter(Boolean);
+  const feedback = externalTestApi.saveBuddyCareExternalTestFeedback(state, {
+    clarityRating: String((formNode.querySelector('[name="buddyCareTestClarityRating"]') || {}).value || '').trim(),
+    helpfulFeatures,
+    confusionNote: String((formNode.querySelector('[name="buddyCareTestConfusionNote"]') || {}).value || '').trim(),
+    wouldContinue: String((formNode.querySelector('[name="buddyCareTestWouldContinue"]') || {}).value || '').trim(),
+    wouldPay: String((formNode.querySelector('[name="buddyCareTestWouldPay"]') || {}).value || '').trim(),
+    pricingModel: String((formNode.querySelector('[name="buddyCareTestPricingModel"]') || {}).value || '').trim(),
+    seasonPassPrice: String((formNode.querySelector('[name="buddyCareTestSeasonPassPrice"]') || {}).value || '').trim()
+  }, Date.now());
+  buddyCareExternalTestFeedbackOpen = true;
+  trackBuddyCareExternalTestEvent('buddy_care_test_feedback_submitted', { source: 'feedback_form' });
+  renderBuddyCareScreen();
+  schedulePersistState(true);
+  return {
+    ok: true,
+    reason: 'feedback_saved',
+    feedback
+  };
+}
+
+function exportBuddyCareTestEvents() {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.exportBuddyCareTestEvents !== 'function') {
+    return '';
+  }
+  const payload = externalTestApi.exportBuddyCareTestEvents(state);
+  if (typeof document === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+    return payload;
+  }
+  const blob = new Blob([payload], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `buddy-care-test-events-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  return payload;
+}
+
+function clearBuddyCareTestEvents() {
+  const externalTestApi = getBuddyCareExternalTestApi();
+  if (!externalTestApi || typeof externalTestApi.clearBuddyCareTestEvents !== 'function') {
+    return false;
+  }
+  externalTestApi.clearBuddyCareTestEvents(state);
+  schedulePersistState(true);
+  renderBuddyCareScreen();
+  return true;
+}
+
+function resetBuddyCareTestData() {
+  const buddyCareApi = getBuddyCareStateApi();
+  if (!buddyCareApi || typeof buddyCareApi.resetBuddyCareTestData !== 'function') {
+    return { ok: false, reason: 'buddy_care_api_unavailable' };
+  }
+  openMenuDialog({
+    title: i18nT('buddyCare.externalTest.reset_confirm_title'),
+    message: i18nT('buddyCare.externalTest.reset_confirm_body'),
+    cancelLabel: i18nT('common.cancel'),
+    confirmLabel: i18nT('buddyCare.externalTest.reset_action'),
+    allowWhileBuddyCare: true,
+    onConfirm: async () => {
+      const result = buddyCareApi.resetBuddyCareTestData(state);
+      if (result && result.ok) {
+        buddyCareActiveView = 'today';
+        clearBuddyCarePlantDetailState();
+        buddyCareDiaryFilter = 'all';
+        buddyCareDiaryComposerOpen = false;
+        buddyCareDiaryComposerPlantId = '';
+        buddyCareSeasonPassOpen = false;
+        buddyCareActivationOnboardingVisible = false;
+        buddyCareJustUnlockedCarePlus = false;
+        buddyCareExternalTestFeedbackOpen = false;
+        renderBuddyCareScreen();
+        renderGameMenu();
+        schedulePersistState(true);
+      }
+    }
+  });
+  return { ok: true, reason: 'confirm_pending' };
+}
+
+function trackBuddyCareConversionIntent(eventName, payload = {}) {
+  const monetizationApi = getBuddyCareMonetizationApi();
+  if (!monetizationApi || typeof monetizationApi.trackBuddyCareConversionIntent !== 'function') {
+    return null;
+  }
+  return monetizationApi.trackBuddyCareConversionIntent(getBuddyCareMonetizationUiState(), eventName, payload);
+}
+
+function getBuddyCareUpgradeReason(context = 'dashboard') {
+  const monetizationApi = getBuddyCareMonetizationApi();
+  if (!monetizationApi || typeof monetizationApi.getCarePlusUpgradeReasons !== 'function') {
+    return null;
+  }
+  return monetizationApi.getCarePlusUpgradeReasons(getBuddyCareMonetizationUiState(), context);
+}
+
+function getBuddyCareCheckoutState() {
+  const monetizationApi = getBuddyCareMonetizationApi();
+  if (!monetizationApi || typeof monetizationApi.getCarePlusCheckoutState !== 'function') {
+    return {
+      enabled: false,
+      isMock: true,
+      paymentReady: false,
+      checkoutFlagEnabled: false,
+      realPaymentEnabled: false,
+      disabledReasonKey: 'buddyCare.screen.monetization_not_ready',
+      testModeKey: 'buddyCare.screen.test_mode_note'
+    };
+  }
+  return monetizationApi.getCarePlusCheckoutState();
+}
+
+function getBuddyCareOffer() {
+  const monetizationApi = getBuddyCareMonetizationApi();
+  if (!monetizationApi || typeof monetizationApi.getCarePlusOffer !== 'function') {
+    return {
+      id: 'buddy_care_season_pass_mock',
+      nameKey: 'buddyCare.screen.seasonpass_title',
+      nameFallback: 'Buddy Care+ Saisonpass',
+      priceLabel: '19,99 EUR',
+      periodKey: 'buddyCare.screen.seasonpass_period',
+      periodFallback: 'Einmalig fuer eine Saison',
+      billingLabelKey: 'buddyCare.screen.seasonpass_label',
+      billingLabelFallback: 'Eine Saison, bis zu 3 Pflanzen',
+      isMock: true,
+      checkoutEnabled: false,
+      featureKeys: [
+        { key: 'buddyCare.screen.seasonpass_feature_3_plants', fallback: 'bis zu 3 Pflanzen' },
+        { key: 'buddyCare.screen.seasonpass_feature_daily_checks', fallback: 'Tageschecks' },
+        { key: 'buddyCare.screen.seasonpass_feature_diary', fallback: 'Tagebuch pro Pflanze' },
+        { key: 'buddyCare.screen.seasonpass_feature_risk', fallback: 'Ampel und Buddy-Hinweise' },
+        { key: 'buddyCare.screen.seasonpass_feature_trends', fallback: 'Verlauf und Trends' },
+        { key: 'buddyCare.screen.seasonpass_feature_weekly', fallback: 'Wochenrueckblick' }
+      ]
+    };
+  }
+  return monetizationApi.getCarePlusOffer();
+}
+
+function setActiveHudScreen(screenId) {
+  if (!state.ui || typeof state.ui !== 'object') {
+    return 'home';
+  }
+  state.ui.activeScreen = String(screenId || 'home');
+  renderActiveScreen();
+  return state.ui.activeScreen;
+}
+
+function isBuddyCareScreenActive() {
+  return Boolean(state && state.ui && state.ui.activeScreen === 'buddyCare');
+}
+
+function normalizeBuddyCareView(view) {
+  switch (String(view || '').trim().toLowerCase()) {
+    case 'plants':
+    case 'diary':
+    case 'history':
+    case 'more':
+      return String(view).trim().toLowerCase() === 'diary' ? 'history' : String(view).trim().toLowerCase();
+    case 'today':
+    default:
+      return 'today';
+  }
+}
+
+function normalizeBuddyCareDetailSection(section) {
+  switch (String(section || '').trim().toLowerCase()) {
+    case 'daily_check':
+    case 'history':
+    case 'data':
+      return String(section).trim().toLowerCase();
+    case 'diary':
+    case 'week':
+      return 'history';
+    case 'overview':
+    default:
+      return 'overview';
+  }
+}
+
+function getActiveBuddyCareView() {
+  return normalizeBuddyCareView(buddyCareActiveView);
+}
+
+function setActiveBuddyCareView(view, options = {}) {
+  const nextView = normalizeBuddyCareView(view);
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  if (safeOptions.preservePlantContext !== true && nextView !== 'plants') {
+    clearBuddyCarePlantDetailState();
+  } else if (nextView === 'plants' && safeOptions.preservePlantContext !== true) {
+    clearBuddyCarePlantDetailState();
+  }
+  if (nextView !== 'history' && safeOptions.preserveDiaryComposer !== true) {
+    buddyCareDiaryComposerOpen = false;
+    buddyCareDiaryComposerPlantId = '';
+  }
+  buddyCareActiveView = nextView;
+  if (safeOptions.resetScroll !== false && ui.buddyCareScreen && typeof ui.buddyCareScreen.scrollTo === 'function') {
+    try {
+      ui.buddyCareScreen.scrollTo({ top: 0, behavior: 'auto' });
+    } catch (_error) {
+      ui.buddyCareScreen.scrollTop = 0;
+    }
+  }
+  if (safeOptions.render !== false) {
+    renderBuddyCareScreen();
+  }
+  return buddyCareActiveView;
+}
+
+function clearBuddyCarePlantDetailState() {
+  buddyCareDetailPlantId = '';
+  buddyCarePlantDetailSection = 'overview';
+  buddyCareActiveDailyCheckPlantId = '';
+  buddyCareDailyCheckDraft = null;
+}
+
+function closeBuddyCarePlantDetails(options = {}) {
+  clearBuddyCarePlantDetailState();
+  setActiveBuddyCareView('plants', {
+    ...options,
+    preservePlantContext: false
+  });
+  return true;
+}
+
+function openBuddyCarePlantDetails(plantId, section = 'overview') {
+  const plant = findBuddyCarePlantById(plantId);
+  if (!plant) {
+    return false;
+  }
+  buddyCareDetailPlantId = String(plant.id || '').trim();
+  buddyCarePlantDetailSection = normalizeBuddyCareDetailSection(section);
+  if (buddyCarePlantDetailSection === 'diary') {
+    trackBuddyCareExternalTestEvent('buddy_care_diary_opened', { source: 'plant_details' });
+  }
+  if (buddyCarePlantDetailSection === 'week') {
+    trackBuddyCareExternalTestEvent('buddy_care_weekly_review_viewed', { source: 'plant_details' });
+  }
+  if (buddyCarePlantDetailSection !== 'daily_check') {
+    buddyCareActiveDailyCheckPlantId = '';
+    buddyCareDailyCheckDraft = null;
+  }
+  setActiveBuddyCareView('plants', { preservePlantContext: true });
+  return true;
+}
+
+function setBuddyCarePlantDetailSection(section) {
+  if (!buddyCareDetailPlantId) {
+    return false;
+  }
+  buddyCarePlantDetailSection = normalizeBuddyCareDetailSection(section);
+  if (buddyCarePlantDetailSection === 'diary') {
+    trackBuddyCareExternalTestEvent('buddy_care_diary_opened', { source: 'detail_segment' });
+  }
+  if (buddyCarePlantDetailSection === 'week') {
+    trackBuddyCareExternalTestEvent('buddy_care_weekly_review_viewed', { source: 'detail_segment' });
+  }
+  if (buddyCarePlantDetailSection === 'daily_check') {
+    return openBuddyCareDailyCheck(buddyCareDetailPlantId, { source: 'detail_segment' });
+  }
+  buddyCareActiveDailyCheckPlantId = '';
+  buddyCareDailyCheckDraft = null;
+  renderBuddyCareScreen();
+  return true;
+}
+
+function setBuddyCareDiaryFilter(filterValue = 'all') {
+  const safeFilter = String(filterValue || '').trim();
+  buddyCareDiaryFilter = safeFilter || 'all';
+  renderBuddyCareScreen();
+  return true;
+}
+
+function normalizeBuddyCarePlantFilter(filterValue = 'all') {
+  const safeFilter = String(filterValue || '').trim().toLowerCase();
+  return ['stable', 'watch', 'action'].includes(safeFilter) ? safeFilter : 'all';
+}
+
+function setBuddyCarePlantFilter(filterValue = 'all') {
+  buddyCarePlantFilter = normalizeBuddyCarePlantFilter(filterValue);
+  renderBuddyCareScreen();
+  return buddyCarePlantFilter;
+}
+
+function normalizeBuddyCareHistoryMode(mode = 'timeline') {
+  return String(mode || '').trim().toLowerCase() === 'trends' ? 'trends' : 'timeline';
+}
+
+function setBuddyCareHistoryMode(mode = 'timeline') {
+  buddyCareHistoryMode = normalizeBuddyCareHistoryMode(mode);
+  renderBuddyCareScreen();
+  return buddyCareHistoryMode;
+}
+
+function openBuddyCareDiaryComposer(plantId = '') {
+  buddyCareDiaryComposerOpen = true;
+  buddyCareDiaryComposerPlantId = String(plantId || '').trim();
+  setActiveBuddyCareView('history', { preserveDiaryComposer: true });
+  return true;
+}
+
+function closeBuddyCareDiaryComposer() {
+  buddyCareDiaryComposerOpen = false;
+  buddyCareDiaryComposerPlantId = '';
+  renderBuddyCareScreen();
+  return true;
+}
+
+function flushBuddyCareDeferredMenuDialog() {
+  if (!buddyCareDeferredMenuDialog) {
+    return false;
+  }
+  const nextDialog = buddyCareDeferredMenuDialog;
+  buddyCareDeferredMenuDialog = null;
+  openMenuDialog({
+    ...nextDialog,
+    allowWhileBuddyCare: true
+  });
+  return true;
+}
+
+function openBuddyCareScreen() {
+  const flagsApi = getBuddyCareFlagsApi();
+  const enabled = !flagsApi || typeof flagsApi.isBuddyCareEnabled !== 'function'
+    ? true
+    : flagsApi.isBuddyCareEnabled();
+  if (!enabled) {
+    return false;
+  }
+  ensureBuddyCareState();
+  registerBuddyCareExternalTestSession();
+  if (state.ui.menuOpen) {
+    closeMenu();
+  }
+  if (state.ui.menuDialogOpen) {
+    closeMenuDialog();
+  }
+  buddyCareActiveView = 'today';
+  buddyCarePlantDetailSection = 'overview';
+  buddyCareDetailPlantId = '';
+  buddyCareActiveDailyCheckPlantId = '';
+  buddyCareDailyCheckDraft = null;
+  buddyCareDiaryFilter = 'all';
+  buddyCareDiaryComposerOpen = false;
+  buddyCareDiaryComposerPlantId = '';
+  buddyCarePlantFilter = 'all';
+  buddyCareHistoryMode = 'timeline';
+  buddyCareSeasonPassOpen = false;
+  buddyCareExternalTestFeedbackOpen = false;
+  state.ui.openSheet = null;
+  renderSheets();
+  renderBuddyCareScreen();
+  setActiveHudScreen('buddyCare');
+  renderBuddyCareScreen();
+  renderFirstRunIntroOverlay();
+  renderFirstRunDashboardFollowupOverlay();
+  return true;
+}
+
+function closeBuddyCareScreen() {
+  buddyCareActiveView = 'today';
+  clearBuddyCarePlantDetailState();
+  buddyCareDiaryFilter = 'all';
+  buddyCareDiaryComposerOpen = false;
+  buddyCareDiaryComposerPlantId = '';
+  buddyCarePlantFilter = 'all';
+  buddyCareHistoryMode = 'timeline';
+  buddyCareSeasonPassOpen = false;
+  buddyCareExternalTestFeedbackOpen = false;
+  setActiveHudScreen('home');
+  renderFirstRunIntroOverlay();
+  renderFirstRunDashboardFollowupOverlay();
+  flushBuddyCareDeferredMenuDialog();
+  return true;
+}
+
+function acceptBuddyCareAgeGate() {
+  const buddyCareApi = getBuddyCareStateApi();
+  ensureBuddyCareState();
+  if (buddyCareApi && typeof buddyCareApi.acceptBuddyCareAgeGate === 'function') {
+    state.buddyCare = buddyCareApi.acceptBuddyCareAgeGate(state, Date.now());
+  } else {
+    state.buddyCare.ageGateAccepted = true;
+    state.buddyCare.ageGateAcceptedAt = Date.now();
+  }
+  trackBuddyCareExternalTestEvent('buddy_care_age_gate_completed', { source: 'age_gate' });
+  renderBuddyCareScreen();
+  schedulePersistState(true);
+  return true;
+}
+
+function activateBuddyCareMockEntitlement() {
+  const buddyCareApi = getBuddyCareStateApi();
+  ensureBuddyCareState();
+  trackBuddyCareConversionIntent('buddy_care_mock_unlock_clicked', { source: 'seasonpass_preview' });
+  if (buddyCareApi && typeof buddyCareApi.activateBuddyCarePlusMock === 'function') {
+    state.buddyCare = buddyCareApi.activateBuddyCarePlusMock(state);
+  } else {
+    state.buddyCare.entitlement = 'care_plus_mock';
+  }
+  buddyCareSeasonPassOpen = false;
+  buddyCareActivationOnboardingVisible = true;
+  buddyCareJustUnlockedCarePlus = true;
+  trackBuddyCareConversionIntent('buddy_care_mock_unlocked', { source: 'seasonpass_preview' });
+  trackBuddyCareExternalTestEvent('buddy_care_test_access_activated', { source: 'seasonpass_preview' });
+  renderBuddyCareScreen();
+  renderGameMenu();
+  schedulePersistState(true);
+  return true;
+}
+
+function openBuddyCarePaywallMock(source = '') {
+  const flagsApi = getBuddyCareFlagsApi();
+  const paywallVisible = !flagsApi || typeof flagsApi.isBuddyCarePaywallMockEnabled !== 'function'
+    ? true
+    : flagsApi.isBuddyCarePaywallMockEnabled();
+  if (!paywallVisible) {
+    return false;
+  }
+  const safeSource = String(source || '').trim().toLowerCase() || 'entry';
+  if (!buddyCareSeasonPassOpen) {
+    if (safeSource === 'locked-slot') {
+      trackBuddyCareConversionIntent('buddy_care_locked_slot_clicked', { source: safeSource });
+    }
+    trackBuddyCareConversionIntent('buddy_care_upgrade_viewed', { source: safeSource });
+    trackBuddyCareConversionIntent('buddy_care_season_pass_viewed', { source: safeSource, screen: 'buddy_care' });
+    trackBuddyCareExternalTestEvent('buddy_care_test_access_viewed', { source: safeSource });
+  }
+  buddyCareSeasonPassOpen = true;
+  setActiveBuddyCareView('more');
+  return true;
+}
+
+function closeBuddyCarePaywallMock() {
+  if (!buddyCareSeasonPassOpen) {
+    return false;
+  }
+  buddyCareSeasonPassOpen = false;
+  renderBuddyCareScreen();
+  return true;
+}
+
+function focusBuddyCareSection(node, focusNode = null) {
+  const safeNode = node && typeof node === 'object' ? node : null;
+  if (!safeNode) {
+    return false;
+  }
+  if (typeof safeNode.scrollIntoView === 'function') {
+    safeNode.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+  }
+  if (focusNode && typeof focusNode.focus === 'function') {
+    try {
+      focusNode.focus({ preventScroll: true });
+    } catch (_error) {
+      focusNode.focus();
+    }
+  }
+  return true;
+}
+
+function dismissBuddyCareActivationOnboarding() {
+  buddyCareActivationOnboardingVisible = false;
+  buddyCareJustUnlockedCarePlus = false;
+  renderBuddyCareScreen();
+  return true;
+}
+
+function runBuddyCareActivationPrimaryAction(actionId = '') {
+  const safeActionId = String(actionId || '').trim().toLowerCase();
+  const buddyCareApi = getBuddyCareStateApi();
+  const plantCount = buddyCareApi && typeof buddyCareApi.getBuddyCarePlantCount === 'function'
+    ? buddyCareApi.getBuddyCarePlantCount(state)
+    : (Array.isArray(state.buddyCare && state.buddyCare.plants) ? state.buddyCare.plants.length : 0);
+  buddyCareJustUnlockedCarePlus = false;
+  trackBuddyCareConversionIntent('buddy_care_activation_cta_clicked', {
+    actionId: safeActionId,
+    cta: safeActionId
+  });
+
+  if (safeActionId === 'focus_setup') {
+    if (plantCount === 1) {
+      trackBuddyCareConversionIntent('buddy_care_second_plant_started', { actionId: safeActionId });
+    } else if (plantCount === 2) {
+      trackBuddyCareConversionIntent('buddy_care_third_plant_started', { actionId: safeActionId });
+    }
+    setActiveBuddyCareView('plants');
+    focusBuddyCareSection(ui.buddyCareSetupCard, ui.buddyCarePlantNameInput);
+    return true;
+  }
+
+  if (safeActionId === 'focus_today') {
+    buddyCareActivationOnboardingVisible = false;
+    setActiveBuddyCareView('today');
+    focusBuddyCareSection(ui.buddyCareTodayCard, null);
+    trackBuddyCareExternalTestEvent('buddy_care_dashboard_viewed', { source: 'activation_onboarding' });
+    return true;
+  }
+
+  return false;
+}
+
+function getBuddyCarePhaseEngineApi() {
+  return window.GrowSimBuddyCarePhaseEngine && typeof window.GrowSimBuddyCarePhaseEngine === 'object'
+    ? window.GrowSimBuddyCarePhaseEngine
+    : null;
+}
+
+function getBuddyCareTaskGeneratorApi() {
+  return window.GrowSimBuddyCareTaskGenerator && typeof window.GrowSimBuddyCareTaskGenerator === 'object'
+    ? window.GrowSimBuddyCareTaskGenerator
+    : null;
+}
+
+function getBuddyCareRiskApi() {
+  return window.GrowSimBuddyCareRiskEngine && typeof window.GrowSimBuddyCareRiskEngine === 'object'
+    ? window.GrowSimBuddyCareRiskEngine
+    : null;
+}
+
+function getBuddyCareTrendApi() {
+  return window.GrowSimBuddyCareTrendEngine && typeof window.GrowSimBuddyCareTrendEngine === 'object'
+    ? window.GrowSimBuddyCareTrendEngine
+    : null;
+}
+
+function getBuddyCareLocale() {
+  const i18nApi = getI18nApi();
+  if (i18nApi && typeof i18nApi.getCurrentLanguage === 'function') {
+    return i18nApi.getCurrentLanguage();
+  }
+  return 'en';
+}
+
+function getBuddyCareTodayDateString() {
+  const nowDate = new Date();
+  const year = nowDate.getUTCFullYear();
+  const month = String(nowDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(nowDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function createEmptyBuddyCareDailyCheckDraft(plantId = '') {
+  return {
+    plantId: String(plantId || '').trim(),
+    mediumMoisture: 'unknown',
+    leafState: 'unknown',
+    growthState: 'unknown',
+    environmentStress: 'unknown',
+    pestsVisible: 'unsure',
+    heightCm: '',
+    note: ''
+  };
+}
+
+function createBuddyCareDailyCheckDraftFromCheck(plantId, check) {
+  const safeCheck = check && typeof check === 'object' ? check : {};
+  return {
+    plantId: String(plantId || safeCheck.plantId || '').trim(),
+    mediumMoisture: String(safeCheck.mediumMoisture || 'unknown').trim().toLowerCase(),
+    leafState: String(safeCheck.leafState || 'unknown').trim().toLowerCase(),
+    growthState: String(safeCheck.growthState || 'unknown').trim().toLowerCase(),
+    environmentStress: String(safeCheck.environmentStress || 'unknown').trim().toLowerCase(),
+    pestsVisible: String(safeCheck.pestsVisible || 'unsure').trim().toLowerCase(),
+    heightCm: safeCheck.heightCm == null ? '' : String(safeCheck.heightCm),
+    note: String(safeCheck.note || '').trim()
+  };
+}
+
+function findBuddyCarePlantById(plantId) {
+  const buddyCare = ensureBuddyCareState();
+  const safePlantId = String(plantId || '').trim();
+  const plants = Array.isArray(buddyCare.plants) ? buddyCare.plants : [];
+  return plants.find((plant) => String(plant && plant.id || '').trim() === safePlantId) || null;
+}
+
+function isBuddyCarePlantReadOnly(plantId) {
+  const buddyCareApi = getBuddyCareStateApi();
+  if (!buddyCareApi || typeof buddyCareApi.isBuddyCarePlantReadOnly !== 'function') {
+    return false;
+  }
+  return buddyCareApi.isBuddyCarePlantReadOnly(state, plantId);
+}
+
+function syncBuddyCareDailyCheckDraftFromForm() {
+  if (!buddyCareActiveDailyCheckPlantId) {
+    return null;
+  }
+  buddyCareDailyCheckDraft = {
+    plantId: buddyCareActiveDailyCheckPlantId,
+    mediumMoisture: ui.buddyCareDailyCheckMoistureSelect ? String(ui.buddyCareDailyCheckMoistureSelect.value || 'unknown').trim().toLowerCase() : 'unknown',
+    leafState: ui.buddyCareDailyCheckLeafStateSelect ? String(ui.buddyCareDailyCheckLeafStateSelect.value || 'unknown').trim().toLowerCase() : 'unknown',
+    growthState: ui.buddyCareDailyCheckGrowthStateSelect ? String(ui.buddyCareDailyCheckGrowthStateSelect.value || 'unknown').trim().toLowerCase() : 'unknown',
+    environmentStress: ui.buddyCareDailyCheckEnvironmentStressSelect ? String(ui.buddyCareDailyCheckEnvironmentStressSelect.value || 'unknown').trim().toLowerCase() : 'unknown',
+    pestsVisible: ui.buddyCareDailyCheckPestsVisibleSelect ? String(ui.buddyCareDailyCheckPestsVisibleSelect.value || 'unsure').trim().toLowerCase() : 'unsure',
+    heightCm: ui.buddyCareDailyCheckHeightInput ? String(ui.buddyCareDailyCheckHeightInput.value || '').trim() : '',
+    note: ui.buddyCareDailyCheckNoteInput ? String(ui.buddyCareDailyCheckNoteInput.value || '').trim() : ''
+  };
+  return buddyCareDailyCheckDraft;
+}
+
+function getBuddyCareFormattedDate(value) {
+  const safeValue = String(value || '').trim();
+  if (!safeValue) {
+    return '';
+  }
+  const parsed = Date.parse(safeValue);
+  if (!Number.isFinite(parsed)) {
+    return safeValue;
+  }
+  try {
+    return new Intl.DateTimeFormat(getBuddyCareLocale(), {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date(parsed));
+  } catch (_error) {
+    return new Date(parsed).toISOString().slice(0, 10);
+  }
+}
+
+function resetBuddyCarePlantSetupForm() {
+  if (ui.buddyCarePlantNameInput) {
+    ui.buddyCarePlantNameInput.value = '';
+  }
+  if (ui.buddyCarePlantTypeSelect) {
+    ui.buddyCarePlantTypeSelect.value = 'unknown';
+  }
+  if (ui.buddyCarePlantEnvironmentSelect) {
+    ui.buddyCarePlantEnvironmentSelect.value = 'indoor';
+  }
+  if (ui.buddyCarePlantStartDateInput) {
+    ui.buddyCarePlantStartDateInput.value = getBuddyCareTodayDateString();
+  }
+}
+
+function submitBuddyCarePlantSetup() {
+  const buddyCareApi = getBuddyCareStateApi();
+  const entitlement = buddyCareApi && typeof buddyCareApi.getBuddyCareEntitlement === 'function'
+    ? buddyCareApi.getBuddyCareEntitlement(state)
+    : String(state.buddyCare && state.buddyCare.entitlement || 'free').trim().toLowerCase();
+  ensureBuddyCareState();
+  if (!buddyCareApi || typeof buddyCareApi.addBuddyCarePlant !== 'function') {
+    return { ok: false, reason: 'buddy_care_api_unavailable' };
+  }
+  const result = buddyCareApi.addBuddyCarePlant(state, {
+    nickname: ui.buddyCarePlantNameInput ? ui.buddyCarePlantNameInput.value : '',
+    plantType: ui.buddyCarePlantTypeSelect ? ui.buddyCarePlantTypeSelect.value : 'unknown',
+    environment: ui.buddyCarePlantEnvironmentSelect ? ui.buddyCarePlantEnvironmentSelect.value : 'indoor',
+    startDate: ui.buddyCarePlantStartDateInput ? ui.buddyCarePlantStartDateInput.value : getBuddyCareTodayDateString()
+  });
+  if (result && result.ok) {
+    const nextPlantCount = buddyCareApi && typeof buddyCareApi.getBuddyCarePlantCount === 'function'
+      ? buddyCareApi.getBuddyCarePlantCount(state)
+      : (Array.isArray(state.buddyCare && state.buddyCare.plants) ? state.buddyCare.plants.length : 0);
+    if (nextPlantCount === 1) {
+      trackBuddyCareExternalTestEvent('buddy_care_first_plant_created', { source: 'setup_form' });
+    } else if (nextPlantCount === 2) {
+      trackBuddyCareExternalTestEvent('buddy_care_second_plant_created', { source: 'setup_form' });
+    }
+    resetBuddyCarePlantSetupForm();
+    renderBuddyCareScreen();
+    renderGameMenu();
+    schedulePersistState(true);
+  } else if (result && result.reason === 'plant_limit_reached' && entitlement === 'free') {
+    trackBuddyCareConversionIntent('buddy_care_upgrade_viewed', {
+      source: 'plant_limit_reached',
+      reasonCode: 'limit_reached'
+    });
+  }
+  return result;
+}
+
+function openBuddyCareDailyCheck(plantId, options = {}) {
+  const buddyCareApi = getBuddyCareStateApi();
+  const plant = findBuddyCarePlantById(plantId);
+  if (!plant || isBuddyCarePlantReadOnly(plantId)) {
+    return false;
+  }
+  const latestCheck = buddyCareApi && typeof buddyCareApi.getLatestDailyCheckForPlant === 'function'
+    ? buddyCareApi.getLatestDailyCheckForPlant(state, plant.id)
+    : null;
+  buddyCareActiveDailyCheckPlantId = String(plant.id || '').trim();
+  buddyCareDailyCheckDraft = latestCheck
+    ? createBuddyCareDailyCheckDraftFromCheck(plant.id, latestCheck)
+    : createEmptyBuddyCareDailyCheckDraft(plant.id);
+  buddyCareDetailPlantId = String(plant.id || '').trim();
+  buddyCarePlantDetailSection = 'daily_check';
+  trackBuddyCareExternalTestEvent('buddy_care_daily_check_started', {
+    source: options && typeof options === 'object' && options.source ? options.source : 'plant_card'
+  });
+  setActiveBuddyCareView('plants', { preservePlantContext: true });
+  return true;
+}
+
+function closeBuddyCareDailyCheck() {
+  buddyCareActiveDailyCheckPlantId = '';
+  buddyCareDailyCheckDraft = null;
+  if (buddyCareDetailPlantId) {
+    buddyCarePlantDetailSection = 'overview';
+  }
+  renderBuddyCareScreen();
+  return true;
+}
+
+function submitBuddyCareDailyCheck() {
+  const buddyCareApi = getBuddyCareStateApi();
+  ensureBuddyCareState();
+  if (!buddyCareApi || typeof buddyCareApi.addDailyCheck !== 'function') {
+    return { ok: false, reason: 'buddy_care_api_unavailable' };
+  }
+  if (!buddyCareActiveDailyCheckPlantId) {
+    return { ok: false, reason: 'plant_id_missing' };
+  }
+  if (isBuddyCarePlantReadOnly(buddyCareActiveDailyCheckPlantId)) {
+    return { ok: false, reason: 'plant_read_only' };
+  }
+  const draft = syncBuddyCareDailyCheckDraftFromForm() || createEmptyBuddyCareDailyCheckDraft(buddyCareActiveDailyCheckPlantId);
+  const result = buddyCareApi.addDailyCheck(state, buddyCareActiveDailyCheckPlantId, {
+    mediumMoisture: draft.mediumMoisture,
+    leafState: draft.leafState,
+    growthState: draft.growthState,
+    environmentStress: draft.environmentStress,
+    pestsVisible: draft.pestsVisible,
+    heightCm: draft.heightCm,
+    note: draft.note
+  });
+  if (result && result.ok) {
+    trackBuddyCareExternalTestEvent('buddy_care_daily_check_completed', { source: 'daily_check_form' });
+    buddyCareDailyCheckDraft = result.check
+      ? createBuddyCareDailyCheckDraftFromCheck(buddyCareActiveDailyCheckPlantId, result.check)
+      : createEmptyBuddyCareDailyCheckDraft(buddyCareActiveDailyCheckPlantId);
+    renderBuddyCareScreen();
+    schedulePersistState(true);
+  }
+  return result;
+}
+
+function submitBuddyCareDiaryEntry(plantId, formNode) {
+  const buddyCareApi = getBuddyCareStateApi();
+  const safePlantId = String(plantId || '').trim();
+  if (!buddyCareApi || typeof buddyCareApi.addDiaryEntry !== 'function') {
+    return { ok: false, reason: 'buddy_care_api_unavailable' };
+  }
+  if (!safePlantId || !formNode || typeof formNode.querySelector !== 'function') {
+    return { ok: false, reason: 'plant_id_missing' };
+  }
+  if (isBuddyCarePlantReadOnly(safePlantId)) {
+    return { ok: false, reason: 'plant_read_only' };
+  }
+  const title = String((formNode.querySelector('[name="buddyCareDiaryTitle"]') || {}).value || '').trim();
+  const note = String((formNode.querySelector('[name="buddyCareDiaryNote"]') || {}).value || '').trim();
+  const heightCm = String((formNode.querySelector('[name="buddyCareDiaryHeight"]') || {}).value || '').trim();
+  const tags = Array.from(formNode.querySelectorAll('input[name="buddyCareDiaryTag"]:checked'))
+    .map((node) => String(node && node.value || '').trim().toLowerCase())
+    .filter(Boolean);
+  if (!title && !note && !heightCm && !tags.length) {
+    return { ok: false, reason: 'entry_empty' };
+  }
+  const result = buddyCareApi.addDiaryEntry(state, safePlantId, {
+    entryType: 'manual',
+    entryDate: getBuddyCareTodayDateString(),
+    title,
+    note,
+    tags,
+    heightCm: heightCm || null,
+    buddyComment: null
+  });
+  if (result && result.ok) {
+    trackBuddyCareExternalTestEvent('buddy_care_manual_diary_created', { source: 'diary_form' });
+    renderBuddyCareScreen();
+    schedulePersistState(true);
+  }
+  return result;
+}
+
+function submitBuddyCareDiaryHubEntry(formNode) {
+  if (!formNode || typeof formNode.querySelector !== 'function') {
+    return { ok: false, reason: 'form_missing' };
+  }
+  const selectedPlantId = String((formNode.querySelector('[name="buddyCareDiaryPlantId"]') || {}).value || '').trim();
+  const result = submitBuddyCareDiaryEntry(selectedPlantId, formNode);
+  if (result && result.ok) {
+    buddyCareDiaryComposerOpen = false;
+    buddyCareDiaryComposerPlantId = '';
+    setActiveBuddyCareView('history');
+  }
+  return result;
+}
+
+function deleteBuddyCareDiaryEntry(entryId) {
+  const buddyCareApi = getBuddyCareStateApi();
+  if (!buddyCareApi || typeof buddyCareApi.deleteDiaryEntry !== 'function') {
+    return { ok: false, reason: 'buddy_care_api_unavailable' };
+  }
+  openMenuDialog({
+    title: i18nT('buddyCare.diary.delete_confirm_title'),
+    message: i18nT('buddyCare.diary.delete_confirm_body'),
+    cancelLabel: i18nT('common.cancel'),
+    confirmLabel: i18nT('buddyCare.diary.delete_entry'),
+    allowWhileBuddyCare: true,
+    onConfirm: async () => {
+      const result = buddyCareApi.deleteDiaryEntry(state, entryId);
+      if (result && result.ok) {
+        renderBuddyCareScreen();
+        schedulePersistState(true);
+      }
+    }
+  });
+  return { ok: true, reason: 'confirm_pending' };
+}
+
+function toggleBuddyCarePlantDetails(plantId) {
+  const safePlantId = String(plantId || '').trim();
+  if (buddyCareDetailPlantId === safePlantId) {
+    return closeBuddyCarePlantDetails();
+  }
+  return openBuddyCarePlantDetails(safePlantId, 'overview');
+}
+
+function removeBuddyCarePlant(plantId) {
+  const buddyCareApi = getBuddyCareStateApi();
+  ensureBuddyCareState();
+  if (!buddyCareApi || typeof buddyCareApi.removeBuddyCarePlant !== 'function') {
+    return { ok: false, reason: 'buddy_care_api_unavailable' };
+  }
+  const result = buddyCareApi.removeBuddyCarePlant(state, plantId);
+  if (result && result.ok) {
+    if (buddyCareActiveDailyCheckPlantId === String(plantId || '').trim()) {
+      buddyCareActiveDailyCheckPlantId = '';
+      buddyCareDailyCheckDraft = null;
+    }
+    if (buddyCareDetailPlantId === String(plantId || '').trim()) {
+      clearBuddyCarePlantDetailState();
+    }
+    renderBuddyCareScreen();
+    renderGameMenu();
+    schedulePersistState(true);
+  }
+  return result;
+}
+
+function getBuddyCarePlantTypeLabel(type) {
+  switch (String(type || '').trim().toLowerCase()) {
+    case 'auto':
+      return i18nT('buddyCare.type.auto');
+    case 'photoperiod':
+      return i18nT('buddyCare.type.photoperiod');
+    default:
+      return i18nT('buddyCare.type.unknown');
+  }
+}
+
+function getBuddyCareEnvironmentLabel(environment) {
+  switch (String(environment || '').trim().toLowerCase()) {
+    case 'outdoor':
+      return i18nT('buddyCare.environment.outdoor');
+    case 'greenhouse':
+      return i18nT('buddyCare.environment.greenhouse');
+    case 'indoor':
+      return i18nT('buddyCare.environment.indoor');
+    default:
+      return i18nT('buddyCare.environment.unknown');
+  }
+}
+
+function getBuddyCarePhaseLabel(phase) {
+  switch (String(phase || '').trim().toLowerCase()) {
+    case 'early_veg':
+      return i18nT('buddyCare.phase.early_veg');
+    case 'veg':
+      return i18nT('buddyCare.phase.veg');
+    case 'stretch':
+      return i18nT('buddyCare.phase.stretch');
+    case 'flower':
+      return i18nT('buddyCare.phase.flower');
+    case 'ripening':
+      return i18nT('buddyCare.phase.ripening');
+    case 'harvest_window':
+      return i18nT('buddyCare.phase.harvest_window');
+    case 'seedling':
+      return i18nT('buddyCare.phase.seedling');
+    default:
+      return i18nT('buddyCare.phase.unknown');
+  }
+}
+
+function getBuddyCareDayLabel(daySinceStart) {
+  if (!Number.isFinite(Number(daySinceStart))) {
+    return i18nT('buddyCare.screen.day_unknown');
+  }
+  return i18nT('buddyCare.screen.day_value', { day: Math.max(1, Math.trunc(Number(daySinceStart))) });
+}
+
+function getBuddyCareDailyCheckStatusLabel(status) {
+  switch (String(status || '').trim().toLowerCase()) {
+    case 'checked_today':
+      return i18nT('buddyCare.dailyCheck.status.checked_today');
+    case 'needs_attention':
+      return i18nT('buddyCare.dailyCheck.status.needs_attention');
+    default:
+      return i18nT('buddyCare.dailyCheck.status.no_check_today');
+  }
+}
+
+function getBuddyCareDailyCheckSummaryCopy(status) {
+  switch (String(status || '').trim().toLowerCase()) {
+    case 'checked_today':
+      return i18nT('buddyCare.summary.checked_today');
+    case 'needs_attention':
+      return i18nT('buddyCare.summary.needs_attention');
+    default:
+      return i18nT('buddyCare.summary.no_check_today');
+  }
+}
+
+function translateBuddyCareRiskCopy(translationKey, fallbackValue) {
+  const safeKey = String(translationKey || '').trim();
+  if (safeKey) {
+    const translated = i18nT(safeKey);
+    if (translated && translated !== safeKey) {
+      return translated;
+    }
+  }
+  return String(fallbackValue || '').trim();
+}
+
+function createFallbackBuddyCareRiskEvaluation(status = 'gray') {
+  return {
+    plantId: '',
+    status,
+    priority: status === 'red' ? 0 : (status === 'yellow' ? 1 : (status === 'gray' ? 2 : 3)),
+    labelKey: `buddyCare.risk.status.${status}`,
+    buddyMessageKey: `buddyCare.risk.message.${status}`,
+    recommendationKeys: [
+      `buddyCare.risk.recommendation.${status === 'gray' ? 'gray_check' : (status === 'green' ? 'green_routine' : (status === 'yellow' ? 'yellow_document' : 'red_check'))}`
+    ],
+    diaryTipKey: status === 'yellow' || status === 'red'
+      ? `buddyCare.risk.diary_tip.${status}`
+      : '',
+    signals: []
+  };
+}
+
+function createFallbackBuddyCareTrendEvaluation(trend = 'not_enough_data') {
+  return {
+    plantId: '',
+    trend,
+    labelKey: `buddyCare.trend.status.${trend}`,
+    buddyMessageKey: `buddyCare.trend.message.${trend}`,
+    todayLineKey: `buddyCare.trend.today.${trend}`,
+    heightComparison: null
+  };
+}
+
+function createFallbackBuddyCareWeeklyReview(status = 'not_enough_data') {
+  return {
+    plantId: '',
+    periodStart: '',
+    periodEnd: '',
+    checkCount: 0,
+    diaryEntryCount: 0,
+    greenCount: 0,
+    yellowCount: 0,
+    redCount: 0,
+    grayCount: 0,
+    attentionCount: 0,
+    status,
+    labelKey: `buddyCare.weeklyReview.label.${status}`,
+    buddySummaryKey: `buddyCare.weeklyReview.summary.${status}`,
+    label: '',
+    highlights: [],
+    buddySummary: '',
+    nextFocus: [],
+    focusLine: ''
+  };
+}
+
+function getBuddyCareRiskLabelText(riskEvaluation) {
+  const safeRisk = riskEvaluation && typeof riskEvaluation === 'object'
+    ? riskEvaluation
+    : createFallbackBuddyCareRiskEvaluation();
+  const riskApi = getBuddyCareRiskApi();
+  return translateBuddyCareRiskCopy(
+    safeRisk.labelKey,
+    riskApi && typeof riskApi.getRiskLabel === 'function'
+      ? riskApi.getRiskLabel(safeRisk.status, getBuddyCareLocale())
+      : ''
+  );
+}
+
+function getBuddyCareRiskBuddyMessageText(riskEvaluation) {
+  const safeRisk = riskEvaluation && typeof riskEvaluation === 'object'
+    ? riskEvaluation
+    : createFallbackBuddyCareRiskEvaluation();
+  const riskApi = getBuddyCareRiskApi();
+  return translateBuddyCareRiskCopy(
+    safeRisk.buddyMessageKey,
+    riskApi && typeof riskApi.getRiskBuddyMessage === 'function'
+      ? riskApi.getRiskBuddyMessage(safeRisk.status, safeRisk.signals, getBuddyCareLocale())
+      : ''
+  );
+}
+
+function getBuddyCareRiskRecommendationsText(riskEvaluation, limit = 3) {
+  const safeRisk = riskEvaluation && typeof riskEvaluation === 'object'
+    ? riskEvaluation
+    : createFallbackBuddyCareRiskEvaluation();
+  const safeLimit = Math.max(0, Math.trunc(Number(limit) || 0)) || 3;
+  const riskApi = getBuddyCareRiskApi();
+  const translatedRecommendations = Array.isArray(safeRisk.recommendationKeys)
+    ? safeRisk.recommendationKeys
+      .map((key) => translateBuddyCareRiskCopy(key, ''))
+      .filter(Boolean)
+    : [];
+  if (translatedRecommendations.length) {
+    return translatedRecommendations.slice(0, safeLimit);
+  }
+  return riskApi && typeof riskApi.getRiskRecommendations === 'function'
+    ? riskApi.getRiskRecommendations(safeRisk.status, safeRisk.signals, getBuddyCareLocale()).slice(0, safeLimit)
+    : [];
+}
+
+function getBuddyCareRiskDiaryTipText(riskEvaluation) {
+  const safeRisk = riskEvaluation && typeof riskEvaluation === 'object'
+    ? riskEvaluation
+    : createFallbackBuddyCareRiskEvaluation();
+  if (!safeRisk.diaryTipKey) {
+    return '';
+  }
+  return translateBuddyCareRiskCopy(safeRisk.diaryTipKey, '');
+}
+
+function getBuddyCareRiskSignalTitles(riskEvaluation, limit = 2) {
+  const safeSignals = Array.isArray(riskEvaluation && riskEvaluation.signals)
+    ? riskEvaluation.signals
+    : [];
+  return safeSignals
+    .map((signal) => translateBuddyCareRiskCopy(signal && signal.titleKey, ''))
+    .filter(Boolean)
+    .slice(0, Math.max(0, Math.trunc(Number(limit) || 0)) || 2);
+}
+
+function getBuddyCareTrendLabelText(trendEvaluation) {
+  const safeTrend = trendEvaluation && typeof trendEvaluation === 'object'
+    ? trendEvaluation
+    : createFallbackBuddyCareTrendEvaluation();
+  const trendApi = getBuddyCareTrendApi();
+  return translateBuddyCareRiskCopy(
+    safeTrend.labelKey,
+    trendApi && typeof trendApi.getTrendLabel === 'function'
+      ? trendApi.getTrendLabel(safeTrend.trend, getBuddyCareLocale())
+      : ''
+  );
+}
+
+function getBuddyCareTrendBuddyMessageText(trendEvaluation) {
+  const safeTrend = trendEvaluation && typeof trendEvaluation === 'object'
+    ? trendEvaluation
+    : createFallbackBuddyCareTrendEvaluation();
+  const trendApi = getBuddyCareTrendApi();
+  return translateBuddyCareRiskCopy(
+    safeTrend.buddyMessageKey,
+    trendApi && typeof trendApi.getTrendBuddyMessage === 'function'
+      ? trendApi.getTrendBuddyMessage(safeTrend.trend, getBuddyCareLocale())
+      : ''
+  );
+}
+
+function getBuddyCareTrendTodayLineText(trendEvaluation) {
+  const safeTrend = trendEvaluation && typeof trendEvaluation === 'object'
+    ? trendEvaluation
+    : createFallbackBuddyCareTrendEvaluation();
+  return translateBuddyCareRiskCopy(
+    safeTrend.todayLineKey,
+    ''
+  );
+}
+
+function getBuddyCareTrendHeightText(trendEvaluation) {
+  const safeTrend = trendEvaluation && typeof trendEvaluation === 'object'
+    ? trendEvaluation
+    : createFallbackBuddyCareTrendEvaluation();
+  const trendApi = getBuddyCareTrendApi();
+  return trendApi && typeof trendApi.getHeightComparisonMessage === 'function'
+    ? trendApi.getHeightComparisonMessage(safeTrend.heightComparison, getBuddyCareLocale())
+    : '';
+}
+
+function getBuddyCareTrendBuddyPresentation(trendEvaluation) {
+  const safeTrend = String(trendEvaluation && trendEvaluation.trend || 'not_enough_data').trim().toLowerCase();
+  switch (safeTrend) {
+    case 'stable':
+    case 'improving':
+      return {
+        assetKind: 'success',
+        altKey: 'buddyCare.buddy.alt.success'
+      };
+    case 'watch_change':
+    case 'repeat_attention':
+      return {
+        assetKind: 'attention',
+        altKey: 'buddyCare.buddy.alt.attention'
+      };
+    default:
+      return {
+        assetKind: 'today',
+        altKey: 'buddyCare.buddy.alt.today'
+      };
+  }
+}
+
+function getBuddyCareMiniHistorySummaryText(miniHistory) {
+  const safeHistory = miniHistory && typeof miniHistory === 'object' ? miniHistory : null;
+  const trendApi = getBuddyCareTrendApi();
+  if (!safeHistory) {
+    return '';
+  }
+  if (safeHistory.buddySummaryKey) {
+    return translateBuddyCareRiskCopy(safeHistory.buddySummaryKey, safeHistory.buddySummary);
+  }
+  return trendApi && typeof trendApi.getMiniHistoryBuddySummary === 'function'
+    ? trendApi.getMiniHistoryBuddySummary(safeHistory, getBuddyCareLocale())
+    : String(safeHistory.buddySummary || '').trim();
+}
+
+function getBuddyCareMiniHistoryChecksLabel(miniHistory) {
+  const safeHistory = miniHistory && typeof miniHistory === 'object' ? miniHistory : null;
+  if (!safeHistory || !Number.isFinite(Number(safeHistory.checkCount)) || Number(safeHistory.checkCount) <= 0) {
+    return '';
+  }
+  return i18nT('buddyCare.history.checks_available', {
+    count: Math.max(0, Math.trunc(Number(safeHistory.checkCount) || 0))
+  });
+}
+
+function getBuddyCareWeeklyReviewLabelText(review) {
+  const safeReview = review && typeof review === 'object'
+    ? review
+    : createFallbackBuddyCareWeeklyReview();
+  const trendApi = getBuddyCareTrendApi();
+  return translateBuddyCareRiskCopy(
+    safeReview.labelKey,
+    trendApi && typeof trendApi.getWeeklyReviewLabel === 'function'
+      ? trendApi.getWeeklyReviewLabel(safeReview, getBuddyCareLocale())
+      : String(safeReview.label || '').trim()
+  );
+}
+
+function getBuddyCareWeeklyReviewSummaryText(review) {
+  const safeReview = review && typeof review === 'object'
+    ? review
+    : createFallbackBuddyCareWeeklyReview();
+  const trendApi = getBuddyCareTrendApi();
+  return translateBuddyCareRiskCopy(
+    safeReview.buddySummaryKey,
+    trendApi && typeof trendApi.getWeeklyReviewBuddySummary === 'function'
+      ? trendApi.getWeeklyReviewBuddySummary(safeReview, getBuddyCareLocale())
+      : String(safeReview.buddySummary || '').trim()
+  );
+}
+
+function getBuddyCareWeeklyReviewFocusLineText(review) {
+  const safeReview = review && typeof review === 'object'
+    ? review
+    : createFallbackBuddyCareWeeklyReview();
+  const focusLine = String(safeReview.focusLine || (Array.isArray(safeReview.nextFocus) ? safeReview.nextFocus[0] : '') || '').trim();
+  return focusLine
+    ? i18nT('buddyCare.weeklyReview.focus_line', { focus: focusLine })
+    : '';
+}
+
+function getBuddyCareWeeklyReviewPresentation(review) {
+  const safeStatus = String(review && review.status || 'not_enough_data').trim().toLowerCase();
+  switch (safeStatus) {
+    case 'calm_week':
+      return {
+        assetKind: 'success',
+        altKey: 'buddyCare.buddy.alt.success'
+      };
+    case 'mixed_week':
+      return {
+        assetKind: 'today',
+        altKey: 'buddyCare.buddy.alt.today'
+      };
+    case 'attention_week':
+      return {
+        assetKind: 'attention',
+        altKey: 'buddyCare.buddy.alt.attention'
+      };
+    default:
+      return {
+        assetKind: 'header',
+        altKey: 'buddyCare.buddy.alt.header'
+      };
+  }
+}
+
+function renderBuddyCareMiniHistory(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const miniHistory = safeCard.miniHistory && typeof safeCard.miniHistory === 'object'
+    ? safeCard.miniHistory
+    : null;
+  if (!miniHistory) {
+    return '';
+  }
+  const historyChecksLabel = getBuddyCareMiniHistoryChecksLabel(miniHistory);
+  const historySummary = getBuddyCareMiniHistorySummaryText(miniHistory);
+  const heightText = safeCard.miniHistoryHeightText || '';
+  const historyPresentation = getBuddyCareTrendBuddyPresentation({ trend: miniHistory.historyStatus || 'not_enough_data' });
+  return `
+    <div class="buddy-care-history-card">
+      <div class="buddy-care-history-head">
+        <strong class="buddy-care-plant-details-head">${escapeHtml(i18nT('buddyCare.history.title'))}</strong>
+        ${historyChecksLabel ? `<span class="buddy-care-history-meta">${escapeHtml(historyChecksLabel)}</span>` : ''}
+      </div>
+      ${miniHistory.checkItems && miniHistory.checkItems.length ? `
+        <div class="buddy-care-history-section">
+          <span class="buddy-care-history-label">${escapeHtml(i18nT('buddyCare.history.last_checks'))}</span>
+          <ul class="buddy-care-history-list">
+            ${miniHistory.checkItems.map((item) => `
+              <li class="buddy-care-history-item">
+                <span class="buddy-care-history-date">${escapeHtml(String(item.dateLabel || item.date || ''))}</span>
+                <span class="buddy-care-history-value">${escapeHtml(String(item.statusLabel || ''))}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      ` : `
+        <p class="buddy-care-history-empty">${escapeHtml(i18nT('buddyCare.history.low_data'))}</p>
+      `}
+      ${miniHistory.diaryItems && miniHistory.diaryItems.length ? `
+        <div class="buddy-care-history-section">
+          <span class="buddy-care-history-label">${escapeHtml(i18nT('buddyCare.history.last_entries'))}</span>
+          <ul class="buddy-care-history-list">
+            ${miniHistory.diaryItems.map((item) => `
+              <li class="buddy-care-history-item">
+                <span class="buddy-care-history-date">${escapeHtml(String(item.dateLabel || item.date || ''))}</span>
+                <span class="buddy-care-history-value">${escapeHtml(String(item.title || ''))}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      ` : ''}
+      <div class="buddy-care-buddy-note buddy-care-buddy-note--history">
+        <div class="buddy-care-buddy-visual">
+          ${renderBuddyCareAssetImage(historyPresentation.assetKind, historyPresentation.altKey, 'buddy-care-buddy-asset')}
+        </div>
+        <div class="buddy-care-buddy-body">
+          <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.screen.buddy_says'))}</span>
+          <p class="buddy-care-buddy-copy">${escapeHtml(historySummary)}</p>
+          ${heightText ? `<p class="buddy-care-buddy-copy buddy-care-buddy-copy--subtle">${escapeHtml(heightText)}</p>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderBuddyCareWeeklyReview(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const weeklyReview = safeCard.weeklyReview && typeof safeCard.weeklyReview === 'object'
+    ? safeCard.weeklyReview
+    : null;
+  if (!weeklyReview) {
+    return '';
+  }
+  const labelText = safeCard.weeklyReviewLabel || getBuddyCareWeeklyReviewLabelText(weeklyReview);
+  const summaryText = safeCard.weeklyReviewSummary || getBuddyCareWeeklyReviewSummaryText(weeklyReview);
+  const highlights = Array.isArray(weeklyReview.highlights)
+    ? weeklyReview.highlights.filter(Boolean).slice(0, 4)
+    : [];
+  const nextFocus = Array.isArray(weeklyReview.nextFocus)
+    ? weeklyReview.nextFocus.filter(Boolean).slice(0, 3)
+    : [];
+  const weeklyPresentation = getBuddyCareWeeklyReviewPresentation(weeklyReview);
+  return `
+    <div class="buddy-care-weekly-card">
+      <div class="buddy-care-history-head">
+        <strong class="buddy-care-plant-details-head">${escapeHtml(i18nT('buddyCare.weeklyReview.title'))}</strong>
+        ${labelText ? `<span class="buddy-care-weekly-meta">${escapeHtml(i18nT('buddyCare.weeklyReview.card_value', { status: labelText }))}</span>` : ''}
+      </div>
+      <div class="buddy-care-history-section">
+        <span class="buddy-care-history-label">${escapeHtml(i18nT('buddyCare.weeklyReview.this_week'))}</span>
+        <ul class="buddy-care-history-list">
+          ${highlights.map((item) => `<li class="buddy-care-history-item"><span class="buddy-care-history-value">${escapeHtml(String(item || ''))}</span></li>`).join('')}
+        </ul>
+      </div>
+      <div class="buddy-care-buddy-note buddy-care-buddy-note--weekly">
+        <div class="buddy-care-buddy-visual">
+          ${renderBuddyCareAssetImage(weeklyPresentation.assetKind, weeklyPresentation.altKey, 'buddy-care-buddy-asset')}
+        </div>
+        <div class="buddy-care-buddy-body">
+          <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.screen.buddy_says'))}</span>
+          <p class="buddy-care-buddy-copy">${escapeHtml(summaryText)}</p>
+        </div>
+      </div>
+      ${nextFocus.length ? `
+        <div class="buddy-care-history-section buddy-care-weekly-focus">
+          <span class="buddy-care-history-label">${escapeHtml(i18nT('buddyCare.weeklyReview.next_focus'))}</span>
+          <ul class="buddy-care-history-list">
+            ${nextFocus.map((item) => `<li class="buddy-care-history-item"><span class="buddy-care-history-value">${escapeHtml(String(item || ''))}</span></li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function shouldShowBuddyCarePaywall() {
+  const flagsApi = getBuddyCareFlagsApi();
+  return !flagsApi || typeof flagsApi.isBuddyCarePaywallMockEnabled !== 'function'
+    ? true
+    : flagsApi.isBuddyCarePaywallMockEnabled();
+}
+
+function getBuddyCareMaximumPlantLimit() {
+  const flagsApi = getBuddyCareFlagsApi();
+  if (flagsApi && typeof flagsApi.getMaximumPlantLimit === 'function') {
+    return Math.max(1, Math.trunc(Number(flagsApi.getMaximumPlantLimit()) || 0) || 3);
+  }
+  return 3;
+}
+
+function renderBuddyCareSeasonPassPreview() {
+  const offer = getBuddyCareOffer();
+  const checkoutState = getBuddyCareCheckoutState();
+  const periodKey = String(offer && offer.periodKey || 'buddyCare.screen.seasonpass_period');
+  const billingLabelKey = String(offer && offer.billingLabelKey || 'buddyCare.screen.seasonpass_label');
+
+  if (ui.buddyCareSeasonPassFeatureList) {
+    const featureItems = Array.isArray(offer && offer.featureKeys) ? offer.featureKeys : [];
+    ui.buddyCareSeasonPassFeatureList.innerHTML = featureItems.map((entry) => {
+      const key = String(entry && entry.key || '').trim();
+      const fallback = String(entry && entry.fallback || '').trim();
+      const label = key ? i18nT(key) : fallback;
+      return `<li>${escapeHtml(label)}</li>`;
+    }).join('');
+  }
+  if (ui.buddyCareSeasonPassPrice) {
+    ui.buddyCareSeasonPassPrice.textContent = String(offer && offer.priceLabel || '19,99 EUR');
+  }
+  if (ui.buddyCareSeasonPassPeriod) {
+    ui.buddyCareSeasonPassPeriod.textContent = i18nT(periodKey);
+  }
+  if (ui.buddyCareSeasonPassBillingLabel) {
+    ui.buddyCareSeasonPassBillingLabel.textContent = i18nT(billingLabelKey);
+  }
+  if (ui.buddyCareSeasonPassStatusNote) {
+    const disabledReasonKey = String(checkoutState && checkoutState.disabledReasonKey || '').trim();
+    ui.buddyCareSeasonPassStatusNote.hidden = true;
+    ui.buddyCareSeasonPassStatusNote.textContent = disabledReasonKey ? i18nT(disabledReasonKey) : '';
+  }
+}
+
+function renderBuddyCareLockedSlotCard(slotNumber) {
+  const safeSlotNumber = Math.max(2, Math.trunc(Number(slotNumber) || 0) || 2);
+  const upgradeReason = getBuddyCareUpgradeReason('locked_slot');
+  const bodyKey = upgradeReason && upgradeReason.bodyKey
+    ? upgradeReason.bodyKey
+    : 'buddyCare.screen.locked_slot_body';
+  return `
+    <article class="buddy-care-plant-item buddy-care-plant-item--locked">
+      <div class="buddy-care-plant-copy">
+        <span class="buddy-care-plant-slot">${escapeHtml(i18nT('buddyCare.screen.slot_label', { number: safeSlotNumber }))}</span>
+        <strong class="buddy-care-plant-name">${escapeHtml(i18nT('buddyCare.screen.locked_slot_title', { number: safeSlotNumber }))}</strong>
+        <p class="buddy-care-risk-copy">${escapeHtml(i18nT(bodyKey))}</p>
+        <span class="buddy-care-plant-meta">${escapeHtml(i18nT('buddyCare.screen.upgrade_price_line'))}</span>
+      </div>
+      <div class="buddy-care-plant-actions">
+        <button class="action-btn action-primary" type="button" data-buddy-care-open-paywall="locked-slot">${escapeHtml(i18nT('buddyCare.screen.view_care_plus'))}</button>
+      </div>
+    </article>
+  `;
+}
+
+function buildBuddyCareActivationOnboardingViewModel(entitlement, plantCount) {
+  const safeEntitlement = String(entitlement || 'free').trim().toLowerCase();
+  const safePlantCount = Math.max(0, Math.trunc(Number(plantCount) || 0));
+  if (safeEntitlement !== 'care_plus_mock' || !buddyCareActivationOnboardingVisible) {
+    return null;
+  }
+
+  if (safePlantCount >= 3) {
+    return {
+      kickerKey: 'buddyCare.screen.activation_complete_kicker',
+      titleKey: 'buddyCare.screen.activation_complete_title',
+      bodyKey: 'buddyCare.screen.activation_complete_body',
+      buddyMessageKey: 'buddyCare.screen.activation_buddy_complete',
+      primaryLabelKey: 'buddyCare.screen.activation_cta_today_start',
+      primaryAction: 'focus_today',
+      secondaryLabelKey: '',
+      assetKind: 'success',
+      altKey: 'buddyCare.buddy.alt.success'
+    };
+  }
+
+  if (safePlantCount === 2) {
+    return {
+      kickerKey: 'buddyCare.entitlement.care_plus_mock',
+      titleKey: 'buddyCare.screen.activation_slot_free_title',
+      bodyKey: 'buddyCare.screen.activation_two_plants_body',
+      buddyMessageKey: 'buddyCare.screen.activation_buddy_ready',
+      primaryLabelKey: 'buddyCare.screen.activation_cta_third_plant',
+      primaryAction: 'focus_setup',
+      secondaryLabelKey: 'buddyCare.screen.activation_cta_later',
+      assetKind: buddyCareJustUnlockedCarePlus ? 'success' : 'header',
+      altKey: buddyCareJustUnlockedCarePlus ? 'buddyCare.buddy.alt.success' : 'buddyCare.buddy.alt.header'
+    };
+  }
+
+  if (safePlantCount === 1) {
+    return {
+      kickerKey: 'buddyCare.entitlement.care_plus_mock',
+      titleKey: 'buddyCare.screen.mock_active_title',
+      bodyKey: 'buddyCare.screen.activation_one_plant_body',
+      buddyMessageKey: 'buddyCare.screen.activation_buddy_ready',
+      primaryLabelKey: 'buddyCare.screen.activation_cta_second_plant',
+      primaryAction: 'focus_setup',
+      secondaryLabelKey: 'buddyCare.screen.activation_cta_later',
+      assetKind: buddyCareJustUnlockedCarePlus ? 'success' : 'header',
+      altKey: buddyCareJustUnlockedCarePlus ? 'buddyCare.buddy.alt.success' : 'buddyCare.buddy.alt.header'
+    };
+  }
+
+  return {
+    kickerKey: 'buddyCare.entitlement.care_plus_mock',
+    titleKey: 'buddyCare.screen.mock_active_title',
+    bodyKey: 'buddyCare.screen.activation_zero_plants_body',
+    buddyMessageKey: 'buddyCare.screen.activation_buddy_ready',
+    primaryLabelKey: 'buddyCare.screen.activation_cta_first_plant',
+    primaryAction: 'focus_setup',
+    secondaryLabelKey: '',
+    assetKind: buddyCareJustUnlockedCarePlus ? 'success' : 'header',
+    altKey: buddyCareJustUnlockedCarePlus ? 'buddyCare.buddy.alt.success' : 'buddyCare.buddy.alt.header'
+  };
+}
+
+function renderBuddyCareActivationOnboardingCard(viewModel) {
+  if (!ui.buddyCareActivationCard) {
+    return;
+  }
+  const safeVm = viewModel && typeof viewModel === 'object' ? viewModel : null;
+  if (!safeVm) {
+    ui.buddyCareActivationCard.hidden = true;
+    ui.buddyCareActivationCard.innerHTML = '';
+    return;
+  }
+
+  ui.buddyCareActivationCard.hidden = false;
+  ui.buddyCareActivationCard.innerHTML = `
+    <p class="buddy-care-panel-kicker">${escapeHtml(i18nT(safeVm.kickerKey))}</p>
+    <h2 class="buddy-care-panel-title">${escapeHtml(i18nT(safeVm.titleKey))}</h2>
+    <p class="buddy-care-panel-copy">${escapeHtml(i18nT(safeVm.bodyKey))}</p>
+    <div class="buddy-care-buddy-note buddy-care-buddy-note--activation">
+      <div class="buddy-care-buddy-visual">
+        ${renderBuddyCareAssetImage(safeVm.assetKind, safeVm.altKey, 'buddy-care-buddy-asset')}
+      </div>
+      <div class="buddy-care-buddy-body">
+        <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.screen.buddy_says'))}</span>
+        <p class="buddy-care-buddy-copy">${escapeHtml(i18nT(safeVm.buddyMessageKey))}</p>
+      </div>
+    </div>
+    <div class="buddy-care-daily-actions">
+      <button class="action-btn action-primary" type="button" data-buddy-care-activation-primary="${escapeHtml(safeVm.primaryAction)}">${escapeHtml(i18nT(safeVm.primaryLabelKey))}</button>
+      ${safeVm.secondaryLabelKey ? `<button class="ghost-btn" type="button" data-buddy-care-activation-dismiss="later">${escapeHtml(i18nT(safeVm.secondaryLabelKey))}</button>` : ''}
+    </div>
+  `;
+}
+
+function getBuddyCareTodayBuddyPresentation(summary) {
+  const overallStatus = String(summary && summary.riskStatus || 'gray').trim().toLowerCase();
+  switch (overallStatus) {
+    case 'green':
+      return {
+        assetKind: 'success',
+        altKey: 'buddyCare.buddy.alt.success'
+      };
+    case 'yellow':
+    case 'red':
+      return {
+        assetKind: 'attention',
+        altKey: 'buddyCare.buddy.alt.attention'
+      };
+    default:
+      return {
+        assetKind: 'today',
+        altKey: 'buddyCare.buddy.alt.today'
+      };
+  }
+}
+
+function sortBuddyCareCardsByRisk(cards) {
+  return (Array.isArray(cards) ? cards.slice() : []).sort((left, right) => {
+    const leftPriority = Number(left && left.riskEvaluation && left.riskEvaluation.priority);
+    const rightPriority = Number(right && right.riskEvaluation && right.riskEvaluation.priority);
+    const priorityDelta = (Number.isFinite(leftPriority) ? leftPriority : 99) - (Number.isFinite(rightPriority) ? rightPriority : 99);
+    if (priorityDelta !== 0) {
+      return priorityDelta;
+    }
+    return String(left && left.name || '').localeCompare(String(right && right.name || ''));
+  });
+}
+
+function getBuddyCareDiaryTags() {
+  const buddyCareApi = getBuddyCareStateApi();
+  if (buddyCareApi && Array.isArray(buddyCareApi.DIARY_TAGS)) {
+    return buddyCareApi.DIARY_TAGS.slice();
+  }
+  return ['observation', 'watering', 'height', 'environment', 'issue', 'weekly_review', 'other', 'daily_check'];
+}
+
+function isBuddyCareDailyCheckAttentionWorthy(check) {
+  const safeCheck = check && typeof check === 'object' ? check : {};
+  return safeCheck.leafState !== 'normal'
+    || safeCheck.pestsVisible !== 'no'
+    || safeCheck.environmentStress !== 'normal'
+    || (safeCheck.mediumMoisture === 'wet' && safeCheck.leafState === 'hanging');
+}
+
+function getBuddyCareDailyCheckOptionLabel(optionValue) {
+  const safeOptionValue = String(optionValue || '').trim().toLowerCase() || 'unknown';
+  const translationKey = `buddyCare.dailyCheck.option.${safeOptionValue}`;
+  const translated = i18nT(translationKey);
+  return translated && translated !== translationKey
+    ? translated
+    : safeOptionValue;
+}
+
+function getBuddyCareDiaryTagLabel(tag) {
+  const safeTag = String(tag || '').trim().toLowerCase() || 'other';
+  return i18nT(`buddyCare.diary.tag.${safeTag}`);
+}
+
+function getBuddyCareDiaryEntryDateLabel(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return '';
+  }
+  return getBuddyCareFormattedDate(entry.entryDate || entry.updatedAt || entry.createdAt || '');
+}
+
+function getBuddyCareLatestDiaryEntryLabel(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return i18nT('buddyCare.diary.latest_entry_none');
+  }
+  return i18nT('buddyCare.diary.latest_entry_value', {
+    date: getBuddyCareDiaryEntryDateLabel(entry)
+  });
+}
+
+function getBuddyCareDiaryEntryTitle(entry, linkedCheck) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  if (safeEntry.title) {
+    return resolveLikelyI18nText(safeEntry.title, 'buddyCare.diary.manual_title_fallback');
+  }
+  if (linkedCheck) {
+    return isBuddyCareDailyCheckAttentionWorthy(linkedCheck)
+      ? i18nT('buddyCare.diary.auto_title_attention')
+      : i18nT('buddyCare.diary.auto_title_complete');
+  }
+  return i18nT('buddyCare.diary.manual_title_fallback');
+}
+
+function getBuddyCareDiaryEntryBuddyComment(entry, linkedCheck) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  if (safeEntry.buddyComment) {
+    return resolveLikelyI18nText(safeEntry.buddyComment);
+  }
+  if (!linkedCheck) {
+    return '';
+  }
+  return isBuddyCareDailyCheckAttentionWorthy(linkedCheck)
+    ? i18nT('buddyCare.summary.needs_attention')
+    : i18nT('buddyCare.summary.checked_today');
+}
+
+function getBuddyCareDiaryEntrySummaryItems(entry, linkedCheck) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const summaryItems = [];
+  if (linkedCheck) {
+    summaryItems.push(`${i18nT('buddyCare.diary.field_medium')}: ${getBuddyCareDailyCheckOptionLabel(linkedCheck.mediumMoisture)}`);
+    summaryItems.push(`${i18nT('buddyCare.diary.field_leaves')}: ${getBuddyCareDailyCheckOptionLabel(linkedCheck.leafState)}`);
+    summaryItems.push(`${i18nT('buddyCare.diary.field_growth')}: ${getBuddyCareDailyCheckOptionLabel(linkedCheck.growthState)}`);
+    summaryItems.push(`${i18nT('buddyCare.diary.field_environment')}: ${getBuddyCareDailyCheckOptionLabel(linkedCheck.environmentStress)}`);
+    summaryItems.push(`${i18nT('buddyCare.diary.field_pests')}: ${getBuddyCareDailyCheckOptionLabel(linkedCheck.pestsVisible)}`);
+  }
+  if (safeEntry.heightCm != null && safeEntry.heightCm !== '') {
+    summaryItems.push(`${i18nT('buddyCare.diary.height_label')}: ${escapeHtml(String(safeEntry.heightCm))}`);
+  }
+  return summaryItems;
+}
+
+function renderBuddyCareDiaryTags(tags) {
+  const safeTags = Array.isArray(tags) ? tags.filter(Boolean) : [];
+  if (!safeTags.length) {
+    return '';
+  }
+  return `
+    <div class="buddy-care-diary-tags">
+      ${safeTags.map((tag) => `<span class="buddy-care-diary-tag">${escapeHtml(getBuddyCareDiaryTagLabel(tag))}</span>`).join('')}
+    </div>
+  `;
+}
+
+function renderBuddyCareDiaryEntry(entry) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const buddyCareApi = getBuddyCareStateApi();
+  const linkedCheck = safeEntry.linkedCheckId && buddyCareApi && typeof buddyCareApi.getDailyCheckById === 'function'
+    ? buddyCareApi.getDailyCheckById(state, safeEntry.linkedCheckId)
+    : null;
+  const title = getBuddyCareDiaryEntryTitle(safeEntry, linkedCheck);
+  const dateLabel = getBuddyCareDiaryEntryDateLabel(safeEntry);
+  const summaryItems = getBuddyCareDiaryEntrySummaryItems(safeEntry, linkedCheck);
+  const note = String(safeEntry.note || '').trim();
+  const buddyComment = getBuddyCareDiaryEntryBuddyComment(safeEntry, linkedCheck);
+  return `
+    <article class="buddy-care-diary-entry">
+      <div class="buddy-care-diary-entry-head">
+        <strong class="buddy-care-diary-entry-title">${escapeHtml(title)}</strong>
+        <span class="buddy-care-diary-entry-date">${escapeHtml(dateLabel)}</span>
+      </div>
+      ${renderBuddyCareDiaryTags(safeEntry.tags)}
+      ${summaryItems.length ? `
+        <ul class="buddy-care-diary-summary-list">
+          ${summaryItems.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+        </ul>
+      ` : ''}
+      ${note ? `<p class="buddy-care-diary-note">${escapeHtml(note)}</p>` : ''}
+      ${buddyComment ? `<p class="buddy-care-diary-buddy-copy">${escapeHtml(buddyComment)}</p>` : ''}
+      ${linkedCheck ? `<span class="buddy-care-diary-linked">${escapeHtml(i18nT('buddyCare.diary.linked_check'))}</span>` : ''}
+      <div class="buddy-care-diary-entry-actions">
+        <button class="ghost-btn buddy-care-diary-delete" type="button" data-buddy-care-delete-entry="${escapeHtml(safeEntry.id)}">${escapeHtml(i18nT('buddyCare.diary.delete_entry'))}</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderBuddyCareDiaryEmptyState() {
+  return `
+    <div class="buddy-care-buddy-note buddy-care-buddy-note--diary">
+      <div class="buddy-care-buddy-visual">
+        ${renderBuddyCareAssetImage('today', 'buddyCare.buddy.alt.today', 'buddy-care-buddy-asset')}
+      </div>
+      <div class="buddy-care-buddy-body">
+        <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.diary.empty_title'))}</span>
+        <p class="buddy-care-buddy-copy">${escapeHtml(i18nT('buddyCare.diary.empty_body'))}</p>
+      </div>
+    </div>
+  `;
+}
+
+function renderBuddyCareDiaryForm(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const safePlantId = String(safeCard.id || '').trim();
+  const tagOptions = getBuddyCareDiaryTags().map((tag) => {
+    const inputId = `buddyCareDiaryTag-${safePlantId}-${tag}`;
+    return `
+      <label class="buddy-care-diary-tag-option" for="${escapeHtml(inputId)}">
+        <input id="${escapeHtml(inputId)}" class="buddy-care-diary-tag-checkbox" type="checkbox" name="buddyCareDiaryTag" value="${escapeHtml(tag)}">
+        <span>${escapeHtml(getBuddyCareDiaryTagLabel(tag))}</span>
+      </label>
+    `;
+  }).join('');
+  return `
+    <form class="buddy-care-diary-form" data-buddy-care-diary-form="${escapeHtml(safePlantId)}">
+      <strong class="buddy-care-plant-details-head">${escapeHtml(i18nT('buddyCare.diary.add_entry'))}</strong>
+      <label class="buddy-care-field">
+        <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.title_label'))}</span>
+        <input class="buddy-care-input" type="text" name="buddyCareDiaryTitle" maxlength="80" placeholder="${escapeHtml(i18nT('buddyCare.diary.title_placeholder'))}">
+      </label>
+      <label class="buddy-care-field buddy-care-field--full">
+        <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.note_label'))}</span>
+        <textarea class="buddy-care-textarea" name="buddyCareDiaryNote" rows="3" maxlength="320" placeholder="${escapeHtml(i18nT('buddyCare.diary.note_placeholder'))}"></textarea>
+      </label>
+      <label class="buddy-care-field">
+        <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.height_label'))}</span>
+        <input class="buddy-care-input" type="number" name="buddyCareDiaryHeight" min="0" step="0.1" inputmode="decimal">
+      </label>
+      <fieldset class="buddy-care-diary-fieldset buddy-care-field buddy-care-field--full">
+        <legend class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.tags_label'))}</legend>
+        <div class="buddy-care-diary-tag-grid">
+          ${tagOptions}
+        </div>
+      </fieldset>
+      <div class="buddy-care-daily-actions">
+        <button class="action-btn action-primary" type="submit">${escapeHtml(i18nT('buddyCare.diary.save_entry'))}</button>
+      </div>
+    </form>
+  `;
+}
+
+function getBuddyCareAssetPath(kind) {
+  const assetsApi = typeof window !== 'undefined' ? window.GrowSimBuddyCareAssets : null;
+  if (assetsApi && typeof assetsApi.getBuddyCareAsset === 'function') {
+    const assetPath = assetsApi.getBuddyCareAsset(kind);
+    if (assetPath) {
+      return String(assetPath);
+    }
+  }
+  return '';
+}
+
+function renderBuddyCareAssetImage(kind, altKey, className) {
+  const assetPath = getBuddyCareAssetPath(kind);
+  if (!assetPath) {
+    return '';
+  }
+  return `<img class="${escapeHtml(className)}" src="${escapeHtml(assetPath)}" alt="${escapeHtml(i18nT(altKey))}" loading="lazy" decoding="async" draggable="false">`;
+}
+
+function getBuddyCareHeroPresentation(activeView, summary = null, options = {}) {
+  const safeView = normalizeBuddyCareView(activeView);
+  const safeSummary = summary && typeof summary === 'object' ? summary : {};
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  const plantCount = Math.max(0, Math.trunc(Number(safeOptions.plantCount) || 0));
+  const ageGateAccepted = safeOptions.ageGateAccepted === true;
+  const hero = {
+    eyebrow: i18nT('buddyCare.screen.eyebrow'),
+    title: i18nT('buddyCare.screen.title'),
+    subtitle: i18nT('buddyCare.screen.subtitle'),
+    copy: i18nT('buddyCare.screen.intro'),
+    assetKind: 'header',
+    altKey: 'buddyCare.buddy.alt.header'
+  };
+
+  if (!ageGateAccepted) {
+    hero.copy = i18nT('buddyCare.screen.age_gate_body');
+    return hero;
+  }
+
+  switch (safeView) {
+    case 'plants':
+      hero.eyebrow = i18nT('buddyCare.nav.plants');
+      hero.subtitle = i18nT('buddyCare.hero.plants_subtitle');
+      hero.copy = plantCount > 0
+        ? i18nT('buddyCare.hero.plants_copy', { count: plantCount })
+        : i18nT('buddyCare.hero.plants_empty');
+      hero.assetKind = plantCount > 0 ? 'today' : 'empty';
+      hero.altKey = plantCount > 0 ? 'buddyCare.buddy.alt.today' : 'buddyCare.buddy.alt.empty';
+      return hero;
+    case 'history':
+      hero.eyebrow = i18nT('buddyCare.nav.history');
+      hero.subtitle = i18nT('buddyCare.v2.history_subtitle');
+      hero.copy = plantCount > 0
+        ? i18nT('buddyCare.v2.history_intro')
+        : i18nT('buddyCare.diary.empty_body');
+      hero.assetKind = plantCount > 0 ? 'today' : 'empty';
+      hero.altKey = plantCount > 0 ? 'buddyCare.buddy.alt.today' : 'buddyCare.buddy.alt.empty';
+      return hero;
+    case 'more':
+      hero.eyebrow = i18nT('buddyCare.nav.more');
+      hero.subtitle = i18nT('buddyCare.more.kicker');
+      hero.copy = i18nT('buddyCare.more.body');
+      hero.assetKind = 'header';
+      hero.altKey = 'buddyCare.buddy.alt.header';
+      return hero;
+    case 'today':
+    default:
+      hero.eyebrow = i18nT('buddyCare.nav.today');
+      hero.subtitle = i18nT('buddyCare.hero.today_subtitle');
+      if (plantCount === 0) {
+        hero.copy = i18nT('buddyCare.hero.today_empty');
+        hero.assetKind = 'empty';
+        hero.altKey = 'buddyCare.buddy.alt.empty';
+        return hero;
+      }
+      hero.copy = i18nT(String(safeSummary.messageKey || 'buddyCare.summary.observe_and_document'));
+      if (String(safeSummary.riskStatus || '').trim().toLowerCase() === 'green') {
+        hero.assetKind = 'success';
+        hero.altKey = 'buddyCare.buddy.alt.success';
+      } else if (String(safeSummary.riskStatus || '').trim().toLowerCase() === 'yellow' || String(safeSummary.riskStatus || '').trim().toLowerCase() === 'red') {
+        hero.assetKind = 'attention';
+        hero.altKey = 'buddyCare.buddy.alt.attention';
+      } else {
+        hero.assetKind = 'today';
+        hero.altKey = 'buddyCare.buddy.alt.today';
+      }
+      return hero;
+  }
+}
+
+function renderBuddyCareHeroVisual(summary = null, activeView = 'today', options = {}) {
+  const hero = getBuddyCareHeroPresentation(activeView, summary, options);
+  if (ui.buddyCareHeroEyebrow) {
+    ui.buddyCareHeroEyebrow.textContent = hero.eyebrow;
+  }
+  if (ui.buddyCareHeroTitle) {
+    ui.buddyCareHeroTitle.textContent = hero.title;
+  }
+  if (ui.buddyCareHeroSubtitle) {
+    ui.buddyCareHeroSubtitle.textContent = hero.subtitle;
+  }
+  if (ui.buddyCareHeroCopy) {
+    ui.buddyCareHeroCopy.textContent = hero.copy;
+  }
+  if (!ui.buddyCareHeroBuddyVisual) {
+    return;
+  }
+  ui.buddyCareHeroBuddyVisual.innerHTML = renderBuddyCareAssetImage(
+    hero.assetKind,
+    hero.altKey,
+    'buddy-care-hero-asset'
+  );
+}
+
+function renderBuddyCareViewNavigation(ageGateAccepted) {
+  if (ui.buddyCareViewNav) {
+    ui.buddyCareViewNav.hidden = !ageGateAccepted;
+  }
+  const activeView = getActiveBuddyCareView();
+  for (const button of ui.buddyCareViewButtons || []) {
+    if (!button || !button.dataset) {
+      continue;
+    }
+    const isActive = normalizeBuddyCareView(button.dataset.buddyCareView) === activeView;
+    button.classList.toggle('is-active', isActive);
+    if (isActive) {
+      button.setAttribute('aria-current', 'page');
+    } else {
+      button.removeAttribute('aria-current');
+    }
+  }
+  for (const panel of ui.buddyCareViewPanels || []) {
+    if (!panel || !panel.dataset) {
+      continue;
+    }
+    panel.hidden = !ageGateAccepted || normalizeBuddyCareView(panel.dataset.buddyCareViewPanel) !== activeView;
+  }
+}
+
+function renderBuddyCareTodayBuddyVisual(summary = null) {
+  if (!ui.buddyCareTodayBuddyVisual) {
+    return;
+  }
+  const presentation = getBuddyCareTodayBuddyPresentation(summary);
+  ui.buddyCareTodayBuddyVisual.innerHTML = renderBuddyCareAssetImage(
+    presentation.assetKind,
+    presentation.altKey,
+    'buddy-care-buddy-asset'
+  );
+}
+
+function getBuddyCareDailyCheckBuddyPresentation(status, riskEvaluation = null) {
+  const riskStatus = String(riskEvaluation && riskEvaluation.status || '').trim().toLowerCase();
+  switch (riskStatus) {
+    case 'green':
+      return {
+        assetKind: 'success',
+        altKey: 'buddyCare.buddy.alt.success',
+        labelKey: 'buddyCare.buddy.label.checked_today',
+        messageKey: riskEvaluation && riskEvaluation.buddyMessageKey
+          ? riskEvaluation.buddyMessageKey
+          : 'buddyCare.summary.checked_today'
+      };
+    case 'yellow':
+    case 'red':
+      return {
+        assetKind: 'attention',
+        altKey: 'buddyCare.buddy.alt.attention',
+        labelKey: 'buddyCare.buddy.label.needs_attention',
+        messageKey: riskEvaluation && riskEvaluation.buddyMessageKey
+          ? riskEvaluation.buddyMessageKey
+          : 'buddyCare.summary.needs_attention'
+      };
+    default:
+      switch (String(status || '').trim().toLowerCase()) {
+        case 'checked_today':
+          return {
+            assetKind: 'success',
+            altKey: 'buddyCare.buddy.alt.success',
+            labelKey: 'buddyCare.buddy.label.checked_today',
+            messageKey: 'buddyCare.summary.checked_today'
+          };
+        case 'needs_attention':
+          return {
+            assetKind: 'attention',
+            altKey: 'buddyCare.buddy.alt.attention',
+            labelKey: 'buddyCare.buddy.label.needs_attention',
+            messageKey: 'buddyCare.summary.needs_attention'
+          };
+        default:
+          return {
+            assetKind: 'today',
+            altKey: 'buddyCare.buddy.alt.today',
+            labelKey: 'buddyCare.buddy.label.daily_check',
+            messageKey: riskEvaluation && riskEvaluation.buddyMessageKey
+              ? riskEvaluation.buddyMessageKey
+              : 'buddyCare.buddy.message.daily_check_intro'
+          };
+      }
+  }
+}
+
+function getBuddyCareLatestCheckLabel(check) {
+  if (!check || typeof check !== 'object') {
+    return i18nT('buddyCare.dailyCheck.latest_check_none');
+  }
+  const dateLabel = getBuddyCareFormattedDate(check.createdAtIso || check.dayKey || '');
+  if (!dateLabel) {
+    return i18nT('buddyCare.dailyCheck.latest_check_none');
+  }
+  return i18nT('buddyCare.dailyCheck.latest_check_value', { date: dateLabel });
+}
+
+function buildBuddyCareTodaySummaryItems(status, tasks, options = {}) {
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const hasDiaryEntryToday = options && options.hasDiaryEntryToday === true;
+  const riskEvaluation = options && options.riskEvaluation && typeof options.riskEvaluation === 'object'
+    ? options.riskEvaluation
+    : null;
+  const trendEvaluation = options && options.trendEvaluation && typeof options.trendEvaluation === 'object'
+    ? options.trendEvaluation
+    : null;
+  const items = [];
+
+  if (riskEvaluation) {
+    const trendLine = getBuddyCareTrendTodayLineText(trendEvaluation);
+    if (trendLine) {
+      items.push(trendLine);
+    }
+    items.push(...getBuddyCareRiskRecommendationsText(riskEvaluation, 2));
+    if (!hasDiaryEntryToday && (riskEvaluation.status === 'yellow' || riskEvaluation.status === 'red')) {
+      items.push(i18nT('buddyCare.diary.today_optional'));
+    }
+    if (!items.length) {
+      items.push(...getBuddyCareRiskRecommendationsText(createFallbackBuddyCareRiskEvaluation('gray'), 2));
+    }
+    return items.slice(0, 3);
+  }
+
+  switch (String(status || '').trim().toLowerCase()) {
+    case 'checked_today':
+      items.push(i18nT('buddyCare.dailyCheck.status.checked_today'));
+      break;
+    case 'needs_attention':
+      items.push(i18nT('buddyCare.dailyCheck.status.needs_attention'));
+      break;
+    default:
+      items.push(i18nT('buddyCare.dailyCheck.today_open'));
+      break;
+  }
+
+  items.push(hasDiaryEntryToday
+    ? i18nT('buddyCare.diary.today_updated')
+    : i18nT('buddyCare.diary.today_optional'));
+
+  if (String(status || '').trim().toLowerCase() === 'needs_attention') {
+    items.push(i18nT('buddyCare.dailyCheck.today_compare_tomorrow'));
+  } else if (safeTasks[0]) {
+    items.push(getBuddyCareTaskTitle(safeTasks[0]));
+  } else if (String(status || '').trim().toLowerCase() === 'checked_today') {
+    items.push(i18nT('buddyCare.dailyCheck.today_all_clear'));
+  }
+
+  return items.slice(0, 3);
+}
+
+function getBuddyCareTaskTitle(task) {
+  const safeTask = task && typeof task === 'object' ? task : {};
+  const taskId = String(safeTask.id || '').trim();
+  let translationKey = '';
+
+  switch (taskId) {
+    case 'seedling-observe':
+      translationKey = 'buddyCare.tasks.seedling_observe';
+      break;
+    case 'seedling-water-check':
+      translationKey = 'buddyCare.tasks.seedling_water_check';
+      break;
+    case 'seedling-photo':
+      translationKey = 'buddyCare.tasks.seedling_photo';
+      break;
+    case 'early-veg-water-check':
+      translationKey = 'buddyCare.tasks.early_veg_water_check';
+      break;
+    case 'early-veg-observe':
+      translationKey = 'buddyCare.tasks.early_veg_observe';
+      break;
+    case 'early-veg-photo':
+      translationKey = 'buddyCare.tasks.early_veg_photo';
+      break;
+    case 'veg-observe':
+      translationKey = 'buddyCare.tasks.veg_observe';
+      break;
+    case 'veg-water-check':
+      translationKey = 'buddyCare.tasks.veg_water_check';
+      break;
+    case 'veg-document-height':
+      translationKey = 'buddyCare.tasks.veg_document_height';
+      break;
+    case 'veg-weather-stress':
+      translationKey = 'buddyCare.tasks.veg_weather_stress';
+      break;
+    case 'stretch-height':
+      translationKey = 'buddyCare.tasks.stretch_height';
+      break;
+    case 'stretch-space':
+      translationKey = 'buddyCare.tasks.stretch_space';
+      break;
+    case 'stretch-photo':
+      translationKey = 'buddyCare.tasks.stretch_photo';
+      break;
+    case 'flower-visual-check':
+      translationKey = 'buddyCare.tasks.flower_visual_check';
+      break;
+    case 'flower-environment':
+      translationKey = 'buddyCare.tasks.flower_environment';
+      break;
+    case 'flower-photo':
+      translationKey = 'buddyCare.tasks.flower_photo';
+      break;
+    case 'flower-greenhouse-humidity':
+      translationKey = 'buddyCare.tasks.flower_greenhouse_humidity';
+      break;
+    case 'ripening-observe':
+      translationKey = 'buddyCare.tasks.ripening_observe';
+      break;
+    case 'ripening-flower-check':
+      translationKey = 'buddyCare.tasks.ripening_flower_check';
+      break;
+    case 'ripening-notes':
+      translationKey = 'buddyCare.tasks.ripening_notes';
+      break;
+    case 'harvest-window-check':
+      translationKey = 'buddyCare.tasks.harvest_window_check';
+      break;
+    case 'harvest-photo':
+      translationKey = 'buddyCare.tasks.harvest_photo';
+      break;
+    case 'harvest-report':
+      translationKey = 'buddyCare.tasks.harvest_report';
+      break;
+    case 'unknown-complete-data':
+      translationKey = 'buddyCare.tasks.unknown_complete_data';
+      break;
+    case 'unknown-start-date':
+      translationKey = 'buddyCare.tasks.unknown_start_date';
+      break;
+    case 'unknown-first-check':
+      translationKey = 'buddyCare.tasks.unknown_first_check';
+      break;
+    default:
+      if (taskId.startsWith('weekly-review:')) {
+        translationKey = 'buddyCare.tasks.weekly_review';
+      } else if (taskId.startsWith('weekly-photo:')) {
+        translationKey = 'buddyCare.tasks.weekly_photo';
+      }
+      break;
+  }
+
+  if (translationKey) {
+    const translated = i18nT(translationKey);
+    if (translated && translated !== translationKey) {
+      return translated;
+    }
+  }
+
+  return String(safeTask.title || '').trim();
+}
+
+const BUDDY_CARE_PLANT_ASSETS = Object.freeze({
+  seedling: 'assets/plant_growth/aligned_frames/frame_006.png',
+  early_veg: 'assets/plant_growth/aligned_frames/frame_014.png',
+  veg: 'assets/plant_growth/aligned_frames/frame_023.png',
+  stretch: 'assets/plant_growth/aligned_frames/frame_029.png',
+  flower: 'assets/plant_growth/aligned_frames/frame_035.png',
+  ripening: 'assets/plant_growth/aligned_frames/frame_042.png',
+  harvest_window: 'assets/plant_growth/aligned_frames/frame_045.png',
+  heat_flower: 'assets/plant_growth/aligned_frames/frame_038.png',
+  fallback: 'assets/plant_growth/aligned_frames/frame_023.png'
+});
+
+function getBuddyCareStatusPresentation(riskStatus) {
+  const safeStatus = String(riskStatus || '').trim().toLowerCase();
+  if (safeStatus === 'red') {
+    return { key: 'action', tone: 'red', icon: '!', label: i18nT('buddyCare.v2.status.action') };
+  }
+  if (safeStatus === 'yellow') {
+    return { key: 'watch', tone: 'yellow', icon: '•', label: i18nT('buddyCare.v2.status.watch') };
+  }
+  if (safeStatus === 'green') {
+    return { key: 'stable', tone: 'green', icon: '✓', label: i18nT('buddyCare.v2.status.stable') };
+  }
+  return { key: 'neutral', tone: 'gray', icon: '•', label: i18nT('buddyCare.v2.status.neutral') };
+}
+
+function getBuddyCarePlantAssetPath(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const phase = String(safeCard.estimatedPhase || '').trim().toLowerCase();
+  const latestEnvironment = String(safeCard.latestCheck && safeCard.latestCheck.environmentStress || '').trim().toLowerCase();
+  if (latestEnvironment === 'hot' && ['flower', 'ripening', 'harvest_window'].includes(phase)) {
+    return BUDDY_CARE_PLANT_ASSETS.heat_flower;
+  }
+  return BUDDY_CARE_PLANT_ASSETS[phase] || BUDDY_CARE_PLANT_ASSETS.fallback;
+}
+
+function renderBuddyCarePlantImage(card, className = 'buddy-care-plant-image') {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const phase = String(safeCard.estimatedPhase || 'unknown').trim().toLowerCase();
+  return `<img class="${escapeHtml(className)}" src="${escapeHtml(getBuddyCarePlantAssetPath(safeCard))}" data-fallback-src="${escapeHtml(BUDDY_CARE_PLANT_ASSETS.fallback)}" data-buddy-care-plant-image data-plant-phase="${escapeHtml(phase)}" alt="${escapeHtml(i18nT('buddyCare.v2.plant_image_alt', { name: safeCard.name || i18nT('buddyCare.v2.plant_fallback') }))}" loading="lazy" decoding="async" draggable="false">`;
+}
+
+function getBuddyCareDisplayName() {
+  const candidates = [
+    state && state.auth && state.auth.user && state.auth.user.displayName,
+    state && state.user && state.user.displayName,
+    state && state.profile && state.profile.displayName
+  ];
+  return candidates.map((value) => String(value || '').trim()).find(Boolean) || '';
+}
+
+function getBuddyCareCurrentDateLabel() {
+  const locale = getBuddyCareLocale();
+  const localeId = locale === 'de' ? 'de-DE' : (locale === 'es' ? 'es-ES' : 'en-US');
+  try {
+    return new Intl.DateTimeFormat(localeId, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  } catch (_error) {
+    return new Date().toLocaleDateString();
+  }
+}
+
+function getBuddyCareTaskIconMarkup(category) {
+  const safeCategory = String(category || '').trim().toLowerCase();
+  if (safeCategory === 'water_check') {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2S5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13Z"/><path d="M9 16c.7 1.2 1.7 1.8 3 1.8"/></svg>';
+  }
+  if (safeCategory === 'photo' || safeCategory === 'document') {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4l1.5-2h5L16 7h4v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+  }
+  if (safeCategory === 'environment') {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0Z"/><path d="M12 17v-7"/></svg>';
+  }
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c0-7 2-12 7-15-1 6-3 10-7 12"/><path d="M12 21c0-6-2-10-7-13 1 5 3 9 7 11"/></svg>';
+}
+
+function getBuddyCareStatusModuleValue(card, kind) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const check = safeCard.latestCheck && typeof safeCard.latestCheck === 'object' ? safeCard.latestCheck : null;
+  if (kind === 'water') {
+    return check ? getBuddyCareDailyCheckOptionLabel(check.mediumMoisture) : safeCard.dailyCheckStatusLabel;
+  }
+  if (kind === 'growth') {
+    return check ? getBuddyCareDailyCheckOptionLabel(check.growthState) : safeCard.trendLabel;
+  }
+  if (kind === 'environment') {
+    return check ? getBuddyCareDailyCheckOptionLabel(check.environmentStress) : safeCard.environmentLabel;
+  }
+  return safeCard.riskStatusLabel;
+}
+
+function getBuddyCareEntryTimestamp(value) {
+  const safeValue = value && typeof value === 'object' ? value : {};
+  return Number(safeValue.createdAt || safeValue.createdAtMs)
+    || Date.parse(String(safeValue.createdAtIso || safeValue.updatedAt || safeValue.entryDate || ''))
+    || 0;
+}
+
+function buildBuddyCareTimelineEntries(cards, filterValue = 'all') {
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const safeFilter = String(filterValue || 'all').trim();
+  const entries = [];
+  safeCards.forEach((card) => {
+    if (safeFilter !== 'all' && String(card.id || '') !== safeFilter) {
+      return;
+    }
+    const linkedChecks = new Set((Array.isArray(card.diaryEntries) ? card.diaryEntries : []).map((entry) => String(entry && entry.linkedCheckId || '')).filter(Boolean));
+    (Array.isArray(card.diaryEntries) ? card.diaryEntries : []).forEach((entry) => {
+      entries.push({
+        id: `diary:${String(entry.id || '')}`,
+        entryId: String(entry.id || ''),
+        deletable: true,
+        plantId: card.id,
+        plantName: card.name,
+        timestamp: getBuddyCareEntryTimestamp(entry),
+        icon: Array.isArray(entry.tags) && entry.tags.includes('watering') ? 'water' : (Array.isArray(entry.tags) && entry.tags.includes('height') ? 'growth' : 'note'),
+        title: getBuddyCareDiaryEntryTitle(entry, null),
+        detail: String(entry.note || getBuddyCareDiaryEntryBuddyComment(entry, null) || '').trim(),
+        target: 'history'
+      });
+    });
+    (Array.isArray(card.dailyChecks) ? card.dailyChecks : []).forEach((check) => {
+      if (linkedChecks.has(String(check && check.id || ''))) {
+        return;
+      }
+      entries.push({
+        id: `check:${String(check && check.id || '')}`,
+        plantId: card.id,
+        plantName: card.name,
+        timestamp: getBuddyCareEntryTimestamp(check),
+        icon: 'check',
+        title: i18nT('buddyCare.v2.timeline_check'),
+        detail: isBuddyCareDailyCheckAttentionWorthy(check) ? i18nT('buddyCare.summary.needs_attention') : i18nT('buddyCare.summary.checked_today'),
+        target: 'history'
+      });
+    });
+  });
+  const seen = new Set();
+  return entries.filter((entry) => {
+    if (!entry.id || seen.has(entry.id)) {
+      return false;
+    }
+    seen.add(entry.id);
+    return true;
+  }).sort((left, right) => right.timestamp - left.timestamp);
+}
+
+function buildBuddyCareDashboardViewModel() {
+  const buddyCare = ensureBuddyCareState();
+  const buddyCareApi = getBuddyCareStateApi();
+  const phaseEngineApi = getBuddyCarePhaseEngineApi();
+  const taskGeneratorApi = getBuddyCareTaskGeneratorApi();
+  const riskApi = getBuddyCareRiskApi();
+  const trendApi = getBuddyCareTrendApi();
+  const plants = Array.isArray(buddyCare.plants) ? buddyCare.plants : [];
+  const cards = [];
+  const tasksByPlant = {};
+  const riskEvaluations = [];
+  const trendEvaluations = [];
+  let noCheckCount = 0;
+  let checkedTodayCount = 0;
+  let needsAttentionCount = 0;
+
+  for (const plant of plants) {
+    const daySinceStart = phaseEngineApi && typeof phaseEngineApi.getDaySinceStart === 'function'
+      ? phaseEngineApi.getDaySinceStart(plant.startDate)
+      : null;
+    const estimatedPhase = phaseEngineApi && typeof phaseEngineApi.getPlantPhase === 'function'
+      ? phaseEngineApi.getPlantPhase(plant)
+      : 'unknown';
+    const todayTasks = taskGeneratorApi && typeof taskGeneratorApi.generateTodayTasksForPlant === 'function'
+      ? taskGeneratorApi.generateTodayTasksForPlant(plant, { phase: estimatedPhase })
+      : [];
+    const weeklyTasks = taskGeneratorApi && typeof taskGeneratorApi.generateWeeklyTasksForPlant === 'function'
+      ? taskGeneratorApi.generateWeeklyTasksForPlant(plant, { phase: estimatedPhase })
+      : [];
+    const dailyChecks = buddyCareApi && typeof buddyCareApi.getDailyChecksForPlant === 'function'
+      ? buddyCareApi.getDailyChecksForPlant(state, plant.id)
+      : [];
+    const latestCheck = buddyCareApi && typeof buddyCareApi.getLatestDailyCheckForPlant === 'function'
+      ? buddyCareApi.getLatestDailyCheckForPlant(state, plant.id)
+      : null;
+    const diaryEntries = buddyCareApi && typeof buddyCareApi.getDiaryEntriesForPlant === 'function'
+      ? buddyCareApi.getDiaryEntriesForPlant(state, plant.id)
+      : [];
+    const latestDiaryEntry = buddyCareApi && typeof buddyCareApi.getLatestDiaryEntryForPlant === 'function'
+      ? buddyCareApi.getLatestDiaryEntryForPlant(state, plant.id)
+      : null;
+    const diaryEntriesToday = buddyCareApi && typeof buddyCareApi.getDiaryEntriesForToday === 'function'
+      ? buddyCareApi.getDiaryEntriesForToday(state, plant.id)
+      : [];
+    const dailyCheckStatus = buddyCareApi && typeof buddyCareApi.getPlantDailyCheckStatus === 'function'
+      ? buddyCareApi.getPlantDailyCheckStatus(state, plant.id)
+      : 'no_check_today';
+    const hasDailyCheckToday = buddyCareApi && typeof buddyCareApi.hasDailyCheckToday === 'function'
+      ? buddyCareApi.hasDailyCheckToday(state, plant.id)
+      : false;
+    if (dailyCheckStatus === 'needs_attention') {
+      needsAttentionCount += 1;
+    } else if (dailyCheckStatus === 'checked_today') {
+      checkedTodayCount += 1;
+    } else {
+      noCheckCount += 1;
+    }
+    const riskEvaluation = riskApi && typeof riskApi.evaluatePlantCareRisk === 'function'
+      ? riskApi.evaluatePlantCareRisk(plant, {
+        latestDailyCheck: latestCheck,
+        dailyChecks,
+        diaryEntries,
+        todayDiaryEntries: diaryEntriesToday,
+        todayTasks,
+        dailyCheckStatus,
+        now: Date.now()
+      })
+      : createFallbackBuddyCareRiskEvaluation(latestCheck ? 'green' : 'gray');
+    const riskLabel = getBuddyCareRiskLabelText(riskEvaluation);
+    const riskBuddyMessage = getBuddyCareRiskBuddyMessageText(riskEvaluation);
+    const riskRecommendations = getBuddyCareRiskRecommendationsText(riskEvaluation, 3);
+    const riskSignalTitles = getBuddyCareRiskSignalTitles(riskEvaluation, 2);
+    const riskDiaryTip = getBuddyCareRiskDiaryTipText(riskEvaluation);
+    const previousCheck = trendApi && typeof trendApi.getPreviousDailyCheckForPlant === 'function'
+      ? trendApi.getPreviousDailyCheckForPlant({ dailyChecks }, plant.id, latestCheck && latestCheck.id)
+      : (dailyChecks[1] || null);
+    const previousRiskEvaluation = riskApi && previousCheck && typeof riskApi.evaluatePlantCareRisk === 'function'
+      ? riskApi.evaluatePlantCareRisk(plant, {
+        latestDailyCheck: previousCheck,
+        dailyChecks: dailyChecks.slice(1),
+        diaryEntries,
+        todayDiaryEntries: [],
+        todayTasks,
+        dailyCheckStatus: isBuddyCareDailyCheckAttentionWorthy(previousCheck) ? 'needs_attention' : 'checked_today',
+        now: Date.now()
+      })
+      : createFallbackBuddyCareRiskEvaluation(previousCheck ? (isBuddyCareDailyCheckAttentionWorthy(previousCheck) ? 'yellow' : 'green') : 'gray');
+    const trendEvaluation = trendApi && typeof trendApi.evaluatePlantCareTrend === 'function'
+      ? trendApi.evaluatePlantCareTrend(plant, {
+        latestDailyCheck: latestCheck,
+        previousDailyCheck: previousCheck,
+        recentDailyChecks: dailyChecks.slice(0, 5),
+        latestRisk: riskEvaluation,
+        previousRisk: previousRiskEvaluation,
+        diaryEntries,
+        todayDiaryEntries: diaryEntriesToday,
+        now: Date.now()
+      })
+      : createFallbackBuddyCareTrendEvaluation(latestCheck && previousCheck ? 'stable' : 'not_enough_data');
+    const trendLabel = getBuddyCareTrendLabelText(trendEvaluation);
+    const trendBuddyMessage = getBuddyCareTrendBuddyMessageText(trendEvaluation);
+    const trendTodayLine = getBuddyCareTrendTodayLineText(trendEvaluation);
+    const trendHeightText = getBuddyCareTrendHeightText(trendEvaluation);
+    const miniHistory = trendApi && typeof trendApi.buildPlantMiniHistory === 'function'
+      ? trendApi.buildPlantMiniHistory(plant, {
+        latestDailyCheck: latestCheck,
+        previousDailyCheck: previousCheck,
+        recentDailyChecks: dailyChecks.slice(0, 3),
+        latestRisk: riskEvaluation,
+        previousRisk: previousRiskEvaluation,
+        diaryEntries,
+        todayDiaryEntries: diaryEntriesToday,
+        trendEvaluation,
+        now: Date.now(),
+        locale: getBuddyCareLocale()
+      })
+      : null;
+    const weeklyReview = trendApi && typeof trendApi.buildPlantWeeklyReview === 'function'
+      ? trendApi.buildPlantWeeklyReview(plant, {
+        latestDailyCheck: latestCheck,
+        previousDailyCheck: previousCheck,
+        recentDailyChecks: dailyChecks.slice(0, 180),
+        latestRisk: riskEvaluation,
+        previousRisk: previousRiskEvaluation,
+        diaryEntries,
+        todayDiaryEntries: diaryEntriesToday,
+        trendEvaluation,
+        now: Date.now(),
+        locale: getBuddyCareLocale()
+      })
+      : createFallbackBuddyCareWeeklyReview();
+    const miniHistoryHeightText = trendApi && miniHistory && typeof trendApi.getHeightComparisonMessage === 'function'
+      ? trendApi.getHeightComparisonMessage(miniHistory.heightDelta, getBuddyCareLocale())
+      : trendHeightText;
+    const weeklyReviewLabel = getBuddyCareWeeklyReviewLabelText(weeklyReview);
+    const weeklyReviewSummary = getBuddyCareWeeklyReviewSummaryText(weeklyReview);
+    const weeklyReviewFocusLine = getBuddyCareWeeklyReviewFocusLineText(weeklyReview);
+    const readOnly = isBuddyCarePlantReadOnly(plant.id);
+    const primaryTaskTitle = todayTasks[0] ? getBuddyCareTaskTitle(todayTasks[0]) : i18nT('buddyCare.screen.no_task');
+    tasksByPlant[String(plant.id || '')] = todayTasks;
+    riskEvaluations.push(riskEvaluation);
+    trendEvaluations.push(trendEvaluation);
+    cards.push({
+      id: String(plant.id || ''),
+      slotNumber: cards.length + 1,
+      name: String(plant.nickname || ''),
+      startDate: String(plant.startDate || ''),
+      plantType: String(plant.plantType || 'unknown'),
+      environment: String(plant.environment || 'unknown'),
+      plantTypeLabel: getBuddyCarePlantTypeLabel(plant.plantType),
+      environmentLabel: getBuddyCareEnvironmentLabel(plant.environment),
+      dayLabel: getBuddyCareDayLabel(daySinceStart),
+      daySinceStart,
+      estimatedPhase,
+      phaseLabel: getBuddyCarePhaseLabel(estimatedPhase),
+      phaseEstimateLabel: i18nT('buddyCare.screen.phase_estimate_value', {
+        phase: getBuddyCarePhaseLabel(estimatedPhase)
+      }),
+      latestCheck,
+      dailyChecks,
+      latestCheckLabel: getBuddyCareLatestCheckLabel(latestCheck),
+      latestDiaryEntry,
+      latestDiaryEntryLabel: getBuddyCareLatestDiaryEntryLabel(latestDiaryEntry),
+      diaryEntries,
+      diaryEntriesToday,
+      hasDiaryEntryToday: diaryEntriesToday.length > 0,
+      dailyCheckStatus,
+      dailyCheckStatusLabel: getBuddyCareDailyCheckStatusLabel(dailyCheckStatus),
+      previousCheck,
+      riskEvaluation,
+      riskStatus: String(riskEvaluation && riskEvaluation.status || 'gray'),
+      riskStatusLabel: riskLabel,
+      riskBuddyMessage,
+      riskRecommendations,
+      riskSignalTitles,
+      riskDiaryTip,
+      previousRiskEvaluation,
+      trendEvaluation,
+      trendStatus: String(trendEvaluation && trendEvaluation.trend || 'not_enough_data'),
+      trendLabel,
+      trendBuddyMessage,
+      trendTodayLine,
+      trendHeightText,
+      miniHistory,
+      miniHistoryHeightText,
+      miniHistoryChecksLabel: getBuddyCareMiniHistoryChecksLabel(miniHistory),
+      miniHistorySummary: getBuddyCareMiniHistorySummaryText(miniHistory),
+      weeklyReview,
+      weeklyReviewLabel,
+      weeklyReviewSummary,
+      weeklyReviewFocusLine,
+      weeklyReviewCardValue: weeklyReviewLabel
+        ? i18nT('buddyCare.weeklyReview.card_value', { status: weeklyReviewLabel })
+        : '',
+      dailyCheckButtonLabel: hasDailyCheckToday
+        ? i18nT('buddyCare.dailyCheck.view')
+        : i18nT('buddyCare.dailyCheck.start'),
+      readOnly,
+      primaryTaskTitle,
+      todaySummaryItems: buildBuddyCareTodaySummaryItems(dailyCheckStatus, todayTasks, {
+        hasDiaryEntryToday: diaryEntriesToday.length > 0,
+        riskEvaluation,
+        trendEvaluation
+      }),
+      mainTask: todayTasks[0] || null,
+      todayTasks,
+      weeklyTasks,
+      detailsOpen: buddyCareDetailPlantId === String(plant.id || '')
+    });
+  }
+
+  const summary = taskGeneratorApi && typeof taskGeneratorApi.generateBuddyTodaySummary === 'function'
+    ? taskGeneratorApi.generateBuddyTodaySummary(plants, tasksByPlant)
+    : { totalPlants: plants.length, totalTasks: 0, messageKey: 'buddyCare.summary.observe_and_document' };
+  const aggregateRiskKey = riskApi && typeof riskApi.getAggregateRiskSummaryKey === 'function'
+    ? riskApi.getAggregateRiskSummaryKey(riskEvaluations)
+    : '';
+  const sortedCards = sortBuddyCareCardsByRisk(cards);
+  const highestRiskStatus = sortedCards[0] && sortedCards[0].riskStatus
+    ? sortedCards[0].riskStatus
+    : (plants.length ? 'gray' : 'gray');
+  if (aggregateRiskKey) {
+    summary.messageKey = aggregateRiskKey;
+  } else if (needsAttentionCount > 0) {
+    summary.messageKey = 'buddyCare.summary.needs_attention';
+  } else if (plants.length > 0 && checkedTodayCount === plants.length) {
+    summary.messageKey = 'buddyCare.summary.checked_today';
+  } else if (noCheckCount > 0) {
+    summary.messageKey = 'buddyCare.summary.no_check_today';
+  }
+  summary.totalTasks = Number(summary.totalTasks || 0) + noCheckCount;
+  summary.riskStatus = highestRiskStatus;
+  summary.checkedTodayCount = checkedTodayCount + needsAttentionCount;
+  summary.openCheckCount = noCheckCount;
+  summary.actionRiskCount = cards.filter((card) => card.riskStatus === 'red').length;
+  summary.watchRiskCount = cards.filter((card) => card.riskStatus === 'yellow').length;
+
+  return {
+    entitlement: buddyCareApi && typeof buddyCareApi.getBuddyCareEntitlement === 'function'
+      ? buddyCareApi.getBuddyCareEntitlement(state)
+      : String(buddyCare.entitlement || 'free'),
+    plantLimit: buddyCareApi && typeof buddyCareApi.getBuddyCarePlantLimit === 'function'
+      ? buddyCareApi.getBuddyCarePlantLimit(state)
+      : 1,
+    cards,
+    prioritizedCards: sortedCards,
+    tasksByPlant,
+    riskEvaluations,
+    trendEvaluations,
+    summary
+  };
+}
+
+function renderBuddyCareTodayList(cards, summary) {
+  if (!ui.buddyCareTodayList) {
+    return;
+  }
+  const safeCards = sortBuddyCareCardsByRisk(cards);
+  const primaryCard = safeCards[0] || null;
+  const displayName = getBuddyCareDisplayName();
+  const hour = new Date().getHours();
+  const greetingKey = hour < 12
+    ? 'buddyCare.v2.greeting_morning'
+    : (hour < 18 ? 'buddyCare.v2.greeting_day' : 'buddyCare.v2.greeting_evening');
+  if (ui.buddyCareTodayGreeting) {
+    ui.buddyCareTodayGreeting.textContent = i18nT(greetingKey, {
+      name: displayName || i18nT('buddyCare.v2.grower')
+    });
+  }
+  if (ui.buddyCareTodayDate) {
+    ui.buddyCareTodayDate.textContent = getBuddyCareCurrentDateLabel();
+  }
+  if (ui.buddyCareTodayEnvironment) {
+    ui.buddyCareTodayEnvironment.hidden = !primaryCard || !primaryCard.environmentLabel;
+    ui.buddyCareTodayEnvironment.textContent = primaryCard ? primaryCard.environmentLabel : '';
+  }
+  if (ui.buddyCareTodayPlantVisual) {
+    ui.buddyCareTodayPlantVisual.innerHTML = primaryCard ? renderBuddyCarePlantImage(primaryCard, 'buddy-care-hero-plant-image') : '';
+  }
+  if (ui.buddyCareTodayHeroActions) {
+    const mainCategory = String(primaryCard && primaryCard.mainTask && primaryCard.mainTask.category || '').trim().toLowerCase();
+    const primaryAttribute = ['photo', 'document'].includes(mainCategory)
+      ? `data-buddy-care-diary-open-composer="${escapeHtml(primaryCard && primaryCard.id || '')}"`
+      : `data-buddy-care-open-check="${escapeHtml(primaryCard && primaryCard.id || '')}"`;
+    ui.buddyCareTodayHeroActions.innerHTML = primaryCard && !primaryCard.readOnly
+      ? `<button class="action-btn action-primary" type="button" ${primaryAttribute}>${escapeHtml(i18nT('buddyCare.v2.check_now'))}</button>`
+      : '';
+  }
+  if (!safeCards.length) {
+    ui.buddyCareTodayList.innerHTML = `
+      <article class="buddy-care-empty-state buddy-care-empty-state--buddy">
+        <div class="buddy-care-empty-copy">
+          <strong>${escapeHtml(i18nT('buddyCare.screen.empty_title'))}</strong>
+          <p>${escapeHtml(i18nT('buddyCare.screen.today_empty_body'))}</p>
+          <button class="action-btn action-primary" type="button" data-buddy-care-switch-view="plants">${escapeHtml(i18nT('buddyCare.v2.add_first_plant'))}</button>
+        </div>
+        <div class="buddy-care-empty-visual">${renderBuddyCareAssetImage('empty', 'buddyCare.buddy.alt.empty', 'buddy-care-empty-asset')}</div>
+      </article>
+    `;
+  } else {
+    const primaryStatus = getBuddyCareStatusPresentation(primaryCard.riskStatus);
+    const mainTask = primaryCard.mainTask || {};
+    const mainCategory = String(mainTask.category || '').trim().toLowerCase();
+    const primaryAttribute = ['photo', 'document'].includes(mainCategory)
+      ? `data-buddy-care-diary-open-composer="${escapeHtml(primaryCard.id)}"`
+      : `data-buddy-care-open-check="${escapeHtml(primaryCard.id)}"`;
+    ui.buddyCareTodayList.innerHTML = `
+      <section class="buddy-care-priority-card buddy-care-priority-card--${escapeHtml(primaryStatus.tone)}">
+        <div class="buddy-care-priority-icon">${getBuddyCareTaskIconMarkup(mainCategory)}</div>
+        <div class="buddy-care-priority-copy">
+          <span class="buddy-care-panel-kicker">${escapeHtml(i18nT('buddyCare.v2.today_important'))}</span>
+          <h2>${escapeHtml(primaryCard.primaryTaskTitle)}</h2>
+          <p>${escapeHtml(primaryCard.name)} <span aria-hidden="true">•</span> ${escapeHtml(primaryCard.environmentLabel)} <span aria-hidden="true">•</span> ${escapeHtml(primaryCard.phaseLabel)}</p>
+        </div>
+        <button class="action-btn action-primary buddy-care-priority-action" type="button" ${primaryAttribute}${primaryCard.readOnly ? ' disabled aria-disabled="true"' : ''}>${escapeHtml(i18nT('buddyCare.v2.start_check'))}<span aria-hidden="true">›</span></button>
+      </section>
+      <section class="buddy-care-plant-rail-section">
+        <div class="buddy-care-section-head">
+          <h2 class="buddy-care-section-title">${escapeHtml(i18nT('buddyCare.screen.plants_title'))}</h2>
+          <button class="buddy-care-text-link" type="button" data-buddy-care-switch-view="plants">${escapeHtml(i18nT('buddyCare.v2.show_all'))}<span aria-hidden="true">›</span></button>
+        </div>
+        <div class="buddy-care-plant-rail" role="list">
+          ${safeCards.map((card) => {
+            const status = getBuddyCareStatusPresentation(card.riskStatus);
+            return `
+              <article class="buddy-care-mini-plant-card" role="listitem">
+                <button class="buddy-care-mini-plant-target" type="button" data-buddy-care-open-plant="${escapeHtml(card.id)}" aria-label="${escapeHtml(i18nT('buddyCare.v2.open_plant', { name: card.name }))}">
+                  <span class="buddy-care-mini-plant-media">${renderBuddyCarePlantImage(card, 'buddy-care-mini-plant-image')}</span>
+                  <span class="buddy-care-mini-plant-name">${escapeHtml(card.name)}</span>
+                  <span class="buddy-care-status-text buddy-care-status-text--${escapeHtml(status.tone)}"><span aria-hidden="true">${escapeHtml(status.icon)}</span>${escapeHtml(status.label)}</span>
+                  <span class="buddy-care-mini-plant-note">${escapeHtml(card.todaySummaryItems[0] || card.phaseLabel)}</span>
+                </button>
+              </article>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
+  }
+  if (ui.buddyCareTodayBuddySummary) {
+    ui.buddyCareTodayBuddySummary.textContent = i18nT(String(summary && summary.messageKey || 'buddyCare.summary.observe_and_document'));
+  }
+}
+
+function renderBuddyCarePlantList(cards) {
+  if (!ui.buddyCarePlantList) {
+    return;
+  }
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const activeFilter = normalizeBuddyCarePlantFilter(buddyCarePlantFilter);
+  const filterOptions = [
+    { value: 'all', label: i18nT('buddyCare.v2.filter.all') },
+    { value: 'stable', label: i18nT('buddyCare.v2.filter.stable') },
+    { value: 'watch', label: i18nT('buddyCare.v2.filter.watch') },
+    { value: 'action', label: i18nT('buddyCare.v2.filter.action') }
+  ];
+  if (ui.buddyCarePlantFilters) {
+    ui.buddyCarePlantFilters.innerHTML = filterOptions.map((option) => `
+      <button class="buddy-care-filter-pill${option.value === activeFilter ? ' is-active' : ''}" type="button" data-buddy-care-plant-filter="${escapeHtml(option.value)}" aria-pressed="${String(option.value === activeFilter)}">${escapeHtml(option.label)}</button>
+    `).join('');
+  }
+  const visibleCards = safeCards.filter((card) => {
+    if (activeFilter === 'all') {
+      return true;
+    }
+    return getBuddyCareStatusPresentation(card.riskStatus).key === activeFilter;
+  });
+  if (!safeCards.length) {
+    ui.buddyCarePlantList.innerHTML = `
+      <article class="buddy-care-empty-state buddy-care-empty-state--buddy">
+        <div class="buddy-care-empty-copy">
+          <strong>${escapeHtml(i18nT('buddyCare.screen.empty_title'))}</strong>
+          <p>${escapeHtml(i18nT('buddyCare.screen.empty_body'))}</p>
+        </div>
+        <div class="buddy-care-empty-visual">
+          ${renderBuddyCareAssetImage('empty', 'buddyCare.buddy.alt.empty', 'buddy-care-empty-asset')}
+        </div>
+      </article>
+    `;
+    return;
+  }
+  if (!visibleCards.length) {
+    ui.buddyCarePlantList.innerHTML = `
+      <article class="buddy-care-empty-state">
+        <strong>${escapeHtml(i18nT('buddyCare.v2.filter_empty_title'))}</strong>
+        <p>${escapeHtml(i18nT('buddyCare.v2.filter_empty_body'))}</p>
+      </article>
+    `;
+    return;
+  }
+  ui.buddyCarePlantList.innerHTML = visibleCards.map((card) => {
+    const status = getBuddyCareStatusPresentation(card.riskStatus);
+    const buddy = getBuddyCareTodayBuddyPresentation({ riskStatus: card.riskStatus });
+    const hasDocumentation = Boolean(card.latestDiaryEntry);
+    const hasHeatStress = String(card.latestCheck && card.latestCheck.environmentStress || '').trim().toLowerCase() === 'hot';
+    return `
+      <article class="buddy-care-plant-profile-card buddy-care-plant-profile-card--${escapeHtml(status.tone)}">
+        <div class="buddy-care-plant-profile-media">${renderBuddyCarePlantImage(card, 'buddy-care-plant-profile-image')}</div>
+        <div class="buddy-care-plant-profile-main">
+          <button class="buddy-care-card-open" type="button" data-buddy-care-open-plant="${escapeHtml(card.id)}" aria-label="${escapeHtml(i18nT('buddyCare.v2.open_plant', { name: card.name }))}"><span aria-hidden="true">›</span></button>
+          <h2>${escapeHtml(card.name)}</h2>
+          <span class="buddy-care-status-text buddy-care-status-text--${escapeHtml(status.tone)}"><span aria-hidden="true">${escapeHtml(status.icon)}</span>${escapeHtml(status.label)}</span>
+          <dl class="buddy-care-plant-facts">
+            <div><dt>${escapeHtml(i18nT('buddyCare.v2.phase'))}</dt><dd>${escapeHtml(card.phaseLabel)}</dd></div>
+            <div><dt>${escapeHtml(i18nT('buddyCare.v2.next_check'))}</dt><dd>${escapeHtml(card.dailyCheckStatusLabel)}</dd></div>
+          </dl>
+          <div class="buddy-care-plant-tags">
+            <span>${escapeHtml(card.environmentLabel)}</span>
+            ${hasDocumentation ? `<span>${escapeHtml(i18nT('buddyCare.v2.documented'))}</span>` : ''}
+            ${hasHeatStress ? `<span class="is-warning">${escapeHtml(i18nT('buddyCare.v2.heat_stress'))}</span>` : ''}
+            ${card.weeklyReviewLabel ? `<span>${escapeHtml(card.weeklyReviewLabel)}</span>` : ''}
+          </div>
+          <div class="buddy-care-plant-card-actions">
+            <button class="action-btn action-primary" type="button" data-buddy-care-open-plant="${escapeHtml(card.id)}">${escapeHtml(i18nT('buddyCare.screen.details_open'))}</button>
+            <button class="ghost-btn" type="button" data-buddy-care-open-check="${escapeHtml(card.id)}"${card.readOnly ? ' disabled aria-disabled="true"' : ''}>${escapeHtml(card.dailyCheckButtonLabel)}</button>
+            <button class="ghost-btn buddy-care-remove-link" type="button" data-buddy-care-remove-plant="${escapeHtml(card.id)}">${escapeHtml(i18nT('buddyCare.screen.remove_plant'))}</button>
+          </div>
+        </div>
+        <aside class="buddy-care-plant-coach">
+          ${renderBuddyCareAssetImage(buddy.assetKind, buddy.altKey, 'buddy-care-plant-coach-image')}
+          <span>${escapeHtml(i18nT('buddyCare.screen.buddy_says'))}</span>
+          <p>${escapeHtml(card.riskBuddyMessage || card.trendBuddyMessage || '')}</p>
+        </aside>
+      </article>
+    `;
+  }).join('');
+}
+
+function renderBuddyCarePlantDetailOverview(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const buddyPresentation = getBuddyCareDailyCheckBuddyPresentation(safeCard.dailyCheckStatus, safeCard.riskEvaluation);
+  const status = getBuddyCareStatusPresentation(safeCard.riskStatus);
+  const latestDocumentation = safeCard.latestDiaryEntry || null;
+  return `
+    <div class="buddy-care-plant-detail-section">
+      <div class="buddy-care-buddy-note buddy-care-buddy-note--today-hero">
+        <div class="buddy-care-buddy-visual">
+          ${renderBuddyCareAssetImage(buddyPresentation.assetKind, buddyPresentation.altKey, 'buddy-care-buddy-asset')}
+        </div>
+        <div class="buddy-care-buddy-body">
+          <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.screen.buddy_says'))}</span>
+          <p class="buddy-care-buddy-copy">${escapeHtml(safeCard.riskBuddyMessage || '')}</p>
+        </div>
+      </div>
+      <section class="buddy-care-detail-priority">
+        <div class="buddy-care-priority-icon">${getBuddyCareTaskIconMarkup(safeCard.mainTask && safeCard.mainTask.category)}</div>
+        <div>
+          <span>${escapeHtml(i18nT('buddyCare.v2.currently_important'))}</span>
+          <h3>${escapeHtml(safeCard.primaryTaskTitle || i18nT('buddyCare.screen.no_task'))}</h3>
+          <p>${escapeHtml(safeCard.environmentLabel)} <span aria-hidden="true">•</span> ${escapeHtml(safeCard.phaseLabel)}</p>
+        </div>
+        <button class="action-btn action-primary" type="button" data-buddy-care-open-check="${escapeHtml(safeCard.id || '')}"${safeCard.readOnly ? ' disabled aria-disabled="true"' : ''}>${escapeHtml(i18nT('buddyCare.v2.start_check'))}<span aria-hidden="true">›</span></button>
+      </section>
+      <div class="buddy-care-status-modules">
+        ${[
+          { kind: 'water', label: i18nT('buddyCare.v2.module.water'), icon: 'water', tone: safeCard.latestCheck && safeCard.latestCheck.mediumMoisture === 'dry' ? 'cyan' : 'green' },
+          { kind: 'growth', label: i18nT('buddyCare.v2.module.growth'), icon: 'growth', tone: 'green' },
+          { kind: 'environment', label: i18nT('buddyCare.v2.module.environment'), icon: 'environment', tone: safeCard.latestCheck && safeCard.latestCheck.environmentStress !== 'normal' ? 'yellow' : 'green' },
+          { kind: 'risk', label: i18nT('buddyCare.v2.module.risks'), icon: 'risk', tone: status.tone }
+        ].map((module) => `
+          <article class="buddy-care-status-module buddy-care-status-module--${escapeHtml(module.tone)}">
+            <span class="buddy-care-status-module-icon">${getBuddyCareTaskIconMarkup(module.icon === 'water' ? 'water_check' : (module.icon === 'environment' ? 'environment' : 'observe'))}</span>
+            <span>${escapeHtml(module.label)}</span>
+            <strong>${escapeHtml(getBuddyCareStatusModuleValue(safeCard, module.kind))}</strong>
+          </article>
+        `).join('')}
+      </div>
+      <section class="buddy-care-documentation-card">
+        <div class="buddy-care-documentation-icon">${getBuddyCareTaskIconMarkup('document')}</div>
+        <div>
+          <span>${escapeHtml(i18nT('buddyCare.v2.latest_documentation'))}</span>
+          <strong>${escapeHtml(latestDocumentation ? getBuddyCareDiaryEntryTitle(latestDocumentation, null) : i18nT('buddyCare.diary.latest_entry_none'))}</strong>
+          <p>${escapeHtml(latestDocumentation ? getBuddyCareDiaryEntryDateLabel(latestDocumentation) : i18nT('buddyCare.v2.no_documentation'))}</p>
+        </div>
+        <button class="buddy-care-card-open" type="button" data-buddy-care-detail-section="history" aria-label="${escapeHtml(i18nT('buddyCare.v2.open_history'))}"><span aria-hidden="true">›</span></button>
+      </section>
+    </div>
+  `;
+}
+
+function renderBuddyCarePlantDetailDiary(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  return `
+    <div class="buddy-care-plant-detail-section">
+      ${safeCard.readOnly ? `
+        <div class="buddy-care-buddy-note buddy-care-buddy-note--diary-tip">
+          <div class="buddy-care-buddy-visual">
+            ${renderBuddyCareAssetImage('today', 'buddyCare.buddy.alt.today', 'buddy-care-buddy-asset')}
+          </div>
+          <div class="buddy-care-buddy-body">
+            <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.screen.read_only_title'))}</span>
+            <p class="buddy-care-buddy-copy">${escapeHtml(i18nT('buddyCare.screen.read_only_body'))}</p>
+          </div>
+        </div>
+      ` : renderBuddyCareDiaryForm(safeCard)}
+      ${safeCard.diaryEntries && safeCard.diaryEntries.length ? `
+        <div class="buddy-care-diary-timeline">
+          <strong class="buddy-care-plant-details-head">${escapeHtml(i18nT('buddyCare.diary.timeline_title'))}</strong>
+          ${safeCard.diaryEntries.map((entry) => renderBuddyCareDiaryEntry(entry)).join('')}
+        </div>
+      ` : renderBuddyCareDiaryEmptyState()}
+    </div>
+  `;
+}
+
+function renderBuddyCarePlantDetailHistory(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const trendPresentation = getBuddyCareTrendBuddyPresentation(safeCard.trendEvaluation);
+  const timeline = buildBuddyCareTimelineEntries([safeCard]);
+  return `
+    <div class="buddy-care-plant-detail-section">
+      <div class="buddy-care-buddy-note buddy-care-buddy-note--trend">
+        <div class="buddy-care-buddy-visual">
+          ${renderBuddyCareAssetImage(trendPresentation.assetKind, trendPresentation.altKey, 'buddy-care-buddy-asset')}
+        </div>
+        <div class="buddy-care-buddy-body">
+          <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.trend.compare_title'))}</span>
+          <p class="buddy-care-buddy-copy">${escapeHtml(safeCard.trendBuddyMessage || '')}</p>
+          ${safeCard.trendHeightText ? `<p class="buddy-care-buddy-copy buddy-care-buddy-copy--subtle">${escapeHtml(safeCard.trendHeightText)}</p>` : ''}
+        </div>
+      </div>
+      ${renderBuddyCareMiniHistory(safeCard)}
+      ${renderBuddyCareWeeklyReview(safeCard)}
+      <div class="buddy-care-timeline">
+        ${timeline.length ? timeline.map((entry) => renderBuddyCareTimelineEntry(entry)).join('') : renderBuddyCareDiaryEmptyState()}
+      </div>
+    </div>
+  `;
+}
+
+function renderBuddyCarePlantDetailData(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  const rows = [
+    [i18nT('buddyCare.v2.data.environment'), safeCard.environmentLabel],
+    [i18nT('buddyCare.v2.data.phase'), safeCard.phaseLabel],
+    [i18nT('buddyCare.v2.data.type'), safeCard.plantTypeLabel],
+    [i18nT('buddyCare.v2.data.start_date'), safeCard.startDate ? getBuddyCareFormattedDate(safeCard.startDate) : ''],
+    [i18nT('buddyCare.v2.data.age'), safeCard.dayLabel],
+    [i18nT('buddyCare.v2.data.last_check'), safeCard.latestCheckLabel],
+    [i18nT('buddyCare.v2.data.last_documentation'), safeCard.latestDiaryEntryLabel]
+  ].filter((row) => String(row[1] || '').trim());
+  return `
+    <div class="buddy-care-plant-detail-section">
+      <dl class="buddy-care-data-list">
+        ${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}
+      </dl>
+    </div>
+  `;
+}
+
+function renderBuddyCarePlantDetailWeek(card) {
+  const safeCard = card && typeof card === 'object' ? card : {};
+  return `
+    <div class="buddy-care-plant-detail-section">
+      ${renderBuddyCareWeeklyReview(safeCard)}
+    </div>
+  `;
+}
+
+function renderBuddyCarePlantDetailCard(cards, ageGateAccepted) {
+  if (!ui.buddyCarePlantDetailCard) {
+    return;
+  }
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const activeCard = safeCards.find((card) => String(card && card.id || '').trim() === String(buddyCareDetailPlantId || '').trim()) || null;
+  const visible = ageGateAccepted && getActiveBuddyCareView() === 'plants' && Boolean(activeCard);
+  ui.buddyCarePlantDetailCard.hidden = !visible;
+  if (!visible) {
+    ui.buddyCarePlantDetailCard.innerHTML = '';
+    return;
+  }
+  const section = normalizeBuddyCareDetailSection(buddyCarePlantDetailSection);
+  const segmentMarkup = [
+    { key: 'overview', label: i18nT('buddyCare.screen.overview') },
+    { key: 'history', label: i18nT('buddyCare.screen.history_short') },
+    { key: 'data', label: i18nT('buddyCare.v2.data_tab') }
+  ].map((item) => `
+    <button class="buddy-care-segment-btn${item.key === section ? ' is-active' : ''}" type="button" role="tab" aria-selected="${String(item.key === section)}" data-buddy-care-detail-section="${escapeHtml(item.key)}">${escapeHtml(item.label)}</button>
+  `).join('');
+  let bodyMarkup = '';
+  if (section === 'daily_check') {
+    bodyMarkup = `
+      <div class="buddy-care-plant-detail-section">
+        <p class="buddy-care-panel-copy">${escapeHtml(i18nT('buddyCare.buddy.message.daily_check_intro'))}</p>
+      </div>
+    `;
+  } else if (section === 'history') {
+    bodyMarkup = renderBuddyCarePlantDetailHistory(activeCard);
+  } else if (section === 'data') {
+    bodyMarkup = renderBuddyCarePlantDetailData(activeCard);
+  } else {
+    bodyMarkup = renderBuddyCarePlantDetailOverview(activeCard);
+  }
+  const status = getBuddyCareStatusPresentation(activeCard.riskStatus);
+  ui.buddyCarePlantDetailCard.innerHTML = `
+    <header class="buddy-care-detail-header">
+      <button class="buddy-care-icon-btn" type="button" data-buddy-care-plant-detail-back="plants" aria-label="${escapeHtml(i18nT('buddyCare.screen.back_to_plants'))}"><span aria-hidden="true">‹</span></button>
+      <h1>${escapeHtml(activeCard.name || '')}</h1>
+      <span class="buddy-care-status-text buddy-care-status-text--${escapeHtml(status.tone)}"><span aria-hidden="true">${escapeHtml(status.icon)}</span>${escapeHtml(status.label)}</span>
+    </header>
+    <section class="buddy-care-detail-hero">
+      <div class="buddy-care-detail-hero-media">${renderBuddyCarePlantImage(activeCard, 'buddy-care-detail-hero-image')}</div>
+      <span class="buddy-care-detail-status">${escapeHtml(i18nT('buddyCare.v2.overall_status'))}: <strong>${escapeHtml(status.label)}</strong></span>
+      <div class="buddy-care-detail-facts">
+        <span>${escapeHtml(activeCard.environmentLabel)}</span>
+        <span>${escapeHtml(activeCard.phaseLabel)}</span>
+        <span>${escapeHtml(activeCard.dayLabel)}</span>
+      </div>
+    </section>
+    <div class="buddy-care-segment-nav" role="tablist" aria-label="${escapeHtml(i18nT('buddyCare.v2.plant_tabs'))}">${segmentMarkup}</div>
+    ${bodyMarkup}
+  `;
+}
+
+function buildBuddyCareDiaryHubEntries(cards, filterValue = 'all') {
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const cardsByPlantId = new Map(safeCards.map((card) => [String(card.id || ''), card]));
+  const entries = [];
+  for (const card of safeCards) {
+    for (const entry of Array.isArray(card.diaryEntries) ? card.diaryEntries : []) {
+      entries.push({
+        ...entry,
+        plantName: card.name,
+        plantId: card.id
+      });
+    }
+  }
+  entries.sort((left, right) => {
+    const leftTime = Date.parse(String(left.updatedAt || left.createdAt || left.entryDate || '')) || 0;
+    const rightTime = Date.parse(String(right.updatedAt || right.createdAt || right.entryDate || '')) || 0;
+    return rightTime - leftTime;
+  });
+  const safeFilter = String(filterValue || 'all').trim();
+  return {
+    cardsByPlantId,
+    entries: safeFilter === 'all'
+      ? entries
+      : entries.filter((entry) => String(entry.plantId || '') === safeFilter)
+  };
+}
+
+function renderBuddyCareDiaryHubComposer(cards) {
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const availableCards = safeCards.filter((card) => !card.readOnly);
+  if (!availableCards.length) {
+    return '';
+  }
+  const selectedPlantId = availableCards.some((card) => card.id === buddyCareDiaryComposerPlantId)
+    ? buddyCareDiaryComposerPlantId
+    : availableCards[0].id;
+  const tagOptions = getBuddyCareDiaryTags().map((tag) => {
+    const inputId = `buddyCareDiaryHubTag-${tag}`;
+    return `
+      <label class="buddy-care-diary-tag-option" for="${escapeHtml(inputId)}">
+        <input id="${escapeHtml(inputId)}" class="buddy-care-diary-tag-checkbox" type="checkbox" name="buddyCareDiaryTag" value="${escapeHtml(tag)}">
+        <span>${escapeHtml(getBuddyCareDiaryTagLabel(tag))}</span>
+      </label>
+    `;
+  }).join('');
+  return `
+    <form id="buddyCareDiaryHubForm" class="buddy-care-diary-form">
+      <strong class="buddy-care-plant-details-head">${escapeHtml(i18nT('buddyCare.diary.add_entry'))}</strong>
+      <label class="buddy-care-field">
+        <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.plant_label'))}</span>
+        <select class="buddy-care-select" name="buddyCareDiaryPlantId">
+          ${availableCards.map((card) => `<option value="${escapeHtml(card.id)}"${card.id === selectedPlantId ? ' selected' : ''}>${escapeHtml(card.name)}</option>`).join('')}
+        </select>
+      </label>
+      <label class="buddy-care-field">
+        <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.title_label'))}</span>
+        <input class="buddy-care-input" type="text" name="buddyCareDiaryTitle" maxlength="80" placeholder="${escapeHtml(i18nT('buddyCare.diary.title_placeholder'))}">
+      </label>
+      <label class="buddy-care-field buddy-care-field--full">
+        <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.note_label'))}</span>
+        <textarea class="buddy-care-textarea" name="buddyCareDiaryNote" rows="3" maxlength="320" placeholder="${escapeHtml(i18nT('buddyCare.diary.note_placeholder'))}"></textarea>
+      </label>
+      <label class="buddy-care-field">
+        <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.height_label'))}</span>
+        <input class="buddy-care-input" type="number" name="buddyCareDiaryHeight" min="0" step="0.1" inputmode="decimal">
+      </label>
+      <fieldset class="buddy-care-diary-fieldset buddy-care-field buddy-care-field--full">
+        <legend class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.diary.tags_label'))}</legend>
+        <div class="buddy-care-diary-tag-grid">
+          ${tagOptions}
+        </div>
+      </fieldset>
+      <div class="buddy-care-daily-actions">
+        <button class="ghost-btn" type="button" data-buddy-care-diary-composer-cancel>${escapeHtml(i18nT('common.cancel'))}</button>
+        <button class="action-btn action-primary" type="submit">${escapeHtml(i18nT('buddyCare.diary.save_entry'))}</button>
+      </div>
+    </form>
+  `;
+}
+
+function getBuddyCareTimelineDateLabel(timestamp) {
+  const numericTimestamp = Number(timestamp) || 0;
+  if (!numericTimestamp) {
+    return '';
+  }
+  const locale = getBuddyCareLocale();
+  const localeId = locale === 'de' ? 'de-DE' : (locale === 'es' ? 'es-ES' : 'en-US');
+  try {
+    return new Intl.DateTimeFormat(localeId, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(numericTimestamp));
+  } catch (_error) {
+    return new Date(numericTimestamp).toLocaleString();
+  }
+}
+
+function renderBuddyCareTimelineEntry(entry) {
+  const safeEntry = entry && typeof entry === 'object' ? entry : {};
+  const iconMarkup = safeEntry.icon === 'water'
+    ? getBuddyCareTaskIconMarkup('water_check')
+    : (safeEntry.icon === 'growth' ? getBuddyCareTaskIconMarkup('observe') : getBuddyCareTaskIconMarkup('document'));
+  return `
+    <article class="buddy-care-timeline-item">
+      <div class="buddy-care-timeline-icon">${iconMarkup}</div>
+      <div class="buddy-care-timeline-copy">
+        <span>${escapeHtml(getBuddyCareTimelineDateLabel(safeEntry.timestamp))} <span aria-hidden="true">•</span> ${escapeHtml(safeEntry.plantName || '')}</span>
+        <h3>${escapeHtml(safeEntry.title || '')}</h3>
+        ${safeEntry.detail ? `<p>${escapeHtml(safeEntry.detail)}</p>` : ''}
+      </div>
+      ${safeEntry.plantId ? `<button class="buddy-care-card-open" type="button" data-buddy-care-open-plant-history="${escapeHtml(safeEntry.plantId)}" aria-label="${escapeHtml(i18nT('buddyCare.v2.open_history'))}"><span aria-hidden="true">›</span></button>` : ''}
+      ${safeEntry.deletable && safeEntry.entryId ? `<button class="ghost-btn buddy-care-diary-delete" type="button" data-buddy-care-delete-entry="${escapeHtml(safeEntry.entryId)}">${escapeHtml(i18nT('buddyCare.diary.delete_entry'))}</button>` : ''}
+    </article>
+  `;
+}
+
+function renderBuddyCareDiaryHubCard(cards, ageGateAccepted) {
+  if (!ui.buddyCareDiaryHubCard) {
+    return;
+  }
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const visible = ageGateAccepted && getActiveBuddyCareView() === 'history';
+  ui.buddyCareDiaryHubCard.hidden = !visible;
+  if (!visible) {
+    ui.buddyCareDiaryHubCard.innerHTML = '';
+    return;
+  }
+  const filterOptions = [{ value: 'all', label: i18nT('buddyCare.diary.all_plants') }]
+    .concat(safeCards.map((card) => ({ value: card.id, label: card.name })));
+  const activeFilter = filterOptions.some((option) => option.value === buddyCareDiaryFilter)
+    ? buddyCareDiaryFilter
+    : 'all';
+  const timelineEntries = buildBuddyCareTimelineEntries(safeCards, activeFilter);
+  const historyMode = normalizeBuddyCareHistoryMode(buddyCareHistoryMode);
+  const primaryCard = sortBuddyCareCardsByRisk(safeCards)[0] || null;
+  const recentThreshold = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const weeklyCheckCount = safeCards.reduce((total, card) => total + (Array.isArray(card.dailyChecks) ? card.dailyChecks.filter((check) => getBuddyCareEntryTimestamp(check) >= recentThreshold).length : 0), 0);
+  const stablePlantCount = safeCards.filter((card) => getBuddyCareStatusPresentation(card.riskStatus).key === 'stable').length;
+  const riskPlantCount = safeCards.filter((card) => ['watch', 'action'].includes(getBuddyCareStatusPresentation(card.riskStatus).key)).length;
+  ui.buddyCareDiaryHubCard.innerHTML = `
+    <header class="buddy-care-screen-header">
+      <div>
+        <h1 class="buddy-care-screen-title">${escapeHtml(i18nT('buddyCare.nav.history'))}</h1>
+        <p class="buddy-care-screen-subtitle">${escapeHtml(i18nT('buddyCare.v2.history_subtitle'))}</p>
+      </div>
+    </header>
+    <div class="buddy-care-history-switch" role="tablist" aria-label="${escapeHtml(i18nT('buddyCare.v2.history_modes'))}">
+      <button class="buddy-care-history-mode${historyMode === 'timeline' ? ' is-active' : ''}" type="button" role="tab" aria-selected="${String(historyMode === 'timeline')}" data-buddy-care-history-mode="timeline">${escapeHtml(i18nT('buddyCare.v2.timeline'))}</button>
+      <button class="buddy-care-history-mode${historyMode === 'trends' ? ' is-active' : ''}" type="button" role="tab" aria-selected="${String(historyMode === 'trends')}" data-buddy-care-history-mode="trends">${escapeHtml(i18nT('buddyCare.v2.trends'))}</button>
+    </div>
+    ${primaryCard ? `
+      <section class="buddy-care-week-hero">
+        <div class="buddy-care-week-visual">
+          ${renderBuddyCareAssetImage('success', 'buddyCare.buddy.alt.success', 'buddy-care-week-buddy')}
+          ${renderBuddyCarePlantImage(primaryCard, 'buddy-care-week-plant')}
+        </div>
+        <div class="buddy-care-week-copy">
+          <h2>${escapeHtml(i18nT('buddyCare.v2.week_with_buddy'))}</h2>
+          <ul>
+            <li><strong>${weeklyCheckCount}</strong> ${escapeHtml(i18nT('buddyCare.v2.week_checks'))}</li>
+            <li><strong>${stablePlantCount}</strong> ${escapeHtml(i18nT('buddyCare.v2.week_stable'))}</li>
+            <li><strong>${riskPlantCount}</strong> ${escapeHtml(i18nT('buddyCare.v2.week_risks'))}</li>
+          </ul>
+          <button class="action-btn action-primary" type="button" data-buddy-care-open-plant-history="${escapeHtml(primaryCard.id)}">${escapeHtml(i18nT('buddyCare.v2.open_weekly_report'))}<span aria-hidden="true">›</span></button>
+        </div>
+      </section>
+    ` : ''}
+    <div class="buddy-care-history-toolbar">
+      <div class="buddy-care-filter-row">
+      ${filterOptions.map((option) => `
+        <button class="buddy-care-filter-pill${option.value === activeFilter ? ' is-active' : ''}" type="button" data-buddy-care-diary-filter="${escapeHtml(option.value)}" aria-pressed="${String(option.value === activeFilter)}">${escapeHtml(option.label)}</button>
+      `).join('')}
+      </div>
+      ${safeCards.some((card) => !card.readOnly) ? `<button class="buddy-care-text-link" type="button" data-buddy-care-diary-open-composer>${escapeHtml(i18nT('buddyCare.diary.add_entry'))}</button>` : ''}
+    </div>
+    ${buddyCareDiaryComposerOpen ? renderBuddyCareDiaryHubComposer(safeCards) : ''}
+    ${historyMode === 'timeline' ? `
+      <div class="buddy-care-timeline">${timelineEntries.length ? timelineEntries.map((entry) => renderBuddyCareTimelineEntry(entry)).join('') : renderBuddyCareDiaryEmptyState()}</div>
+    ` : `
+      <div class="buddy-care-trends-grid">
+        ${safeCards.filter((card) => activeFilter === 'all' || card.id === activeFilter).map((card) => `
+          <article class="buddy-care-trend-card">
+            <div class="buddy-care-section-head"><h2>${escapeHtml(card.name)}</h2><span>${escapeHtml(card.trendLabel)}</span></div>
+            <p>${escapeHtml(card.trendBuddyMessage || card.miniHistorySummary || '')}</p>
+            ${card.miniHistoryHeightText ? `<strong>${escapeHtml(card.miniHistoryHeightText)}</strong>` : ''}
+            <button class="buddy-care-text-link" type="button" data-buddy-care-open-plant-history="${escapeHtml(card.id)}">${escapeHtml(i18nT('buddyCare.v2.open_plant_history'))}<span aria-hidden="true">›</span></button>
+          </article>
+        `).join('') || renderBuddyCareDiaryEmptyState()}
+      </div>
+    `}
+  `;
+}
+
+function renderBuddyCareMoreInfoCard(ageGateAccepted) {
+  if (!ui.buddyCareMoreInfoCard) {
+    return;
+  }
+  const visible = ageGateAccepted && getActiveBuddyCareView() === 'more';
+  ui.buddyCareMoreInfoCard.hidden = !visible;
+  if (!visible) {
+    return;
+  }
+  const buddyCare = ensureBuddyCareState();
+  const entitlement = String(buddyCare && buddyCare.entitlement || 'free').trim().toLowerCase();
+  ui.buddyCareMoreInfoCard.innerHTML = `
+    <header class="buddy-care-screen-header">
+      <div>
+        <h1 class="buddy-care-screen-title">${escapeHtml(i18nT('buddyCare.nav.more'))}</h1>
+        <p class="buddy-care-screen-subtitle">${escapeHtml(i18nT('buddyCare.v2.more_subtitle'))}</p>
+      </div>
+    </header>
+    <nav class="buddy-care-more-menu" aria-label="${escapeHtml(i18nT('buddyCare.v2.more_navigation'))}">
+      <button type="button" data-buddy-care-switch-view="history"><span class="buddy-care-more-icon">${getBuddyCareTaskIconMarkup('document')}</span><span><strong>${escapeHtml(i18nT('buddyCare.v2.more_weekly'))}</strong><small>${escapeHtml(i18nT('buddyCare.v2.more_weekly_hint'))}</small></span><span aria-hidden="true">›</span></button>
+      <button type="button" data-buddy-care-switch-view="plants"><span class="buddy-care-more-icon">${getBuddyCareTaskIconMarkup('observe')}</span><span><strong>${escapeHtml(i18nT('buddyCare.v2.more_plants'))}</strong><small>${escapeHtml(i18nT('buddyCare.v2.more_plants_hint'))}</small></span><span aria-hidden="true">›</span></button>
+      <div class="buddy-care-more-status"><span class="buddy-care-more-icon">${getBuddyCareTaskIconMarkup('environment')}</span><span><strong>${escapeHtml(i18nT('buddyCare.v2.more_status'))}</strong><small>${escapeHtml(entitlement === 'care_plus_mock' ? i18nT('buddyCare.entitlement.care_plus_mock') : i18nT('buddyCare.entitlement.free'))}</small></span></div>
+    </nav>
+  `;
+}
+
+function getBuddyCareExternalTestStateSlice() {
+  const buddyCare = ensureBuddyCareState();
+  return buddyCare && buddyCare.externalTest && typeof buddyCare.externalTest === 'object'
+    ? buddyCare.externalTest
+    : null;
+}
+
+function buildBuddyCareExternalTestChecklistItems(summary) {
+  const safeSummary = summary && typeof summary === 'object' ? summary : getBuddyCareExternalTestSummary();
+  const externalTestApi = getBuddyCareExternalTestApi();
+  const hasEvent = externalTestApi && typeof externalTestApi.hasBuddyCareExternalTestEvent === 'function'
+    ? (eventName) => externalTestApi.hasBuddyCareExternalTestEvent(state, eventName)
+    : () => false;
+  return [
+    { key: 'first_plant', done: safeSummary.plantCount >= 1 },
+    { key: 'daily_check', done: safeSummary.dailyCheckCompleted === true },
+    { key: 'diary_open', done: safeSummary.diaryEntryCreated === true || hasEvent('buddy_care_diary_opened') },
+    { key: 'test_access', done: safeSummary.testAccessActivated === true },
+    { key: 'second_plant', done: safeSummary.secondPlantCreated === true },
+    { key: 'reload', done: safeSummary.reloadCompleted === true },
+    { key: 'feedback', done: safeSummary.feedbackSubmitted === true }
+  ];
+}
+
+function renderBuddyCareExternalTestIntroCard(ageGateAccepted) {
+  if (!ui.buddyCareExternalTestIntroCard) {
+    return;
+  }
+  const externalTestState = getBuddyCareExternalTestStateSlice();
+  const visible = isBuddyCareExternalTestEnabled()
+    && ageGateAccepted
+    && getActiveBuddyCareView() === 'more'
+    && !(externalTestState && externalTestState.introDismissedAt);
+  ui.buddyCareExternalTestIntroCard.hidden = !visible;
+  if (!visible) {
+    ui.buddyCareExternalTestIntroCard.innerHTML = '';
+    return;
+  }
+  ui.buddyCareExternalTestIntroCard.innerHTML = `
+    <div class="buddy-care-section-head">
+      <div>
+        <p class="buddy-care-panel-kicker">${escapeHtml(i18nT('buddyCare.externalTest.kicker'))}</p>
+        <h2 class="buddy-care-panel-title">${escapeHtml(i18nT('buddyCare.externalTest.intro_title'))}</h2>
+      </div>
+    </div>
+    <div class="buddy-care-buddy-note buddy-care-buddy-note--seasonpass">
+      <div class="buddy-care-buddy-visual">
+        ${renderBuddyCareAssetImage('header', 'buddyCare.buddy.alt.header', 'buddy-care-buddy-asset')}
+      </div>
+      <div class="buddy-care-buddy-body">
+        <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.screen.buddy_says'))}</span>
+        <p class="buddy-care-buddy-copy">${escapeHtml(i18nT('buddyCare.externalTest.intro_body'))}</p>
+      </div>
+    </div>
+    <p class="buddy-care-panel-footnote">${escapeHtml(i18nT('buddyCare.externalTest.test_access_note'))}</p>
+    <div class="buddy-care-daily-actions">
+      <button class="action-btn action-primary" type="button" data-buddy-care-test-start>${escapeHtml(i18nT('buddyCare.externalTest.start'))}</button>
+      <button class="ghost-btn" type="button" data-buddy-care-test-feedback-open>${escapeHtml(i18nT('buddyCare.externalTest.feedback'))}</button>
+      <button class="ghost-btn" type="button" data-buddy-care-test-intro-dismiss>${escapeHtml(i18nT('buddyCare.screen.activation_cta_later'))}</button>
+    </div>
+  `;
+}
+
+function renderBuddyCareExternalTestChecklistCard(ageGateAccepted, summary) {
+  if (!ui.buddyCareExternalTestChecklistCard) {
+    return;
+  }
+  const safeSummary = summary && typeof summary === 'object' ? summary : getBuddyCareExternalTestSummary();
+  const externalTestState = getBuddyCareExternalTestStateSlice();
+  const visible = isBuddyCareExternalTestEnabled() && ageGateAccepted && getActiveBuddyCareView() === 'more';
+  ui.buddyCareExternalTestChecklistCard.hidden = !visible;
+  if (!visible) {
+    ui.buddyCareExternalTestChecklistCard.innerHTML = '';
+    return;
+  }
+  const checklistItems = buildBuddyCareExternalTestChecklistItems(safeSummary);
+  const completedCount = checklistItems.filter((item) => item.done).length;
+  const collapsed = Boolean(externalTestState && externalTestState.checklistDismissedAt);
+  ui.buddyCareExternalTestChecklistCard.innerHTML = collapsed
+    ? `
+      <div class="buddy-care-section-head">
+        <div>
+          <p class="buddy-care-panel-kicker">${escapeHtml(i18nT('buddyCare.externalTest.kicker'))}</p>
+          <h2 class="buddy-care-panel-title">${escapeHtml(i18nT('buddyCare.externalTest.checklist_title'))}</h2>
+        </div>
+      </div>
+      <p class="buddy-care-panel-copy">${escapeHtml(i18nT('buddyCare.externalTest.checklist_progress', {
+        done: completedCount,
+        total: checklistItems.length
+      }))}</p>
+      <div class="buddy-care-daily-actions">
+        <button class="ghost-btn" type="button" data-buddy-care-test-checklist-open>${escapeHtml(i18nT('buddyCare.externalTest.checklist_show'))}</button>
+        <button class="ghost-btn" type="button" data-buddy-care-test-feedback-open>${escapeHtml(i18nT('buddyCare.externalTest.feedback'))}</button>
+      </div>
+    `
+    : `
+      <div class="buddy-care-section-head">
+        <div>
+          <p class="buddy-care-panel-kicker">${escapeHtml(i18nT('buddyCare.externalTest.kicker'))}</p>
+          <h2 class="buddy-care-panel-title">${escapeHtml(i18nT('buddyCare.externalTest.checklist_title'))}</h2>
+        </div>
+        <button class="ghost-btn" type="button" data-buddy-care-test-checklist-dismiss>${escapeHtml(i18nT('common.close'))}</button>
+      </div>
+      <p class="buddy-care-panel-copy">${escapeHtml(i18nT('buddyCare.externalTest.checklist_progress', {
+        done: completedCount,
+        total: checklistItems.length
+      }))}</p>
+      <ul class="buddy-care-test-checklist">
+        ${checklistItems.map((item) => `
+          <li class="buddy-care-test-checklist-item${item.done ? ' is-done' : ''}">
+            <span class="buddy-care-test-check">${item.done ? '&#10003;' : '&#9711;'}</span>
+            <span>${escapeHtml(i18nT(`buddyCare.externalTest.checklist_item.${item.key}`))}</span>
+          </li>
+        `).join('')}
+      </ul>
+      <div class="buddy-care-daily-actions">
+        <button class="ghost-btn" type="button" data-buddy-care-test-feedback-open>${escapeHtml(i18nT('buddyCare.externalTest.feedback'))}</button>
+      </div>
+    `;
+}
+
+function renderBuddyCareExternalTestFeedbackFeatureOptions(selectedValues = []) {
+  const selectedSet = new Set(Array.isArray(selectedValues) ? selectedValues : []);
+  const externalTestApi = getBuddyCareExternalTestApi();
+  const features = externalTestApi && Array.isArray(externalTestApi.FEEDBACK_HELPFUL_FEATURES)
+    ? externalTestApi.FEEDBACK_HELPFUL_FEATURES
+    : ['today_view', 'daily_check', 'buddy_hints', 'diary', 'risk_light', 'trend', 'weekly_review', 'three_plant_overview'];
+  return features.map((feature) => `
+    <label class="buddy-care-diary-tag-option">
+      <input type="checkbox" name="buddyCareTestHelpfulFeature" value="${escapeHtml(feature)}"${selectedSet.has(feature) ? ' checked' : ''}>
+      <span>${escapeHtml(i18nT(`buddyCare.externalTest.helpful_option.${feature}`))}</span>
+    </label>
+  `).join('');
+}
+
+function renderBuddyCareExternalTestSelectOptions(optionKeys = [], selectedValue = '', baseKey = '') {
+  const safeKeys = Array.isArray(optionKeys) ? optionKeys : [];
+  const safeSelectedValue = String(selectedValue || '').trim().toLowerCase();
+  return [''].concat(safeKeys).map((optionValue) => {
+    if (!optionValue) {
+      return `<option value="">${escapeHtml(i18nT('buddyCare.externalTest.select_placeholder'))}</option>`;
+    }
+    return `<option value="${escapeHtml(optionValue)}"${safeSelectedValue === optionValue ? ' selected' : ''}>${escapeHtml(i18nT(`${baseKey}.${optionValue}`))}</option>`;
+  }).join('');
+}
+
+function renderBuddyCareExternalTestFeedbackCard(ageGateAccepted, summary) {
+  if (!ui.buddyCareExternalTestFeedbackCard) {
+    return;
+  }
+  const visible = isBuddyCareExternalTestEnabled() && ageGateAccepted && getActiveBuddyCareView() === 'more';
+  ui.buddyCareExternalTestFeedbackCard.hidden = !visible;
+  if (!visible) {
+    ui.buddyCareExternalTestFeedbackCard.innerHTML = '';
+    return;
+  }
+  const safeSummary = summary && typeof summary === 'object' ? summary : getBuddyCareExternalTestSummary();
+  const externalTestState = getBuddyCareExternalTestStateSlice();
+  const feedback = externalTestState && externalTestState.feedback && typeof externalTestState.feedback === 'object'
+    ? externalTestState.feedback
+    : {
+      clarityRating: 0,
+      helpfulFeatures: [],
+      confusionNote: '',
+      wouldContinue: '',
+      wouldPay: '',
+      pricingModel: '',
+      seasonPassPrice: '',
+      submittedAt: null
+    };
+  const showForm = buddyCareExternalTestFeedbackOpen || Boolean(feedback.submittedAt);
+  ui.buddyCareExternalTestFeedbackCard.innerHTML = `
+    <div class="buddy-care-section-head">
+      <div>
+        <p class="buddy-care-panel-kicker">${escapeHtml(i18nT('buddyCare.externalTest.feedback_kicker'))}</p>
+        <h2 class="buddy-care-panel-title">${escapeHtml(i18nT('buddyCare.externalTest.feedback_title'))}</h2>
+      </div>
+    </div>
+    <p class="buddy-care-panel-copy">${escapeHtml(i18nT('buddyCare.externalTest.feedback_body'))}</p>
+    ${feedback.submittedAt ? `
+      <div class="buddy-care-buddy-note buddy-care-buddy-note--activation">
+        <div class="buddy-care-buddy-visual">
+          ${renderBuddyCareAssetImage('success', 'buddyCare.buddy.alt.success', 'buddy-care-buddy-asset')}
+        </div>
+        <div class="buddy-care-buddy-body">
+          <span class="buddy-care-buddy-label">${escapeHtml(i18nT('buddyCare.externalTest.feedback_saved_title'))}</span>
+          <p class="buddy-care-buddy-copy">${escapeHtml(i18nT('buddyCare.externalTest.feedback_saved_body'))}</p>
+        </div>
+      </div>
+    ` : ''}
+    ${showForm ? `
+      <form id="buddyCareExternalTestFeedbackForm" class="buddy-care-daily-form">
+        <label class="buddy-care-field">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.externalTest.feedback_clarity_label'))}</span>
+          <select class="buddy-care-select" name="buddyCareTestClarityRating">
+            ${renderBuddyCareExternalTestSelectOptions(['1', '2', '3', '4', '5'], feedback.clarityRating ? String(feedback.clarityRating) : '', 'buddyCare.externalTest.clarity_option')}
+          </select>
+        </label>
+        <label class="buddy-care-field">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.externalTest.feedback_continue_label'))}</span>
+          <select class="buddy-care-select" name="buddyCareTestWouldContinue">
+            ${renderBuddyCareExternalTestSelectOptions(['yes', 'maybe', 'no'], feedback.wouldContinue, 'buddyCare.externalTest.choice')}
+          </select>
+        </label>
+        <fieldset class="buddy-care-field buddy-care-field--full buddy-care-diary-fieldset">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.externalTest.feedback_helpful_label'))}</span>
+          <div class="buddy-care-diary-tag-grid">
+            ${renderBuddyCareExternalTestFeedbackFeatureOptions(feedback.helpfulFeatures)}
+          </div>
+        </fieldset>
+        <label class="buddy-care-field buddy-care-field--full">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.externalTest.feedback_confusion_label'))}</span>
+          <textarea class="buddy-care-textarea" name="buddyCareTestConfusionNote" rows="4" maxlength="1200">${escapeHtml(feedback.confusionNote || '')}</textarea>
+        </label>
+        <label class="buddy-care-field">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.externalTest.feedback_pay_label'))}</span>
+          <select class="buddy-care-select" name="buddyCareTestWouldPay">
+            ${renderBuddyCareExternalTestSelectOptions(['yes', 'maybe', 'no'], feedback.wouldPay, 'buddyCare.externalTest.choice')}
+          </select>
+        </label>
+        <label class="buddy-care-field">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.externalTest.feedback_model_label'))}</span>
+          <select class="buddy-care-select" name="buddyCareTestPricingModel">
+            ${renderBuddyCareExternalTestSelectOptions(['season_pass', 'monthly_subscription', 'one_time_purchase', 'free_only'], feedback.pricingModel, 'buddyCare.externalTest.pricing_model')}
+          </select>
+        </label>
+        <label class="buddy-care-field buddy-care-field--full">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.externalTest.feedback_price_label'))}</span>
+          <select class="buddy-care-select" name="buddyCareTestSeasonPassPrice">
+            ${renderBuddyCareExternalTestSelectOptions(['under_10', '10_15', '15_20', 'over_20', 'would_not_pay'], feedback.seasonPassPrice, 'buddyCare.externalTest.season_pass_price')}
+          </select>
+        </label>
+        <div class="buddy-care-daily-actions">
+          <button class="ghost-btn" type="button" data-buddy-care-test-feedback-dismiss>${escapeHtml(i18nT('common.cancel'))}</button>
+          <button class="action-btn action-primary" type="submit">${escapeHtml(i18nT('buddyCare.externalTest.feedback_submit'))}</button>
+        </div>
+      </form>
+    ` : `
+      <div class="buddy-care-daily-actions">
+        <button class="action-btn action-primary" type="button" data-buddy-care-test-feedback-open>${escapeHtml(i18nT('buddyCare.externalTest.feedback'))}</button>
+      </div>
+    `}
+    <p class="buddy-care-panel-footnote">${escapeHtml(i18nT('buddyCare.externalTest.feedback_privacy_note'))}</p>
+  `;
+  if (safeSummary.feedbackSubmitted && !buddyCareExternalTestFeedbackOpen) {
+    buddyCareExternalTestFeedbackOpen = false;
+  }
+}
+
+function renderBuddyCareExternalTestToolsCard(ageGateAccepted) {
+  if (!ui.buddyCareExternalTestToolsCard) {
+    return;
+  }
+  const visible = isBuddyCareExternalTestEnabled() && ageGateAccepted && getActiveBuddyCareView() === 'more';
+  ui.buddyCareExternalTestToolsCard.hidden = !visible;
+  if (!visible) {
+    ui.buddyCareExternalTestToolsCard.innerHTML = '';
+    return;
+  }
+  ui.buddyCareExternalTestToolsCard.innerHTML = `
+    <div class="buddy-care-section-head">
+      <div>
+        <p class="buddy-care-panel-kicker">${escapeHtml(i18nT('buddyCare.externalTest.tools_kicker'))}</p>
+        <h2 class="buddy-care-panel-title">${escapeHtml(i18nT('buddyCare.externalTest.tools_title'))}</h2>
+      </div>
+    </div>
+    <p class="buddy-care-panel-copy">${escapeHtml(i18nT('buddyCare.externalTest.tools_body'))}</p>
+    <div class="buddy-care-daily-actions">
+      <button class="ghost-btn" type="button" data-buddy-care-test-export>${escapeHtml(i18nT('buddyCare.externalTest.export_action'))}</button>
+      <button class="ghost-btn" type="button" data-buddy-care-test-reset>${escapeHtml(i18nT('buddyCare.externalTest.reset_action'))}</button>
+    </div>
+  `;
+}
+
+function renderBuddyCareDailyCheckCard(cards, ageGateAccepted) {
+  if (!ui.buddyCareDailyCheckCard) {
+    return;
+  }
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const activeCard = safeCards.find((card) => card.id === buddyCareActiveDailyCheckPlantId) || null;
+  const visible = ageGateAccepted
+    && getActiveBuddyCareView() === 'plants'
+    && normalizeBuddyCareDetailSection(buddyCarePlantDetailSection) === 'daily_check'
+    && Boolean(activeCard);
+  if (!visible) {
+    ui.buddyCareDailyCheckCard.hidden = true;
+    return;
+  }
+
+  if (!buddyCareDailyCheckDraft || buddyCareDailyCheckDraft.plantId !== activeCard.id) {
+    buddyCareDailyCheckDraft = activeCard.latestCheck
+      ? createBuddyCareDailyCheckDraftFromCheck(activeCard.id, activeCard.latestCheck)
+      : createEmptyBuddyCareDailyCheckDraft(activeCard.id);
+  }
+
+  ui.buddyCareDailyCheckCard.hidden = false;
+  const buddyPresentation = getBuddyCareDailyCheckBuddyPresentation(activeCard.dailyCheckStatus, activeCard.riskEvaluation);
+  if (ui.buddyCareDailyCheckTitle) {
+    ui.buddyCareDailyCheckTitle.textContent = i18nT('buddyCare.dailyCheck.title_for_plant', {
+      plant: activeCard.name
+    });
+  }
+  if (ui.buddyCareDailyCheckBuddyVisual) {
+    ui.buddyCareDailyCheckBuddyVisual.innerHTML = renderBuddyCareAssetImage(
+      buddyPresentation.assetKind,
+      buddyPresentation.altKey,
+      'buddy-care-buddy-asset'
+    );
+  }
+  if (ui.buddyCareDailyCheckBuddyLabel) {
+    ui.buddyCareDailyCheckBuddyLabel.textContent = i18nT(buddyPresentation.labelKey);
+  }
+  if (ui.buddyCareDailyCheckSubtitle) {
+    ui.buddyCareDailyCheckSubtitle.textContent = translateBuddyCareRiskCopy(
+      buddyPresentation.messageKey,
+      activeCard.riskBuddyMessage
+    );
+  }
+  if (ui.buddyCareDailyCheckStatusBadge) {
+    ui.buddyCareDailyCheckStatusBadge.textContent = activeCard.riskStatusLabel;
+    ui.buddyCareDailyCheckStatusBadge.className = `buddy-care-badge buddy-care-risk-badge buddy-care-risk-badge--${activeCard.riskStatus}`;
+  }
+  if (ui.buddyCareDailyCheckMoistureSelect) {
+    ui.buddyCareDailyCheckMoistureSelect.value = buddyCareDailyCheckDraft.mediumMoisture || 'unknown';
+  }
+  if (ui.buddyCareDailyCheckLeafStateSelect) {
+    ui.buddyCareDailyCheckLeafStateSelect.value = buddyCareDailyCheckDraft.leafState || 'unknown';
+  }
+  if (ui.buddyCareDailyCheckGrowthStateSelect) {
+    ui.buddyCareDailyCheckGrowthStateSelect.value = buddyCareDailyCheckDraft.growthState || 'unknown';
+  }
+  if (ui.buddyCareDailyCheckEnvironmentStressSelect) {
+    ui.buddyCareDailyCheckEnvironmentStressSelect.value = buddyCareDailyCheckDraft.environmentStress || 'unknown';
+  }
+  if (ui.buddyCareDailyCheckPestsVisibleSelect) {
+    ui.buddyCareDailyCheckPestsVisibleSelect.value = buddyCareDailyCheckDraft.pestsVisible || 'unsure';
+  }
+  if (ui.buddyCareDailyCheckHeightInput) {
+    ui.buddyCareDailyCheckHeightInput.value = buddyCareDailyCheckDraft.heightCm || '';
+  }
+  if (ui.buddyCareDailyCheckNoteInput) {
+    ui.buddyCareDailyCheckNoteInput.value = buddyCareDailyCheckDraft.note || '';
+  }
+}
+
+function renderBuddyCareScreen() {
+  if (!ui.buddyCareScreen) {
+    return;
+  }
+
+  const buddyCareApi = getBuddyCareStateApi();
+  const buddyCare = ensureBuddyCareState();
+  if (ui.buddyCarePlantStartDateInput && !ui.buddyCarePlantStartDateInput.value) {
+    ui.buddyCarePlantStartDateInput.value = getBuddyCareTodayDateString();
+  }
+  const dashboardVm = buildBuddyCareDashboardViewModel();
+  const entitlement = buddyCareApi && typeof buddyCareApi.getBuddyCareEntitlement === 'function'
+    ? buddyCareApi.getBuddyCareEntitlement(state)
+    : String(buddyCare.entitlement || 'free');
+  const plantLimit = buddyCareApi && typeof buddyCareApi.getBuddyCarePlantLimit === 'function'
+    ? buddyCareApi.getBuddyCarePlantLimit(state)
+    : (entitlement === 'care_plus_mock' ? 3 : 1);
+  const plantCount = buddyCareApi && typeof buddyCareApi.getBuddyCarePlantCount === 'function'
+    ? buddyCareApi.getBuddyCarePlantCount(state)
+    : (Array.isArray(buddyCare.plants) ? buddyCare.plants.length : 0);
+  const maxPlantLimit = getBuddyCareMaximumPlantLimit();
+  const remainingSlots = buddyCareApi && typeof buddyCareApi.getBuddyCareRemainingPlantSlots === 'function'
+    ? buddyCareApi.getBuddyCareRemainingPlantSlots(state)
+    : Math.max(0, plantLimit - plantCount);
+  const canAddPlant = buddyCareApi && typeof buddyCareApi.canAddBuddyCarePlant === 'function'
+    ? buddyCareApi.canAddBuddyCarePlant(state)
+    : remainingSlots > 0;
+  const ageGateAccepted = buddyCareApi && typeof buddyCareApi.hasAcceptedBuddyCareAgeGate === 'function'
+    ? buddyCareApi.hasAcceptedBuddyCareAgeGate(state)
+    : buddyCare.ageGateAccepted === true;
+  const paywallVisible = shouldShowBuddyCarePaywall();
+  const activationVm = buildBuddyCareActivationOnboardingViewModel(entitlement, plantCount);
+  const freeUpgradeReason = getBuddyCareUpgradeReason('dashboard');
+  const freeLimitReason = getBuddyCareUpgradeReason('limit_reached');
+  const externalTestSummary = getBuddyCareExternalTestSummary();
+  const activeView = getActiveBuddyCareView();
+  const detailOpen = Boolean(buddyCareDetailPlantId);
+
+  if (isBuddyCareExternalTestEnabled() && ageGateAccepted && isBuddyCareScreenActive()) {
+    trackBuddyCareExternalTestEvent('buddy_care_dashboard_viewed', { source: 'buddy_care_screen' });
+  }
+
+  renderBuddyCareHeroVisual(dashboardVm.summary, activeView, {
+    ageGateAccepted,
+    plantCount
+  });
+  renderBuddyCareViewNavigation(ageGateAccepted);
+
+  if (ui.buddyCareStatusBadge) {
+    ui.buddyCareStatusBadge.hidden = ageGateAccepted && activeView !== 'more';
+    ui.buddyCareStatusBadge.textContent = entitlement === 'care_plus_mock'
+      ? i18nT('buddyCare.entitlement.care_plus_mock')
+      : i18nT('buddyCare.entitlement.free');
+  }
+  if (ui.buddyCareOpenPaywallBtn) {
+    ui.buddyCareOpenPaywallBtn.hidden = !ageGateAccepted || activeView !== 'more' || entitlement === 'care_plus_mock' || !paywallVisible;
+  }
+  if (ui.buddyCarePlantLimit) {
+    ui.buddyCarePlantLimit.textContent = i18nT('buddyCare.screen.plant_limit', { count: plantLimit });
+  }
+  if (ui.buddyCareAgeGateCard) {
+    ui.buddyCareAgeGateCard.hidden = ageGateAccepted;
+  }
+  if (ui.buddyCareHero) {
+    ui.buddyCareHero.hidden = ageGateAccepted;
+  }
+  if (ui.buddyCarePlaceholderCard) {
+    ui.buddyCarePlaceholderCard.hidden = !ageGateAccepted || activeView !== 'today' || plantCount > 0;
+  }
+  if (ui.buddyCareSetupCard) {
+    ui.buddyCareSetupCard.hidden = !ageGateAccepted || activeView !== 'plants' || detailOpen;
+  }
+  if (ui.buddyCarePlantsCard) {
+    ui.buddyCarePlantsCard.hidden = !ageGateAccepted || activeView !== 'plants' || detailOpen;
+  }
+  if (ui.buddyCareMockCard) {
+    ui.buddyCareMockCard.hidden = !ageGateAccepted || activeView !== 'more' || entitlement === 'care_plus_mock' || !paywallVisible;
+  }
+  if (ui.buddyCareMockActiveState) {
+    ui.buddyCareMockActiveState.hidden = !ageGateAccepted || activeView !== 'more' || entitlement !== 'care_plus_mock';
+  }
+  if (ui.buddyCareActivationCard) {
+    ui.buddyCareActivationCard.hidden = !ageGateAccepted || activeView !== 'more' || entitlement !== 'care_plus_mock' || !activationVm;
+  }
+  if (ui.buddyCareSeasonPassCard) {
+    ui.buddyCareSeasonPassCard.hidden = !ageGateAccepted || activeView !== 'more' || entitlement === 'care_plus_mock' || !paywallVisible || !buddyCareSeasonPassOpen;
+  }
+  if (ui.buddyCareModeHint) {
+    ui.buddyCareModeHint.textContent = ageGateAccepted
+      ? (entitlement === 'care_plus_mock' ? i18nT('buddyCare.screen.placeholder_note_mock') : i18nT('buddyCare.screen.placeholder_note_free'))
+      : i18nT('buddyCare.screen.age_gate_body');
+  }
+  if (ui.buddyCareFreeHintBody) {
+    ui.buddyCareFreeHintBody.textContent = freeUpgradeReason && freeUpgradeReason.bodyKey
+      ? i18nT(freeUpgradeReason.bodyKey)
+      : i18nT('buddyCare.screen.upgrade_body');
+  }
+  if (ui.buddyCareSummaryCard) {
+    ui.buddyCareSummaryCard.hidden = !ageGateAccepted || activeView !== 'today';
+  }
+  if (ui.buddyCareTodayCard) {
+    ui.buddyCareTodayCard.hidden = !ageGateAccepted || activeView !== 'today';
+  }
+  if (ui.buddyCareDailyCheckCard && !buddyCareActiveDailyCheckPlantId) {
+    ui.buddyCareDailyCheckCard.hidden = true;
+  }
+  if (ui.buddyCarePlantCount) {
+    ui.buddyCarePlantCount.textContent = plantCount > plantLimit
+      ? i18nT('buddyCare.screen.plant_count_saved', {
+        active: plantLimit,
+        saved: plantCount - plantLimit
+      })
+      : `${plantCount} / ${plantLimit}`;
+  }
+  if (ui.buddyCareAddPlantBtn) {
+    ui.buddyCareAddPlantBtn.disabled = !ageGateAccepted || !canAddPlant;
+    ui.buddyCareAddPlantBtn.setAttribute('aria-disabled', String(!ageGateAccepted || !canAddPlant));
+  }
+  if (ui.buddyCareSetupStatus) {
+    if (!ageGateAccepted) {
+      ui.buddyCareSetupStatus.textContent = i18nT('buddyCare.screen.age_gate_body');
+    } else if (plantCount === 0) {
+      ui.buddyCareSetupStatus.textContent = i18nT('buddyCare.screen.setup_status_empty');
+    } else if (entitlement === 'free' && plantCount > plantLimit) {
+      ui.buddyCareSetupStatus.textContent = i18nT('buddyCare.screen.read_only_body');
+    } else if (entitlement === 'free' && !canAddPlant) {
+      ui.buddyCareSetupStatus.textContent = freeLimitReason && freeLimitReason.bodyKey
+        ? i18nT(freeLimitReason.bodyKey)
+        : i18nT('buddyCare.screen.setup_status_limit_free', {
+          total: maxPlantLimit
+        });
+    } else if (remainingSlots > 0) {
+      ui.buddyCareSetupStatus.textContent = i18nT('buddyCare.screen.setup_status_available', {
+        count: remainingSlots,
+        total: plantLimit
+      });
+    } else {
+      ui.buddyCareSetupStatus.textContent = i18nT('buddyCare.screen.setup_status_limit', {
+        total: plantLimit
+      });
+    }
+  }
+  if (ui.buddyCareSummaryPlantCount) {
+    ui.buddyCareSummaryPlantCount.textContent = String(dashboardVm.summary.checkedTodayCount || 0);
+  }
+  if (ui.buddyCareSummaryEntitlement) {
+    ui.buddyCareSummaryEntitlement.textContent = String(dashboardVm.summary.totalPlants || 0);
+  }
+  if (ui.buddyCareSummaryTaskCount) {
+    ui.buddyCareSummaryTaskCount.textContent = String(dashboardVm.summary.openCheckCount || 0);
+  }
+  if (ui.buddyCareSummaryRiskCount) {
+    ui.buddyCareSummaryRiskCount.textContent = String(dashboardVm.summary.actionRiskCount || 0);
+  }
+  if (ui.buddyCareFreeHintCard) {
+    ui.buddyCareFreeHintCard.hidden = !ageGateAccepted || activeView !== 'more' || entitlement !== 'free' || !paywallVisible;
+  }
+  if (ui.buddyCareMockHintCard) {
+    ui.buddyCareMockHintCard.hidden = !ageGateAccepted || activeView !== 'more' || entitlement !== 'care_plus_mock';
+  }
+  if (ui.buddyCareSeasonPassBuddyVisual) {
+    ui.buddyCareSeasonPassBuddyVisual.innerHTML = renderBuddyCareAssetImage(
+      'header',
+      'buddyCare.buddy.alt.header',
+      'buddy-care-buddy-asset'
+    );
+  }
+  if (ui.buddyCareMockActiveBuddyVisual) {
+    ui.buddyCareMockActiveBuddyVisual.innerHTML = renderBuddyCareAssetImage(
+      'success',
+      'buddyCare.buddy.alt.success',
+      'buddy-care-buddy-asset'
+    );
+  }
+  renderBuddyCareSeasonPassPreview();
+  renderBuddyCareExternalTestIntroCard(ageGateAccepted);
+  renderBuddyCareExternalTestChecklistCard(ageGateAccepted, externalTestSummary);
+  renderBuddyCareTodayBuddyVisual(dashboardVm.summary);
+  renderBuddyCareTodayList(dashboardVm.prioritizedCards, dashboardVm.summary);
+  renderBuddyCareDailyCheckCard(dashboardVm.cards, ageGateAccepted);
+  renderBuddyCarePlantList(dashboardVm.cards);
+  renderBuddyCarePlantDetailCard(dashboardVm.cards, ageGateAccepted);
+  renderBuddyCareDiaryHubCard(dashboardVm.cards, ageGateAccepted);
+  renderBuddyCareExternalTestFeedbackCard(ageGateAccepted, externalTestSummary);
+  renderBuddyCareExternalTestToolsCard(ageGateAccepted);
+  renderBuddyCareMoreInfoCard(ageGateAccepted);
+  renderBuddyCareActivationOnboardingCard(ageGateAccepted && activeView === 'more' ? activationVm : null);
+}
+
+window.__gsOpenBuddyCare = openBuddyCareScreen;
+window.__gsCloseBuddyCare = closeBuddyCareScreen;
+window.__gsSetActiveBuddyCareView = setActiveBuddyCareView;
+window.__gsOpenBuddyCarePlantDetails = openBuddyCarePlantDetails;
+window.__gsCloseBuddyCarePlantDetails = closeBuddyCarePlantDetails;
+window.__gsSetBuddyCarePlantDetailSection = setBuddyCarePlantDetailSection;
+window.__gsSetBuddyCareDiaryFilter = setBuddyCareDiaryFilter;
+window.__gsSetBuddyCarePlantFilter = setBuddyCarePlantFilter;
+window.__gsSetBuddyCareHistoryMode = setBuddyCareHistoryMode;
+window.__gsOpenBuddyCareDiaryComposer = openBuddyCareDiaryComposer;
+window.__gsCloseBuddyCareDiaryComposer = closeBuddyCareDiaryComposer;
+window.__gsAcceptBuddyCareAgeGate = acceptBuddyCareAgeGate;
+window.__gsOpenBuddyCarePaywallMock = openBuddyCarePaywallMock;
+window.__gsCloseBuddyCarePaywallMock = closeBuddyCarePaywallMock;
+window.__gsActivateBuddyCareMockEntitlement = activateBuddyCareMockEntitlement;
+window.__gsRunBuddyCareActivationPrimaryAction = runBuddyCareActivationPrimaryAction;
+window.__gsDismissBuddyCareActivationOnboarding = dismissBuddyCareActivationOnboarding;
+window.__gsSubmitBuddyCarePlantSetup = submitBuddyCarePlantSetup;
+window.__gsOpenBuddyCareDailyCheck = openBuddyCareDailyCheck;
+window.__gsCloseBuddyCareDailyCheck = closeBuddyCareDailyCheck;
+window.__gsSubmitBuddyCareDailyCheck = submitBuddyCareDailyCheck;
+window.__gsSyncBuddyCareDailyCheckDraft = syncBuddyCareDailyCheckDraftFromForm;
+window.__gsSubmitBuddyCareDiaryEntry = submitBuddyCareDiaryEntry;
+window.__gsSubmitBuddyCareDiaryHubEntry = submitBuddyCareDiaryHubEntry;
+window.__gsDeleteBuddyCareDiaryEntry = deleteBuddyCareDiaryEntry;
+window.__gsRemoveBuddyCarePlant = removeBuddyCarePlant;
+window.__gsToggleBuddyCarePlantDetails = toggleBuddyCarePlantDetails;
+window.__gsStartBuddyCareExternalTest = startBuddyCareExternalTest;
+window.__gsDismissBuddyCareExternalTestIntro = dismissBuddyCareExternalTestIntro;
+window.__gsDismissBuddyCareExternalTestChecklist = dismissBuddyCareExternalTestChecklist;
+window.__gsReopenBuddyCareExternalTestChecklist = reopenBuddyCareExternalTestChecklist;
+window.__gsOpenBuddyCareExternalTestFeedback = openBuddyCareExternalTestFeedback;
+window.__gsCloseBuddyCareExternalTestFeedback = closeBuddyCareExternalTestFeedback;
+window.__gsSubmitBuddyCareExternalTestFeedback = submitBuddyCareExternalTestFeedback;
+window.__gsGetBuddyCareExternalTestSummary = getBuddyCareExternalTestSummary;
+window.__gsExportBuddyCareTestEvents = exportBuddyCareTestEvents;
+window.__gsClearBuddyCareTestEvents = clearBuddyCareTestEvents;
+window.__gsResetBuddyCareTestData = resetBuddyCareTestData;
 
 function getCompactRunGoalTitle(runGoal) {
   const goalId = String(runGoal && runGoal.id || '');
@@ -13440,14 +17337,14 @@ function renderFirstRunIntroOverlay() {
     return;
   }
   const intro = getFirstRunIntroState(state);
-  const visible = intro.active === true;
+  const visible = intro.active === true && !isBuddyCareScreenActive();
   overlayNode.classList.toggle('hidden', !visible);
   overlayNode.setAttribute('aria-hidden', String(!visible));
+  if (appHud) {
+    appHud.classList.toggle('app-hud--blocked', intro.active === true && visible !== true && !hasSetup() && !isBuddyCareScreenActive());
+  }
   if (!visible) {
     contentNode.replaceChildren();
-    if (appHud && !hasSetup()) {
-      appHud.classList.add('app-hud--blocked');
-    }
     return;
   }
 
@@ -13456,7 +17353,23 @@ function renderFirstRunIntroOverlay() {
   }
 
   const outcome = resolveFirstRunIntroOutcome(intro.decisionId || 'gentle_water');
-  const stateLabel = i18nT(`onboarding.first_five.day1.summary_state.${outcome.statusKey}`);
+  const stateLabel = i18nT(`onboarding.first_five.day1.summary.summary_state.${outcome.statusKey}`);
+  const introBuddyAssetSrc = resolveHomeRetentionBuddyAsset({}, { mode: 'starter' }) || CARE_STUDIO_ASSET_PATHS.buddyBase;
+  const introBuddyMotionClass = resolveBuddyMotionClass({
+    surface: 'home_starter',
+    mode: 'starter',
+    dailyCategory: 'default'
+  });
+  const introBuddyMarkup = buildCareMediaFrameMarkup({
+    src: introBuddyAssetSrc,
+    fallbackSrc: CARE_STUDIO_ASSET_PATHS.buddyBase,
+    frameClass: 'first-run-intro-buddy-frame',
+    imageClass: `first-run-intro-buddy-image ${introBuddyMotionClass}`.trim(),
+    fallbackClass: 'first-run-intro-buddy-fallback',
+    fallbackMarkup: '<span class="first-run-intro-buddy-fallback-dot"></span>',
+    alt: '',
+    loading: 'eager'
+  });
   let markup = '';
   if (intro.step === 'plant') {
     markup = `
@@ -13467,7 +17380,10 @@ function renderFirstRunIntroOverlay() {
           <img src="assets/plants/strains/shared/stage_02_seedling/healthy_none.png" alt="">
         </div>
         <p class="first-run-intro-step__body">${escapeHtml(i18nT('onboarding.first_five.day1.plant.body'))}</p>
-        <p class="first-run-intro-step__buddy">${escapeHtml(i18nT('onboarding.first_five.day1.plant.buddy'))}</p>
+        <div class="first-run-intro-buddy-row">
+          <span class="first-run-intro-buddy-visual">${introBuddyMarkup}</span>
+          <p class="first-run-intro-step__buddy">${escapeHtml(i18nT('onboarding.first_five.day1.plant.buddy'))}</p>
+        </div>
         <button id="firstRunIntroPrimaryBtn" class="action-btn action-primary" type="button">${escapeHtml(i18nT('onboarding.first_five.day1.plant.cta'))}</button>
       </div>
     `;
@@ -13477,6 +17393,10 @@ function renderFirstRunIntroOverlay() {
         <span class="first-run-intro-step__eyebrow">${escapeHtml(i18nT('onboarding.first_five.day1.decision.eyebrow'))}</span>
         <h2>${escapeHtml(i18nT('onboarding.first_five.day1.decision.title'))}</h2>
         <p class="first-run-intro-step__body">${escapeHtml(i18nT('onboarding.first_five.day1.decision.body'))}</p>
+        <div class="first-run-intro-buddy-row">
+          <span class="first-run-intro-buddy-visual">${introBuddyMarkup}</span>
+          <p class="first-run-intro-step__buddy">${escapeHtml(i18nT('onboarding.first_five.day1.decision.buddy'))}</p>
+        </div>
         <div class="first-run-intro-options">
           <button class="first-run-intro-option" type="button" data-first-run-decision="gentle_water">
             <strong>${escapeHtml(i18nT('onboarding.first_five.day1.decision.gentle.title'))}</strong>
@@ -13499,7 +17419,10 @@ function renderFirstRunIntroOverlay() {
         <span class="first-run-intro-step__eyebrow">${escapeHtml(i18nT('onboarding.first_five.day1.result.eyebrow'))}</span>
         <h2>${escapeHtml(outcome.resultTitle)}</h2>
         <p class="first-run-intro-step__body">${escapeHtml(outcome.resultBody)}</p>
-        <p class="first-run-intro-step__buddy">${escapeHtml(outcome.buddyLine)}</p>
+        <div class="first-run-intro-buddy-row">
+          <span class="first-run-intro-buddy-visual">${introBuddyMarkup}</span>
+          <p class="first-run-intro-step__buddy">${escapeHtml(outcome.buddyLine)}</p>
+        </div>
         <div class="first-run-intro-reward-row" aria-live="polite">
           <span>+${escapeHtml(String(outcome.coins))} Coins</span>
           <span>+${escapeHtml(String(outcome.xp))} XP</span>
@@ -13520,13 +17443,17 @@ function renderFirstRunIntroOverlay() {
           <div><span>${escapeHtml(i18nT('onboarding.first_five.day1.summary.coins'))}</span><strong>+${escapeHtml(String(outcome.coins))}</strong></div>
         </div>
         <p class="first-run-intro-step__body">${escapeHtml(i18nT('onboarding.first_five.day1.summary.teaser'))}</p>
-        <p class="first-run-intro-step__buddy">${escapeHtml(outcome.summaryLine)}</p>
+        <div class="first-run-intro-buddy-row">
+          <span class="first-run-intro-buddy-visual">${introBuddyMarkup}</span>
+          <p class="first-run-intro-step__buddy">${escapeHtml(outcome.summaryLine)}</p>
+        </div>
         <button id="firstRunIntroPrimaryBtn" class="action-btn action-primary" type="button">${escapeHtml(i18nT('onboarding.first_five.day1.summary.cta'))}</button>
       </div>
     `;
   }
 
   contentNode.innerHTML = markup;
+  hydrateCareAssetFrames(contentNode);
   const primaryBtn = document.getElementById('firstRunIntroPrimaryBtn');
   if (primaryBtn) {
     primaryBtn.onclick = () => {
@@ -13555,6 +17482,9 @@ function shouldShowFirstRunDashboardFollowup(snapshot = state) {
   const run = getCanonicalRun(safeState);
   const profile = getCanonicalProfile(safeState);
   const uiState = safeState.ui && typeof safeState.ui === 'object' ? safeState.ui : {};
+  if (String(uiState.activeScreen || 'home') !== 'home') {
+    return false;
+  }
   const totalRuns = Math.max(0, Math.trunc(Number(profile && profile.stats && profile.stats.totalRuns || 0)));
   const runId = Math.max(0, Math.trunc(Number(run && run.id) || 0));
   if (String(run && run.status || '') !== 'active' || runId !== 1 || totalRuns !== 0) {
@@ -13590,15 +17520,34 @@ function renderFirstRunDashboardFollowupOverlay() {
     contentNode.replaceChildren();
     return;
   }
+  const introBuddyAssetSrc = resolveHomeRetentionBuddyAsset({}, { mode: 'starter' }) || CARE_STUDIO_ASSET_PATHS.buddyBase;
+  const introBuddyMotionClass = resolveBuddyMotionClass({
+    surface: 'home_starter',
+    mode: 'starter',
+    dailyCategory: 'default'
+  });
   contentNode.innerHTML = `
     <div class="first-run-intro-step">
       <span class="first-run-intro-step__eyebrow">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.eyebrow'))}</span>
       <h2>${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.title'))}</h2>
       <p class="first-run-intro-step__body">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.body'))}</p>
-      <p class="first-run-intro-step__buddy">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.buddy'))}</p>
+      <div class="first-run-intro-buddy-row">
+        <span class="first-run-intro-buddy-visual">${buildCareMediaFrameMarkup({
+          src: introBuddyAssetSrc,
+          fallbackSrc: CARE_STUDIO_ASSET_PATHS.buddyBase,
+          frameClass: 'first-run-intro-buddy-frame',
+          imageClass: `first-run-intro-buddy-image ${introBuddyMotionClass}`.trim(),
+          fallbackClass: 'first-run-intro-buddy-fallback',
+          fallbackMarkup: '<span class="first-run-intro-buddy-fallback-dot"></span>',
+          alt: '',
+          loading: 'eager'
+        })}</span>
+        <p class="first-run-intro-step__buddy">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.buddy'))}</p>
+      </div>
       <button id="firstRunDashboardFollowupBtn" class="action-btn action-primary" type="button">${escapeHtml(i18nT('onboarding.first_five.dashboard_followup.cta'))}</button>
     </div>
   `;
+  hydrateCareAssetFrames(contentNode);
   const buttonNode = document.getElementById('firstRunDashboardFollowupBtn');
   if (buttonNode) {
     buttonNode.onclick = () => {
@@ -15270,6 +19219,22 @@ function renderMenuDynamicRows() {
   }
   if (ui.menuCoinShopBtn) {
     ui.menuCoinShopBtn.setAttribute('title', 'Optionale Komfortaktionen. Der lokale Run bleibt ohne Kauf spielbar.');
+  }
+  if (ui.menuBuddyCareBtn) {
+    const buddyCare = ensureBuddyCareState();
+    const entitlement = String(buddyCare.entitlement || 'free');
+    const plantCount = Array.isArray(buddyCare.plants) ? buddyCare.plants.length : 0;
+    const plantLimit = entitlement === 'care_plus_mock' ? 3 : 1;
+    ui.menuBuddyCareBtn.classList.remove('hidden');
+    ui.menuBuddyCareBtn.setAttribute('aria-hidden', 'false');
+    ui.menuBuddyCareBtn.setAttribute('title', entitlement === 'care_plus_mock'
+      ? 'Care+ Testzugang ist aktiv. Du kannst bis zu drei Pflanzen begleiten.'
+      : 'Buddy Care+ bietet einen kostenlosen Testzugang fuer bis zu drei Pflanzen.');
+    if (ui.menuBuddyCareSubtext) {
+      ui.menuBuddyCareSubtext.textContent = entitlement === 'care_plus_mock'
+        ? i18nT('menu.buddy_care_hint_active', { count: plantCount, total: plantLimit })
+        : i18nT('menu.buddy_care_hint', { count: plantCount, total: plantLimit });
+    }
   }
   if (ui.menuAboutBtn && menuEntries.about) {
     ui.menuAboutBtn.setAttribute('title', String(menuEntries.about.title || ''));
@@ -21344,12 +25309,25 @@ function renderMenuDialogRewards(items) {
   }
 }
 
-function openMenuDialog({ title, message, cancelLabel = i18nT('common.cancel'), confirmLabel = i18nT('common.ok'), onConfirm = null, variant = 'default', kicker = '', rewards = [] }) {
+function openMenuDialog({ title, message, cancelLabel = i18nT('common.cancel'), confirmLabel = i18nT('common.ok'), onConfirm = null, variant = 'default', kicker = '', rewards = [], allowWhileBuddyCare = false }) {
   if (!ui.menuDialogTitle || !ui.menuDialogText || !ui.menuDialogCancelBtn || !ui.menuDialogConfirmBtn) {
     return;
   }
 
   const safeVariant = String(variant || 'default');
+  if (isBuddyCareScreenActive() && allowWhileBuddyCare !== true && safeVariant === 'mission-reward') {
+    buddyCareDeferredMenuDialog = {
+      title,
+      message,
+      cancelLabel,
+      confirmLabel,
+      onConfirm,
+      variant: safeVariant,
+      kicker,
+      rewards
+    };
+    return;
+  }
   const dialogCard = ui.menuDialog ? ui.menuDialog.querySelector('.menu-dialog-card') : null;
   const kickerNode = document.getElementById('menuDialogKicker');
   const showMissionReward = safeVariant === 'mission-reward';
@@ -24672,14 +28650,14 @@ function updateSettingsUI() {
     const minMinutes = Math.round(EVENT_ROLL_MIN_REAL_MS / 60000);
     const maxMinutes = Math.round(EVENT_ROLL_MAX_REAL_MS / 60000);
     eventFreqNode.textContent = i18nT('settings.event_frequency_value', { min: minMinutes, max: maxMinutes });
-    eventFreqNode.className = 'value_gold';
+    eventFreqNode.className = 'settings-status-value';
     eventFreqNode.setAttribute('title', 'Ereignisse erscheinen in einem ruhigen Zeitfenster.');
   }
 
   const tutNode = document.getElementById('settingsTutorialValue');
   if (tutNode) {
     tutNode.textContent = i18nT('settings.prepared');
-    tutNode.className = 'subtitle';
+    tutNode.className = 'settings-prepared-value';
     tutNode.setAttribute('title', 'Zusätzliche Hinweise werden später erweitert.');
   }
 
@@ -24693,28 +28671,28 @@ function updateSettingsUI() {
   const volNode = document.getElementById('settingsVolumeValue');
   if (volNode) {
     volNode.textContent = i18nT('settings.prepared');
-    volNode.className = 'subtitle';
+    volNode.className = 'settings-prepared-value';
     volNode.setAttribute('title', 'Audio-Feintuning wird später erweitert.');
   }
 
   const effNode = document.getElementById('settingsEffectsValue');
   if (effNode) {
     effNode.textContent = i18nT('settings.prepared');
-    effNode.className = 'subtitle';
+    effNode.className = 'settings-prepared-value';
     effNode.setAttribute('title', 'Grafik-Feintuning wird später erweitert.');
   }
 
   const batNode = document.getElementById('settingsBatteryValue');
   if (batNode) {
     batNode.textContent = i18nT('settings.prepared');
-    batNode.className = 'subtitle';
+    batNode.className = 'settings-prepared-value';
     batNode.setAttribute('title', 'Akkuschonende Optionen werden später erweitert.');
   }
 
   const hapNode = document.getElementById('settingsHapticValue');
   if (hapNode) {
     hapNode.textContent = i18nT('settings.prepared');
-    hapNode.className = 'subtitle';
+    hapNode.className = 'settings-prepared-value';
     hapNode.setAttribute('title', 'Haptik-Optionen werden später erweitert.');
   }
 
@@ -25224,7 +29202,7 @@ function initSettingsEvents() {
 
   const defBtn = byId('settingsDefaultBtn');
   if (defBtn) {
-    defBtn.setAttribute('title', 'Setzt lokale Hinweis- und Benachrichtigungseinstellungen auf den Standard zurück.');
+    defBtn.setAttribute('title', 'Setzt die Reminder-Basis zurück.');
     defBtn.addEventListener('click', () => {
       state.settings.gameplay = { simSpeed: DEFAULT_BASE_SIM_SPEED, eventFrequency: 'Normal', tutorial: true, autosave: 5 };
       state.settings.audio = { volume: 84, effects: 'Hoch', battery: false, haptic: true };
@@ -25235,7 +29213,7 @@ function initSettingsEvents() {
 
   const saveBtn = byId('settingsSaveBtn');
   if (saveBtn) {
-    saveBtn.setAttribute('title', 'Speichert den aktuellen lokalen Zustand im Browser.');
+    saveBtn.setAttribute('title', 'Schließt dieses Fenster. Aktive Änderungen wirken bereits sofort.');
   }
 
   const languageSelect = byId('settingsLanguageSelect');
