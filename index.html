@@ -573,6 +573,8 @@
               </div>
             </div>
             <form id="buddyCareDailyCheckForm" class="buddy-care-daily-form">
+              <div id="buddyCareDailyCheckWizard" class="buddy-care-daily-wizard" aria-live="polite"></div>
+              <div class="buddy-care-daily-compat" hidden aria-hidden="true">
               <label class="buddy-care-field">
                 <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.medium_label">Wie fuehlt sich das Medium an?</span>
                 <select id="buddyCareDailyCheckMoistureSelect" class="buddy-care-select">
@@ -633,11 +635,12 @@
                 <button id="buddyCareDailyCheckCancelBtn" class="ghost-btn" type="button" data-i18n="common.cancel">Abbrechen</button>
                 <button id="buddyCareDailyCheckSubmitBtn" class="action-btn action-primary" type="submit" data-i18n="buddyCare.dailyCheck.save">Check speichern</button>
               </div>
+              </div>
             </form>
           </section>
         </div>
 
-        <div id="buddyCareDiaryView" class="buddy-care-view" data-buddy-care-view-panel="history" hidden>
+        <div id="buddyCareDiaryView" class="buddy-care-view" data-buddy-care-view-panel="diary" hidden>
           <section id="buddyCareDiaryHubCard" class="buddy-care-panel" hidden aria-live="polite"></section>
         </div>
 
@@ -736,11 +739,11 @@
             </span>
             <span class="buddy-care-nav-label" data-i18n="buddyCare.nav.plants">Pflanzen</span>
           </button>
-          <button class="buddy-care-nav-btn" type="button" data-buddy-care-view="history">
+          <button class="buddy-care-nav-btn" type="button" data-buddy-care-view="diary">
             <span class="buddy-care-nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="m3 13 6-6 5 4 7-8"/></svg>
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
             </span>
-            <span class="buddy-care-nav-label" data-i18n="buddyCare.nav.history">Verlauf</span>
+            <span class="buddy-care-nav-label" data-i18n="buddyCare.nav.diary">Tagebuch</span>
           </button>
           <button class="buddy-care-nav-btn" type="button" data-buddy-care-view="more">
             <span class="buddy-care-nav-icon" aria-hidden="true">

@@ -450,6 +450,7 @@ function cacheUi() {
   ui.buddyCareDailyCheckSubtitle = document.getElementById('buddyCareDailyCheckSubtitle');
   ui.buddyCareDailyCheckStatusBadge = document.getElementById('buddyCareDailyCheckStatusBadge');
   ui.buddyCareDailyCheckForm = document.getElementById('buddyCareDailyCheckForm');
+  ui.buddyCareDailyCheckWizard = document.getElementById('buddyCareDailyCheckWizard');
   ui.buddyCareDailyCheckMoistureSelect = document.getElementById('buddyCareDailyCheckMoistureSelect');
   ui.buddyCareDailyCheckLeafStateSelect = document.getElementById('buddyCareDailyCheckLeafStateSelect');
   ui.buddyCareDailyCheckGrowthStateSelect = document.getElementById('buddyCareDailyCheckGrowthStateSelect');
@@ -1184,6 +1185,31 @@ function bindMenuOverlayEvents(controller = null) {
     };
     ui.buddyCareDailyCheckForm.addEventListener('input', syncDraft);
     ui.buddyCareDailyCheckForm.addEventListener('change', syncDraft);
+    ui.buddyCareDailyCheckForm.addEventListener('click', (event) => {
+      const target = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('[data-buddy-care-wizard-option-field], [data-buddy-care-wizard-next], [data-buddy-care-wizard-back], [data-buddy-care-wizard-cancel]')
+        : null;
+      if (!target) {
+        return;
+      }
+      const optionField = String(target.getAttribute('data-buddy-care-wizard-option-field') || '').trim();
+      if (optionField && typeof window.__gsSelectBuddyCareDailyCheckWizardOption === 'function') {
+        const optionValue = String(target.getAttribute('data-buddy-care-wizard-option-value') || '').trim();
+        window.__gsSelectBuddyCareDailyCheckWizardOption(optionField, optionValue);
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-wizard-next') && typeof window.__gsMoveBuddyCareDailyCheckStep === 'function') {
+        window.__gsMoveBuddyCareDailyCheckStep(1);
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-wizard-back') && typeof window.__gsMoveBuddyCareDailyCheckStep === 'function') {
+        window.__gsMoveBuddyCareDailyCheckStep(-1);
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-wizard-cancel') && typeof window.__gsCloseBuddyCareDailyCheck === 'function') {
+        window.__gsCloseBuddyCareDailyCheck();
+      }
+    });
   }
   if (ui.buddyCareDailyCheckCancelBtn) {
     ui.buddyCareDailyCheckCancelBtn.addEventListener('click', () => {

@@ -758,6 +758,7 @@ let buddyCareActiveView = 'today';
 let buddyCarePlantDetailSection = 'overview';
 let buddyCareActiveDailyCheckPlantId = '';
 let buddyCareDailyCheckDraft = null;
+let buddyCareDailyCheckStep = 0;
 let buddyCareSeasonPassOpen = false;
 let buddyCareActivationOnboardingVisible = false;
 let buddyCareJustUnlockedCarePlus = false;
@@ -13519,7 +13520,7 @@ function normalizeBuddyCareView(view) {
     case 'diary':
     case 'history':
     case 'more':
-      return String(view).trim().toLowerCase() === 'diary' ? 'history' : String(view).trim().toLowerCase();
+      return String(view).trim().toLowerCase() === 'history' ? 'diary' : String(view).trim().toLowerCase();
     case 'today':
     default:
       return 'today';
@@ -13529,11 +13530,11 @@ function normalizeBuddyCareView(view) {
 function normalizeBuddyCareDetailSection(section) {
   switch (String(section || '').trim().toLowerCase()) {
     case 'daily_check':
-    case 'history':
-    case 'data':
-      return String(section).trim().toLowerCase();
     case 'diary':
+    case 'history':
     case 'week':
+      return String(section).trim().toLowerCase();
+    case 'data':
       return 'history';
     case 'overview':
     default:
@@ -13553,7 +13554,7 @@ function setActiveBuddyCareView(view, options = {}) {
   } else if (nextView === 'plants' && safeOptions.preservePlantContext !== true) {
     clearBuddyCarePlantDetailState();
   }
-  if (nextView !== 'history' && safeOptions.preserveDiaryComposer !== true) {
+  if (nextView !== 'diary' && safeOptions.preserveDiaryComposer !== true) {
     buddyCareDiaryComposerOpen = false;
     buddyCareDiaryComposerPlantId = '';
   }
@@ -13576,6 +13577,7 @@ function clearBuddyCarePlantDetailState() {
   buddyCarePlantDetailSection = 'overview';
   buddyCareActiveDailyCheckPlantId = '';
   buddyCareDailyCheckDraft = null;
+  buddyCareDailyCheckStep = 0;
 }
 
 function closeBuddyCarePlantDetails(options = {}) {
@@ -13603,6 +13605,7 @@ function openBuddyCarePlantDetails(plantId, section = 'overview') {
   if (buddyCarePlantDetailSection !== 'daily_check') {
     buddyCareActiveDailyCheckPlantId = '';
     buddyCareDailyCheckDraft = null;
+    buddyCareDailyCheckStep = 0;
   }
   setActiveBuddyCareView('plants', { preservePlantContext: true });
   return true;
@@ -13624,6 +13627,7 @@ function setBuddyCarePlantDetailSection(section) {
   }
   buddyCareActiveDailyCheckPlantId = '';
   buddyCareDailyCheckDraft = null;
+  buddyCareDailyCheckStep = 0;
   renderBuddyCareScreen();
   return true;
 }
@@ -13659,7 +13663,7 @@ function setBuddyCareHistoryMode(mode = 'timeline') {
 function openBuddyCareDiaryComposer(plantId = '') {
   buddyCareDiaryComposerOpen = true;
   buddyCareDiaryComposerPlantId = String(plantId || '').trim();
-  setActiveBuddyCareView('history', { preserveDiaryComposer: true });
+  setActiveBuddyCareView('diary', { preserveDiaryComposer: true });
   return true;
 }
 
@@ -13930,6 +13934,120 @@ function createBuddyCareDailyCheckDraftFromCheck(plantId, check) {
   };
 }
 
+const BUDDY_CARE_DAILY_CHECK_STEPS = Object.freeze([
+  {
+    key: 'medium',
+    field: 'mediumMoisture',
+    titleKey: 'buddyCare.dailyCheck.medium_label',
+    tipKey: 'buddyCare.dailyCheck.tip_medium',
+    options: ['dry', 'moist', 'wet', 'unknown']
+  },
+  {
+    key: 'leaves',
+    field: 'leafState',
+    titleKey: 'buddyCare.dailyCheck.leaf_label',
+    tipKey: 'buddyCare.dailyCheck.tip_leaves',
+    options: ['normal', 'hanging', 'curling', 'spots', 'yellowing', 'unknown']
+  },
+  {
+    key: 'growth',
+    field: 'growthState',
+    titleKey: 'buddyCare.dailyCheck.growth_label',
+    tipKey: 'buddyCare.dailyCheck.tip_growth',
+    options: ['normal', 'fast', 'slow', 'unknown']
+  },
+  {
+    key: 'environment',
+    field: 'environmentStress',
+    titleKey: 'buddyCare.dailyCheck.environment_label',
+    tipKey: 'buddyCare.dailyCheck.tip_environment',
+    options: ['normal', 'hot', 'humid', 'cold', 'windy', 'unknown']
+  },
+  {
+    key: 'pests',
+    field: 'pestsVisible',
+    titleKey: 'buddyCare.dailyCheck.pests_label',
+    tipKey: 'buddyCare.dailyCheck.tip_pests',
+    options: ['no', 'unsure', 'yes']
+  },
+  {
+    key: 'notes',
+    field: '',
+    titleKey: 'buddyCare.dailyCheck.notes_title',
+    tipKey: 'buddyCare.dailyCheck.tip_notes',
+    options: []
+  },
+  {
+    key: 'result',
+    field: '',
+    titleKey: 'buddyCare.dailyCheck.result_title',
+    tipKey: 'buddyCare.dailyCheck.tip_result',
+    options: []
+  }
+]);
+
+function getBuddyCareDailyCheckLastStepIndex() {
+  return Math.max(0, BUDDY_CARE_DAILY_CHECK_STEPS.length - 1);
+}
+
+function normalizeBuddyCareDailyCheckStep(step) {
+  const parsed = Math.trunc(Number(step));
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(getBuddyCareDailyCheckLastStepIndex(), parsed));
+}
+
+function syncBuddyCareDailyCheckHiddenField(field, value) {
+  const safeField = String(field || '').trim();
+  const safeValue = String(value || '').trim();
+  const fieldMap = {
+    mediumMoisture: ui.buddyCareDailyCheckMoistureSelect,
+    leafState: ui.buddyCareDailyCheckLeafStateSelect,
+    growthState: ui.buddyCareDailyCheckGrowthStateSelect,
+    environmentStress: ui.buddyCareDailyCheckEnvironmentStressSelect,
+    pestsVisible: ui.buddyCareDailyCheckPestsVisibleSelect
+  };
+  const node = fieldMap[safeField];
+  if (node) {
+    node.value = safeValue;
+  }
+}
+
+function selectBuddyCareDailyCheckWizardOption(field, value) {
+  if (!buddyCareActiveDailyCheckPlantId) {
+    return false;
+  }
+  const safeField = String(field || '').trim();
+  const safeValue = String(value || '').trim().toLowerCase();
+  const stepConfig = BUDDY_CARE_DAILY_CHECK_STEPS.find((step) => step.field === safeField);
+  if (!stepConfig || !stepConfig.options.includes(safeValue)) {
+    return false;
+  }
+  const draft = buddyCareDailyCheckDraft || createEmptyBuddyCareDailyCheckDraft(buddyCareActiveDailyCheckPlantId);
+  draft.plantId = buddyCareActiveDailyCheckPlantId;
+  draft[safeField] = safeValue;
+  buddyCareDailyCheckDraft = draft;
+  syncBuddyCareDailyCheckHiddenField(safeField, safeValue);
+  renderBuddyCareScreen();
+  return true;
+}
+
+function setBuddyCareDailyCheckStep(step) {
+  if (!buddyCareActiveDailyCheckPlantId) {
+    return false;
+  }
+  syncBuddyCareDailyCheckDraftFromForm();
+  buddyCareDailyCheckStep = normalizeBuddyCareDailyCheckStep(step);
+  renderBuddyCareScreen();
+  return true;
+}
+
+function moveBuddyCareDailyCheckStep(delta) {
+  const safeDelta = Math.trunc(Number(delta) || 0);
+  return setBuddyCareDailyCheckStep(buddyCareDailyCheckStep + safeDelta);
+}
+
 function findBuddyCarePlantById(plantId) {
   const buddyCare = ensureBuddyCareState();
   const safePlantId = String(plantId || '').trim();
@@ -13949,6 +14067,12 @@ function syncBuddyCareDailyCheckDraftFromForm() {
   if (!buddyCareActiveDailyCheckPlantId) {
     return null;
   }
+  const wizardHeightInput = ui.buddyCareDailyCheckForm && typeof ui.buddyCareDailyCheckForm.querySelector === 'function'
+    ? ui.buddyCareDailyCheckForm.querySelector('[data-buddy-care-wizard-height]')
+    : null;
+  const wizardNoteInput = ui.buddyCareDailyCheckForm && typeof ui.buddyCareDailyCheckForm.querySelector === 'function'
+    ? ui.buddyCareDailyCheckForm.querySelector('[data-buddy-care-wizard-note]')
+    : null;
   buddyCareDailyCheckDraft = {
     plantId: buddyCareActiveDailyCheckPlantId,
     mediumMoisture: ui.buddyCareDailyCheckMoistureSelect ? String(ui.buddyCareDailyCheckMoistureSelect.value || 'unknown').trim().toLowerCase() : 'unknown',
@@ -13956,9 +14080,19 @@ function syncBuddyCareDailyCheckDraftFromForm() {
     growthState: ui.buddyCareDailyCheckGrowthStateSelect ? String(ui.buddyCareDailyCheckGrowthStateSelect.value || 'unknown').trim().toLowerCase() : 'unknown',
     environmentStress: ui.buddyCareDailyCheckEnvironmentStressSelect ? String(ui.buddyCareDailyCheckEnvironmentStressSelect.value || 'unknown').trim().toLowerCase() : 'unknown',
     pestsVisible: ui.buddyCareDailyCheckPestsVisibleSelect ? String(ui.buddyCareDailyCheckPestsVisibleSelect.value || 'unsure').trim().toLowerCase() : 'unsure',
-    heightCm: ui.buddyCareDailyCheckHeightInput ? String(ui.buddyCareDailyCheckHeightInput.value || '').trim() : '',
-    note: ui.buddyCareDailyCheckNoteInput ? String(ui.buddyCareDailyCheckNoteInput.value || '').trim() : ''
+    heightCm: wizardHeightInput
+      ? String(wizardHeightInput.value || '').trim()
+      : (ui.buddyCareDailyCheckHeightInput ? String(ui.buddyCareDailyCheckHeightInput.value || '').trim() : ''),
+    note: wizardNoteInput
+      ? String(wizardNoteInput.value || '').trim()
+      : (ui.buddyCareDailyCheckNoteInput ? String(ui.buddyCareDailyCheckNoteInput.value || '').trim() : '')
   };
+  if (ui.buddyCareDailyCheckHeightInput) {
+    ui.buddyCareDailyCheckHeightInput.value = buddyCareDailyCheckDraft.heightCm;
+  }
+  if (ui.buddyCareDailyCheckNoteInput) {
+    ui.buddyCareDailyCheckNoteInput.value = buddyCareDailyCheckDraft.note;
+  }
   return buddyCareDailyCheckDraft;
 }
 
@@ -14047,6 +14181,7 @@ function openBuddyCareDailyCheck(plantId, options = {}) {
   buddyCareDailyCheckDraft = latestCheck
     ? createBuddyCareDailyCheckDraftFromCheck(plant.id, latestCheck)
     : createEmptyBuddyCareDailyCheckDraft(plant.id);
+  buddyCareDailyCheckStep = 0;
   buddyCareDetailPlantId = String(plant.id || '').trim();
   buddyCarePlantDetailSection = 'daily_check';
   trackBuddyCareExternalTestEvent('buddy_care_daily_check_started', {
@@ -14059,6 +14194,7 @@ function openBuddyCareDailyCheck(plantId, options = {}) {
 function closeBuddyCareDailyCheck() {
   buddyCareActiveDailyCheckPlantId = '';
   buddyCareDailyCheckDraft = null;
+  buddyCareDailyCheckStep = 0;
   if (buddyCareDetailPlantId) {
     buddyCarePlantDetailSection = 'overview';
   }
@@ -14079,6 +14215,11 @@ function submitBuddyCareDailyCheck() {
     return { ok: false, reason: 'plant_read_only' };
   }
   const draft = syncBuddyCareDailyCheckDraftFromForm() || createEmptyBuddyCareDailyCheckDraft(buddyCareActiveDailyCheckPlantId);
+  if (normalizeBuddyCareDailyCheckStep(buddyCareDailyCheckStep) !== getBuddyCareDailyCheckLastStepIndex()) {
+    buddyCareDailyCheckStep = Math.min(getBuddyCareDailyCheckLastStepIndex(), buddyCareDailyCheckStep + 1);
+    renderBuddyCareScreen();
+    return { ok: false, reason: 'wizard_in_progress' };
+  }
   const result = buddyCareApi.addDailyCheck(state, buddyCareActiveDailyCheckPlantId, {
     mediumMoisture: draft.mediumMoisture,
     leafState: draft.leafState,
@@ -14093,6 +14234,7 @@ function submitBuddyCareDailyCheck() {
     buddyCareDailyCheckDraft = result.check
       ? createBuddyCareDailyCheckDraftFromCheck(buddyCareActiveDailyCheckPlantId, result.check)
       : createEmptyBuddyCareDailyCheckDraft(buddyCareActiveDailyCheckPlantId);
+    buddyCareDailyCheckStep = getBuddyCareDailyCheckLastStepIndex();
     renderBuddyCareScreen();
     schedulePersistState(true);
   }
@@ -14146,7 +14288,7 @@ function submitBuddyCareDiaryHubEntry(formNode) {
   if (result && result.ok) {
     buddyCareDiaryComposerOpen = false;
     buddyCareDiaryComposerPlantId = '';
-    setActiveBuddyCareView('history');
+    setActiveBuddyCareView('diary');
   }
   return result;
 }
@@ -14192,6 +14334,7 @@ function removeBuddyCarePlant(plantId) {
     if (buddyCareActiveDailyCheckPlantId === String(plantId || '').trim()) {
       buddyCareActiveDailyCheckPlantId = '';
       buddyCareDailyCheckDraft = null;
+      buddyCareDailyCheckStep = 0;
     }
     if (buddyCareDetailPlantId === String(plantId || '').trim()) {
       clearBuddyCarePlantDetailState();
@@ -15915,6 +16058,11 @@ function renderBuddyCarePlantList(cards) {
     return;
   }
   const safeCards = Array.isArray(cards) ? cards : [];
+  const buddyCareApi = getBuddyCareStateApi();
+  const entitlement = buddyCareApi && typeof buddyCareApi.getBuddyCareEntitlement === 'function'
+    ? buddyCareApi.getBuddyCareEntitlement(state)
+    : String(state.buddyCare && state.buddyCare.entitlement || 'free').trim().toLowerCase();
+  const maxPlantLimit = getBuddyCareMaximumPlantLimit();
   const activeFilter = normalizeBuddyCarePlantFilter(buddyCarePlantFilter);
   const filterOptions = [
     { value: 'all', label: i18nT('buddyCare.v2.filter.all') },
@@ -15956,7 +16104,7 @@ function renderBuddyCarePlantList(cards) {
     `;
     return;
   }
-  ui.buddyCarePlantList.innerHTML = visibleCards.map((card) => {
+  const plantCardMarkup = visibleCards.map((card) => {
     const status = getBuddyCareStatusPresentation(card.riskStatus);
     const buddy = getBuddyCareTodayBuddyPresentation({ riskStatus: card.riskStatus });
     const hasDocumentation = Boolean(card.latestDiaryEntry);
@@ -15992,6 +16140,10 @@ function renderBuddyCarePlantList(cards) {
       </article>
     `;
   }).join('');
+  const lockedSlotMarkup = entitlement === 'free' && safeCards.length >= 1 && activeFilter === 'all' && safeCards.length < maxPlantLimit
+    ? Array.from({ length: maxPlantLimit - safeCards.length }, (_entry, index) => renderBuddyCareLockedSlotCard(safeCards.length + index + 1)).join('')
+    : '';
+  ui.buddyCarePlantList.innerHTML = `${plantCardMarkup}${lockedSlotMarkup}`;
 }
 
 function renderBuddyCarePlantDetailOverview(card) {
@@ -16040,7 +16192,7 @@ function renderBuddyCarePlantDetailOverview(card) {
           <strong>${escapeHtml(latestDocumentation ? getBuddyCareDiaryEntryTitle(latestDocumentation, null) : i18nT('buddyCare.diary.latest_entry_none'))}</strong>
           <p>${escapeHtml(latestDocumentation ? getBuddyCareDiaryEntryDateLabel(latestDocumentation) : i18nT('buddyCare.v2.no_documentation'))}</p>
         </div>
-        <button class="buddy-care-card-open" type="button" data-buddy-care-detail-section="history" aria-label="${escapeHtml(i18nT('buddyCare.v2.open_history'))}"><span aria-hidden="true">›</span></button>
+        <button class="buddy-care-card-open" type="button" data-buddy-care-detail-section="diary" aria-label="${escapeHtml(i18nT('buddyCare.diary.open'))}"><span aria-hidden="true">›</span></button>
       </section>
     </div>
   `;
@@ -16074,7 +16226,6 @@ function renderBuddyCarePlantDetailDiary(card) {
 function renderBuddyCarePlantDetailHistory(card) {
   const safeCard = card && typeof card === 'object' ? card : {};
   const trendPresentation = getBuddyCareTrendBuddyPresentation(safeCard.trendEvaluation);
-  const timeline = buildBuddyCareTimelineEntries([safeCard]);
   return `
     <div class="buddy-care-plant-detail-section">
       <div class="buddy-care-buddy-note buddy-care-buddy-note--trend">
@@ -16088,10 +16239,6 @@ function renderBuddyCarePlantDetailHistory(card) {
         </div>
       </div>
       ${renderBuddyCareMiniHistory(safeCard)}
-      ${renderBuddyCareWeeklyReview(safeCard)}
-      <div class="buddy-care-timeline">
-        ${timeline.length ? timeline.map((entry) => renderBuddyCareTimelineEntry(entry)).join('') : renderBuddyCareDiaryEmptyState()}
-      </div>
     </div>
   `;
 }
@@ -16140,8 +16287,10 @@ function renderBuddyCarePlantDetailCard(cards, ageGateAccepted) {
   const section = normalizeBuddyCareDetailSection(buddyCarePlantDetailSection);
   const segmentMarkup = [
     { key: 'overview', label: i18nT('buddyCare.screen.overview') },
+    { key: 'daily_check', label: i18nT('buddyCare.dailyCheck.title') },
+    { key: 'diary', label: i18nT('buddyCare.nav.diary') },
     { key: 'history', label: i18nT('buddyCare.screen.history_short') },
-    { key: 'data', label: i18nT('buddyCare.v2.data_tab') }
+    { key: 'week', label: i18nT('buddyCare.screen.week') }
   ].map((item) => `
     <button class="buddy-care-segment-btn${item.key === section ? ' is-active' : ''}" type="button" role="tab" aria-selected="${String(item.key === section)}" data-buddy-care-detail-section="${escapeHtml(item.key)}">${escapeHtml(item.label)}</button>
   `).join('');
@@ -16154,8 +16303,10 @@ function renderBuddyCarePlantDetailCard(cards, ageGateAccepted) {
     `;
   } else if (section === 'history') {
     bodyMarkup = renderBuddyCarePlantDetailHistory(activeCard);
-  } else if (section === 'data') {
-    bodyMarkup = renderBuddyCarePlantDetailData(activeCard);
+  } else if (section === 'diary') {
+    bodyMarkup = renderBuddyCarePlantDetailDiary(activeCard);
+  } else if (section === 'week') {
+    bodyMarkup = renderBuddyCarePlantDetailWeek(activeCard);
   } else {
     bodyMarkup = renderBuddyCarePlantDetailOverview(activeCard);
   }
@@ -16298,7 +16449,7 @@ function renderBuddyCareDiaryHubCard(cards, ageGateAccepted) {
     return;
   }
   const safeCards = Array.isArray(cards) ? cards : [];
-  const visible = ageGateAccepted && getActiveBuddyCareView() === 'history';
+  const visible = ageGateAccepted && getActiveBuddyCareView() === 'diary';
   ui.buddyCareDiaryHubCard.hidden = !visible;
   if (!visible) {
     ui.buddyCareDiaryHubCard.innerHTML = '';
@@ -16319,7 +16470,7 @@ function renderBuddyCareDiaryHubCard(cards, ageGateAccepted) {
   ui.buddyCareDiaryHubCard.innerHTML = `
     <header class="buddy-care-screen-header">
       <div>
-        <h1 class="buddy-care-screen-title">${escapeHtml(i18nT('buddyCare.nav.history'))}</h1>
+        <h1 class="buddy-care-screen-title">${escapeHtml(i18nT('buddyCare.nav.diary'))}</h1>
         <p class="buddy-care-screen-subtitle">${escapeHtml(i18nT('buddyCare.v2.history_subtitle'))}</p>
       </div>
     </header>
@@ -16389,7 +16540,7 @@ function renderBuddyCareMoreInfoCard(ageGateAccepted) {
       </div>
     </header>
     <nav class="buddy-care-more-menu" aria-label="${escapeHtml(i18nT('buddyCare.v2.more_navigation'))}">
-      <button type="button" data-buddy-care-switch-view="history"><span class="buddy-care-more-icon">${getBuddyCareTaskIconMarkup('document')}</span><span><strong>${escapeHtml(i18nT('buddyCare.v2.more_weekly'))}</strong><small>${escapeHtml(i18nT('buddyCare.v2.more_weekly_hint'))}</small></span><span aria-hidden="true">›</span></button>
+      <button type="button" data-buddy-care-switch-view="diary"><span class="buddy-care-more-icon">${getBuddyCareTaskIconMarkup('document')}</span><span><strong>${escapeHtml(i18nT('buddyCare.nav.diary'))}</strong><small>${escapeHtml(i18nT('buddyCare.v2.history_intro'))}</small></span><span aria-hidden="true">›</span></button>
       <button type="button" data-buddy-care-switch-view="plants"><span class="buddy-care-more-icon">${getBuddyCareTaskIconMarkup('observe')}</span><span><strong>${escapeHtml(i18nT('buddyCare.v2.more_plants'))}</strong><small>${escapeHtml(i18nT('buddyCare.v2.more_plants_hint'))}</small></span><span aria-hidden="true">›</span></button>
       <div class="buddy-care-more-status"><span class="buddy-care-more-icon">${getBuddyCareTaskIconMarkup('environment')}</span><span><strong>${escapeHtml(i18nT('buddyCare.v2.more_status'))}</strong><small>${escapeHtml(entitlement === 'care_plus_mock' ? i18nT('buddyCare.entitlement.care_plus_mock') : i18nT('buddyCare.entitlement.free'))}</small></span></div>
     </nav>
@@ -16670,6 +16821,150 @@ function renderBuddyCareExternalTestToolsCard(ageGateAccepted) {
   `;
 }
 
+function createBuddyCareDailyCheckPreviewCheck(activeCard) {
+  const safeCard = activeCard && typeof activeCard === 'object' ? activeCard : {};
+  const draft = buddyCareDailyCheckDraft || createEmptyBuddyCareDailyCheckDraft(safeCard.id || buddyCareActiveDailyCheckPlantId);
+  return {
+    id: 'buddy-care-daily-check-draft',
+    plantId: String(safeCard.id || draft.plantId || buddyCareActiveDailyCheckPlantId || '').trim(),
+    dayKey: getBuddyCareTodayDateString(),
+    createdAtIso: new Date().toISOString(),
+    mediumMoisture: String(draft.mediumMoisture || 'unknown').trim().toLowerCase(),
+    leafState: String(draft.leafState || 'unknown').trim().toLowerCase(),
+    growthState: String(draft.growthState || 'unknown').trim().toLowerCase(),
+    environmentStress: String(draft.environmentStress || 'unknown').trim().toLowerCase(),
+    pestsVisible: String(draft.pestsVisible || 'unsure').trim().toLowerCase(),
+    heightCm: draft.heightCm,
+    note: String(draft.note || '').trim()
+  };
+}
+
+function evaluateBuddyCareDailyCheckDraft(activeCard) {
+  const safeCard = activeCard && typeof activeCard === 'object' ? activeCard : {};
+  const previewCheck = createBuddyCareDailyCheckPreviewCheck(safeCard);
+  const riskApi = getBuddyCareRiskApi();
+  const plant = findBuddyCarePlantById(safeCard.id || previewCheck.plantId) || safeCard.plant || safeCard;
+  if (riskApi && typeof riskApi.evaluatePlantCareRisk === 'function') {
+    return riskApi.evaluatePlantCareRisk(plant, {
+      latestDailyCheck: previewCheck,
+      dailyChecks: [previewCheck].concat(Array.isArray(safeCard.dailyChecks) ? safeCard.dailyChecks : []),
+      diaryEntries: Array.isArray(safeCard.diaryEntries) ? safeCard.diaryEntries : [],
+      todayDiaryEntries: Array.isArray(safeCard.todayDiaryEntries) ? safeCard.todayDiaryEntries : [],
+      todayTasks: Array.isArray(safeCard.todayTasks) ? safeCard.todayTasks : [],
+      dailyCheckStatus: isBuddyCareDailyCheckAttentionWorthy(previewCheck) ? 'needs_attention' : 'checked_today',
+      now: Date.now()
+    });
+  }
+  return createFallbackBuddyCareRiskEvaluation(isBuddyCareDailyCheckAttentionWorthy(previewCheck) ? 'yellow' : 'green');
+}
+
+function renderBuddyCareDailyCheckWizardProgress(stepIndex) {
+  const totalSteps = BUDDY_CARE_DAILY_CHECK_STEPS.length;
+  const currentStep = Math.min(totalSteps, Math.max(1, stepIndex + 1));
+  const progressPercent = Math.round((currentStep / totalSteps) * 100);
+  return `
+    <div class="buddy-care-wizard-progress" data-buddy-care-wizard-progress>
+      <div class="buddy-care-wizard-progress-meta">
+        <span>${escapeHtml(i18nT('buddyCare.dailyCheck.wizard_progress', { current: currentStep, total: totalSteps }))}</span>
+        <span>${escapeHtml(i18nT(BUDDY_CARE_DAILY_CHECK_STEPS[stepIndex].titleKey))}</span>
+      </div>
+      <div class="buddy-care-wizard-progress-track" aria-hidden="true">
+        <span style="width: ${progressPercent}%"></span>
+      </div>
+    </div>
+  `;
+}
+
+function renderBuddyCareDailyCheckWizardActions(stepIndex) {
+  const isFirstStep = stepIndex <= 0;
+  const isResultStep = stepIndex >= getBuddyCareDailyCheckLastStepIndex();
+  return `
+    <div class="buddy-care-wizard-actions">
+      <button class="ghost-btn" type="button" data-buddy-care-wizard-cancel>${escapeHtml(i18nT('common.cancel'))}</button>
+      <div class="buddy-care-wizard-action-pair">
+        ${isFirstStep ? '' : `<button class="ghost-btn" type="button" data-buddy-care-wizard-back>${escapeHtml(i18nT('common.back'))}</button>`}
+        ${isResultStep
+          ? `<button class="action-btn action-primary" type="submit" data-buddy-care-wizard-submit>${escapeHtml(i18nT('buddyCare.dailyCheck.save'))}</button>`
+          : `<button class="action-btn action-primary" type="button" data-buddy-care-wizard-next>${escapeHtml(i18nT('buddyCare.dailyCheck.next'))}</button>`}
+      </div>
+    </div>
+  `;
+}
+
+function renderBuddyCareDailyCheckWizard(activeCard) {
+  const safeCard = activeCard && typeof activeCard === 'object' ? activeCard : {};
+  const stepIndex = normalizeBuddyCareDailyCheckStep(buddyCareDailyCheckStep);
+  const step = BUDDY_CARE_DAILY_CHECK_STEPS[stepIndex] || BUDDY_CARE_DAILY_CHECK_STEPS[0];
+  const draft = buddyCareDailyCheckDraft || createEmptyBuddyCareDailyCheckDraft(safeCard.id || buddyCareActiveDailyCheckPlantId);
+  let bodyMarkup = '';
+
+  if (step.key === 'notes') {
+    bodyMarkup = `
+      <div class="buddy-care-wizard-note-grid">
+        <label class="buddy-care-field">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.dailyCheck.height_label'))}</span>
+          <input class="buddy-care-input" type="number" min="0" step="0.1" inputmode="decimal" value="${escapeHtml(draft.heightCm || '')}" data-buddy-care-wizard-height>
+        </label>
+        <label class="buddy-care-field buddy-care-field--full">
+          <span class="buddy-care-field-label">${escapeHtml(i18nT('buddyCare.dailyCheck.note_label'))}</span>
+          <textarea class="buddy-care-textarea" rows="4" maxlength="280" data-buddy-care-wizard-note>${escapeHtml(draft.note || '')}</textarea>
+        </label>
+      </div>
+    `;
+  } else if (step.key === 'result') {
+    const previewCheck = createBuddyCareDailyCheckPreviewCheck(safeCard);
+    const riskEvaluation = evaluateBuddyCareDailyCheckDraft(safeCard);
+    const statusPresentation = getBuddyCareStatusPresentation(riskEvaluation.status);
+    const recommendationItems = getBuddyCareRiskRecommendationsText(riskEvaluation, 2)
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join('');
+    bodyMarkup = `
+      <div class="buddy-care-wizard-result" data-buddy-care-wizard-result>
+        <div class="buddy-care-wizard-result-status buddy-care-wizard-result-status--${escapeHtml(statusPresentation.tone)}">
+          <span>${escapeHtml(statusPresentation.icon)}</span>
+          <strong>${escapeHtml(getBuddyCareRiskLabelText(riskEvaluation))}</strong>
+        </div>
+        <p class="buddy-care-panel-copy">${escapeHtml(getBuddyCareRiskBuddyMessageText(riskEvaluation))}</p>
+        <ul class="buddy-care-wizard-review-list">
+          <li><span>${escapeHtml(i18nT('buddyCare.diary.field_medium'))}</span><strong>${escapeHtml(getBuddyCareDailyCheckOptionLabel(previewCheck.mediumMoisture))}</strong></li>
+          <li><span>${escapeHtml(i18nT('buddyCare.diary.field_leaves'))}</span><strong>${escapeHtml(getBuddyCareDailyCheckOptionLabel(previewCheck.leafState))}</strong></li>
+          <li><span>${escapeHtml(i18nT('buddyCare.diary.field_growth'))}</span><strong>${escapeHtml(getBuddyCareDailyCheckOptionLabel(previewCheck.growthState))}</strong></li>
+          <li><span>${escapeHtml(i18nT('buddyCare.diary.field_environment'))}</span><strong>${escapeHtml(getBuddyCareDailyCheckOptionLabel(previewCheck.environmentStress))}</strong></li>
+          <li><span>${escapeHtml(i18nT('buddyCare.diary.field_pests'))}</span><strong>${escapeHtml(getBuddyCareDailyCheckOptionLabel(previewCheck.pestsVisible))}</strong></li>
+        </ul>
+        ${recommendationItems ? `<div class="buddy-care-wizard-recommendations"><span>${escapeHtml(i18nT('buddyCare.dailyCheck.next_recommendation'))}</span><ul>${recommendationItems}</ul></div>` : ''}
+      </div>
+    `;
+  } else {
+    const selectedValue = String(draft[step.field] || '').trim().toLowerCase();
+    const options = Array.isArray(step.options) ? step.options : [];
+    bodyMarkup = `
+      <div class="buddy-care-wizard-options" role="group" aria-label="${escapeHtml(i18nT(step.titleKey))}">
+        ${options.map((option) => {
+          const selected = selectedValue === option;
+          return `
+            <button class="buddy-care-wizard-option${selected ? ' is-selected' : ''}" type="button" aria-pressed="${selected ? 'true' : 'false'}" data-buddy-care-wizard-option-field="${escapeHtml(step.field)}" data-buddy-care-wizard-option-value="${escapeHtml(option)}">
+              <span>${escapeHtml(getBuddyCareDailyCheckOptionLabel(option))}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  return `
+    ${renderBuddyCareDailyCheckWizardProgress(stepIndex)}
+    <section class="buddy-care-wizard-step" data-buddy-care-wizard-step="${escapeHtml(step.key)}">
+      <div class="buddy-care-wizard-step-head">
+        <h3>${escapeHtml(i18nT(step.titleKey))}</h3>
+        <p>${escapeHtml(i18nT(step.tipKey))}</p>
+      </div>
+      ${bodyMarkup}
+    </section>
+    ${renderBuddyCareDailyCheckWizardActions(stepIndex)}
+  `;
+}
+
 function renderBuddyCareDailyCheckCard(cards, ageGateAccepted) {
   if (!ui.buddyCareDailyCheckCard) {
     return;
@@ -16690,6 +16985,7 @@ function renderBuddyCareDailyCheckCard(cards, ageGateAccepted) {
       ? createBuddyCareDailyCheckDraftFromCheck(activeCard.id, activeCard.latestCheck)
       : createEmptyBuddyCareDailyCheckDraft(activeCard.id);
   }
+  buddyCareDailyCheckStep = normalizeBuddyCareDailyCheckStep(buddyCareDailyCheckStep);
 
   ui.buddyCareDailyCheckCard.hidden = false;
   const buddyPresentation = getBuddyCareDailyCheckBuddyPresentation(activeCard.dailyCheckStatus, activeCard.riskEvaluation);
@@ -16738,6 +17034,9 @@ function renderBuddyCareDailyCheckCard(cards, ageGateAccepted) {
   }
   if (ui.buddyCareDailyCheckNoteInput) {
     ui.buddyCareDailyCheckNoteInput.value = buddyCareDailyCheckDraft.note || '';
+  }
+  if (ui.buddyCareDailyCheckWizard) {
+    ui.buddyCareDailyCheckWizard.innerHTML = renderBuddyCareDailyCheckWizard(activeCard);
   }
 }
 
@@ -16952,6 +17251,8 @@ window.__gsOpenBuddyCareDailyCheck = openBuddyCareDailyCheck;
 window.__gsCloseBuddyCareDailyCheck = closeBuddyCareDailyCheck;
 window.__gsSubmitBuddyCareDailyCheck = submitBuddyCareDailyCheck;
 window.__gsSyncBuddyCareDailyCheckDraft = syncBuddyCareDailyCheckDraftFromForm;
+window.__gsMoveBuddyCareDailyCheckStep = moveBuddyCareDailyCheckStep;
+window.__gsSelectBuddyCareDailyCheckWizardOption = selectBuddyCareDailyCheckWizardOption;
 window.__gsSubmitBuddyCareDiaryEntry = submitBuddyCareDiaryEntry;
 window.__gsSubmitBuddyCareDiaryHubEntry = submitBuddyCareDiaryHubEntry;
 window.__gsDeleteBuddyCareDiaryEntry = deleteBuddyCareDiaryEntry;

@@ -20172,6 +20172,208 @@ body.panelized-ready :is(
   gap: 12px;
 }
 
+.buddy-care-daily-compat[hidden] {
+  display: none !important;
+}
+
+.buddy-care-daily-wizard {
+  display: grid;
+  gap: 14px;
+}
+
+.buddy-care-wizard-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.buddy-care-wizard-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(214, 225, 214, 0.76);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.buddy-care-wizard-progress-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.buddy-care-wizard-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(147, 213, 74, 0.82), rgba(213, 255, 121, 0.98));
+  box-shadow: 0 0 16px rgba(173, 255, 87, 0.28);
+  transition: width 180ms ease;
+}
+
+.buddy-care-wizard-step {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(171, 205, 163, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top left, rgba(147, 213, 74, 0.12), transparent 44%),
+    rgba(8, 13, 11, 0.74);
+}
+
+.buddy-care-wizard-step-head {
+  display: grid;
+  gap: 6px;
+}
+
+.buddy-care-wizard-step-head h3 {
+  margin: 0;
+  color: #f4f7f1;
+  font-size: 1.12rem;
+  line-height: 1.15;
+}
+
+.buddy-care-wizard-step-head p {
+  margin: 0;
+  color: rgba(214, 225, 214, 0.78);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.buddy-care-wizard-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.buddy-care-wizard-option {
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(244, 247, 241, 0.9);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.buddy-care-wizard-option:hover,
+.buddy-care-wizard-option:focus-visible {
+  outline: none;
+  transform: translateY(-1px);
+  border-color: rgba(173, 255, 87, 0.42);
+}
+
+.buddy-care-wizard-option.is-selected {
+  border-color: rgba(173, 255, 87, 0.68);
+  background: rgba(115, 170, 52, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(173, 255, 87, 0.2), 0 0 18px rgba(173, 255, 87, 0.14);
+  color: #f8ffe9;
+}
+
+.buddy-care-wizard-note-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.buddy-care-wizard-result {
+  display: grid;
+  gap: 12px;
+}
+
+.buddy-care-wizard-result-status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.buddy-care-wizard-result-status--green {
+  border-color: rgba(147, 213, 74, 0.5);
+  color: #b7f35a;
+}
+
+.buddy-care-wizard-result-status--yellow {
+  border-color: rgba(255, 184, 56, 0.52);
+  color: #ffce59;
+}
+
+.buddy-care-wizard-result-status--red {
+  border-color: rgba(255, 104, 104, 0.54);
+  color: #ff8f8f;
+}
+
+.buddy-care-wizard-result-status--gray {
+  color: rgba(244, 247, 241, 0.76);
+}
+
+.buddy-care-wizard-review-list,
+.buddy-care-wizard-recommendations ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buddy-care-wizard-review-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.buddy-care-wizard-review-list span,
+.buddy-care-wizard-recommendations span {
+  color: rgba(214, 225, 214, 0.72);
+  font-size: 0.82rem;
+}
+
+.buddy-care-wizard-review-list strong {
+  color: #f4f7f1;
+  font-size: 0.92rem;
+  text-align: right;
+}
+
+.buddy-care-wizard-recommendations {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(173, 255, 87, 0.08);
+}
+
+.buddy-care-wizard-recommendations li {
+  color: rgba(244, 247, 241, 0.9);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.buddy-care-wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.buddy-care-wizard-action-pair {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .buddy-care-field--full {
   grid-column: 1 / -1;
 }
@@ -20885,6 +21087,21 @@ body.panelized-ready :is(
 
   .buddy-care-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .buddy-care-wizard-options {
+    grid-template-columns: 1fr;
+  }
+
+  .buddy-care-wizard-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .buddy-care-wizard-action-pair,
+  .buddy-care-wizard-action-pair > button,
+  .buddy-care-wizard-actions > button {
+    width: 100%;
   }
 
   .buddy-care-daily-form {
