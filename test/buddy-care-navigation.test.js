@@ -13,11 +13,11 @@ const stylesCss = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf
   assert.match(indexHtml, /id="buddyCareViewNav"/, 'Buddy Care should expose an internal navigation shell');
   assert.match(indexHtml, /data-buddy-care-view="today"/, 'today view button should exist');
   assert.match(indexHtml, /data-buddy-care-view="plants"/, 'plants view button should exist');
-  assert.match(indexHtml, /data-buddy-care-view="history"/, 'history view button should exist');
+  assert.match(indexHtml, /data-buddy-care-view="diary"/, 'diary view button should exist');
   assert.match(indexHtml, /data-buddy-care-view="more"/, 'more view button should exist');
   assert.match(indexHtml, /id="buddyCareTodayView"/, 'today view container should exist');
   assert.match(indexHtml, /id="buddyCarePlantsView"/, 'plants view container should exist');
-  assert.match(indexHtml, /id="buddyCareDiaryView"[^>]+data-buddy-care-view-panel="history"/, 'history view container should reuse the existing Care history surface');
+  assert.match(indexHtml, /id="buddyCareDiaryView"[^>]+data-buddy-care-view-panel="diary"/, 'diary view container should expose the existing Care diary surface');
   assert.match(indexHtml, /id="buddyCareMoreView"/, 'more view container should exist');
 })();
 
@@ -33,7 +33,7 @@ const stylesCss = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf
   assert.match(appJs, /function openBuddyCarePlantDetails\(plantId, section = 'overview'\)/, 'plant detail deep links should stay local to Buddy Care');
   assert.match(appJs, /function openBuddyCareDailyCheck\(plantId, options = \{\}\)/, 'daily check deep links should stay local to Buddy Care');
   assert.match(appJs, /setActiveBuddyCareView\('more'\)/, 'Care+ and feedback links should route into the more view');
-  assert.match(appJs, /setActiveBuddyCareView\('history', \{ preserveDiaryComposer: true \}\)/, 'diary composer should open inside the history view');
+  assert.match(appJs, /setActiveBuddyCareView\('diary', \{ preserveDiaryComposer: true \}\)/, 'diary composer should open inside the diary view');
 })();
 
 (function testReferenceUiStateAndTabsExist() {
@@ -51,7 +51,7 @@ const stylesCss = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf
   assert.ok(stylesCss.includes('.buddy-care-segment-nav'), 'plant detail segments should have dedicated styling');
   assert.ok(stylesCss.includes('.buddy-care-filter-row'), 'diary filters should have dedicated styling');
   assert.ok(stylesCss.includes('.buddy-care-plant-profile-card'), 'plant overview should use reference-style profile cards');
-  assert.ok(stylesCss.includes('.buddy-care-week-hero'), 'history should expose the weekly report hero');
+  assert.ok(stylesCss.includes('.buddy-care-week-hero'), 'diary should expose the weekly report hero');
   assert.ok(stylesCss.includes('.buddy-care-status-modules'), 'plant detail should expose compact status modules');
 })();
 

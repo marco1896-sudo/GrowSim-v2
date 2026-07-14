@@ -230,14 +230,21 @@ async function main() {
       const card = document.getElementById('buddyCareDailyCheckCard');
       return Boolean(card && card.hidden === false);
     });
-    await page.selectOption('#buddyCareDailyCheckMoistureSelect', 'moist');
-    await page.selectOption('#buddyCareDailyCheckLeafStateSelect', 'normal');
-    await page.selectOption('#buddyCareDailyCheckGrowthStateSelect', 'normal');
-    await page.selectOption('#buddyCareDailyCheckEnvironmentStressSelect', 'normal');
-    await page.selectOption('#buddyCareDailyCheckPestsVisibleSelect', 'no');
-    await page.fill('#buddyCareDailyCheckHeightInput', '12.5');
-    await page.fill('#buddyCareDailyCheckNoteInput', 'Audit check');
-    await page.click('#buddyCareDailyCheckSubmitBtn');
+    await page.click('[data-buddy-care-wizard-option-field="mediumMoisture"][data-buddy-care-wizard-option-value="moist"]');
+    await page.click('[data-buddy-care-wizard-next]');
+    await page.click('[data-buddy-care-wizard-option-field="leafState"][data-buddy-care-wizard-option-value="normal"]');
+    await page.click('[data-buddy-care-wizard-next]');
+    await page.click('[data-buddy-care-wizard-option-field="growthState"][data-buddy-care-wizard-option-value="normal"]');
+    await page.click('[data-buddy-care-wizard-next]');
+    await page.click('[data-buddy-care-wizard-option-field="environmentStress"][data-buddy-care-wizard-option-value="normal"]');
+    await page.click('[data-buddy-care-wizard-next]');
+    await page.click('[data-buddy-care-wizard-option-field="pestsVisible"][data-buddy-care-wizard-option-value="no"]');
+    await page.click('[data-buddy-care-wizard-next]');
+    await page.fill('[data-buddy-care-wizard-height]', '12.5');
+    await page.fill('[data-buddy-care-wizard-note]', 'Audit check');
+    await page.click('[data-buddy-care-wizard-next]');
+    await page.waitForSelector('[data-buddy-care-wizard-result]');
+    await page.click('[data-buddy-care-wizard-submit]');
     await page.waitForFunction(() => {
       const state = window.__gsState && window.__gsState.buddyCare;
       return Boolean(
@@ -253,23 +260,23 @@ async function main() {
     await openPlantDetailSection(page, 'history');
     await page.waitForFunction(() => {
       const card = document.getElementById('buddyCarePlantDetailCard');
-      return Boolean(card && /Wochenrueckblick|Wochenrückblick/i.test(card.textContent || ''));
+      return Boolean(card && /Trend|Verlauf|Entwicklung/i.test(card.textContent || ''));
     });
-    await openPlantDetailSection(page, 'data');
-    const detailText = await page.locator('#buddyCarePlantDetailCard').textContent();
-    assert.match(detailText || '', /Daten/i, 'plant data should stay in the dedicated detail area');
-    await switchBuddyCareView(page, 'history');
+    await openPlantDetailSection(page, 'week');
+    const weekText = await page.locator('#buddyCarePlantDetailCard').textContent();
+    assert.match(weekText || '', /Woche|Wochenrueckblick|WochenrÃ¼ckblick/i, 'weekly review should stay in the dedicated week detail area');
+    await switchBuddyCareView(page, 'diary');
     const composerState = await page.evaluate(() => {
       window.__gsOpenBuddyCareDiaryComposer('buddy-plant-1');
       const hub = document.getElementById('buddyCareDiaryHubCard');
       return {
-        activeView: document.querySelector('[data-buddy-care-view="history"]')?.classList.contains('is-active'),
+        activeView: document.querySelector('[data-buddy-care-view="diary"]')?.classList.contains('is-active'),
         hubHidden: hub?.hidden,
         formCount: hub?.querySelectorAll('#buddyCareDiaryHubForm').length || 0,
         text: hub?.textContent.trim().slice(0, 120) || ''
       };
     });
-    assert.strictEqual(composerState.formCount, 1, `history composer should open: ${JSON.stringify(composerState)}`);
+    assert.strictEqual(composerState.formCount, 1, `diary composer should open: ${JSON.stringify(composerState)}`);
 
     const diaryForm = page.locator('#buddyCareDiaryHubForm');
     await diaryForm.locator('select[name="buddyCareDiaryPlantId"]').selectOption('buddy-plant-1');
@@ -277,7 +284,13 @@ async function main() {
     await diaryForm.locator('textarea[name="buddyCareDiaryNote"]').fill('Observed calmly.');
     await diaryForm.locator('input[name="buddyCareDiaryHeight"]').fill('13.0');
     await diaryForm.locator('input[type="checkbox"][value="observation"]').check();
-    await diaryForm.locator('button[type="submit"]').click();
+    await diaryForm.evaluate((form) => {
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+        return;
+      }
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
     await page.waitForFunction(() => {
       const state = window.__gsState && window.__gsState.buddyCare;
       return Boolean(state && Array.isArray(state.diaryEntries) && state.diaryEntries.length >= 2);
@@ -343,7 +356,7 @@ async function main() {
         document.getElementById('menuCloseBtn')?.click();
       }
     });
-    for (const view of ['today', 'plants', 'history', 'more']) {
+    for (const view of ['today', 'plants', 'diary', 'more']) {
       await switchBuddyCareView(page, view);
       await page.waitForTimeout(360);
       if (captureScreenshots) {
@@ -364,7 +377,7 @@ async function main() {
     }));
     assert.ok(mobileLayout.scrollWidth <= mobileLayout.viewportWidth + 1, `Buddy Care should not create horizontal page overflow at ${viewportWidth}px`);
     assert.strictEqual(mobileLayout.activeNavCount, 1, 'exactly one bottom navigation item should be active');
-    assert.strictEqual(mobileLayout.detailTabCount, 3, 'plant detail should expose overview, history, and data tabs');
+    assert.strictEqual(mobileLayout.detailTabCount, 5, 'plant detail should expose overview, daily check, diary, history, and week tabs');
 
     await page.reload({ waitUntil: 'networkidle' });
     await waitForBoot(page);
