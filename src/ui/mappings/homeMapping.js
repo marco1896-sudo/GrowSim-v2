@@ -55,8 +55,8 @@
         risk: Number(playerFacingStatus.risk || 0)
       },
       panel: {
-        playerName: 'Max Mustergrower',
-        playerRole: 'Gärtner',
+        playerName: 'Gast',
+        playerRole: 'Lokaler Spielstand',
         xpText: '',
         xpPercent: 0,
         coinText: '',

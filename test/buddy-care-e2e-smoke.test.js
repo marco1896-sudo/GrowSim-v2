@@ -66,7 +66,11 @@ async function waitForMenuDialogVisible(page) {
 }
 
 async function fillPlantSetup(page, name) {
-  await switchBuddyCareView(page, 'plants');
+  await page.evaluate(() => {
+    if (typeof window.__gsOpenBuddyCarePlantSetup === 'function') {
+      window.__gsOpenBuddyCarePlantSetup();
+    }
+  });
   await page.fill('#buddyCarePlantNameInput', name);
   await page.selectOption('#buddyCarePlantTypeSelect', 'auto');
   await page.selectOption('#buddyCarePlantEnvironmentSelect', 'indoor');
@@ -98,8 +102,11 @@ async function main() {
   const { server, baseUrl } = await startStaticServer(ROOT, HOST);
   const browser = await chromium.launch({ headless: true });
   const viewportWidth = Math.max(320, Number(process.env.BUDDY_CARE_VIEWPORT_WIDTH) || 390);
-  const viewportHeight = Math.max(640, Number(process.env.BUDDY_CARE_VIEWPORT_HEIGHT) || 844);
+  const viewportHeight = Math.max(568, Number(process.env.BUDDY_CARE_VIEWPORT_HEIGHT) || 844);
   const page = await browser.newPage({ viewport: { width: viewportWidth, height: viewportHeight } });
+  const captureScreenshots = process.env.BUDDY_CARE_CAPTURE_SCREENSHOTS === '1';
+  const screenshotDir = path.join(ROOT, 'output', 'care-reference-e2e');
+  if (captureScreenshots) fs.mkdirSync(screenshotDir, { recursive: true });
 
   try {
     const url = `${baseUrl}/`;
@@ -187,10 +194,58 @@ async function main() {
     assert.doesNotMatch(productCopy || '', /(Technisches Fundament|Phase 5|MVP 0\.1|Mock freischalten|Testmodus:)/i, 'Buddy Care should not show internal rollout wording');
     assert.match(productCopy || '', /Testzugang aktivieren/i, 'Buddy Care should use product-ready test access wording');
 
+    const emptyTodayState = await page.evaluate(() => {
+      const screen = document.getElementById('buddyCareScreen');
+      const scrollContent = document.getElementById('buddyCareScrollContent');
+      const nav = document.getElementById('buddyCareViewNav');
+      return {
+        navCount: document.querySelectorAll('#buddyCareViewNav').length,
+        navOutsideScroll: Boolean(screen && scrollContent && nav && screen.contains(nav) && !scrollContent.contains(nav)),
+        primarySetupCtas: document.querySelectorAll('#buddyCareTodayView [data-buddy-care-open-setup]').length,
+        heroImages: document.querySelectorAll('#buddyCareTodayCard .buddy-care-today-hero-asset').length,
+        placeholderHidden: Boolean(document.getElementById('buddyCarePlaceholderCard')?.hidden),
+        summaryHidden: Boolean(document.getElementById('buddyCareSummaryCard')?.hidden),
+        todayListChildren: document.getElementById('buddyCareTodayList')?.children.length || 0
+      };
+    });
+    assert.strictEqual(emptyTodayState.navCount, 1, 'Buddy Care should render one bottom navigation');
+    assert.strictEqual(emptyTodayState.navOutsideScroll, true, 'bottom navigation should be outside the scroll region');
+    assert.strictEqual(emptyTodayState.primarySetupCtas, 1, 'empty Today should expose one primary setup CTA');
+    assert.strictEqual(emptyTodayState.heroImages, 1, 'empty Today should expose one dominant Buddy asset');
+    assert.strictEqual(emptyTodayState.placeholderHidden, true, 'legacy placeholder should stay hidden in the empty Today view');
+    assert.strictEqual(emptyTodayState.summaryHidden, true, 'empty Today should not show the metric summary');
+    assert.strictEqual(emptyTodayState.todayListChildren, 0, 'empty Today should not append a second empty card');
+    if (captureScreenshots) {
+      await page.waitForTimeout(360);
+      await page.screenshot({ path: path.join(screenshotDir, `today-empty-${viewportWidth}x${viewportHeight}.png`), fullPage: true });
+      await switchBuddyCareView(page, 'plants');
+      await page.waitForTimeout(360);
+      await page.screenshot({ path: path.join(screenshotDir, `plants-empty-${viewportWidth}x${viewportHeight}.png`), fullPage: true });
+    }
+    await switchBuddyCareView(page, 'plants');
+    await page.click('#buddyCarePlantsView [data-buddy-care-open-setup]');
+    await page.waitForFunction(() => document.getElementById('buddyCareSetupCard')?.hidden === false);
+    const setupReachability = await page.evaluate(() => {
+      const scrollContent = document.getElementById('buddyCareScrollContent');
+      if (scrollContent) scrollContent.scrollTop = scrollContent.scrollHeight;
+      const addButton = document.getElementById('buddyCareAddPlantBtn');
+      const nav = document.getElementById('buddyCareViewNav');
+      const scrollRect = scrollContent?.getBoundingClientRect();
+      const buttonRect = addButton?.getBoundingClientRect();
+      const navRect = nav?.getBoundingClientRect();
+      return {
+        buttonInsideScrollViewport: Boolean(scrollRect && buttonRect && buttonRect.top >= scrollRect.top - 1 && buttonRect.bottom <= scrollRect.bottom + 1),
+        navSeparated: Boolean(scrollRect && navRect && scrollRect.bottom <= navRect.top + 1)
+      };
+    });
+    assert.strictEqual(setupReachability.buttonInsideScrollViewport, true, 'setup submit should remain reachable above bottom navigation');
+    assert.strictEqual(setupReachability.navSeparated, true, 'setup scroll region should not overlap bottom navigation');
+    await switchBuddyCareView(page, 'today');
+
     await fillPlantSetup(page, 'Audit Alpha');
     await page.waitForFunction(() => {
       const badge = document.getElementById('buddyCarePlantCount');
-      return Boolean(badge && badge.textContent.includes('1 / 1'));
+      return Boolean(badge && badge.textContent.includes('1 von 1'));
     });
 
     const collapsedCardText = await page.locator('#buddyCarePlantsView .buddy-care-plant-profile-card').first().textContent();
@@ -221,7 +276,7 @@ async function main() {
     await fillPlantSetup(page, 'Audit Gamma');
     await page.waitForFunction(() => {
       const badge = document.getElementById('buddyCarePlantCount');
-      return Boolean(badge && badge.textContent.includes('3 / 3'));
+      return Boolean(badge && badge.textContent.includes('3 von 3'));
     });
 
     await switchBuddyCareView(page, 'plants');
@@ -264,7 +319,7 @@ async function main() {
     });
     await openPlantDetailSection(page, 'week');
     const weekText = await page.locator('#buddyCarePlantDetailCard').textContent();
-    assert.match(weekText || '', /Woche|Wochenrueckblick|WochenrÃ¼ckblick/i, 'weekly review should stay in the dedicated week detail area');
+    assert.match(weekText || '', /Woche|Wochenrückblick/i, 'weekly review should stay in the dedicated week detail area');
     await switchBuddyCareView(page, 'diary');
     const composerState = await page.evaluate(() => {
       window.__gsOpenBuddyCareDiaryComposer('buddy-plant-1');
@@ -314,7 +369,7 @@ async function main() {
     });
 
     assert.strictEqual(deletePromptState.diaryEntries, diaryCountBeforeDelete, 'opening the delete dialog should not delete a diary entry yet');
-    assert.match(deletePromptState.title, /Eintrag wirklich loeschen\?/i, 'deleting a diary entry should require confirmation');
+    assert.match(deletePromptState.title, /Eintrag wirklich löschen\?/i, 'deleting a diary entry should require confirmation');
     assert.match(deletePromptState.message, /Buddy Care\+/i, 'delete confirmation should explain the affected diary entry scope');
 
     await page.click('#menuDialogCancelBtn');
@@ -347,9 +402,6 @@ async function main() {
     assert.ok(beforeReload.diaryEntries >= 1, 'at least one diary entry should remain before reload');
     assert.strictEqual(beforeReload.lockedSlots, 0, 'test access should hide locked slots');
 
-    const captureScreenshots = process.env.BUDDY_CARE_CAPTURE_SCREENSHOTS === '1';
-    const screenshotDir = path.join(ROOT, 'output', 'care-reference-e2e');
-    if (captureScreenshots) fs.mkdirSync(screenshotDir, { recursive: true });
     await page.evaluate(() => {
       const gameMenu = document.getElementById('gameMenu');
       if (gameMenu && gameMenu.getAttribute('aria-hidden') === 'false') {
@@ -369,15 +421,29 @@ async function main() {
       await page.screenshot({ path: path.join(screenshotDir, `plant-detail-${viewportWidth}x${viewportHeight}.png`), fullPage: true });
     }
 
-    const mobileLayout = await page.evaluate(() => ({
-      viewportWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-      activeNavCount: document.querySelectorAll('#buddyCareViewNav [aria-current="page"]').length,
-      detailTabCount: document.querySelectorAll('#buddyCarePlantDetailCard [role="tab"]').length
-    }));
+    const mobileLayout = await page.evaluate(() => {
+      const screen = document.getElementById('buddyCareScreen');
+      const scrollContent = document.getElementById('buddyCareScrollContent');
+      const nav = document.getElementById('buddyCareViewNav');
+      const screenRect = screen?.getBoundingClientRect();
+      const scrollRect = scrollContent?.getBoundingClientRect();
+      const navRect = nav?.getBoundingClientRect();
+      return {
+        viewportWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        activeNavCount: document.querySelectorAll('#buddyCareViewNav [aria-current="page"]').length,
+        detailTabCount: document.querySelectorAll('#buddyCarePlantDetailCard [role="tab"]').length,
+        navOutsideScroll: Boolean(scrollContent && nav && !scrollContent.contains(nav)),
+        navBottomDelta: screenRect && navRect ? Math.abs(screenRect.bottom - navRect.bottom) : 999,
+        separatedRegions: Boolean(scrollRect && navRect && scrollRect.bottom <= navRect.top + 1)
+      };
+    });
     assert.ok(mobileLayout.scrollWidth <= mobileLayout.viewportWidth + 1, `Buddy Care should not create horizontal page overflow at ${viewportWidth}px`);
     assert.strictEqual(mobileLayout.activeNavCount, 1, 'exactly one bottom navigation item should be active');
     assert.strictEqual(mobileLayout.detailTabCount, 5, 'plant detail should expose overview, daily check, diary, history, and week tabs');
+    assert.strictEqual(mobileLayout.navOutsideScroll, true, 'bottom navigation should remain outside the scroll content');
+    assert.ok(mobileLayout.navBottomDelta <= 1, 'bottom navigation should stay aligned with the Care screen bottom');
+    assert.strictEqual(mobileLayout.separatedRegions, true, 'scroll content and bottom navigation should not overlap');
 
     await page.reload({ waitUntil: 'networkidle' });
     await waitForBoot(page);
@@ -400,7 +466,7 @@ async function main() {
     assert.strictEqual(afterReload.plants, 3, 'Buddy Care plants should persist after reload');
     assert.ok(afterReload.dailyChecks >= 1, 'daily checks should persist after reload');
     assert.ok(afterReload.diaryEntries >= 1, 'diary entries should persist after reload');
-    assert.strictEqual(afterReload.plantCountLabel, '3 / 3', 'plant count label should restore after reload');
+    assert.strictEqual(afterReload.plantCountLabel, '3 von 3 Pflanzen', 'plant count label should restore after reload');
     assert.strictEqual(afterReload.ageGateHidden, true, 'age gate should stay accepted after reload');
   } finally {
     await closeBrowser(browser);

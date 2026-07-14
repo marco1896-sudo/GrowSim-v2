@@ -19902,14 +19902,27 @@ body.panelized-ready :is(
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
-  padding: calc(20px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
+  padding: 0;
   background:
     radial-gradient(circle at top right, rgba(160, 204, 164, 0.18), transparent 38%),
     linear-gradient(180deg, rgba(11, 18, 15, 0.98) 0%, rgba(15, 22, 19, 0.98) 100%);
+  overflow: hidden;
+}
+
+#app-hud > .buddy-care-screen.hud-screen.is-active {
+  display: flex !important;
+  flex-direction: column;
+}
+
+.buddy-care-scroll-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: calc(12px + env(safe-area-inset-top)) 14px 24px;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  scroll-padding-block: 12px 24px;
 }
 
 .buddy-care-shell {
@@ -19918,7 +19931,7 @@ body.panelized-ready :is(
   display: grid;
   gap: 14px;
   align-content: start;
-  min-height: 100%;
+  min-height: 0;
 }
 
 .buddy-care-topbar {
@@ -19936,41 +19949,45 @@ body.panelized-ready :is(
 }
 
 .buddy-care-back {
-  min-height: 44px;
-  padding-inline: 16px;
+  min-height: 38px;
+  padding-inline: 13px;
 }
 
 .buddy-care-topbar-link {
-  min-height: 36px;
+  min-height: 34px;
 }
 
 .buddy-care-view {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   min-height: 0;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  padding-bottom: 0;
 }
 
 .buddy-care-nav {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
+  position: relative;
+  z-index: 20;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  background: rgba(8, 13, 11, 0.94);
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: rgba(6, 11, 9, 0.97);
   backdrop-filter: blur(14px);
+  box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.2);
 }
 
 .buddy-care-nav-btn {
   display: grid;
   justify-items: center;
   gap: 6px;
-  min-height: 60px;
-  padding: 10px 8px;
+  min-height: 54px;
+  padding: 7px 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -20622,7 +20639,7 @@ body.panelized-ready :is(
 
 .buddy-care-empty-asset {
   display: block;
-  width: clamp(96px, 24vw, 160px);
+  width: clamp(72px, 22vw, 110px);
   height: auto;
 }
 
@@ -21010,6 +21027,42 @@ body.panelized-ready :is(
   line-height: 1.45;
 }
 
+.buddy-care-topbar {
+  min-height: 38px;
+}
+
+.buddy-care-screen-header {
+  gap: 10px;
+  padding: 2px 2px 0;
+}
+
+.buddy-care-screen-title {
+  font-size: clamp(1.5rem, 6vw, 2rem);
+}
+
+.buddy-care-screen-subtitle {
+  margin-top: 4px;
+  font-size: 0.86rem;
+}
+
+.buddy-care-today-hero-asset {
+  width: clamp(110px, 34vw, 170px);
+}
+
+#buddyCareTodayCard.is-empty .buddy-care-buddy-note--today-hero {
+  min-height: 0;
+  grid-template-columns: minmax(110px, 170px) minmax(0, 1fr);
+  padding: 16px;
+}
+
+#buddyCareTodayCard.is-empty .buddy-care-buddy-note--today-hero .buddy-care-buddy-body {
+  padding-right: 0;
+}
+
+.buddy-care-filter-row[hidden] {
+  display: none !important;
+}
+
 .buddy-care-panel[hidden] {
   display: none !important;
 }
@@ -21023,7 +21076,7 @@ body.panelized-ready :is(
 }
 
 @media (min-width: 720px) {
-  .buddy-care-screen {
+  .buddy-care-scroll-content {
     padding-inline: 24px;
   }
 
@@ -21040,14 +21093,8 @@ body.panelized-ready :is(
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .buddy-care-nav {
-    width: fit-content;
-    justify-self: center;
-    min-width: min(100%, 420px);
-  }
-
   .buddy-care-view {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    padding-bottom: 0;
   }
 
   .buddy-care-plant-item {
@@ -21068,7 +21115,7 @@ body.panelized-ready :is(
   }
 
   .buddy-care-topbar {
-    align-items: stretch;
+    align-items: center;
   }
 
   .buddy-care-topbar-actions {
@@ -21117,7 +21164,52 @@ body.panelized-ready :is(
   }
 
   .buddy-care-view {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-bottom: 0;
+  }
+
+  .buddy-care-buddy-note--today-hero {
+    min-height: 0;
+    grid-template-columns: minmax(100px, 0.78fr) minmax(0, 1.22fr);
+  }
+
+  .buddy-care-buddy-note--today-hero .buddy-care-buddy-body {
+    padding-right: 0;
+  }
+
+  .buddy-care-buddy-note--today-hero .buddy-care-hero-plant {
+    display: none;
+  }
+
+  #buddyCareTodayCard.is-empty .buddy-care-buddy-note--today-hero {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  #buddyCareTodayCard.is-empty .buddy-care-buddy-note--today-hero .buddy-care-buddy-visual {
+    justify-self: center;
+  }
+
+  #buddyCareTodayCard.is-empty .buddy-care-buddy-note--today-hero .buddy-care-buddy-body {
+    justify-items: start;
+  }
+
+  #buddyCarePlantsCard .buddy-care-empty-state--buddy {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  #buddyCarePlantsCard .buddy-care-empty-visual {
+    align-self: center;
+  }
+}
+
+@media (max-width: 340px) {
+  #buddyCarePlantCount {
+    font-size: 0;
+  }
+
+  #buddyCarePlantCount::before {
+    content: attr(data-compact-label);
+    font-size: 0.78rem;
   }
 }
 

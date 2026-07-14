@@ -136,7 +136,8 @@ assert.ok(stylesCss.includes('.buddy-care-seasonpass-card'), 'buddy care should 
 assert.ok(stylesCss.includes('.buddy-care-test-checklist'), 'buddy care should style the external test checklist');
 assert.ok(stylesCss.includes('.buddy-care-view[hidden]'), 'buddy care should fully remove inactive views from layout');
 assert.ok(stylesCss.includes('.buddy-care-nav[hidden]'), 'buddy care should fully remove the hidden internal nav from layout');
-assert.match(stylesCss, /\.buddy-care-screen\s*\{[\s\S]*overflow-y:\s*auto;[\s\S]*-webkit-overflow-scrolling:\s*touch;/, 'buddy care screen should use a dedicated vertical scroll container');
+assert.match(stylesCss, /\.buddy-care-screen\s*\{[\s\S]*overflow:\s*hidden;/, 'buddy care screen should contain scrolling and bottom navigation');
+assert.match(stylesCss, /\.buddy-care-scroll-content\s*\{[\s\S]*overflow-y:\s*auto;[\s\S]*-webkit-overflow-scrolling:\s*touch;/, 'buddy care should use a dedicated vertical scroll container');
 assert.match(stylesCss, /\.buddy-care-screen\s*\{[\s\S]*min-height:\s*0;[\s\S]*height:\s*100%;/, 'buddy care screen should be constrained to the HUD height');
 assert.ok(indexHtml.includes('Testzugang aktivieren'), 'buddy care shell should use test access wording for the premium preview');
 assert.ok(indexHtml.includes('Heute wichtig'), 'buddy care shell should keep today as the primary dashboard anchor');

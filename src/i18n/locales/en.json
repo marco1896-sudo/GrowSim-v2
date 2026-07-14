@@ -36,6 +36,10 @@
     "display_name": "Display name",
     "logout": "Sign out",
     "connected": "Connected to account",
+    "greeting": "Hello",
+    "welcome": "Welcome",
+    "guest": "Guest",
+    "local_save": "Local save",
     "status_label": "Status",
     "cancel": "Cancel",
     "missing_credentials": "Please enter email and password.",
@@ -186,6 +190,8 @@
       "subtitle": "Your 3-plant coach",
       "intro": "Buddy guides up to three plants here with clear daily priorities.",
       "plant_limit": "{count} plants available",
+      "plant_count": "{count} of {limit} plants",
+      "plant_count_compact": "{count} / {limit}",
       "age_gate_kicker": "Age gate",
       "age_gate_title": "Adults only",
       "age_gate_body": "Before Buddy Care+ opens, confirm once that you are of legal age.",
@@ -217,6 +223,7 @@
       "today_kicker": "Today",
       "today_title": "Today matters",
       "today_empty_body": "As soon as plants are created, today's overview will appear here.",
+      "today_empty_coach": "Your plant overview is ready. Add your first plant. Buddy will then show you what matters today.",
       "buddy_says": "Buddy says",
       "phase_note": "Buddy estimates the phase from your inputs. You can adjust it manually later.",
       "plants_kicker": "Overview",
@@ -512,10 +519,10 @@
         "red": "Several signals stand out. Check the plant calmly today and document the change."
       },
       "aggregate": {
-        "all_gray": "Buddy says: Start with a short daily check so I can place your plants more clearly.",
-        "all_green": "Buddy says: Everything feels calm today. Keep your routine and add a short note.",
-        "has_yellow": "Buddy says: One plant deserves a closer look. No reason to panic - a clean comparison helps.",
-        "has_red": "Buddy says: One plant needs your attention today. Check it calmly and document what you see."
+        "all_gray": "Start with a short daily check so I can place your plants more clearly.",
+        "all_green": "Everything feels calm today. Keep your routine and add a short note.",
+        "has_yellow": "One plant deserves a closer look. No reason to panic - a clean comparison helps.",
+        "has_red": "One plant needs your attention today. Check it calmly and document what you see."
       },
       "recommendation": {
         "gray_check": "Start a daily check",

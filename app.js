@@ -382,7 +382,7 @@ const state = {
     }
   },
   profile: progressionDefaults ? progressionDefaults.getDefaultProfile() : {
-    displayName: 'Marco',
+    displayName: '',
     totalXp: 0,
     level: 1,
     unlocks: {
@@ -755,6 +755,7 @@ const supportFlowRuntime = {
 };
 let buddyCareDetailPlantId = '';
 let buddyCareActiveView = 'today';
+let buddyCarePlantSetupOpen = false;
 let buddyCarePlantDetailSection = 'overview';
 let buddyCareActiveDailyCheckPlantId = '';
 let buddyCareDailyCheckDraft = null;
@@ -7791,11 +7792,11 @@ function mountHudComponents() {
 
   hudPanelsApi.mount(appHud, {
     player: {
-      name: 'Max Mustergrower',
-      role: 'Gärtner',
-      xpText: 'XP: 7.350 / 8.650',
-      xpPercent: 84,
-      currencyCoins: '2.480'
+      name: 'Gast',
+      role: 'Lokaler Spielstand',
+      xpText: 'XP: 0 / 100',
+      xpPercent: 0,
+      currencyCoins: '0'
     },
     environment: {
       temperature: '25.3°C',
@@ -13300,8 +13301,7 @@ function startBuddyCareExternalTest() {
     setActiveBuddyCareView('today');
     focusBuddyCareSection(ui.buddyCareTodayCard, null);
   } else {
-    setActiveBuddyCareView('plants');
-    focusBuddyCareSection(ui.buddyCareSetupCard, ui.buddyCarePlantNameInput);
+    openBuddyCarePlantSetup();
   }
   return true;
 }
@@ -13483,7 +13483,7 @@ function getBuddyCareOffer() {
       nameFallback: 'Buddy Care+ Saisonpass',
       priceLabel: '19,99 EUR',
       periodKey: 'buddyCare.screen.seasonpass_period',
-      periodFallback: 'Einmalig fuer eine Saison',
+      periodFallback: 'Einmalig für eine Saison',
       billingLabelKey: 'buddyCare.screen.seasonpass_label',
       billingLabelFallback: 'Eine Saison, bis zu 3 Pflanzen',
       isMock: true,
@@ -13558,18 +13558,26 @@ function setActiveBuddyCareView(view, options = {}) {
     buddyCareDiaryComposerOpen = false;
     buddyCareDiaryComposerPlantId = '';
   }
+  buddyCarePlantSetupOpen = nextView === 'plants' && safeOptions.openPlantSetup === true;
   buddyCareActiveView = nextView;
-  if (safeOptions.resetScroll !== false && ui.buddyCareScreen && typeof ui.buddyCareScreen.scrollTo === 'function') {
+  const scrollTarget = ui.buddyCareScrollContent || ui.buddyCareScreen;
+  if (safeOptions.resetScroll !== false && scrollTarget && typeof scrollTarget.scrollTo === 'function') {
     try {
-      ui.buddyCareScreen.scrollTo({ top: 0, behavior: 'auto' });
+      scrollTarget.scrollTo({ top: 0, behavior: 'auto' });
     } catch (_error) {
-      ui.buddyCareScreen.scrollTop = 0;
+      scrollTarget.scrollTop = 0;
     }
   }
   if (safeOptions.render !== false) {
     renderBuddyCareScreen();
   }
   return buddyCareActiveView;
+}
+
+function openBuddyCarePlantSetup() {
+  setActiveBuddyCareView('plants', { openPlantSetup: true });
+  focusBuddyCareSection(ui.buddyCareSetupCard, ui.buddyCarePlantNameInput);
+  return true;
 }
 
 function clearBuddyCarePlantDetailState() {
@@ -13704,6 +13712,7 @@ function openBuddyCareScreen() {
     closeMenuDialog();
   }
   buddyCareActiveView = 'today';
+  buddyCarePlantSetupOpen = false;
   buddyCarePlantDetailSection = 'overview';
   buddyCareDetailPlantId = '';
   buddyCareActiveDailyCheckPlantId = '';
@@ -13727,6 +13736,7 @@ function openBuddyCareScreen() {
 
 function closeBuddyCareScreen() {
   buddyCareActiveView = 'today';
+  buddyCarePlantSetupOpen = false;
   clearBuddyCarePlantDetailState();
   buddyCareDiaryFilter = 'all';
   buddyCareDiaryComposerOpen = false;
@@ -13851,8 +13861,7 @@ function runBuddyCareActivationPrimaryAction(actionId = '') {
     } else if (plantCount === 2) {
       trackBuddyCareConversionIntent('buddy_care_third_plant_started', { actionId: safeActionId });
     }
-    setActiveBuddyCareView('plants');
-    focusBuddyCareSection(ui.buddyCareSetupCard, ui.buddyCarePlantNameInput);
+    openBuddyCarePlantSetup();
     return true;
   }
 
@@ -14974,6 +14983,12 @@ function renderBuddyCareActivationOnboardingCard(viewModel) {
 }
 
 function getBuddyCareTodayBuddyPresentation(summary) {
+  if (Math.max(0, Math.trunc(Number(summary && summary.totalPlants) || 0)) === 0) {
+    return {
+      assetKind: 'empty',
+      altKey: 'buddyCare.buddy.alt.empty'
+    };
+  }
   const overallStatus = String(summary && summary.riskStatus || 'gray').trim().toLowerCase();
   switch (overallStatus) {
     case 'green':
@@ -15341,7 +15356,7 @@ function renderBuddyCareTodayBuddyVisual(summary = null) {
   ui.buddyCareTodayBuddyVisual.innerHTML = renderBuddyCareAssetImage(
     presentation.assetKind,
     presentation.altKey,
-    'buddy-care-buddy-asset'
+    'buddy-care-buddy-asset buddy-care-today-hero-asset'
   );
 }
 
@@ -15606,12 +15621,11 @@ function renderBuddyCarePlantImage(card, className = 'buddy-care-plant-image') {
 }
 
 function getBuddyCareDisplayName() {
-  const candidates = [
-    state && state.auth && state.auth.user && state.auth.user.displayName,
-    state && state.user && state.user.displayName,
-    state && state.profile && state.profile.displayName
-  ];
-  return candidates.map((value) => String(value || '').trim()).find(Boolean) || '';
+  const authApi = window.GrowSimAuth;
+  if (!authApi || typeof authApi.getCurrentUserDisplayName !== 'function') {
+    return '';
+  }
+  return authApi.getCurrentUserDisplayName() || '';
 }
 
 function getBuddyCareCurrentDateLabel() {
@@ -15968,14 +15982,10 @@ function renderBuddyCareTodayList(cards, summary) {
   }
   const safeCards = sortBuddyCareCardsByRisk(cards);
   const primaryCard = safeCards[0] || null;
-  const displayName = getBuddyCareDisplayName();
-  const hour = new Date().getHours();
-  const greetingKey = hour < 12
-    ? 'buddyCare.v2.greeting_morning'
-    : (hour < 18 ? 'buddyCare.v2.greeting_day' : 'buddyCare.v2.greeting_evening');
   if (ui.buddyCareTodayGreeting) {
-    ui.buddyCareTodayGreeting.textContent = i18nT(greetingKey, {
-      name: displayName || i18nT('buddyCare.v2.grower')
+    ui.buddyCareTodayGreeting.textContent = getUserGreeting({
+      guestGreeting: i18nT('auth.greeting'),
+      namedGreeting: i18nT('buddyCare.v2.greeting_day')
     });
   }
   if (ui.buddyCareTodayDate) {
@@ -15988,6 +15998,12 @@ function renderBuddyCareTodayList(cards, summary) {
   if (ui.buddyCareTodayPlantVisual) {
     ui.buddyCareTodayPlantVisual.innerHTML = primaryCard ? renderBuddyCarePlantImage(primaryCard, 'buddy-care-hero-plant-image') : '';
   }
+  if (ui.buddyCareTodayCard) {
+    ui.buddyCareTodayCard.classList.toggle('is-empty', !safeCards.length);
+  }
+  if (ui.buddyCareTodayBuddyLabel) {
+    ui.buddyCareTodayBuddyLabel.textContent = i18nT(safeCards.length ? 'buddyCare.screen.buddy_says' : 'buddyCare.screen.title');
+  }
   if (ui.buddyCareTodayHeroActions) {
     const mainCategory = String(primaryCard && primaryCard.mainTask && primaryCard.mainTask.category || '').trim().toLowerCase();
     const primaryAttribute = ['photo', 'document'].includes(mainCategory)
@@ -15995,19 +16011,10 @@ function renderBuddyCareTodayList(cards, summary) {
       : `data-buddy-care-open-check="${escapeHtml(primaryCard && primaryCard.id || '')}"`;
     ui.buddyCareTodayHeroActions.innerHTML = primaryCard && !primaryCard.readOnly
       ? `<button class="action-btn action-primary" type="button" ${primaryAttribute}>${escapeHtml(i18nT('buddyCare.v2.check_now'))}</button>`
-      : '';
+      : `<button class="action-btn action-primary" type="button" data-buddy-care-open-setup>${escapeHtml(i18nT('buddyCare.v2.add_first_plant'))}</button>`;
   }
   if (!safeCards.length) {
-    ui.buddyCareTodayList.innerHTML = `
-      <article class="buddy-care-empty-state buddy-care-empty-state--buddy">
-        <div class="buddy-care-empty-copy">
-          <strong>${escapeHtml(i18nT('buddyCare.screen.empty_title'))}</strong>
-          <p>${escapeHtml(i18nT('buddyCare.screen.today_empty_body'))}</p>
-          <button class="action-btn action-primary" type="button" data-buddy-care-switch-view="plants">${escapeHtml(i18nT('buddyCare.v2.add_first_plant'))}</button>
-        </div>
-        <div class="buddy-care-empty-visual">${renderBuddyCareAssetImage('empty', 'buddyCare.buddy.alt.empty', 'buddy-care-empty-asset')}</div>
-      </article>
-    `;
+    ui.buddyCareTodayList.innerHTML = '';
   } else {
     const primaryStatus = getBuddyCareStatusPresentation(primaryCard.riskStatus);
     const mainTask = primaryCard.mainTask || {};
@@ -16049,7 +16056,9 @@ function renderBuddyCareTodayList(cards, summary) {
     `;
   }
   if (ui.buddyCareTodayBuddySummary) {
-    ui.buddyCareTodayBuddySummary.textContent = i18nT(String(summary && summary.messageKey || 'buddyCare.summary.observe_and_document'));
+    ui.buddyCareTodayBuddySummary.textContent = safeCards.length
+      ? i18nT(String(summary && summary.messageKey || 'buddyCare.summary.observe_and_document'))
+      : i18nT('buddyCare.screen.today_empty_coach');
   }
 }
 
@@ -16071,6 +16080,7 @@ function renderBuddyCarePlantList(cards) {
     { value: 'action', label: i18nT('buddyCare.v2.filter.action') }
   ];
   if (ui.buddyCarePlantFilters) {
+    ui.buddyCarePlantFilters.hidden = safeCards.length === 0;
     ui.buddyCarePlantFilters.innerHTML = filterOptions.map((option) => `
       <button class="buddy-care-filter-pill${option.value === activeFilter ? ' is-active' : ''}" type="button" data-buddy-care-plant-filter="${escapeHtml(option.value)}" aria-pressed="${String(option.value === activeFilter)}">${escapeHtml(option.label)}</button>
     `).join('');
@@ -16087,6 +16097,7 @@ function renderBuddyCarePlantList(cards) {
         <div class="buddy-care-empty-copy">
           <strong>${escapeHtml(i18nT('buddyCare.screen.empty_title'))}</strong>
           <p>${escapeHtml(i18nT('buddyCare.screen.empty_body'))}</p>
+          ${buddyCarePlantSetupOpen ? '' : `<button class="action-btn action-primary" type="button" data-buddy-care-open-setup>${escapeHtml(i18nT('buddyCare.v2.add_first_plant'))}</button>`}
         </div>
         <div class="buddy-care-empty-visual">
           ${renderBuddyCareAssetImage('empty', 'buddyCare.buddy.alt.empty', 'buddy-care-empty-asset')}
@@ -17107,10 +17118,10 @@ function renderBuddyCareScreen() {
     ui.buddyCareHero.hidden = ageGateAccepted;
   }
   if (ui.buddyCarePlaceholderCard) {
-    ui.buddyCarePlaceholderCard.hidden = !ageGateAccepted || activeView !== 'today' || plantCount > 0;
+    ui.buddyCarePlaceholderCard.hidden = true;
   }
   if (ui.buddyCareSetupCard) {
-    ui.buddyCareSetupCard.hidden = !ageGateAccepted || activeView !== 'plants' || detailOpen;
+    ui.buddyCareSetupCard.hidden = !ageGateAccepted || activeView !== 'plants' || detailOpen || (plantCount === 0 && !buddyCarePlantSetupOpen);
   }
   if (ui.buddyCarePlantsCard) {
     ui.buddyCarePlantsCard.hidden = !ageGateAccepted || activeView !== 'plants' || detailOpen;
@@ -17138,7 +17149,7 @@ function renderBuddyCareScreen() {
       : i18nT('buddyCare.screen.upgrade_body');
   }
   if (ui.buddyCareSummaryCard) {
-    ui.buddyCareSummaryCard.hidden = !ageGateAccepted || activeView !== 'today';
+    ui.buddyCareSummaryCard.hidden = !ageGateAccepted || activeView !== 'today' || plantCount === 0;
   }
   if (ui.buddyCareTodayCard) {
     ui.buddyCareTodayCard.hidden = !ageGateAccepted || activeView !== 'today';
@@ -17152,7 +17163,14 @@ function renderBuddyCareScreen() {
         active: plantLimit,
         saved: plantCount - plantLimit
       })
-      : `${plantCount} / ${plantLimit}`;
+      : i18nT('buddyCare.screen.plant_count', {
+        count: plantCount,
+        limit: plantLimit
+      });
+    ui.buddyCarePlantCount.dataset.compactLabel = i18nT('buddyCare.screen.plant_count_compact', {
+      count: plantCount,
+      limit: plantLimit
+    });
   }
   if (ui.buddyCareAddPlantBtn) {
     ui.buddyCareAddPlantBtn.disabled = !ageGateAccepted || !canAddPlant;
@@ -17232,6 +17250,7 @@ function renderBuddyCareScreen() {
 window.__gsOpenBuddyCare = openBuddyCareScreen;
 window.__gsCloseBuddyCare = closeBuddyCareScreen;
 window.__gsSetActiveBuddyCareView = setActiveBuddyCareView;
+window.__gsOpenBuddyCarePlantSetup = openBuddyCarePlantSetup;
 window.__gsOpenBuddyCarePlantDetails = openBuddyCarePlantDetails;
 window.__gsCloseBuddyCarePlantDetails = closeBuddyCarePlantDetails;
 window.__gsSetBuddyCarePlantDetailSection = setBuddyCarePlantDetailSection;
@@ -17347,7 +17366,10 @@ function getAuthDisplayIdentity() {
     return null;
   }
 
-  if (!authApi.isAuthenticated()) {
+  const hasAuthenticatedUser = typeof authApi.isAuthenticatedUser === 'function'
+    ? authApi.isAuthenticatedUser()
+    : (authApi.isAuthenticated() && Boolean(authApi.getUser()));
+  if (!hasAuthenticatedUser) {
     return null;
   }
 
@@ -17356,11 +17378,38 @@ function getAuthDisplayIdentity() {
     return null;
   }
 
-  const displayName = typeof user.displayName === 'string' ? user.displayName.trim() : '';
+  const displayName = typeof authApi.getCurrentUserDisplayName === 'function'
+    ? authApi.getCurrentUserDisplayName()
+    : (typeof user.displayName === 'string' ? user.displayName.trim() : '');
   const email = typeof user.email === 'string' ? user.email.trim() : '';
   return {
     displayName: displayName || null,
     email: email || null
+  };
+}
+
+function getUserGreeting(options = {}) {
+  const authApi = window.GrowSimAuth;
+  if (authApi && typeof authApi.getUserGreeting === 'function') {
+    return authApi.getUserGreeting(options);
+  }
+  const safeOptions = options && typeof options === 'object' ? options : {};
+  return String(safeOptions.guestGreeting || '').trim();
+}
+
+function getProfileDisplayModel() {
+  const authApi = window.GrowSimAuth;
+  const guestTitle = i18nT('auth.guest');
+  const guestSubtitle = i18nT('auth.local_save');
+  if (authApi && typeof authApi.getProfileDisplayModel === 'function') {
+    return authApi.getProfileDisplayModel({ guestTitle, guestSubtitle });
+  }
+  return {
+    isAuthenticated: false,
+    hasDisplayName: false,
+    isGuest: true,
+    title: guestTitle,
+    subtitle: guestSubtitle
   };
 }
 
@@ -17884,6 +17933,7 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
   const xpRatio = clamp((Number(levelProgress.xpPercent || 0) / 100), 0, 1);
   const coinBalance = getCoins(sourceState);
   const playerLevel = Number(profile.level || 1); const playerRole = playerLevel >= 6 ? 'Master Grower' : (playerLevel >= 4 ? 'Lead Grower' : (playerLevel >= 2 ? 'Grow Operator' : 'Starter'));
+  const profileDisplay = getProfileDisplayModel();
 
   const environment = deriveEnvironmentReadout(sourceState);
   const roots = deriveRootZoneReadout(environment, sourceState);
@@ -18016,17 +18066,8 @@ function buildHomeViewModel(appState = state) { const sourceState = appState && 
       risk: Number(displayStatus.risk || 0)
     },
     panel: {
-      playerName: (() => {
-        const authIdentity = getAuthDisplayIdentity();
-        if (authIdentity && authIdentity.displayName) {
-          return authIdentity.displayName;
-        }
-        if (authIdentity && authIdentity.email) {
-          return authIdentity.email;
-        }
-        return profile.displayName || 'Marco';
-      })(),
-      playerRole,
+      playerName: profileDisplay.title,
+      playerRole: profileDisplay.isGuest ? profileDisplay.subtitle : playerRole,
       playerLevel: `LVL ${playerLevel}`,
       xpText: xpTarget > xpCurrent
         ? `XP: ${formatCompactNumber(xpCurrent)} / ${formatCompactNumber(xpTarget)}`
@@ -19474,10 +19515,10 @@ function renderMenuDynamicRows() {
   const menuProfileRoleNode = uiNode('menuProfileRoleValue', 'menuProfileRoleValue');
   const menuProfilePanel = buildHomeViewModel(state).panel || {};
   if (menuProfileNameNode) {
-    menuProfileNameNode.textContent = String(menuProfilePanel.playerName || 'Grower');
+    menuProfileNameNode.textContent = String(menuProfilePanel.playerName || i18nT('auth.guest'));
   }
   if (menuProfileRoleNode) {
-    menuProfileRoleNode.textContent = String(menuProfilePanel.playerRole || 'Starter');
+    menuProfileRoleNode.textContent = String(menuProfilePanel.playerRole || i18nT('auth.local_save'));
   }
 
   if (!ui.menuRescueBtn || !ui.menuRescueSubtext || !ui.menuPushBtn || !ui.menuPushStatus) {
@@ -19530,7 +19571,7 @@ function renderMenuDynamicRows() {
     ui.menuBuddyCareBtn.setAttribute('aria-hidden', 'false');
     ui.menuBuddyCareBtn.setAttribute('title', entitlement === 'care_plus_mock'
       ? 'Care+ Testzugang ist aktiv. Du kannst bis zu drei Pflanzen begleiten.'
-      : 'Buddy Care+ bietet einen kostenlosen Testzugang fuer bis zu drei Pflanzen.');
+      : 'Buddy Care+ bietet einen kostenlosen Testzugang für bis zu drei Pflanzen.');
     if (ui.menuBuddyCareSubtext) {
       ui.menuBuddyCareSubtext.textContent = entitlement === 'care_plus_mock'
         ? i18nT('menu.buddy_care_hint_active', { count: plantCount, total: plantLimit })
@@ -29324,7 +29365,7 @@ function syncAuthModalContent() {
       nodes.loggedInEmail.textContent = authIdentity.email || '-';
     }
     if (nodes.loggedInName) {
-      nodes.loggedInName.textContent = authIdentity.displayName || '-';
+      nodes.loggedInName.textContent = authIdentity.displayName || getProfileDisplayModel().title;
     }
     return;
   }

@@ -326,7 +326,7 @@
       ? harvestApi.getDefaultProfileHarvest()
       : null;
     return {
-      displayName: 'Marco',
+      displayName: '',
       totalXp: 0,
       level: 1,
       unlocks: cloneDefaultUnlocks(),
