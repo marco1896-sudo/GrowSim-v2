@@ -1,0 +1,144 @@
+- generic [active] [ref=e1]:
+  - main [ref=e9]:
+    - region [ref=e158]:
+      - article [ref=e159]:
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - generic [ref=e18]:
+              - generic [ref=e20]: LVL
+              - strong [ref=e21]: LVL 11
+            - generic [ref=e22]:
+              - generic [ref=e23]:
+                - strong [ref=e24]: Marco
+                - generic [ref=e25]: Starter
+              - generic [ref=e26]: "XP: 0 / 150"
+            - generic [ref=e29]:
+              - strong [ref=e34]: "0"
+              - button [ref=e162]:
+                - generic [ref=e37]: Menü öffnen
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - status [ref=e163]
+              - generic [ref=e41]:
+                - paragraph [ref=e42]:
+                  - text: "RUN-ZIEL:"
+                  - strong [ref=e43]: Run-Ziel
+                - paragraph [ref=e44]: "FORTSCHRITT:"
+              - button [ref=e164]
+            - button [ref=e165]:
+              - generic [ref=e374]:
+                - generic [ref=e377]:
+                  - strong [ref=e378]: Heute 0/3 Aufgaben
+                  - generic [ref=e379]: Daily Care
+                - generic: Nicht den ganzen Tag ueberdrehen. Erst die Wasserseite mit Keimling sanft giessen ordnen, dann neu lesen. · Tagesentscheidung ist offen.
+      - group [ref=e172]:
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - generic [ref=e56]: MANUAL
+            - generic [ref=e57]: Optimal
+          - generic [ref=e59]:
+            - strong [ref=e60]: "25.0"
+            - generic [ref=e61]: °C
+          - generic [ref=e173]:
+            - strong [ref=e68]: 60%
+            - strong [ref=e72]: 1.3 kPa
+            - strong [ref=e76]: "625"
+          - generic [ref=e77]: TARGET
+        - button [ref=e174] [cursor=pointer]
+        - button [ref=e175] [cursor=pointer]
+        - button [ref=e176] [cursor=pointer]
+        - button [ref=e177] [cursor=pointer]
+        - generic [ref=e84]: Temperatur
+        - generic [ref=e85]: 25.0°C
+        - generic [ref=e86]: Luftfeuchte
+        - generic [ref=e87]: PPFD
+        - generic [ref=e88]: Luftstrom
+        - generic [ref=e89]: Mittel
+      - generic [ref=e90]:
+        - article [ref=e91]:
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - generic [ref=e94]: WACHSTUM
+              - strong [ref=e95]: Keimung
+            - generic [ref=e96]: Tag 1
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - strong [ref=e99]: 0% → Keimling
+              - generic [ref=e100]: Zielphase
+            - generic [ref=e101]: Gesund
+            - strong [ref=e102]: "1.06"
+            - button [ref=e178]
+          - progressbar [ref=e179]
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - generic [ref=e110]: Zeit
+              - strong [ref=e111]: 08:13
+            - generic [ref=e112]: Basis 12x · Boost 24x für 30 Min
+            - generic [ref=e114]:
+              - generic [ref=e116]: Ereignis
+              - strong [ref=e117]: 76:56
+        - region [ref=e180]:
+          - button [ref=e181] [cursor=pointer]:
+            - strong [ref=e121]: "68"
+            - generic [ref=e124]: Wasser
+          - button [ref=e182] [cursor=pointer]:
+            - strong [ref=e127]: "65"
+            - generic [ref=e130]: Nährstoffe
+          - button [ref=e183] [cursor=pointer]:
+            - strong [ref=e133]: "15"
+            - generic [ref=e136]: Stress
+          - button [ref=e184] [cursor=pointer]:
+            - strong [ref=e139]: "16"
+            - generic [ref=e142]: Risiko
+      - region:
+        - button [ref=e185]:
+          - generic [ref=e145]: Boost
+        - button [ref=e186]:
+          - generic [ref=e151]: Events
+        - button [ref=e187]:
+          - generic [ref=e154]: Analyse
+        - button [ref=e188]:
+          - generic [ref=e157]: Pflege
+  - generic [ref=e190]:
+    - generic [ref=e191]:
+      - generic [ref=e192]:
+        - generic [ref=e193]: Grow Simulator
+        - heading "Dein erster Grow beginnt" [level=2] [ref=e194]
+      - generic [ref=e195]: Schritt 4 von 4
+    - generic [ref=e380]:
+      - generic [ref=e381]:
+        - generic [ref=e382]: Startklar
+        - heading "Dein Grow ist startbereit" [level=3] [ref=e383]
+        - paragraph [ref=e384]: Dein erster Run ist startklar. Wir übernehmen dieses Setup jetzt so und gehen direkt in einen geführten Tag 1.
+      - complementary [ref=e385]:
+        - img "Buddy bestätigt die Run-Zusammenfassung" [ref=e386]
+        - paragraph [ref=e387]: "Das ist dein ruhiger Startpunkt: klares Setup, kein Druck und genau ein wichtiger erster Moment."
+      - generic [ref=e388]:
+        - generic [ref=e389]:
+          - heading "Run-Profil" [level=3] [ref=e390]
+          - strong [ref=e391]: Ausgewogen
+        - generic [ref=e392]: ◇
+        - strong [ref=e393]: Balanced Control
+        - paragraph [ref=e394]: Solider Kontroll-Run mit guter Fehlertoleranz und ohne harte Peaks.
+        - paragraph [ref=e395]: Kein extremer Vorteil, aber auch keine große Sollbruchstelle.
+        - generic [ref=e396]: "Hybrid · Soil Medium · Medium Light · Mode: Indoor Run"
+      - generic "Gewähltes Setup" [ref=e397]:
+        - article [ref=e398]:
+          - generic [ref=e401]: Grow-Setup
+          - strong [ref=e402]: Indoor
+        - article [ref=e403]:
+          - generic [ref=e406]: Licht-Setup
+          - strong [ref=e407]: Mittleres Licht
+        - article [ref=e408]:
+          - generic [ref=e411]: Substrat
+          - strong [ref=e412]: Erde
+        - article [ref=e413]:
+          - generic [ref=e416]: Topfgröße
+          - strong [ref=e417]: 2 Liter (S)
+        - article [ref=e418]:
+          - generic [ref=e421]: Genetik
+          - strong [ref=e422]: Hybrid
+    - generic [ref=e210]:
+      - button "Zurück" [ref=e211] [cursor=pointer]
+      - button "Grow erstellen" [ref=e423] [cursor=pointer]
+  - text: › › › › › › › › › › › ›

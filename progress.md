@@ -1,4 +1,4 @@
-﻿Original prompt: Perform a visual polish and hierarchy pass on the rebuilt reference-style main HUD. Keep gameplay logic unchanged and preserve structure.
+Original prompt: Perform a visual polish and hierarchy pass on the rebuilt reference-style main HUD. Keep gameplay logic unchanged and preserve structure.
 
 2026-03-14
 - Started visual polish pass with develop-web-game skill.
@@ -144,3 +144,17 @@ Open items:
   - verified service worker control, shell cache persistence, and guest/local boot reaching `window.__gsBootOk === true` after a full offline reopen
   - the previously reported guest startup failure is confirmed test drift against the newer honest push copy (`Lokales Spielen bleibt möglich`)
   - added a dedicated offline reopen regression test to lock in service-worker-backed boot readiness without changing product logic
+
+2026-07-13
+- Started approved Buddy Care+ reference UI implementation.
+- Read the full task, project constraints, UI references, and Buddy asset workflow.
+- Current focus: preserve the existing Care+ data/save/overlay architecture while completing the reference-style shell and targeted tests.
+- Reworked the local Care+ view model and UI composition around Today, Plants, Plant Detail, History, and More without changing persistence.
+- Added normalized plant filters, timeline/trends mode, existing phase/risk-based cannabis imagery, and reference-style Buddy placement.
+- Syntax, i18n parity, navigation, shell, state, daily check, diary, trend, and product-hardening tests pass after the first implementation pass.
+- Next: run the required browser interaction loop, inspect mobile screenshots, and correct any visual or runtime regressions.
+- Browser QA completed at 390x844 for Today, Plants, Plant Detail, History, and More.
+- Updated the existing mobile E2E smoke flow for the new information architecture and added horizontal-overflow, active-navigation, and detail-tab assertions.
+- Fixed hidden-state CSS precedence, restored diary deletion in the real history timeline, and replaced checkerboard-backed plant files with existing phase-aligned growth frames.
+- The complete Care+ flow now passes with three plants, daily check, diary entry, delete confirmation, reload, and persistence restoration.
+- Next: complete the final static, state, i18n, and product-hardening regression suite.

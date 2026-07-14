@@ -374,6 +374,7 @@ async function main() {
     assert.strictEqual(initialBuilderState.guestWelcomeVisible, false, 'signed-in first run setup should hide the guest-mode welcome note');
     assert.strictEqual(initialBuilderState.guestWelcomeText, '', 'signed-in first run setup should not show the guest-mode welcome note');
     assert.strictEqual(initialBuilderState.activePotVisible, false, 'first step should stay a welcome screen instead of showing setup cards');
+    assert.strictEqual(initialBuilderState.buddySrc, 'assets/buddy/transparent/emotions/happy/buddy_emotion_happy_open_arms_v001.png', 'welcome step should show the onboarding Buddy immediately');
     assert.strictEqual(initialBuilderState.nextHidden, false, 'next button should be visible before summary');
     assert.strictEqual(initialBuilderState.startHidden, true, 'start button should stay hidden before summary');
     assert.strictEqual(initialBuilderState.outdoorDisabled, true, 'locked outdoor mode should stay visibly unavailable on first run');
@@ -835,9 +836,9 @@ async function main() {
     assert.strictEqual(runtimeSettings.audioNote, 'Vorbereitet. Sichtbar, aber noch nicht direkt anpassbar.', 'audio block should explain prepared areas explicitly');
     assert.strictEqual(runtimeSettings.footerNote, 'Aktive Änderungen wirken sofort. Vorbereitetes bleibt hier nur Status.', 'footer should explain the difference between active settings and prepared areas');
     assert.strictEqual(runtimeSettings.defaultLabel, 'Reminder zurücksetzen', 'default button should describe its real reminder scope');
-    assert.strictEqual(runtimeSettings.defaultTitle, 'Setzt die Reminder-Basis zurück.', 'default button title should avoid global reset wording');
+    assert.strictEqual(runtimeSettings.defaultTitle, 'Setzt die Reminder-Basis zur\u00fcck.', 'default button title should avoid global reset wording');
     assert.strictEqual(runtimeSettings.saveLabel, 'Fertig', 'save button should read like a neutral confirmation instead of a global apply action');
-    assert.strictEqual(runtimeSettings.saveTitle, 'Schließt dieses Fenster. Aktive Änderungen wirken bereits sofort.', 'save button title should explain that active settings already apply instantly');
+    assert.strictEqual(runtimeSettings.saveTitle, 'Schlie\u00dft dieses Fenster. Aktive \u00c4nderungen wirken bereits sofort.', 'save button title should explain that active settings already apply instantly');
 
     await dismissMissionRewardDialogIfPresent(page);
     await page.locator('#diagnosisSheet [data-close-sheet]').evaluate((node) => node.click());

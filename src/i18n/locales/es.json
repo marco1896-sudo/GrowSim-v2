@@ -75,7 +75,629 @@
     "reminders_hint": "Opcional. Usa una cuenta solo para funciones extra.",
     "about_sheet_title": "Sobre Grow Simulator",
     "about_sheet_body": "Grow Simulator empieza en local en este dispositivo por defecto. Cloud Sync, resultados verificados, acceso a la clasificacion y recordatorios siguen siendo extras opcionales.",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "buddy_care": "Buddy Care+",
+    "buddy_care_hint": "{count} / {total} plantas en setup",
+    "buddy_care_hint_active": "Acceso de prueba Care+ activo: {count} / {total} plantas"
+  },
+  "buddyCare": {
+    "nav": {
+      "today": "Hoy",
+      "plants": "Plantas",
+      "diary": "Diario",
+      "history": "Historial",
+      "more": "Mas"
+    },
+    "v2": {
+      "open_settings": "Abrir ajustes",
+      "history_subtitle": "Desarrollo y retrospectiva",
+      "history_intro": "Chequeos, documentación y tendencias de los datos existentes de tus plantas.",
+      "greeting_morning": "Buenos días, {name}",
+      "greeting_day": "Hola, {name}",
+      "greeting_evening": "Buenas tardes, {name}",
+      "grower": "Cultivador",
+      "check_now": "Revisar ahora",
+      "add_first_plant": "Añadir primera planta",
+      "today_important": "Importante hoy",
+      "start_check": "Iniciar revisión",
+      "show_all": "Ver todas",
+      "open_plant": "Abrir {name}",
+      "plant_image_alt": "Planta de cannabis {name}",
+      "plant_fallback": "Planta",
+      "phase": "Fase",
+      "next_check": "Próxima revisión",
+      "documented": "Documentación disponible",
+      "heat_stress": "Estrés térmico observado",
+      "filter_label": "Filtrar plantas",
+      "filter": {
+        "all": "Todas",
+        "stable": "Estable",
+        "watch": "Observar",
+        "action": "Requiere acción"
+      },
+      "filter_empty_title": "No hay plantas en este filtro",
+      "filter_empty_body": "Elige otro estado para ver tus plantas existentes.",
+      "status": {
+        "stable": "Estable",
+        "watch": "Observar",
+        "action": "Requiere acción",
+        "neutral": "Pendiente"
+      },
+      "currently_important": "Importante ahora",
+      "module": {
+        "water": "Agua",
+        "growth": "Desarrollo",
+        "environment": "Entorno",
+        "risks": "Riesgos"
+      },
+      "latest_documentation": "Última documentación",
+      "no_documentation": "Todavía no hay documentación",
+      "open_history": "Abrir historial",
+      "data_tab": "Datos",
+      "overall_status": "Estado general",
+      "plant_tabs": "Secciones de la planta",
+      "data": {
+        "environment": "Ubicación",
+        "phase": "Fase",
+        "type": "Tipo de planta",
+        "start_date": "Fecha de inicio",
+        "age": "Edad",
+        "last_check": "Última revisión",
+        "last_documentation": "Última documentación"
+      },
+      "completed_checks": "Revisiones completadas",
+      "total_checks": "Revisiones de hoy",
+      "open_checks": "Revisiones abiertas",
+      "risks": "Riesgos agudos",
+      "history_modes": "Vista del historial",
+      "timeline": "Cronología",
+      "trends": "Tendencias",
+      "week_with_buddy": "Tu semana con Buddy",
+      "week_checks": "revisiones esta semana",
+      "week_stable": "plantas estables",
+      "week_risks": "plantas en observación",
+      "open_weekly_report": "Abrir informe semanal",
+      "open_plant_history": "Abrir historial de la planta",
+      "timeline_check": "Revisión de planta completada",
+      "more_subtitle": "Funciones y ajustes de Care+",
+      "more_navigation": "Más áreas de Care+",
+      "more_weekly": "Informes semanales",
+      "more_weekly_hint": "Abrir retrospectivas y tendencias",
+      "more_plants": "Gestión de plantas",
+      "more_plants_hint": "Añadir y gestionar plantas",
+      "more_status": "Estado de Care+"
+    },
+    "hero": {
+      "today_subtitle": "Hoy tus plantas necesitan tu foco.",
+      "today_empty": "Todavia no hay plantas. Empieza con una planta y te mostrare lo que importa hoy.",
+      "plants_subtitle": "Crear, revisar y abrir plantas con foco.",
+      "plants_copy": "Ahora acompanias {count} plantas. Manten las tarjetas compactas y entra en la vista individual para ver los detalles.",
+      "plants_empty": "Crea aqui tu primera planta para que Buddy pueda montar una zona de cuidado clara.",
+      "diary_subtitle": "Tus entradas en un solo lugar.",
+      "diary_copy": "Aqui puedes revisar las notas y chequeos diarios mas recientes de todas tus plantas."
+    },
+    "entitlement": {
+      "free": "Free",
+      "care_plus_mock": "Acceso de prueba Care+"
+    },
+    "screen": {
+      "eyebrow": "Resumen de tus plantas",
+      "title": "Buddy Care+",
+      "subtitle": "Tu coach de 3 plantas",
+      "intro": "Aqui Buddy acompana hasta tres plantas con prioridades diarias claras.",
+      "plant_limit": "{count} plantas disponibles",
+      "age_gate_kicker": "Control de edad",
+      "age_gate_title": "Solo para usuarios adultos",
+      "age_gate_body": "Antes de abrir Buddy Care+, confirma una vez que eres mayor de edad.",
+      "age_gate_action": "Soy mayor de edad",
+      "placeholder_kicker": "Listo para hoy",
+      "placeholder_title": "Tu panel de cuidado esta listo",
+      "placeholder_body": "Agrega tu primera planta y empieza con el chequeo diario, el diario y el resumen semanal.",
+      "placeholder_note_free": "El modo Free sigue limitado a una planta.",
+      "placeholder_note_mock": "El acceso de prueba Care+ esta activo. Ahora puedes acompanar hasta 3 plantas.",
+      "today_view_hint": "Despues Buddy te muestra que es lo mas importante hoy.",
+      "setup_kicker": "Empecemos",
+      "setup_title": "Setup de plantas",
+      "setup_body": "Crea tus primeras plantas de Buddy Care. Free empieza con 1 planta y el acceso de prueba Care+ amplia hasta 3.",
+      "setup_name_label": "Nombre",
+      "setup_name_placeholder": "p. ej. Balcon 01",
+      "setup_type_label": "Tipo",
+      "setup_environment_label": "Entorno",
+      "setup_start_label": "Fecha de inicio",
+      "setup_add": "Agregar planta",
+      "setup_status_empty": "Crea tu primera planta.",
+      "setup_status_available": "Aun quedan {count} de {total} espacios libres.",
+      "setup_status_limit": "Los {total} espacios de plantas ya estan ocupados.",
+      "setup_status_limit_free": "Free se queda en 1 planta. Con Buddy Care+ puedes acompanar hasta {total} plantas.",
+      "summary_kicker": "Resumen",
+      "summary_title": "Panel de cuidado",
+      "summary_plants": "Plantas",
+      "summary_entitlement": "Acceso",
+      "summary_tasks": "Tareas abiertas",
+      "today_kicker": "Hoy",
+      "today_title": "Hoy importa",
+      "today_empty_body": "En cuanto crees plantas, aqui aparecera el resumen de hoy.",
+      "buddy_says": "Buddy dice",
+      "phase_note": "Buddy estima la fase segun tus datos. Podras ajustarla manualmente mas adelante.",
+      "plants_kicker": "Resumen",
+      "plants_title": "Tus plantas",
+      "empty_title": "Buddy esta esperando tu primera planta.",
+      "empty_body": "Anade una planta para que Buddy pueda prepararte tareas diarias, un plan semanal y consejos de cuidado.",
+      "slot_label": "Slot {number}",
+      "details": "Detalles",
+      "day_unknown": "Dia desconocido",
+      "day_value": "Dia {day}",
+      "phase_estimate_value": "Fase estimada: {phase}",
+      "card_type_environment": "{type} - {environment}",
+      "card_day_phase": "{phase} · {day}",
+      "card_today_value": "Hoy: {status}",
+      "card_week_value": "Semana: {status}",
+      "details_open": "Abrir detalles",
+      "details_close": "Cerrar detalles",
+      "back_to_plants": "Volver a plantas",
+      "overview": "Resumen",
+      "history_short": "Historial",
+      "week": "Semana",
+      "next_task": "Siguiente tarea",
+      "read_only_badge": "Solo ver",
+      "read_only_title": "Guardada en acceso Free",
+      "read_only_body": "Esta planta sigue guardada. Activa otra vez el acceso de prueba Care+ para anadir nuevos chequeos y entradas.",
+      "plant_count_saved": "{active} activas · {saved} guardadas",
+      "main_task": "Primero hoy: {task}",
+      "no_task": "Sin tarea todavia",
+      "weekly_title": "Esta semana",
+      "remove_plant": "Eliminar",
+      "free_hint": "Version Free: 1 planta activa. Con Care+ puedes acompanar hasta 3 plantas.",
+      "mock_hint": "Acceso de prueba Care+ activo: hasta 3 plantas disponibles.",
+      "view_care_plus": "Ver acceso de prueba",
+      "upgrade_title": "Activar acceso de prueba Care+",
+      "upgrade_body": "Acompana hasta 3 plantas con chequeos diarios, diario, semaforo, historial y revision semanal.",
+      "upgrade_price_line": "Pase de temporada: 19,99 EUR",
+      "seasonpass_preview": "Probar Care+",
+      "seasonpass_title": "Pase de temporada Buddy Care+",
+      "seasonpass_body": "Tu coach digital de 3 plantas para una temporada completa.",
+      "seasonpass_label": "Una temporada, hasta 3 plantas",
+      "seasonpass_price": "19,99 EUR",
+      "seasonpass_period": "Pago unico por una temporada",
+      "seasonpass_feature_3_plants": "hasta 3 plantas",
+      "seasonpass_feature_daily_checks": "chequeos diarios",
+      "seasonpass_feature_diary": "diario por planta",
+      "seasonpass_feature_risk": "semaforo y pistas de Buddy",
+      "seasonpass_feature_trends": "historial y tendencias",
+      "seasonpass_feature_weekly": "revision semanal",
+      "seasonpass_feature_pdf": "exportacion PDF mas adelante",
+      "seasonpass_feature_reminders": "recordatorios mas adelante",
+      "mock_unlock": "Activar acceso de prueba",
+      "test_mode_note": "Acceso de prueba gratuito - no se activa ningun pago.",
+      "monetization_not_ready": "La monetizacion todavia no esta liberada.",
+      "checkout_not_released": "Checkout todavia no esta liberado.",
+      "mock_badge": "Probar gratis",
+      "mock_title": "Acceso de prueba gratuito Care+",
+      "mock_body": "Mira Care+ con calma y desbloquea hasta 3 plantas para tu prueba.",
+      "mock_upgrade": "Ver acceso de prueba",
+      "mock_active_title": "Acceso de prueba Care+ activo",
+      "mock_active_body": "Ahora puedes acompanar hasta 3 plantas.",
+      "upgrade_reason_free_zero": "Empieza gratis con una planta. Con el acceso de prueba Care+ luego puedes acompanar hasta 3 plantas.",
+      "upgrade_reason_free_one": "Tu slot Free esta activo. Con el acceso de prueba Care+ puedes acompanar dos plantas mas.",
+      "upgrade_reason_locked_slot": "Este slot pertenece al acceso de prueba Care+. Asi puedes acompanar hasta 3 plantas por separado.",
+      "upgrade_reason_limit_reached": "Free acompana una planta. El acceso de prueba Care+ amplia a Buddy hasta 3 plantas.",
+      "activation_zero_plants_body": "Agrega tu primera planta para que Buddy pueda crear chequeos diarios, diario y revision semanal.",
+      "activation_one_plant_body": "Tu primera planta ya esta lista. Ahora puedes usar el slot 2.",
+      "activation_two_plants_body": "Todavia queda un slot libre. Buddy puede acompanar una tercera planta.",
+      "activation_complete_kicker": "3 plantas activas",
+      "activation_complete_title": "Tu setup de Care+ esta completo",
+      "activation_complete_body": "Buddy ahora acompana las 3 plantas con chequeos diarios, diario, semaforo, historial y revision semanal.",
+      "activation_slot_free_title": "Todavia queda un slot libre",
+      "activation_buddy_ready": "El acceso de prueba Care+ ya esta listo. Agrega tus otras plantas para que pueda acompanarlas por separado.",
+      "activation_buddy_complete": "Buddy ya acompana las 3 plantas. Hoy puedes empezar directamente con el chequeo diario y el historial.",
+      "activation_cta_first_plant": "Agregar primera planta",
+      "activation_cta_second_plant": "Agregar segunda planta",
+      "activation_cta_third_plant": "Agregar tercera planta",
+      "activation_cta_today_start": "Empezar hoy",
+      "activation_cta_later": "Mas tarde",
+      "locked_slot_title": "Slot {number} bloqueado",
+      "locked_slot_body": "Con el acceso de prueba Care+ puedes acompanar hasta 3 plantas."
+    },
+    "externalTest": {
+      "kicker": "Acceso de prueba Buddy Care+",
+      "intro_title": "Prueba temprana gratuita",
+      "intro_body": "Estas probando una version temprana de Buddy Care+. Tu feedback ayuda a que el coach de plantas sea mas claro y mas util.",
+      "test_access_note": "Acceso de prueba gratuito. No se activa ningun pago. Tus datos de Buddy Care quedan locales en el sistema de guardado existente.",
+      "start": "Iniciar prueba",
+      "feedback": "Dar feedback",
+      "checklist_title": "Probar Buddy Care+",
+      "checklist_show": "Mostrar lista",
+      "checklist_progress": "{done} de {total} pasos detectados.",
+      "checklist_item": {
+        "first_plant": "Crear una planta",
+        "daily_check": "Completar un chequeo diario",
+        "diary_open": "Abrir el diario",
+        "test_access": "Activar acceso de prueba",
+        "second_plant": "Crear una segunda planta",
+        "reload": "Recargar la pagina",
+        "feedback": "Dar feedback"
+      },
+      "feedback_kicker": "Feedback de prueba",
+      "feedback_title": "Tu opinion",
+      "feedback_body": "Un feedback corto y honesto ayuda mas. El contenido del cultivo no se copia en los eventos de prueba.",
+      "feedback_saved_title": "Feedback guardado",
+      "feedback_saved_body": "Gracias. Tus respuestas quedan locales y ayudan a decidir la siguiente fase de prueba.",
+      "feedback_submit": "Guardar feedback",
+      "feedback_clarity_label": "Que tan comprensible fue Buddy Care+?",
+      "feedback_helpful_label": "Que fue lo mas util?",
+      "feedback_confusion_label": "Que fue poco claro o molesto?",
+      "feedback_continue_label": "Seguirias usando Buddy Care+?",
+      "feedback_pay_label": "En general pagarias por esto?",
+      "feedback_model_label": "Que modelo te encajaria mejor?",
+      "feedback_price_label": "Que precio para un pase de temporada te pareceria realista?",
+      "feedback_privacy_note": "El texto libre queda solo de forma local en Buddy Care+. Los eventos de seguimiento no incluyen nombres de plantas, notas ni contenido del cultivo.",
+      "tools_kicker": "Datos de prueba",
+      "tools_title": "Restablecer o exportar la prueba",
+      "tools_body": "Solo se exportan eventos tecnicos de prueba de Buddy Care. El Grow Simulator normal no se toca.",
+      "export_action": "Exportar eventos de prueba",
+      "reset_action": "Restablecer datos de prueba",
+      "reset_confirm_title": "Restablecer los datos de prueba de Buddy Care?",
+      "reset_confirm_body": "Se eliminaran plantas, chequeos diarios y entradas del diario dentro de Buddy Care+. El Grow Simulator normal no cambia.",
+      "select_placeholder": "Elige una opcion",
+      "clarity_option": {
+        "1": "1 - poco claro",
+        "2": "2",
+        "3": "3",
+        "4": "4",
+        "5": "5 - muy claro"
+      },
+      "helpful_option": {
+        "today_view": "Hoy importa",
+        "daily_check": "Chequeo diario",
+        "buddy_hints": "Consejos de Buddy",
+        "diary": "Diario",
+        "risk_light": "Semaforo",
+        "trend": "Tendencia",
+        "weekly_review": "Resumen semanal",
+        "three_plant_overview": "Vista de 3 plantas"
+      },
+      "choice": {
+        "yes": "Si",
+        "maybe": "Quizas",
+        "no": "No"
+      },
+      "pricing_model": {
+        "season_pass": "pase de temporada unico",
+        "monthly_subscription": "suscripcion mensual",
+        "one_time_purchase": "compra unica",
+        "free_only": "solo gratis"
+      },
+      "season_pass_price": {
+        "under_10": "menos de 10 EUR",
+        "10_15": "10-15 EUR",
+        "15_20": "15-20 EUR",
+        "over_20": "mas de 20 EUR",
+        "would_not_pay": "no pagaria"
+      }
+    },
+    "phase": {
+      "seedling": "Plantula",
+      "early_veg": "Vegetativo temprano",
+      "veg": "Vegetativo",
+      "stretch": "Stretch",
+      "flower": "Floracion",
+      "ripening": "Maduracion",
+      "harvest_window": "Ventana de cosecha",
+      "unknown": "Desconocida"
+    },
+    "type": {
+      "auto": "Auto",
+      "photoperiod": "Foto",
+      "unknown": "Desconocido"
+    },
+    "environment": {
+      "indoor": "Indoor",
+      "outdoor": "Outdoor",
+      "greenhouse": "Invernadero",
+      "unknown": "Entorno desconocido"
+    },
+    "dailyCheck": {
+      "kicker": "Chequeo diario",
+      "title": "Chequeo diario",
+      "title_for_plant": "Chequeo diario de {plant}",
+      "medium_label": "Como se siente el sustrato?",
+      "leaf_label": "Como se ven las hojas?",
+      "growth_label": "Como se ve el crecimiento?",
+      "environment_label": "Paso algo llamativo hoy?",
+      "pests_label": "Hay plagas visibles?",
+      "height_label": "Altura en cm, opcional",
+      "note_label": "Nota, opcional",
+      "save": "Guardar chequeo",
+      "start": "Iniciar chequeo diario",
+      "recheck": "Actualizar chequeo diario",
+      "view": "Ver chequeo diario",
+      "latest_check_none": "Aun no hay chequeo",
+      "latest_check_value": "Ultimo chequeo: {date}",
+      "today_open": "Chequeo diario abierto",
+      "today_all_clear": "Todo se ve tranquilo",
+      "today_compare_tomorrow": "Compara otra vez las hojas manana",
+      "status": {
+        "no_check_today": "Chequeo diario abierto",
+        "checked_today": "Chequeo diario hecho",
+        "needs_attention": "Observar mejor"
+      },
+      "option": {
+        "dry": "Seco",
+        "moist": "Ligeramente humedo",
+        "wet": "Mojado",
+        "unknown": "No lo se",
+        "normal": "Normal",
+        "hanging": "Caidas",
+        "curling": "Se enrollan",
+        "spots": "Manchas visibles",
+        "yellowing": "Se ponen amarillas",
+        "fast": "Rapido",
+        "slow": "Lento",
+        "hot": "Calor",
+        "humid": "Muy humedo",
+        "cold": "Frio",
+        "windy": "Ventoso",
+        "no": "No",
+        "unsure": "No estoy seguro",
+        "yes": "Si"
+      }
+    },
+    "diary": {
+      "title": "Diario",
+      "open": "Abrir diario",
+      "hide": "Cerrar diario",
+      "all_plants": "Todas las plantas",
+      "add_entry": "Anadir entrada",
+      "save_entry": "Guardar entrada",
+      "delete_entry": "Eliminar",
+      "delete_confirm_title": "Eliminar esta entrada?",
+      "delete_confirm_body": "Esta entrada del diario se eliminara de Buddy Care+.",
+      "latest_entry_none": "Ultima entrada: todavia no hay ninguna",
+      "latest_entry_value": "Ultima entrada: {date}",
+      "timeline_title": "Timeline",
+      "empty_title": "Todavia no hay entradas.",
+      "empty_body": "Consejo de Buddy: una nota corta hoy te ayudara despues a entender mejor los cambios.",
+      "today_updated": "Diario actualizado",
+      "today_optional": "Opcional: anadir una nota corta al diario",
+      "linked_check": "Daily check vinculado",
+      "field_medium": "Sustrato",
+      "field_leaves": "Hojas",
+      "field_growth": "Crecimiento",
+      "field_environment": "Entorno",
+      "field_pests": "Plagas",
+      "plant_label": "Planta",
+      "title_label": "Titulo",
+      "title_placeholder": "p. ej. postura de las hojas por la manana",
+      "note_label": "Nota",
+      "note_placeholder": "Anota una observacion breve",
+      "height_label": "Altura en cm",
+      "tags_label": "Tags",
+      "manual_title_fallback": "Entrada sin titulo",
+      "auto_title_complete": "Daily check completado",
+      "auto_title_attention": "Daily check: observar con mas detalle",
+      "tag": {
+        "observation": "Observacion",
+        "watering": "Riego",
+        "height": "Altura",
+        "environment": "Entorno",
+        "issue": "Incidencia",
+        "weekly_review": "Revision semanal",
+        "other": "Otro",
+        "daily_check": "Daily check"
+      }
+    },
+    "risk": {
+      "status": {
+        "gray": "Aun faltan datos",
+        "green": "Sin senales llamativas",
+        "yellow": "Observar con mas atencion",
+        "red": "Revisar hoy"
+      },
+      "message": {
+        "gray": "Todavia necesito un daily check antes de poder ubicar mejor esta planta.",
+        "green": "Todo parece tranquilo. Hoy basta con una revision serena.",
+        "yellow": "Hay una senal llamativa. No hay motivo para entrar en panico: observa con mas atencion y compara manana.",
+        "red": "Hay varias senales llamativas. Revisa la planta con calma hoy y documenta el cambio."
+      },
+      "aggregate": {
+        "all_gray": "Buddy dice: Empieza con un daily check corto para que pueda ubicar mejor tus plantas.",
+        "all_green": "Buddy dice: Hoy todo parece tranquilo. Manten tu rutina y deja una nota breve.",
+        "has_yellow": "Buddy dice: Una planta merece una observacion mas atenta. No hay motivo para el panico: una comparacion limpia ayuda.",
+        "has_red": "Buddy dice: Una planta necesita tu atencion hoy. Revisa con calma y documenta lo que ves."
+      },
+      "recommendation": {
+        "gray_check": "Iniciar daily check",
+        "gray_data": "Revisar los datos de la planta",
+        "gray_diary": "Anadir la primera nota al diario",
+        "green_routine": "Mantener la rutina",
+        "green_note": "Anadir una nota opcional",
+        "green_tomorrow": "Volver a revisar manana brevemente",
+        "yellow_document": "Documentar la zona llamativa",
+        "yellow_compare": "Comparar otra vez manana",
+        "yellow_not_many_changes": "No cambiar varias cosas a la vez",
+        "red_check": "Revisar la planta con calma hoy",
+        "red_document": "Anotar la observacion",
+        "red_compare": "Hacer la comparacion manana"
+      },
+      "diary_tip": {
+        "yellow": "Consejo de Buddy: anade hoy una nota breve para poder comparar manana.",
+        "red": "Consejo de Buddy: documenta hoy con especial cuidado la zona llamativa."
+      },
+      "signal": {
+        "pest_title": "Plagas visibles",
+        "pest_message": "Las plagas visibles son una senal clara para revisar esta planta con calma hoy.",
+        "moisture_title": "Sustrato mojado y hojas caidas",
+        "moisture_message": "Esta combinacion merece una revision tranquila hoy.",
+        "leaf_title": "Las hojas se ven distintas",
+        "leaf_message": "La postura o el color de las hojas llaman la atencion hoy.",
+        "growth_title": "El crecimiento parece mas lento",
+        "growth_message": "Ahora mismo el crecimiento parece mas lento de lo esperado.",
+        "environment_title": "El entorno llamo la atencion",
+        "environment_message": "Calor, humedad, frio o viento llamaron la atencion hoy.",
+        "pest_unsure_title": "Plagas poco claras",
+        "pest_unsure_message": "Marcaste las plagas como dudosas, asi que esta planta merece una mirada mas cercana.",
+        "diary_issue_title": "Nota de problema hoy",
+        "diary_issue_message": "El diario de hoy ya marca un punto llamativo.",
+        "attention_title": "El chequeo marco atencion",
+        "attention_message": "El ultimo daily check ya sugiere un seguimiento mas cercano.",
+        "repeat_title": "Atencion repetida",
+        "repeat_message": "Hubo varios chequeos llamativos dentro de las ultimas 48 horas."
+      }
+    },
+    "trend": {
+      "title": "Tendencia",
+      "compare_title": "Buddy compara",
+      "card_value": "Tendencia: {trend}",
+      "status": {
+        "not_enough_data": "Aun no hay suficientes datos",
+        "stable": "Tendencia tranquila",
+        "improving": "Mas tranquilo que el ultimo chequeo",
+        "watch_change": "Nuevo cambio detectado",
+        "repeat_attention": "Se repite la atencion"
+      },
+      "message": {
+        "not_enough_data": "Todavia necesito al menos dos chequeos para comparar los cambios de forma util.",
+        "stable": "La tendencia parece tranquila. Manten tu rutina.",
+        "improving": "El chequeo de hoy parece mas tranquilo que el anterior. Sigue observando y no cambies demasiadas cosas a la vez.",
+        "watch_change": "Hay un cambio nuevo desde el ultimo chequeo. Documentalo brevemente y compara otra vez manana.",
+        "repeat_attention": "La senal llamativa se repite. Revisa la planta con calma hoy y deja registrado el seguimiento."
+      },
+      "today": {
+        "not_enough_data": "Aun faltan datos para comparar",
+        "stable": "Tendencia tranquila desde el ultimo chequeo",
+        "improving": "Mas tranquilo que el ultimo chequeo",
+        "watch_change": "Nuevo cambio desde el ultimo chequeo",
+        "repeat_attention": "La senal se repite"
+      },
+      "height": {
+        "delta": "Desde el ultimo valor de altura: {delta} cm",
+        "first": "Primer valor de altura guardado"
+      }
+    },
+    "history": {
+      "title": "Historial",
+      "last_checks": "Ultimos chequeos",
+      "last_entries": "Ultimas entradas",
+      "low_data": "Aun hay pocos datos.",
+      "checks_available": "Historial: {count} chequeos",
+      "day": {
+        "today": "Hoy",
+        "yesterday": "Ayer",
+        "two_days_ago": "Hace 2 dias",
+        "days_ago": "Hace {count} dias"
+      },
+      "summary": {
+        "low_data": "Todavia hay poco historial. Dos o tres chequeos ayudan a Buddy a comparar mejor.",
+        "stable": "La tendencia parece tranquila. Manten tu rutina.",
+        "improving": "La tendencia hoy parece mas tranquila. Sigue observando y no cambies demasiadas cosas a la vez.",
+        "watch_change": "Hay un cambio nuevo. Compara otra vez manana y documentalo brevemente.",
+        "repeat_attention": "La senal llamativa se repite. Revisa la planta con calma hoy y documenta el historial."
+      }
+    },
+    "weeklyReview": {
+      "title": "Revision semanal",
+      "this_week": "Esta semana",
+      "card_value": "Semana: {status}",
+      "next_focus": "Siguiente foco",
+      "focus_line": "Foco semanal: {focus}",
+      "checks_completed": "{count} chequeos completados",
+      "diary_entries_added": "{count} entradas de diario anadidas",
+      "label": {
+        "not_enough_data": "poco historial",
+        "calm_week": "tranquila",
+        "mixed_week": "mezclada",
+        "attention_week": "observar mejor"
+      },
+      "summary": {
+        "not_enough_data": "Todavia hay poco historial. Dos o tres chequeos mas ayudan a Buddy a ubicar mejor el seguimiento.",
+        "calm_week": "El recorrido de la semana parece tranquilo. Manten tu rutina y sigue documentando brevemente.",
+        "mixed_week": "La semana fue mixta. Sigue observando con calma los puntos llamativos y comparalos con tus ultimas notas.",
+        "attention_week": "Esta planta merece una observacion mas cercana en los proximos dias. Revisala con calma y documenta el seguimiento."
+      },
+      "highlight": {
+        "low_data": "Todavia hay poco historial",
+        "calm": "El seguimiento parece tranquilo",
+        "mixed": "La semana fue mixta",
+        "attention_repeat": "{count}x observar con mas atencion",
+        "today_check": "{count}x revisar hoy",
+        "new_change": "Se detecto un cambio nuevo",
+        "height": "Valores de altura documentados"
+      },
+      "focus": {
+        "check_two_three_days": "hacer un daily check en 2-3 dias",
+        "first_diary_entry": "anadir una primera nota breve al diario",
+        "build_routine": "crear una rutina",
+        "keep_routine": "mantener la rutina",
+        "height_once_week": "registrar la altura una vez por semana",
+        "note_changes": "anadir una nota breve cuando algo cambie",
+        "compare_spot": "comparar otra vez la zona llamativa",
+        "no_many_changes": "no cambiar varias cosas a la vez",
+        "add_short_note": "anadir una nota breve",
+        "check_today_calmly": "revisar la planta con calma hoy",
+        "document_trend": "documentar el seguimiento",
+        "compare_tomorrow": "comparar otra vez manana"
+      }
+    },
+    "buddy": {
+      "alt": {
+        "header": "Buddy como coach de plantas",
+        "empty": "Buddy esta esperando tu primera planta",
+        "today": "Buddy da una pista",
+        "success": "Buddy informa: todo en orden",
+        "attention": "Buddy informa: observa con mas detalle"
+      },
+      "label": {
+        "daily_check": "Buddy acompana tu chequeo diario",
+        "checked_today": "Buddy informa: todo en orden",
+        "needs_attention": "Buddy informa: observa con mas detalle"
+      },
+      "message": {
+        "daily_check_intro": "Buddy hace contigo un chequeo corto de la planta. Tarda menos de un minuto."
+      }
+    },
+    "tasks": {
+      "seedling_observe": "Revisar el estado",
+      "seedling_water_check": "No mantener el sustrato siempre mojado",
+      "seedling_photo": "Hacer una foto de seguimiento",
+      "early_veg_water_check": "Revisar la humedad del sustrato",
+      "early_veg_observe": "Observar el color de las hojas",
+      "early_veg_photo": "Hacer una foto",
+      "veg_observe": "Observar el crecimiento",
+      "veg_water_check": "Revisar la humedad del sustrato",
+      "veg_document_height": "Registrar la altura",
+      "veg_weather_stress": "Observar el estres del clima",
+      "stretch_height": "Registrar la altura",
+      "stretch_space": "Revisar el espacio disponible",
+      "stretch_photo": "Hacer una foto comparativa",
+      "flower_visual_check": "Revisar visualmente la zona floral",
+      "flower_environment": "Vigilar humedad y entorno",
+      "flower_photo": "Documentar el progreso en foto",
+      "flower_greenhouse_humidity": "Vigilar humedad y movimiento de aire",
+      "ripening_observe": "Observar senales de maduracion",
+      "ripening_flower_check": "Revisar la zona floral",
+      "ripening_notes": "Preparar notas finales",
+      "harvest_window_check": "Revisar la ventana de cosecha",
+      "harvest_photo": "Hacer una foto final",
+      "harvest_report": "Preparar el informe del cultivo",
+      "unknown_complete_data": "Completar los datos de la planta",
+      "unknown_start_date": "Revisar la fecha de inicio",
+      "unknown_first_check": "Preparar la primera revision",
+      "weekly_review": "Hacer una revision semanal",
+      "weekly_photo": "Comparar la foto semanal"
+    },
+    "summary": {
+      "observe_and_document": "Hoy lo mas importante es observar y documentar. No todos los cambios necesitan una accion inmediata.",
+      "complete_data": "Completa primero los datos que faltan. Asi la fase y las tareas seran bastante mas utiles.",
+      "stay_observant": "Hoy conviene sobre todo una mirada tranquila al progreso, al clima y a la documentacion.",
+      "checked_today": "Todo se ve tranquilo. Hoy basta con una revision calmada.",
+      "needs_attention": "Hay algo que llama la atencion. No hace falta panico: documentalo y compara manana otra vez.",
+      "no_check_today": "Un chequeo corto ayuda a detectar cambios antes."
+    },
+    "more": {
+      "kicker": "Care+ y ajustes",
+      "title": "Mas",
+      "body": "Aqui encuentras acceso de prueba, feedback, avisos y tus herramientas de prueba de Buddy Care."
+    }
   },
   "home": {
     "water": "Agua",
@@ -442,9 +1064,18 @@
           "title": "Agua baja",
           "description": "El agua hoy se ve algo justa. Como quieres leer este run?",
           "option": {
-            "careful_water": { "label": "Regar con cuidado", "description": "Dar un paso pequeno y tranquilo en vez de corregir con prisa." },
-            "check_later": { "label": "Revisar luego", "description": "Observar primero y volver a leer el run despues." },
-            "read_buddy_tip": { "label": "Leer consejo de Buddy", "description": "Pedir una lectura extra de Buddy antes de actuar." }
+            "careful_water": {
+              "label": "Regar con cuidado",
+              "description": "Dar un paso pequeno y tranquilo en vez de corregir con prisa."
+            },
+            "check_later": {
+              "label": "Revisar luego",
+              "description": "Observar primero y volver a leer el run despues."
+            },
+            "read_buddy_tip": {
+              "label": "Leer consejo de Buddy",
+              "description": "Pedir una lectura extra de Buddy antes de actuar."
+            }
           },
           "result": {
             "careful_water": "Linea limpia. Termina primero {task} hoy y luego vuelve a leer el run.",
@@ -456,9 +1087,18 @@
           "title": "Estres elevado",
           "description": "La planta hoy se ve mas tensa. Que linea quieres seguir?",
           "option": {
-            "stay_calm": { "label": "Mantener la calma", "description": "Quitar presion sin cargar mas el run." },
-            "review_routine": { "label": "Revisar rutina", "description": "Leer primero la rutina habitual de cuidado y analisis." },
-            "avoid_boost": { "label": "Evitar boost", "description": "Hoy mejor no forzar aceleracion." }
+            "stay_calm": {
+              "label": "Mantener la calma",
+              "description": "Quitar presion sin cargar mas el run."
+            },
+            "review_routine": {
+              "label": "Revisar rutina",
+              "description": "Leer primero la rutina habitual de cuidado y analisis."
+            },
+            "avoid_boost": {
+              "label": "Evitar boost",
+              "description": "Hoy mejor no forzar aceleracion."
+            }
           },
           "result": {
             "stay_calm": "Buena direccion. {task} deberia sacar primero la presion del run antes de hacer mas.",
@@ -470,9 +1110,18 @@
           "title": "Foco en riesgo",
           "description": "Hoy el run muestra mas riesgo que comodidad. Que va primero?",
           "option": {
-            "prioritize_risk": { "label": "Priorizar riesgo", "description": "Bajar la presion antes que nada." },
-            "first_diagnosis": { "label": "Primero diagnostico", "description": "Leer la situacion con limpieza antes de actuar." },
-            "wait_and_watch": { "label": "Esperar y observar", "description": "No precipitarse y mirar primero la tendencia." }
+            "prioritize_risk": {
+              "label": "Priorizar riesgo",
+              "description": "Bajar la presion antes que nada."
+            },
+            "first_diagnosis": {
+              "label": "Primero diagnostico",
+              "description": "Leer la situacion con limpieza antes de actuar."
+            },
+            "wait_and_watch": {
+              "label": "Esperar y observar",
+              "description": "No precipitarse y mirar primero la tendencia."
+            }
           },
           "result": {
             "prioritize_risk": "Prioridad clara. {task} recibe hoy tu foco primero para que el resto se lea mejor.",
@@ -484,9 +1133,18 @@
           "title": "Floracion en foco",
           "description": "La floracion o maduracion esta activa. Que quieres vigilar hoy?",
           "option": {
-            "check_humidity": { "label": "Revisar humedad", "description": "Leer con cuidado clima y humedad hoy." },
-            "avoid_stress": { "label": "Evitar estres", "description": "Sin intervenciones innecesarias en una fase sensible." },
-            "use_buddy_tip": { "label": "Usar Buddy Extra Tip", "description": "Pedir antes una lectura extra del acompanante." }
+            "check_humidity": {
+              "label": "Revisar humedad",
+              "description": "Leer con cuidado clima y humedad hoy."
+            },
+            "avoid_stress": {
+              "label": "Evitar estres",
+              "description": "Sin intervenciones innecesarias en una fase sensible."
+            },
+            "use_buddy_tip": {
+              "label": "Usar Buddy Extra Tip",
+              "description": "Pedir antes una lectura extra del acompanante."
+            }
           },
           "result": {
             "check_humidity": "Buen foco para esta fase. {task} encaja mejor hoy como ancla segura.",
@@ -498,9 +1156,18 @@
           "title": "Rutina de crecimiento",
           "description": "La fase vegetativa vive de bases limpias. Por donde quieres empezar?",
           "option": {
-            "check_supply": { "label": "Revisar suministro", "description": "Ordenar primero agua y nutrientes." },
-            "watch_light_stress": { "label": "Mirar luz y estres", "description": "Tener primero presente carga y clima." },
-            "focus_dailycare": { "label": "Focar Daily Care", "description": "Usar la tarea de hoy como ancla clara." }
+            "check_supply": {
+              "label": "Revisar suministro",
+              "description": "Ordenar primero agua y nutrientes."
+            },
+            "watch_light_stress": {
+              "label": "Mirar luz y estres",
+              "description": "Tener primero presente carga y clima."
+            },
+            "focus_dailycare": {
+              "label": "Focar Daily Care",
+              "description": "Usar la tarea de hoy como ancla clara."
+            }
           },
           "result": {
             "check_supply": "Buena base de crecimiento. {task} es el mejor punto de partida para el loop diario de hoy.",
@@ -512,9 +1179,18 @@
           "title": "Decision de boost de tiempo",
           "description": "Hoy la velocidad puede parecer tentadora. Como quieres manejarla?",
           "option": {
-            "use_safe_boost_check": { "label": "Usar Safe Boost Check", "description": "Leer primero de forma conservadora antes de acelerar." },
-            "finish_dailycare_first": { "label": "Primero Daily Care", "description": "Fijar el ancla del dia antes de usar velocidad." },
-            "skip_for_now": { "label": "Dejarlo para despues", "description": "Leer el dia primero sin aceleracion." }
+            "use_safe_boost_check": {
+              "label": "Usar Safe Boost Check",
+              "description": "Leer primero de forma conservadora antes de acelerar."
+            },
+            "finish_dailycare_first": {
+              "label": "Primero Daily Care",
+              "description": "Fijar el ancla del dia antes de usar velocidad."
+            },
+            "skip_for_now": {
+              "label": "Dejarlo para despues",
+              "description": "Leer el dia primero sin aceleracion."
+            }
           },
           "result": {
             "use_safe_boost_check": "Es el camino mas seguro. {action} encaja mejor hoy que acelerar a ciegas.",
@@ -1417,6 +2093,11 @@
           "lesson": "La mejora tambien es una senal. No todo movimiento positivo pide una accion inmediata."
         }
       }
+    },
+    "more": {
+      "kicker": "Care+ y ajustes",
+      "title": "Mas",
+      "body": "Aqui encuentras acceso de prueba, feedback, avisos y tus herramientas de prueba de Buddy Care."
     }
   },
   "settings": {
@@ -1507,9 +2188,37 @@
     "ready": "Listo"
   },
   "support": {
-    "paypal_cta": "Apoyar con PayPal",
-    "voluntary_hint": "Voluntario. Cada aporte ayuda directamente al desarrollo.",
-    "title": "Apoyar GrowSim"
+    "paypal_cta": "Continuar a PayPal",
+    "paypal_cta_selected": "Continuar a PayPal ({amount})",
+    "paypal_cta_title": "Abre PayPal externamente para {tier} ({amount}).",
+    "paypal_cta_disabled_title": "Elige primero un nivel de apoyo.",
+    "voluntary_hint": "Opcional. Cada aporte apoya directamente el desarrollo.",
+    "select_hint": "Elige primero un nivel de apoyo. El pago solo se abrira externamente por PayPal despues.",
+    "selection_hint": "Seleccionado: {tier} ({amount}). Es apoyo voluntario, usa PayPal externo y no cambia tu run.",
+    "title": "Apoyar GrowSim",
+    "sheet_note": "Si GrowSim te ayuda o simplemente se siente bien de usar, aqui puedes apoyar su desarrollo continuo.",
+    "intro_title": "Apoyo voluntario",
+    "intro_subtitle": "Gracias por ayudar a Grow Simulator a crecer con un apoyo tranquilo y opcional.",
+    "section_eyebrow": "Niveles de apoyo",
+    "tier": {
+      "seed": {
+        "label": "Semilla",
+        "description": "Un pequeno aporte para nuevas ideas"
+      },
+      "growth": {
+        "label": "Crecimiento",
+        "description": "Un aporte solido para el desarrollo continuo"
+      },
+      "bloom": {
+        "label": "Floracion",
+        "description": "Un aporte mayor para futuras mejoras"
+      },
+      "custom": {
+        "label": "Importe libre",
+        "description": "Apoyo flexible",
+        "amount": "Importe libre"
+      }
+    }
   },
   "rewards": {
     "status_claimed": "Ya reclamado",
@@ -2321,19 +3030,20 @@
       "welcome": {
         "eyebrow": "Primeros pasos",
         "title": "Empieza tu primer grow",
-        "body": "Lleva tu planta por crecimiento, decisiones, errores, clima, estres y cosecha. Buddy te acompana - pero tu decides."
+        "body": "Preparamos tu primer grow en cuatro pasos tranquilos. Despues Buddy te lleva directo al dia 1 con una primera decision real.",
+        "hint": "Tu decides el setup y yo mantengo los primeros minutos claros, calmados y faciles de leer."
       },
       "buddy": {
         "eyebrow": "Buddy",
         "title": "Conoce a tu guia",
-        "body": "Soy Buddy. No solo te digo que tocar. Te enseno por que reacciona tu planta.",
-        "hint": "Voy corto, calido y honesto. Tu primer dia debe sentirse premium, no como un formulario."
+        "body": "No solo te digo que importa. Tambien te digo por que cuenta y que pasa despues.",
+        "hint": "Sigo siendo breve, tranquilo y honesto para que tu primer dia se sienta guiado y no tecnico."
       },
       "setup": {
         "eyebrow": "Quick setup",
         "title": "Empieza tu primer grow",
-        "body": "Bastan tres decisiones cortas. El resto lo mantenemos tranquilo para tu primer run.",
-        "hint": "Mapeamos tus elecciones al setup existente para que el inicio sea ligero y la simulacion siga estable.",
+        "body": "Bastan unas pocas decisiones claras. Definimos ahora el tono de tu run y enseguida empieza el primer dia.",
+        "hint": "Elige el setup que te parezca correcto para tu primer run. Yo mantengo las diferencias cortas y claras.",
         "style_title": "Estilo de grow",
         "style_hint": "Que tan directo debe sentirse tu primer run.",
         "environment_title": "Entorno",
@@ -2354,19 +3064,19 @@
             "title": "Seguro",
             "badge": "Recomendado",
             "body": "Mas margen para una primera impresion calmada.",
-            "effect": "Calma · limpio · estable"
+            "effect": "Calma ? limpio ? estable"
           },
           "fast": {
             "title": "Rapido",
             "badge": "Directo",
             "body": "Feedback temprano y una sensacion mas inmediata del cambio.",
-            "effect": "Ritmo · reaccion · foco"
+            "effect": "Ritmo ? reaccion ? foco"
           },
           "challenging": {
             "title": "Exigente",
             "badge": "Mas presion",
             "body": "Menos comodidad y mas observacion desde el inicio.",
-            "effect": "Presion · timing · disciplina"
+            "effect": "Presion ? timing ? disciplina"
           }
         },
         "environment": {
@@ -2374,19 +3084,19 @@
             "title": "Indoor",
             "badge": "Control",
             "body": "Inicio mas calmado con clima mas claro.",
-            "effect": "Limpio · estable · calmado"
+            "effect": "Limpio ? estable ? calmado"
           },
           "outdoor": {
             "title": "Outdoor",
             "badge": "Clima",
             "body": "Mas naturaleza, mas cambios, mas historia.",
-            "effect": "Aire · clima · timing"
+            "effect": "Aire ? clima ? timing"
           },
           "greenhouse": {
             "title": "Invernadero",
             "badge": "Hibrido",
             "body": "Protegido, pero no esteril. Un punto medio.",
-            "effect": "Margen · luz · observacion"
+            "effect": "Margen ? luz ? observacion"
           }
         },
         "plant": {
@@ -2394,19 +3104,19 @@
             "title": "Amigable",
             "badge": "Suave",
             "body": "Una apertura clara y tolerante.",
-            "effect": "Margen · aprendizaje · calma"
+            "effect": "Margen ? aprendizaje ? calma"
           },
           "auto": {
             "title": "Auto",
             "badge": "Directo",
             "body": "Se siente mas rapido y mas inmediato al empezar.",
-            "effect": "Ritmo · flow · foco"
+            "effect": "Ritmo ? flow ? foco"
           },
           "yield": {
             "title": "Productiva",
             "badge": "Objetivo",
             "body": "Un inicio mirando el potencial de mas adelante.",
-            "effect": "Potencial · base · meta"
+            "effect": "Potencial ? base ? meta"
           }
         },
         "mode": {
@@ -2425,15 +3135,15 @@
         },
         "light": {
           "medium": {
-            "title": "Medium Light",
+            "title": "Luz media",
             "badge": "Estandar",
-            "body": "Base de luz solida para un inicio calmado y facil de leer.",
+            "body": "Luz equilibrada que hace el primer dia facil de leer.",
             "effect": "Balance ? control ? margen"
           },
           "high": {
-            "title": "High Output Light",
+            "title": "Luz intensa",
             "badge": "Mas tarde",
-            "body": "Mas presion y velocidad cuando tu perfil ya lo haya desbloqueado.",
+            "body": "Mas intensidad y velocidad cuando tu perfil ya la haya desbloqueado.",
             "effect": "Pico ? consumo ? foco"
           }
         },
@@ -2441,7 +3151,7 @@
           "soil": {
             "title": "Tierra",
             "badge": "Recomendado",
-            "body": "Perdona pequenos errores y sigue siendo facil de leer en el primer run.",
+            "body": "Perdona pequenos errores y te deja aprender el ritmo con calma.",
             "effect": "Margen ? calma ? tolerancia"
           },
           "coco": {
@@ -2455,7 +3165,7 @@
           "small": {
             "title": "2 litros (S)",
             "badge": "Estandar",
-            "body": "Maceta pequena de inicio con respuesta directa y ventana de cuidado mas estrecha.",
+            "body": "Maceta pequena de inicio con respuesta directa y una ventana de cuidado mas estrecha.",
             "effect": "Compacta ? directa ? activa"
           },
           "medium": {
@@ -2481,8 +3191,8 @@
       "summary": {
         "eyebrow": "Listo",
         "title": "Tu grow esta listo",
-        "body": "Vas a crear el run y entrar directo en un primer dia guiado.",
-        "hint": "Sigo contigo. Tras empezar guiamos solo el primer momento importante, no diez menus."
+        "body": "Tu primer run ya esta listo. Conservamos este setup y pasamos directo a un dia 1 guiado.",
+        "hint": "Este es tu punto de partida tranquilo: setup claro, sin presion y con un solo primer momento importante."
       },
       "actions": {
         "next": "Siguiente",
@@ -2491,7 +3201,7 @@
       "dashboard_followup": {
         "eyebrow": "Ya en marcha",
         "title": "Tu grow ya esta en marcha",
-        "body": "El dia 1 esta hecho. Desde aqui tu planta seguira desarrollandose paso a paso, y Buddy aparecera cuando algo importante necesite atencion.",
+        "body": "El dia 1 esta hecho. Desde aqui tu planta seguira desarrollandose paso a paso y Buddy aparecera cuando algo importante necesite atencion.",
         "buddy": "Buen comienzo. Vuelve mas tarde: el crecimiento, la luz y el cuidado cambiaran el siguiente dia.",
         "cta": "Continuar"
       },
@@ -2506,14 +3216,15 @@
         "plant": {
           "eyebrow": "Dia 1",
           "title": "Dia 1 - Plantula",
-          "body": "Todo empieza pequeno. Hoy lo importante es no exagerar.",
-          "buddy": "Yo vigilo la reaccion. Tu eliges el primer cuidado.",
+          "body": "Todo empieza pequeno. Hoy la clave es mantener la calma y leer bien la primera reaccion.",
+          "buddy": "Tu haces la primera eleccion y yo miro lo que la plantula te devuelve.",
           "cta": "Elegir primer cuidado"
         },
         "decision": {
           "eyebrow": "Primera decision",
           "title": "La maceta se siente un poco seca. Que haces?",
-          "body": "Sin castigo duro y sin truco. Solo un primer momento con una respuesta real.",
+          "body": "Esta es tu primera decision real de grow: regar ahora, esperar un poco y marcar el tono del dia 1.",
+          "buddy": "La humedad es lo primero que puede desviarse. Si quieres un comienzo estable, elige el movimiento mas suave.",
           "gentle": {
             "title": "Regar con cuidado",
             "body": "Mejora un poco la humedad y mantiene el estres bajo."
@@ -2534,7 +3245,7 @@
         },
         "heavy": {
           "result_title": "Valiente, pero vigilado",
-          "result_body": "Puede salir bien - pero voy a mirar de cerca las raices.",
+          "result_body": "Puede salir bien, pero voy a mirar de cerca las raices.",
           "buddy": "Mas agua no siempre es mas seguridad. Hoy todavia sigue bajo control."
         },
         "wait": {
@@ -2554,10 +3265,10 @@
           "decision": "Primera decision de cuidado",
           "stability": "Estabilidad",
           "coins": "Coins",
-          "teaser": "Manana te espera la primera reaccion de crecimiento.",
+          "teaser": "Manana empezaras a leer como responde de verdad este setup.",
           "cta": "Ir al dashboard",
           "yes": "Hecho",
-          "good": "Buen inicio. La planta ya conoce tu ritmo.",
+          "good": "Buen inicio. Tu grow ya tiene un ritmo tranquilo.",
           "okay": "Inicio tranquilo. Hoy observar fue suficiente.",
           "observed": "Aprendimos algo. Manana leeremos mejor las raices.",
           "summary_state": {
