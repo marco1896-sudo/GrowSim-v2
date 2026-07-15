@@ -52,24 +52,42 @@ const ROOT = path.resolve(__dirname, '..');
     await context.setOffline(true);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForBoot(page, 20000);
-    const offlineState = await page.evaluate(async () => {
+    await page.evaluate(async () => {
       const storage = window.GrowSimBuddyCarePhotoStorage.storage;
-      const [first, second] = await Promise.all([storage.getPhotoBlob('offline-photo-a'), storage.getPhotoBlob('offline-photo-b')]);
+      await Promise.all([storage.getPhotoBlob('offline-photo-a'), storage.getPhotoBlob('offline-photo-b')]);
       window.__gsOpenBuddyCare();
       window.__gsSetActiveBuddyCareView('diary');
       window.__gsSetBuddyCareHistoryMode('photos');
-      await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+    await page.waitForFunction(() => document.querySelectorAll('.buddy-care-photo-card').length === 2);
+    await page.evaluate(() => {
       window.__gsToggleBuddyCareComparePhoto('offline-photo-a');
       window.__gsToggleBuddyCareComparePhoto('offline-photo-b');
+    });
+    await page.waitForFunction(() => {
+      const images = Array.from(document.querySelectorAll('.buddy-care-photo-comparison img[data-buddy-care-photo-id]'));
+      return images.length === 2 && images.every((image) => (
+        image.dataset.buddyCarePhotoState === 'loaded'
+        && image.src.startsWith('blob:')
+        && image.complete
+        && image.naturalWidth > 0
+      ));
+    });
+    const offlineState = await page.evaluate(async () => {
+      const storage = window.GrowSimBuddyCarePhotoStorage.storage;
+      const [first, second] = await Promise.all([storage.getPhotoBlob('offline-photo-a'), storage.getPhotoBlob('offline-photo-b')]);
+      const comparisonImages = Array.from(document.querySelectorAll('.buddy-care-photo-comparison img[data-buddy-care-photo-id]'));
       return {
         firstSize: first && first.size,
         secondSize: second && second.size,
         comparisonVisible: Boolean(document.querySelector('.buddy-care-photo-comparison')),
+        comparisonSourcesLocal: comparisonImages.length === 2 && comparisonImages.every((image) => image.src.startsWith('blob:')),
         online: navigator.onLine
       };
     });
     assert.ok(offlineState.firstSize > 0 && offlineState.secondSize > 0);
     assert.strictEqual(offlineState.comparisonVisible, true);
+    assert.strictEqual(offlineState.comparisonSourcesLocal, true, 'offline comparison images must be decoded from local blob URLs');
     assert.strictEqual(offlineState.online, false);
 
     await page.evaluate(async () => {

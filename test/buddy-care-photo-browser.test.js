@@ -44,6 +44,14 @@ const ROOT = path.resolve(__dirname, '..');
         blob: processed.blob,
         metadata: { id: 'photo-a', plantId: 'plant-a', sourceType: 'daily_check', sourceId: 'check-a', category: 'whole_plant', width: processed.width, height: processed.height, mimeType: processed.mimeType, byteSize: processed.byteSize, createdAt: 1000 }
       });
+      storage.close();
+      const loadedAfterReopen = await storage.getPhotoBlob('photo-a');
+      const reopenedDb = await storage.openDatabase();
+      const rawBlobRecord = await new Promise((resolve, reject) => {
+        const request = reopenedDb.transaction('blobs', 'readonly').objectStore('blobs').get('photo-a');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
       await storage.savePhoto({
         blob: processed.blob,
         metadata: { id: 'photo-b', plantId: 'plant-b', sourceType: 'journal', sourceId: 'entry-b', category: 'detail', width: processed.width, height: processed.height, mimeType: processed.mimeType, byteSize: processed.byteSize, createdAt: 2000 }
@@ -74,6 +82,14 @@ const ROOT = path.resolve(__dirname, '..');
         processed: { width: processed.width, height: processed.height, size: processed.byteSize, type: processed.mimeType },
         metadataMarkerPresent: processedText.includes('ExifGPSLocationDeviceModel'),
         first,
+        loadedAfterReopen: Boolean(loadedAfterReopen && loadedAfterReopen.size > 0),
+        rawBlobRecord: rawBlobRecord ? {
+          id: rawBlobRecord.id,
+          isBlob: rawBlobRecord.blob instanceof Blob,
+          byteSize: rawBlobRecord.byteSize,
+          mimeType: rawBlobRecord.mimeType,
+          createdAt: rawBlobRecord.createdAt
+        } : null,
         plantACount: plantA.length,
         plantBCount: plantB.length,
         firstPrimaryWasSet: plantAWithFirstPrimary.find((photo) => photo.id === 'photo-a').isPrimary,
@@ -90,6 +106,14 @@ const ROOT = path.resolve(__dirname, '..');
     assert.ok(['image/webp', 'image/jpeg'].includes(result.processed.type));
     assert.ok(result.processed.size < result.original.size);
     assert.strictEqual(result.metadataMarkerPresent, false, 'canvas re-encoding must not preserve source metadata payloads');
+    assert.strictEqual(result.loadedAfterReopen, true, 'photo blobs must survive closing and reopening the IndexedDB connection');
+    assert.deepStrictEqual(result.rawBlobRecord, {
+      id: 'photo-a',
+      isBlob: true,
+      byteSize: result.processed.size,
+      mimeType: result.processed.type,
+      createdAt: 1000
+    });
     assert.strictEqual(result.plantACount, 2);
     assert.strictEqual(result.plantBCount, 1);
     assert.strictEqual(result.firstPrimaryWasSet, true);

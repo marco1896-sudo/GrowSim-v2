@@ -792,6 +792,8 @@ let buddyCareSelectedPhotoId = '';
 let buddyCareComparePhotoIds = [];
 let buddyCarePhotoHydrationGeneration = 0;
 let buddyCarePhotoMaintenanceAttempted = false;
+let buddyCarePhotoPickerActive = false;
+let buddyCarePhotoPickerUnlockTimer = null;
 const buddyCarePhotoMetadataCache = new Map();
 const buddyCarePhotoObjectUrls = new Map();
 const buddyCareExternalTestSessionId = `buddy-care-test-session-${Date.now()}`;
@@ -13235,11 +13237,131 @@ function getBuddyCarePhotoIdApi() {
     : null;
 }
 
+function setBuddyCarePhotoPickerActive(active, options = {}) {
+  buddyCarePhotoPickerActive = active === true;
+  if (buddyCarePhotoPickerUnlockTimer !== null) {
+    window.clearTimeout(buddyCarePhotoPickerUnlockTimer);
+    buddyCarePhotoPickerUnlockTimer = null;
+  }
+  if (buddyCarePhotoPickerActive) {
+    const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 60000);
+    buddyCarePhotoPickerUnlockTimer = window.setTimeout(() => {
+      buddyCarePhotoPickerActive = false;
+      buddyCarePhotoPickerUnlockTimer = null;
+      if (isBuddyCareScreenActive()) renderBuddyCareScreen();
+    }, timeoutMs);
+  } else if (options.render === true && isBuddyCareScreenActive()) {
+    renderBuddyCareScreen();
+  }
+  return buddyCarePhotoPickerActive;
+}
+
 function releaseBuddyCarePersistedPhotoUrls() {
-  buddyCarePhotoObjectUrls.forEach((url) => {
+  buddyCarePhotoObjectUrls.forEach((entry) => {
+    const url = typeof entry === 'string' ? entry : entry && entry.url;
+    if (!url) return;
     try { URL.revokeObjectURL(url); } catch (_error) { /* best effort */ }
   });
   buddyCarePhotoObjectUrls.clear();
+}
+
+function revokeBuddyCarePersistedPhotoUrl(renderKey) {
+  const entry = buddyCarePhotoObjectUrls.get(renderKey);
+  const url = typeof entry === 'string' ? entry : entry && entry.url;
+  if (url) {
+    try { URL.revokeObjectURL(url); } catch (_error) { /* best effort */ }
+  }
+  buddyCarePhotoObjectUrls.delete(renderKey);
+}
+
+function getBuddyCarePhotoRenderKey(image, photoId, index) {
+  const explicitKey = String(image && image.getAttribute && image.getAttribute('data-buddy-care-photo-render-key') || '').trim();
+  return explicitKey || `photo-slot:${Math.max(0, Number(index) || 0)}:${photoId}`;
+}
+
+function waitForBuddyCarePhotoImage(image) {
+  if (!image) return Promise.reject(new Error('care_photo_image_missing'));
+  if (image.complete && image.naturalWidth > 0) return Promise.resolve();
+  if (typeof image.decode === 'function') {
+    return image.decode().then(() => {
+      if (!image.naturalWidth) throw new Error('care_photo_image_decode_failed');
+    });
+  }
+  return new Promise((resolve, reject) => {
+    image.addEventListener('load', resolve, { once: true });
+    image.addEventListener('error', () => reject(new Error('care_photo_image_decode_failed')), { once: true });
+  });
+}
+
+function setBuddyCarePhotoImageState(image, stateValue) {
+  if (!image) return;
+  const stateName = String(stateValue || 'loading');
+  const media = image.closest('.buddy-care-photo-media, .buddy-care-detail-hero-media');
+  if (!image.dataset.buddyCarePhotoOriginalAlt) {
+    image.dataset.buddyCarePhotoOriginalAlt = String(image.getAttribute('alt') || '');
+  }
+  image.dataset.buddyCarePhotoState = stateName;
+  if (stateName === 'missing') {
+    const message = i18nT('buddyCare.photos.error_load');
+    image.setAttribute('alt', message);
+    image.setAttribute('title', message);
+    if (media) {
+      media.classList.add('is-missing');
+      media.dataset.buddyCarePhotoError = message;
+    }
+    return;
+  }
+  if (stateName === 'loaded') {
+    image.setAttribute('alt', image.dataset.buddyCarePhotoOriginalAlt);
+    image.removeAttribute('title');
+    if (media) {
+      media.classList.remove('is-missing');
+      delete media.dataset.buddyCarePhotoError;
+    }
+  }
+}
+
+function getBuddyCareDiaryFormRuntimeKey(form) {
+  if (!form) return '';
+  if (form.id === 'buddyCareDiaryHubForm') return 'diary-hub';
+  const editId = String(form.getAttribute('data-buddy-care-edit-diary-id') || '').trim();
+  return editId ? `diary-edit:${editId}` : '';
+}
+
+function captureBuddyCareDiaryFormRuntimeValues() {
+  if (!ui.buddyCareScreen || typeof ui.buddyCareScreen.querySelectorAll !== 'function') return new Map();
+  const snapshots = new Map();
+  const forms = ui.buddyCareScreen.querySelectorAll('#buddyCareDiaryHubForm, [data-buddy-care-edit-diary-id]');
+  forms.forEach((form) => {
+    const key = getBuddyCareDiaryFormRuntimeKey(form);
+    if (!key) return;
+    const values = {};
+    ['buddyCareDiaryPlantId', 'buddyCareDiaryTitle', 'buddyCareDiaryNote', 'buddyCareDiaryHeight'].forEach((name) => {
+      const field = form.querySelector(`[name="${name}"]`);
+      if (field) values[name] = field.value;
+    });
+    values.buddyCareDiaryTag = Array.from(form.querySelectorAll('input[name="buddyCareDiaryTag"]:checked'))
+      .map((field) => String(field.value || ''));
+    snapshots.set(key, values);
+  });
+  return snapshots;
+}
+
+function restoreBuddyCareDiaryFormRuntimeValues(snapshots) {
+  if (!(snapshots instanceof Map) || !snapshots.size || !ui.buddyCareScreen) return;
+  const forms = ui.buddyCareScreen.querySelectorAll('#buddyCareDiaryHubForm, [data-buddy-care-edit-diary-id]');
+  forms.forEach((form) => {
+    const values = snapshots.get(getBuddyCareDiaryFormRuntimeKey(form));
+    if (!values) return;
+    ['buddyCareDiaryPlantId', 'buddyCareDiaryTitle', 'buddyCareDiaryNote', 'buddyCareDiaryHeight'].forEach((name) => {
+      const field = form.querySelector(`[name="${name}"]`);
+      if (field && Object.prototype.hasOwnProperty.call(values, name)) field.value = values[name];
+    });
+    const selectedTags = new Set(Array.isArray(values.buddyCareDiaryTag) ? values.buddyCareDiaryTag : []);
+    form.querySelectorAll('input[name="buddyCareDiaryTag"]').forEach((field) => {
+      field.checked = selectedTags.has(String(field.value || ''));
+    });
+  });
 }
 
 function releaseBuddyCarePhotoDraft(draft) {
@@ -13435,33 +13557,49 @@ async function runBuddyCarePhotoMaintenance() {
 async function hydrateBuddyCarePhotoImages(root = ui.buddyCareScreen) {
   if (!root || typeof root.querySelectorAll !== 'function') return;
   const generation = ++buddyCarePhotoHydrationGeneration;
-  releaseBuddyCarePersistedPhotoUrls();
   const photoStorage = getBuddyCarePhotoStorageApi();
   if (!photoStorage || typeof photoStorage.getPhotoBlob !== 'function') return;
   const nodes = Array.from(root.querySelectorAll('img[data-buddy-care-photo-id]'));
-  for (const image of nodes) {
+  const activeRenderKeys = new Set();
+  await Promise.all(nodes.map(async (image, index) => {
     const photoId = String(image.getAttribute('data-buddy-care-photo-id') || '').trim();
-    if (!photoId) continue;
+    if (!photoId) return;
+    const renderKey = getBuddyCarePhotoRenderKey(image, photoId, index);
+    const fallbackSrc = String(image.getAttribute('src') || '').trim();
+    activeRenderKeys.add(renderKey);
+    setBuddyCarePhotoImageState(image, 'loading');
     try {
       const blob = await photoStorage.getPhotoBlob(photoId);
-      if (!blob || !image.isConnected || generation !== buddyCarePhotoHydrationGeneration) {
-        image.closest('.buddy-care-photo-media')?.classList.add('is-missing');
-        continue;
+      if (generation !== buddyCarePhotoHydrationGeneration || !image.isConnected) return;
+      if (!blob) {
+        revokeBuddyCarePersistedPhotoUrl(renderKey);
+        setBuddyCarePhotoImageState(image, 'missing');
+        return;
       }
-      let url = buddyCarePhotoObjectUrls.get(photoId);
-      if (!url) {
-        url = URL.createObjectURL(blob);
-        if (generation !== buddyCarePhotoHydrationGeneration) {
-          URL.revokeObjectURL(url);
-          return;
-        }
-        buddyCarePhotoObjectUrls.set(photoId, url);
+      let entry = buddyCarePhotoObjectUrls.get(renderKey);
+      if (!entry || entry.photoId !== photoId || !entry.url) {
+        revokeBuddyCarePersistedPhotoUrl(renderKey);
+        const url = URL.createObjectURL(blob);
+        entry = { photoId, url };
+        buddyCarePhotoObjectUrls.set(renderKey, entry);
       }
-      image.src = url;
+      image.src = entry.url;
+      await waitForBuddyCarePhotoImage(image);
+      if (generation !== buddyCarePhotoHydrationGeneration || !image.isConnected) return;
+      setBuddyCarePhotoImageState(image, 'loaded');
     } catch (_error) {
-      image.closest('.buddy-care-photo-media')?.classList.add('is-missing');
+      if (generation !== buddyCarePhotoHydrationGeneration || !image.isConnected) return;
+      revokeBuddyCarePersistedPhotoUrl(renderKey);
+      if (fallbackSrc) image.src = fallbackSrc;
+      setBuddyCarePhotoImageState(image, 'missing');
     }
-  }
+  }));
+  if (generation !== buddyCarePhotoHydrationGeneration) return;
+  Array.from(buddyCarePhotoObjectUrls.keys()).forEach((renderKey) => {
+    if (!activeRenderKeys.has(renderKey)) {
+      revokeBuddyCarePersistedPhotoUrl(renderKey);
+    }
+  });
 }
 
 async function processBuddyCareFilesToRecords(fileList, metadataFactory, limit) {
@@ -14305,17 +14443,24 @@ function openBuddyCareScreen() {
     activeToast.dataset.anchor = 'buddy-care';
   }
   renderSheets();
-  renderBuddyCareScreen();
   setActiveHudScreen('buddyCare');
   renderBuddyCareScreen();
   renderFirstRunIntroOverlay();
   renderFirstRunDashboardFollowupOverlay();
-  refreshBuddyCarePhotoMetadata().catch(() => setBuddyCarePhotoMessage('buddyCare.photos.error_load', 'error'));
-  runBuddyCarePhotoMaintenance().then(() => refreshBuddyCarePhotoMetadata()).catch(() => {});
+  refreshBuddyCarePhotoMetadata({ render: false }).catch(() => setBuddyCarePhotoMessage('buddyCare.photos.error_load', 'error'));
+  runBuddyCarePhotoMaintenance()
+    .then(async (result) => {
+      await refreshBuddyCarePhotoMetadata({ render: false });
+      if (result && Array.isArray(result.removedPhotoIds) && result.removedPhotoIds.length && isBuddyCareScreenActive()) {
+        renderBuddyCareScreen();
+      }
+    })
+    .catch(() => {});
   return true;
 }
 
 function closeBuddyCareScreen() {
+  setBuddyCarePhotoPickerActive(false);
   buddyCareActiveView = 'today';
   buddyCarePlantSetupOpen = false;
   clearBuddyCarePlantDetailState();
@@ -18441,6 +18586,10 @@ function renderBuddyCareScreen() {
   if (!ui.buddyCareScreen) {
     return;
   }
+  if (buddyCarePhotoPickerActive) {
+    return;
+  }
+  const diaryFormRuntimeValues = captureBuddyCareDiaryFormRuntimeValues();
 
   const buddyCareApi = getBuddyCareStateApi();
   const buddyCare = ensureBuddyCareState();
@@ -18641,6 +18790,7 @@ function renderBuddyCareScreen() {
   renderBuddyCareExternalTestToolsCard(ageGateAccepted);
   renderBuddyCareMoreInfoCard(ageGateAccepted);
   renderBuddyCareActivationOnboardingCard(ageGateAccepted && activeView === 'more' ? activationVm : null);
+  restoreBuddyCareDiaryFormRuntimeValues(diaryFormRuntimeValues);
   hydrateBuddyCarePhotoImages().catch(() => {});
 }
 
@@ -18658,6 +18808,7 @@ window.__gsOpenBuddyCarePhoto = openBuddyCarePhoto;
 window.__gsCloseBuddyCarePhoto = closeBuddyCarePhoto;
 window.__gsSetBuddyCarePhotoSort = setBuddyCarePhotoSort;
 window.__gsHandleBuddyCarePhotoFiles = handleBuddyCarePhotoFiles;
+window.__gsSetBuddyCarePhotoPickerActive = setBuddyCarePhotoPickerActive;
 window.__gsUpdateBuddyCarePhotoDraft = updateBuddyCarePhotoDraft;
 window.__gsRemoveBuddyCarePhotoDraft = removeBuddyCarePhotoDraft;
 window.__gsHandleBuddyCarePrimaryPhotoFiles = handleBuddyCarePrimaryPhotoFiles;

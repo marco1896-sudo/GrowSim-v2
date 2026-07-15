@@ -75,6 +75,9 @@ const contextBuilder = require('../src/buddy-care/intelligence/contextBuilder.js
   assert.strictEqual(normalized.category, 'leaf_bottom');
   assert.strictEqual(normalized.note, 'underside');
   assert.ok(normalized.id.startsWith('photo-'));
+  assert.strictEqual(photoStorageApi.isValidPhotoBlob(new Blob(['image'], { type: 'image/webp' })), true);
+  assert.strictEqual(photoStorageApi.isValidPhotoBlob(new Blob(['text'], { type: 'text/plain' })), false, 'non-image blobs must not enter photo storage');
+  assert.strictEqual(photoStorageApi.isValidPhotoBlob({ size: 5, type: 'image/webp' }), false, 'blob-like plain objects must not enter photo storage');
 })();
 
 (function testProcessingValidationAndDimensions() {

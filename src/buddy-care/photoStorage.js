@@ -19,6 +19,19 @@
     return Number.isFinite(result) && result > 0 ? Math.round(result) : fallback;
   }
 
+  function isValidPhotoBlob(value) {
+    const BlobConstructor = globalScope && typeof globalScope.Blob === 'function' ? globalScope.Blob : null;
+    const isBlob = BlobConstructor
+      ? value instanceof BlobConstructor
+      : Object.prototype.toString.call(value) === '[object Blob]';
+    return Boolean(
+      isBlob
+      && typeof value.size === 'number'
+      && value.size > 0
+      && /^image\/(?:jpeg|png|webp)$/i.test(normalizeString(value.type))
+    );
+  }
+
   function normalizePhotoMetadata(value = {}) {
     const safeValue = value && typeof value === 'object' ? value : {};
     const createdAt = normalizePositiveNumber(safeValue.createdAt, Date.now());
@@ -134,7 +147,7 @@
         if (!metadata.id || !metadata.plantId) {
           throw new Error('care_photo_metadata_invalid');
         }
-        if (!blob || typeof blob.size !== 'number' || blob.size <= 0) {
+        if (!isValidPhotoBlob(blob)) {
           throw new Error('care_photo_blob_invalid');
         }
         return {
@@ -148,9 +161,36 @@
       const blobs = transaction.objectStore(BLOB_STORE);
       prepared.forEach((record) => {
         photos.put(record.metadata);
-        blobs.put({ id: record.metadata.id, blob: record.blob });
+        blobs.put({
+          id: record.metadata.id,
+          blob: record.blob,
+          mimeType: record.metadata.mimeType,
+          byteSize: record.blob.size,
+          createdAt: record.metadata.createdAt
+        });
       });
       await transactionDone(transaction);
+
+      const verificationTransaction = db.transaction([PHOTO_STORE, BLOB_STORE], 'readonly');
+      const verified = await Promise.all(prepared.map(async (record) => {
+        const [storedMetadata, storedBlobRecord] = await Promise.all([
+          requestResult(verificationTransaction.objectStore(PHOTO_STORE).get(record.metadata.id)),
+          requestResult(verificationTransaction.objectStore(BLOB_STORE).get(record.metadata.id))
+        ]);
+        return Boolean(
+          storedMetadata
+          && storedMetadata.id === record.metadata.id
+          && storedBlobRecord
+          && storedBlobRecord.id === record.metadata.id
+          && isValidPhotoBlob(storedBlobRecord.blob)
+          && storedBlobRecord.blob.size === record.metadata.byteSize
+        );
+      }));
+      await transactionDone(verificationTransaction);
+      if (verified.some((result) => !result)) {
+        await deletePhotos(prepared.map((record) => record.metadata.id)).catch(() => {});
+        throw new Error('care_photo_storage_verification_failed');
+      }
       return prepared.map((record) => record.metadata);
     }
 
@@ -176,7 +216,8 @@
       const transaction = db.transaction(BLOB_STORE, 'readonly');
       const value = await requestResult(transaction.objectStore(BLOB_STORE).get(safeId));
       await transactionDone(transaction);
-      return value && value.blob && value.blob.size > 0 ? value.blob : null;
+      const blob = isValidPhotoBlob(value) ? value : value && value.blob;
+      return isValidPhotoBlob(blob) ? blob : null;
     }
 
     async function getPhotosByIndex(indexName, queryValue) {
@@ -383,6 +424,7 @@
     SOURCE_TYPES,
     CATEGORIES,
     normalizePhotoMetadata,
+    isValidPhotoBlob,
     createPhotoId,
     createPhotoStorage,
     storage: createPhotoStorage()
