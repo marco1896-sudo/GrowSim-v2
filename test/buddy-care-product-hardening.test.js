@@ -98,4 +98,23 @@ const esLocale = fs.readFileSync(path.join(__dirname, '..', 'src', 'i18n', 'loca
   assert.strictEqual(normalized.diaryEntries.length, 1, 'orphaned diary entries should be filtered out');
 })();
 
+(function testNormalizationRepairsInvalidDatesAndDuplicateRecordIds() {
+  const normalized = buddyCareState.normalizeBuddyCareState({
+    entitlement: 'care_plus_mock',
+    plants: [{ id: 'alpha', nickname: 'Alpha', startDate: '2026-99-99', createdAt: Date.UTC(2026, 6, 1) }],
+    dailyChecks: [
+      { id: 'duplicate', plantId: 'alpha', dayKey: '2026-07-10', createdAt: Date.UTC(2026, 6, 10, 8) },
+      { id: 'duplicate', plantId: 'alpha', dayKey: '2026-07-11', createdAt: Date.UTC(2026, 6, 11, 8) }
+    ],
+    diaryEntries: [
+      { id: 'duplicate', plantId: 'alpha', entryDate: '2026-07-10', note: 'A' },
+      { id: 'duplicate', plantId: 'alpha', entryDate: '2026-07-11', note: 'B' }
+    ]
+  });
+
+  assert.strictEqual(normalized.plants[0].startDate, '2026-07-01', 'invalid stored dates should fall back deterministically');
+  assert.strictEqual(new Set(normalized.dailyChecks.map((entry) => entry.id)).size, 2, 'duplicate check ids should be repaired without dropping records');
+  assert.strictEqual(new Set(normalized.diaryEntries.map((entry) => entry.id)).size, 2, 'duplicate diary ids should be repaired without dropping records');
+})();
+
 console.log('buddy-care-product-hardening.test.js passed');

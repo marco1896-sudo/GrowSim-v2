@@ -409,15 +409,20 @@ function cacheUi() {
   ui.buddyCarePlantLimit = document.getElementById('buddyCarePlantLimit');
   ui.buddyCareModeHint = document.getElementById('buddyCareModeHint');
   ui.buddyCareAgeGateCard = document.getElementById('buddyCareAgeGateCard');
+  ui.buddyCareAgeGateBackBtn = document.getElementById('buddyCareAgeGateBackBtn');
   ui.buddyCareAgeGateAcceptBtn = document.getElementById('buddyCareAgeGateAcceptBtn');
   ui.buddyCarePlaceholderCard = document.getElementById('buddyCarePlaceholderCard');
   ui.buddyCareExternalTestIntroCard = document.getElementById('buddyCareExternalTestIntroCard');
   ui.buddyCareSetupCard = document.getElementById('buddyCareSetupCard');
   ui.buddyCareSetupForm = document.getElementById('buddyCareSetupForm');
   ui.buddyCarePlantNameInput = document.getElementById('buddyCarePlantNameInput');
+  ui.buddyCarePlantNameError = document.getElementById('buddyCarePlantNameError');
   ui.buddyCarePlantTypeSelect = document.getElementById('buddyCarePlantTypeSelect');
+  ui.buddyCarePlantTypeError = document.getElementById('buddyCarePlantTypeError');
   ui.buddyCarePlantEnvironmentSelect = document.getElementById('buddyCarePlantEnvironmentSelect');
+  ui.buddyCarePlantEnvironmentError = document.getElementById('buddyCarePlantEnvironmentError');
   ui.buddyCarePlantStartDateInput = document.getElementById('buddyCarePlantStartDateInput');
+  ui.buddyCarePlantStartDateError = document.getElementById('buddyCarePlantStartDateError');
   ui.buddyCareAddPlantBtn = document.getElementById('buddyCareAddPlantBtn');
   ui.buddyCareSetupStatus = document.getElementById('buddyCareSetupStatus');
   ui.buddyCareSummaryCard = document.getElementById('buddyCareSummaryCard');
@@ -470,6 +475,7 @@ function cacheUi() {
   ui.buddyCareDiaryHubCard = document.getElementById('buddyCareDiaryHubCard');
   ui.buddyCareFreeHintCard = document.getElementById('buddyCareFreeHintCard');
   ui.buddyCareFreeHintBody = document.getElementById('buddyCareFreeHintBody');
+  ui.buddyCareFreeOfferPrice = document.getElementById('buddyCareFreeOfferPrice');
   ui.buddyCareMockHintCard = document.getElementById('buddyCareMockHintCard');
   ui.buddyCareMockCard = document.getElementById('buddyCareMockCard');
   ui.buddyCareMockUpgradeBtn = document.getElementById('buddyCareMockUpgradeBtn');
@@ -1158,6 +1164,13 @@ function bindMenuOverlayEvents(controller = null) {
       }
     });
   }
+  if (ui.buddyCareAgeGateBackBtn) {
+    ui.buddyCareAgeGateBackBtn.addEventListener('click', () => {
+      if (typeof window.__gsCloseBuddyCare === 'function') {
+        window.__gsCloseBuddyCare();
+      }
+    });
+  }
   if (ui.buddyCareOpenPaywallBtn) {
     ui.buddyCareOpenPaywallBtn.addEventListener('click', () => {
       if (typeof window.__gsOpenBuddyCarePaywallMock === 'function') {
@@ -1170,6 +1183,19 @@ function bindMenuOverlayEvents(controller = null) {
       event.preventDefault();
       if (typeof window.__gsSubmitBuddyCarePlantSetup === 'function') {
         window.__gsSubmitBuddyCarePlantSetup();
+      }
+    });
+    ui.buddyCareSetupForm.addEventListener('input', (event) => {
+      const field = event.target;
+      if (!(field instanceof HTMLElement)) {
+        return;
+      }
+      field.setAttribute('aria-invalid', 'false');
+      const errorId = String(field.getAttribute('aria-describedby') || '').trim();
+      const errorNode = errorId ? document.getElementById(errorId) : null;
+      if (errorNode) {
+        errorNode.hidden = true;
+        errorNode.textContent = '';
       }
     });
   }
@@ -1319,6 +1345,35 @@ function bindMenuOverlayEvents(controller = null) {
     });
   }
   if (ui.buddyCareScreen) {
+    ui.buddyCareScreen.addEventListener('keydown', (event) => {
+      const ageGate = ui.buddyCareAgeGateCard;
+      if (!ageGate || ageGate.hidden) {
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (event.key !== 'Tab') {
+        return;
+      }
+      const focusable = Array.from(ageGate.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+        .filter((node) => !node.hidden && node.getAttribute('aria-hidden') !== 'true');
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
     ui.buddyCareScreen.addEventListener('submit', (event) => {
       const diaryForm = event.target && typeof event.target.closest === 'function'
         ? event.target.closest('[data-buddy-care-diary-form]')
@@ -1352,11 +1407,119 @@ function bindMenuOverlayEvents(controller = null) {
         window.__gsSubmitBuddyCareExternalTestFeedback(feedbackForm);
       }
     });
+    ui.buddyCareScreen.addEventListener('change', (event) => {
+      const input = event.target;
+      if (!input || !input.matches) return;
+      if (input.matches('[data-buddy-care-photo-input]')) {
+        const scope = String(input.getAttribute('data-buddy-care-photo-input') || '').trim();
+        const files = Array.from(input.files || []);
+        const entryId = String(input.getAttribute('data-buddy-care-photo-entry-id') || '').trim();
+        const plantId = String(input.getAttribute('data-buddy-care-photo-plant-id') || '').trim();
+        input.value = '';
+        if (scope === 'profile' && typeof window.__gsHandleBuddyCarePrimaryPhotoFiles === 'function') {
+          window.__gsHandleBuddyCarePrimaryPhotoFiles(plantId, files);
+        } else if (scope === 'existing_diary' && typeof window.__gsHandleBuddyCareExistingDiaryPhotoFiles === 'function') {
+          window.__gsHandleBuddyCareExistingDiaryPhotoFiles(plantId, entryId, files);
+        } else if (typeof window.__gsHandleBuddyCarePhotoFiles === 'function') {
+          window.__gsHandleBuddyCarePhotoFiles(scope, files);
+        }
+        return;
+      }
+      if (input.matches('[data-buddy-care-photo-draft-field]') && typeof window.__gsUpdateBuddyCarePhotoDraft === 'function') {
+        window.__gsUpdateBuddyCarePhotoDraft(
+          String(input.getAttribute('data-buddy-care-photo-scope') || '').trim(),
+          String(input.getAttribute('data-buddy-care-photo-id') || '').trim(),
+          String(input.getAttribute('data-buddy-care-photo-draft-field') || '').trim(),
+          input.value
+        );
+      }
+    });
     ui.buddyCareScreen.addEventListener('click', (event) => {
       const target = event.target && typeof event.target.closest === 'function'
-        ? event.target.closest('[data-buddy-care-view], [data-buddy-care-switch-view], [data-buddy-care-open-setup], [data-buddy-care-open-plant], [data-buddy-care-open-plant-history], [data-buddy-care-open-check], [data-buddy-care-open-paywall], [data-buddy-care-close-paywall], [data-buddy-care-delete-entry], [data-buddy-care-plant-detail-back], [data-buddy-care-detail-section], [data-buddy-care-diary-filter], [data-buddy-care-plant-filter], [data-buddy-care-history-mode], [data-buddy-care-diary-open-composer], [data-buddy-care-diary-composer-cancel], [data-buddy-care-diary-jump], [data-buddy-care-test-start], [data-buddy-care-test-intro-dismiss], [data-buddy-care-test-feedback-open], [data-buddy-care-test-checklist-dismiss], [data-buddy-care-test-checklist-open], [data-buddy-care-test-feedback-dismiss], [data-buddy-care-test-reset], [data-buddy-care-test-export]')
+        ? event.target.closest('[data-buddy-care-view], [data-buddy-care-switch-view], [data-buddy-care-open-setup], [data-buddy-care-open-plant], [data-buddy-care-open-plant-history], [data-buddy-care-open-check], [data-buddy-care-open-paywall], [data-buddy-care-close-paywall], [data-buddy-care-delete-entry], [data-buddy-care-edit-entry], [data-buddy-care-cancel-edit-entry], [data-buddy-care-plant-detail-back], [data-buddy-care-detail-section], [data-buddy-care-diary-filter], [data-buddy-care-plant-filter], [data-buddy-care-history-mode], [data-buddy-care-diary-open-composer], [data-buddy-care-diary-composer-cancel], [data-buddy-care-diary-jump], [data-buddy-care-answer-question], [data-buddy-care-confirm-action], [data-buddy-care-mark-action-performed], [data-buddy-care-action-outcome], [data-buddy-care-remove-photo-draft], [data-buddy-care-open-photo], [data-buddy-care-open-photo-source], [data-buddy-care-photo-compare], [data-buddy-care-photo-primary], [data-buddy-care-photo-delete], [data-buddy-care-photo-close], [data-buddy-care-photo-sort], [data-buddy-care-remove-primary-photo], [data-buddy-care-test-start], [data-buddy-care-test-intro-dismiss], [data-buddy-care-test-feedback-open], [data-buddy-care-test-checklist-dismiss], [data-buddy-care-test-checklist-open], [data-buddy-care-test-feedback-dismiss], [data-buddy-care-test-reset], [data-buddy-care-test-export]')
         : null;
       if (!target) {
+        return;
+      }
+      const removeDraftId = String(target.getAttribute('data-buddy-care-remove-photo-draft') || '').trim();
+      if (removeDraftId && typeof window.__gsRemoveBuddyCarePhotoDraft === 'function') {
+        window.__gsRemoveBuddyCarePhotoDraft(String(target.getAttribute('data-buddy-care-photo-scope') || '').trim(), removeDraftId);
+        return;
+      }
+      const editEntryId = String(target.getAttribute('data-buddy-care-edit-entry') || '').trim();
+      if (editEntryId && typeof window.__gsEditBuddyCareDiaryEntry === 'function') {
+        window.__gsEditBuddyCareDiaryEntry(editEntryId);
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-cancel-edit-entry') && typeof window.__gsCancelBuddyCareDiaryEntryEdit === 'function') {
+        window.__gsCancelBuddyCareDiaryEntryEdit();
+        return;
+      }
+      const openPhotoId = String(target.getAttribute('data-buddy-care-open-photo') || '').trim();
+      if (openPhotoId && typeof window.__gsOpenBuddyCarePhoto === 'function') {
+        window.__gsOpenBuddyCarePhoto(openPhotoId);
+        return;
+      }
+      const openPhotoSourceId = String(target.getAttribute('data-buddy-care-open-photo-source') || '').trim();
+      if (openPhotoSourceId && typeof window.__gsOpenBuddyCarePhotoSource === 'function') {
+        window.__gsOpenBuddyCarePhotoSource(openPhotoSourceId);
+        return;
+      }
+      const comparePhotoId = String(target.getAttribute('data-buddy-care-photo-compare') || '').trim();
+      if (comparePhotoId && typeof window.__gsToggleBuddyCareComparePhoto === 'function') {
+        window.__gsToggleBuddyCareComparePhoto(comparePhotoId);
+        return;
+      }
+      const primaryPhotoId = String(target.getAttribute('data-buddy-care-photo-primary') || '').trim();
+      if (primaryPhotoId && typeof window.__gsSetBuddyCarePrimaryPhoto === 'function') {
+        window.__gsSetBuddyCarePrimaryPhoto(primaryPhotoId);
+        return;
+      }
+      const deletePhotoId = String(target.getAttribute('data-buddy-care-photo-delete') || '').trim();
+      if (deletePhotoId && typeof window.__gsDeleteBuddyCarePhoto === 'function') {
+        window.__gsDeleteBuddyCarePhoto(deletePhotoId);
+        return;
+      }
+      if (target.hasAttribute('data-buddy-care-photo-close') && typeof window.__gsCloseBuddyCarePhoto === 'function') {
+        window.__gsCloseBuddyCarePhoto();
+        return;
+      }
+      const photoSort = String(target.getAttribute('data-buddy-care-photo-sort') || '').trim();
+      if (photoSort && typeof window.__gsSetBuddyCarePhotoSort === 'function') {
+        window.__gsSetBuddyCarePhotoSort(photoSort);
+        return;
+      }
+      const removePrimaryPlantId = String(target.getAttribute('data-buddy-care-remove-primary-photo') || '').trim();
+      if (removePrimaryPlantId && typeof window.__gsRemoveBuddyCarePrimaryPhoto === 'function') {
+        window.__gsRemoveBuddyCarePrimaryPhoto(removePrimaryPlantId);
+        return;
+      }
+      const answerQuestionId = String(target.getAttribute('data-buddy-care-answer-question') || '').trim();
+      if (answerQuestionId && typeof window.__gsAnswerBuddyCareIntelligenceQuestion === 'function') {
+        window.__gsAnswerBuddyCareIntelligenceQuestion(
+          String(target.getAttribute('data-buddy-care-question-plant') || '').trim(),
+          answerQuestionId,
+          String(target.getAttribute('data-buddy-care-question-value') || '').trim()
+        );
+        return;
+      }
+      const confirmActionId = String(target.getAttribute('data-buddy-care-confirm-action') || '').trim();
+      if (confirmActionId && typeof window.__gsConfirmBuddyCareIntelligenceAction === 'function') {
+        window.__gsConfirmBuddyCareIntelligenceAction(String(target.getAttribute('data-buddy-care-action-plant') || '').trim(), confirmActionId);
+        return;
+      }
+      const performedActionId = String(target.getAttribute('data-buddy-care-mark-action-performed') || '').trim();
+      if (performedActionId && typeof window.__gsMarkBuddyCareIntelligenceActionPerformed === 'function') {
+        window.__gsMarkBuddyCareIntelligenceActionPerformed(String(target.getAttribute('data-buddy-care-action-plant') || '').trim(), performedActionId);
+        return;
+      }
+      const outcomeActionId = String(target.getAttribute('data-buddy-care-action-outcome') || '').trim();
+      if (outcomeActionId && typeof window.__gsRecordBuddyCareIntelligenceActionOutcome === 'function') {
+        window.__gsRecordBuddyCareIntelligenceActionOutcome(
+          String(target.getAttribute('data-buddy-care-action-plant') || '').trim(),
+          outcomeActionId,
+          String(target.getAttribute('data-buddy-care-action-outcome-value') || '').trim()
+        );
         return;
       }
       const nextView = String(target.getAttribute('data-buddy-care-view') || target.getAttribute('data-buddy-care-switch-view') || '').trim();

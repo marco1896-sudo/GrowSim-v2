@@ -170,3 +170,87 @@ Open items:
 Open items:
 - Real-device Safari/PWA keyboard behavior remains a recommended manual check before the next external test.
 - Transparent Buddy assets still have slightly different internal padding; CSS bounds now limit the visible inconsistency.
+
+2026-07-14 — Buddy Care+ full audit and hardening
+- Current task: audit the existing Care+ architecture, reproduce defects, apply targeted P0/P1 and low-risk P2 fixes, add regression coverage, and validate mobile/reload/accessibility behavior.
+- Initial inventory confirms Care+ uses the existing `src/buddy-care/state.js` canonical state, `storage.js` save normalization, `app.js` render/actions, `index.html` shell, shared `styles.css`, locale JSON files, and focused `test/buddy-care-*.test.js` coverage.
+- Implemented targeted hardening for persisted active-plant selection, unique daily-check/diary ids, same-day check updates, defensive date/height validation, and downgrade-safe read-only plant handling.
+- Consolidated the supported Free/Test access presentation, isolated the four Care+ views with `hidden`/`inert`/ARIA state, and converted the age gate into a modal focus/scroll lock with explicit focus return.
+- Made Plants list, setup, plant detail, and daily check mutually exclusive subviews so inactive sections no longer retain layout space or duplicate main headings.
+- Added localized inline form errors and terminology parity for de/en/es; the i18n audit reports 2,566 keys per locale with no missing or extra keys.
+- Added and expanded focused Care+ state, access, navigation, accessibility, validation, reload, unicode, and mobile E2E tests.
+- Validation: all 19 `buddy-care*.test.js` files pass; E2E passes at 320x568, 375x667, 390x844, 393x852, 430x932, 768x1024, and 1280x800; syntax, i18n, UI architecture, and general smoke checks pass.
+- Known unrelated baseline issue: `test/daily-tasks-ui-state.test.js` expects German streak copy but reproducibly receives `Daily Streak 3`; this remains outside the Care+ change scope.
+
+2026-07-15 — Buddy Care+ local intelligence system
+- Current approved task: evolve Care+ into a deterministic, local, context-aware plant coach without external AI.
+- Preserve the existing Care+ save/access/UI architecture and all uncommitted user changes.
+- Initial analysis: `state.buddyCare` is canonical; `state.js` owns normalization, `storage.js` persistence, and `app.js` the Care+ view model/render path.
+- Planned additive modules: context, robust trends, weighted causes, safety/priority, targeted questions, action/effect tracking, plant patterns, and insight orchestration.
+- Do not change Free/Test plant limits, user/auth/premium behavior, service worker, or unrelated simulation systems.
+- Phase A complete:
+  - bumped only the Care+ slice to version 3 and added a versioned `intelligence` substate
+  - added defensive normalization for actions, question answers, insights, and plant patterns
+  - preserved unknown legacy Care+ fields while normalized canonical fields remain authoritative
+  - added state mutation/read APIs for insight, action, and question persistence
+  - targeted state/migration tests pass
+- Phases B-D complete:
+  - added pure context, robust multi-check trend, cause scoring, priority, question, action/effect, plant-pattern, safety, and insight modules
+  - covered worsening/improving/stable/unknown trends, recurring moisture, contradictions, overdue checks, watering-demand shifts, frequent interventions, and action outcomes
+  - persisted question answers, confirmed/performed actions, effect outcomes, latest insights, and median-based plant patterns
+- Phase E integrated:
+  - Today and plant detail now use one intelligence-fed main priority with legacy task fallback
+  - added compact targeted question, explicit action confirmation/completion, effect control, and “Warum zeigt Buddy das?” details
+  - added matching DE/EN/ES copy and mobile styles
+  - focused 390x844 Playwright screenshots reviewed for wet-root and effect-control states
+- Phase F regression and closeout complete:
+  - all 25 focused `buddy-care*.test.js` files pass, including migration, access limits, daily checks, diary, weekly review, navigation, UI, intelligence, reload, and effect-loop coverage
+  - syntax, i18n parity (2,691 keys per locale), UI architecture, guest-name resolution, and UTF-8 regression checks pass
+  - the final 390x844 action/effect flow was rerun and visually reviewed with one clear primary priority
+  - generated QA screenshots were removed after inspection and the local test server was stopped
+
+Open item:
+- `test/guest-mode-startup.test.js` still fails before Care+ renders because its expected first-day seedling hero class is absent; this is reproducible in isolation and was not changed because it is outside the Care+ scope.
+
+2026-07-15 — Buddy Care+ local photo documentation
+- Current approved task: add fully local, privacy-friendly plant photos without image analysis, cloud upload, or image data in the normal Care+ snapshot.
+- Required architecture: small photo IDs only in Care+ state; metadata and blobs in an isolated, versioned IndexedDB with local canvas re-encoding.
+- Integration scope: primary plant photo, up to three Daily Check photos, up to five diary photos, per-plant photo history, same-plant comparison, deletion/reset cleanup, DE/EN/ES copy, mobile/PWA QA.
+- Existing dirty-tree changes are user-owned and must be preserved.
+
+2026-07-15 — Buddy Care+ external free-test stabilization
+- Reproduced the baseline: all 25 `buddy-care*.test.js` files passed; only `guest-mode-startup.test.js` failed at the first-day seedling hero contract.
+- Root cause confirmed as runtime integration drift: seedling-specific CSS and test coverage existed, while the overlay markup still used the base class and old leaf-only asset.
+- Restored the intended existing seedling hero class, image class, and aligned `frame_006.png` asset without weakening the test.
+- Extended the guest startup flow to prove neutral Care+ copy, no login gate, no blocking first-day overlay, and Care+ reachability.
+- The extended test exposed and now covers a missing persist on Care+ close; Home is saved before an immediate reload, keeping the first-day teaser intact.
+- `guest-mode-startup.test.js` now passes.
+- Added deterministic multi-day Care Intelligence coverage for stable, wet, dry, light discoloration, successful action, failed action, contradictory data, overdue checks, and three-plant isolation.
+- Calibrations are evidence-driven and covered by the new multi-day test:
+  - rapid contradictory moisture reports now request one moisture recheck instead of staying silent
+  - stale moderate concerns are capped at `today` unless a current rapid-risk signal still exists
+  - new `urgent_check` evidence now outranks an older due effect review while the review remains available
+- Mobile matrix passed at 390x844, 375x667, 360x800, 430x932, and 768x1024 for the full Care+ flow and the intelligence action/effect loop.
+- Raised only Care+ question/effect option targets from 36px to 44px after the mobile assertion exposed undersized controls.
+- Corrected the fixed-width Care+ coach card on tablet/desktop viewports so its responsive layout follows the 393px app shell rather than the outer viewport; 768x1024 clipping is now covered and visually rechecked.
+- PWA/persistence validation passed: service-worker shell assets, online-to-offline persistent-context reopen, offline availability of all Care Intelligence modules, schema-3 normalization, old-save migration, and partial intelligence defaults.
+- Final targeted regression passed:
+  - all 26 `buddy-care*.test.js` files
+  - `guest-mode-startup.test.js`
+  - syntax, i18n parity (2,691 keys per locale), UI architecture, neutral display-name resolution, UTF-8, and `git diff --check`
+- Existing test screenshots were visually reviewed at 375x667, 360x800, and 768x1024; generated artifacts were removed after review and the local dev server was stopped.
+
+Remaining real-device checks:
+- iOS Safari/PWA virtual-keyboard resize, safe-area behavior on a notched device, install/add-to-home-screen flow, and touch feel still require physical-device confirmation.
+
+2026-07-15 — Buddy Care+ local photo documentation complete
+- Added an isolated IndexedDB photo database with atomic metadata/blob writes, plant/source indexes, primary-photo handling, targeted deletion, full reset, and orphan maintenance.
+- Added local JPEG/PNG/WebP validation and canvas re-encoding: 15 MB input limit, 1600 px maximum long edge, WebP preferred with JPEG fallback, adaptive quality/size control, no upscaling, and source EXIF payload removal.
+- Integrated camera/gallery inputs, draft previews/categories/notes, three Daily Check photos, five journal photos, optional plant primary photos, per-plant history, detail actions, and same-plant before/after comparison.
+- Care+ state is version 4 and stores only small photo references plus the one-time privacy-notice flag; existing saves receive defensive defaults.
+- Added cleanup for photo, journal, Daily Check, plant, orphan, and full-Care reset paths. Object URLs are revoked across replacement, removal, modal close, plant change, and rerender.
+- Added DE/EN/ES copy, a persistent local-storage privacy note in More, and a real-device checklist in `docs/qa/BUDDY_CARE_PHOTO_DEVICE_CHECKLIST.md`.
+- Validation passed: all 30 `buddy-care*.test.js` files, the four dedicated photo tests, syntax, i18n parity (2,748 keys per locale), UI architecture, guest startup, offline boot, and smoke checks.
+- Photo E2E passed at 390x844, 375x667, 430x932, and 768x1024; service-worker-controlled online-to-cold-offline reopen, load, compare, delete, and second offline reopen passed.
+- Visual gallery/comparison screenshots were reviewed at the required viewports and removed after inspection. No physical iPhone or Android tests were claimed.
+- Known unrelated runtime-suite baselines remain: `daily-tasks-ui-state.test.js` receives `Daily Streak 3`; `coin-shop-runtime-fix.test.js` lacks visible unavailable-service feedback. Both are outside Care+ photo scope.

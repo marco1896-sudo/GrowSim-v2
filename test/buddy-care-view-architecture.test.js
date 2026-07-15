@@ -18,7 +18,8 @@ assert.deepStrictEqual(panels, ['today', 'plants', 'diary', 'more'], 'Care+ shou
 assert.strictEqual((screenMarkup.match(/id="buddyCareViewNav"/g) || []).length, 1, 'Care+ should render one persistent bottom navigation');
 assert.ok(screenMarkup.indexOf('id="buddyCareViewNav"') > screenMarkup.indexOf('id="buddyCareScrollContent"'), 'navigation should follow the scroll content');
 assert.match(appJs, /let buddyCareActiveView = 'today';/, 'Today should remain the non-persistent default view');
-assert.match(appJs, /panel\.hidden = !ageGateAccepted \|\| normalizeBuddyCareView\(panel\.dataset\.buddyCareViewPanel\) !== activeView;/, 'runtime should show only the active main view');
+assert.match(appJs, /const panelHidden = !ageGateAccepted \|\| normalizeBuddyCareView\(panel\.dataset\.buddyCareViewPanel\) !== activeView;/, 'runtime should show only the active main view');
+assert.match(appJs, /panel\.setAttribute\('aria-hidden', String\(panelHidden\)\);/, 'inactive views should be hidden from assistive technology');
 assert.match(appJs, /const scrollTarget = ui\.buddyCareScrollContent \|\| ui\.buddyCareScreen;/, 'view changes should reset only the internal Care scroll region');
 
 console.log('buddy-care-view-architecture.test.js passed');

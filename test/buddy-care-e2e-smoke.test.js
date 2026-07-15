@@ -28,7 +28,8 @@ async function openBuddyCare(page) {
 }
 
 async function closeBuddyCare(page) {
-  await page.click('#buddyCareBackBtn');
+  const ageGateVisible = await page.locator('#buddyCareAgeGateCard').isVisible();
+  await page.click(ageGateVisible ? '#buddyCareAgeGateBackBtn' : '#buddyCareBackBtn');
   await page.waitForFunction(() => {
     return Boolean(window.__gsState && window.__gsState.ui && window.__gsState.ui.activeScreen === 'home');
   });
@@ -74,6 +75,13 @@ async function fillPlantSetup(page, name) {
   await page.fill('#buddyCarePlantNameInput', name);
   await page.selectOption('#buddyCarePlantTypeSelect', 'auto');
   await page.selectOption('#buddyCarePlantEnvironmentSelect', 'indoor');
+  await page.fill('#buddyCarePlantStartDateInput', await page.evaluate(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }));
   await page.click('#buddyCareAddPlantBtn');
 }
 
@@ -148,6 +156,35 @@ async function main() {
     assert.strictEqual(firstRunAccessibility.introHidden, true, 'first-run intro overlay should not cover Buddy Care');
     assert.strictEqual(firstRunAccessibility.dialogHidden, true, 'existing noncritical simulator dialogs should close when Buddy Care opens');
 
+    await page.waitForFunction(() => document.activeElement?.id === 'buddyCareAgeGateAcceptBtn');
+    const ageGateLockState = await page.evaluate(() => {
+      const screen = document.getElementById('buddyCareScreen');
+      const dialog = document.getElementById('buddyCareAgeGateCard');
+      const scrollContent = document.getElementById('buddyCareScrollContent');
+      const nav = document.getElementById('buddyCareViewNav');
+      return {
+        role: dialog?.getAttribute('role') || '',
+        modal: dialog?.getAttribute('aria-modal') || '',
+        backgroundInert: Boolean(scrollContent?.inert),
+        navInert: Boolean(nav?.inert),
+        bodyLocked: document.body.classList.contains('buddy-care-age-gate-open'),
+        guestCopy: screen?.textContent || ''
+      };
+    });
+    assert.strictEqual(ageGateLockState.role, 'dialog', 'age gate should expose a dialog role');
+    assert.strictEqual(ageGateLockState.modal, 'true', 'age gate should expose modal semantics');
+    assert.strictEqual(ageGateLockState.backgroundInert, true, 'age gate should make Care+ background inert');
+    assert.strictEqual(ageGateLockState.navInert, true, 'age gate should lock the bottom navigation');
+    assert.strictEqual(ageGateLockState.bodyLocked, true, 'age gate should lock background scrolling');
+    assert.doesNotMatch(ageGateLockState.guestCopy, /\b(?:Marco|Max Mustergrower|Max)\b/i, 'guest Care+ must not show a foreign name');
+    if (captureScreenshots) {
+      await page.screenshot({ path: path.join(screenshotDir, `age-gate-${viewportWidth}x${viewportHeight}.png`), fullPage: true });
+    }
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    assert.strictEqual(await page.evaluate(() => document.activeElement?.id), 'buddyCareAgeGateAcceptBtn', 'age gate should retain focus and ignore Escape dismissal');
+
     await openMissionRewardDialog(page, 'Reward while Buddy Care is active');
     await page.waitForTimeout(160);
 
@@ -189,6 +226,7 @@ async function main() {
       const card = document.getElementById('buddyCareAgeGateCard');
       return Boolean(card && card.hidden === true);
     });
+    assert.strictEqual(await page.evaluate(() => document.activeElement?.id), 'buddyCareTodayGreeting', 'age confirmation should restore focus to the active Care+ view');
 
     const productCopy = await page.locator('#buddyCareScreen').textContent();
     assert.doesNotMatch(productCopy || '', /(Technisches Fundament|Phase 5|MVP 0\.1|Mock freischalten|Testmodus:)/i, 'Buddy Care should not show internal rollout wording');
@@ -215,6 +253,29 @@ async function main() {
     assert.strictEqual(emptyTodayState.placeholderHidden, true, 'legacy placeholder should stay hidden in the empty Today view');
     assert.strictEqual(emptyTodayState.summaryHidden, true, 'empty Today should not show the metric summary');
     assert.strictEqual(emptyTodayState.todayListChildren, 0, 'empty Today should not append a second empty card');
+    assert.strictEqual(await page.evaluate(() => Array.from(document.querySelectorAll('#buddyCareScreen h1')).filter((heading) => heading.getClientRects().length > 0).length), 1, 'active Care+ view should expose exactly one visible main heading');
+    const viewIsolation = await page.evaluate(() => Array.from(document.querySelectorAll('[data-buddy-care-view-panel]')).map((panel) => ({
+      view: panel.dataset.buddyCareViewPanel,
+      hidden: panel.hidden,
+      inert: panel.inert,
+      ariaHidden: panel.getAttribute('aria-hidden')
+    })));
+    assert.strictEqual(viewIsolation.filter((panel) => !panel.hidden).length, 1, 'exactly one Care+ main view should be visible');
+    assert.ok(viewIsolation.filter((panel) => panel.hidden).every((panel) => panel.inert && panel.ariaHidden === 'true'), 'inactive views should be inert and hidden from assistive technology');
+    const toastLayout = await page.evaluate(() => {
+      window.showRetentionToast?.('Care toast test');
+      const toast = document.getElementById('retentionToast');
+      const nav = document.getElementById('buddyCareViewNav');
+      const toastRect = toast?.getBoundingClientRect();
+      const navRect = nav?.getBoundingClientRect();
+      return {
+        anchor: toast?.dataset.anchor || '',
+        separated: Boolean(toastRect && navRect && toastRect.bottom <= navRect.top)
+      };
+    });
+    assert.strictEqual(toastLayout.anchor, 'buddy-care', 'global toasts should use the Care+ navigation anchor');
+    assert.strictEqual(toastLayout.separated, true, 'global toasts should not cover Care+ bottom navigation');
+    await page.evaluate(() => document.getElementById('retentionToast')?.remove());
     if (captureScreenshots) {
       await page.waitForTimeout(360);
       await page.screenshot({ path: path.join(screenshotDir, `today-empty-${viewportWidth}x${viewportHeight}.png`), fullPage: true });
@@ -225,6 +286,7 @@ async function main() {
     await switchBuddyCareView(page, 'plants');
     await page.click('#buddyCarePlantsView [data-buddy-care-open-setup]');
     await page.waitForFunction(() => document.getElementById('buddyCareSetupCard')?.hidden === false);
+    assert.strictEqual(await page.evaluate(() => Array.from(document.querySelectorAll('#buddyCareScreen h1')).filter((heading) => heading.getClientRects().length > 0).length), 1, 'plant setup should expose exactly one visible main heading');
     const setupReachability = await page.evaluate(() => {
       const scrollContent = document.getElementById('buddyCareScrollContent');
       if (scrollContent) scrollContent.scrollTop = scrollContent.scrollHeight;
@@ -240,6 +302,30 @@ async function main() {
     });
     assert.strictEqual(setupReachability.buttonInsideScrollViewport, true, 'setup submit should remain reachable above bottom navigation');
     assert.strictEqual(setupReachability.navSeparated, true, 'setup scroll region should not overlap bottom navigation');
+    await page.click('#buddyCareAddPlantBtn');
+    const invalidSetupState = await page.evaluate(() => ({
+      plants: window.__gsState?.buddyCare?.plants?.length || 0,
+      nameInvalid: document.getElementById('buddyCarePlantNameInput')?.getAttribute('aria-invalid'),
+      typeInvalid: document.getElementById('buddyCarePlantTypeSelect')?.getAttribute('aria-invalid'),
+      environmentInvalid: document.getElementById('buddyCarePlantEnvironmentSelect')?.getAttribute('aria-invalid')
+    }));
+    assert.strictEqual(invalidSetupState.plants, 0, 'invalid empty setup must not create a plant');
+    assert.strictEqual(invalidSetupState.nameInvalid, 'true', 'empty plant name should receive an inline error');
+    assert.strictEqual(invalidSetupState.typeInvalid, 'true', 'missing plant type should receive an inline error');
+    assert.strictEqual(invalidSetupState.environmentInvalid, 'true', 'missing environment should receive an inline error');
+    await page.fill('#buddyCarePlantNameInput', 'Future plant');
+    await page.selectOption('#buddyCarePlantTypeSelect', 'auto');
+    await page.selectOption('#buddyCarePlantEnvironmentSelect', 'indoor');
+    await page.fill('#buddyCarePlantStartDateInput', '2099-01-01');
+    await page.click('#buddyCareAddPlantBtn');
+    const invalidFutureDateState = await page.evaluate(() => ({
+      plants: window.__gsState?.buddyCare?.plants?.length || 0,
+      dateInvalid: document.getElementById('buddyCarePlantStartDateInput')?.getAttribute('aria-invalid'),
+      dateError: document.getElementById('buddyCarePlantStartDateError')?.textContent.trim() || ''
+    }));
+    assert.strictEqual(invalidFutureDateState.plants, 0, 'future start dates must not create a plant');
+    assert.strictEqual(invalidFutureDateState.dateInvalid, 'true', 'future start dates should receive an inline error');
+    assert.ok(invalidFutureDateState.dateError.length > 0, 'future date validation should explain the error');
     await switchBuddyCareView(page, 'today');
 
     await fillPlantSetup(page, 'Audit Alpha');
@@ -261,6 +347,13 @@ async function main() {
     assert.strictEqual(collapsedCardStructure.hasWeeklyCard, false, 'collapsed plant cards should keep the weekly review out of the collapsed view');
 
     await switchBuddyCareView(page, 'more');
+    const freeAccessState = await page.evaluate(() => ({
+      id: document.getElementById('buddyCareScreen')?.dataset.buddyCareAccessStatus || '',
+      visibleStatuses: ['buddyCareFreeHintCard', 'buddyCareMockCard', 'buddyCareMockActiveState', 'buddyCareActivationCard', 'buddyCareSeasonPassCard']
+        .filter((id) => document.getElementById(id)?.hidden === false)
+    }));
+    assert.strictEqual(freeAccessState.id, 'test_available', 'free state should centrally resolve to test available');
+    assert.deepStrictEqual(freeAccessState.visibleStatuses, ['buddyCareFreeHintCard'], 'free state should show exactly one access-status surface');
     await page.click('[data-buddy-care-open-paywall="dashboard"]');
     await page.waitForFunction(() => {
       const card = document.getElementById('buddyCareSeasonPassCard');
@@ -271,13 +364,30 @@ async function main() {
       const card = document.getElementById('buddyCareActivationCard');
       return Boolean(card && card.hidden === false);
     });
+    const activeAccessState = await page.evaluate(() => ({
+      id: document.getElementById('buddyCareScreen')?.dataset.buddyCareAccessStatus || '',
+      visibleStatuses: ['buddyCareFreeHintCard', 'buddyCareMockCard', 'buddyCareMockActiveState', 'buddyCareActivationCard', 'buddyCareSeasonPassCard']
+        .filter((id) => document.getElementById(id)?.hidden === false)
+    }));
+    assert.strictEqual(activeAccessState.id, 'test_active', 'activated state should centrally resolve to test active');
+    assert.deepStrictEqual(activeAccessState.visibleStatuses, ['buddyCareActivationCard'], 'activation should show one access-status surface');
 
-    await fillPlantSetup(page, 'Audit Beta');
+    await fillPlantSetup(page, 'Audit Blüte');
     await fillPlantSetup(page, 'Audit Gamma');
     await page.waitForFunction(() => {
       const badge = document.getElementById('buddyCarePlantCount');
       return Boolean(badge && badge.textContent.includes('3 von 3'));
     });
+
+    await page.evaluate(() => {
+      window.__gsOpenBuddyCarePlantSetup?.();
+      const form = document.getElementById('buddyCareSetupForm');
+      document.getElementById('buddyCarePlantNameInput').value = 'Blocked Delta';
+      document.getElementById('buddyCarePlantTypeSelect').value = 'auto';
+      document.getElementById('buddyCarePlantEnvironmentSelect').value = 'indoor';
+      form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    assert.strictEqual(await page.evaluate(() => window.__gsState?.buddyCare?.plants?.length), 3, 'fourth plant should remain blocked through the UI submit path');
 
     await switchBuddyCareView(page, 'plants');
     await page.click('#buddyCarePlantsView [data-buddy-care-open-check="buddy-plant-1"]');
@@ -285,6 +395,7 @@ async function main() {
       const card = document.getElementById('buddyCareDailyCheckCard');
       return Boolean(card && card.hidden === false);
     });
+    assert.strictEqual(await page.evaluate(() => Array.from(document.querySelectorAll('#buddyCareScreen h1')).filter((heading) => heading.getClientRects().length > 0).length), 1, 'daily check should expose exactly one visible main heading');
     await page.click('[data-buddy-care-wizard-option-field="mediumMoisture"][data-buddy-care-wizard-option-value="moist"]');
     await page.click('[data-buddy-care-wizard-next]');
     await page.click('[data-buddy-care-wizard-option-field="leafState"][data-buddy-care-wizard-option-value="normal"]');
@@ -335,8 +446,8 @@ async function main() {
 
     const diaryForm = page.locator('#buddyCareDiaryHubForm');
     await diaryForm.locator('select[name="buddyCareDiaryPlantId"]').selectOption('buddy-plant-1');
-    await diaryForm.locator('input[name="buddyCareDiaryTitle"]').fill('Manual note');
-    await diaryForm.locator('textarea[name="buddyCareDiaryNote"]').fill('Observed calmly.');
+    await diaryForm.locator('input[name="buddyCareDiaryTitle"]').fill('Blütennotiz');
+    await diaryForm.locator('textarea[name="buddyCareDiaryNote"]').fill('Blätter ruhig, Höhe geprüft.');
     await diaryForm.locator('input[name="buddyCareDiaryHeight"]').fill('13.0');
     await diaryForm.locator('input[type="checkbox"][value="observation"]').check();
     await diaryForm.evaluate((form) => {
@@ -392,6 +503,7 @@ async function main() {
         plants: state && Array.isArray(state.plants) ? state.plants.length : 0,
         dailyChecks: state && Array.isArray(state.dailyChecks) ? state.dailyChecks.length : 0,
         diaryEntries: state && Array.isArray(state.diaryEntries) ? state.diaryEntries.length : 0,
+        activePlantId: state && state.activePlantId,
         lockedSlots: document.querySelectorAll('.buddy-care-plant-item--locked').length
       };
     });
@@ -401,6 +513,7 @@ async function main() {
     assert.ok(beforeReload.dailyChecks >= 1, 'a daily check should be stored before reload');
     assert.ok(beforeReload.diaryEntries >= 1, 'at least one diary entry should remain before reload');
     assert.strictEqual(beforeReload.lockedSlots, 0, 'test access should hide locked slots');
+    assert.strictEqual(beforeReload.activePlantId, 'buddy-plant-1', 'last opened plant should be the persisted active plant');
 
     await page.evaluate(() => {
       const gameMenu = document.getElementById('gameMenu');
@@ -411,6 +524,7 @@ async function main() {
     for (const view of ['today', 'plants', 'diary', 'more']) {
       await switchBuddyCareView(page, view);
       await page.waitForTimeout(360);
+      assert.strictEqual(await page.evaluate(() => Array.from(document.querySelectorAll('#buddyCareScreen h1')).filter((heading) => heading.getClientRects().length > 0).length), 1, `${view} should expose exactly one visible main heading`);
       if (captureScreenshots) {
         await page.screenshot({ path: path.join(screenshotDir, `${view}-${viewportWidth}x${viewportHeight}.png`), fullPage: true });
       }
@@ -440,7 +554,7 @@ async function main() {
     });
     assert.ok(mobileLayout.scrollWidth <= mobileLayout.viewportWidth + 1, `Buddy Care should not create horizontal page overflow at ${viewportWidth}px`);
     assert.strictEqual(mobileLayout.activeNavCount, 1, 'exactly one bottom navigation item should be active');
-    assert.strictEqual(mobileLayout.detailTabCount, 5, 'plant detail should expose overview, daily check, diary, history, and week tabs');
+    assert.strictEqual(mobileLayout.detailTabCount, 6, 'plant detail should expose overview, daily check, diary, history, photos, and week tabs');
     assert.strictEqual(mobileLayout.navOutsideScroll, true, 'bottom navigation should remain outside the scroll content');
     assert.ok(mobileLayout.navBottomDelta <= 1, 'bottom navigation should stay aligned with the Care screen bottom');
     assert.strictEqual(mobileLayout.separatedRegions, true, 'scroll content and bottom navigation should not overlap');
@@ -457,6 +571,8 @@ async function main() {
         plants: state && Array.isArray(state.plants) ? state.plants.length : 0,
         dailyChecks: state && Array.isArray(state.dailyChecks) ? state.dailyChecks.length : 0,
         diaryEntries: state && Array.isArray(state.diaryEntries) ? state.diaryEntries.length : 0,
+        activePlantId: state && state.activePlantId,
+        activePlantCards: document.querySelectorAll('#buddyCarePlantsView .buddy-care-plant-profile-card[data-active-plant="true"]').length,
         plantCountLabel: document.getElementById('buddyCarePlantCount')?.textContent.trim() || '',
         ageGateHidden: Boolean(document.getElementById('buddyCareAgeGateCard')?.hidden)
       };
@@ -468,6 +584,10 @@ async function main() {
     assert.ok(afterReload.diaryEntries >= 1, 'diary entries should persist after reload');
     assert.strictEqual(afterReload.plantCountLabel, '3 von 3 Pflanzen', 'plant count label should restore after reload');
     assert.strictEqual(afterReload.ageGateHidden, true, 'age gate should stay accepted after reload');
+    assert.strictEqual(afterReload.activePlantId, 'buddy-plant-1', 'active plant should persist after reload');
+    assert.strictEqual(afterReload.activePlantCards, 1, 'restored active plant should have one visible selected card');
+    const persistedUnicode = await page.locator('#buddyCareScreen').textContent();
+    assert.match(persistedUnicode || '', /Audit Blüte/i, 'plant names with umlauts should persist and render after reload');
   } finally {
     await closeBrowser(browser);
     await closeServer(server);

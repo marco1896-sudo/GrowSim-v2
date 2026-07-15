@@ -135,6 +135,35 @@
     };
   }
 
+  function getCarePlusAccessStatus(source, overrides = null) {
+    const facts = getBuddyCareFacts(source);
+    if (facts.entitlement === 'care_plus_mock') {
+      return {
+        id: 'test_active',
+        entitlement: facts.entitlement,
+        plantLimit: facts.plantLimit,
+        showOffer: false,
+        showActiveState: true
+      };
+    }
+    if (isCarePlusMockEnabled(overrides)) {
+      return {
+        id: 'test_available',
+        entitlement: facts.entitlement,
+        plantLimit: facts.plantLimit,
+        showOffer: true,
+        showActiveState: false
+      };
+    }
+    return {
+      id: 'free_active',
+      entitlement: facts.entitlement,
+      plantLimit: facts.plantLimit,
+      showOffer: false,
+      showActiveState: false
+    };
+  }
+
   function getCarePlusUpgradeReasons(source, context = 'dashboard') {
     const safeContext = String(context || 'dashboard').trim().toLowerCase();
     const facts = getBuddyCareFacts(source);
@@ -260,6 +289,7 @@
     isCarePlusPaymentReady,
     getCarePlusOffer,
     getCarePlusCheckoutState,
+    getCarePlusAccessStatus,
     getCarePlusUpgradeReasons,
     trackBuddyCareConversionIntent,
     getBuddyCareConversionEvents
