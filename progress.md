@@ -254,3 +254,20 @@ Remaining real-device checks:
 - Photo E2E passed at 390x844, 375x667, 430x932, and 768x1024; service-worker-controlled online-to-cold-offline reopen, load, compare, delete, and second offline reopen passed.
 - Visual gallery/comparison screenshots were reviewed at the required viewports and removed after inspection. No physical iPhone or Android tests were claimed.
 - Known unrelated runtime-suite baselines remain: `daily-tasks-ui-state.test.js` receives `Daily Streak 3`; `coin-shop-runtime-fix.test.js` lacks visible unavailable-service feedback. Both are outside Care+ photo scope.
+
+2026-07-15 - Buddy Care+ photo readback stabilization
+- Current approved task: end-to-end debug and stabilize the existing fully local Care+ photo flow without backend, login, cloud sync, or image data in normal localStorage.
+- Baseline: model, IndexedDB/blob, and offline reopen tests pass; the real photo E2E fails during profile-photo selection before `primaryPhotoId` is set.
+- Initial render audit found that every Care+ render revokes all persisted photo object URLs and hydrates images sequentially, so a later render can cancel visible-image readback.
+- Next: capture the concrete profile-upload error, fix the smallest proven storage/render causes, then strengthen visible-image, rerender, reload, offline, comparison, and mobile assertions.
+- Root cause confirmed in the readback/render layer: all persisted object URLs were revoked at the start of every hydration, images were loaded sequentially, and a newer render invalidated the in-flight generation. Care+ opening also triggered redundant asynchronous full rerenders that could replace photo inputs and loaded nodes.
+- Storage now accepts only real non-empty JPEG/PNG/WebP blobs, stores an explicit blob record, atomically writes metadata/blob, and verifies both records by matching photo ID and byte size after commit.
+- Photo hydration now loads in parallel, manages URLs per visible render slot, waits for actual decode, rejects stale generations, revokes only replaced/removed slots, and exposes a localized controlled missing-photo state.
+- Strengthened E2E coverage proves profile replacement/removal, Daily Check, diary edit retention, gallery, detail, comparison, plant switching, rerender, reload, localStorage privacy, missing-blob fallback, and object-URL cleanup.
+- Offline persistent-context coverage now proves two decoded local `blob:` sources in the comparison after a cold offline reopen, followed by deletion and a second offline reopen.
+- Visual checks passed at 390x844, 375x667, 360x800, 430x932, and 768x1024 with no horizontal overflow.
+- Validation passed: all 30 Buddy Care tests, syntax, i18n parity, UI architecture, service-worker shell, offline boot, guest startup, and smoke suite.
+- Unrelated baseline failures remain unchanged: `daily-tasks-ui-state.test.js` expects German streak copy but receives `Daily Streak 3`; `coin-shop-runtime-fix.test.js` expects unavailable-service feedback.
+- A final repeated E2E run exposed the native file-picker race directly: full Care+ rerenders could replace the file input before its `change` event. Care+ now pauses rerendering only while the camera/gallery picker is active and unlocks on selection, focus return, close, or timeout; five consecutive photo E2E runs passed.
+- Diary composer/edit values are now preserved across internal Care+ rerenders, preventing typed notes/tags/height from being lost while a photo is processed; the E2E test asserts the pre-photo diary note reaches the saved entry.
+- The full upload/save/profile replacement/Daily Check/diary/gallery/detail/compare/delete/reload/missing-blob flow passed with each required initial viewport: 390x844, 375x667, 360x800, 430x932, and 768x1024.

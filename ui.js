@@ -1415,6 +1415,9 @@ function bindMenuOverlayEvents(controller = null) {
         const files = Array.from(input.files || []);
         const entryId = String(input.getAttribute('data-buddy-care-photo-entry-id') || '').trim();
         const plantId = String(input.getAttribute('data-buddy-care-photo-plant-id') || '').trim();
+        if (typeof window.__gsSetBuddyCarePhotoPickerActive === 'function') {
+          window.__gsSetBuddyCarePhotoPickerActive(false);
+        }
         input.value = '';
         if (scope === 'profile' && typeof window.__gsHandleBuddyCarePrimaryPhotoFiles === 'function') {
           window.__gsHandleBuddyCarePrimaryPhotoFiles(plantId, files);
@@ -1433,6 +1436,21 @@ function bindMenuOverlayEvents(controller = null) {
           input.value
         );
       }
+    });
+    ui.buddyCareScreen.addEventListener('click', (event) => {
+      const input = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('[data-buddy-care-photo-input]')
+        : null;
+      if (input && typeof window.__gsSetBuddyCarePhotoPickerActive === 'function') {
+        window.__gsSetBuddyCarePhotoPickerActive(true);
+      }
+    });
+    window.addEventListener('focus', () => {
+      window.setTimeout(() => {
+        if (typeof window.__gsSetBuddyCarePhotoPickerActive === 'function') {
+          window.__gsSetBuddyCarePhotoPickerActive(false, { render: true });
+        }
+      }, 400);
     });
     ui.buddyCareScreen.addEventListener('click', (event) => {
       const target = event.target && typeof event.target.closest === 'function'
