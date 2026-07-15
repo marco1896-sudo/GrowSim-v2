@@ -49,6 +49,40 @@
     'high'
   ]);
 
+  const CARE_ACTION_STATUSES = Object.freeze([
+    'recommended',
+    'confirmed',
+    'performed',
+    'effect_pending',
+    'improved',
+    'unchanged',
+    'worsened',
+    'cancelled'
+  ]);
+
+  const CARE_PRIORITIES = Object.freeze([
+    'urgent_check',
+    'today',
+    'observe',
+    'routine',
+    'no_action'
+  ]);
+
+  const PHOTO_SOURCE_TYPES = Object.freeze([
+    'profile',
+    'daily_check',
+    'journal',
+    'follow_up'
+  ]);
+
+  const PHOTO_CATEGORIES = Object.freeze([
+    'whole_plant',
+    'leaf_top',
+    'leaf_bottom',
+    'detail',
+    'other'
+  ]);
+
   /**
    * @typedef {'free'|'care_plus_mock'} BuddyCareEntitlement
    */
@@ -76,6 +110,7 @@
    * @property {string} phase
    * @property {number|null} createdAt
    * @property {boolean} archived
+   * @property {string|null} primaryPhotoId
    */
 
   /**
@@ -85,6 +120,7 @@
    * @property {string} dayKey
    * @property {string} createdAtIso
    * @property {number|null} createdAt
+   * @property {string[]} photoIds
    * @property {'dry'|'moist'|'wet'|'unknown'} mediumMoisture
    * @property {'normal'|'hanging'|'curling'|'spots'|'yellowing'|'unknown'} leafState
    * @property {'normal'|'fast'|'slow'|'unknown'} growthState
@@ -118,6 +154,7 @@
    * @property {number|null} heightCm
    * @property {string|null} buddyComment
    * @property {string[]} photoUrls
+   * @property {string[]} photoIds
    * @property {string} createdAt
    * @property {string} updatedAt
    */
@@ -138,22 +175,29 @@
    * @property {boolean} ageGateAccepted
    * @property {number|null} ageGateAcceptedAt
    * @property {BuddyCareEntitlement} entitlement
+   * @property {string|null} activePlantId
    * @property {PlantProfile[]} plants
    * @property {DailyCareCheck[]} dailyChecks
    * @property {DiaryEntry[]} diaryEntries
    * @property {CareTask[]} tasks
    * @property {RiskSignal[]} riskSignals
+   * @property {Object} intelligence
    * @property {BuddyCareSettings} settings
    */
 
   const api = Object.freeze({
-    VERSION: 1,
+    VERSION: 4,
+    INTELLIGENCE_VERSION: 1,
     ENTITLEMENTS,
     PLANT_PHASES,
     TASK_STATUSES,
     DAILY_CHECK_STATUSES,
     DIARY_TAGS,
-    RISK_LEVELS
+    RISK_LEVELS,
+    CARE_ACTION_STATUSES,
+    CARE_PRIORITIES,
+    PHOTO_SOURCE_TYPES,
+    PHOTO_CATEGORIES
   });
 
   globalScope.GrowSimBuddyCareTypes = api;

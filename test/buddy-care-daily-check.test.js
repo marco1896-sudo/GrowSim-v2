@@ -57,6 +57,48 @@ const TODAY_KEY = '2026-07-10';
   assert.strictEqual(buddyCareState.hasDailyCheckToday(rootState, addPlant.plant.id, { now: NOW }), true, 'hasDailyCheckToday should detect the new check');
 })();
 
+(function testSameDayCheckUpdatesWithoutCrossPlantLeakage() {
+  const rootState = { buddyCare: buddyCareState.createDefaultBuddyCareState() };
+  buddyCareState.activateBuddyCarePlusMock(rootState);
+  const alpha = buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Alpha' }).plant;
+  const beta = buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Beta' }).plant;
+
+  const first = buddyCareState.addDailyCheck(rootState, alpha.id, {
+    mediumMoisture: 'dry', leafState: 'normal', growthState: 'normal', environmentStress: 'normal', pestsVisible: 'no', heightCm: '12,5'
+  }, { now: NOW });
+  const updated = buddyCareState.addDailyCheck(rootState, alpha.id, {
+    mediumMoisture: 'moist', leafState: 'normal', growthState: 'normal', environmentStress: 'normal', pestsVisible: 'no', heightCm: '13.2'
+  }, { now: NOW + 60_000 });
+  const betaCheck = buddyCareState.addDailyCheck(rootState, beta.id, {
+    mediumMoisture: 'wet', leafState: 'hanging', growthState: 'slow', environmentStress: 'humid', pestsVisible: 'no', heightCm: 20
+  }, { now: NOW + 120_000 });
+
+  assert.strictEqual(first.ok, true, 'first daily check should save');
+  assert.strictEqual(first.check.heightCm, 12.5, 'decimal comma should normalize safely');
+  assert.strictEqual(updated.reason, 'daily_check_updated', 'second same-day check should update the existing record');
+  assert.strictEqual(updated.check.id, first.check.id, 'same-day update should keep a stable check id');
+  assert.strictEqual(rootState.buddyCare.dailyChecks.length, 2, 'separate plants should keep separate same-day records');
+  assert.strictEqual(rootState.buddyCare.diaryEntries.length, 2, 'each plant check should keep one linked diary record');
+  assert.strictEqual(buddyCareState.getLatestDailyCheckForPlant(rootState, alpha.id).heightCm, 13.2, 'updated Alpha height should be isolated');
+  assert.strictEqual(buddyCareState.getLatestDailyCheckForPlant(rootState, beta.id).heightCm, 20, 'Beta height should stay isolated');
+  assert.notStrictEqual(updated.check.id, betaCheck.check.id, 'different plant checks need unique ids');
+  assert.notStrictEqual(updated.diaryEntry.id, betaCheck.diaryEntry.id, 'different diary records need unique ids');
+})();
+
+(function testInvalidHeightDoesNotMutateState() {
+  const rootState = { buddyCare: buddyCareState.createDefaultBuddyCareState() };
+  const plant = buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Height Guard' }).plant;
+  for (const invalidHeight of [0, -1, 'abc', 1001]) {
+    const result = buddyCareState.addDailyCheck(rootState, plant.id, {
+      mediumMoisture: 'moist', leafState: 'normal', growthState: 'normal', environmentStress: 'normal', pestsVisible: 'no', heightCm: invalidHeight
+    }, { now: NOW });
+    assert.strictEqual(result.ok, false, `height ${invalidHeight} should be rejected`);
+    assert.strictEqual(result.reason, 'invalid_height', 'invalid height should expose a stable reason');
+  }
+  assert.strictEqual(rootState.buddyCare.dailyChecks.length, 0, 'invalid heights must not save a daily check');
+  assert.strictEqual(rootState.buddyCare.diaryEntries.length, 0, 'invalid heights must not create linked diary data');
+})();
+
 (function testStatusCheckedToday() {
   const rootState = { buddyCare: buddyCareState.createDefaultBuddyCareState() };
   const addPlant = buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Alpha' });

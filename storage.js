@@ -148,18 +148,27 @@ function createDefaultBuddyCareStateFromBase() {
     return buddyCareApi.createDefaultBuddyCareState();
   }
   return {
-    version: 1,
+    version: 4,
     ageGateAccepted: false,
     ageGateAcceptedAt: null,
     entitlement: 'free',
+    activePlantId: null,
     plants: [],
     dailyChecks: [],
     diaryEntries: [],
     tasks: [],
     riskSignals: [],
+    intelligence: {
+      version: 1,
+      actions: [],
+      questionAnswers: [],
+      insights: [],
+      plantPatterns: []
+    },
     settings: {
       notificationsEnabled: false,
-      preferredReminderTime: '18:00'
+      preferredReminderTime: '18:00',
+      photoPrivacyNoticeSeen: false
     }
   };
 }
@@ -373,6 +382,17 @@ async function clearStoredState() {
     db.close();
   } catch (_error) {
     // non-fatal
+  }
+
+  const photoApi = typeof window !== 'undefined' && window.GrowSimBuddyCarePhotoStorage
+    ? window.GrowSimBuddyCarePhotoStorage.storage
+    : null;
+  if (photoApi && typeof photoApi.clearAllPhotos === 'function') {
+    try {
+      await photoApi.clearAllPhotos();
+    } catch (error) {
+      console.warn('[storage] Buddy Care photo cleanup failed', error);
+    }
   }
 }
 

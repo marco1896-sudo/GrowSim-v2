@@ -27,7 +27,8 @@ const stylesCss = fs.readFileSync(path.join(__dirname, '..', 'styles.css'), 'utf
   assert.match(appJs, /function getActiveBuddyCareView\(\)/, 'Buddy Care should expose a getter for the active view');
   assert.match(appJs, /function setActiveBuddyCareView\(view, options = \{\}\)/, 'Buddy Care should expose a setter for the active view');
   assert.match(appJs, /function renderBuddyCareViewNavigation\(ageGateAccepted\)/, 'Buddy Care should render exactly one active view navigation state');
-  assert.match(appJs, /panel\.hidden = !ageGateAccepted \|\| normalizeBuddyCareView\(panel\.dataset\.buddyCareViewPanel\) !== activeView;/, 'only one Buddy Care main view should stay visible at a time');
+  assert.match(appJs, /const panelHidden = !ageGateAccepted \|\| normalizeBuddyCareView\(panel\.dataset\.buddyCareViewPanel\) !== activeView;/, 'only one Buddy Care main view should stay visible at a time');
+  assert.match(appJs, /panel\.inert = panelHidden;/, 'inactive Buddy Care views should not stay interactive');
 })();
 
 (function testBuddyCareDeepLinksStayLocal() {

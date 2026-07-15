@@ -407,7 +407,7 @@
         </section>
       </section>
     </main>
-    <main id="buddyCareScreen" class="hud-main hud-screen buddy-care-screen" data-screen="buddyCare" hidden aria-hidden="true">
+    <main id="buddyCareScreen" class="hud-main hud-screen buddy-care-screen" data-screen="buddyCare" data-buddy-care-access-status="free_active" hidden aria-hidden="true">
       <div id="buddyCareScrollContent" class="buddy-care-scroll-content">
       <section class="buddy-care-shell" aria-label="Buddy Care Plus">
         <header class="buddy-care-topbar">
@@ -432,17 +432,10 @@
           <div id="buddyCareHeroBuddyVisual" class="buddy-care-hero-visual"></div>
         </section>
 
-        <section id="buddyCareAgeGateCard" class="buddy-care-panel" aria-live="polite">
-          <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.age_gate_kicker">Altersfreigabe</p>
-          <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.age_gate_title">Nur für volljährige Nutzer</h2>
-          <p class="buddy-care-panel-copy" data-i18n="buddyCare.screen.age_gate_body">Bevor Buddy Care+ geöffnet wird, bestätigst du einmal, dass du volljährig bist.</p>
-          <button id="buddyCareAgeGateAcceptBtn" class="action-btn action-primary" type="button" data-i18n="buddyCare.screen.age_gate_action">Ich bin volljährig</button>
-        </section>
-
         <div id="buddyCareTodayView" class="buddy-care-view" data-buddy-care-view-panel="today" hidden>
           <header class="buddy-care-screen-header buddy-care-screen-header--today">
             <div>
-              <h1 id="buddyCareTodayGreeting" class="buddy-care-screen-title">Heute</h1>
+              <h1 id="buddyCareTodayGreeting" class="buddy-care-screen-title" tabindex="-1">Heute</h1>
               <p id="buddyCareTodayDate" class="buddy-care-screen-subtitle"></p>
             </div>
             <div class="buddy-care-screen-actions">
@@ -512,32 +505,37 @@
         <div id="buddyCarePlantsView" class="buddy-care-view" data-buddy-care-view-panel="plants" hidden>
           <section id="buddyCareSetupCard" class="buddy-care-panel" hidden aria-live="polite">
             <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.setup_kicker">Los geht's</p>
-            <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.setup_title">Pflanzen-Setup</h2>
+            <h1 class="buddy-care-panel-title" data-i18n="buddyCare.screen.setup_title">Pflanzen-Setup</h1>
             <p class="buddy-care-panel-copy" data-i18n="buddyCare.screen.setup_body">Lege deine ersten Buddy-Care-Pflanzen an. Free startet mit 1 Pflanze, der Care+ Testzugang erweitert auf bis zu 3.</p>
-            <form id="buddyCareSetupForm" class="buddy-care-setup-form">
+            <form id="buddyCareSetupForm" class="buddy-care-setup-form" novalidate>
               <label class="buddy-care-field">
                 <span class="buddy-care-field-label" data-i18n="buddyCare.screen.setup_name_label">Name</span>
-                <input id="buddyCarePlantNameInput" class="buddy-care-input" type="text" maxlength="28" data-i18n-placeholder="buddyCare.screen.setup_name_placeholder" placeholder="z. B. Balkon 01">
+                <input id="buddyCarePlantNameInput" class="buddy-care-input" type="text" maxlength="28" required aria-describedby="buddyCarePlantNameError" data-i18n-placeholder="buddyCare.screen.setup_name_placeholder" placeholder="z. B. Balkon 01">
+                <span id="buddyCarePlantNameError" class="buddy-care-field-error" hidden></span>
               </label>
               <label class="buddy-care-field">
                 <span class="buddy-care-field-label" data-i18n="buddyCare.screen.setup_type_label">Typ</span>
-                <select id="buddyCarePlantTypeSelect" class="buddy-care-select">
-                  <option value="unknown" data-i18n="buddyCare.type.unknown">Unbekannt</option>
-                  <option value="auto" data-i18n="buddyCare.type.auto">Auto</option>
-                  <option value="photoperiod" data-i18n="buddyCare.type.photoperiod">Photo</option>
+                <select id="buddyCarePlantTypeSelect" class="buddy-care-select" required aria-describedby="buddyCarePlantTypeError">
+                  <option value="" selected disabled data-i18n="buddyCare.validation.choose_type">Typ auswählen</option>
+                  <option value="auto" data-i18n="buddyCare.type.auto">Autoflower</option>
+                  <option value="photoperiod" data-i18n="buddyCare.type.photoperiod">Photoperiodisch</option>
                 </select>
+                <span id="buddyCarePlantTypeError" class="buddy-care-field-error" hidden></span>
               </label>
               <label class="buddy-care-field">
                 <span class="buddy-care-field-label" data-i18n="buddyCare.screen.setup_environment_label">Umgebung</span>
-                <select id="buddyCarePlantEnvironmentSelect" class="buddy-care-select">
+                <select id="buddyCarePlantEnvironmentSelect" class="buddy-care-select" required aria-describedby="buddyCarePlantEnvironmentError">
+                  <option value="" selected disabled data-i18n="buddyCare.validation.choose_environment">Umgebung auswählen</option>
                   <option value="indoor" data-i18n="buddyCare.environment.indoor">Indoor</option>
                   <option value="outdoor" data-i18n="buddyCare.environment.outdoor">Outdoor</option>
                   <option value="greenhouse" data-i18n="buddyCare.environment.greenhouse">Gewächshaus</option>
                 </select>
+                <span id="buddyCarePlantEnvironmentError" class="buddy-care-field-error" hidden></span>
               </label>
               <label class="buddy-care-field">
                 <span class="buddy-care-field-label" data-i18n="buddyCare.screen.setup_start_label">Startdatum</span>
-                <input id="buddyCarePlantStartDateInput" class="buddy-care-input" type="date">
+                <input id="buddyCarePlantStartDateInput" class="buddy-care-input" type="date" min="2000-01-01" required aria-describedby="buddyCarePlantStartDateError">
+                <span id="buddyCarePlantStartDateError" class="buddy-care-field-error" hidden></span>
               </label>
               <button id="buddyCareAddPlantBtn" class="action-btn action-primary" type="submit" data-i18n="buddyCare.screen.setup_add">Pflanze hinzufügen</button>
             </form>
@@ -548,7 +546,7 @@
             <div class="buddy-care-section-head">
               <div>
                 <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.plants_kicker">Übersicht</p>
-                <h2 class="buddy-care-panel-title" data-i18n="buddyCare.screen.plants_title">Deine Pflanzen</h2>
+                <h1 class="buddy-care-panel-title" data-i18n="buddyCare.screen.plants_title">Deine Pflanzen</h1>
               </div>
               <span id="buddyCarePlantCount" class="buddy-care-badge">0 / 1</span>
             </div>
@@ -562,7 +560,7 @@
             <div class="buddy-care-section-head">
               <div>
                 <p class="buddy-care-panel-kicker" data-i18n="buddyCare.dailyCheck.kicker">Tagescheck</p>
-                <h2 id="buddyCareDailyCheckTitle" class="buddy-care-panel-title">Tagescheck</h2>
+                <h1 id="buddyCareDailyCheckTitle" class="buddy-care-panel-title">Tagescheck</h1>
               </div>
               <span id="buddyCareDailyCheckStatusBadge" class="buddy-care-badge">Kein Check heute</span>
             </div>
@@ -626,7 +624,7 @@
               </label>
               <label class="buddy-care-field">
                 <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.height_label">Höhe in cm, optional</span>
-                <input id="buddyCareDailyCheckHeightInput" class="buddy-care-input" type="number" min="0" step="0.1" inputmode="decimal">
+                <input id="buddyCareDailyCheckHeightInput" class="buddy-care-input" type="number" min="0.1" max="1000" step="0.1" inputmode="decimal">
               </label>
               <label class="buddy-care-field buddy-care-field--full">
                 <span class="buddy-care-field-label" data-i18n="buddyCare.dailyCheck.note_label">Notiz, optional</span>
@@ -656,7 +654,7 @@
               </div>
             </div>
             <p id="buddyCareFreeHintBody" class="buddy-care-panel-copy" data-i18n="buddyCare.screen.upgrade_body">Begleite bis zu 3 Pflanzen mit Tagescheck, Tagebuch, Ampel, Verlauf und Wochenrückblick.</p>
-            <p class="buddy-care-panel-footnote" data-i18n="buddyCare.screen.upgrade_price_line">Saisonpass: 19,99 EUR</p>
+            <p id="buddyCareFreeOfferPrice" class="buddy-care-panel-footnote" data-i18n="buddyCare.screen.upgrade_price_line">Saisonpass: 19,99 EUR</p>
             <button class="action-btn action-primary" type="button" data-buddy-care-open-paywall="dashboard" data-i18n="buddyCare.screen.view_care_plus">Testzugang ansehen</button>
           </section>
 
@@ -755,6 +753,17 @@
             <span class="buddy-care-nav-label" data-i18n="buddyCare.nav.more">Mehr</span>
           </button>
         </nav>
+        <section id="buddyCareAgeGateCard" class="buddy-care-age-gate" role="dialog" aria-modal="true" aria-labelledby="buddyCareAgeGateTitle" aria-describedby="buddyCareAgeGateBody" aria-live="polite">
+          <div class="buddy-care-panel buddy-care-age-gate-dialog">
+            <p class="buddy-care-panel-kicker" data-i18n="buddyCare.screen.age_gate_kicker">Altersfreigabe</p>
+            <h1 id="buddyCareAgeGateTitle" class="buddy-care-panel-title" data-i18n="buddyCare.screen.age_gate_title">Nur für volljährige Nutzer</h1>
+            <p id="buddyCareAgeGateBody" class="buddy-care-panel-copy" data-i18n="buddyCare.screen.age_gate_body">Bevor Buddy Care+ geöffnet wird, bestätigst du einmal, dass du volljährig bist.</p>
+            <div class="buddy-care-daily-actions">
+              <button id="buddyCareAgeGateBackBtn" class="ghost-btn" type="button" data-i18n="common.back">Zurück</button>
+              <button id="buddyCareAgeGateAcceptBtn" class="action-btn action-primary" type="button" data-i18n="buddyCare.screen.age_gate_action">Ich bin volljährig</button>
+            </div>
+          </div>
+        </section>
     </main>
 </div>
 
@@ -2167,6 +2176,8 @@
       { src: 'src/i18n/index.js' },
       { src: 'src/buddy-care/featureFlags.js' },
       { src: 'src/buddy-care/types.js' },
+      { src: 'src/buddy-care/photoStorage.js' },
+      { src: 'src/buddy-care/photoProcessing.js' },
       { src: 'src/buddy-care/externalTestReadiness.js' },
       { src: 'src/buddy-care/state.js' },
       { src: 'src/buddy-care/monetizationReadiness.js' },
@@ -2175,6 +2186,15 @@
       { src: 'src/buddy-care/taskGenerator.js' },
       { src: 'src/buddy-care/riskEngine.js' },
       { src: 'src/buddy-care/trendEngine.js' },
+      { src: 'src/buddy-care/intelligence/contextBuilder.js' },
+      { src: 'src/buddy-care/intelligence/trendAnalyzer.js' },
+      { src: 'src/buddy-care/intelligence/causeScorer.js' },
+      { src: 'src/buddy-care/intelligence/priorityEngine.js' },
+      { src: 'src/buddy-care/intelligence/questionEngine.js' },
+      { src: 'src/buddy-care/intelligence/actionTracker.js' },
+      { src: 'src/buddy-care/intelligence/profileLearner.js' },
+      { src: 'src/buddy-care/intelligence/safetyRules.js' },
+      { src: 'src/buddy-care/intelligence/insightEngine.js' },
       { src: 'src/events/legacy/EventV1WriteTelemetry.js' },
       { src: 'sim.js' },
       { src: 'src/simulation/plantState.js' },

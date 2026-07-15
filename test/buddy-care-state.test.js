@@ -121,7 +121,7 @@ function buildStorageContext(savedSnapshot) {
     }
   });
 
-  assert.strictEqual(normalized.version, 1, 'normalized state should use v1');
+  assert.strictEqual(normalized.version, 4, 'normalized state should migrate to v4');
   assert.strictEqual(normalized.entitlement, 'care_plus_mock', 'entitlement should preserve mock mode');
   assert.strictEqual(normalized.plants.length, 3, 'normalized state should clamp to max three plants');
   assert.strictEqual(normalized.settings.preferredReminderTime, '19:30', 'valid reminder time should survive normalization');
@@ -165,6 +165,27 @@ function buildStorageContext(savedSnapshot) {
   assert.strictEqual(normalized.diaryEntries.length, 1, 'orphaned diary entries should be removed during normalization');
 })();
 
+(function testNormalizationRepairsDuplicateRecordIdsAndInvalidDates() {
+  const normalized = buddyCareState.normalizeBuddyCareState({
+    entitlement: 'care_plus_mock',
+    plants: [{ id: 'plant-1', nickname: 'Ähre', startDate: '2026-02-31' }],
+    dailyChecks: [
+      { id: 'shared-check', plantId: 'plant-1', dayKey: '2026-07-14' },
+      { id: 'shared-check', plantId: 'plant-1', dayKey: '2026-02-31', createdAtIso: '2026-07-13T09:00:00.000Z' }
+    ],
+    diaryEntries: [
+      { id: 'shared-entry', plantId: 'plant-1', entryDate: '2026-07-14' },
+      { id: 'shared-entry', plantId: 'plant-1', entryDate: '2026-07-13' }
+    ]
+  });
+
+  assert.strictEqual(new Set(normalized.dailyChecks.map((check) => check.id)).size, 2, 'duplicate daily-check ids should be repaired without dropping valid data');
+  assert.strictEqual(new Set(normalized.diaryEntries.map((entry) => entry.id)).size, 2, 'duplicate diary-entry ids should be repaired without dropping valid data');
+  assert.strictEqual(normalized.dailyChecks[1].dayKey, '2026-07-13', 'impossible stored day keys should fall back to their valid creation date');
+  assert.notStrictEqual(normalized.plants[0].startDate, '2026-02-31', 'impossible legacy dates should normalize to a safe valid value');
+  assert.strictEqual(normalized.plants[0].nickname, 'Ähre', 'unicode plant names should survive normalization');
+})();
+
 (function testPlantSetupMutations() {
   const rootState = { buddyCare: buddyCareState.createDefaultBuddyCareState() };
 
@@ -182,6 +203,7 @@ function buildStorageContext(savedSnapshot) {
   assert.strictEqual(rootState.buddyCare.plants[0].environment, 'outdoor', 'environment should persist');
   assert.strictEqual(rootState.buddyCare.plants[0].startDate, '2026-07-01', 'start date should persist');
   assert.strictEqual(rootState.buddyCare.plants[0].phase, 'seedling', 'plant phase should persist');
+  assert.strictEqual(rootState.buddyCare.activePlantId, firstAdd.plant.id, 'newly added plant should become the active plant');
   assert.strictEqual(buddyCareState.canAddBuddyCarePlant(rootState), false, 'free tier should block a second plant');
 
   const blockedAdd = buddyCareState.addBuddyCarePlant(rootState, {
@@ -197,6 +219,10 @@ function buildStorageContext(savedSnapshot) {
   buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Gamma', phase: 'flowering' });
   assert.strictEqual(rootState.buddyCare.plants.length, 3, 'care+ mock should allow up to three plants');
   assert.strictEqual(buddyCareState.getBuddyCareRemainingPlantSlots(rootState), 0, 'no slots should remain at three plants');
+  const fourthAdd = buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Delta' });
+  assert.strictEqual(fourthAdd.ok, false, 'care+ should block a fourth plant');
+  assert.strictEqual(fourthAdd.reason, 'plant_limit_reached', 'fourth plant should fail without mutating stored plants');
+  assert.strictEqual(rootState.buddyCare.plants.length, 3, 'blocked fourth plant should preserve the existing three plants');
 
   rootState.buddyCare.tasks.push({ id: 'task-b', plantId: rootState.buddyCare.plants[1].id, title: 'Observe', status: 'open' });
   rootState.buddyCare.riskSignals.push({ id: 'risk-b', plantId: rootState.buddyCare.plants[1].id, level: 'medium', label: 'Watch', source: 'test' });
@@ -207,6 +233,28 @@ function buildStorageContext(savedSnapshot) {
   assert.strictEqual(buddyCareState.getBuddyCareRemainingPlantSlots(rootState), 1, 'one slot should reopen after removal');
   assert.strictEqual(rootState.buddyCare.tasks.length, 0, 'removing a plant should clear linked buddy-care tasks');
   assert.strictEqual(rootState.buddyCare.riskSignals.length, 0, 'removing a plant should clear linked buddy-care risk signals');
+  assert.ok(rootState.buddyCare.plants.some((plant) => plant.id === rootState.buddyCare.activePlantId), 'removing the active plant should select a valid remaining plant');
+})();
+
+(function testActivePlantSelectionMigratesAndPersists() {
+  const rootState = { buddyCare: buddyCareState.createDefaultBuddyCareState() };
+  buddyCareState.activateBuddyCarePlusMock(rootState);
+  const alpha = buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Alpha' }).plant;
+  const beta = buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Beta' }).plant;
+
+  const selected = buddyCareState.selectBuddyCarePlant(rootState, alpha.id);
+  assert.strictEqual(selected.ok, true, 'existing plants should be selectable');
+  assert.strictEqual(buddyCareState.getActiveBuddyCarePlantId(rootState), alpha.id, 'selected plant should be exposed centrally');
+
+  const restored = buddyCareState.normalizeBuddyCareState(JSON.parse(JSON.stringify(rootState.buddyCare)));
+  assert.strictEqual(restored.activePlantId, alpha.id, 'active plant should survive save serialization and normalization');
+
+  const invalidLegacy = buddyCareState.normalizeBuddyCareState({
+    entitlement: 'care_plus_mock',
+    activePlantId: 'missing',
+    plants: [alpha, beta]
+  });
+  assert.strictEqual(invalidLegacy.activePlantId, alpha.id, 'missing active selections should fall back to a valid plant');
 })();
 
 (function testDowngradeKeepsStoredPlantsReadOnly() {
@@ -223,6 +271,7 @@ function buildStorageContext(savedSnapshot) {
   assert.strictEqual(buddyCareState.isBuddyCarePlantReadOnly(rootState, rootState.buddyCare.plants[0].id), false, 'the first plant should stay active after downgrade');
   assert.strictEqual(buddyCareState.isBuddyCarePlantReadOnly(rootState, rootState.buddyCare.plants[1].id), true, 'extra plants should become read-only after downgrade');
   assert.strictEqual(buddyCareState.isBuddyCarePlantReadOnly(rootState, rootState.buddyCare.plants[2].id), true, 'the third plant should also become read-only after downgrade');
+  assert.strictEqual(rootState.buddyCare.activePlantId, rootState.buddyCare.plants[0].id, 'downgrade should select the remaining writable plant without deleting others');
 })();
 
 (function testPlantProfileNormalizationFallbacks() {
@@ -304,7 +353,7 @@ async function main() {
   };
   restoredContext.ensureStateIntegrity(Date.now());
 
-  assert.strictEqual(restoredContext.state.buddyCare.version, 1, 'integrity pass should normalize buddy care version');
+  assert.strictEqual(restoredContext.state.buddyCare.version, 4, 'integrity pass should normalize buddy care version');
   assert.strictEqual(restoredContext.state.buddyCare.ageGateAccepted, false, 'invalid age gate values should normalize to false');
   assert.strictEqual(restoredContext.state.buddyCare.entitlement, 'free', 'invalid entitlement should normalize to free');
   assert.strictEqual(restoredContext.state.buddyCare.plants.length, 3, 'invalid entitlement snapshots should keep stored plants for safe downgrade handling');

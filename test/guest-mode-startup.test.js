@@ -219,6 +219,30 @@ async function main() {
     assert.strictEqual(starterGoalState.mode, 'starter', 'post-intro first-day goal should use the starter teaser slot');
     assert.strictEqual(starterGoalState.actionTarget, 'dashboard', 'post-intro first-day goal should route into the dashboard');
     assert.match(starterGoalState.text, /Nächster Schritt|Wachstumsreaktion/i, 'post-intro teaser should explain the next first-day step');
+    await page.evaluate(() => window.__gsOpenBuddyCare?.());
+    await page.waitForFunction(() => {
+      const screen = document.getElementById('buddyCareScreen');
+      return Boolean(screen && !screen.hidden && screen.getAttribute('aria-hidden') === 'false');
+    }, null, { timeout: 10000 });
+    const guestBuddyCareState = await page.evaluate(() => {
+      const screen = document.getElementById('buddyCareScreen');
+      const introOverlay = document.getElementById('firstRunIntroOverlay');
+      const followupOverlay = document.getElementById('firstRunDashboardFollowupOverlay');
+      return {
+        activeScreen: window.__gsState?.ui?.activeScreen || '',
+        screenText: screen?.textContent.replace(/\s+/g, ' ').trim() || '',
+        introHidden: Boolean(introOverlay?.classList.contains('hidden')),
+        followupHidden: Boolean(followupOverlay?.classList.contains('hidden')),
+        authGateActive: Boolean(window.__gsState?.ui?.authGateActive)
+      };
+    });
+    assert.strictEqual(guestBuddyCareState.activeScreen, 'buddyCare', 'completed first-day flow should keep Buddy Care reachable for guests');
+    assert.strictEqual(guestBuddyCareState.introHidden, true, 'first-day intro must not cover Buddy Care');
+    assert.strictEqual(guestBuddyCareState.followupHidden, true, 'dashboard follow-up must not cover Buddy Care');
+    assert.strictEqual(guestBuddyCareState.authGateActive, false, 'opening Buddy Care must not activate login for guests');
+    assert.doesNotMatch(guestBuddyCareState.screenText, /\bMarco\b/i, 'guest Buddy Care must use neutral copy');
+    await page.click('#buddyCareAgeGateBackBtn');
+    await page.waitForFunction(() => window.__gsState?.ui?.activeScreen === 'home', null, { timeout: 10000 });
     if (false) {
     const guestCareState = await page.evaluate(() => {
       const careSheet = document.getElementById('careSheet');

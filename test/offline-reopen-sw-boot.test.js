@@ -46,6 +46,15 @@ async function collectBootSnapshot(page) {
     const registrations = 'serviceWorker' in navigator
       ? await navigator.serviceWorker.getRegistrations()
       : [];
+    const careStateApi = window.GrowSimBuddyCareState;
+    const careIntelligenceReady = typeof window.GrowSimCareInsightEngine?.buildCareInsight === 'function';
+    const migratedCareState = typeof careStateApi?.normalizeBuddyCareState === 'function'
+      ? careStateApi.normalizeBuddyCareState({
+        version: 2,
+        plants: [{ id: 'offline-care-plant', nickname: 'Offline-Pflanze', environment: 'indoor', phase: 'veg' }],
+        intelligence: { actions: null, questionAnswers: [{}] }
+      })
+      : null;
 
     return {
       bootOk: window.__gsBootOk === true,
@@ -61,7 +70,11 @@ async function collectBootSnapshot(page) {
         installing: registration.installing?.scriptURL || ''
       })),
       cacheKeys,
-      cacheCounts
+      cacheCounts,
+      careIntelligenceReady,
+      migratedCareVersion: Number(migratedCareState?.version || 0),
+      migratedCarePlants: Array.isArray(migratedCareState?.plants) ? migratedCareState.plants.length : 0,
+      migratedCareActions: Array.isArray(migratedCareState?.intelligence?.actions) ? migratedCareState.intelligence.actions.length : -1
     };
   });
 }
@@ -123,6 +136,10 @@ async function main() {
       'ready',
       `offline reopen should end at ready, got ${JSON.stringify(offlineSnapshot.bootState)}`
     );
+    assert.strictEqual(offlineSnapshot.careIntelligenceReady, true, 'offline reopen should restore the local Care+ intelligence modules');
+    assert.strictEqual(offlineSnapshot.migratedCareVersion, 4, 'offline reopen should retain the current Care+ schema-4 migration path');
+    assert.strictEqual(offlineSnapshot.migratedCarePlants, 1, 'offline Care+ migration should retain existing plants');
+    assert.strictEqual(offlineSnapshot.migratedCareActions, 0, 'offline Care+ migration should defend against partial intelligence fields');
 
     console.log('offline reopen service worker boot test passed');
   } finally {

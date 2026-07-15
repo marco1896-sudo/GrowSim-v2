@@ -184,6 +184,17 @@
       "free": "Free",
       "care_plus_mock": "Acceso de prueba Care+"
     },
+    "validation": {
+      "choose_type": "Elige un tipo",
+      "choose_environment": "Elige un entorno",
+      "name_required": "Ponle un nombre a tu planta.",
+      "name_too_long": "El nombre no puede superar los 28 caracteres.",
+      "type_required": "Elige Autofloreciente o Fotoperiódica.",
+      "environment_required": "Elige un entorno.",
+      "date_invalid": "Introduce una fecha de inicio válida desde el año 2000.",
+      "date_future": "La fecha de inicio no puede estar en el futuro.",
+      "height_invalid": "La altura debe estar entre 0,1 y 1.000 cm."
+    },
     "screen": {
       "eyebrow": "Resumen de tus plantas",
       "title": "Buddy Care+",
@@ -393,8 +404,8 @@
       "unknown": "Desconocida"
     },
     "type": {
-      "auto": "Auto",
-      "photoperiod": "Foto",
+      "auto": "Autofloreciente",
+      "photoperiod": "Fotoperiódica",
       "unknown": "Desconocido"
     },
     "environment": {
@@ -563,6 +574,169 @@
         "repeat_message": "Hubo varios chequeos llamativos dentro de las ultimas 48 horas."
       }
     },
+    "intelligence": {
+      "priority": {
+        "urgent_check": "Revisar ahora",
+        "today": "Hacer hoy",
+        "observe": "Observar",
+        "routine": "Rutina",
+        "no_action": "Sin intervención"
+      },
+      "headline": {
+        "need_check": "Buddy necesita un check actual",
+        "stable": "La planta parece estable en general",
+        "watch": "Un cambio leve merece observación",
+        "worsening": "La evolución ha empeorado",
+        "improving": "La evolución parece más tranquila",
+        "reassess": "Conviene reevaluar la posible causa"
+      },
+      "summary": {
+        "need_check": "Aún no hay información suficiente para una valoración útil. Empieza con un check de cuidados corto.",
+        "stable": "La planta parece estable en general. Observar es más útil que intervenir de nuevo ahora.",
+        "observe": "El cambio es leve o todavía poco claro. Comprueba primero el punto abierto más importante.",
+        "worsening": "Varios checks muestran un empeoramiento. Revisa hoy con calma la señal más importante.",
+        "improving": "La planta parece más tranquila que en la observación anterior. Mantén la rutina actual por ahora.",
+        "reassess": "La última medida aún no muestra una mejora clara. Care+ vuelve a ponderar las posibles causas."
+      },
+      "cause": {
+        "wet_root_zone": "una zona radicular posiblemente demasiado húmeda",
+        "dry_root_zone": "una zona radicular posiblemente seca",
+        "heat_or_light_stress": "posible estrés por calor o luz",
+        "possible_nutrient_shortage": "posible falta de nutrientes",
+        "possible_overfeeding": "posible exceso de fertilización",
+        "normal_leaf_turnover": "renovación normal de hojas por edad o fase",
+        "possible_pest_pressure": "posible presión de plagas",
+        "possible_ph_uptake_range": "posible problema de pH o absorción",
+        "transplant_or_location_stress": "posible estrés por trasplante o cambio de lugar",
+        "insufficient_data": "datos insuficientes"
+      },
+      "question_title": "Una pregunta rápida",
+      "question": {
+        "medium_moisture": {
+          "prompt": "¿El sustrato sigue húmedo?",
+          "reason": "Esto ayuda a diferenciar sequedad de una zona radicular posiblemente demasiado húmeda."
+        },
+        "leaf_area": {
+          "prompt": "¿Están más afectadas las hojas superiores o las inferiores?",
+          "reason": "La posición ayuda a separar la renovación normal de otras posibles causas."
+        },
+        "recent_feeding": {
+          "prompt": "¿Se fertilizó la planta en los últimos días?",
+          "reason": "Así se comprueba la relación temporal sin recomendar otra fertilización prematura."
+        },
+        "heat_exposure": {
+          "prompt": "¿Estuvo la planta expuesta a mucho calor recientemente?",
+          "reason": "Esto ayuda a valorar con cautela un posible estrés por calor o luz."
+        },
+        "pests_visible": {
+          "prompt": "¿Se ven plagas o marcas de alimentación?",
+          "reason": "Una mirada rápida a ambos lados de las hojas puede aclararlo."
+        },
+        "symptom_onset": {
+          "prompt": "¿El cambio apareció de repente o poco a poco?",
+          "reason": "El momento ayuda a separar una carga breve de un patrón más largo."
+        },
+        "problem_spread": {
+          "prompt": "¿La anomalía se ha extendido desde el último check?",
+          "reason": "Así Buddy distingue una observación estable de un cambio progresivo."
+        },
+        "leaf_texture": {
+          "prompt": "¿Las hojas se sienten blandas, secas o caídas?",
+          "reason": "La tensión de la hoja ayuda a acotar causas de agua y ambiente."
+        }
+      },
+      "option": {
+        "dry": "Seco",
+        "moist": "Algo húmedo",
+        "wet": "Mojado",
+        "unknown": "No estoy seguro",
+        "upper": "Hojas superiores",
+        "lower": "Hojas inferiores",
+        "all": "Superiores e inferiores",
+        "yes": "Sí",
+        "no": "No",
+        "sudden": "De repente",
+        "gradual": "Poco a poco",
+        "soft": "Blandas",
+        "drooping": "Caídas"
+      },
+      "action": {
+        "start_daily_check": "Iniciar un check de cuidados corto",
+        "check_substrate_moisture": "Comprobar la humedad del sustrato",
+        "avoid_watering_today": "No volver a regar hoy",
+        "water_if_dry": "Regar con cuidado solo si se confirma sequedad",
+        "reduce_midday_light": "Reducir temporalmente el calor directo del mediodía",
+        "observe_before_feeding": "Seguir observando antes de fertilizar",
+        "pause_feeding": "Pausar la fertilización por ahora",
+        "observe_two_days": "Observar hasta el próximo check",
+        "check_leaf_undersides": "Revisar el envés de las hojas",
+        "document_before_adjusting": "Documentar la evolución antes de cambiar valores",
+        "observe_after_change": "Observar después del último cambio",
+        "review_action_effect": "Revisar el efecto de la última medida"
+      },
+      "actionReason": {
+        "start_daily_check": "Un check actual aporta los datos necesarios.",
+        "check_substrate_moisture": "La humedad separa las causas de agua más importantes.",
+        "avoid_watering_today": "Más agua sería un riesgo innecesario mientras el sustrato está húmedo.",
+        "water_if_dry": "Regar solo tiene sentido cuando se confirma sequedad.",
+        "reduce_midday_light": "Un alivio reversible es más seguro que una intervención fuerte.",
+        "observe_before_feeding": "Los síntomas inespecíficos no justifican fertilizar.",
+        "pause_feeding": "Una pausa evita intensificar un posible exceso.",
+        "observe_two_days": "Los datos disponibles favorecen una observación tranquila.",
+        "check_leaf_undersides": "Esta revisión es rápida, segura e informativa.",
+        "document_before_adjusting": "Una comparación limpia evita varios cambios simultáneos.",
+        "observe_after_change": "El último cambio necesita tiempo antes de valorar su efecto.",
+        "review_action_effect": "El resultado muestra si la hipótesis actual sigue encajando."
+      },
+      "action_remember": "Guardar como tarea",
+      "action_mark_performed": "Marcar como realizada",
+      "effect": {
+        "title": "Control del efecto",
+        "question": "Aplicaste “{action}”. ¿Cómo ha cambiado la planta?",
+        "pending": "La medida fue realizada. Observa hasta el control previsto en vez de volver a intervenir ahora.",
+        "improved": "Mejoró",
+        "unchanged": "Sin cambios",
+        "worsened": "Empeoró"
+      },
+      "why_title": "¿Por qué muestra Buddy esto?",
+      "why_low_data": "Aún faltan señales comparables. La información ausente no se valora de forma negativa.",
+      "possible_causes": "Posibles causas",
+      "pattern_watering": "En esta planta, los intervalos de riego confirmados estuvieron normalmente entre {min} y {max} días.",
+      "signal": {
+        "progressive_worsening": "La planta mostró más señales en varios checks.",
+        "progressive_improvement": "La planta se mostró más tranquila en varios checks.",
+        "no_clear_direction": "Ahora mismo no hay una dirección clara de empeoramiento.",
+        "substrate_repeatedly_wet": "El sustrato se indicó como mojado varias veces.",
+        "substrate_repeatedly_dry": "El sustrato se indicó como seco varias veces.",
+        "same_leaf_issue_recurring": "La misma anomalía de hojas se repite.",
+        "new_issue": "Apareció una anomalía nueva desde el check anterior.",
+        "growth_stagnating": "Se indicó crecimiento lento varias veces.",
+        "check_overdue_for_pattern": "Se superó claramente el intervalo habitual entre checks.",
+        "attention_check_overdue": "Falta el siguiente check comparativo de una planta que antes mostró señales.",
+        "water_demand_increasing": "Los intervalos de riego confirmados se acortan en varias entradas.",
+        "water_demand_decreasing": "Los intervalos de riego confirmados se alargan en varias entradas.",
+        "care_interventions_frequent": "Se documentaron demasiadas intervenciones de cuidado en poco tiempo.",
+        "multiple_risk_signals": "Aparecen varias señales de riesgo distintas al mismo tiempo.",
+        "action_helped": "Una medida anterior parece haber ayudado.",
+        "action_no_improvement": "Una medida anterior aún no mostró mejora.",
+        "dry_and_hanging": "El sustrato seco y las hojas caídas aparecen juntos.",
+        "wet_and_hanging": "El sustrato mojado y las hojas caídas aparecen juntos.",
+        "critical_data_contradiction": "Hay datos recientes contradictorios que conviene revisar.",
+        "effect_check_due": "Ya se puede revisar el efecto de una medida.",
+        "leaf_change": "Las hojas se indicaron como cambiadas.",
+        "environment_change": "El ambiente se indicó como inusual.",
+        "pests_uncertain": "Las señales de plagas siguen siendo inciertas.",
+        "current_wet_substrate": "El sustrato está mojado ahora.",
+        "current_dry_substrate": "El sustrato está seco ahora.",
+        "hanging_leaves": "Las hojas parecen caídas.",
+        "repeated_wet_substrate": "Se repiten lecturas de sustrato mojado.",
+        "repeated_dry_substrate": "Se repiten lecturas de sustrato seco.",
+        "heat_reported": "Se indicó calor en el check actual.",
+        "yellowing_leaves": "Se indicaron hojas claras o amarillentas.",
+        "lower_leaves_affected": "Las hojas inferiores son las más afectadas.",
+        "pests_visible": "Se indicaron plagas o marcas de alimentación."
+      }
+    },
     "trend": {
       "title": "Tendencia",
       "compare_title": "Buddy compara",
@@ -711,6 +885,69 @@
       "checked_today": "Todo se ve tranquilo. Hoy basta con una revision calmada.",
       "needs_attention": "Hay algo que llama la atencion. No hace falta panico: documentalo y compara manana otra vez.",
       "no_check_today": "Un chequeo corto ayuda a detectar cambios antes."
+    },
+    "photos": {
+      "photos": "Fotos",
+      "take_photo": "Tomar foto",
+      "choose_gallery": "Elegir de la galería",
+      "add_photo": "Añadir foto",
+      "limit_label": "Hasta {count} fotos locales",
+      "processing": "Procesando …",
+      "processed": "La foto está lista para guardar.",
+      "saved_local": "Foto guardada localmente.",
+      "preview_alt": "Vista previa de la foto de la planta",
+      "primary_alt": "Foto principal de {name}",
+      "category_label": "Categoría",
+      "note_label": "Nota breve",
+      "source_label": "Origen",
+      "remove_photo": "Quitar foto",
+      "delete_photo": "Eliminar foto",
+      "use_primary": "Usar como foto principal",
+      "remove_primary": "Quitar foto principal",
+      "open_photo": "Abrir foto",
+      "open_source": "Abrir entrada vinculada",
+      "edit_entry": "Editar entrada",
+      "photo_detail": "Detalles de la foto",
+      "select_compare": "Seleccionar para comparar",
+      "compare_selected": "Seleccionada",
+      "compare_photos": "Comparar fotos",
+      "before": "Antes",
+      "after": "Después",
+      "compare_guidance": "Compara el color, la tensión de las hojas y la extensión de la zona afectada.",
+      "time_distance": "Diferencia de tiempo: {count} días",
+      "photo_count": "{count} fotos",
+      "newest": "Más recientes primero",
+      "oldest": "Más antiguas primero",
+      "none_title": "Todavía no hay fotos",
+      "none_body": "Documenta una foto en el perfil, el Daily Check o el diario.",
+      "privacy_local": "Las fotos se guardan localmente en este dispositivo y no se suben automáticamente.",
+      "privacy_title": "Fotos locales",
+      "delete_confirm_title": "¿Eliminar foto?",
+      "delete_confirm_body": "Esta foto se eliminará permanentemente de este dispositivo.",
+      "remove_primary_confirm_title": "¿Quitar foto principal?",
+      "remove_primary_confirm_body": "Volverá a mostrarse la ilustración de la planta. La foto seguirá en el historial.",
+      "error_format_unsupported": "Este formato no es compatible. Elige una imagen JPEG, PNG o WebP.",
+      "error_file_too_large": "El archivo es demasiado grande. Elige una imagen de hasta 15 MB.",
+      "error_decode": "No se pudo leer la imagen. Elige otro archivo.",
+      "error_storage_full": "No se pudo guardar la foto localmente. Elimina fotos que ya no necesites o libera espacio en el dispositivo.",
+      "error_save": "No se pudo guardar la foto localmente. Inténtalo de nuevo.",
+      "error_load": "No se pudo cargar una foto.",
+      "error_delete": "No se pudo eliminar la foto por completo. Inténtalo de nuevo.",
+      "error_limit": "Se alcanzó el número máximo de fotos.",
+      "error_compare_plant": "Compara solo fotos de la misma planta.",
+      "category": {
+        "whole_plant": "Planta completa",
+        "leaf_top": "Haz de la hoja",
+        "leaf_bottom": "Envés de la hoja",
+        "detail": "Detalle",
+        "other": "Otro"
+      },
+      "source": {
+        "profile": "Perfil",
+        "daily_check": "Daily Check",
+        "journal": "Diario",
+        "follow_up": "Control de efecto"
+      }
     },
     "more": {
       "kicker": "Care+ y ajustes",

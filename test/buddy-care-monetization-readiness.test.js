@@ -67,6 +67,16 @@ const deLocale = fs.readFileSync(path.join(__dirname, '..', 'src', 'i18n', 'loca
   assert.strictEqual(lockedSlotReason.bodyKey, 'buddyCare.screen.upgrade_reason_locked_slot', 'locked slot copy should explain the Care+ separation benefit');
 })();
 
+(function testAccessStatusIsMutuallyExclusive() {
+  const rootState = { buddyCare: buddyCareState.createDefaultBuddyCareState() };
+  assert.strictEqual(monetization.getCarePlusAccessStatus(rootState).id, 'test_available', 'enabled mock should expose one available-test status');
+  buddyCareState.activateBuddyCarePlusMock(rootState);
+  const active = monetization.getCarePlusAccessStatus(rootState);
+  assert.strictEqual(active.id, 'test_active', 'activated mock should expose one active-test status');
+  assert.strictEqual(active.showOffer, false, 'active test status should not expose the activation offer simultaneously');
+  assert.strictEqual(active.showActiveState, true, 'active test status should expose its active presentation');
+})();
+
 (function testConversionEventsStayLocalAndSanitized() {
   const rootState = { buddyCare: buddyCareState.createDefaultBuddyCareState() };
   buddyCareState.addBuddyCarePlant(rootState, { nickname: 'Visible Plant' });

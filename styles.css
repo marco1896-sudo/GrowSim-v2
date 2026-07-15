@@ -32,6 +32,380 @@
   --gs-shadow-soft: 0 10px 24px rgba(3, 8, 18, 0.55);
 }
 
+/* Buddy Care+ local photo documentation */
+.buddy-care-photo-input-actions,
+.buddy-care-photo-detail-actions,
+.buddy-care-profile-photo-actions,
+.buddy-care-photo-toolbar,
+.buddy-care-photo-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.buddy-care-photo-input-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 9px 13px;
+  border: 1px solid rgba(128, 181, 133, 0.42);
+  border-radius: 12px;
+  background: rgba(17, 45, 34, 0.78);
+  color: var(--text, #f5f7ef);
+  font-size: 0.83rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.buddy-care-photo-input-btn:focus-within {
+  outline: 2px solid #d9b86c;
+  outline-offset: 2px;
+}
+
+.buddy-care-photo-input-btn.is-disabled {
+  opacity: 0.58;
+  cursor: wait;
+}
+
+.buddy-care-photo-input-btn input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.buddy-care-photo-composer {
+  display: grid;
+  gap: 12px;
+  margin-block: 14px;
+  padding-block: 14px;
+  border-block: 1px solid rgba(151, 190, 148, 0.2);
+}
+
+.buddy-care-photo-composer .buddy-care-section-head h3,
+.buddy-care-photo-composer .buddy-care-section-head p {
+  margin: 0;
+}
+
+.buddy-care-photo-draft-grid,
+.buddy-care-photo-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.buddy-care-photo-draft,
+.buddy-care-photo-card {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(141, 183, 140, 0.24);
+  border-radius: 14px;
+  background: rgba(9, 30, 24, 0.7);
+}
+
+.buddy-care-photo-draft {
+  display: grid;
+  gap: 8px;
+}
+
+.buddy-care-photo-draft label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.72rem;
+}
+
+.buddy-care-photo-media {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  inline-size: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  background: rgba(13, 38, 29, 0.92);
+}
+
+.buddy-care-photo-media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.buddy-care-photo-media.is-missing::after {
+  content: "×";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 1.4rem;
+}
+
+.buddy-care-photo-message {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+}
+
+.buddy-care-photo-message--busy { background: rgba(73, 123, 154, 0.2); }
+.buddy-care-photo-message--success { background: rgba(80, 155, 102, 0.2); }
+.buddy-care-photo-message--error { background: rgba(190, 83, 72, 0.2); }
+
+.buddy-care-photo-privacy {
+  margin: 0;
+  color: var(--text-muted, #b5c4b7);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.buddy-care-photo-thumb-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-block: 4px;
+  scrollbar-width: thin;
+}
+
+.buddy-care-photo-thumb {
+  flex: 0 0 84px;
+  min-height: 64px;
+  padding: 0;
+  border: 1px solid rgba(153, 194, 151, 0.3);
+  border-radius: 11px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.buddy-care-photo-card.is-selected {
+  border-color: #d9b86c;
+  box-shadow: inset 0 0 0 1px #d9b86c;
+}
+
+.buddy-care-photo-card-open {
+  display: grid;
+  gap: 8px;
+  inline-size: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.buddy-care-photo-card-open > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.buddy-care-photo-card-open small {
+  color: var(--text-muted, #b5c4b7);
+}
+
+.buddy-care-photo-toolbar {
+  justify-content: space-between;
+  margin-block: 12px;
+}
+
+.buddy-care-photo-detail,
+.buddy-care-photo-comparison {
+  display: grid;
+  gap: 12px;
+  margin-block: 12px;
+  padding: 14px;
+  border: 1px solid rgba(155, 196, 153, 0.28);
+  border-radius: 16px;
+  background: rgba(8, 29, 23, 0.94);
+}
+
+.buddy-care-photo-detail-media {
+  max-height: min(52svh, 520px);
+  aspect-ratio: auto;
+}
+
+.buddy-care-photo-detail-media img {
+  max-height: min(52svh, 520px);
+  object-fit: contain;
+}
+
+.buddy-care-photo-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.buddy-care-photo-facts div {
+  display: grid;
+  gap: 2px;
+}
+
+.buddy-care-photo-facts dt { color: var(--text-muted, #b5c4b7); font-size: 0.7rem; }
+.buddy-care-photo-facts dd { margin: 0; font-weight: 750; }
+.buddy-care-photo-delete { color: #ffaea4; }
+
+.buddy-care-photo-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.buddy-care-photo-compare-grid article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.buddy-care-photo-compare-grid article > span {
+  color: #d9b86c;
+  font-weight: 800;
+}
+
+.buddy-care-photo-compare-grid small { color: var(--text-muted, #b5c4b7); }
+
+.buddy-care-profile-photo-actions {
+  justify-content: center;
+  margin-top: 8px;
+}
+
+@media (max-width: 430px) {
+  .buddy-care-photo-draft-grid,
+  .buddy-care-photo-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .buddy-care-photo-compare-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .buddy-care-photo-input-actions > * {
+    flex: 1 1 130px;
+  }
+}
+
+/* Buddy Care+ local intelligence */
+.buddy-care-intelligence-question,
+.buddy-care-effect-check,
+.buddy-care-intelligence-why {
+  border: 1px solid var(--care-line, rgba(182, 243, 61, 0.2));
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(19, 27, 22, 0.94), rgba(7, 12, 10, 0.96));
+  box-shadow: 0 10px 24px rgb(0 0 0 / 18%);
+}
+
+.buddy-care-intelligence-question,
+.buddy-care-effect-check {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  margin-block: 10px;
+}
+
+.buddy-care-intelligence-question h3,
+.buddy-care-intelligence-question p,
+.buddy-care-effect-check p,
+.buddy-care-action-pending {
+  margin: 0;
+}
+
+.buddy-care-intelligence-question h3 {
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.buddy-care-intelligence-question p,
+.buddy-care-effect-check p,
+.buddy-care-action-pending {
+  color: var(--text-muted, #53685b);
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.buddy-care-intelligence-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.buddy-care-intelligence-options .ghost-btn {
+  min-height: 44px;
+  padding: 7px 11px;
+  font-size: 0.78rem;
+}
+
+.buddy-care-intelligence-why {
+  margin-block: 10px;
+  overflow: clip;
+}
+
+.buddy-care-intelligence-why summary {
+  min-height: 42px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 750;
+  list-style-position: inside;
+}
+
+.buddy-care-intelligence-why-body {
+  display: grid;
+  gap: 9px;
+  padding: 0 14px 14px;
+  color: var(--text-muted, #53685b);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.buddy-care-intelligence-why-body :is(ul, ol, p) {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.buddy-care-intelligence-why-body p {
+  padding-inline-start: 0;
+}
+
+.buddy-care-priority-copy small {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-muted, #53685b);
+  font-size: 0.72rem;
+}
+
+.buddy-care-priority-control:empty {
+  display: none;
+}
+
+.buddy-care-priority-control {
+  grid-column: 2;
+  width: 100%;
+}
+
+.buddy-care-priority-control .action-btn {
+  width: 100%;
+}
+
+@media (max-width: 390px) {
+  .buddy-care-intelligence-question,
+  .buddy-care-effect-check {
+    padding: 12px;
+  }
+
+  .buddy-care-intelligence-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .buddy-care-intelligence-options .ghost-btn {
+    width: 100%;
+  }
+}
+
 .gs-card {
   border-radius: var(--gs-radius-card);
 }
@@ -11454,6 +11828,7 @@ body.panelized-ready :is(
 
 /* Buddy Care+ reference UI */
 .buddy-care-screen {
+  position: relative;
   --care-accent: #b6f33d;
   --care-accent-soft: rgba(182, 243, 61, 0.14);
   --care-line: rgba(188, 209, 139, 0.22);
@@ -11465,6 +11840,60 @@ body.panelized-ready :is(
     radial-gradient(circle at 15% 44%, rgba(85, 137, 33, 0.08), transparent 24%),
     #030605;
   color: #f4f7f1;
+}
+
+body.buddy-care-age-gate-open {
+  overflow: hidden;
+}
+
+.buddy-care-age-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 13050;
+  display: grid;
+  place-items: center;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: rgba(3, 8, 6, 0.88);
+  backdrop-filter: blur(14px);
+}
+
+body.buddy-care-age-gate-open .retention-toast {
+  display: none !important;
+}
+
+.buddy-care-age-gate[hidden] {
+  display: none !important;
+}
+
+.buddy-care-age-gate-dialog {
+  width: min(100%, 430px);
+  max-height: 100%;
+  overflow: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
+}
+
+.buddy-care-field-error {
+  color: #ffaaa1;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.buddy-care-field-error[hidden] {
+  display: none !important;
+}
+
+.buddy-care-input[aria-invalid="true"],
+.buddy-care-select[aria-invalid="true"],
+.buddy-care-textarea[aria-invalid="true"] {
+  border-color: rgba(239, 103, 89, 0.82);
+  box-shadow: 0 0 0 2px rgba(239, 103, 89, 0.16);
+}
+
+.buddy-care-plant-profile-card.is-active {
+  border-color: rgba(174, 234, 70, 0.58);
+  box-shadow: 0 0 0 1px rgba(174, 234, 70, 0.12), 0 16px 30px rgba(0, 0, 0, 0.2);
 }
 
 .buddy-care-shell {
@@ -16050,6 +16479,10 @@ body.panelized-ready :is(
   bottom: auto;
 }
 
+.retention-toast[data-anchor="buddy-care"] {
+  bottom: calc(88px + env(safe-area-inset-bottom));
+}
+
 .retention-toast.is-hidden {
   opacity: 0;
   transform: translateX(-50%) translateY(6px);
@@ -20540,6 +20973,16 @@ body.panelized-ready :is(
 
 .buddy-care-buddy-note--today-hero {
   align-items: center;
+  min-height: 0;
+  grid-template-columns: minmax(100px, 0.78fr) minmax(0, 1.22fr);
+}
+
+.buddy-care-buddy-note--today-hero .buddy-care-buddy-body {
+  padding-right: 0;
+}
+
+.buddy-care-buddy-note--today-hero .buddy-care-hero-plant {
+  display: none;
 }
 
 .buddy-care-buddy-asset {
@@ -21247,4 +21690,25 @@ body.panelized-ready :is(
 
 [data-buddy-care-plant-image][data-plant-phase="veg"] {
   transform: scale(3.25);
+}
+
+[data-buddy-care-plant-image][data-buddy-care-photo-id] {
+  transform: none !important;
+  object-fit: cover !important;
+  object-position: center;
+}
+
+.buddy-care-history-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 430px) {
+  .buddy-care-photo-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .buddy-care-photo-draft-grid {
+    grid-template-columns: 1fr;
+  }
 }
